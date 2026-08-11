@@ -1,0 +1,25 @@
+{
+  "name": "@languon/backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsx watch src/index.ts",
+    "lint": "eslint .",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.0",
+    "@hono/zod-openapi": "^1.5.2",
+    "@languon/contracts": "workspace:*",
+    "@languon/database": "workspace:*",
+    "@languon/prompts": "workspace:*",
+    "@mastra/core": "^1.57.0",
+    "hono": "^4.13.1",
+    "zod": "^4.4.3"
+  }
+}

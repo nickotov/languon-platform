@@ -1,0 +1,25 @@
+# Project-scoped settings load only after this repository is trusted in Codex.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+project_doc_max_bytes = 65536
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 6
+
+[sandbox_workspace_write]
+# Keep persistent outbound access disabled. Codex can request narrowly scoped
+# approval for dependency downloads or external documentation when required.
+network_access = false
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60

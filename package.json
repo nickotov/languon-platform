@@ -1,0 +1,47 @@
+{
+  "name": "languon",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "dev": "turbo run dev --parallel",
+    "dev:admin": "turbo run dev --filter=@languon/admin",
+    "dev:apps:docker": "docker compose --profile apps up --build",
+    "dev:backend": "turbo run dev --filter=@languon/backend",
+    "dev:infra": "docker compose up -d postgres redis",
+    "dev:mobile": "turbo run dev --filter=@languon/mobile",
+    "dev:mobile:docker": "turbo run dev:docker --filter=@languon/mobile",
+    "dev:web": "turbo run dev --filter=@languon/web",
+    "feature:new": "node scripts/create-feature.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:down": "docker compose down",
+    "lint": "eslint .",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.1",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.9.0",
+    "prettier": "^3.9.6",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.12",
+    "turbo": "^2.10.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.10"
+  }
+}

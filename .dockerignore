@@ -1,0 +1,11 @@
+.git
+.next
+.turbo
+coverage
+dist
+node_modules
+.env*
+!.env.example
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios

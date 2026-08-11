@@ -1,0 +1,23 @@
+# Dependencies and generated output
+node_modules/
+.next/
+.turbo/
+dist/
+coverage/
+.expo/
+web-build/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.local
+
+# Tooling and operating-system files
+.DS_Store
+*.log
+.codex-log/
+
+# Native mobile output
+apps/mobile/android/
+apps/mobile/ios/
