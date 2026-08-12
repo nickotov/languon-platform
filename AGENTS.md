@@ -260,10 +260,26 @@ A successful compilation alone is never sufficient.
 ## Git and review hygiene
 
 Inspect `git status` before work and before handoff. Preserve unrelated changes,
-do not overwrite user work, and never leave conflicts unresolved. Do not create
-commits unless the user or current workflow explicitly requests them. If commits
-are requested, use focused imperative subjects and avoid mixing refactors with
-functional changes.
+do not overwrite user work, and never leave conflicts unresolved.
+
+Every feature must be implemented on a dedicated branch created from `main`.
+Use the branch name `feature/<feature-slug>`, matching the feature workspace
+under `.agent/features/<feature-slug>/` when one exists. Do not implement feature
+changes directly on `main`. Keep the feature specification, ExecPlan, evidence,
+review, implementation, and remediation together on that branch.
+
+After the feature satisfies the Definition of Done, integrate it into `main`
+with a squash merge so the completed feature becomes one commit on `main`.
+Inspect the final squashed diff before committing, resolve conflicts without
+discarding unrelated work, and rerun any checks affected by conflict resolution.
+Do not use a regular merge commit or rebase individual feature commits onto
+`main`. Do not delete the feature branch or push local branches unless the user
+or the active workflow explicitly requests it.
+
+The feature branch and squash-merge rules explicitly authorize the local commits
+required by that workflow. Outside feature delivery, do not create commits unless
+the user or current workflow explicitly requests them. Use focused imperative
+subjects and avoid mixing unrelated changes into the squashed feature commit.
 
 Review findings must include severity, location, problem, impact, and suggested
 fix. Prioritize functional correctness, missing requirements, regressions, race
