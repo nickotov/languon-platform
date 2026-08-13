@@ -32,6 +32,12 @@ Do not paste full logs when a focused excerpt or artifact reference is enough.
 - Observed result:
 - Artifacts:
 
+## User-flow guide verification
+
+- Guides created or updated:
+- Commands and journeys checked:
+- `pnpm docs:user-flows:check` result:
+
 ## Static checks
 
 - Format:

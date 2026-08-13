@@ -56,6 +56,16 @@ and compatible deployment position instead of inventing a destructive rollback.
 User-visible changes require browser or device evidence in the active feature's
 `EVIDENCE.md`.
 
+Completed executable features also require a current start-to-result guide under
+[`docs/user-flows/`](./user-flows/README.md). Before changing related behavior,
+match the feature slug and changed paths against guide frontmatter. After
+updating a guide, verify its commands and expected results against current source
+and run:
+
+```sh
+pnpm docs:user-flows:check
+```
+
 ## PostgreSQL schema and migrations
 
 Backend modules own their Drizzle schema definitions. The backend aggregate at

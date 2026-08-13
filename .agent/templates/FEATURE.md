@@ -30,6 +30,14 @@ Describe the observable behavior after completion.
 
 - Record product, data, security, compatibility, and rollout constraints.
 
+## User-flow documentation
+
+- Required: Assess whether this feature has an executable browser, API, mobile,
+  admin, CLI, or system journey.
+- Guide: `docs/user-flows/{{FEATURE_SLUG}}.md`, or record a concrete reason why a
+  guide is not applicable.
+- Related guides: List every existing guide whose documented behavior may change.
+
 ## Open decisions
 
 - Record only decisions that materially require product or stakeholder input.

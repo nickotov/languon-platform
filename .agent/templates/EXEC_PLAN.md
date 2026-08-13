@@ -29,6 +29,7 @@ relevant accepted ADRs.
 - E2E: Required / not required — rationale.
 - Browser/device: Required / not required — rationale.
 - Database migration: Required / not required — rationale.
+- User-flow guide: Required / not required — guide path or concrete rationale.
 
 ## Milestones
 
@@ -81,6 +82,7 @@ relevant accepted ADRs.
 | Lint               | Pending        |          |
 | Build              | Pending        |          |
 | Database migration | Not applicable |          |
+| User-flow guide    | Pending        |          |
 | Independent review | Pending        |          |
 | Security review    | To assess      |          |
 

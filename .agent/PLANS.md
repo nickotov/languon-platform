@@ -36,6 +36,14 @@ Assign each criterion a stable identifier such as `AC-1`.
 State which unit, integration, contract, E2E, browser/device, migration, and
 manual checks are required or not required, with rationale.
 
+### User-flow documentation
+
+List every `docs/user-flows/*.md` guide that the feature must create or update,
+based on feature slugs and `source_paths` metadata. For a feature with no
+executable browser, API, mobile, admin, CLI, or system journey, record the
+concrete reason a guide is not applicable. State which documented commands and
+expected results will be verified.
+
 ### Milestones
 
 Use checkboxes and keep each milestone independently verifiable:
@@ -88,7 +96,8 @@ current; Git retains obsolete detail.
 ## Completion policy
 
 Complete a plan only after all acceptance criteria and relevant validation pass,
-independent review finishes, material findings are resolved or justified, and
-`EVIDENCE.md` describes the final proof. Mark work blocked only for a genuine
-external dependency or decision that cannot be safely resolved from repository
-context.
+required user-flow guides match current behavior and pass
+`pnpm docs:user-flows:check`, independent review finishes, material findings are
+resolved or justified, and `EVIDENCE.md` describes the final proof. Mark work
+blocked only for a genuine external dependency or decision that cannot be safely
+resolved from repository context.

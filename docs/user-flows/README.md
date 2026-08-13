@@ -1,0 +1,111 @@
+# User-flow testing guides
+
+These guides let a developer verify a completed feature from a local environment
+startup through observable results. They complement automated tests and feature
+evidence with a repeatable manual/browser/API/device recipe.
+
+## Guide index
+
+- [User Authentication](./user-authentication.md) — signup, verification,
+  sessions, passwords, recovery, logout, and passkeys through the browser and
+  HTTP API.
+
+## Naming and frontmatter
+
+Use one canonical guide named `docs/user-flows/<feature-slug>.md`. The slug must
+match the primary `.agent/features/<feature-slug>/` workspace when one exists.
+Related features may update more than one guide when their behavior overlaps.
+
+Every guide starts with this YAML frontmatter:
+
+```yaml
+---
+feature: example-feature
+title: Example Feature
+status: current
+last_verified: 2026-08-13
+surfaces:
+  - browser
+  - api
+source_paths:
+  - apps/web/src/fsd/features/example/**
+  - apps/backend/src/modules/example/**
+related_features:
+  - another-feature
+---
+```
+
+Required fields:
+
+- `feature` — kebab-case primary feature slug; it must match the filename.
+- `title` — human-readable feature name and the guide's level-one heading.
+- `status` — `draft`, `current`, or `retired`.
+- `last_verified` — `YYYY-MM-DD`; change it only after checking current source
+  and running the proportional journeys recorded in feature evidence.
+- `surfaces` — one or more of `browser`, `api`, `mobile`, `admin`, `cli`, or
+  `system`. Each selected surface requires its corresponding verification
+  section.
+- `source_paths` — repository-relative paths or glob-like patterns covering the
+  implementation, contracts, configuration, and infrastructure that can change
+  the documented journey.
+
+`related_features` is optional and identifies other feature workspaces that
+commonly affect the guide. Frontmatter values are intentionally simple scalars
+and block lists so the dependency-free validator can check them.
+
+## Required guide content
+
+Every guide must contain:
+
+- `What this verifies` — scope, observable outcomes, and intentional limits.
+- `Start the development environment` — prerequisites, safe local configuration,
+  migrations, exact start commands, health checks, and test data.
+- One verification section for every declared surface, such as Browser
+  verification or API verification, with numbered actions and expected results.
+- `Expected failure and edge cases` — material negative, retry, permission,
+  state-transition, and rate-limit behavior.
+- `Automated regression checks` — exact focused commands and what they cover.
+- `Troubleshooting` — likely environment/configuration failures and diagnosis.
+- `Cleanup` — ordinary non-destructive cleanup first; destructive local resets
+  must be clearly labeled and must never target shared/staging/production data.
+
+Use fake local identities and sanitized development secrets. Do not include real
+tokens, credentials, personal data, or instructions that mutate shared systems.
+When a flow cannot be reproduced correctly through one surface—for example,
+WebAuthn signature creation through `curl`—say so and point to the correct
+browser/device or automated verification.
+
+## Agent update workflow
+
+Before changing behavior, scan guide metadata by feature and likely path:
+
+```sh
+rg -n "^(feature|related_features|source_paths):|^  - " docs/user-flows/*.md
+```
+
+Read all matches and use semantic judgment for shared contracts or cross-cutting
+configuration. During feature completion, create the canonical guide if needed,
+update every affected guide and its metadata, run the documented journeys, and
+record evidence in the active `.agent/features/<feature>/EVIDENCE.md`.
+
+Validate the collection with:
+
+```sh
+pnpm docs:user-flows:check
+```
+
+The check validates filename/frontmatter consistency, supported surfaces,
+repository-relative source paths, required sections, and index membership. It
+cannot prove prose accuracy; implementation review and real verification remain
+required.
+
+## Lifecycle
+
+- `draft` — the guide is being written and must not be treated as complete.
+- `current` — the guide matches current behavior and has current evidence.
+- `retired` — the feature/surface no longer exists; keep the guide only when its
+  history remains useful and explain the replacement in the body.
+
+Behavior changes and guide updates belong in the same feature branch and squash
+commit. A feature with no executable journey may omit a guide only when its
+`FEATURE.md` records a concrete not-applicable reason.

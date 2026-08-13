@@ -33,6 +33,8 @@ issues.
 
 - [ ] Applicable architecture boundaries are preserved.
 - [ ] Tests cover the material regression surface.
+- [ ] Required user-flow guides match current behavior, commands, and expected
+      outcomes, or `FEATURE.md` records a valid not-applicable reason.
 - [ ] No debugging artifacts or accidental scope changes remain.
 
 ## Final verdict

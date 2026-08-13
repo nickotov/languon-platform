@@ -11,8 +11,10 @@ description: Implement a Languon feature autonomously from repository specificat
 2. Locate `.agent/features/<feature>/FEATURE.md` and existing `EXEC_PLAN.md`.
 3. If the feature workspace is missing, run
    `pnpm feature:new -- <slug> "<title>"` and complete `FEATURE.md`.
-4. Read relevant architecture documentation and inspect Git state.
-5. Treat repository files as authoritative over conversation memory.
+4. Scan `docs/user-flows/*.md` frontmatter for the feature slug and affected
+   source paths, then read every related guide.
+5. Read relevant architecture documentation and inspect Git state.
+6. Treat repository files as authoritative over conversation memory.
 
 ## Explore and plan
 
@@ -34,7 +36,9 @@ For each milestone:
 3. Diagnose and fix root causes of failures.
 4. Update progress, decisions, discoveries, validation, and remaining work in
    the ExecPlan.
-5. Continue without waiting for routine approval.
+5. Keep every affected user-flow guide aligned with changed commands, behavior,
+   expected results, edge cases, and source-path metadata.
+6. Continue without waiting for routine approval.
 
 Preserve unrelated changes and applicable DDD, FSD, package-boundary, schema,
 security, and secret-handling constraints.
@@ -49,6 +53,10 @@ Run all relevant workspace checks and then the appropriate broader suite. Write
 exact commands, concise results, observed journeys, artifacts, and remaining
 risks to `EVIDENCE.md`; do not paste unbounded logs.
 
+Create or update required `docs/user-flows/<feature-slug>.md` guides according
+to the root instructions. Run `pnpm docs:user-flows:check` and record which guide
+steps were verified; prose never substitutes for required automated tests.
+
 ## Review and remediate
 
 Request an independent `reviewer` after implementation. Request
@@ -62,7 +70,8 @@ changes.
 
 ## Finish
 
-Return done only when the repository Definition of Done is satisfied and all
-feature artifacts reflect reality. Return blocked only for a genuine external
-dependency or user decision that cannot be safely resolved from repository
-context; record the blocker and completed work in the ExecPlan.
+Return done only when the repository Definition of Done is satisfied, all
+required user-flow guides match current behavior, and all feature artifacts
+reflect reality. Return blocked only for a genuine external dependency or user
+decision that cannot be safely resolved from repository context; record the
+blocker and completed work in the ExecPlan.

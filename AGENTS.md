@@ -15,8 +15,10 @@ locate and read, in order:
 1. The closest applicable `AGENTS.md` files.
 2. `.agent/features/<feature>/FEATURE.md`.
 3. `.agent/features/<feature>/EXEC_PLAN.md`, when present.
-4. Relevant accepted ADRs under `docs/adr/` and architecture documentation.
-5. Analogous source implementations and tests.
+4. Relevant `docs/user-flows/*.md` guides, discovered from their `feature` and
+   `source_paths` frontmatter.
+5. Relevant accepted ADRs under `docs/adr/` and architecture documentation.
+6. Analogous source implementations and tests.
 
 After context compaction or uncertainty, reread the feature and plan, inspect
 `git status` and `git diff`, inspect relevant recent commits when available, and
@@ -60,6 +62,7 @@ pnpm test                       # run all automated tests
 pnpm test:coverage              # run tests with coverage
 pnpm build                      # build all workspaces
 pnpm check                      # run the full pre-handoff validation suite
+pnpm docs:user-flows:check      # validate user-flow guide metadata/structure
 pnpm feature:new -- slug "Name" # create durable feature artifacts
 ```
 
@@ -146,6 +149,39 @@ reasonable autonomous assumptions there.
 Do not ask the user to approve ordinary milestones. Continue until the feature
 satisfies the Definition of Done or meets a genuine blocking condition.
 
+## User-flow testing guides
+
+Durable start-to-result verification guides live under `docs/user-flows/`.
+Read [`docs/user-flows/README.md`](./docs/user-flows/README.md) for the required
+frontmatter, naming, content, and lifecycle rules.
+
+Before implementing a feature or behavior change:
+
+1. Scan the guide frontmatter for the active feature slug and changed
+   `source_paths`.
+2. Read every matching guide before editing the related behavior.
+3. Decide in the feature specification whether a user-flow guide is required.
+   A feature with a browser, API, mobile, admin, CLI, or other executable
+   user/system journey normally requires one. Record a concrete reason when it
+   does not.
+
+Before completing the feature:
+
+- Create `docs/user-flows/<feature-slug>.md` when no applicable guide exists.
+- Update every existing guide whose documented behavior, setup, expected result,
+  edge case, command, surface, or `source_paths` changed.
+- Cover prerequisites, environment setup, exact start commands, test data,
+  browser/device steps when applicable, API/CLI steps when supported, expected
+  results, important failure and edge cases, automated regression commands,
+  troubleshooting, and safe cleanup.
+- Use fake local data and sanitized development settings. Never place real
+  credentials, tokens, production identifiers, or destructive shared-data
+  instructions in a guide.
+- Update `last_verified` only after checking the guide against current source and
+  running the proportional verification recorded in the active `EVIDENCE.md`.
+- Run `pnpm docs:user-flows:check` and include guide accuracy in independent
+  review. Manual guides complement automated tests; they never replace them.
+
 ## Autonomous feature flow
 
 1. Understand the specification, applicable instructions, and relevant ADRs.
@@ -159,12 +195,13 @@ satisfies the Definition of Done or meets a genuine blocking condition.
 8. Update the ExecPlan and evidence; create or update an ADR when a decision
    crosses the ADR threshold.
 9. Repeat implementation and targeted validation for remaining milestones.
-10. Run the full relevant validation suite.
-11. Verify user-visible behavior in the real app when applicable.
-12. Perform independent code review and risk-triggered security review.
-13. Fix valid findings and rerun affected checks.
-14. Record final evidence and remaining risks.
-15. Finish only when the Definition of Done is satisfied.
+10. Create or update every affected user-flow testing guide.
+11. Run the full relevant validation suite.
+12. Verify user-visible behavior in the real app when applicable.
+13. Perform independent code review and risk-triggered security review.
+14. Fix valid findings and rerun affected checks.
+15. Record final evidence and remaining risks.
+16. Finish only when the Definition of Done is satisfied.
 
 ## Clarifications and blocking conditions
 
@@ -252,6 +289,9 @@ Work is done only when:
   architectural decision is recorded and indexed.
 - No debugging artifacts, secrets, generated output, or accidental scope changes
   remain.
+- Required user-flow guides exist, match current behavior and commands, pass
+  `pnpm docs:user-flows:check`, and are covered by review/evidence; every
+  not-applicable decision has a concrete reason in `FEATURE.md`.
 - `EXEC_PLAN.md`, `EVIDENCE.md`, and `REVIEW.md` reflect the final state.
 - Remaining risks are explicit.
 

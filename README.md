@@ -55,6 +55,7 @@ parity checks; the host-based `pnpm dev` loop is faster for normal development.
 | `pnpm test:coverage`                   | Run tests with coverage                        |
 | `pnpm build`                           | Build all workspaces in dependency order       |
 | `pnpm check`                           | Run formatting, lint, types, tests, and builds |
+| `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections |
 | `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace            |
 
 Target one workspace with pnpm filters, for example:
@@ -93,5 +94,6 @@ context compaction.
 
 See [architecture](./docs/architecture.md),
 [architecture decisions](./docs/adr/README.md),
-[development](./docs/development.md), and
+[development](./docs/development.md),
+[user-flow testing guides](./docs/user-flows/README.md), and
 [agentic development](./docs/agentic-development.md) for details.

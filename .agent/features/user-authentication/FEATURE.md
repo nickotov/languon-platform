@@ -392,6 +392,14 @@ safe, explicit inverse.
 - Authentication does not introduce roles or authorization policy beyond active
   user/session identity.
 
+## User-flow documentation
+
+- Required: Yes; authentication exposes browser and API journeys.
+- Guide: [User Authentication](../../../docs/user-flows/user-authentication.md).
+- Maintenance: Update the guide whenever authentication contracts, routes,
+  environment/startup behavior, browser flows, expected outcomes, edge cases,
+  regression commands, or cleanup requirements change.
+
 ## Open decisions
 
 - None. The user approved this feature plan and ADR-0001/0002 on 2026-08-13.

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "check": "pnpm format:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:check": "pnpm --filter @languon/backend db:check",
     "db:generate": "pnpm --filter @languon/backend db:generate",
     "db:migrate": "pnpm --filter @languon/backend db:migrate",
@@ -22,6 +22,7 @@
     "dev:mobile": "turbo run dev --filter=@languon/mobile",
     "dev:mobile:docker": "turbo run dev:docker --filter=@languon/mobile",
     "dev:web": "turbo run dev --filter=@languon/web",
+    "docs:user-flows:check": "node --test scripts/check-user-flow-guides.test.mjs && node scripts/check-user-flow-guides.mjs",
     "feature:new": "node scripts/create-feature.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
