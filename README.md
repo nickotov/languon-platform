@@ -18,6 +18,7 @@ corepack enable
 cp .env.example .env.local
 pnpm install
 pnpm dev:infra
+pnpm db:migrate
 pnpm dev
 ```
 
@@ -44,6 +45,10 @@ parity checks; the host-based `pnpm dev` loop is faster for normal development.
 | `pnpm dev:web`                         | Run only the user-facing web application       |
 | `pnpm dev:admin`                       | Run only the administration application        |
 | `pnpm dev:mobile`                      | Run only the Expo development server           |
+| `pnpm db:generate`                     | Generate reviewed Drizzle SQL migrations       |
+| `pnpm db:check`                        | Validate Drizzle migration history             |
+| `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations |
+| `pnpm db:studio`                       | Inspect the local database with Drizzle Studio |
 | `pnpm lint`                            | Run repository lint rules                      |
 | `pnpm typecheck`                       | Type-check every workspace                     |
 | `pnpm test`                            | Run all automated tests                        |

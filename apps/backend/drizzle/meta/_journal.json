@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1786603281928,
+      "tag": "0000_foamy_angel",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786605532337,
+      "tag": "0001_magical_trish_tilby",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786605543339,
+      "tag": "0002_rich_inhumans",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786606235094,
+      "tag": "0003_glorious_malice",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786606683073,
+      "tag": "0004_mature_alex_power",
+      "breakpoints": true
+    }
+  ]
+}

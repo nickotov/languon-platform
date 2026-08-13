@@ -1,0 +1,5 @@
+ALTER TABLE "auth_verification_challenges" DROP CONSTRAINT "auth_verification_challenges_digest_format";--> statement-breakpoint
+ALTER TABLE "auth_verification_challenges" DROP CONSTRAINT "auth_verification_challenges_sends_bounded";--> statement-breakpoint
+ALTER TABLE "auth_verification_challenges" ADD COLUMN "send_window_started_at" timestamp with time zone NOT NULL;--> statement-breakpoint
+ALTER TABLE "auth_verification_challenges" ADD CONSTRAINT "auth_verification_challenges_digest_format" CHECK (char_length("auth_verification_challenges"."code_digest") between 58 and 64 and "auth_verification_challenges"."code_digest" ~ '^hmac-sha256:v[1-9][0-9]*:[A-Za-z0-9_-]{43}$');--> statement-breakpoint
+ALTER TABLE "auth_verification_challenges" ADD CONSTRAINT "auth_verification_challenges_sends_bounded" CHECK ("auth_verification_challenges"."send_count" between 1 and 5 and "auth_verification_challenges"."send_window_started_at" <= "auth_verification_challenges"."created_at" and "auth_verification_challenges"."created_at" <= "auth_verification_challenges"."last_sent_at");

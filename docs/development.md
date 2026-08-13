@@ -10,11 +10,12 @@ Start infrastructure separately from application processes:
 
 ```sh
 pnpm dev:infra
+pnpm db:migrate
 pnpm dev
 ```
 
-To run applications in separate terminals, start infrastructure first and then
-run only the services needed for the journey:
+To run applications in separate terminals, start infrastructure, apply pending
+migrations once, and then run only the services needed for the journey:
 
 ```sh
 pnpm dev:backend
@@ -22,6 +23,16 @@ pnpm dev:web
 pnpm dev:admin
 pnpm dev:mobile
 ```
+
+The default development verification and recovery code is `0000`. It is
+accepted only in development/test, or in private staging with the explicit
+unsafe acknowledgement documented in `.env.example`; production rejects it.
+
+Keep `AUTH_TRUST_PROXY=false` unless the backend is reachable only through
+known reverse proxies. When it is enabled, set `AUTH_TRUSTED_PROXY_CIDRS` to
+the exact addresses or CIDRs of proxies that can connect directly to the
+backend, and configure ingress to overwrite its forwarding headers. The API
+ignores forwarding headers received from every other peer.
 
 The individual commands build their workspace dependencies before starting the
 selected development server.
@@ -40,8 +51,30 @@ pnpm check
 
 Database changes also require migration-forward, migration-backward when a safe
 down migration exists, and integration verification against a disposable
-PostgreSQL instance. User-visible changes require browser or device evidence in
-the active feature's `EVIDENCE.md`.
+PostgreSQL instance. When a safe inverse does not exist, record the forward-fix
+and compatible deployment position instead of inventing a destructive rollback.
+User-visible changes require browser or device evidence in the active feature's
+`EVIDENCE.md`.
+
+## PostgreSQL schema and migrations
+
+Backend modules own their Drizzle schema definitions. The backend aggregate at
+`apps/backend/src/infrastructure/database/schema.ts` is the generation entry;
+reviewed SQL and Drizzle metadata under `apps/backend/drizzle/` are the ordered,
+committed database transition history.
+
+```sh
+pnpm db:generate # generate a migration after changing Drizzle schema
+pnpm db:check    # validate the checked-in migration history
+pnpm db:migrate  # explicitly apply pending migrations
+pnpm db:studio   # inspect a local development database
+```
+
+`db:migrate` requires explicit `APP_ENV` and `DATABASE_URL` configuration. Run
+it as a singleton development/deployment step before backend processes start;
+the runner also holds a PostgreSQL advisory lock. Backend HTTP startup never
+mutates schema. Do not use `drizzle-kit push` for the ordinary development,
+staging, or production database.
 
 ## Dependencies
 

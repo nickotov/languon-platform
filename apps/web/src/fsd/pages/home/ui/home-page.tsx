@@ -1,3 +1,5 @@
+import { HomeSessionActions } from "@/fsd/features/auth";
+
 export function HomePage() {
   return (
     <main className="home">
@@ -8,6 +10,7 @@ export function HomePage() {
           Learn through personalized courses, practical language tools, and a
           tutor that adapts to your goals and progress.
         </p>
+        <HomeSessionActions />
       </section>
     </main>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE "auth_verification_challenges" ADD CONSTRAINT "auth_verification_challenges_email_user_fk" FOREIGN KEY ("email_id","user_id") REFERENCES "public"."user_emails"("id","user_id") ON DELETE cascade ON UPDATE no action;

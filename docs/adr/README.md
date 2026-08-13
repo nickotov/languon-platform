@@ -12,8 +12,10 @@ constraints, while feature-local decisions belong in the feature's
 
 ## Index
 
-| ADR | Decision | Status |
-| --- | -------- | ------ |
+| ADR                                                            | Decision                                 | Status   |
+| -------------------------------------------------------------- | ---------------------------------------- | -------- |
+| [ADR-0001](./0001-user-authentication-and-session-strategy.md) | User authentication and session strategy | Accepted |
+| [ADR-0002](./0002-drizzle-schema-and-migration-strategy.md)    | Drizzle schema and migration strategy    | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

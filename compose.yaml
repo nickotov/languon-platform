@@ -30,6 +30,19 @@ services:
     volumes:
       - redis-data:/data
 
+  migrate:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: infra/docker/dev.Dockerfile
+    command: ["pnpm", "db:migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgres://${POSTGRES_USER:-languon}:${POSTGRES_PASSWORD:-languon-local}@postgres:5432/${POSTGRES_DB:-languon}
+
   backend:
     profiles: ["apps"]
     build:
@@ -37,13 +50,20 @@ services:
       dockerfile: infra/docker/dev.Dockerfile
     command: ["pnpm", "dev:backend"]
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
+      APP_ENV: development
+      AUTH_ALLOWED_ORIGINS: http://localhost:3000
+      AUTH_CODE_HMAC_SECRET: development-only-code-secret-change-me-36a29d70c54e
+      AUTH_JWT_SECRET: development-only-jwt-secret-change-me-9f87c82b4d31
+      AUTH_WEBAUTHN_RP_ID: localhost
       BACKEND_PORT: 4000
-      DATABASE_URL: postgres://languon:languon-local@postgres:5432/languon
+      DATABASE_URL: postgres://${POSTGRES_USER:-languon}:${POSTGRES_PASSWORD:-languon-local}@postgres:5432/${POSTGRES_DB:-languon}
       REDIS_URL: redis://redis:6379
     ports:
       - "4000:4000"

@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "ioredis": "^6.0.0",
     "postgres": "^3.4.9"
   }

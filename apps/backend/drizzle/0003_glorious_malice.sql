@@ -1,0 +1,2 @@
+DROP INDEX "auth_passkeys_user_canonical_name_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "auth_passkeys_user_canonical_name_unique" ON "auth_passkeys" USING btree ("user_id","canonical_name") WHERE "auth_passkeys"."revoked_at" is null;
