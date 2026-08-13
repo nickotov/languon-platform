@@ -28,6 +28,10 @@ ExecPlan before substantial implementation.
 Mock external systems only for deterministic control, cost avoidance, or failure
 simulation. Do not mock the component under test or entire internal layers.
 
+For behavior represented by a current `docs/user-flows` guide, use
+`$user-flow-e2e` to synchronize stable scenarios and mapped tests. Traceability
+markers do not justify promoting exhaustive lower-layer cases into E2E.
+
 ## Execute
 
 For a bug, reproduce the failure with an automated regression test before fixing
@@ -42,6 +46,9 @@ root cause and rerun both focused and broader checks.
 
 Never delete, weaken, skip, or rewrite a legitimate test merely to produce a
 pass. Do not silently replace a required test layer with a weaker one.
+When guide behavior changes, rerun
+`pnpm user-flow:e2e -- check <guide-feature-slug>` for every affected guide and
+the mapped E2E command before handoff.
 
 ## Report
 

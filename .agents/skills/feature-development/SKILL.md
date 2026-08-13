@@ -13,8 +13,11 @@ description: Implement a Languon feature autonomously from repository specificat
    `pnpm feature:new -- <slug> "<title>"` and complete `FEATURE.md`.
 4. Scan `docs/user-flows/*.md` frontmatter for the feature slug and affected
    source paths, then read every related guide.
-5. Read relevant architecture documentation and inspect Git state.
-6. Treat repository files as authoritative over conversation memory.
+5. For every related current guide, run
+   `pnpm user-flow:e2e -- inspect <guide-feature-slug>` and read its mapped
+   tests. The guide slug can differ from the active feature slug.
+6. Read relevant architecture documentation and inspect Git state.
+7. Treat repository files as authoritative over conversation memory.
 
 ## Explore and plan
 
@@ -38,7 +41,9 @@ For each milestone:
    the ExecPlan.
 5. Keep every affected user-flow guide aligned with changed commands, behavior,
    expected results, edge cases, and source-path metadata.
-6. Continue without waiting for routine approval.
+6. Use `$user-flow-e2e` whenever guide test-relevant behavior changes; update
+   scenarios, real tests, markers, and execution evidence together.
+7. Continue without waiting for routine approval.
 
 Preserve unrelated changes and applicable DDD, FSD, package-boundary, schema,
 security, and secret-handling constraints.
@@ -56,6 +61,9 @@ risks to `EVIDENCE.md`; do not paste unbounded logs.
 Create or update required `docs/user-flows/<feature-slug>.md` guides according
 to the root instructions. Run `pnpm docs:user-flows:check` and record which guide
 steps were verified; prose never substitutes for required automated tests.
+For every affected current guide, run
+`pnpm user-flow:e2e -- check <guide-feature-slug>` and execute its mapped E2E
+journeys.
 
 ## Review and remediate
 

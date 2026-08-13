@@ -56,6 +56,8 @@ parity checks; the host-based `pnpm dev` loop is faster for normal development.
 | `pnpm build`                           | Build all workspaces in dependency order       |
 | `pnpm check`                           | Run formatting, lint, types, tests, and builds |
 | `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections |
+| `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability     |
+| `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability    |
 | `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace            |
 
 Target one workspace with pnpm filters, for example:

@@ -37,6 +37,9 @@ Do not paste full logs when a focused excerpt or artifact reference is enough.
 - Guides created or updated:
 - Commands and journeys checked:
 - `pnpm docs:user-flows:check` result:
+- `pnpm user-flow:e2e -- check <guide-feature-slug>` result for every affected guide:
+- Scenario IDs and exact E2E test files:
+- E2E environment/command/result and cleanup:
 
 ## Static checks
 

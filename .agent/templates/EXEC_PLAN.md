@@ -30,6 +30,8 @@ relevant accepted ADRs.
 - Browser/device: Required / not required — rationale.
 - Database migration: Required / not required — rationale.
 - User-flow guide: Required / not required — guide path or concrete rationale.
+- User-flow E2E: Required / not required — scenario IDs, exact test files,
+  command/environment, and rationale.
 
 ## Milestones
 
@@ -83,6 +85,7 @@ relevant accepted ADRs.
 | Build              | Pending        |          |
 | Database migration | Not applicable |          |
 | User-flow guide    | Pending        |          |
+| User-flow E2E      | Pending        |          |
 | Independent review | Pending        |          |
 | Security review    | To assess      |          |
 

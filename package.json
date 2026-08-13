@@ -30,7 +30,9 @@
     "lint": "eslint .",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "user-flow:e2e": "node scripts/user-flow-e2e.mjs",
+    "user-flow:e2e:check": "node scripts/user-flow-e2e.mjs check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

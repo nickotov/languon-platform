@@ -195,6 +195,15 @@ For an architectural choice that future features must respect, ask Codex to
 assess whether the decision needs an ADR. Strategic choices should remain
 `Proposed` until the developer accepts them.
 
+When a feature creates or changes a current `docs/user-flows` guide, invoke
+`$user-flow-e2e`. The skill derives proportional critical scenarios, updates the
+real E2E tests and traceability markers, runs the mapped safe environment, and
+records evidence. Inspect the mapping before editing with:
+
+```sh
+pnpm user-flow:e2e -- inspect <feature-slug>
+```
+
 ## Prompting bug fixes
 
 Give a reproducible symptom, actual behavior, expected behavior, environment,
@@ -299,6 +308,7 @@ evidence for real user behavior; it does not replace automated regression tests.
 | HTTP, contracts, repositories     | Integration/contract tests through `$testing`         |
 | PostgreSQL, Redis, migrations     | Disposable Docker infrastructure + `$db-verification` |
 | Web/admin rendering and journeys  | Playwright MCP + `$browser-verification`              |
+| Guide-to-E2E synchronization      | `$user-flow-e2e` + stable scenario/revision markers   |
 | Native mobile behavior            | Expo simulator/device verification                    |
 | Independent implementation review | `$code-review` and risk-triggered security review     |
 

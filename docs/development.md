@@ -66,6 +66,19 @@ and run:
 pnpm docs:user-flows:check
 ```
 
+Current guides also map their critical scenarios to executable E2E files. Use
+the repository `user-flow-e2e` skill when guide behavior changes, then inspect
+and validate the mapping:
+
+```sh
+pnpm user-flow:e2e -- inspect <feature-slug>
+pnpm user-flow:e2e -- check <feature-slug>
+```
+
+Run the mapped guide environment/command and record the exact result in the
+active feature evidence; traceability markers do not replace execution or
+review.
+
 ## PostgreSQL schema and migrations
 
 Backend modules own their Drizzle schema definitions. The backend aggregate at

@@ -56,8 +56,13 @@ repo/
 │       ├── browser-verification/
 │       │   └── SKILL.md
 │       │
-│       └── db-verification/
-│           └── SKILL.md
+│       ├── db-verification/
+│       │   └── SKILL.md
+│       │
+│       └── user-flow-e2e/
+│           ├── SKILL.md
+│           └── agents/
+│               └── openai.yaml
 │
 ├── .agent/
 │   ├── PLANS.md

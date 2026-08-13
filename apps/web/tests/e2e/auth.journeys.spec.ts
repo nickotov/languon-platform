@@ -6,6 +6,8 @@ import {
   type TestInfo,
 } from "@playwright/test";
 
+// @user-flow-revision user-authentication sha256:49fadbe3ce6c2534
+
 const initialPassword = "E2e!Initial-password-2026";
 const replacementPassword = "E2e!Replacement-password-2026";
 const runId =
@@ -98,6 +100,7 @@ async function addVirtualAuthenticator(page: Page): Promise<{
 }
 
 test.describe("authentication journeys", () => {
+  // @user-flow user-authentication/signup-verification-refresh-logout
   test("signup, verification, refresh bootstrap, and logout", async ({
     page,
   }, testInfo) => {
@@ -144,6 +147,7 @@ test.describe("authentication journeys", () => {
     assertNoBrowserErrors();
   });
 
+  // @user-flow user-authentication/password-reset-session-revocation
   test("password reset revokes old credentials and sessions", async ({
     browser,
     page,
@@ -207,6 +211,7 @@ test.describe("authentication journeys", () => {
     assertNoBrowserErrors();
   });
 
+  // @user-flow user-authentication/passkey-lifecycle
   test("passkey enrollment, failed assertion, login, rename, and removal", async ({
     page,
   }, testInfo) => {

@@ -37,6 +37,8 @@ Describe the observable behavior after completion.
 - Guide: `docs/user-flows/{{FEATURE_SLUG}}.md`, or record a concrete reason why a
   guide is not applicable.
 - Related guides: List every existing guide whose documented behavior may change.
+- E2E synchronization: List stable critical scenarios and exact test files for
+  every current guide, or keep the guide draft with a concrete blocker.
 
 ## Open decisions
 

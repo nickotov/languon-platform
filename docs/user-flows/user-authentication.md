@@ -8,6 +8,7 @@ surfaces:
   - api
 source_paths:
   - .agent/features/user-authentication/**
+  - .agents/skills/user-flow-e2e/**
   - .env.example
   - compose.yaml
   - package.json
@@ -29,6 +30,15 @@ source_paths:
   - packages/contracts/src/auth/**
   - packages/database/src/migrations/**
   - packages/database/src/postgres/**
+  - scripts/check-user-flow-guides.mjs
+  - scripts/user-flow-e2e.mjs
+e2e_command: web-playwright
+e2e_tests:
+  - apps/web/tests/e2e/auth.journeys.spec.ts
+e2e_scenarios:
+  - signup-verification-refresh-logout
+  - password-reset-session-revocation
+  - passkey-lifecycle
 related_features:
   - user-flow-testing-guides
 ---
@@ -418,6 +428,24 @@ into issues, logs, or committed documentation.
 Rate limits are intentionally shared across account/flow and client-address
 dimensions. Use unique test emails and wait for the returned retry interval; do
 not restart Redis merely to bypass a correct throttle.
+
+## E2E coverage
+
+The critical cross-boundary journeys are traced by stable scenario IDs in
+`apps/web/tests/e2e/auth.journeys.spec.ts`:
+
+| Scenario ID                          | Executable behavior                                                                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `signup-verification-refresh-logout` | Signup, development code verification, refresh-based reload, no browser token storage, security headers, and logout persistence. |
+| `password-reset-session-revocation`  | Two sessions, recovery/reset, old-session revocation, old-password rejection, replacement login, and logout.                     |
+| `passkey-lifecycle`                  | Virtual-authenticator enrollment, bad-signature rejection, discoverable login, rename, and removal.                              |
+
+These are intentionally the critical E2E slices, not an exhaustive copy of
+every edge-case row above. Contract, HTTP, repository, Redis, and domain suites
+cover validation boundaries, rate limits, transactions, replay, and concurrency
+at lower cost. When the startup, browser/API flow, or expected-failure behavior
+in this guide changes, use the `user-flow-e2e` skill to review and update the
+mapped tests and their derived guide revision before marking the guide current.
 
 ## Automated regression checks
 

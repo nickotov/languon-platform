@@ -35,6 +35,8 @@ issues.
 - [ ] Tests cover the material regression surface.
 - [ ] Required user-flow guides match current behavior, commands, and expected
       outcomes, or `FEATURE.md` records a valid not-applicable reason.
+- [ ] Current guides map proportional critical scenarios to real E2E tests;
+      scenario/revision markers, execution evidence, and assertions agree.
 - [ ] No debugging artifacts or accidental scope changes remain.
 
 ## Final verdict

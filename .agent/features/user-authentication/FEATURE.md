@@ -398,7 +398,8 @@ safe, explicit inverse.
 - Guide: [User Authentication](../../../docs/user-flows/user-authentication.md).
 - Maintenance: Update the guide whenever authentication contracts, routes,
   environment/startup behavior, browser flows, expected outcomes, edge cases,
-  regression commands, or cleanup requirements change.
+  regression commands, or cleanup requirements change. Use `user-flow-e2e` to
+  actualize its three mapped Playwright scenarios and coverage revision.
 
 ## Open decisions
 

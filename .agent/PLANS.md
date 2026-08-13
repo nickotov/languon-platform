@@ -42,7 +42,9 @@ List every `docs/user-flows/*.md` guide that the feature must create or update,
 based on feature slugs and `source_paths` metadata. For a feature with no
 executable browser, API, mobile, admin, CLI, or system journey, record the
 concrete reason a guide is not applicable. State which documented commands and
-expected results will be verified.
+expected results will be verified. For every current guide, list stable critical
+E2E scenario IDs, exact test files, the mapped command, and how the tests will be
+executed. Record a blocker rather than marking a guide current without E2E.
 
 ### Milestones
 
@@ -97,7 +99,8 @@ current; Git retains obsolete detail.
 
 Complete a plan only after all acceptance criteria and relevant validation pass,
 required user-flow guides match current behavior and pass
-`pnpm docs:user-flows:check`, independent review finishes, material findings are
-resolved or justified, and `EVIDENCE.md` describes the final proof. Mark work
-blocked only for a genuine external dependency or decision that cannot be safely
-resolved from repository context.
+`pnpm docs:user-flows:check`, their mapped E2E scenarios/revisions are current
+and executed, independent review finishes, material findings are resolved or
+justified, and `EVIDENCE.md` describes the final proof. Mark work blocked only
+for a genuine external dependency or decision that cannot be safely resolved
+from repository context.

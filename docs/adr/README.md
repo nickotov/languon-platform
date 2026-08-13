@@ -12,10 +12,12 @@ constraints, while feature-local decisions belong in the feature's
 
 ## Index
 
-| ADR                                                            | Decision                                 | Status   |
-| -------------------------------------------------------------- | ---------------------------------------- | -------- |
-| [ADR-0001](./0001-user-authentication-and-session-strategy.md) | User authentication and session strategy | Accepted |
-| [ADR-0002](./0002-drizzle-schema-and-migration-strategy.md)    | Drizzle schema and migration strategy    | Accepted |
+| ADR                                                            | Decision                                 | Status                 |
+| -------------------------------------------------------------- | ---------------------------------------- | ---------------------- |
+| [ADR-0001](./0001-user-authentication-and-session-strategy.md) | User authentication and session strategy | Accepted               |
+| [ADR-0002](./0002-drizzle-schema-and-migration-strategy.md)    | Drizzle schema and migration strategy    | Accepted               |
+| [ADR-0003](./0003-user-flow-e2e-traceability.md)               | User-flow E2E traceability               | Superseded by ADR-0004 |
+| [ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)     | User-flow E2E traceability hardening     | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.
