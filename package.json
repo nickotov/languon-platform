@@ -8,6 +8,9 @@
     "pnpm": ">=10"
   },
   "scripts": {
+    "browser": "node scripts/agent-browser.mjs",
+    "browser:check": "node --test scripts/agent-browser.test.mjs scripts/agent-browser.integration.test.mjs && node scripts/agent-browser.mjs --doctor",
+    "browser:install": "node scripts/agent-browser.mjs --install",
     "build": "turbo run build",
     "check": "pnpm format:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:check": "pnpm --filter @languon/backend db:check",
@@ -30,7 +33,8 @@
     "format:check": "prettier --check .",
     "infra:down": "docker compose down",
     "lint": "eslint .",
-    "test": "turbo run test",
+    "test": "pnpm test:agent-browser && turbo run test",
+    "test:agent-browser": "node --test scripts/agent-browser.test.mjs",
     "test:coverage": "turbo run test:coverage",
     "typecheck": "turbo run typecheck",
     "user-flow:e2e": "node scripts/user-flow-e2e.mjs",
@@ -42,6 +46,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitest/coverage-v8": "^4.1.10",
+    "agent-browser": "0.33.0",
     "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.9.0",

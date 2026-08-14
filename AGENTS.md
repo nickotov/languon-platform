@@ -211,6 +211,13 @@ layer:
 - Use E2E for critical cross-application journeys, not exhaustive edge matrices.
 - Use real browser/device verification for material rendering and interaction,
   and disposable infrastructure for database/cache invariants.
+- Use project-pinned `agent-browser` through `$browser-verification` for
+  exploratory web/admin checks against a running local application. Invoke it
+  through the repository's safe wrapper; do not bypass its local-host,
+  configuration, session, or command restrictions without explicit user
+  authorization. Keep
+  Playwright for committed, repeatable E2E tests; an `agent-browser` session is
+  acceptance evidence, not an E2E test or a substitute for one.
 - Mock only for deterministic control, cost avoidance, or external failure
   simulation. Never mock the component under test or weaken legitimate tests.
 

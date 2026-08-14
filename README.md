@@ -51,6 +51,8 @@ parity checks; the host-based `pnpm dev` loop is faster for normal development.
 | `pnpm dev:web`                         | Run only the user-facing web application       |
 | `pnpm dev:admin`                       | Run only the administration application        |
 | `pnpm dev:mobile`                      | Run only the Expo development server           |
+| `pnpm browser:install`                 | Install Chrome for agent-led browser checks    |
+| `pnpm browser:check`                   | Test the safe wrapper and live browser launch  |
 | `pnpm db:generate`                     | Generate reviewed Drizzle SQL migrations       |
 | `pnpm db:check`                        | Validate Drizzle migration history             |
 | `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations |
@@ -73,6 +75,16 @@ pnpm --filter @languon/backend test
 pnpm --filter @languon/web dev
 pnpm --filter @languon/mobile typecheck
 ```
+
+Run `pnpm browser:install` once after installing dependencies when agents need
+real-browser verification. The repository-pinned
+[agent-browser](https://github.com/vercel-labs/agent-browser) CLI is for fast,
+exploratory checks of a running web or admin app through
+`$browser-verification`; Playwright remains the committed E2E test runner. Use
+the repository wrapper so local host, configuration, session, and command
+safeguards are enforced. Start with
+`pnpm browser -- start <task-slug> <local-url>`, then use the random session
+handle it prints for subsequent commands.
 
 ## Repository structure
 

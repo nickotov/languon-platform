@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/vercel-labs/agent-browser/main/agent-browser.schema.json",
+  "allowedDomains": ["localhost", "127.0.0.1"],
+  "contentBoundaries": true,
+  "maxOutput": 30000
+}
