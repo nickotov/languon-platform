@@ -114,6 +114,50 @@ describe("authentication forms", () => {
     expect(login).not.toHaveBeenCalled();
   });
 
+  it("keeps signup discoverable and shows progress while retrying capabilities", async () => {
+    const user = userEvent.setup();
+    let resolveRetry:
+      | ((value: Awaited<ReturnType<typeof authApi.capabilities>>) => void)
+      | undefined;
+    const retry = new Promise<Awaited<ReturnType<typeof authApi.capabilities>>>(
+      (resolve) => {
+        resolveRetry = resolve;
+      },
+    );
+    vi.mocked(authApi.capabilities)
+      .mockRejectedValueOnce(new Error("backend unavailable"))
+      .mockReturnValueOnce(retry);
+
+    render(
+      <AuthProvider>
+        <LoginForm />
+      </AuthProvider>,
+    );
+
+    expect(
+      await screen.findByText(
+        "Authentication options are temporarily unavailable.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Create an account" }),
+    ).toHaveAttribute("href", "/signup");
+
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(
+      await screen.findByText("Checking available sign-in methods…"),
+    ).toBeInTheDocument();
+
+    resolveRetry?.({
+      email: { passwordRecovery: true, signUp: true, verification: true },
+      passkeys: { authentication: false, registration: false },
+      passwordAuthentication: true,
+    });
+    expect(
+      await screen.findByRole("link", { name: "Forgot password?" }),
+    ).toBeInTheDocument();
+  });
+
   it("starts a verification flow after signup", async () => {
     const user = userEvent.setup();
     vi.spyOn(authApi, "signUp").mockResolvedValue({

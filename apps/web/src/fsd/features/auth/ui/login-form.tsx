@@ -171,7 +171,7 @@ export function LoginForm({
       ) : null}
       <AuthLinks
         mode="login"
-        signupAvailable={capabilities?.email.signUp ?? false}
+        signupAvailable={capabilities?.email.signUp !== false}
       />
     </>
   );

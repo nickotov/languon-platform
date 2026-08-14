@@ -90,9 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshCapabilities = useCallback(async () => {
+    setCapabilitiesError(null);
     try {
       setCapabilities(await authApi.capabilities());
-      setCapabilitiesError(null);
     } catch {
       setCapabilities(null);
       setCapabilitiesError(
