@@ -62,6 +62,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm lint`                            | Run repository lint rules                       |
 | `pnpm typecheck`                       | Type-check every workspace                      |
 | `pnpm test`                            | Run all automated tests                         |
+| `pnpm test:frontend-architecture`      | Test web/admin FSD import boundaries            |
 | `pnpm test:coverage`                   | Run tests with coverage                         |
 | `pnpm build`                           | Build all workspaces in dependency order        |
 | `pnpm check`                           | Run formatting, lint, types, tests, and builds  |
@@ -120,3 +121,5 @@ See [architecture](./docs/architecture.md),
 [development](./docs/development.md),
 [user-flow testing guides](./docs/user-flows/README.md), and
 [agentic development](./docs/agentic-development.md) for details.
+Frontend component and state work uses the project-local
+`$frontend-development` skill.

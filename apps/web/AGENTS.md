@@ -17,6 +17,11 @@ Expose slices through a public entry point when a slice gains multiple modules.
 Do not deep-import another slice's internals. Put reusable business behavior in
 `features` or `entities`, not route files or generic UI components.
 
+Use `$frontend-development` whenever creating or restructuring components,
+hooks, state, API clients, shared UI, or imports between FSD slices. Its
+component folders, CSS Modules, native-element, and state-communication rules
+are the frontend implementation standard.
+
 ## State and rendering
 
 - Prefer Server Components and server-side data access when interactivity is not

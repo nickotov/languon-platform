@@ -59,6 +59,17 @@ legacy Pages Router. Server state belongs in TanStack Query when it needs client
 caching; shared client state belongs in Zustand; component-local state remains
 React state.
 
+Frontend slices use `api`, `hooks`, `lib`, `model`, and `ui` segments only when
+needed. Components live in one-component folders below `ui` and normally pair a
+TSX file with a CSS Module. Shared design-system primitives live in `shared/ui`
+and include colocated stories. Prefer semantic native elements, including
+`dialog` and popover primitives, before custom interaction machinery. Avoid
+prop drilling through unrelated components by selecting scoped context, shared
+client state, or a typed `shared/lib` event bus according to ownership and
+lifetime. Root ESLint configuration enforces the FSD dependency direction for
+both web applications; `.agents/skills/frontend-development/SKILL.md` defines
+the implementation workflow.
+
 ## Mobile
 
 The Expo application groups user-facing screens separately from reusable

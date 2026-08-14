@@ -18,6 +18,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0002](./0002-drizzle-schema-and-migration-strategy.md)    | Drizzle schema and migration strategy    | Accepted               |
 | [ADR-0003](./0003-user-flow-e2e-traceability.md)               | User-flow E2E traceability               | Superseded by ADR-0004 |
 | [ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)     | User-flow E2E traceability hardening     | Accepted               |
+| [ADR-0005](./0005-frontend-component-and-fsd-standards.md)     | Frontend component and FSD standards     | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

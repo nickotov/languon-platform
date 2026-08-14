@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Frontend Development'
+    short_description: 'Build frontend code with Languon FSD rules'
+    default_prompt: 'Use $frontend-development to implement this frontend change with Languon component and FSD conventions.'
