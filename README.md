@@ -85,7 +85,7 @@ pnpm --filter @languon/mobile typecheck
 - `packages/prompts/` — local prompt fallbacks and Langfuse prompt access.
 - `infra/` — checked-in container definitions.
 - `docs/` — product, architecture, ADRs, setup, and development documentation.
-- `.agent/` — durable feature specifications, plans, evidence, and reviews.
+- `.agent/` — durable feature artifacts and lightweight correction plans.
 - `.agents/skills/` — repository-scoped Codex workflows.
 - `.codex/` — trusted-project Codex configuration and custom agents.
 
@@ -98,7 +98,8 @@ Read [AGENTS.md](./AGENTS.md) before changing the repository. Non-trivial work
 starts with a feature directory generated under `.agent/features/`. The
 `EXEC_PLAN.md` is living state: it records requirements, milestones, decisions,
 discoveries, validation, and remaining work so another agent can continue after
-context compaction.
+context compaction. Bounded low-risk maintenance uses one lightweight plan under
+`.agent/corrections/` instead.
 
 See [architecture](./docs/architecture.md),
 [architecture decisions](./docs/adr/README.md),

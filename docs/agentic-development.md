@@ -18,7 +18,8 @@ The agent owns normal in-repository execution:
 
 - reading applicable instructions, ADRs, and existing code;
 - exploring analogous behavior and identifying affected boundaries;
-- maintaining the ExecPlan for non-trivial work;
+- maintaining one correction plan for bounded work or the full ExecPlan for
+  non-trivial feature work;
 - implementing, testing, running the app, and collecting evidence;
 - requesting independent review and fixing valid findings;
 - stopping only for a genuine blocker or a decision reserved for the developer.
@@ -165,12 +166,57 @@ Do not say only “look into this” when you expect a code change. “Diagnose�
 “explore” authorize investigation and reporting; “implement,” “fix,” or “change”
 clearly authorizes in-scope repository edits and non-destructive validation.
 
+## Choosing correction or feature development
+
+Codex classifies the request before creating a branch or feature workspace. The
+decision is based on conceptual behavior, risk, and reversibility—not the number
+of edited files. Tests, docs, and matching configuration can support one small
+correction without turning it into a feature.
+
+| Use correction development                 | Use feature development                                           |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| Adjust existing behavior or presentation   | Add a new capability or journey                                   |
+| One cohesive, reversible outcome           | Multiple deliverable milestones or boundaries                     |
+| Existing architecture and contracts remain | Public API/schema, persistence, migration, or integration changes |
+| Targeted verification is reliable          | Auth/security policy, deployment, rollout, or ADR decision        |
+| No material product decision               | Meaningful product ambiguity or cross-cutting refactor            |
+
+Examples:
+
+- Correction: move the established local web port and update matching config,
+  tests, and docs.
+- Correction: update a button label/style on one existing screen or fix a narrow
+  established-behavior bug.
+- Feature: add signup, OAuth, a database-backed user setting, or a new API.
+- Feature: introduce a design system, change production topology, or alter an
+  authorization rule.
+
+Use `$correction-development` for the lightweight flow. It creates one document
+under `.agent/corrections/`, implements one bounded patch, runs targeted checks,
+and updates only affected documentation. It does not automatically create a
+branch, commit, run the full repository gate, execute E2E, or request independent
+review. Those remain available when the actual correction risk requires them.
+
+```text
+Use $correction-development to move the normal local web port from 3000 to 3333.
+Keep deployed topology unchanged. Update matching local config, focused tests,
+and developer instructions, then verify the dev command binds on 3333.
+```
+
+If investigation makes any root correction condition false, Codex records the
+discovery and switches to `$feature-development` before expanding
+implementation. The examples in the comparison table are not exhaustive;
+explicitly requesting the correction flow cannot bypass public contracts,
+integrations, persisted data or migrations, sensitive-data/auth/security rules,
+billing/legal behavior, dependencies or cross-cutting architecture, deployment,
+material product ambiguity, coordination needs, or a new user journey.
+
 ## Prompting feature work
 
 For a non-trivial feature, explicitly invoke `$feature-development`. Codex will
 create or update `.agent/features/<slug>/`, maintain the ExecPlan, run
 proportional verification, request review, remediate findings, and record
-evidence. Tiny isolated changes do not need a feature workspace.
+evidence. Bounded low-risk changes should use `$correction-development` instead.
 
 Example:
 
@@ -222,6 +268,11 @@ pnpm user-flow:e2e -- inspect <feature-slug>
 Give a reproducible symptom, actual behavior, expected behavior, environment,
 and any useful evidence. Explicitly say whether Codex should only diagnose or
 also implement the fix.
+
+A narrow bug that restores established behavior normally uses
+`$correction-development`. A bug that exposes a missing product capability,
+public-contract change, migration, authorization redesign, or multi-boundary
+refactor escalates to feature development.
 
 Example:
 
@@ -393,13 +444,18 @@ pnpm --filter @languon/admin build
 pnpm check
 ```
 
-User-visible web/admin changes require real-browser evidence in addition to
-these commands. Database changes require disposable-infrastructure verification.
+For features, user-visible web/admin changes require real-browser evidence and
+database changes require disposable-infrastructure verification in addition to
+these commands. For corrections, browser/runtime evidence is proportional: use
+it when visual or runtime risk, uncertainty, changed user-flow coverage, or the
+developer's requested proof warrants it.
 
 ## Durable state and long-running work
 
 Conversation context is temporary. Repository artifacts are authoritative:
 
+- `.agent/corrections/<slug>.md` combines plan, evidence, review decisions, and
+  remaining risks for one bounded correction;
 - `FEATURE.md` describes requested behavior and acceptance criteria;
 - `EXEC_PLAN.md` records milestones, decisions, discoveries, progress, and
   validation state;
@@ -413,6 +469,9 @@ Create a feature workspace manually when useful:
 ```sh
 pnpm feature:new -- user-profile "User profile"
 ```
+
+For a correction, create one document from
+`.agent/templates/CORRECTION.md`; no generator or feature workspace is needed.
 
 To continue after a pause or context compaction, point Codex at durable state:
 

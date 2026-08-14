@@ -1,9 +1,23 @@
 ---
 name: feature-development
-description: Implement a Languon feature autonomously from repository specification through exploration, ExecPlan milestones, proportional testing, real-app verification, independent review, remediation, and recorded evidence. Use for non-trivial feature work, cross-workspace changes, significant refactors, or whenever FEATURE.md and EXEC_PLAN.md govern delivery. Do not use for a tiny isolated edit that does not require a durable plan.
+description: Implement a Languon feature autonomously from repository specification through exploration, ExecPlan milestones, proportional testing, real-app verification, independent review, remediation, and recorded evidence. Use for new capabilities or journeys, cross-boundary work, public contracts, persistence/migrations, auth/security policy, deployment decisions, significant refactors, multi-milestone delivery, or whenever FEATURE.md and EXEC_PLAN.md govern. Do not use for work that satisfies the root correction-flow criteria; use correction-development instead.
 ---
 
 # Feature development
+
+## Confirm feature classification
+
+Apply the correction-versus-feature routing rules in root `AGENTS.md` before
+creating a branch or feature artifacts. Do not launch this workflow merely
+because a small change also needs tests, documentation, or several matching
+configuration edits. If all correction conditions hold, use
+`$correction-development` instead unless the user explicitly requires the full
+feature lifecycle.
+
+Never downgrade feature-sized work to a correction to avoid review. New user
+capabilities, public contracts, data/migration work, auth or security policy,
+deployment decisions, cross-cutting architecture, and multi-milestone work stay
+in this flow.
 
 ## Establish durable context
 

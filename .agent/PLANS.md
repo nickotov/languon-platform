@@ -11,6 +11,11 @@ architecture or persistence, introduces a user journey, requires migration or
 rollout coordination, or cannot be safely completed and verified in one small
 change.
 
+Do not create an ExecPlan for work that satisfies the correction criteria in
+root `AGENTS.md`. Use one `.agent/corrections/<slug>.md` document based on
+`.agent/templates/CORRECTION.md` instead. Escalate to an ExecPlan if discovery
+crosses the correction boundary.
+
 ## Required sections
 
 ### Goal

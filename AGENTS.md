@@ -7,10 +7,25 @@ after planning, implementation, or the first passing test. A feature is complete
 only after implementation, proportional verification, independent review, and
 required remediation are complete.
 
+Before starting work, classify the request as a correction or feature using the
+rules below. Do not launch feature ceremony for bounded low-risk maintenance;
+do not use the correction flow to bypass feature-level risk or coordination.
+
 ## Source of truth
 
-Repository files are authoritative over conversation memory. For feature work,
-locate and read, in order:
+Repository files are authoritative over conversation memory. Classify the work
+before creating durable artifacts.
+
+For correction work, locate and read, in order:
+
+1. The closest applicable `AGENTS.md` files.
+2. `.agent/corrections/<correction>.md` when it already exists.
+3. Relevant `docs/user-flows/*.md` guides discovered from changed
+   `source_paths`, only when observable behavior or commands may change.
+4. Relevant accepted ADRs only when the correction intersects their subject.
+5. The affected source implementation and focused tests.
+
+For feature work, locate and read, in order:
 
 1. The closest applicable `AGENTS.md` files.
 2. `.agent/features/<feature>/FEATURE.md`.
@@ -20,10 +35,10 @@ locate and read, in order:
 5. Relevant accepted ADRs under `docs/adr/` and architecture documentation.
 6. Analogous source implementations and tests.
 
-After context compaction or uncertainty, reread the feature and plan, inspect
-`git status` and `git diff`, inspect relevant recent commits when available, and
-continue from recorded remaining work. Never reconstruct progress from memory
-when repository state can establish it.
+After context compaction or uncertainty, reread the active correction document
+or feature artifacts, inspect `git status` and `git diff`, inspect relevant
+recent commits when available, and continue from recorded remaining work. Never
+reconstruct progress from memory when repository state can establish it.
 
 ## Repository map
 
@@ -36,7 +51,7 @@ when repository state can establish it.
 - `packages/prompts` — local prompt fallbacks and Langfuse integration.
 - `infra` — local and deployable infrastructure definitions.
 - `docs` — product, architecture, ADRs, and operating documentation.
-- `.agent` — durable feature specifications, plans, evidence, and reviews.
+- `.agent` — durable feature and correction plans, evidence, and reviews.
 - `.agents/skills` — repository-scoped reusable Codex workflows.
 - `.codex` — trusted-project Codex configuration and custom agents.
 
@@ -90,14 +105,14 @@ application processes normally run on the host for fast feedback.
 - Do not edit generated output, dependency directories, caches, native build
   output, or lockfile content by hand.
 - Keep changes focused. Preserve unrelated user work and avoid opportunistic
-  refactors outside the feature boundary.
+  refactors outside the active correction or feature boundary.
 
 ## Architecture Decision Records
 
 Architecture Decision Records (ADRs) live under `docs/adr/`. Architecture
 documentation describes what the system does and how it is structured; ADRs
-record why a durable technical choice was made. The active feature's ExecPlan
-records decisions that are local to that feature.
+record why a durable technical choice was made. The active correction document
+or feature ExecPlan records decisions that remain local to that work.
 
 Before planning or changing architecture, scan `docs/adr/README.md` and search
 ADR titles and content for relevant terms. Read only the relevant records and
@@ -114,8 +129,8 @@ Create or propose an ADR when a decision affects multiple features, components,
 or boundaries; is costly to reverse; establishes a project-wide rule; has
 meaningful alternatives or non-obvious tradeoffs; or materially affects
 security, persistence, APIs, infrastructure, scaling, or deployment. Keep local
-implementation choices in `EXEC_PLAN.md`. If future features must respect a
-feature decision, promote it to an ADR.
+implementation choices in the active correction document or `EXEC_PLAN.md`. If
+future features must respect a local decision, promote it to an ADR.
 
 Use the next unused zero-padded number, a kebab-case filename, and
 `docs/adr/template.md`. Add every ADR to `docs/adr/README.md`. An agent may mark
@@ -137,6 +152,88 @@ To change an accepted decision:
 3. Update the ADR index and current architecture documentation.
 4. Record migration and rollout work in the active ExecPlan.
 
+## Work classification: correction or feature
+
+Perform a short read-only triage before creating a branch, feature workspace, or
+plan. Route by conceptual scope, reversibility, and risk—not raw line count or
+the number of supporting test/documentation files.
+
+Use the **correction flow** only when all of these are true:
+
+- The outcome adjusts existing behavior or presentation; it does not give a user
+  or operator a genuinely new capability or journey.
+- The change has one coherent conceptual surface and can be implemented in one
+  bounded pass. Matching tests, docs, examples, and configuration do not count
+  as separate surfaces.
+- It follows existing architecture and established product behavior without a
+  material unresolved product decision.
+- It does not add or change a public API/event/contract, persisted schema or
+  migration, authentication/authorization policy, security/trust boundary,
+  deployment model, rollout, billing/legal behavior, cross-cutting abstraction,
+  framework, or runtime dependency.
+- Targeted verification can give reliable confidence without separate
+  milestones or coordination across independently deliverable components.
+
+Typical corrections include an established local-development port adjustment,
+a button/copy/style/layout change on one existing screen, a small reproducible
+bug fix, or a narrow command/example/internal cleanup. A supporting exact-origin
+development value or several consistency files can remain part of one local
+correction when no trust policy changes.
+
+Use the **feature flow** when any of these is true:
+
+- The request adds a capability, executable journey, endpoint, integration,
+  persistent concept, or materially different failure/permission behavior.
+- It crosses product or architecture boundaries, needs multiple milestones,
+  requires migration/rollout coordination, or introduces a reusable abstraction
+  or dependency.
+- It changes public contracts, production infrastructure, authentication or
+  authorization policy, sensitive-data handling, another security boundary, or
+  requires a new/superseding ADR.
+- Meaningful product behavior remains ambiguous, several independently useful
+  solutions are plausible, or targeted checks cannot establish confidence.
+
+Examples are context-sensitive: changing one button's spacing is a correction;
+introducing a design system is a feature. Moving the normal local web port is a
+correction; changing public deployment topology is a feature. Fixing an existing
+form validation defect is a correction; adding a new signup flow is a feature.
+
+If the user explicitly requests the full feature lifecycle, use it. If the user
+requests a correction but a feature trigger applies, explain the escalation and
+use feature development; the lightweight flow cannot bypass safety. If a
+correction grows across its recorded boundary, mark it `Escalated` and switch
+flows before implementing the expanded work.
+
+## Correction flow
+
+For qualifying work, use the repository `correction-development` skill:
+
+1. Create `.agent/corrections/<slug>.md` from
+   `.agent/templates/CORRECTION.md`. This one file combines plan, progress,
+   evidence, review decisions, and remaining risks.
+2. Record the routing rationale, current/expected behavior, in/out scope, likely
+   files, relevant constraints, affected guides, escalation boundary, and
+   targeted verification. Do not create `FEATURE.md`, `EXEC_PLAN.md`,
+   `EVIDENCE.md`, and `REVIEW.md`.
+3. Inspect only relevant execution paths, analogous code, matching user-flow
+   guides, and ADRs whose subject is actually touched.
+4. Implement one coherent patch. Add or update the smallest reliable regression
+   coverage when it protects behavior.
+5. Run targeted tests and only the affected lint/typecheck/build/runtime checks
+   needed for confidence. Full `pnpm check`, E2E, browser/device/database runs,
+   subagents, and independent review are proportional tools, not automatic
+   correction milestones.
+6. Update existing documentation when commands, observable behavior, expected
+   results, troubleshooting, or source mapping changed. If a current user-flow
+   guide's test-relevant content changes, use `user-flow-e2e`; a genuinely new
+   user journey requires escalation to feature development.
+7. Inspect the final diff, resolve valid findings, and update the correction
+   document to `Complete` with exact evidence and remaining risks.
+
+Corrections run on the current branch by default and do not authorize automatic
+commits, merges, pushes, or branch deletion. Create `correction/<slug>` only when
+the user requests a branch or another applicable policy requires one.
+
 ## Complex features and ExecPlans
 
 For non-trivial work or significant refactors, create and maintain an ExecPlan
@@ -157,7 +254,7 @@ Durable start-to-result verification guides live under `docs/user-flows/`.
 Read [`docs/user-flows/README.md`](./docs/user-flows/README.md) for the required
 frontmatter, naming, content, and lifecycle rules.
 
-Before implementing a feature or behavior change:
+Before implementing any behavior or command change:
 
 1. Scan the guide frontmatter for the active feature slug and changed
    `source_paths`.
@@ -165,10 +262,17 @@ Before implementing a feature or behavior change:
 3. Run `pnpm user-flow:e2e -- inspect <guide-feature-slug>` for every matching
    current guide and read its declared E2E tests before editing behavior. A
    related guide's slug can differ from the active feature slug.
-4. Decide in the feature specification whether a user-flow guide is required.
-   A feature with a browser, API, mobile, admin, CLI, or other executable
-   user/system journey normally requires one. Record a concrete reason when it
-   does not.
+
+For a feature, also decide in the feature specification whether a user-flow
+guide is required. A feature with a browser, API, mobile, admin, CLI, or other
+executable user/system journey normally requires one. Record a concrete reason
+when it does not.
+
+For a correction, update a matching existing guide only when the correction
+changes its commands, observable behavior, expected results, failure cases,
+troubleshooting, or `source_paths`. Do not create a new guide for a cosmetic or
+internal correction with no documented journey impact. If a correction would
+create a new executable journey, reclassify it as a feature.
 
 Before completing the feature:
 
@@ -243,6 +347,12 @@ a behavior-affecting way. Record the exact blocker and all completed work.
 Prefer behavior-first tests and the lowest-cost test that reliably catches the
 regression.
 
+For corrections, start and normally finish with targeted checks for the changed
+surface. Add affected workspace lint/typecheck/build only when relevant. Run the
+full repository gate or real infrastructure/browser/device checks when risk,
+uncertainty, changed user-flow coverage, or the user request justifies them—not
+to satisfy feature ceremony.
+
 - Bugs: reproduce with a failing test when reasonably possible, fix the cause,
   and prove the test passes.
 - Deterministic domain logic, parsers, validators, transformations, and state
@@ -268,7 +378,8 @@ When a command or test fails:
 2. Fix the root cause.
 3. Rerun the smallest reproducing check.
 4. Rerun the appropriate broader suite.
-5. Record material discoveries and validation changes in the ExecPlan.
+5. Record material discoveries and validation changes in the active ExecPlan or
+   correction document.
 
 Do not silently fall back to a weaker verification path.
 
@@ -289,13 +400,40 @@ integration, product decisions, and final conclusions.
 
 Keep noisy exploration and long logs out of the main context. Ask subagents for
 file references, root causes, relevant excerpts, and actionable conclusions.
-Run reviewer and tester after implementation; run security review for auth,
-authorization, uploads, payments, external URLs, secrets, cryptography, personal
-data, SQL, HTML rendering, model tool execution, and webhooks.
+For features, run reviewer and tester after implementation. For corrections,
+use subagents or independent review only when uncertainty, blast radius, a
+changed boundary, or the user request makes the extra pass valuable. Run
+security review when work materially affects auth, authorization, uploads,
+payments, external URLs, secrets, cryptography, personal data, SQL, HTML
+rendering, model tool execution, or webhooks. Merely touching a related file or
+updating a value within an already-approved local model does not by itself force
+security review; a material security-policy change is feature-sized.
 
 ## Definition of Done
 
-Work is done only when:
+### Corrections
+
+A correction is done only when:
+
+- The expected bounded behavior is implemented without crossing the recorded
+  escalation boundary.
+- The smallest reliable regression tests and targeted checks pass; affected
+  lint/typecheck/build/runtime checks are included when relevant.
+- Existing documentation and user-flow/E2E traceability are updated when their
+  commands or observable behavior changed, or the correction document records a
+  concrete not-applicable reason.
+- The final diff contains no accidental scope, debugging artifacts, generated
+  output, secrets, or unresolved conflicts.
+- `.agent/corrections/<slug>.md` is `Complete` and records exact evidence,
+  documentation/review decisions, and remaining risks.
+
+A correction does not require a dedicated feature branch, four feature
+artifacts, full `pnpm check`, mapped E2E execution, browser verification, or
+independent review unless the actual change or user request warrants them.
+
+### Features
+
+A feature is done only when:
 
 - Acceptance criteria are satisfied and implementation is complete.
 - Relevant unit, integration, contract, E2E, and real-app checks pass.
