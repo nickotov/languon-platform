@@ -5,16 +5,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 
-import { authApi, authErrorMessage } from '@/fsd/shared/api/auth-api';
+import { authApi } from '@/fsd/shared/api/auth-api';
+import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 
+import { localizedAuthError } from '../lib/auth-error-message';
 import { useAuth } from '../model/auth-provider';
 import { FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
 
 export function ForgotPasswordForm() {
+    const { href, t } = useI18n();
     const router = useRouter();
     const { capabilities } = useAuth();
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useLocaleSensitiveState<string | null>(null);
     const [pending, setPending] = useState(false);
 
     async function submit(event: FormEvent<HTMLFormElement>) {
@@ -24,7 +27,7 @@ export function ForgotPasswordForm() {
             email: new FormData(event.currentTarget).get('email'),
         });
         if (!parsed.success) {
-            setError('Enter a valid email address.');
+            setError(t('forgot.invalidEmail'));
             return;
         }
 
@@ -32,10 +35,12 @@ export function ForgotPasswordForm() {
         try {
             const response = await authApi.forgotPassword(parsed.data);
             router.push(
-                `/reset-password?flowId=${encodeURIComponent(response.recovery.flowId)}`,
+                href(
+                    `/reset-password?flowId=${encodeURIComponent(response.recovery.flowId)}`,
+                ),
             );
         } catch (caught) {
-            setError(authErrorMessage(caught));
+            setError(localizedAuthError(caught, t));
         } finally {
             setPending(false);
         }
@@ -44,23 +49,20 @@ export function ForgotPasswordForm() {
     if (capabilities && !capabilities.email.passwordRecovery) {
         return (
             <FormMessage>
-                Password recovery is not available in this environment.{' '}
-                <Link href='/login'>Return to sign in.</Link>
+                {t('forgot.unavailable')}{' '}
+                <Link href={href('/login')}>{t('auth.returnToSignIn')}</Link>
             </FormMessage>
         );
     }
 
     return (
         <>
-            <p className='auth-intro'>
-                We’ll send a recovery code if the address can use password
-                recovery.
-            </p>
+            <p className='auth-intro'>{t('forgot.intro')}</p>
             <CapabilityState />
             {error ? <FormMessage>{error}</FormMessage> : null}
             <form aria-busy={pending} className='auth-form' onSubmit={submit}>
                 <label className='field'>
-                    <span>Email</span>
+                    <span>{t('common.email')}</span>
                     <input
                         autoComplete='username'
                         inputMode='email'
@@ -74,11 +76,11 @@ export function ForgotPasswordForm() {
                     disabled={pending || !capabilities}
                     type='submit'
                 >
-                    {pending ? 'Requesting code…' : 'Send recovery code'}
+                    {pending ? t('forgot.pending') : t('forgot.submit')}
                 </button>
             </form>
             <p className='auth-switch'>
-                <Link href='/login'>Back to sign in</Link>
+                <Link href={href('/login')}>{t('forgot.back')}</Link>
             </p>
         </>
     );

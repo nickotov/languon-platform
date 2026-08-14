@@ -6,6 +6,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Web Internationalization and Language Switching](./web-i18n-support.md) —
+  localized SSR routes, language selection, and preference persistence.
 - [User Authentication](./user-authentication.md) — signup, verification,
   sessions, passwords, recovery, logout, and passkeys through the browser and
   HTTP API.

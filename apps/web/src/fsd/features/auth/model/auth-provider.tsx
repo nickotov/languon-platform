@@ -21,6 +21,7 @@ import {
     useSessionStore,
 } from '@/fsd/entities/session/model/session-store';
 import { authApi, AuthApiError } from '@/fsd/shared/api/auth-api';
+import { useI18n } from '@/fsd/shared/i18n';
 
 import { RefreshCoordinator } from './refresh-coordinator';
 
@@ -60,6 +61,7 @@ async function refreshWithDeadline(): Promise<AuthenticationSuccessResponse> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    const { t } = useI18n();
     const [queryClient] = useState(
         () =>
             new QueryClient({
@@ -72,9 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = useSessionStore((state) => state.signOut);
     const [capabilities, setCapabilities] =
         useState<AuthCapabilitiesResponse | null>(null);
-    const [capabilitiesError, setCapabilitiesError] = useState<string | null>(
-        null,
-    );
+    const [capabilitiesFailed, setCapabilitiesFailed] = useState(false);
+    const capabilitiesError = capabilitiesFailed
+        ? t('auth.capabilitiesUnavailable')
+        : null;
     const bootstrapped = useRef(false);
 
     useEffect(
@@ -92,14 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const refreshCapabilities = useCallback(async () => {
-        setCapabilitiesError(null);
+        setCapabilitiesFailed(false);
         try {
             setCapabilities(await authApi.capabilities());
         } catch {
             setCapabilities(null);
-            setCapabilitiesError(
-                'Authentication options are temporarily unavailable.',
-            );
+            setCapabilitiesFailed(true);
         }
     }, []);
 

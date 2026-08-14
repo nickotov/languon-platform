@@ -1,0 +1,16 @@
+.header {
+    align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    padding: clamp(0.8rem, 2.5vw, 1.5rem);
+    pointer-events: none;
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 100%;
+    z-index: 10;
+}
+
+.header > * {
+    pointer-events: auto;
+}

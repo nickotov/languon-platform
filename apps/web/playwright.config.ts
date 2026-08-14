@@ -81,7 +81,10 @@ export default defineConfig({
         },
         {
             command: `pnpm exec next dev --turbopack -p ${webPort} -H 127.0.0.1`,
-            env: { NEXT_PUBLIC_API_URL: backendOrigin },
+            env: {
+                AUTH_E2E_DIST_DIR: '.next-e2e',
+                NEXT_PUBLIC_API_URL: backendOrigin,
+            },
             reuseExistingServer,
             stderr: 'pipe',
             stdout: 'pipe',

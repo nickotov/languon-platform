@@ -2,13 +2,15 @@
 
 import { useAuth } from '../model/auth-provider';
 import { FormMessage } from './auth-shell';
+import { useI18n } from '@/fsd/shared/i18n';
 
 export function CapabilityState() {
+    const { t } = useI18n();
     const { capabilities, capabilitiesError, refreshCapabilities } = useAuth();
     if (!capabilities && !capabilitiesError) {
         return (
             <p className='loading-state' role='status'>
-                Checking available sign-in methods…
+                {t('auth.capabilitiesChecking')}
             </p>
         );
     }
@@ -22,7 +24,7 @@ export function CapabilityState() {
                 onClick={() => void refreshCapabilities()}
                 type='button'
             >
-                Retry
+                {t('common.retry')}
             </button>
         </FormMessage>
     );

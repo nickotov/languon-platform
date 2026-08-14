@@ -12,25 +12,17 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
-import {
-    authApi,
-    AuthApiError,
-    authErrorMessage,
-} from '@/fsd/shared/api/auth-api';
+import { authApi, AuthApiError } from '@/fsd/shared/api/auth-api';
+import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 
+import { localizedAuthError } from '../lib/auth-error-message';
 import { createPasskey, supportsPasskeys } from '../lib/webauthn';
 import { useAuth } from '../model/auth-provider';
 import { FormMessage } from './auth-shell';
 import { PasswordField } from './password-field';
 
-function readableDate(value: string): string {
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
-}
-
 export function SecuritySettings() {
+    const { formatDate, href, t } = useI18n();
     const router = useRouter();
     const status = useSessionStore((state) => state.status);
     const user = useSessionStore((state) => state.user);
@@ -43,8 +35,8 @@ export function SecuritySettings() {
         signOutEverywhere,
         signOutHere,
     } = useAuth();
-    const [error, setError] = useState<string | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
+    const [error, setError] = useLocaleSensitiveState<string | null>(null);
+    const [message, setMessage] = useLocaleSensitiveState<string | null>(null);
     const [recentAuthenticationRequired, setRecentAuthenticationRequired] =
         useState(false);
     const [ceremonyPending, setCeremonyPending] = useState(false);
@@ -57,9 +49,9 @@ export function SecuritySettings() {
 
     useEffect(() => {
         if (status === 'signed-out') {
-            router.replace('/login?returnTo=%2Fsecurity');
+            router.replace(href('/login?returnTo=%2Fsecurity'));
         }
-    }, [router, status]);
+    }, [href, router, status]);
 
     const passkeyQueryKey = ['auth', 'passkeys', user?.id] as const;
     const passkeyQuery = useQuery({
@@ -84,7 +76,7 @@ export function SecuritySettings() {
             caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required',
         );
-        setError(authErrorMessage(caught));
+        setError(localizedAuthError(caught, t));
     }
 
     async function changePassword(event: FormEvent<HTMLFormElement>) {
@@ -99,9 +91,7 @@ export function SecuritySettings() {
             newPassword: data.get('newPassword'),
         });
         if (!parsed.success) {
-            setError(
-                parsed.error.issues[0]?.message ?? 'Check both passwords.',
-            );
+            setError(t('security.passwordsInvalid'));
             return;
         }
 
@@ -112,9 +102,7 @@ export function SecuritySettings() {
             );
             acceptAuthentication(response);
             form.reset();
-            setMessage(
-                'Password changed. Your other sessions were signed out.',
-            );
+            setMessage(t('security.passwordChanged'));
         } catch (caught) {
             captureError(caught);
         } finally {
@@ -132,7 +120,7 @@ export function SecuritySettings() {
             new FormData(form).get('name'),
         );
         if (!name.success) {
-            setError(name.error.issues[0]?.message ?? 'Enter a passkey name.');
+            setError(t('security.passkeyNameInvalid'));
             return;
         }
 
@@ -150,7 +138,7 @@ export function SecuritySettings() {
             );
             updatePasskeys((current) => [...current, response.passkey]);
             form.reset();
-            setMessage('Passkey added.');
+            setMessage(t('security.passkeyAdded'));
         } catch (caught) {
             captureError(caught);
         } finally {
@@ -161,9 +149,7 @@ export function SecuritySettings() {
     async function renamePasskey(passkeyId: string, name: string) {
         const parsed = PasskeyNameSchema.safeParse(name);
         if (!parsed.success) {
-            setError(
-                parsed.error.issues[0]?.message ?? 'Enter a passkey name.',
-            );
+            setError(t('security.passkeyNameInvalid'));
             return;
         }
         setError(null);
@@ -177,7 +163,7 @@ export function SecuritySettings() {
                     passkey.id === passkeyId ? response.passkey : passkey,
                 ),
             );
-            setMessage('Passkey renamed.');
+            setMessage(t('security.passkeyRenamed'));
         } catch (caught) {
             captureError(caught);
         }
@@ -198,7 +184,7 @@ export function SecuritySettings() {
                 current.filter((passkey) => passkey.id !== passkeyId),
             );
             setConfirmRevoke(null);
-            setMessage('Passkey removed.');
+            setMessage(t('security.passkeyRemoved'));
         } catch (caught) {
             captureError(caught);
         }
@@ -210,7 +196,7 @@ export function SecuritySettings() {
         try {
             if (scope === 'all') await signOutEverywhere();
             else await signOutHere();
-            router.replace('/login');
+            router.replace(href('/login'));
         } catch (caught) {
             captureError(caught);
         } finally {
@@ -221,7 +207,7 @@ export function SecuritySettings() {
     if (status === 'bootstrapping') {
         return (
             <div className='loading-state' role='status'>
-                Restoring your session…
+                {t('security.restoring')}
             </div>
         );
     }
@@ -229,8 +215,10 @@ export function SecuritySettings() {
     if (status === 'signed-out') {
         return (
             <FormMessage tone='info'>
-                Sign in to manage your security.{' '}
-                <Link href='/login?returnTo=%2Fsecurity'>Go to sign in.</Link>
+                {t('security.signInRequired')}{' '}
+                <Link href={href('/login?returnTo=%2Fsecurity')}>
+                    {t('security.goToSignIn')}
+                </Link>
             </FormMessage>
         );
     }
@@ -243,8 +231,8 @@ export function SecuritySettings() {
                     {recentAuthenticationRequired ? (
                         <>
                             {' '}
-                            <Link href='/login?returnTo=%2Fsecurity'>
-                                Sign in again.
+                            <Link href={href('/login?returnTo=%2Fsecurity')}>
+                                {t('security.signInAgain')}
                             </Link>
                         </>
                     ) : null}
@@ -258,17 +246,15 @@ export function SecuritySettings() {
                 className='settings-panel'
                 aria-labelledby='account-heading'
             >
-                <h2 id='account-heading'>Account</h2>
+                <h2 id='account-heading'>{t('security.account')}</h2>
                 <dl className='metadata-list'>
                     <div>
-                        <dt>Email</dt>
+                        <dt>{t('common.email')}</dt>
                         <dd>{user?.primaryEmail}</dd>
                     </div>
                     <div>
-                        <dt>Current session expires</dt>
-                        <dd>
-                            {session ? readableDate(session.expiresAt) : '—'}
-                        </dd>
+                        <dt>{t('security.sessionExpires')}</dt>
+                        <dd>{session ? formatDate(session.expiresAt) : '—'}</dd>
                     </div>
                 </dl>
             </section>
@@ -277,15 +263,15 @@ export function SecuritySettings() {
                 className='settings-panel'
                 aria-labelledby='password-heading'
             >
-                <h2 id='password-heading'>Change password</h2>
-                <p>Changing your password signs out every other session.</p>
+                <h2 id='password-heading'>{t('security.changePassword')}</h2>
+                <p>{t('security.changePasswordHelp')}</p>
                 <form
                     aria-busy={passwordPending}
                     className='auth-form'
                     onSubmit={changePassword}
                 >
                     <label className='field'>
-                        <span>Email</span>
+                        <span>{t('common.email')}</span>
                         <input
                             autoComplete='username'
                             name='email'
@@ -296,12 +282,12 @@ export function SecuritySettings() {
                     </label>
                     <PasswordField
                         autoComplete='current-password'
-                        label='Current password'
+                        label={t('common.currentPassword')}
                         name='currentPassword'
                     />
                     <PasswordField
                         autoComplete='new-password'
-                        label='New password'
+                        label={t('common.newPassword')}
                         name='newPassword'
                     />
                     <button
@@ -310,8 +296,8 @@ export function SecuritySettings() {
                         type='submit'
                     >
                         {passwordPending
-                            ? 'Changing password…'
-                            : 'Change password'}
+                            ? t('reset.pending')
+                            : t('security.changePassword')}
                     </button>
                 </form>
             </section>
@@ -321,19 +307,16 @@ export function SecuritySettings() {
                     className='settings-panel'
                     aria-labelledby='passkeys-heading'
                 >
-                    <h2 id='passkeys-heading'>Passkeys</h2>
-                    <p>
-                        Use a device passkey for passwordless sign-in. Adding or
-                        removing one may require a fresh sign-in.
-                    </p>
+                    <h2 id='passkeys-heading'>{t('security.passkeys')}</h2>
+                    <p>{t('security.passkeysHelp')}</p>
                     <form className='inline-form' onSubmit={registerPasskey}>
                         <label className='field'>
-                            <span>Passkey name</span>
+                            <span>{t('security.passkeyName')}</span>
                             <input
                                 autoComplete='off'
                                 maxLength={160}
                                 name='name'
-                                placeholder='Personal laptop'
+                                placeholder={t('security.passkeyPlaceholder')}
                                 required
                             />
                         </label>
@@ -342,32 +325,29 @@ export function SecuritySettings() {
                             disabled={ceremonyPending || !passkeySupported}
                             type='submit'
                         >
-                            Add passkey
+                            {t('security.addPasskey')}
                         </button>
                     </form>
                     {!passkeySupported ? (
-                        <small>
-                            Passkeys need a supported browser in a secure
-                            context.
-                        </small>
+                        <small>{t('passkey.unsupported')}</small>
                     ) : null}
                     {passkeyQuery.isPending ? (
-                        <p role='status'>Loading passkeys…</p>
+                        <p role='status'>{t('security.loadingPasskeys')}</p>
                     ) : null}
                     {passkeyQuery.isError ? (
                         <FormMessage>
-                            <p>{authErrorMessage(passkeyQuery.error)}</p>
+                            <p>{localizedAuthError(passkeyQuery.error, t)}</p>
                             <button
                                 className='text-button'
                                 onClick={() => void passkeyQuery.refetch()}
                                 type='button'
                             >
-                                Retry loading passkeys
+                                {t('security.retryPasskeys')}
                             </button>
                         </FormMessage>
                     ) : null}
                     {passkeyQuery.isSuccess && passkeys.length === 0 ? (
-                        <p>No passkeys yet.</p>
+                        <p>{t('security.noPasskeys')}</p>
                     ) : null}
                     <ul className='passkey-list'>
                         {passkeys.map((passkey) => (
@@ -388,7 +368,7 @@ export function SecuritySettings() {
                 className='settings-panel settings-panel--danger'
                 aria-labelledby='sessions-heading'
             >
-                <h2 id='sessions-heading'>Sessions</h2>
+                <h2 id='sessions-heading'>{t('security.sessions')}</h2>
                 <div className='button-row'>
                     <button
                         className='secondary-button'
@@ -396,7 +376,7 @@ export function SecuritySettings() {
                         onClick={() => void logout('current')}
                         type='button'
                     >
-                        Sign out here
+                        {t('security.signOutHere')}
                     </button>
                     <button
                         className='danger-button'
@@ -404,7 +384,7 @@ export function SecuritySettings() {
                         onClick={() => void logout('all')}
                         type='button'
                     >
-                        Sign out everywhere
+                        {t('security.signOutEverywhere')}
                     </button>
                 </div>
             </section>
@@ -425,15 +405,20 @@ function PasskeyRow({
     onRevoke(passkeyId: string): Promise<void>;
     passkey: PasskeyMetadata;
 }) {
+    const { formatDate, t } = useI18n();
     const [editing, setEditing] = useState(false);
     return (
         <li className='passkey-row'>
             <div>
                 <strong>{passkey.name}</strong>
                 <small>
-                    Added {readableDate(passkey.createdAt)}
+                    {t('security.added', {
+                        date: formatDate(passkey.createdAt),
+                    })}
                     {passkey.lastUsedAt
-                        ? ` · Last used ${readableDate(passkey.lastUsedAt)}`
+                        ? ` · ${t('security.lastUsed', {
+                              date: formatDate(passkey.lastUsedAt),
+                          })}`
                         : ''}
                 </small>
             </div>
@@ -454,7 +439,7 @@ function PasskeyRow({
                         className='sr-only'
                         htmlFor={`passkey-${passkey.id}`}
                     >
-                        New passkey name
+                        {t('security.newPasskeyName')}
                     </label>
                     <input
                         defaultValue={passkey.name}
@@ -463,47 +448,62 @@ function PasskeyRow({
                         required
                     />
                     <button
-                        aria-label={`Save ${passkey.name}`}
+                        aria-label={t('security.saveNamed', {
+                            name: passkey.name,
+                        })}
                         className='text-button'
                         type='submit'
                     >
-                        Save
+                        {t('common.save')}
                     </button>
                     <button
-                        aria-label={`Cancel renaming ${passkey.name}`}
+                        aria-label={t('security.cancelRenaming', {
+                            name: passkey.name,
+                        })}
                         className='text-button'
                         onClick={() => setEditing(false)}
                         type='button'
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                 </form>
             ) : (
                 <div className='button-row'>
                     <button
-                        aria-label={`Rename ${passkey.name}`}
+                        aria-label={t('security.renameNamed', {
+                            name: passkey.name,
+                        })}
                         className='text-button'
                         onClick={() => setEditing(true)}
                         type='button'
                     >
-                        Rename
+                        {t('security.rename')}
                     </button>
                     <button
-                        aria-label={`${confirmRevoke ? 'Confirm remove' : 'Remove'} ${passkey.name}`}
+                        aria-label={t(
+                            confirmRevoke
+                                ? 'security.confirmRemoveNamed'
+                                : 'security.removeNamed',
+                            { name: passkey.name },
+                        )}
                         className='text-button text-button--danger'
                         onClick={() => void onRevoke(passkey.id)}
                         type='button'
                     >
-                        {confirmRevoke ? 'Confirm remove' : 'Remove'}
+                        {confirmRevoke
+                            ? t('security.confirmRemove')
+                            : t('security.remove')}
                     </button>
                     {confirmRevoke ? (
                         <button
-                            aria-label={`Cancel removing ${passkey.name}`}
+                            aria-label={t('security.cancelRemoving', {
+                                name: passkey.name,
+                            })}
                             className='text-button'
                             onClick={onCancelRevoke}
                             type='button'
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </button>
                     ) : null}
                 </div>

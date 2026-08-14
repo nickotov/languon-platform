@@ -1,15 +1,16 @@
+'use client';
+
 import { HomeSessionActions } from '@/fsd/features/auth';
+import { useI18n } from '@/fsd/shared/i18n';
 
 export function HomePage() {
+    const { t } = useI18n();
     return (
         <main className='home'>
             <section className='home__content'>
-                <div className='home__eyebrow'>AI-first language learning</div>
+                <div className='home__eyebrow'>{t('home.eyebrow')}</div>
                 <h1>Languon</h1>
-                <p>
-                    Learn through personalized courses, practical language
-                    tools, and a tutor that adapts to your goals and progress.
-                </p>
+                <p>{t('home.description')}</p>
                 <HomeSessionActions />
             </section>
         </main>

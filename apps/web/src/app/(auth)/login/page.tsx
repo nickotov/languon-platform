@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 
 import { LoginPage } from '@/fsd/pages/login/ui/login-page';
+import { localizedMetadata } from '@/fsd/shared/i18n/metadata';
 
-export const metadata: Metadata = { title: 'Sign in · Languon' };
+export async function generateMetadata(): Promise<Metadata> {
+    return localizedMetadata('meta.login');
+}
 
 function single(value: string | string[] | undefined): string | undefined {
     return typeof value === 'string' ? value : undefined;

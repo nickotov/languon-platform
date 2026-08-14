@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 
-import { authApi, authErrorMessage } from '@/fsd/shared/api/auth-api';
+import { authApi } from '@/fsd/shared/api/auth-api';
+import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 
 import { useAuth } from '../model/auth-provider';
+import { localizedAuthError } from '../lib/auth-error-message';
 import { FormMessage } from './auth-shell';
 
 export function VerifyEmailForm({
@@ -21,11 +23,12 @@ export function VerifyEmailForm({
     resendAvailableAt?: string | undefined;
     returnTo?: string | undefined;
 }) {
+    const { href, t } = useI18n();
     const router = useRouter();
     const { authenticate, capabilities } = useAuth();
     const [activeFlowId, setActiveFlowId] = useState(flowId ?? '');
-    const [error, setError] = useState<string | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
+    const [error, setError] = useLocaleSensitiveState<string | null>(null);
+    const [message, setMessage] = useLocaleSensitiveState<string | null>(null);
     const [pending, setPending] = useState<'resend' | 'verify' | null>(null);
     const [nextResendAt, setNextResendAt] = useState(() =>
         resendAvailableAt ? Date.parse(resendAvailableAt) : 0,
@@ -44,15 +47,13 @@ export function VerifyEmailForm({
         setError(null);
         setMessage(null);
         if (!activeFlowId) {
-            setError(
-                'This verification link is incomplete. Start signup again.',
-            );
+            setError(t('verify.incompleteFull'));
             return;
         }
         const code = new FormData(event.currentTarget).get('code');
         const parsed = VerificationCodeSchema.safeParse(code);
         if (!parsed.success) {
-            setError('Enter the four-digit code from your email.');
+            setError(t('verify.invalidCode'));
             return;
         }
 
@@ -66,9 +67,9 @@ export function VerifyEmailForm({
                     }),
                 (result) => result,
             );
-            router.replace(safeReturnPath(returnTo));
+            router.replace(href(safeReturnPath(returnTo)));
         } catch (caught) {
-            setError(authErrorMessage(caught));
+            setError(localizedAuthError(caught, t));
         } finally {
             setPending(null);
         }
@@ -93,12 +94,10 @@ export function VerifyEmailForm({
                 resendAvailableAt: response.verification.resendAvailableAt,
                 returnTo: safeReturnPath(returnTo),
             });
-            router.replace(`/verify-email?${query.toString()}`);
-            setMessage(
-                'If the address can receive verification email, a fresh code is on its way.',
-            );
+            router.replace(href(`/verify-email?${query.toString()}`));
+            setMessage(t('verify.resent'));
         } catch (caught) {
-            setError(authErrorMessage(caught));
+            setError(localizedAuthError(caught, t));
         } finally {
             setPending(null);
         }
@@ -107,8 +106,8 @@ export function VerifyEmailForm({
     if (capabilities && !capabilities.email.verification) {
         return (
             <FormMessage>
-                Email verification is not available in this environment.{' '}
-                <Link href='/login'>Return to sign in.</Link>
+                {t('verify.unavailable')}{' '}
+                <Link href={href('/login')}>{t('auth.returnToSignIn')}</Link>
             </FormMessage>
         );
     }
@@ -116,14 +115,11 @@ export function VerifyEmailForm({
     const waitSeconds = Math.max(0, Math.ceil((nextResendAt - now) / 1_000));
     return (
         <>
-            <p className='auth-intro'>
-                Enter the four-digit code we sent. Codes expire after ten
-                minutes.
-            </p>
+            <p className='auth-intro'>{t('verify.intro')}</p>
             {!activeFlowId ? (
                 <FormMessage>
-                    This verification link is incomplete.{' '}
-                    <Link href='/signup'>Start signup again.</Link>
+                    {t('verify.incomplete')}{' '}
+                    <Link href={href('/signup')}>{t('verify.startAgain')}</Link>
                 </FormMessage>
             ) : null}
             {error ? <FormMessage>{error}</FormMessage> : null}
@@ -136,7 +132,7 @@ export function VerifyEmailForm({
                 onSubmit={submit}
             >
                 <label className='field'>
-                    <span>Verification code</span>
+                    <span>{t('verify.code')}</span>
                     <input
                         autoComplete='one-time-code'
                         className='code-input'
@@ -156,7 +152,9 @@ export function VerifyEmailForm({
                     }
                     type='submit'
                 >
-                    {pending === 'verify' ? 'Checking code…' : 'Verify email'}
+                    {pending === 'verify'
+                        ? t('verify.checking')
+                        : t('verify.submit')}
                 </button>
             </form>
             <button
@@ -171,10 +169,10 @@ export function VerifyEmailForm({
                 type='button'
             >
                 {pending === 'resend'
-                    ? 'Sending…'
+                    ? t('verify.sending')
                     : waitSeconds > 0
-                      ? `Send a new code in ${waitSeconds}s`
-                      : 'Send a new code'}
+                      ? t('verify.resendIn', { seconds: waitSeconds })
+                      : t('verify.resend')}
             </button>
         </>
     );

@@ -70,6 +70,13 @@ lifetime. Root ESLint configuration enforces the FSD dependency direction for
 both web applications; `.agents/skills/frontend-development/SKILL.md` defines
 the implementation workflow.
 
+The web application keeps URLs independent of language. Its root layout selects
+an allowlisted locale from the preference cookie, then `Accept-Language`, with
+English fallback; server-loads a typed shared message catalog; and provides
+translation and formatting helpers to the rendered tree. Manual selection
+updates only the cookie and refreshes the unchanged route. ADR-0007 defines this
+contract.
+
 ## Mobile
 
 The Expo application groups user-facing screens separately from reusable

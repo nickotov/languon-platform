@@ -4,19 +4,22 @@ import { SignUpRequestSchema } from '@languon/contracts';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 
-import { authApi, authErrorMessage } from '@/fsd/shared/api/auth-api';
+import { authApi } from '@/fsd/shared/api/auth-api';
+import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 
 import { useAuth } from '../model/auth-provider';
+import { localizedAuthError } from '../lib/auth-error-message';
 import { AuthLinks, FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
 import { PasswordField } from './password-field';
 
 export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
+    const { href, t } = useI18n();
     const router = useRouter();
     const { capabilities } = useAuth();
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useLocaleSensitiveState<string | null>(null);
     const [pending, setPending] = useState(false);
     const sessionStatus = useSessionStore((state) => state.status);
 
@@ -30,10 +33,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
             password: form.get('password'),
         });
         if (!parsed.success) {
-            setError(
-                parsed.error.issues[0]?.message ??
-                    'Check your account details.',
-            );
+            setError(t('signup.invalid'));
             return;
         }
 
@@ -45,9 +45,9 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                 resendAvailableAt: response.verification.resendAvailableAt,
                 returnTo: safeReturnPath(returnTo),
             });
-            router.push(`/verify-email?${query.toString()}`);
+            router.push(href(`/verify-email?${query.toString()}`));
         } catch (caught) {
-            setError(authErrorMessage(caught));
+            setError(localizedAuthError(caught, t));
         } finally {
             setPending(false);
         }
@@ -56,10 +56,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
     if (capabilities && !capabilities.email.signUp) {
         return (
             <>
-                <FormMessage>
-                    Email signup is not available in this environment. Try
-                    signing in if you already have an account.
-                </FormMessage>
+                <FormMessage>{t('signup.unavailable')}</FormMessage>
                 <AuthLinks mode='signup' />
             </>
         );
@@ -67,14 +64,12 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
 
     return (
         <>
-            <p className='auth-intro'>
-                Create your account, then confirm that the email belongs to you.
-            </p>
+            <p className='auth-intro'>{t('signup.intro')}</p>
             <CapabilityState />
             {error ? <FormMessage>{error}</FormMessage> : null}
             <form aria-busy={pending} className='auth-form' onSubmit={submit}>
                 <label className='field'>
-                    <span>Email</span>
+                    <span>{t('common.email')}</span>
                     <input
                         autoComplete='username'
                         inputMode='email'
@@ -85,7 +80,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                 </label>
                 <PasswordField
                     autoComplete='new-password'
-                    label='Password'
+                    label={t('common.password')}
                     name='password'
                 />
                 <button
@@ -97,7 +92,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                     }
                     type='submit'
                 >
-                    {pending ? 'Creating account…' : 'Create account'}
+                    {pending ? t('signup.pending') : t('signup.submit')}
                 </button>
             </form>
             <AuthLinks mode='signup' />

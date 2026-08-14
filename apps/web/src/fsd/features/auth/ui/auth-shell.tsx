@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { type ReactNode, useEffect, useRef } from 'react';
 
+import { useI18n } from '@/fsd/shared/i18n';
+
 export function AuthShell({
     children,
     eyebrow,
@@ -12,10 +14,15 @@ export function AuthShell({
     eyebrow: string;
     title: string;
 }) {
+    const { href, t } = useI18n();
     return (
         <main className='auth-layout'>
             <section className='auth-card' aria-labelledby='auth-title'>
-                <Link className='brand-link' href='/' aria-label='Languon home'>
+                <Link
+                    className='brand-link'
+                    href={href('/')}
+                    aria-label={t('auth.brandHome')}
+                >
                     Languon
                 </Link>
                 <p className='eyebrow'>{eyebrow}</p>
@@ -57,14 +64,15 @@ export function AuthLinks({
     mode: 'login' | 'signup';
     signupAvailable?: boolean;
 }) {
+    const { href, t } = useI18n();
     if (mode === 'login' && !signupAvailable) return null;
     return (
         <p className='auth-switch'>
             {mode === 'login'
-                ? 'New to Languon? '
-                : 'Already have an account? '}
-            <Link href={mode === 'login' ? '/signup' : '/login'}>
-                {mode === 'login' ? 'Create an account' : 'Sign in'}
+                ? `${t('auth.newToLanguon')} `
+                : `${t('auth.alreadyAccount')} `}
+            <Link href={href(mode === 'login' ? '/signup' : '/login')}>
+                {mode === 'login' ? t('auth.createAccount') : t('auth.signIn')}
             </Link>
         </p>
     );

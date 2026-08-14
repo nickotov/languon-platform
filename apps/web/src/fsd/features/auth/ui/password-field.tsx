@@ -2,6 +2,8 @@
 
 import { useId, useState } from 'react';
 
+import { useI18n } from '@/fsd/shared/i18n';
+
 export function PasswordField({
     autoComplete,
     label,
@@ -11,6 +13,7 @@ export function PasswordField({
     label: string;
     name: string;
 }) {
+    const { t } = useI18n();
     const hintId = useId();
     const inputId = useId();
     const [visible, setVisible] = useState(false);
@@ -31,19 +34,19 @@ export function PasswordField({
                     type={visible ? 'text' : 'password'}
                 />
                 <button
-                    aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
+                    aria-label={t('password.toggleLabel', {
+                        action: visible ? t('common.hide') : t('common.show'),
+                        label: label.toLowerCase(),
+                    })}
                     className='text-button password-input__toggle'
                     onClick={() => setVisible((current) => !current)}
                     type='button'
                 >
-                    {visible ? 'Hide' : 'Show'}
+                    {visible ? t('common.hide') : t('common.show')}
                 </button>
             </span>
             {autoComplete === 'new-password' ? (
-                <small id={hintId}>
-                    Use 15–128 characters. Spaces and pasted passwords are
-                    welcome.
-                </small>
+                <small id={hintId}>{t('password.hint')}</small>
             ) : null}
         </div>
     );

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    distDir: process.env.AUTH_E2E_DIST_DIR ?? '.next',
     reactStrictMode: true,
     transpilePackages: ['@languon/contracts'],
     async headers() {

@@ -1,0 +1,33 @@
+.field {
+    align-items: center;
+    display: flex;
+    gap: 0.55rem;
+}
+
+.label {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.select {
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid rgb(25 35 31 / 18%);
+    border-radius: 999px;
+    color: var(--foreground);
+    cursor: pointer;
+    min-height: 2.6rem;
+    padding: 0.5rem 2rem 0.5rem 0.85rem;
+}
+
+@media (max-width: 32rem) {
+    .label {
+        position: absolute;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        height: 1px;
+        overflow: hidden;
+        white-space: nowrap;
+        width: 1px;
+    }
+}

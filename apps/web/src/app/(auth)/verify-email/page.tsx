@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 
 import { VerifyEmailPage } from '@/fsd/pages/verify-email/ui/verify-email-page';
+import { localizedMetadata } from '@/fsd/shared/i18n/metadata';
 
-export const metadata: Metadata = { title: 'Verify email · Languon' };
+export async function generateMetadata(): Promise<Metadata> {
+    return localizedMetadata('meta.verifyEmail');
+}
 
 function single(value: string | string[] | undefined): string | undefined {
     return typeof value === 'string' ? value : undefined;

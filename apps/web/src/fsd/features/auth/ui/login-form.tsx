@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 
-import { authApi, authErrorMessage } from '@/fsd/shared/api/auth-api';
+import { authApi } from '@/fsd/shared/api/auth-api';
+import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 
 import { getPasskey, supportsPasskeys } from '../lib/webauthn';
+import { localizedAuthError } from '../lib/auth-error-message';
 import { useAuth } from '../model/auth-provider';
 import { AuthLinks, FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
@@ -22,9 +24,10 @@ export function LoginForm({
     passwordReset?: string | undefined;
     returnTo?: string | undefined;
 }) {
+    const { href, t } = useI18n();
     const router = useRouter();
     const { authenticate, capabilities } = useAuth();
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useLocaleSensitiveState<string | null>(null);
     const [pending, setPending] = useState<'passkey' | 'password' | null>(null);
     const [passkeySupported, setPasskeySupported] = useState(false);
     const sessionStatus = useSessionStore((state) => state.status);
@@ -42,10 +45,7 @@ export function LoginForm({
             password: data.get('password'),
         });
         if (!parsed.success) {
-            setError(
-                parsed.error.issues[0]?.message ??
-                    'Check your sign-in details.',
-            );
+            setError(t('login.invalid'));
             return;
         }
 
@@ -62,12 +62,12 @@ export function LoginForm({
                     resendAvailableAt: response.verification.resendAvailableAt,
                     returnTo: destination,
                 });
-                router.push(`/verify-email?${query.toString()}`);
+                router.push(href(`/verify-email?${query.toString()}`));
                 return;
             }
-            router.replace(destination);
+            router.replace(href(destination));
         } catch (caught) {
-            setError(authErrorMessage(caught));
+            setError(localizedAuthError(caught, t));
         } finally {
             setPending(null);
         }
@@ -90,9 +90,9 @@ export function LoginForm({
                 },
                 (result) => result,
             );
-            router.replace(destination);
+            router.replace(href(destination));
         } catch (caught) {
-            setError(authErrorMessage(caught));
+            setError(localizedAuthError(caught, t));
         } finally {
             setPending(null);
         }
@@ -100,13 +100,10 @@ export function LoginForm({
 
     return (
         <>
-            <p className='auth-intro'>
-                Welcome back. Your learning space is ready when you are.
-            </p>
+            <p className='auth-intro'>{t('login.intro')}</p>
             {passwordReset === 'complete' ? (
                 <FormMessage tone='success'>
-                    Your password was changed and existing sessions were signed
-                    out. Sign in with your new password.
+                    {t('login.passwordResetComplete')}
                 </FormMessage>
             ) : null}
             <CapabilityState />
@@ -117,7 +114,7 @@ export function LoginForm({
                 onSubmit={submitPassword}
             >
                 <label className='field'>
-                    <span>Email</span>
+                    <span>{t('common.email')}</span>
                     <input
                         autoComplete='username'
                         inputMode='email'
@@ -128,12 +125,14 @@ export function LoginForm({
                 </label>
                 <PasswordField
                     autoComplete='current-password'
-                    label='Password'
+                    label={t('common.password')}
                     name='password'
                 />
                 {capabilities?.email.passwordRecovery ? (
                     <div className='field-row'>
-                        <Link href='/forgot-password'>Forgot password?</Link>
+                        <Link href={href('/forgot-password')}>
+                            {t('login.forgotPassword')}
+                        </Link>
                     </div>
                 ) : null}
                 <button
@@ -145,12 +144,14 @@ export function LoginForm({
                     }
                     type='submit'
                 >
-                    {pending === 'password' ? 'Signing in…' : 'Sign in'}
+                    {pending === 'password'
+                        ? t('login.pending')
+                        : t('auth.signIn')}
                 </button>
             </form>
             {capabilities?.passkeys.authentication ? (
                 <div className='alternative-action'>
-                    <span>or</span>
+                    <span>{t('login.or')}</span>
                     <button
                         className='secondary-button'
                         disabled={
@@ -162,14 +163,11 @@ export function LoginForm({
                         type='button'
                     >
                         {pending === 'passkey'
-                            ? 'Waiting for passkey…'
-                            : 'Sign in with a passkey'}
+                            ? t('login.passkeyPending')
+                            : t('login.passkey')}
                     </button>
                     {!passkeySupported ? (
-                        <small>
-                            Passkeys need a supported browser in a secure
-                            context.
-                        </small>
+                        <small>{t('passkey.unsupported')}</small>
                     ) : null}
                 </div>
             ) : null}

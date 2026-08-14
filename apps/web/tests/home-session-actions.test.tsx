@@ -1,11 +1,13 @@
 import type { AuthenticationSuccessResponse } from '@languon/contracts';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { AuthProvider } from '@/fsd/features/auth/model/auth-provider';
 import { HomeSessionActions } from '@/fsd/features/auth/ui/home-session-actions';
 import { authApi } from '@/fsd/shared/api/auth-api';
+
+import { render } from './render';
 
 const response: AuthenticationSuccessResponse = {
     accessToken: 'aaa.bbb.ccc',

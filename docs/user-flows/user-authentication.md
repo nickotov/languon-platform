@@ -31,6 +31,7 @@ source_paths:
     - apps/web/src/fsd/features/auth/**
     - apps/web/src/fsd/pages/**
     - apps/web/src/fsd/shared/api/auth-api.ts
+    - apps/web/src/fsd/shared/i18n/**
     - packages/contracts/src/auth/**
     - packages/database/src/migrations/**
     - packages/database/src/postgres/**
@@ -44,6 +45,7 @@ e2e_scenarios:
     - password-reset-session-revocation
     - passkey-lifecycle
 related_features:
+    - web-i18n-support
     - user-flow-testing-guides
     - web-dev-port-3333
 ---

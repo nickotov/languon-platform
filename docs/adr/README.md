@@ -19,6 +19,8 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0003](./0003-user-flow-e2e-traceability.md)               | User-flow E2E traceability               | Superseded by ADR-0004 |
 | [ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)     | User-flow E2E traceability hardening     | Accepted               |
 | [ADR-0005](./0005-frontend-component-and-fsd-standards.md)     | Frontend component and FSD standards     | Accepted               |
+| [ADR-0006](./0006-web-internationalization-strategy.md)        | Web internationalization strategy        | Superseded by ADR-0007 |
+| [ADR-0007](./0007-web-request-locale-strategy.md)              | Web request locale strategy              | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

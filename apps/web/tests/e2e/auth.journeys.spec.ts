@@ -257,7 +257,7 @@ test.describe('authentication journeys', () => {
             .getByRole('button', { name: 'Sign in with a passkey' })
             .click();
         await expect(
-            page.getByText('The passkey operation could not be completed.', {
+            page.getByText('The passkey could not be verified.', {
                 exact: true,
             }),
         ).toBeVisible();

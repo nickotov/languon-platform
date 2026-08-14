@@ -1,7 +1,7 @@
 import type { AuthenticationSuccessResponse } from '@languon/contracts';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
@@ -13,9 +13,27 @@ import { SecuritySettings } from '@/fsd/features/auth/ui/security-settings';
 import { SignupForm } from '@/fsd/features/auth/ui/signup-form';
 import { VerifyEmailForm } from '@/fsd/features/auth/ui/verify-email-form';
 import { authApi } from '@/fsd/shared/api/auth-api';
+import { I18nProvider, type Locale } from '@/fsd/shared/i18n';
+import { en } from '@/fsd/shared/i18n/messages/en';
+import { ru } from '@/fsd/shared/i18n/messages/ru';
+
+import { render } from './render';
 
 const replace = vi.fn();
 const push = vi.fn();
+const testCatalogs = { en, ru };
+
+function LocaleSwitcherHarness({ children }: { children: ReactNode }) {
+    const [locale, setLocale] = useState<Extract<Locale, 'en' | 'ru'>>('en');
+    return (
+        <I18nProvider locale={locale} messages={testCatalogs[locale]}>
+            <button onClick={() => setLocale('ru')} type='button'>
+                Switch test locale
+            </button>
+            {children}
+        </I18nProvider>
+    );
+}
 
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push, replace }),
@@ -160,6 +178,38 @@ describe('authentication forms', () => {
         expect(
             await screen.findByRole('link', { name: 'Forgot password?' }),
         ).toBeInTheDocument();
+    });
+
+    it('keeps a capabilities failure retryable and retranslates it', async () => {
+        const user = userEvent.setup();
+        vi.mocked(authApi.capabilities).mockRejectedValue(
+            new Error('backend unavailable'),
+        );
+
+        render(
+            <LocaleSwitcherHarness>
+                <AuthProvider>
+                    <LoginForm />
+                </AuthProvider>
+            </LocaleSwitcherHarness>,
+        );
+
+        expect(
+            await screen.findByText(
+                'Authentication options are temporarily unavailable.',
+            ),
+        ).toBeInTheDocument();
+        await user.click(
+            screen.getByRole('button', { name: 'Switch test locale' }),
+        );
+
+        expect(
+            await screen.findByText('Способы входа временно недоступны.'),
+        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Повторить' })).toBeEnabled();
+        expect(
+            screen.queryByText('Проверяем доступные способы входа…'),
+        ).not.toBeInTheDocument();
     });
 
     it('starts a verification flow after signup', async () => {
