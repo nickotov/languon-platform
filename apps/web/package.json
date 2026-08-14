@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev --turbopack -p 3000",
+    "dev": "next dev --turbopack -p 3333 -H 127.0.0.1",
+    "dev:docker": "next dev --turbopack -p 3333 -H 0.0.0.0",
     "lint": "eslint .",
-    "start": "next start -p 3000",
+    "start": "next start -p 3333 -H 127.0.0.1",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage --passWithNoTests",

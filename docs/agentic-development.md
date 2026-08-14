@@ -72,7 +72,7 @@ service:
 | Service        | Command            | Default URL                     |
 | -------------- | ------------------ | ------------------------------- |
 | Backend        | `pnpm dev:backend` | `http://localhost:4000`         |
-| Frontend / web | `pnpm dev:web`     | `http://localhost:3000`         |
+| Frontend / web | `pnpm dev:web`     | `http://localhost:3333`         |
 | Admin          | `pnpm dev:admin`   | `http://localhost:3001`         |
 | Mobile / Expo  | `pnpm dev:mobile`  | Metro normally uses port `8081` |
 | PostgreSQL     | `pnpm dev:infra`   | `localhost:5432`                |
@@ -81,6 +81,19 @@ service:
 The `dev:*` application commands build required workspace packages before
 starting the selected server. Web and admin journeys that call the API also
 need the backend.
+
+Backend and Next.js host processes bind to `127.0.0.1` by default. Compose also
+publishes application and infrastructure ports only on loopback; the containers
+listen on their internal interfaces so host access still works. These defaults
+are a security boundary because local development uses public placeholder
+secrets and authentication code `0000`.
+
+For an intentional LAN/device check, expose only the application profile with
+`LANGUON_APP_BIND_HOST=0.0.0.0 pnpm dev:apps:docker`. This changes only Docker
+publication: configure coherent public API/origin values separately, and use
+HTTPS for passkeys. Never use fixed codes, placeholder secrets, meaningful
+accounts, or shared/staging/production data on an exposed development stack.
+Keep PostgreSQL and Redis loopback-only.
 
 You can run these commands yourself or ask Codex to start and retain only the
 services needed for a verification journey. In that prompt, name the target URL
@@ -332,7 +345,7 @@ Example verification prompt:
 
 ```text
 Start the required local infrastructure, backend, and web services. Use
-$browser-verification with Playwright MCP against http://localhost:3000.
+$browser-verification with Playwright MCP against http://localhost:3333.
 
 Verify AC-1 through AC-4 for the saved vocabulary journey at 390x844 and
 1440x900. Cover the happy path, empty state, validation failure, API failure,

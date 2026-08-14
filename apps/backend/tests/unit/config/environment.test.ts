@@ -48,6 +48,7 @@ describe("loadEnvironment authentication settings", () => {
         AUTH_FIXED_VERIFICATION_CODE_ENABLED: fixedCodeEnabled,
         AUTH_REFRESH_TOKEN_TTL: 14 * 24 * 60 * 60,
         AUTH_VERIFICATION_CODE_MODE: fixedCodeEnabled ? "fixed" : "unavailable",
+        BACKEND_HOST: "127.0.0.1",
       });
     },
   );
@@ -72,6 +73,36 @@ describe("loadEnvironment authentication settings", () => {
 
     expect(environment.AUTH_ACCESS_TOKEN_TTL).toBe(10 * 60);
     expect(environment.AUTH_REFRESH_TOKEN_TTL).toBe(7 * 24 * 60 * 60);
+  });
+
+  it("normalizes blank optional Langfuse credentials and preserves configured values", () => {
+    const blankEnvironment = loadEnvironment(
+      values("development", {
+        LANGFUSE_PUBLIC_KEY: "",
+        LANGFUSE_SECRET_KEY: "",
+      }),
+    );
+    const configuredEnvironment = loadEnvironment(
+      values("development", {
+        LANGFUSE_PUBLIC_KEY: "local-public-key",
+        LANGFUSE_SECRET_KEY: "local-secret-key",
+      }),
+    );
+
+    expect(blankEnvironment.LANGFUSE_PUBLIC_KEY).toBeUndefined();
+    expect(blankEnvironment.LANGFUSE_SECRET_KEY).toBeUndefined();
+    expect(configuredEnvironment.LANGFUSE_PUBLIC_KEY).toBe("local-public-key");
+    expect(configuredEnvironment.LANGFUSE_SECRET_KEY).toBe("local-secret-key");
+  });
+
+  it("requires an explicit supported backend bind host", () => {
+    expect(
+      loadEnvironment(values("development", { BACKEND_HOST: "0.0.0.0" }))
+        .BACKEND_HOST,
+    ).toBe("0.0.0.0");
+    expect(() =>
+      loadEnvironment(values("development", { BACKEND_HOST: "192.0.2.10" })),
+    ).toThrow();
   });
 
   it.each([
@@ -161,7 +192,7 @@ describe("loadEnvironment authentication settings", () => {
 
   it("provides localhost WebAuthn and origin defaults only outside deployed environments", () => {
     expect(loadEnvironment(values("development"))).toMatchObject({
-      AUTH_ALLOWED_ORIGINS: ["http://localhost:3000"],
+      AUTH_ALLOWED_ORIGINS: ["http://localhost:3333"],
       AUTH_TRUST_PROXY: false,
       AUTH_TRUSTED_PROXY_CIDRS: [],
       AUTH_WEBAUTHN_RP_ID: "localhost",

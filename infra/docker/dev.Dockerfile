@@ -11,4 +11,4 @@ COPY . .
 
 RUN pnpm install --frozen-lockfile
 
-EXPOSE 3000 3001 4000 8081
+EXPOSE 3001 3333 4000 8081

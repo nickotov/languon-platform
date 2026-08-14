@@ -2,7 +2,7 @@
 feature: user-authentication
 title: User Authentication
 status: current
-last_verified: 2026-08-13
+last_verified: 2026-08-14
 surfaces:
   - browser
   - api
@@ -10,12 +10,16 @@ source_paths:
   - .agent/features/user-authentication/**
   - .agents/skills/user-flow-e2e/**
   - .env.example
+  - README.md
   - compose.yaml
+  - docs/agentic-development.md
+  - infra/docker/dev.Dockerfile
   - package.json
   - apps/backend/package.json
   - apps/backend/drizzle/**
   - apps/backend/src/app.ts
   - apps/backend/src/config/environment.ts
+  - apps/backend/src/index.ts
   - apps/backend/src/infrastructure/database/**
   - apps/backend/src/modules/authentication/**
   - apps/backend/src/modules/users/**
@@ -41,6 +45,7 @@ e2e_scenarios:
   - passkey-lifecycle
 related_features:
   - user-flow-testing-guides
+  - web-dev-port-3333
 ---
 
 # User Authentication
@@ -87,8 +92,9 @@ file. Keep these values for the guide:
 
 ```dotenv
 APP_ENV=development
+BACKEND_HOST=127.0.0.1
 NEXT_PUBLIC_API_URL=http://localhost:4000
-AUTH_ALLOWED_ORIGINS=http://localhost:3000
+AUTH_ALLOWED_ORIGINS=http://localhost:3333
 AUTH_WEBAUTHN_RP_ID=localhost
 ```
 
@@ -117,9 +123,13 @@ pnpm dev:web
 
 Expected endpoints:
 
-- Web: `http://localhost:3000`
+- Web: `http://localhost:3333`
 - Backend health: `http://localhost:4000/health`
 - OpenAPI: `http://localhost:4000/openapi.json`
+
+The backend, web app, PostgreSQL, and Redis are loopback-only by default. Do not
+expose this development authentication stack to a LAN: it intentionally uses
+public local secrets and verification/recovery code `0000`.
 
 Confirm the backend and authentication capabilities before creating data:
 
@@ -143,7 +153,7 @@ characters that is not a common password, such as
 
 ### Signup, verification, reload, and current-session logout
 
-1. Open `http://localhost:3000/signup?returnTo=%2Fsecurity`.
+1. Open `http://localhost:3333/signup?returnTo=%2Fsecurity`.
 2. Enter a fresh fake email and `Languon-dev-passphrase-2026!`.
 3. Select **Create account**.
 4. Expect navigation to `/verify-email` with a flow identifier in the URL. The
@@ -234,7 +244,7 @@ Set task-specific shell variables:
 export LANGUON_PREVIOUS_UMASK="$(umask)"
 umask 077
 export LANGUON_API=http://localhost:4000
-export LANGUON_ORIGIN=http://localhost:3000
+export LANGUON_ORIGIN=http://localhost:3333
 export LANGUON_EMAIL="auth-guide-$(date +%s)@example.test"
 export LANGUON_PASSWORD='Languon-dev-passphrase-2026!'
 export LANGUON_NEW_PASSWORD='Languon-dev-replacement-2026!'
@@ -547,7 +557,7 @@ staging, or production data. Historical commands and results are in
 - Browser shows capability unavailable: inspect `/auth/capabilities` and backend
   startup configuration. Development should use the local sender/fixed code;
   deployed environments intentionally differ.
-- API returns `403` unexpectedly: include `Origin: http://localhost:3000`
+- API returns `403` unexpectedly: include `Origin: http://localhost:3333`
   exactly. Do not use a trailing slash.
 - Browser/API returns `429`: read `Retry-After`, wait, and use a fresh fake email
   for a new end-to-end run.

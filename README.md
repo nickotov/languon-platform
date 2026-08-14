@@ -15,7 +15,9 @@ management.
 
 ```sh
 corepack enable
-cp .env.example .env.local
+if [ ! -e .env.local ] && [ ! -L .env.local ]; then
+  cp .env.example .env.local
+fi
 pnpm install
 pnpm dev:infra
 pnpm db:migrate
@@ -24,12 +26,16 @@ pnpm dev
 
 The default local endpoints are:
 
-- Web: `http://localhost:3000`
+- Web: `http://localhost:3333`
 - Admin: `http://localhost:3001`
 - Backend health: `http://localhost:4000/health`
 - OpenAPI document: `http://localhost:4000/openapi.json`
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
+
+Backend, Next.js, PostgreSQL, and Redis development endpoints are loopback-only
+by default. This keeps the public local secrets and verification code `0000`
+off the LAN.
 
 Use `pnpm dev:apps:docker` to build and start the application services plus
 their infrastructure in Docker. The app profile is intended for environment

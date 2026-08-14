@@ -6,7 +6,7 @@ import {
   type TestInfo,
 } from "@playwright/test";
 
-// @user-flow-revision user-authentication sha256:49fadbe3ce6c2534
+// @user-flow-revision user-authentication sha256:855d3e63671c4a38
 
 const initialPassword = "E2e!Initial-password-2026";
 const replacementPassword = "E2e!Replacement-password-2026";

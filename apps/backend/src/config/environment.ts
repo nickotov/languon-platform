@@ -24,6 +24,11 @@ const SecretSchema = z.string().superRefine((secret, context) => {
   }
 });
 
+const OptionalNonEmptyStringSchema = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const RawEnvironmentSchema = z
   .object({
     APP_ENV: z.enum(["development", "test", "staging", "production"]),
@@ -47,13 +52,14 @@ const RawEnvironmentSchema = z
     AUTH_TRUSTED_PROXY_CIDRS: z.string().optional(),
     AUTH_WEBAUTHN_RP_ID: z.string().min(1).max(253).optional(),
     AUTH_WEBAUTHN_RP_NAME: z.string().min(1).max(100).default("Languon"),
+    BACKEND_HOST: z.enum(["127.0.0.1", "0.0.0.0"]).default("127.0.0.1"),
     BACKEND_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
     DATABASE_URL: z
       .url()
       .default("postgres://languon:languon-local@localhost:5432/languon"),
     LANGFUSE_BASE_URL: z.url().default("https://cloud.langfuse.com"),
-    LANGFUSE_PUBLIC_KEY: z.string().min(1).optional(),
-    LANGFUSE_SECRET_KEY: z.string().min(1).optional(),
+    LANGFUSE_PUBLIC_KEY: OptionalNonEmptyStringSchema,
+    LANGFUSE_SECRET_KEY: OptionalNonEmptyStringSchema,
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -302,7 +308,7 @@ function parseAllowedOrigins(
         "Deployed environments require at least one exact HTTPS origin.",
       );
     }
-    return ["http://localhost:3000"];
+    return ["http://localhost:3333"];
   }
 
   const origins = value.split(",").map((origin) => origin.trim());

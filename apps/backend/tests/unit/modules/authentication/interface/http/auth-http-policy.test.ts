@@ -56,7 +56,7 @@ describe("AuthHttpPolicy", () => {
 
   it("uses a clearly local-only cookie name without Secure in development", () => {
     const policy = new AuthHttpPolicy({
-      allowedOrigins: ["http://localhost:3000"],
+      allowedOrigins: ["http://localhost:3333"],
       appEnvironment: "development",
       refreshTokenTtlSeconds: 1_209_600,
     });

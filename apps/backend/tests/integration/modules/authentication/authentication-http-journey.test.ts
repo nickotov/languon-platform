@@ -32,7 +32,7 @@ const describeIfInfrastructure =
   isDatabaseIntegrationEnabled() && redisIntegrationEnabled
     ? describe
     : describe.skip;
-const origin = "http://localhost:3000";
+const origin = "http://localhost:3333";
 const initialPassword = "A safe initial password 47!";
 const replacementPassword = "A different secure password 92!";
 

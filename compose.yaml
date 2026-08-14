@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -26,7 +26,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
 
@@ -58,37 +58,38 @@ services:
         condition: service_healthy
     environment:
       APP_ENV: development
-      AUTH_ALLOWED_ORIGINS: http://localhost:3000
+      AUTH_ALLOWED_ORIGINS: http://localhost:3333
       AUTH_CODE_HMAC_SECRET: development-only-code-secret-change-me-36a29d70c54e
       AUTH_JWT_SECRET: development-only-jwt-secret-change-me-9f87c82b4d31
       AUTH_WEBAUTHN_RP_ID: localhost
+      BACKEND_HOST: 0.0.0.0
       BACKEND_PORT: 4000
       DATABASE_URL: postgres://${POSTGRES_USER:-languon}:${POSTGRES_PASSWORD:-languon-local}@postgres:5432/${POSTGRES_DB:-languon}
       REDIS_URL: redis://redis:6379
     ports:
-      - "4000:4000"
+      - "${LANGUON_APP_BIND_HOST:-127.0.0.1}:4000:4000"
 
   web:
     profiles: ["apps"]
     build:
       context: .
       dockerfile: infra/docker/dev.Dockerfile
-    command: ["pnpm", "dev:web"]
+    command: ["pnpm", "dev:web:docker"]
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000
     ports:
-      - "3000:3000"
+      - "${LANGUON_APP_BIND_HOST:-127.0.0.1}:3333:3333"
 
   admin:
     profiles: ["apps"]
     build:
       context: .
       dockerfile: infra/docker/dev.Dockerfile
-    command: ["pnpm", "dev:admin"]
+    command: ["pnpm", "dev:admin:docker"]
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000
     ports:
-      - "3001:3001"
+      - "${LANGUON_APP_BIND_HOST:-127.0.0.1}:3001:3001"
 
   mobile:
     profiles: ["apps"]
@@ -97,7 +98,7 @@ services:
       dockerfile: infra/docker/dev.Dockerfile
     command: ["pnpm", "dev:mobile:docker"]
     ports:
-      - "8081:8081"
+      - "${LANGUON_APP_BIND_HOST:-127.0.0.1}:8081:8081"
 
 volumes:
   postgres-data:

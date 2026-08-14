@@ -19,10 +19,13 @@ const app = createApp({ authentication: authentication.options });
 const server = serve(
   {
     fetch: app.fetch,
+    hostname: environment.BACKEND_HOST,
     port: environment.BACKEND_PORT,
   },
   ({ port }) => {
-    console.log(`Languon backend listening on http://localhost:${port}`);
+    console.log(
+      `Languon backend listening on http://${environment.BACKEND_HOST}:${port}`,
+    );
   },
 );
 

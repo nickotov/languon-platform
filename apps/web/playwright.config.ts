@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const webOrigin = process.env.AUTH_E2E_WEB_ORIGIN ?? "http://localhost:3000";
+const webOrigin = process.env.AUTH_E2E_WEB_ORIGIN ?? "http://localhost:3333";
 const backendOrigin =
   process.env.AUTH_E2E_BACKEND_ORIGIN ?? "http://localhost:4000";
 const databaseUrl = process.env.AUTH_E2E_DATABASE_URL;
@@ -31,7 +31,7 @@ for (const [name, value] of [
 }
 
 const backendPort = new URL(backendOrigin).port || "4000";
-const webPort = new URL(webOrigin).port || "3000";
+const webPort = new URL(webOrigin).port || "3333";
 const reuseExistingServer = process.env.AUTH_E2E_REUSE_SERVERS === "true";
 
 export default defineConfig({
@@ -77,7 +77,7 @@ export default defineConfig({
       url: `${backendOrigin}/health`,
     },
     {
-      command: `pnpm exec next dev --turbopack -p ${webPort}`,
+      command: `pnpm exec next dev --turbopack -p ${webPort} -H 127.0.0.1`,
       env: { NEXT_PUBLIC_API_URL: backendOrigin },
       reuseExistingServer,
       stderr: "pipe",
