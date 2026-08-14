@@ -1,11 +1,11 @@
 {
-  "extends": "expo/tsconfig.base",
-  "compilerOptions": {
-    "noUncheckedIndexedAccess": true,
-    "paths": {
-      "@/*": ["./src/*"]
+    "extends": "expo/tsconfig.base",
+    "compilerOptions": {
+        "noUncheckedIndexedAccess": true,
+        "paths": {
+            "@/*": ["./src/*"]
+        },
+        "strict": true
     },
-    "strict": true
-  },
-  "include": ["App.tsx", "src/**/*.ts", "src/**/*.tsx"]
+    "include": ["App.tsx", "src/**/*.ts", "src/**/*.tsx"]
 }

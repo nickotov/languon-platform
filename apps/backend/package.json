@@ -1,37 +1,37 @@
 {
-  "name": "@languon/backend",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "tsup src/index.ts src/infrastructure/database/migrate-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
-    "db:check": "drizzle-kit check",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/infrastructure/database/migrate-command.ts",
-    "db:studio": "drizzle-kit studio",
-    "dev": "tsx watch src/index.ts",
-    "lint": "eslint .",
-    "start": "node dist/index.js",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@hono/node-server": "^2.1.0",
-    "@hono/zod-openapi": "^1.5.2",
-    "@languon/contracts": "workspace:*",
-    "@languon/database": "workspace:*",
-    "@languon/prompts": "workspace:*",
-    "@mastra/core": "^1.57.0",
-    "@node-rs/argon2": "^2.0.2",
-    "@simplewebauthn/server": "^13.3.2",
-    "drizzle-orm": "^0.45.2",
-    "hono": "^4.13.1",
-    "ioredis": "^6.0.0",
-    "jose": "^6.2.8",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "drizzle-kit": "^0.31.10"
-  }
+    "name": "@languon/backend",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "tsup src/index.ts src/infrastructure/database/migrate-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
+        "db:check": "drizzle-kit check",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "tsx src/infrastructure/database/migrate-command.ts",
+        "db:studio": "drizzle-kit studio",
+        "dev": "tsx watch src/index.ts",
+        "lint": "eslint .",
+        "start": "node dist/index.js",
+        "test": "vitest run",
+        "test:coverage": "vitest run --coverage",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@hono/node-server": "^2.1.0",
+        "@hono/zod-openapi": "^1.5.2",
+        "@languon/contracts": "workspace:*",
+        "@languon/database": "workspace:*",
+        "@languon/prompts": "workspace:*",
+        "@mastra/core": "^1.57.0",
+        "@node-rs/argon2": "^2.0.2",
+        "@simplewebauthn/server": "^13.3.2",
+        "drizzle-orm": "^0.45.2",
+        "hono": "^4.13.1",
+        "ioredis": "^6.0.0",
+        "jose": "^6.2.8",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "drizzle-kit": "^0.31.10"
+    }
 }

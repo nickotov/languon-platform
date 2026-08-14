@@ -25,9 +25,9 @@ For a new guide, define the metadata and coverage section before inspection:
 ```yaml
 e2e_command: web-playwright
 e2e_tests:
-  - apps/web/tests/e2e/example.spec.ts
+    - apps/web/tests/e2e/example.spec.ts
 e2e_scenarios:
-  - primary-cross-boundary-journey
+    - primary-cross-boundary-journey
 ```
 
 Add `## E2E coverage` with each scenario ID in backticks and state the observable

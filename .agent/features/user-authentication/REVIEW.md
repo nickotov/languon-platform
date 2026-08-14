@@ -20,57 +20,57 @@ Verdict: Approved after remediation; no open critical, high, or medium finding
 ### High
 
 - Enumeration through identity-dependent signup/resend/forgot cooldown results.
-  - Resolution: true Redis rolling windows use HMAC-derived opaque subjects;
-    signup seeds flow aliases to the same address counters, and forgot applies
-    the same pre-lookup cooldown for existing and nonexistent identities.
+    - Resolution: true Redis rolling windows use HMAC-derived opaque subjects;
+      signup seeds flow aliases to the same address counters, and forgot applies
+      the same pre-lookup cooldown for existing and nonexistent identities.
 - Logout of a rotated predecessor left its refresh successor active.
-  - Resolution: logout now locks the supplied digest and revokes its complete
-    family in the same transactional serialization path as rotation. Sequential
-    and concurrent real-PostgreSQL regressions pass.
+    - Resolution: logout now locks the supplied digest and revokes its complete
+      family in the same transactional serialization path as rotation. Sequential
+      and concurrent real-PostgreSQL regressions pass.
 
 ### Medium
 
 - Repeated signup and fixed-window counters violated the 60-second/five-per-
   rolling-hour issuance policy.
-  - Resolution: initial issue, signup replacement, and resend share rolling
-    address/flow counters; database checks remain a transactional backstop.
+    - Resolution: initial issue, signup replacement, and resend share rolling
+      address/flow counters; database checks remain a transactional backstop.
 - Duplicate passkey persistence conflicts fell through to HTTP 500.
-  - Resolution: persistence conflicts map to a stable non-secret `409 conflict`.
+    - Resolution: persistence conflicts map to a stable non-secret `409 conflict`.
 - Authentication bodies were unbounded before parsing.
-  - Resolution: early Hono body middleware enforces a 384 KiB cap, large enough
-    for the bounded WebAuthn registration contract; valid 200k attestations reach
-    validation and >384 KiB requests return stable 413 errors.
+    - Resolution: early Hono body middleware enforces a 384 KiB cap, large enough
+      for the bounded WebAuthn registration contract; valid 200k attestations reach
+      validation and >384 KiB requests return stable 413 errors.
 - Concurrent logins could falsely fail during password-parameter rehash.
-  - Resolution: the loser reloads and verifies the current credential before
-    retrying session issuance without a second replacement.
+    - Resolution: the loser reloads and verifies the current credential before
+      retrying session issuance without a second replacement.
 - Protected OpenAPI operations lacked bearer-security metadata.
-  - Resolution: the bearer scheme and per-operation declarations are registered
-    and asserted.
+    - Resolution: the bearer scheme and per-operation declarations are registered
+      and asserted.
 - `db:studio` lacked credentials.
-  - Resolution: Drizzle config reads explicit `DATABASE_URL` with a sanitized
-    local default; the Studio workflow starts successfully.
+    - Resolution: Drizzle config reads explicit `DATABASE_URL` with a sanitized
+      local default; the Studio workflow starts successfully.
 - Refresh replay/passkey lifecycle events were incomplete.
-  - Resolution: sequential/concurrent replay and passkey register/auth/rename/
-    revoke outcomes record bounded coarse IDs without secrets or payloads.
+    - Resolution: sequential/concurrent replay and passkey register/auth/rename/
+      revoke outcomes record bounded coarse IDs without secrets or payloads.
 - Trusted-proxy mode accepted attacker-controlled forwarding chains.
-  - Resolution: configuration requires validated peer CIDRs, the direct socket
-    peer must be trusted, and the chain is validated and walked right-to-left.
+    - Resolution: configuration requires validated peer CIDRs, the direct socket
+      peer must be trusted, and the chain is validated and walked right-to-left.
 - Retryable refresh/logout failures cleared the browser credential.
-  - Resolution: only terminal 401 responses clear it; 403/429/5xx preserve it.
+    - Resolution: only terminal 401 responses clear it; 403/429/5xx preserve it.
 - Passkey completion endpoints lacked limits.
-  - Resolution: both completion paths use bounded fail-closed client/user limits.
+    - Resolution: both completion paths use bounded fail-closed client/user limits.
 - Required E2E journeys were absent.
-  - Resolution: three Playwright journeys exercise cookie bootstrap, reset and
-    session revocation, plus virtual WebAuthn failure/success/management.
+    - Resolution: three Playwright journeys exercise cookie bootstrap, reset and
+      session revocation, plus virtual WebAuthn failure/success/management.
 - Active passkeys were unbounded despite response/options collection limits.
-  - Resolution: registration serializes on the user row and permits at most 50
-    active passkeys. Sequential and 51-way concurrent real-PostgreSQL tests pass.
+    - Resolution: registration serializes on the user row and permits at most 50
+      active passkeys. Sequential and 51-way concurrent real-PostgreSQL tests pass.
 
 ### Low hardening
 
 - Change-password password-manager metadata and framing protection were weak.
-  - Resolution: the form includes the account email with `autocomplete=username`;
-    global CSP `frame-ancestors 'none'` and `X-Frame-Options: DENY` are asserted.
+    - Resolution: the form includes the account email with `autocomplete=username`;
+      global CSP `frame-ancestors 'none'` and `X-Frame-Options: DENY` are asserted.
 
 ## Re-review verdict
 

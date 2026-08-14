@@ -1,4 +1,4 @@
 interface:
-  display_name: "Database Verification"
-  short_description: "Verify database behavior and migrations safely"
-  default_prompt: "Use $db-verification to validate this database change against disposable infrastructure."
+    display_name: 'Database Verification'
+    short_description: 'Verify database behavior and migrations safely'
+    default_prompt: 'Use $db-verification to validate this database change against disposable infrastructure.'

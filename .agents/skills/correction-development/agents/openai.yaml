@@ -1,4 +1,4 @@
 interface:
-  display_name: "Correction Development"
-  short_description: "Ship small low-risk changes with focused proof"
-  default_prompt: "Use $correction-development to implement this bounded correction with a concise plan and proportional verification."
+    display_name: 'Correction Development'
+    short_description: 'Ship small low-risk changes with focused proof'
+    default_prompt: 'Use $correction-development to implement this bounded correction with a concise plan and proportional verification.'

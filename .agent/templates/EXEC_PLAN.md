@@ -36,23 +36,23 @@ relevant accepted ADRs.
 ## Milestones
 
 - [ ] M1 — Exploration and design
-  - Objective:
-  - Components:
-  - Acceptance criteria:
-  - Required tests:
-  - Evidence:
+    - Objective:
+    - Components:
+    - Acceptance criteria:
+    - Required tests:
+    - Evidence:
 - [ ] M2 — Implementation and targeted verification
-  - Objective:
-  - Components:
-  - Acceptance criteria:
-  - Required tests:
-  - Evidence:
+    - Objective:
+    - Components:
+    - Acceptance criteria:
+    - Required tests:
+    - Evidence:
 - [ ] M3 — Full validation and review
-  - Objective:
-  - Components:
-  - Acceptance criteria:
-  - Required tests:
-  - Evidence:
+    - Objective:
+    - Components:
+    - Acceptance criteria:
+    - Required tests:
+    - Evidence:
 
 ## Progress
 
@@ -61,11 +61,11 @@ relevant accepted ADRs.
 ## Decisions
 
 - None yet. For each material decision, record:
-  - Stable ID and title:
-  - Context:
-  - Choice and rationale:
-  - Alternatives rejected:
-  - ADR impact: Not ADR-worthy / Proposed ADR-NNNN / Accepted ADR-NNNN.
+    - Stable ID and title:
+    - Context:
+    - Choice and rationale:
+    - Alternatives rejected:
+    - ADR impact: Not ADR-worthy / Proposed ADR-NNNN / Accepted ADR-NNNN.
 
 ## Discoveries
 

@@ -63,18 +63,18 @@ Updated: 2026-08-14
   `$correction-development` skill; explicit feature-skill exclusion; and matching
   repository/developer documentation.
 - Commands and results:
-  - the official `quick_validate.py` skill validator, invoked through
-    `uv run --quiet --with pyyaml`, passed after both implementation and review
-    remediation. The first sandboxed attempt could not access the normal uv
-    cache; the approved rerun succeeded without changing project dependencies.
-  - `pnpm format:check` — passed.
-  - targeted explicit Prettier check for all changed Markdown/YAML artifacts —
-    passed.
-  - referenced-artifact existence checks and routing-rule search — passed. One
-    initial search misquoted a backticked status token in zsh; the safely quoted
-    rerun passed.
-  - `git diff --check` — passed before final evidence update and rerun for final
-    handoff.
+    - the official `quick_validate.py` skill validator, invoked through
+      `uv run --quiet --with pyyaml`, passed after both implementation and review
+      remediation. The first sandboxed attempt could not access the normal uv
+      cache; the approved rerun succeeded without changing project dependencies.
+    - `pnpm format:check` — passed.
+    - targeted explicit Prettier check for all changed Markdown/YAML artifacts —
+      passed.
+    - referenced-artifact existence checks and routing-rule search — passed. One
+      initial search misquoted a backticked status token in zsh; the safely quoted
+      rerun passed.
+    - `git diff --check` — passed before final evidence update and rerun for final
+      handoff.
 - Documentation: updated `AGENTS.md`, `.agent/PLANS.md`, feature workspace and
   root README guidance, and `docs/agentic-development.md`. No application
   behavior, command result, or user journey changed, so no `docs/user-flows`

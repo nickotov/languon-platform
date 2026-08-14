@@ -1,9 +1,9 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+    - 'apps/*'
+    - 'packages/*'
 
 preferWorkspacePackages: true
 
 onlyBuiltDependencies:
-  - esbuild
-  - sharp
+    - esbuild
+    - sharp

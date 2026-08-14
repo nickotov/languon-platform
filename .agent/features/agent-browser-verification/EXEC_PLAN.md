@@ -54,36 +54,36 @@ Playwright E2E suite.
 ## Milestones
 
 - [x] M1 — Exploration and design
-  - Objective: Compare upstream capabilities with the existing verification
-    workflow and establish the Playwright boundary.
-  - Components: Upstream docs, root commands, Codex config, skills, developer docs.
-  - Acceptance criteria: AC-1 through AC-4.
-  - Required tests: Repository inspection and upstream documentation review.
-  - Evidence: Upstream supports a pinned project dependency, MCP mode,
-    accessibility refs, viewports, console/network inspection, screenshots,
-    isolated sessions, content boundaries, and cleanup.
+    - Objective: Compare upstream capabilities with the existing verification
+      workflow and establish the Playwright boundary.
+    - Components: Upstream docs, root commands, Codex config, skills, developer docs.
+    - Acceptance criteria: AC-1 through AC-4.
+    - Required tests: Repository inspection and upstream documentation review.
+    - Evidence: Upstream supports a pinned project dependency, MCP mode,
+      accessibility refs, viewports, console/network inspection, screenshots,
+      isolated sessions, content boundaries, and cleanup.
 - [x] M2 — Implementation and targeted verification
-  - Objective: Add the dependency and commands, remove the Playwright MCP entry,
-    and align agent
-    and developer instructions.
-  - Components: `package.json`, lockfile, `.codex/config.toml`, `AGENTS.md`,
-    `agent-browser.json`, safe wrapper and tests, browser-verification skill,
-    README, agentic-development docs.
-  - Acceptance criteria: AC-1 through AC-4.
-  - Required tests: Package/command inspection, formatting, targeted text audit.
-  - Evidence: Pinned CLI 0.33.0, canonical scripts and project config are active;
-    wrapper tests, managed browser installation, full launch diagnostic,
-    content-boundary, local-host containment, and live smoke checks pass.
+    - Objective: Add the dependency and commands, remove the Playwright MCP entry,
+      and align agent
+      and developer instructions.
+    - Components: `package.json`, lockfile, `.codex/config.toml`, `AGENTS.md`,
+      `agent-browser.json`, safe wrapper and tests, browser-verification skill,
+      README, agentic-development docs.
+    - Acceptance criteria: AC-1 through AC-4.
+    - Required tests: Package/command inspection, formatting, targeted text audit.
+    - Evidence: Pinned CLI 0.33.0, canonical scripts and project config are active;
+      wrapper tests, managed browser installation, full launch diagnostic,
+      content-boundary, local-host containment, and live smoke checks pass.
 - [x] M3 — Full validation and review
-  - Objective: Run a live smoke journey and repository checks, then complete
-    independent review and remediation.
-  - Components: Full feature diff and durable evidence.
-  - Acceptance criteria: AC-5 and final audit of AC-1 through AC-4.
-  - Required tests: `agent-browser` version/doctor/smoke, format, lint,
-    typecheck, build, independent reviewer and tester passes.
-  - Evidence: `pnpm browser:check`, the live Languon smoke, frozen pnpm 10
-    lockfile validation, `pnpm check`, and final independent implementation,
-    test, and security reviews all passed.
+    - Objective: Run a live smoke journey and repository checks, then complete
+      independent review and remediation.
+    - Components: Full feature diff and durable evidence.
+    - Acceptance criteria: AC-5 and final audit of AC-1 through AC-4.
+    - Required tests: `agent-browser` version/doctor/smoke, format, lint,
+      typecheck, build, independent reviewer and tester passes.
+    - Evidence: `pnpm browser:check`, the live Languon smoke, frozen pnpm 10
+      lockfile validation, `pnpm check`, and final independent implementation,
+      test, and security reviews all passed.
 
 ## Progress
 
@@ -105,41 +105,41 @@ Playwright E2E suite.
 ## Decisions
 
 - D-1 — Tool boundary.
-  - Context: Interactive verification and automated regression tests serve
-    different purposes despite both controlling Chromium.
-  - Choice and rationale: Use `agent-browser` for exploratory real-app evidence;
-    retain Playwright only for committed E2E suites because it supplies stable,
-    reviewable assertions and fixtures.
-  - Alternatives rejected: Keep Playwright MCP as primary (does not deliver the
-    requested faster workflow); replace Playwright E2E (would weaken durable
-    regression coverage).
-  - ADR impact: Not ADR-worthy; reversible developer tooling choice.
+    - Context: Interactive verification and automated regression tests serve
+      different purposes despite both controlling Chromium.
+    - Choice and rationale: Use `agent-browser` for exploratory real-app evidence;
+      retain Playwright only for committed E2E suites because it supplies stable,
+      reviewable assertions and fixtures.
+    - Alternatives rejected: Keep Playwright MCP as primary (does not deliver the
+      requested faster workflow); replace Playwright E2E (would weaken durable
+      regression coverage).
+    - ADR impact: Not ADR-worthy; reversible developer tooling choice.
 - D-2 — Project-pinned CLI.
-  - Context: Agents need reproducible availability without an unpinned global
-    install or a second interactive Playwright path.
-  - Choice and rationale: Pin the root dev dependency, expose setup/doctor
-    scripts, and run browser checks through a repository-owned wrapper. Pin
-    0.33.0 because its hardened allowlist blocks page traffic that escaped
-    0.27.0. Although the package declares pnpm 11, its consumer installation,
-    frozen lockfile, CLI, managed Chrome install, and live launch are verified
-    with this repository's pinned pnpm 10.13.1; upgrading the whole repository
-    toolchain is outside this feature.
-  - Alternatives rejected: Global-only install (unversioned); copy upstream
-    skill wholesale (duplicates Languon's acceptance workflow).
-  - ADR impact: Not ADR-worthy.
+    - Context: Agents need reproducible availability without an unpinned global
+      install or a second interactive Playwright path.
+    - Choice and rationale: Pin the root dev dependency, expose setup/doctor
+      scripts, and run browser checks through a repository-owned wrapper. Pin
+      0.33.0 because its hardened allowlist blocks page traffic that escaped
+      0.27.0. Although the package declares pnpm 11, its consumer installation,
+      frozen lockfile, CLI, managed Chrome install, and live launch are verified
+      with this repository's pinned pnpm 10.13.1; upgrading the whole repository
+      toolchain is outside this feature.
+    - Alternatives rejected: Global-only install (unversioned); copy upstream
+      skill wholesale (duplicates Languon's acceptance workflow).
+    - ADR impact: Not ADR-worthy.
 - D-3 — Enforced safe wrapper.
-  - Context: Browser output and repository prose are untrusted, upstream config
-    can inherit user/environment settings, and shell approval is not a semantic
-    browser action policy.
-  - Choice and rationale: Route normal verification through a tested wrapper
-    that selects the reviewed config, strips browser/proxy overrides, requires a
-    random wrapper-owned session handle, permits only reviewed local hosts, and
-    allowlists safe commands. Pass the security flags explicitly on every
-    controlled browser invocation and regression-test page-driven navigation
-    and `sendBeacon` against a reachable disallowed sink.
-  - Alternatives rejected: Instruction-only controls; exposing agent-browser MCP;
-    relying on upstream category policies without verified enforcement.
-  - ADR impact: Not ADR-worthy; feature-local tool containment.
+    - Context: Browser output and repository prose are untrusted, upstream config
+      can inherit user/environment settings, and shell approval is not a semantic
+      browser action policy.
+    - Choice and rationale: Route normal verification through a tested wrapper
+      that selects the reviewed config, strips browser/proxy overrides, requires a
+      random wrapper-owned session handle, permits only reviewed local hosts, and
+      allowlists safe commands. Pass the security flags explicitly on every
+      controlled browser invocation and regression-test page-driven navigation
+      and `sendBeacon` against a reachable disallowed sink.
+    - Alternatives rejected: Instruction-only controls; exposing agent-browser MCP;
+      relying on upstream category policies without verified enforcement.
+    - ADR impact: Not ADR-worthy; feature-local tool containment.
 
 ## Discoveries
 

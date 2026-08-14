@@ -7,3 +7,4 @@ node_modules
 pnpm-lock.yaml
 apps/mobile/.expo
 apps/backend/drizzle/meta
+apps/*/next-env.d.ts

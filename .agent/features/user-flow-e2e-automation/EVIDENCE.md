@@ -23,22 +23,22 @@ Status: Complete
 ### Unit and traceability contract
 
 - `node --test scripts/check-user-flow-guides.test.mjs`
-  - Result: passed, 15/15.
-  - Covers complete guide parsing; filename/surface/section/index/path failures;
-    registered command IDs and control characters; exact bounded regular paths
-    and symlink rejection; substantive scenario coverage; scenario IDs and
-    duplicates; a table of revision-changing content versus date/unrelated
-    stability; missing/stale/malformed/duplicate/orphaned markers;
-    repository-wide marker discovery; terminal-safe diagnostics; missing test
-    files; and CLI inspect/check parity/non-execution behavior.
+    - Result: passed, 15/15.
+    - Covers complete guide parsing; filename/surface/section/index/path failures;
+      registered command IDs and control characters; exact bounded regular paths
+      and symlink rejection; substantive scenario coverage; scenario IDs and
+      duplicates; a table of revision-changing content versus date/unrelated
+      stability; missing/stale/malformed/duplicate/orphaned markers;
+      repository-wide marker discovery; terminal-safe diagnostics; missing test
+      files; and CLI inspect/check parity/non-execution behavior.
 - `pnpm docs:user-flows:check`
-  - Result: passed; one current guide plus its E2E mappings validated.
+    - Result: passed; one current guide plus its E2E mappings validated.
 - `pnpm user-flow:e2e -- inspect user-authentication`
-  - Result: `Status: synchronized`.
-  - Revision: `sha256:49fadbe3ce6c2534`.
-  - Test file: `apps/web/tests/e2e/auth.journeys.spec.ts`.
+    - Result: `Status: synchronized`.
+    - Revision: `sha256:49fadbe3ce6c2534`.
+    - Test file: `apps/web/tests/e2e/auth.journeys.spec.ts`.
 - `pnpm user-flow:e2e -- check user-authentication`
-  - Result: passed.
+    - Result: passed.
 
 ### Repository skill
 
@@ -66,12 +66,12 @@ Status: Complete
   `docs/user-flows/user-authentication.md`, ending with
   `pnpm --filter @languon/web test:e2e`.
 - Result: passed, 3/3 in 15.7s.
-  - `signup-verification-refresh-logout`: signup, code `0000`, refresh reload,
-    token-storage/header checks, logout, signed-out reload.
-  - `password-reset-session-revocation`: two sessions, recovery/reset, old
-    session/password rejection, replacement login, logout.
-  - `passkey-lifecycle`: virtual-authenticator enrollment, bad-signature
-    rejection, discoverable login, rename, removal.
+    - `signup-verification-refresh-logout`: signup, code `0000`, refresh reload,
+      token-storage/header checks, logout, signed-out reload.
+    - `password-reset-session-revocation`: two sessions, recovery/reset, old
+      session/password rejection, replacement login, logout.
+    - `passkey-lifecycle`: virtual-authenticator enrollment, bad-signature
+      rejection, discoverable login, rename, removal.
 - Browser evidence: tests assert unexpected console/page/HTTP errors; none were
   reported. No new UI behavior required additional responsive visual coverage.
 - Cleanup: `docker ps --all` confirmed neither exact disposable container
@@ -96,13 +96,13 @@ Status: Complete
   triggered `no-useless-escape`.
 - `git diff --check`: passed during implementation.
 - Final `pnpm check`: passed on the remediated tree.
-  - Formatting: passed.
-  - User-flow validator/CLI contract: 15/15 and repository mapping passed.
-  - Lint: passed.
-  - Typecheck: passed, 10/10 Turbo tasks.
-  - Tests: passed, 10/10 Turbo tasks; backend real-infrastructure suites remain
-    intentionally environment-gated in this generic command.
-  - Build: passed, 7/7 Turbo tasks.
+    - Formatting: passed.
+    - User-flow validator/CLI contract: 15/15 and repository mapping passed.
+    - Lint: passed.
+    - Typecheck: passed, 10/10 Turbo tasks.
+    - Tests: passed, 10/10 Turbo tasks; backend real-infrastructure suites remain
+      intentionally environment-gated in this generic command.
+    - Build: passed, 7/7 Turbo tasks.
 - Final `git diff --check`: passed.
 - Final user-flow skill scaffold validation: `Skill is valid!`.
 

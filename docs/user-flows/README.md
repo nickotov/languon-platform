@@ -25,18 +25,18 @@ title: Example Feature
 status: current
 last_verified: 2026-08-13
 surfaces:
-  - browser
-  - api
+    - browser
+    - api
 source_paths:
-  - apps/web/src/fsd/features/example/**
-  - apps/backend/src/modules/example/**
+    - apps/web/src/fsd/features/example/**
+    - apps/backend/src/modules/example/**
 e2e_command: web-playwright
 e2e_tests:
-  - apps/web/tests/e2e/example.spec.ts
+    - apps/web/tests/e2e/example.spec.ts
 e2e_scenarios:
-  - primary-cross-boundary-journey
+    - primary-cross-boundary-journey
 related_features:
-  - another-feature
+    - another-feature
 ---
 ```
 

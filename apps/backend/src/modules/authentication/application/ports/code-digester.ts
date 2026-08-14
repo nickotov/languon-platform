@@ -1,17 +1,17 @@
-import type { VerificationChallengePurpose } from "../../domain/verification-challenge";
+import type { VerificationChallengePurpose } from '../../domain/verification-challenge';
 
 export interface VerificationCodeBinding {
-  code: string;
-  flowId: string;
-  purpose: VerificationChallengePurpose;
-  userId: string;
+    code: string;
+    flowId: string;
+    purpose: VerificationChallengePurpose;
+    userId: string;
 }
 
 export interface VerificationCodeDigestCandidate extends VerificationCodeBinding {
-  digest: string;
+    digest: string;
 }
 
 export interface VerificationCodeDigester {
-  digest(binding: VerificationCodeBinding): string;
-  matches(candidate: VerificationCodeDigestCandidate): boolean;
+    digest(binding: VerificationCodeBinding): string;
+    matches(candidate: VerificationCodeDigestCandidate): boolean;
 }

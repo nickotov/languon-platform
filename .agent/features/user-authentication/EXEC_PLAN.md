@@ -242,84 +242,84 @@ milestone mapping concise.
 ## Milestones
 
 - [x] M1 — Specification, architecture, and threat/test design
-  - Objective: convert approved defaults into complete observable behavior,
-    identify boundaries and strategic ADRs, and make verification proportional.
-  - Components: `FEATURE.md`, `EXEC_PLAN.md`, ADR-0001, ADR-0002, repository
-    exploration, official security/protocol/migration references.
-  - Acceptance criteria: planning support for AC-1–AC-26.
-  - Required tests: read-only source/architecture review; independent product,
-    architecture, security, and testing audits.
-  - Evidence: planning artifacts and audit conclusions dated 2026-08-12.
+    - Objective: convert approved defaults into complete observable behavior,
+      identify boundaries and strategic ADRs, and make verification proportional.
+    - Components: `FEATURE.md`, `EXEC_PLAN.md`, ADR-0001, ADR-0002, repository
+      exploration, official security/protocol/migration references.
+    - Acceptance criteria: planning support for AC-1–AC-26.
+    - Required tests: read-only source/architecture review; independent product,
+      architecture, security, and testing audits.
+    - Evidence: planning artifacts and audit conclusions dated 2026-08-12.
 - [x] M2 — Database foundation and user identity
-  - Objective: introduce Drizzle factories/config/commands/migration harness,
-    user domain/application boundary, module-owned schema, and initial migrations.
-  - Components: `@languon/database`, backend DB composition, `users` module,
-    Drizzle config/migrations, disposable PostgreSQL harness, docs/env.
-  - Acceptance criteria: AC-1, AC-21–AC-24, database portion of AC-26.
-  - Required tests: schema/value-object unit tests, clean/repeat/concurrent
-    migrations, constraint/index inspection, repository commit/rollback/races.
-  - Evidence: unit domain suite plus ten real-PostgreSQL migration/repository
-    checks passed on the explicitly confirmed disposable target. Source/built
-    migration invocation, Drizzle check, typecheck, lint, and build passed.
+    - Objective: introduce Drizzle factories/config/commands/migration harness,
+      user domain/application boundary, module-owned schema, and initial migrations.
+    - Components: `@languon/database`, backend DB composition, `users` module,
+      Drizzle config/migrations, disposable PostgreSQL harness, docs/env.
+    - Acceptance criteria: AC-1, AC-21–AC-24, database portion of AC-26.
+    - Required tests: schema/value-object unit tests, clean/repeat/concurrent
+      migrations, constraint/index inspection, repository commit/rollback/races.
+    - Evidence: unit domain suite plus ten real-PostgreSQL migration/repository
+      checks passed on the explicitly confirmed disposable target. Source/built
+      migration invocation, Drizzle check, typecheck, lint, and build passed.
 - [x] M3 — Password, email verification, and recovery domain/application
-  - Objective: implement deterministic state machines and ports before transport.
-  - Components: authentication domain/application, password/code/clock/entropy/
-    email/rate-limit ports, Argon2id and development-email adapters.
-  - Acceptance criteria: AC-2–AC-7, configuration portions of AC-9/AC-16/AC-25.
-  - Required tests: test-first unit/state-machine cases, real Argon2id adapter,
-    environment matrix, fake email, redaction, expiry/attempt/cooldown boundaries.
-  - Evidence: password/code policies, Argon2id, fixed/disabled email adapters,
-    transactional challenge flows, rolling Redis limits, recovery/change, and
-    redacted events are implemented. Backend unit and real-infrastructure suites
-    cover their success, failure, concurrency, and environment boundaries.
+    - Objective: implement deterministic state machines and ports before transport.
+    - Components: authentication domain/application, password/code/clock/entropy/
+      email/rate-limit ports, Argon2id and development-email adapters.
+    - Acceptance criteria: AC-2–AC-7, configuration portions of AC-9/AC-16/AC-25.
+    - Required tests: test-first unit/state-machine cases, real Argon2id adapter,
+      environment matrix, fake email, redaction, expiry/attempt/cooldown boundaries.
+    - Evidence: password/code policies, Argon2id, fixed/disabled email adapters,
+      transactional challenge flows, rolling Redis limits, recovery/change, and
+      redacted events are implemented. Backend unit and real-infrastructure suites
+      cover their success, failure, concurrency, and environment boundaries.
 - [x] M4 — JWT, refresh sessions, authorization boundary, and HTTP contracts
-  - Objective: implement session issuance/rotation/revocation and expose the
-    password/email flows through validated Hono/OpenAPI boundaries.
-  - Components: contracts, JOSE/session persistence, Redis limiter, middleware,
-    Hono routes, cookie/origin/CORS policies, application composition.
-  - Acceptance criteria: AC-2–AC-12, AC-16–AC-18, AC-25–AC-26.
-  - Required tests: real-crypto unit, PostgreSQL/Redis concurrency integration,
-    Hono contract/OpenAPI, cookie/hostile-origin/cancellation/error/log tests.
-  - Evidence: JOSE access tokens, opaque rotating refresh families, fresh
-    principal/session checks, secure cookies/origin/CORS, bounded bodies, trusted
-    proxy CIDRs, shared error envelopes, OpenAPI bearer metadata, and runtime
-    composition are implemented and covered by HTTP/unit/real-PostgreSQL tests.
+    - Objective: implement session issuance/rotation/revocation and expose the
+      password/email flows through validated Hono/OpenAPI boundaries.
+    - Components: contracts, JOSE/session persistence, Redis limiter, middleware,
+      Hono routes, cookie/origin/CORS policies, application composition.
+    - Acceptance criteria: AC-2–AC-12, AC-16–AC-18, AC-25–AC-26.
+    - Required tests: real-crypto unit, PostgreSQL/Redis concurrency integration,
+      Hono contract/OpenAPI, cookie/hostile-origin/cancellation/error/log tests.
+    - Evidence: JOSE access tokens, opaque rotating refresh families, fresh
+      principal/session checks, secure cookies/origin/CORS, bounded bodies, trusted
+      proxy CIDRs, shared error envelopes, OpenAPI bearer metadata, and runtime
+      composition are implemented and covered by HTTP/unit/real-PostgreSQL tests.
 - [x] M5 — Passkey enrollment, authentication, and management
-  - Objective: add WebAuthn without weakening identity, recovery, origin, or
-    challenge boundaries.
-  - Components: contracts/use cases, SimpleWebAuthn adapter, passkey repository,
-    Redis challenge store, HTTP routes.
-  - Acceptance criteria: AC-13–AC-18, relevant AC-25–AC-26.
-  - Required tests: option-policy unit, PostgreSQL/Redis verifier integration,
-    origin/RP/user/UV/signature/counter/duplicate/replay/race negatives.
-  - Evidence: SimpleWebAuthn registration/authentication adapters, one-time Redis
-    challenges, passkey persistence/management, recent-auth checks, counter CAS,
-    completion rate limits, and audit events are implemented. Unit, disposable
-    PostgreSQL/Redis, composed HTTP, and virtual-authenticator E2E checks pass.
+    - Objective: add WebAuthn without weakening identity, recovery, origin, or
+      challenge boundaries.
+    - Components: contracts/use cases, SimpleWebAuthn adapter, passkey repository,
+      Redis challenge store, HTTP routes.
+    - Acceptance criteria: AC-13–AC-18, relevant AC-25–AC-26.
+    - Required tests: option-policy unit, PostgreSQL/Redis verifier integration,
+      origin/RP/user/UV/signature/counter/duplicate/replay/race negatives.
+    - Evidence: SimpleWebAuthn registration/authentication adapters, one-time Redis
+      challenges, passkey persistence/management, recent-auth checks, counter CAS,
+      completion rate limits, and audit events are implemented. Unit, disposable
+      PostgreSQL/Redis, composed HTTP, and virtual-authenticator E2E checks pass.
 - [x] M6 — Web authentication experience
-  - Objective: implement accessible forms, memory-only auth state, cross-request/
-    tab refresh coordination, routing, passkey UX, and security settings.
-  - Components: FSD session entity/auth features/pages, API client/provider,
-    Vitest DOM/component setup, Playwright E2E setup.
-  - Acceptance criteria: AC-10, AC-13–AC-15, AC-17, AC-19–AC-20, AC-25–AC-26.
-  - Required tests: component tests, three critical E2E journeys, browser checks
-    at narrow/wide viewports, storage/console/network audit.
-  - Evidence: accessible auth/security pages, memory-only access state, cookie
-    bootstrap, safe returns, cross-tab refresh coordination, password and passkey
-    UX, component tests, and three Playwright journeys are complete. Manual wide
-    and 375px browser checks also found no horizontal overflow or token storage.
+    - Objective: implement accessible forms, memory-only auth state, cross-request/
+      tab refresh coordination, routing, passkey UX, and security settings.
+    - Components: FSD session entity/auth features/pages, API client/provider,
+      Vitest DOM/component setup, Playwright E2E setup.
+    - Acceptance criteria: AC-10, AC-13–AC-15, AC-17, AC-19–AC-20, AC-25–AC-26.
+    - Required tests: component tests, three critical E2E journeys, browser checks
+      at narrow/wide viewports, storage/console/network audit.
+    - Evidence: accessible auth/security pages, memory-only access state, cookie
+      bootstrap, safe returns, cross-tab refresh coordination, password and passkey
+      UX, component tests, and three Playwright journeys are complete. Manual wide
+      and 375px browser checks also found no horizontal overflow or token storage.
 - [x] M7 — Full validation, review, remediation, and integration
-  - Objective: prove the complete behavior, resolve material independent
-    findings, finalize artifacts, and squash-integrate the feature to `main`.
-  - Components: whole feature diff, docs/ADRs, `EVIDENCE.md`, `REVIEW.md`.
-  - Acceptance criteria: AC-1–AC-26 and repository Definition of Done.
-  - Required tests: affected targeted suites, disposable PostgreSQL/Redis,
-    workspace/repository format/lint/typecheck/test/build/check, real browser,
-    independent reviewer and security-reviewer reruns after remediation.
-  - Evidence: repository and disposable-infrastructure checks, three browser
-    journeys, manual responsive verification, and independent correctness and
-    security re-reviews passed. All critical, high, and medium findings were
-    remediated; the completed feature was squash-integrated into `main`.
+    - Objective: prove the complete behavior, resolve material independent
+      findings, finalize artifacts, and squash-integrate the feature to `main`.
+    - Components: whole feature diff, docs/ADRs, `EVIDENCE.md`, `REVIEW.md`.
+    - Acceptance criteria: AC-1–AC-26 and repository Definition of Done.
+    - Required tests: affected targeted suites, disposable PostgreSQL/Redis,
+      workspace/repository format/lint/typecheck/test/build/check, real browser,
+      independent reviewer and security-reviewer reruns after remediation.
+    - Evidence: repository and disposable-infrastructure checks, three browser
+      journeys, manual responsive verification, and independent correctness and
+      security re-reviews passed. All critical, high, and medium findings were
+      remediated; the completed feature was squash-integrated into `main`.
 
 ## Progress
 
@@ -366,94 +366,94 @@ milestone mapping concise.
 ## Decisions
 
 - D-001 — Separate stable user from credentials
-  - Context: later product ownership and OAuth providers need one durable subject.
-  - Choice and rationale: `users` owns identity/status; primary email, password,
-    passkeys, sessions, and future OAuth identities are separate records.
-  - Alternatives rejected: password fields on user; provider-specific users;
-    automatic email-based OAuth merging.
-  - ADR impact: Accepted ADR-0001.
+    - Context: later product ownership and OAuth providers need one durable subject.
+    - Choice and rationale: `users` owns identity/status; primary email, password,
+      passkeys, sessions, and future OAuth identities are separate records.
+    - Alternatives rejected: password fields on user; provider-specific users;
+      automatic email-based OAuth merging.
+    - ADR impact: Accepted ADR-0001.
 - D-002 — JWT access plus opaque refresh sessions
-  - Context: clients need token API auth while sessions need rotation/revocation.
-  - Choice and rationale: minimal HS256 access JWT; 256-bit opaque refresh secret,
-    hash-only PostgreSQL storage, atomic rotation, strict family replay revocation,
-    absolute 14-day expiry, no grace interval. Web uses in-tab single-flight,
-    Web Locks where available, BroadcastChannel propagation, and a tested
-    fallback to coordinate refresh across tabs while the server remains atomic.
-  - Alternatives rejected: JWT refresh, refresh plaintext, sliding expiry,
-    silent replay grace, browser-readable refresh tokens.
-  - ADR impact: Accepted ADR-0001.
+    - Context: clients need token API auth while sessions need rotation/revocation.
+    - Choice and rationale: minimal HS256 access JWT; 256-bit opaque refresh secret,
+      hash-only PostgreSQL storage, atomic rotation, strict family replay revocation,
+      absolute 14-day expiry, no grace interval. Web uses in-tab single-flight,
+      Web Locks where available, BroadcastChannel propagation, and a tested
+      fallback to coordinate refresh across tabs while the server remains atomic.
+    - Alternatives rejected: JWT refresh, refresh plaintext, sliding expiry,
+      silent replay grace, browser-readable refresh tokens.
+    - ADR impact: Accepted ADR-0001.
 - D-003 — Browser token transport and immediate state
-  - Context: avoid XSS-readable long-lived credentials while restoring reloads.
-  - Choice and rationale: access token JSON/in memory; production host-only
-    `__Host-` Secure/HttpOnly/SameSite=Lax/Path=/ refresh cookie; exact Origin and
-    credentialed CORS; fresh user/session lookup on auth/security mutations.
-    Production web and API must remain same-site for this transport; cross-site
-    deployment requires revisiting the cookie/CSRF decision.
-  - Alternatives rejected: local/session storage, tokens in URLs, wildcard CORS,
-    trusting JWT roles/resource ownership.
-  - ADR impact: Accepted ADR-0001.
+    - Context: avoid XSS-readable long-lived credentials while restoring reloads.
+    - Choice and rationale: access token JSON/in memory; production host-only
+      `__Host-` Secure/HttpOnly/SameSite=Lax/Path=/ refresh cookie; exact Origin and
+      credentialed CORS; fresh user/session lookup on auth/security mutations.
+      Production web and API must remain same-site for this transport; cross-site
+      deployment requires revisiting the cookie/CSRF decision.
+    - Alternatives rejected: local/session storage, tokens in URLs, wildcard CORS,
+      trusting JWT roles/resource ownership.
+    - ADR impact: Accepted ADR-0001.
 - D-004 — Required deployment classification and verification mode
-  - Context: default `NODE_ENV=development` could accidentally enable `0000`.
-  - Choice and rationale: required `APP_ENV`; dev/test fixed `0000`; staging
-    disabled unless an exact insecure opt-in; production refuses mock/fixed mode.
-    JWT and code-HMAC secrets are separate, high-entropy, environment-specific.
-  - Alternatives rejected: request-selected mode, `NODE_ENV` inference, code
-    response/logging, production mock fallback.
-  - ADR impact: Feature-local security configuration under Accepted ADR-0001.
+    - Context: default `NODE_ENV=development` could accidentally enable `0000`.
+    - Choice and rationale: required `APP_ENV`; dev/test fixed `0000`; staging
+      disabled unless an exact insecure opt-in; production refuses mock/fixed mode.
+      JWT and code-HMAC secrets are separate, high-entropy, environment-specific.
+    - Alternatives rejected: request-selected mode, `NODE_ENV` inference, code
+      response/logging, production mock fallback.
+    - ADR impact: Feature-local security configuration under Accepted ADR-0001.
 - D-005 — Email adapter boundary and production availability
-  - Context: email delivery is mocked now but signup/reset must not claim delivery.
-  - Choice and rationale: define sender port and deterministic dev/test adapter;
-    production email-dependent operations return stable unavailable behavior until
-    a separately configured real adapter exists. Backend health can remain up.
-  - Alternatives rejected: console/log delivery, silent no-op, choosing a provider
-    without product/operational scope.
-  - ADR impact: Not ADR-worthy; provider integration is a follow-up.
+    - Context: email delivery is mocked now but signup/reset must not claim delivery.
+    - Choice and rationale: define sender port and deterministic dev/test adapter;
+      production email-dependent operations return stable unavailable behavior until
+      a separately configured real adapter exists. Backend health can remain up.
+    - Alternatives rejected: console/log delivery, silent no-op, choosing a provider
+      without product/operational scope.
+    - ADR impact: Not ADR-worthy; provider integration is a follow-up.
 - D-006 — Password and code protection
-  - Context: passwords face offline attack; four-digit codes are brute-forceable.
-  - Choice and rationale: Argon2id, 15–128 Unicode/no composition, deterministic
-    common-password blocklist; keyed purpose/user/flow-bound code digest, strict
-    attempts/expiry/resend limits. Unknown login runs dummy Argon2 verification.
-  - Alternatives rejected: Passport.js, reversible encryption, SHA/bcrypt for a
-    new system, unkeyed code hash, permanent lockout.
-  - ADR impact: Feature-local implementation of Accepted ADR-0001.
+    - Context: passwords face offline attack; four-digit codes are brute-forceable.
+    - Choice and rationale: Argon2id, 15–128 Unicode/no composition, deterministic
+      common-password blocklist; keyed purpose/user/flow-bound code digest, strict
+      attempts/expiry/resend limits. Unknown login runs dummy Argon2 verification.
+    - Alternatives rejected: Passport.js, reversible encryption, SHA/bcrypt for a
+      new system, unkeyed code hash, permanent lockout.
+    - ADR impact: Feature-local implementation of Accepted ADR-0001.
 - D-007 — Passkey posture
-  - Context: secure passwordless login must avoid enumeration/cross-account attach.
-  - Choice and rationale: verified recently authenticated enrollment; multiple
-    named credentials; discoverable login; exact configured RP/origins; required
-    user verification; five-minute one-time Redis challenge; zero counters
-    tolerated per authenticator behavior, nonzero rollback emits a security
-    failure; revoke requires recent auth. Every initial account retains its
-    password recovery method, so revoking the last passkey does not strand it.
-  - Alternatives rejected: passkey-only signup, email-first allow list, request-
-    derived RP/origin, lockout solely on a zero counter.
-  - ADR impact: Accepted ADR-0001.
+    - Context: secure passwordless login must avoid enumeration/cross-account attach.
+    - Choice and rationale: verified recently authenticated enrollment; multiple
+      named credentials; discoverable login; exact configured RP/origins; required
+      user verification; five-minute one-time Redis challenge; zero counters
+      tolerated per authenticator behavior, nonzero rollback emits a security
+      failure; revoke requires recent auth. Every initial account retains its
+      password recovery method, so revoking the last passkey does not strand it.
+    - Alternatives rejected: passkey-only signup, email-first allow list, request-
+      derived RP/origin, lockout solely on a zero counter.
+    - ADR impact: Accepted ADR-0001.
 - D-008 — Redis is disposable and authentication issuance fails closed
-  - Context: limits/challenges cannot become bypasses or hang indefinitely.
-  - Choice and rationale: HMAC-derived keys, bounded retries/timeouts, atomic TTL
-    operations, explicit trusted proxies; public authentication/refresh/ceremony
-    issuance fails closed when required Redis control is unavailable. Existing
-    bearer authorization remains governed by its own session freshness policy.
-  - Alternatives rejected: `maxRetriesPerRequest: null`, raw email/IP keys,
-    Redis as durable session truth, unconditional fail-open.
-  - ADR impact: Feature-local.
+    - Context: limits/challenges cannot become bypasses or hang indefinitely.
+    - Choice and rationale: HMAC-derived keys, bounded retries/timeouts, atomic TTL
+      operations, explicit trusted proxies; public authentication/refresh/ceremony
+      issuance fails closed when required Redis control is unavailable. Existing
+      bearer authorization remains governed by its own session freshness policy.
+    - Alternatives rejected: `maxRetriesPerRequest: null`, raw email/IP keys,
+      Redis as durable session truth, unconditional fail-open.
+    - ADR impact: Feature-local.
 - D-009 — Drizzle and migration lifecycle
-  - Context: this is the first business schema and all later modules need parity.
-  - Choice and rationale: module-owned Drizzle schemas, backend aggregate/config,
-    declarative current TypeScript mapping, authoritative ordered SQL transition
-    history, explicit generate/check/migrate/studio commands, no shared push or
-    implicit HTTP startup migration, singleton deploy migration plus database
-    advisory lock, and forward corrections unless safe explicit down exists.
-    Programmatic migration requires a trusted explicit disposable capability.
-  - Alternatives rejected: custom raw-SQL ledger, business schema in database
-    package, automatic startup mutation, shared `push`.
-  - ADR impact: Accepted ADR-0002.
+    - Context: this is the first business schema and all later modules need parity.
+    - Choice and rationale: module-owned Drizzle schemas, backend aggregate/config,
+      declarative current TypeScript mapping, authoritative ordered SQL transition
+      history, explicit generate/check/migrate/studio commands, no shared push or
+      implicit HTTP startup migration, singleton deploy migration plus database
+      advisory lock, and forward corrections unless safe explicit down exists.
+      Programmatic migration requires a trusted explicit disposable capability.
+    - Alternatives rejected: custom raw-SQL ledger, business schema in database
+      package, automatic startup mutation, shared `push`.
+    - ADR impact: Accepted ADR-0002.
 - D-010 — Web-first, mobile-compatible boundary
-  - Context: web needs a complete journey now; native refresh storage differs.
-  - Choice and rationale: implement web cookie flow and shared contracts now;
-    defer mobile/admin UI and native refresh-token transport.
-  - Alternatives rejected: browser-readable refresh token for client parity;
-    unverified placeholder mobile implementation.
-  - ADR impact: Feature-local scope.
+    - Context: web needs a complete journey now; native refresh storage differs.
+    - Choice and rationale: implement web cookie flow and shared contracts now;
+      defer mobile/admin UI and native refresh-token transport.
+    - Alternatives rejected: browser-readable refresh token for client parity;
+      unverified placeholder mobile implementation.
+    - ADR impact: Feature-local scope.
 
 ## Discoveries
 

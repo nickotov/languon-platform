@@ -1,4 +1,4 @@
-import { Mastra } from "@mastra/core/mastra";
+import { Mastra } from '@mastra/core/mastra';
 
 /**
  * Register agents and workflows here as product modules are introduced.

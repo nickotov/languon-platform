@@ -1,4 +1,4 @@
 interface:
-  display_name: "Browser Verification"
-  short_description: "Verify user journeys in a real browser"
-  default_prompt: "Use $browser-verification to verify this user journey in the running application."
+    display_name: 'Browser Verification'
+    short_description: 'Verify user journeys in a real browser'
+    default_prompt: 'Use $browser-verification to verify this user journey in the running application.'

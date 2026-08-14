@@ -1,4 +1,4 @@
 interface:
-  display_name: "Feature Development"
-  short_description: "Run features from specification to proof"
-  default_prompt: "Use $feature-development to implement this feature from specification through verified completion."
+    display_name: 'Feature Development'
+    short_description: 'Run features from specification to proof'
+    default_prompt: 'Use $feature-development to implement this feature from specification through verified completion.'

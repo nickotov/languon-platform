@@ -1,4 +1,4 @@
 interface:
-  display_name: "User Flow E2E"
-  short_description: "Synchronize guides with executable E2E tests"
-  default_prompt: "Use $user-flow-e2e to create or update E2E coverage for a user-flow guide."
+    display_name: 'User Flow E2E'
+    short_description: 'Synchronize guides with executable E2E tests'
+    default_prompt: 'Use $user-flow-e2e to create or update E2E coverage for a user-flow guide.'

@@ -71,39 +71,39 @@ start successfully without optional Langfuse credentials.
 ## Milestones
 
 - [x] M1 — Exploration and design
-  - Objective: enumerate every active normal-development port/origin and
-    distinguish isolated E2E/historical references.
-  - Components: web scripts, backend environment/tests, Compose/Docker,
-    `.env.example`, auth guide/Playwright, developer docs, ADRs.
-  - Acceptance criteria: AC-1–AC-6 mapped to implementation and verification.
-  - Required tests: source scan, current guide inspection, reported startup
-    failure analysis.
-  - Evidence: port 3000 is bound by another project; all active Languon 3000
-    references and the empty-Langfuse validation mismatch are identified.
+    - Objective: enumerate every active normal-development port/origin and
+      distinguish isolated E2E/historical references.
+    - Components: web scripts, backend environment/tests, Compose/Docker,
+      `.env.example`, auth guide/Playwright, developer docs, ADRs.
+    - Acceptance criteria: AC-1–AC-6 mapped to implementation and verification.
+    - Required tests: source scan, current guide inspection, reported startup
+      failure analysis.
+    - Evidence: port 3000 is bound by another project; all active Languon 3000
+      references and the empty-Langfuse validation mismatch are identified.
 - [x] M2 — Implementation and targeted verification
-  - Objective: update configuration/origins/docs atomically, normalize blank
-    optional Langfuse keys, and synchronize the guide revision.
-  - Components: files discovered in M1 plus targeted tests.
-  - Acceptance criteria: AC-1–AC-4.
-  - Required tests: backend environment unit suite, web/backend lint/typecheck,
-    Compose config, guide inspect/check.
-  - Evidence: environment regression 20/20 and auth policy 7/7 passed; web unit
-    35/35 passed; affected lint/typecheck/build passed; rendered Compose exposes
-    web 3333 and backend allows the matching origin; guide checks and revision
-    `sha256:855d3e63671c4a38` are synchronized.
+    - Objective: update configuration/origins/docs atomically, normalize blank
+      optional Langfuse keys, and synchronize the guide revision.
+    - Components: files discovered in M1 plus targeted tests.
+    - Acceptance criteria: AC-1–AC-4.
+    - Required tests: backend environment unit suite, web/backend lint/typecheck,
+      Compose config, guide inspect/check.
+    - Evidence: environment regression 20/20 and auth policy 7/7 passed; web unit
+      35/35 passed; affected lint/typecheck/build passed; rendered Compose exposes
+      web 3333 and backend allows the matching origin; guide checks and revision
+      `sha256:855d3e63671c4a38` are synchronized.
 - [x] M3 — Full validation and review
-  - Objective: prove real startup/browser/E2E behavior, run the repository gate,
-    independently review, remediate, and integrate.
-  - Components: complete diff and feature artifacts.
-  - Acceptance criteria: AC-1–AC-7.
-  - Required tests: mapped E2E, browser verification, `pnpm check`, diff hygiene,
-    independent code/security/test review.
-  - Evidence: final mapped Chromium E2E 3/3 at loopback web 3333/backend 4100;
-    canonical dev/start listeners returned HTTP 200 and `lsof` confirmed
-    `127.0.0.1:3333`; full `pnpm check` passed; default and LAN-opt-in Compose
-    renders preserve loopback-only data services; independent tester,
-    correctness, and security re-reviews passed after both Medium findings were
-    remediated.
+    - Objective: prove real startup/browser/E2E behavior, run the repository gate,
+      independently review, remediate, and integrate.
+    - Components: complete diff and feature artifacts.
+    - Acceptance criteria: AC-1–AC-7.
+    - Required tests: mapped E2E, browser verification, `pnpm check`, diff hygiene,
+      independent code/security/test review.
+    - Evidence: final mapped Chromium E2E 3/3 at loopback web 3333/backend 4100;
+      canonical dev/start listeners returned HTTP 200 and `lsof` confirmed
+      `127.0.0.1:3333`; full `pnpm check` passed; default and LAN-opt-in Compose
+      renders preserve loopback-only data services; independent tester,
+      correctness, and security re-reviews passed after both Medium findings were
+      remediated.
 
 ## Progress
 
@@ -144,31 +144,31 @@ start successfully without optional Langfuse credentials.
 ## Decisions
 
 - D-001 — Preserve isolated E2E ports
-  - Context: the auth guide's disposable recipe intentionally uses 3100/4100 to
-    avoid ordinary dev services and enforce safe ownership.
-  - Choice and rationale: change the Playwright fallback and normal endpoint to
-    3333, but leave the explicit safe recipe at 3100/4100.
-  - Alternatives rejected: globally replacing every numeric 3000/3100 reference.
-  - ADR impact: Not ADR-worthy; reversible local tooling configuration.
+    - Context: the auth guide's disposable recipe intentionally uses 3100/4100 to
+      avoid ordinary dev services and enforce safe ownership.
+    - Choice and rationale: change the Playwright fallback and normal endpoint to
+      3333, but leave the explicit safe recipe at 3100/4100.
+    - Alternatives rejected: globally replacing every numeric 3000/3100 reference.
+    - ADR impact: Not ADR-worthy; reversible local tooling configuration.
 - D-002 — Empty optional credentials mean unconfigured
-  - Context: `.env.example` represents absent optional Langfuse credentials as
-    blank, but the backend rejects blank strings.
-  - Choice and rationale: normalize exact empty strings to `undefined` at the
-    environment boundary; retain validation for non-string/invalid values.
-  - Alternatives rejected: require fake observability credentials or force each
-    developer to delete example keys manually.
-  - ADR impact: Not ADR-worthy; aligns optional configuration semantics.
+    - Context: `.env.example` represents absent optional Langfuse credentials as
+      blank, but the backend rejects blank strings.
+    - Choice and rationale: normalize exact empty strings to `undefined` at the
+      environment boundary; retain validation for non-string/invalid values.
+    - Alternatives rejected: require fake observability credentials or force each
+      developer to delete example keys manually.
+    - ADR impact: Not ADR-worthy; aligns optional configuration semantics.
 - D-003 — Local authentication surfaces default to loopback
-  - Context: host Next/backend listeners and Compose publications were reachable
-    on the LAN while development deliberately uses public placeholders and code
-    `0000`.
-  - Choice and rationale: host backend/web/admin bind `127.0.0.1`; containers
-    bind internally but Compose publishes app/data ports on loopback. LAN app
-    publication requires an explicit environment opt-in and documented warning.
-  - Alternatives rejected: relying on browser Origin checks, which direct
-    network clients can forge, or exposing PostgreSQL/Redis for device testing.
-  - ADR impact: Not ADR-worthy; local-development hardening within existing auth
-    security constraints.
+    - Context: host Next/backend listeners and Compose publications were reachable
+      on the LAN while development deliberately uses public placeholders and code
+      `0000`.
+    - Choice and rationale: host backend/web/admin bind `127.0.0.1`; containers
+      bind internally but Compose publishes app/data ports on loopback. LAN app
+      publication requires an explicit environment opt-in and documented warning.
+    - Alternatives rejected: relying on browser Origin checks, which direct
+      network clients can forge, or exposing PostgreSQL/Redis for device testing.
+    - ADR impact: Not ADR-worthy; local-development hardening within existing auth
+      security constraints.
 
 ## Discoveries
 

@@ -1,4 +1,4 @@
 interface:
-  display_name: "Code Review"
-  short_description: "Review changes for material engineering risks"
-  default_prompt: "Use $code-review to independently review this implementation and prioritize actionable findings."
+    display_name: 'Code Review'
+    short_description: 'Review changes for material engineering risks'
+    default_prompt: 'Use $code-review to independently review this implementation and prioritize actionable findings.'

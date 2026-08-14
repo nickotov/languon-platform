@@ -66,18 +66,18 @@ Updated: 2026-08-14
   correction document or feature artifacts instead of assuming every task is a
   feature.
 - Commands and results:
-  - `wc -l AGENTS.md` — 276 lines; target of at most 300 passed.
-  - Official `quick_validate.py` via `uv run --with pyyaml` — all five modified
-    skills passed; user-flow-e2e passed again after remediation.
-  - focused critical-policy assertions and delegated-owner existence checks —
-    passed. One bundled probe initially used a line-spanning regex and exited 1;
-    nine isolated fixed-string assertions then passed, confirming it was a probe
-    error rather than a missing policy.
-  - `pnpm format:check` — passed before final review remediation and rerun for
-    final handoff.
-  - `git diff --check` — passed throughout and rerun for final handoff.
-  - Application tests, lint, typecheck, build, browser, and database checks were
-    not run because only Markdown/YAML agent workflow instructions changed.
+    - `wc -l AGENTS.md` — 276 lines; target of at most 300 passed.
+    - Official `quick_validate.py` via `uv run --with pyyaml` — all five modified
+      skills passed; user-flow-e2e passed again after remediation.
+    - focused critical-policy assertions and delegated-owner existence checks —
+      passed. One bundled probe initially used a line-spanning regex and exited 1;
+      nine isolated fixed-string assertions then passed, confirming it was a probe
+      error rather than a missing policy.
+    - `pnpm format:check` — passed before final review remediation and rerun for
+      final handoff.
+    - `git diff --check` — passed throughout and rerun for final handoff.
+    - Application tests, lint, typecheck, build, browser, and database checks were
+      not run because only Markdown/YAML agent workflow instructions changed.
 - Documentation: root instructions link to `README.md`,
   `docs/agentic-development.md`, ADR/user-flow docs, `.agent/PLANS.md`, and the
   relevant repository skills. No application behavior, command, or user journey

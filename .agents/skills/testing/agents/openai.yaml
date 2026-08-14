@@ -1,4 +1,4 @@
 interface:
-  display_name: "Testing"
-  short_description: "Choose and run proportional test coverage"
-  default_prompt: "Use $testing to design and execute the right tests for this change."
+    display_name: 'Testing'
+    short_description: 'Choose and run proportional test coverage'
+    default_prompt: 'Use $testing to design and execute the right tests for this change.'

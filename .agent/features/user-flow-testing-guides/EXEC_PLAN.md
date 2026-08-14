@@ -75,43 +75,43 @@ and User Authentication has the first complete browser/API guide.
 ## Milestones
 
 - [x] M1 — Exploration and design
-  - Objective: establish the guide lifecycle, metadata, enforcement boundary,
-    and exact authentication verification surface.
-  - Components: root instructions/templates, docs layout, package scripts,
-    authentication routes/contracts/UI/E2E evidence.
-  - Acceptance criteria: AC-1–AC-8 mapped to implementation and checks.
-  - Required tests: source/contract audit and baseline Git-state inspection.
-  - Evidence: current commands, endpoint paths, UI labels, test journeys, and
-    absence of existing user-flow guides were verified from repository source.
+    - Objective: establish the guide lifecycle, metadata, enforcement boundary,
+      and exact authentication verification surface.
+    - Components: root instructions/templates, docs layout, package scripts,
+      authentication routes/contracts/UI/E2E evidence.
+    - Acceptance criteria: AC-1–AC-8 mapped to implementation and checks.
+    - Required tests: source/contract audit and baseline Git-state inspection.
+    - Evidence: current commands, endpoint paths, UI labels, test journeys, and
+      absence of existing user-flow guides were verified from repository source.
 - [x] M2 — Convention and enforcement
-  - Objective: implement instructions, frontmatter schema, validator, templates,
-    and repository links.
-  - Components: `AGENTS.md`, `.agent/templates/`, `docs/user-flows/README.md`,
-    `scripts/check-user-flow-guides.mjs`, root `package.json`, README/development.
-  - Acceptance criteria: AC-1–AC-4 and AC-7.
-  - Required tests: focused validator, intentional invalid-fixture check, format,
-    lint/syntax, and diff hygiene.
-  - Evidence: root instructions/skill/plan/templates, guide index/schema,
-    dependency-free validator with seven focused tests, `pnpm check` integration,
-    and root documentation links are implemented and validated.
+    - Objective: implement instructions, frontmatter schema, validator, templates,
+      and repository links.
+    - Components: `AGENTS.md`, `.agent/templates/`, `docs/user-flows/README.md`,
+      `scripts/check-user-flow-guides.mjs`, root `package.json`, README/development.
+    - Acceptance criteria: AC-1–AC-4 and AC-7.
+    - Required tests: focused validator, intentional invalid-fixture check, format,
+      lint/syntax, and diff hygiene.
+    - Evidence: root instructions/skill/plan/templates, guide index/schema,
+      dependency-free validator with seven focused tests, `pnpm check` integration,
+      and root documentation links are implemented and validated.
 - [x] M3 — Authentication guide
-  - Objective: provide a reproducible start-to-result manual/browser/API guide.
-  - Components: `docs/user-flows/user-authentication.md` and index.
-  - Acceptance criteria: AC-5–AC-7.
-  - Required tests: validator and audit against routes, contracts, UI, and E2E.
-  - Evidence: the current guide covers browser/API success and failure paths,
-    automated suites, troubleshooting, and cleanup. Real local startup/migration
-    and signup/verify/me/refresh/logout API smoke passed against PostgreSQL/Redis.
+    - Objective: provide a reproducible start-to-result manual/browser/API guide.
+    - Components: `docs/user-flows/user-authentication.md` and index.
+    - Acceptance criteria: AC-5–AC-7.
+    - Required tests: validator and audit against routes, contracts, UI, and E2E.
+    - Evidence: the current guide covers browser/API success and failure paths,
+      automated suites, troubleshooting, and cleanup. Real local startup/migration
+      and signup/verify/me/refresh/logout API smoke passed against PostgreSQL/Redis.
 - [x] M4 — Full validation, review, and integration
-  - Objective: prove the convention, resolve independent findings, finalize
-    artifacts, and squash-integrate the feature into `main`.
-  - Components: full diff, feature artifacts, Git history.
-  - Acceptance criteria: AC-1–AC-8 and repository Definition of Done.
-  - Required tests: `pnpm check`, guide validator, formatting/diff checks, and
-    independent review.
-  - Evidence: `pnpm check`, the exact disposable-infrastructure Playwright
-    recipe, independent review, security review, remediation, and Git hygiene
-    all passed. The completed branch is ready for squash integration to `main`.
+    - Objective: prove the convention, resolve independent findings, finalize
+      artifacts, and squash-integrate the feature into `main`.
+    - Components: full diff, feature artifacts, Git history.
+    - Acceptance criteria: AC-1–AC-8 and repository Definition of Done.
+    - Required tests: `pnpm check`, guide validator, formatting/diff checks, and
+      independent review.
+    - Evidence: `pnpm check`, the exact disposable-infrastructure Playwright
+      recipe, independent review, security review, remediation, and Git hygiene
+      all passed. The completed branch is ready for squash integration to `main`.
 
 ## Progress
 
@@ -158,39 +158,39 @@ and User Authentication has the first complete browser/API guide.
 ## Decisions
 
 - D-001 — One canonical guide per primary feature slug
-  - Context: stable naming and discovery are needed without a separate registry
-    service.
-  - Choice and rationale: use `docs/user-flows/<feature-slug>.md`, require the
-    frontmatter `feature` to match the filename, and allow related guides to list
-    overlapping `source_paths`.
-  - Alternatives rejected: guide names unrelated to feature workspaces; a guide
-    embedded only in historical `EVIDENCE.md`.
-  - ADR impact: Not ADR-worthy; engineering documentation convention.
+    - Context: stable naming and discovery are needed without a separate registry
+      service.
+    - Choice and rationale: use `docs/user-flows/<feature-slug>.md`, require the
+      frontmatter `feature` to match the filename, and allow related guides to list
+      overlapping `source_paths`.
+    - Alternatives rejected: guide names unrelated to feature workspaces; a guide
+      embedded only in historical `EVIDENCE.md`.
+    - ADR impact: Not ADR-worthy; engineering documentation convention.
 - D-002 — Path-aware YAML frontmatter
-  - Context: agents need to find guides affected by cross-feature code changes.
-  - Choice and rationale: require feature/title/status/date/surfaces/source paths;
-    agents scan feature and source-path metadata, then use judgment for semantic
-    overlap.
-  - Alternatives rejected: filename-only discovery; exhaustive manually
-    maintained reverse dependency graph.
-  - ADR impact: Not ADR-worthy.
+    - Context: agents need to find guides affected by cross-feature code changes.
+    - Choice and rationale: require feature/title/status/date/surfaces/source paths;
+      agents scan feature and source-path metadata, then use judgment for semantic
+      overlap.
+    - Alternatives rejected: filename-only discovery; exhaustive manually
+      maintained reverse dependency graph.
+    - ADR impact: Not ADR-worthy.
 - D-003 — Dependency-free structural validation
-  - Context: a convention that is never checked will drift, but full semantic
-    matching is not reliable from static paths.
-  - Choice and rationale: validate metadata, naming, index membership, and core
-    sections in `pnpm check`; keep semantic accuracy under feature review.
-  - Alternatives rejected: no enforcement; adding a YAML dependency; brittle Git
-    diff heuristics.
-  - ADR impact: Not ADR-worthy.
+    - Context: a convention that is never checked will drift, but full semantic
+      matching is not reliable from static paths.
+    - Choice and rationale: validate metadata, naming, index membership, and core
+      sections in `pnpm check`; keep semantic accuracy under feature review.
+    - Alternatives rejected: no enforcement; adding a YAML dependency; brittle Git
+      diff heuristics.
+    - ADR impact: Not ADR-worthy.
 - D-004 — Manual guide complements automated evidence
-  - Context: the user wants both reproducible manual testing and durable expected
-    results.
-  - Choice and rationale: include browser/API steps and link exact automated
-    suites for races, limits, and virtual WebAuthn that are costly or unsafe to
-    reproduce manually.
-  - Alternatives rejected: replacing automation with prose; copying full E2E
-    implementation into docs.
-  - ADR impact: Not ADR-worthy.
+    - Context: the user wants both reproducible manual testing and durable expected
+      results.
+    - Choice and rationale: include browser/API steps and link exact automated
+      suites for races, limits, and virtual WebAuthn that are costly or unsafe to
+      reproduce manually.
+    - Alternatives rejected: replacing automation with prose; copying full E2E
+      implementation into docs.
+    - ADR impact: Not ADR-worthy.
 
 ## Discoveries
 

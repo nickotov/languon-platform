@@ -71,47 +71,47 @@ stale mappings automatically, run the journeys, and leave durable evidence.
 ## Milestones
 
 - [x] M1 — Exploration and design
-  - Objective: define reliable agent-owned synchronization without unsafe code
-    generation or shell execution.
-  - Components: current guide validator, root workflows/templates, auth guide,
-    Playwright config/spec, ADR index.
-  - Acceptance criteria: AC-1–AC-8 mapped to implementation and tests.
-  - Required tests: source audit and explicit layer/risk analysis.
-  - Evidence: repository source establishes one current guide, three existing
-    critical auth journeys, and a dependency-free validation path.
+    - Objective: define reliable agent-owned synchronization without unsafe code
+      generation or shell execution.
+    - Components: current guide validator, root workflows/templates, auth guide,
+      Playwright config/spec, ADR index.
+    - Acceptance criteria: AC-1–AC-8 mapped to implementation and tests.
+    - Required tests: source audit and explicit layer/risk analysis.
+    - Evidence: repository source establishes one current guide, three existing
+      critical auth journeys, and a dependency-free validation path.
 - [x] M2 — Traceability contract and tooling
-  - Objective: implement metadata, revisions, marker validation, CLI, docs, and
-    unit/contract regressions.
-  - Components: guide checker/tests, new inspection CLI, package scripts,
-    guide convention.
-  - Acceptance criteria: AC-1–AC-4.
-  - Required tests: focused Node test suite and invalid fixture probes.
-  - Evidence: 15 focused Node tests pass for structure, metadata, paths,
-    revisions, scenario/file markers, orphan detection, CLI inspect/check, and
-    repository mapping, including repository-wide discovery, substantive
-    coverage, symlink/path bounds, diagnostics, and inspect/check parity.
-    Inspection reports synchronized revision `sha256:49fadbe3ce6c2534`.
+    - Objective: implement metadata, revisions, marker validation, CLI, docs, and
+      unit/contract regressions.
+    - Components: guide checker/tests, new inspection CLI, package scripts,
+      guide convention.
+    - Acceptance criteria: AC-1–AC-4.
+    - Required tests: focused Node test suite and invalid fixture probes.
+    - Evidence: 15 focused Node tests pass for structure, metadata, paths,
+      revisions, scenario/file markers, orphan detection, CLI inspect/check, and
+      repository mapping, including repository-wide discovery, substantive
+      coverage, symlink/path bounds, diagnostics, and inspect/check parity.
+      Inspection reports synchronized revision `sha256:49fadbe3ce6c2534`.
 - [x] M3 — Agent workflow and authentication migration
-  - Objective: make synchronization part of ordinary feature delivery and trace
-    the existing auth journeys end-to-end.
-  - Components: root instructions, skills, plans/templates, auth guide/spec,
-    ADR/current docs.
-  - Acceptance criteria: AC-5–AC-7.
-  - Required tests: guide/CLI checks and real auth Playwright run.
-  - Evidence: the repository skill passes scaffold validation and an independent
-    read-only forward test; root workflows/templates/docs and active ADR-0004
-    are updated; all 3 mapped auth Playwright scenarios passed in 15.7s against
-    owned disposable PostgreSQL/Redis and cleanup was verified.
+    - Objective: make synchronization part of ordinary feature delivery and trace
+      the existing auth journeys end-to-end.
+    - Components: root instructions, skills, plans/templates, auth guide/spec,
+      ADR/current docs.
+    - Acceptance criteria: AC-5–AC-7.
+    - Required tests: guide/CLI checks and real auth Playwright run.
+    - Evidence: the repository skill passes scaffold validation and an independent
+      read-only forward test; root workflows/templates/docs and active ADR-0004
+      are updated; all 3 mapped auth Playwright scenarios passed in 15.7s against
+      owned disposable PostgreSQL/Redis and cleanup was verified.
 - [x] M4 — Full validation and review
-  - Objective: complete repository checks, independent/security review,
-    remediation, and artifacts before squash integration.
-  - Components: complete diff and feature artifacts.
-  - Acceptance criteria: AC-1–AC-8.
-  - Required tests: `pnpm check`, E2E, diff hygiene, independent/test/security
-    review as applicable.
-  - Evidence: `pnpm check` passed on the remediated tree; independent tester,
-    code, architecture, and security re-reviews report no remaining
-    Critical/High/Medium findings; diff and skill validation pass.
+    - Objective: complete repository checks, independent/security review,
+      remediation, and artifacts before squash integration.
+    - Components: complete diff and feature artifacts.
+    - Acceptance criteria: AC-1–AC-8.
+    - Required tests: `pnpm check`, E2E, diff hygiene, independent/test/security
+      review as applicable.
+    - Evidence: `pnpm check` passed on the remediated tree; independent tester,
+      code, architecture, and security re-reviews report no remaining
+      Critical/High/Medium findings; diff and skill validation pass.
 
 ## Progress
 
@@ -145,28 +145,28 @@ stale mappings automatically, run the journeys, and leave durable evidence.
 ## Decisions
 
 - D-001 — Agent-authored, tool-verified E2E synchronization
-  - Context: working cross-boundary tests require architecture, selector, data,
-    infrastructure, and assertion judgment that prose templates cannot supply.
-  - Choice and rationale: the skill guides an agent to write tests; validators
-    prove traceability/freshness; actual execution proves behavior.
-  - Alternatives rejected: blind test generation; documentation-only reminders.
-  - ADR impact: ADR-0003, superseded by accepted ADR-0004 after review
-    hardening.
+    - Context: working cross-boundary tests require architecture, selector, data,
+      infrastructure, and assertion judgment that prose templates cannot supply.
+    - Choice and rationale: the skill guides an agent to write tests; validators
+      prove traceability/freshness; actual execution proves behavior.
+    - Alternatives rejected: blind test generation; documentation-only reminders.
+    - ADR impact: ADR-0003, superseded by accepted ADR-0004 after review
+      hardening.
 - D-002 — Stable scenario IDs plus per-test-file coverage revision
-  - Context: file paths alone do not detect missing scenarios or guide changes.
-  - Choice and rationale: each scenario has one marker; each declared file
-    carries a revision derived from test-relevant guide content.
-  - Alternatives rejected: mtimes; CI-provider-only Git diff rules; hashing the
-    entire guide including verification dates.
-  - ADR impact: ADR-0003, superseded by accepted ADR-0004 after review
-    hardening.
+    - Context: file paths alone do not detect missing scenarios or guide changes.
+    - Choice and rationale: each scenario has one marker; each declared file
+      carries a revision derived from test-relevant guide content.
+    - Alternatives rejected: mtimes; CI-provider-only Git diff rules; hashing the
+      entire guide including verification dates.
+    - ADR impact: ADR-0003, superseded by accepted ADR-0004 after review
+      hardening.
 - D-003 — Inspection/check command never executes frontmatter
-  - Context: a guide is editable content and must not become an arbitrary shell
-    execution boundary.
-  - Choice and rationale: CLI reports/validates; the agent follows the reviewed
-    documented environment command when running E2E.
-  - Alternatives rejected: `shell: true` execution of `e2e_command`.
-  - ADR impact: security boundary hardened in accepted ADR-0004.
+    - Context: a guide is editable content and must not become an arbitrary shell
+      execution boundary.
+    - Choice and rationale: CLI reports/validates; the agent follows the reviewed
+      documented environment command when running E2E.
+    - Alternatives rejected: `shell: true` execution of `e2e_command`.
+    - ADR impact: security boundary hardened in accepted ADR-0004.
 
 ## Discoveries
 

@@ -21,11 +21,11 @@ Status: Complete
   journeys, expected results, negative cases, automation, troubleshooting, and
   cleanup. Linked it from the completed authentication feature specification.
 - `pnpm docs:user-flows:check`
-  - Result: passed.
-  - Seven `node:test` cases pass for complete guide/parsing plus filename,
-    surface-section, empty-list/section, unsafe-path, missing-index, and
-    fenced-index false-positive failures. The checked-in collection reports
-    `Validated 1 user-flow guide(s).`
+    - Result: passed.
+    - Seven `node:test` cases pass for complete guide/parsing plus filename,
+      surface-section, empty-list/section, unsafe-path, missing-index, and
+      fenced-index false-positive failures. The checked-in collection reports
+      `Validated 1 user-flow guide(s).`
 - `node --check` for the validator and its test file passed.
 
 ## Real local guide smoke
@@ -35,8 +35,8 @@ Status: Complete
 - `pnpm dev:infra` started PostgreSQL/Redis and created isolated local volumes for
   this verification.
 - `pnpm db:migrate`
-  - The first sandboxed attempt failed because tsx could not open its temporary
-    IPC socket (`EPERM`). Re-running with local execution permission passed.
+    - The first sandboxed attempt failed because tsx could not open its temporary
+      IPC socket (`EPERM`). Re-running with local execution permission passed.
 - `pnpm dev:backend` started the backend on `http://localhost:4000`.
 - Fresh local API journey passed with these exact results: health `200`, auth
   capabilities `200`, signup `202 verification_pending`, verification with

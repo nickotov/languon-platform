@@ -4,48 +4,48 @@ title: User Authentication
 status: current
 last_verified: 2026-08-14
 surfaces:
-  - browser
-  - api
+    - browser
+    - api
 source_paths:
-  - .agent/features/user-authentication/**
-  - .agents/skills/user-flow-e2e/**
-  - .env.example
-  - README.md
-  - compose.yaml
-  - docs/agentic-development.md
-  - infra/docker/dev.Dockerfile
-  - package.json
-  - apps/backend/package.json
-  - apps/backend/drizzle/**
-  - apps/backend/src/app.ts
-  - apps/backend/src/config/environment.ts
-  - apps/backend/src/index.ts
-  - apps/backend/src/infrastructure/database/**
-  - apps/backend/src/modules/authentication/**
-  - apps/backend/src/modules/users/**
-  - apps/web/package.json
-  - apps/web/playwright.config.ts
-  - apps/web/tests/e2e/**
-  - apps/web/src/app/(auth)/**
-  - apps/web/src/fsd/entities/session/**
-  - apps/web/src/fsd/features/auth/**
-  - apps/web/src/fsd/pages/**
-  - apps/web/src/fsd/shared/api/auth-api.ts
-  - packages/contracts/src/auth/**
-  - packages/database/src/migrations/**
-  - packages/database/src/postgres/**
-  - scripts/check-user-flow-guides.mjs
-  - scripts/user-flow-e2e.mjs
+    - .agent/features/user-authentication/**
+    - .agents/skills/user-flow-e2e/**
+    - .env.example
+    - README.md
+    - compose.yaml
+    - docs/agentic-development.md
+    - infra/docker/dev.Dockerfile
+    - package.json
+    - apps/backend/package.json
+    - apps/backend/drizzle/**
+    - apps/backend/src/app.ts
+    - apps/backend/src/config/environment.ts
+    - apps/backend/src/index.ts
+    - apps/backend/src/infrastructure/database/**
+    - apps/backend/src/modules/authentication/**
+    - apps/backend/src/modules/users/**
+    - apps/web/package.json
+    - apps/web/playwright.config.ts
+    - apps/web/tests/e2e/**
+    - apps/web/src/app/(auth)/**
+    - apps/web/src/fsd/entities/session/**
+    - apps/web/src/fsd/features/auth/**
+    - apps/web/src/fsd/pages/**
+    - apps/web/src/fsd/shared/api/auth-api.ts
+    - packages/contracts/src/auth/**
+    - packages/database/src/migrations/**
+    - packages/database/src/postgres/**
+    - scripts/check-user-flow-guides.mjs
+    - scripts/user-flow-e2e.mjs
 e2e_command: web-playwright
 e2e_tests:
-  - apps/web/tests/e2e/auth.journeys.spec.ts
+    - apps/web/tests/e2e/auth.journeys.spec.ts
 e2e_scenarios:
-  - signup-verification-refresh-logout
-  - password-reset-session-revocation
-  - passkey-lifecycle
+    - signup-verification-refresh-logout
+    - password-reset-session-revocation
+    - passkey-lifecycle
 related_features:
-  - user-flow-testing-guides
-  - web-dev-port-3333
+    - user-flow-testing-guides
+    - web-dev-port-3333
 ---
 
 # User Authentication
