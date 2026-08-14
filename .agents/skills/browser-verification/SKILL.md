@@ -7,10 +7,11 @@ description: Verify Languon web or admin behavior in a real browser, including c
 
 ## Prepare
 
-Read the feature acceptance criteria and identify the smallest set of journeys,
-roles, data states, and viewports needed. Start the relevant infrastructure and
-application with documented commands. Use deterministic non-production test data
-and never enter real credentials or personal data.
+Read the active correction outcome or feature acceptance criteria and identify
+the smallest set of journeys, roles, data states, and viewports needed. Start the
+relevant infrastructure and application with documented commands. Use
+deterministic non-production data and never enter real credentials or personal
+data.
 
 ## Verify
 
@@ -32,7 +33,8 @@ Do not claim a journey passed from source inspection alone.
 ## Report
 
 Record environment, browser, viewport, exact scenario, observed result,
-console/network state, and artifact paths in `EVIDENCE.md`. For failures, include
-reproduction steps and the narrowest supporting evidence. If browser tooling or
-the required environment is unavailable, complete all safe automated checks and
-record the exact unresolved gap instead of silently downgrading verification.
+console/network state, and artifact paths in the single correction document or
+feature `EVIDENCE.md`. For failures, include reproduction steps and the narrowest
+supporting evidence. If browser tooling or the required environment is
+unavailable, complete safe automated checks and record the unresolved gap
+instead of silently downgrading verification.

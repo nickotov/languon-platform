@@ -1,17 +1,17 @@
 ---
 name: testing
-description: Determine, implement, and execute the lowest-cost reliable automated test strategy for Languon changes. Use for test planning, regression reproduction, unit/integration/contract/E2E coverage, failure analysis, coverage gaps, or validation before feature completion. Do not use to weaken legitimate tests or replace required real-browser, device, database, or security verification.
+description: Determine, implement, and execute the lowest-cost reliable automated test strategy for Languon changes. Use for test planning, regression reproduction, unit/integration/contract/E2E coverage, failure analysis, coverage gaps, or validation before correction or feature handoff. Do not use to weaken legitimate tests or replace required real-browser, device, database, or security verification.
 ---
 
 # Testing strategy
 
 ## Define the regression surface
 
-Read the feature specification, ExecPlan, implementation diff, applicable
-instructions, and existing neighboring tests. List the behaviors that could
-regress and select the lowest-cost test layer that reliably detects each one.
-Record required and deliberately omitted test layers with rationale in the
-ExecPlan before substantial implementation.
+Read the active correction document or feature specification/ExecPlan, the
+implementation diff, applicable instructions, and neighboring tests. List the
+behaviors that could regress and select the lowest-cost reliable layer for each.
+Record required and deliberately omitted layers with rationale in the active
+durable work state before substantial implementation.
 
 ## Select test layers
 
@@ -39,10 +39,10 @@ it when reasonably possible. For deterministic business logic, prefer a failing
 test first. API changes should begin with a contract or integration test when
 practical.
 
-Run the narrowest test repeatedly while iterating, then run the affected
-workspace suite and broader repository checks. If a test fails, determine
-whether implementation, test, environment, or assumptions are wrong; fix the
-root cause and rerun both focused and broader checks.
+Run the narrowest test repeatedly while iterating, then the affected workspace
+suite and any broader checks required by the active correction or feature flow.
+If a test fails, determine whether implementation, test, environment, or
+assumptions are wrong; fix the root cause and rerun focused and broader checks.
 
 Never delete, weaken, skip, or rewrite a legitimate test merely to produce a
 pass. Do not silently replace a required test layer with a weaker one.
@@ -54,4 +54,5 @@ the mapped E2E command before handoff.
 
 Return test files added or changed, exact commands, concise results, failure root
 causes, coverage gaps, and remaining verification. Put final evidence in the
-active feature's `EVIDENCE.md` and update the ExecPlan validation table.
+single correction document, or in feature `EVIDENCE.md` and the ExecPlan
+validation table, according to the active flow.
