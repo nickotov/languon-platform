@@ -24,6 +24,10 @@ pnpm dev:admin
 pnpm dev:mobile
 ```
 
+The aggregate `pnpm dev` command temporarily excludes mobile while that
+application's development is deferred. Use `pnpm dev:mobile` only when working
+on the mobile surface. The Docker aggregate follows the same boundary.
+
 The default development verification and recovery code is `0000`. It is
 accepted only in development/test, or in private staging with the explicit
 unsafe acknowledgement documented in `.env.example`; production rejects it.

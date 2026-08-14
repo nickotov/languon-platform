@@ -37,36 +37,38 @@ Backend, Next.js, PostgreSQL, and Redis development endpoints are loopback-only
 by default. This keeps the public local secrets and verification code `0000`
 off the LAN.
 
-Use `pnpm dev:apps:docker` to build and start the application services plus
-their infrastructure in Docker. The app profile is intended for environment
-parity checks; the host-based `pnpm dev` loop is faster for normal development.
+Use `pnpm dev:apps:docker` to build and start backend, web, admin, and their
+infrastructure in Docker. The app profile is intended for environment parity
+checks; the host-based `pnpm dev` loop is faster for normal development. Mobile
+is temporarily excluded from both aggregate commands while its development is
+deferred; start it explicitly with `pnpm dev:mobile` when needed.
 
 ## Canonical commands
 
-| Command                                | Purpose                                        |
-| -------------------------------------- | ---------------------------------------------- |
-| `pnpm dev`                             | Run all application development servers        |
-| `pnpm dev:infra`                       | Start PostgreSQL and Redis                     |
-| `pnpm dev:backend`                     | Run only the backend                           |
-| `pnpm dev:web`                         | Run only the user-facing web application       |
-| `pnpm dev:admin`                       | Run only the administration application        |
-| `pnpm dev:mobile`                      | Run only the Expo development server           |
-| `pnpm browser:install`                 | Install Chrome for agent-led browser checks    |
-| `pnpm browser:check`                   | Test the safe wrapper and live browser launch  |
-| `pnpm db:generate`                     | Generate reviewed Drizzle SQL migrations       |
-| `pnpm db:check`                        | Validate Drizzle migration history             |
-| `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations |
-| `pnpm db:studio`                       | Inspect the local database with Drizzle Studio |
-| `pnpm lint`                            | Run repository lint rules                      |
-| `pnpm typecheck`                       | Type-check every workspace                     |
-| `pnpm test`                            | Run all automated tests                        |
-| `pnpm test:coverage`                   | Run tests with coverage                        |
-| `pnpm build`                           | Build all workspaces in dependency order       |
-| `pnpm check`                           | Run formatting, lint, types, tests, and builds |
-| `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections |
-| `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability     |
-| `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability    |
-| `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace            |
+| Command                                | Purpose                                         |
+| -------------------------------------- | ----------------------------------------------- |
+| `pnpm dev`                             | Run backend, web, and admin development servers |
+| `pnpm dev:infra`                       | Start PostgreSQL and Redis                      |
+| `pnpm dev:backend`                     | Run only the backend                            |
+| `pnpm dev:web`                         | Run only the user-facing web application        |
+| `pnpm dev:admin`                       | Run only the administration application         |
+| `pnpm dev:mobile`                      | Run only the Expo development server            |
+| `pnpm browser:install`                 | Install Chrome for agent-led browser checks     |
+| `pnpm browser:check`                   | Test the safe wrapper and live browser launch   |
+| `pnpm db:generate`                     | Generate reviewed Drizzle SQL migrations        |
+| `pnpm db:check`                        | Validate Drizzle migration history              |
+| `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations  |
+| `pnpm db:studio`                       | Inspect the local database with Drizzle Studio  |
+| `pnpm lint`                            | Run repository lint rules                       |
+| `pnpm typecheck`                       | Type-check every workspace                      |
+| `pnpm test`                            | Run all automated tests                         |
+| `pnpm test:coverage`                   | Run tests with coverage                         |
+| `pnpm build`                           | Build all workspaces in dependency order        |
+| `pnpm check`                           | Run formatting, lint, types, tests, and builds  |
+| `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections  |
+| `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability      |
+| `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability     |
+| `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace             |
 
 Target one workspace with pnpm filters, for example:
 

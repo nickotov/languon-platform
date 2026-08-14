@@ -49,21 +49,25 @@ Codex session before relying on the new configuration.
 
 ## Running Languon
 
-### Run everything
+### Run the active applications
 
-Start PostgreSQL and Redis, then run every application on the host:
+Start PostgreSQL and Redis, then run the currently active applications on the
+host:
 
 ```sh
 pnpm dev:infra
 pnpm dev
 ```
 
-`pnpm dev` starts backend, web, admin, and the Expo development server. For a
-containerized parity check, use:
+`pnpm dev` starts backend, web, and admin. Mobile is temporarily excluded while
+its development is deferred; use `pnpm dev:mobile` only for explicit mobile
+work. For a containerized parity check of the active applications, use:
 
 ```sh
 pnpm dev:apps:docker
 ```
+
+The Docker aggregate also excludes mobile.
 
 ### Run services separately
 
