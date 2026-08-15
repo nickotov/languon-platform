@@ -8,6 +8,7 @@
         "pnpm": ">=10"
     },
     "scripts": {
+        "agent": "headroom wrap codex",
         "browser": "node scripts/agent-browser.mjs",
         "browser:check": "node --test scripts/agent-browser.test.mjs scripts/agent-browser.integration.test.mjs && node scripts/agent-browser.mjs --doctor",
         "browser:install": "node scripts/agent-browser.mjs --install",
