@@ -30,6 +30,37 @@ Updated: 2026-08-16
 - Result: No executable product journey changed.
 - Journeys validated: None required.
 
+## Pencil canvas verification
+
+- Tool: Pencil canvas state inspection for `design/main.pen`.
+- Result: PASS after remediation — exactly one top-level frame exists, named
+  `design system`. Its foundation rows have a resolvable layout, completed
+  library frames are not placeholders, and shared interactive-control symbols use
+  48px targets to meet both web/iOS and Android minimums.
+- Coverage: 26 reusable symbols. The core library includes Button, IconButton,
+  Field, Textarea, Checkbox, Radio, Switcher, Select, Tabs, Dialog, Bottom sheet,
+  Toast, Tooltip, Menu, Option row, Badge, Chip, Divider, Card, Inline alert,
+  Progress, Skeleton, Empty state, Error state, Select accessible, and Menu
+  accessible.
+- Composition: the frame groups foundation color/type/spacing references and
+  component-state examples logically. Motion values, typography families, and
+  sheet geometry are synchronized with `DESIGN_SYSTEM.md`; Button-state labels
+  use their matching semantic foreground rather than a fixed on-primary color.
+  The visible state reference covers default, hover, pressed, focus, disabled,
+  and loading actions plus read-only, error, and success field feedback.
+- Scope: design-time artifact only; no application source, runtime tokens,
+  dependencies, or executable product journeys changed.
+- Final audit: independent tester inspected 238 canvas nodes and found exactly 24
+  reusable symbols, zero structural/layout problems, and zero placeholders.
+  Independent reviewer verified the loading action, read-only/error/success field
+  states, 48px control roots, and no clipping or overflow; both returned PASS.
+- Follow-up refinement: the board now includes component use groups, a Button
+  variant matrix with default/hover/pressed/focus/disabled examples, and a visual
+  CSS-variable handoff table. `DESIGN_SYSTEM.md` records the matching future web
+  custom-property names and their semantic uses. A focused Pencil audit confirms
+  all 20 matrix cells use the documented foreground/background/border triplets;
+  the resulting 361-node canvas has zero layout problems and zero placeholders.
+
 ## Real application verification
 
 - Environment: Not applicable; no rendered application code changed.
@@ -37,8 +68,8 @@ Updated: 2026-08-16
   required when primitives are later implemented.
 - Observed result: Browser/device verification would not exercise this Markdown
   deliverable and was deliberately omitted.
-- Artifacts: `design/main.pen` remained unchanged with SHA-256
-  `4a354a157bf55a1d691c7eb17d4f8368d52e351492d7ba5fb9b09035ceee2ceb`.
+- Artifacts: `design/main.pen` is now the approved one-frame component library;
+  application rendering remains unchanged.
 
 ## Source and content verification
 
@@ -72,6 +103,8 @@ Updated: 2026-08-16
     - `pnpm format:check` — PASS.
 - Lint: `pnpm lint` — PASS.
 - Diff: `git diff --check` — PASS.
+- Git scope: `git status --short` reports `design/main.pen` as an intended new
+  design artifact; no runtime files were modified by the canvas work.
 - Typecheck: Not applicable; no TypeScript changed.
 - Build: Not applicable; no build input or runtime application changed.
 

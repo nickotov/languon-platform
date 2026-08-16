@@ -85,6 +85,38 @@ Verdict: Pass after remediation
 - Resolution: The independent reviewer and tester found no unresolved material
   issue after remediation.
 
+### Pencil component-library follow-up
+
+- Severity: Medium
+- Location: `design/main.pen` foundation/component sections.
+- Problem: The first canvas pass had clipped token rows, state-label contrast
+  mistakes, token/type parity drift, undersized control roots, reversed sheet
+  radii, incomplete primitive coverage, and inaccurate canvas evidence.
+- Impact: Future screen composition could inherit inaccessible or inconsistent
+  visual primitives.
+- Resolution: Fixed. The canvas uses an unconstrained token-row layout, completed
+  containers, synchronized motion/type values, corrected semantic Button-label
+  mappings, complete visible action/field state examples, 48px cross-platform
+  target roots, top sheet radii, and 24 reusable symbols. A focused Pencil
+  recheck is recorded in `EVIDENCE.md`.
+
+### Final Pencil re-review
+
+- Severity: None
+- Resolution: Independent reviewer and tester both passed the remediated canvas.
+  The final audit confirms one `design system` frame, 24 reusable symbols, no
+  placeholders or layout problems, synchronized foundation values, 48px shared
+  control roots, and complete visible action/field state references.
+
+### Handoff and state-matrix refinement
+
+- Severity: None
+- Resolution: The refined canvas balances default component padding, labels
+  components by use family, and adds a visual CSS-variable handoff. An independent
+  Pencil check confirmed the complete Primary, Secondary, Quiet, and Destructive
+  Button matrix uses the exact default, hover, pressed, focus, and disabled token
+  mappings from `DESIGN_SYSTEM.md`, with no layout problems or placeholders.
+
 ## Acceptance-criteria audit
 
 - [x] Every criterion is implemented and evidenced.

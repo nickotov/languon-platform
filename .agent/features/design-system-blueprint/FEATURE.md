@@ -36,8 +36,9 @@ applications.
       transparency, increased/forced contrast, localization, and RTL readiness.
 - [x] AC-5 — The document contains a prompt-ready visual-generation brief and a
       future implementation/verification checklist aligned with ADR-0005.
-- [x] AC-6 — `README.md` documents the new `design/` directory, `design/main.pen`
-      remains unchanged, and no runtime public API, dependency, or behavior changes.
+- [x] AC-6 — `README.md` documents the new `design/` directory and `design/main.pen`
+      contains one reusable `design system` canvas frame, while runtime public API,
+      dependencies, and application behavior remain unchanged.
 - [x] AC-7 — Proportional formatting, link, contrast, diff, tester, and independent
       review evidence is complete with all material findings resolved.
 
@@ -54,7 +55,6 @@ applications.
 
 ### Out of scope
 
-- Editing `design/main.pen` or generating a component canvas.
 - Implementing CSS variables, React/React Native primitives, Storybook, themes,
   screens, product journeys, or application behavior.
 - The denser admin-product variant and product-specific AI chat, lesson, course,
@@ -63,6 +63,9 @@ applications.
 
 ## Constraints and risks
 
+- The canvas is a design-time token and component library, not an application
+  implementation; it must remain one named frame with reusable symbols that future
+  screens can instance.
 - The blueprint must preserve ADR-0005: future web primitives remain under each
   application's `shared/ui`, start from native semantics, and gain colocated stories.
 - Web and mobile share conceptual semantics but must retain platform-native

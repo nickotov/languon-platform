@@ -19,8 +19,9 @@ and native mobile.
 - `apps/web` currently carries warm cream/forest ad hoc global CSS; `apps/mobile`
   repeats those raw values in a screen stylesheet; admin has an unrelated dark shell.
 - No shared UI primitives, stories, theme contract, or design token package exists.
-- `design/main.pen` is user-owned and contains one blank 800x600 frame; it must not
-  be changed by this documentation feature.
+- `design/main.pen` is the approved visual handoff surface. It must contain exactly
+  one `design system` frame and reusable token/component symbols, without runtime
+  implementation changes.
 - ADR-0005 requires web/admin primitives under app-local `shared/ui`, colocated
   stories, and accessible native elements before custom interaction machinery.
 - Root instructions prohibit application-source imports across `apps/*`; a future
@@ -81,6 +82,16 @@ and native mobile.
     - Evidence: Formatting, lint, user-flow documentation, link, contrast, hash,
       and diff checks pass. Independent tester and reviewer findings were
       remediated and their final passes found no unresolved material issues.
+- [x] M4 — Materialize the visual token and component library
+    - Objective: Convert the approved blueprint into one structured Pencil canvas
+      that later UI work can instance.
+    - Components: `design/main.pen`.
+    - Acceptance criteria: AC-2, AC-3, AC-4, AC-6.
+    - Required tests: Pencil structural inspection; visual component/symbol audit;
+      Git scope check.
+    - Evidence: one top-level `design system` frame, synchronized light/dark token
+      variables, and 26 reusable symbols covering actions, fields, controls,
+      selection, overlays, feedback, menus, content, and state compositions.
 
 ## Progress
 
@@ -96,15 +107,25 @@ and native mobile.
   state mappings, stronger surface boundaries, language metadata, persistent
   actionable notifications, reusable empty/error states, and precise reflow
   wording. The final 787-line blueprint has 62 verified contrast pairs.
+- 2026-08-16 — Completed M4: built `design/main.pen` as a single `design system`
+  canvas frame. It stores light/dark foundation variables and reusable component
+  symbols for future screen composition. Independent Pencil passes confirm 238
+  nodes, 24 reusable symbols, zero placeholders, zero layout problems, explicit
+  action/field state examples, and 48px cross-platform control targets; no runtime
+  source or dependencies changed.
+- 2026-08-16 — Refined the handoff board after visual feedback: compacted default
+  component padding, added grouped use guidance, made a full Button variant/state
+  matrix visible, and added an exact future CSS custom-property table. A focused
+  audit verified all 20 matrix cells against their documented semantic triplets.
 
 ## Decisions
 
-- D1 — Documentation-first design contract
+- D1 — Blueprint-led design contract
     - Context: The user needs requirements that can generate design later, not live UI.
-    - Choice and rationale: Produce one Markdown source of truth and preserve the
-      empty `.pen` board for the later visual phase.
+    - Choice and rationale: Use Markdown as the human-reviewable source of truth
+      and materialize the approved values as a `.pen` token/component library.
     - Alternatives rejected: `.pen`-only content is harder to diff and review;
-      implementing components would exceed the approved scope.
+      runtime components would exceed the approved scope.
     - ADR impact: Not ADR-worthy; future runtime sharing may require a separate ADR.
 - D2 — Fresh adult editorial identity
     - Context: Existing forest values are placeholders and the user approved a reset.
@@ -150,8 +171,10 @@ and native mobile.
 | User-flow E2E      | Not applicable | No affected guide                     |
 | Independent tester | Passed         | Initial finding fixed; final re-check |
 | Independent review | Passed         | All four findings fixed and rechecked |
+| Pencil structure   | Passed         | One frame and 26 reusable symbols     |
 | Security review    | Not applicable | No security-sensitive behavior        |
 
 ## Remaining work
 
-- None.
+- Future runtime implementation must verify the canvas values against real browser
+  and native rendering, including screen-reader behavior and font metrics.

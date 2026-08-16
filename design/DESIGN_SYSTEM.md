@@ -45,7 +45,9 @@ This version does not define:
   tutor-management, or gamification patterns;
 - runtime CSS variables, TypeScript exports, React components, React Native
   components, dependencies, or a cross-application package;
-- a finished component board in `main.pen`.
+- runtime implementation of the component board in `main.pen`; the board is a
+  design-time token and reusable-symbol library, not a substitute for accessible
+  web or native primitives.
 
 Those additions should extend these foundations rather than silently changing
 their semantic meaning.
@@ -128,6 +130,45 @@ not token names.
 Future web code should map system tokens to CSS custom properties. Future mobile
 code should map the same semantics to a typed theme object. This document does
 not choose a package or permit application-source imports across `apps/*`.
+
+### CSS custom-property handoff
+
+The following are the approved future web names. They are a handoff contract for
+app-local theme files, not a shared runtime package or a license to add raw values
+to components. Define the values on the theme root, switch them using the chosen
+theme mechanism, and consume `var(--sys-...)` only through semantic component
+styles.
+
+| CSS custom property                  | System token / value               | Use                                      |
+| ------------------------------------ | ---------------------------------- | ---------------------------------------- |
+| `--sys-color-background-canvas`      | `sys.color.background.canvas`      | Page/app background                      |
+| `--sys-color-surface-default`        | `sys.color.surface.default`        | Controls, cards, dialogs                 |
+| `--sys-color-surface-subtle`         | `sys.color.surface.subtle`         | Grouped content and quiet containers     |
+| `--sys-color-text-primary`           | `sys.color.text.primary`           | Main text                                |
+| `--sys-color-text-secondary`         | `sys.color.text.secondary`         | Supporting text                          |
+| `--sys-color-border-control`         | `sys.color.border.control`         | Default meaningful control boundary      |
+| `--sys-color-action-primary`         | `sys.color.action.primary`         | Primary actions and active state         |
+| `--sys-color-action-primary-hover`   | `sys.color.action.primary-hover`   | Pointer hover                            |
+| `--sys-color-action-primary-pressed` | `sys.color.action.primary-pressed` | Press/touch feedback                     |
+| `--sys-color-focus`                  | `sys.color.focus`                  | Focus ring                               |
+| `--sys-color-danger`                 | `sys.color.danger`                 | Error text/icon and destructive action   |
+| `--sys-color-disabled-surface`       | `sys.color.disabled.surface`       | Disabled control background              |
+| `--sys-color-disabled-content`       | `sys.color.disabled.content`       | Disabled text/icon                       |
+| `--sys-space-1` / `2` / `4` / `6`    | `4px` / `8px` / `16px` / `24px`    | Fine gap / compact / default / section   |
+| `--sys-size-control-sm`              | `40px`                             | Pointer-rich web control only            |
+| `--sys-size-control-md`              | `48px`                             | Default cross-platform control target    |
+| `--sys-size-control-lg`              | `56px`                             | High-emphasis mobile action              |
+| `--sys-radius-sm` / `md` / `lg`      | `10px` / `14px` / `20px`           | Controls / cards / panels                |
+| `--sys-font-display` / `ui`          | `Literata` / `Manrope`             | Editorial display / interface and body   |
+| `--sys-motion-fast` / `standard`     | `120ms` / `180ms`                  | Press/hover / small reveal and selection |
+| `--sys-ease-standard`                | `cubic-bezier(0.2, 0.8, 0.2, 1)`   | Entry and spatial change                 |
+
+For example, a future app-local Button should use
+`background: var(--sys-color-action-primary)`,
+`min-height: var(--sys-size-control-md)`, and
+`transition-duration: var(--sys-motion-fast)`. Its hover, pressed, focus, and
+disabled rules must resolve through the corresponding semantic variables rather
+than a computed or arbitrary color.
 
 ## 5. Color
 
