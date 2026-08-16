@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Codebase Design'
+    short_description: 'Design deep modules at established seams'
+    default_prompt: 'Use $codebase-design to evaluate this Languon module interface and propose a deeper design.'

@@ -9,11 +9,12 @@
     },
     "scripts": {
         "agent": "headroom wrap codex",
+        "agent-skills:check": "node --test scripts/check-agent-skills.test.mjs && node scripts/check-agent-skills.mjs",
         "browser": "node scripts/agent-browser.mjs",
         "browser:check": "node --test scripts/agent-browser.test.mjs scripts/agent-browser.integration.test.mjs && node scripts/agent-browser.mjs --doctor",
         "browser:install": "node scripts/agent-browser.mjs --install",
         "build": "turbo run build",
-        "check": "pnpm format:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+        "check": "pnpm format:check && pnpm agent-skills:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
         "db:check": "pnpm --filter @languon/backend db:check",
         "db:generate": "pnpm --filter @languon/backend db:generate",
         "db:migrate": "pnpm --filter @languon/backend db:migrate",

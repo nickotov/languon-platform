@@ -1,0 +1,7 @@
+interface:
+    display_name: 'Improve Codebase Architecture'
+    short_description: 'Survey focused architecture friction'
+    default_prompt: 'Use $improve-codebase-architecture to survey this Languon subsystem for evidence-backed deepening opportunities.'
+
+policy:
+    allow_implicit_invocation: false

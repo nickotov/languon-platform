@@ -1,0 +1,7 @@
+interface:
+    display_name: 'Prototype'
+    short_description: 'Answer product questions with throwaway prototypes'
+    default_prompt: 'Use $prototype to answer this product or interaction question with a disposable Languon prototype.'
+
+policy:
+    allow_implicit_invocation: false

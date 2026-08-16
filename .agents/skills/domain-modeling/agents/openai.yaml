@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Domain Modeling'
+    short_description: "Sharpen Languon's shared domain language"
+    default_prompt: 'Use $domain-modeling to clarify these Languon domain terms and record only resolved language.'

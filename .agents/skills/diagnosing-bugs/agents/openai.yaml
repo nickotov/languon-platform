@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Diagnosing Bugs'
+    short_description: 'Build a tight evidence-led bug diagnosis loop'
+    default_prompt: 'Use $diagnosing-bugs to reproduce, isolate, diagnose, and verify this difficult Languon bug.'

@@ -55,6 +55,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm dev:mobile`                      | Run only the Expo development server            |
 | `pnpm browser:install`                 | Install Chrome for agent-led browser checks     |
 | `pnpm browser:check`                   | Test the safe wrapper and live browser launch   |
+| `pnpm agent-skills:check`              | Validate repository-scoped agent skill packages |
 | `pnpm db:generate`                     | Generate reviewed Drizzle SQL migrations        |
 | `pnpm db:check`                        | Validate Drizzle migration history              |
 | `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations  |
@@ -121,5 +122,7 @@ See [architecture](./docs/architecture.md),
 [development](./docs/development.md),
 [user-flow testing guides](./docs/user-flows/README.md), and
 [agentic development](./docs/agentic-development.md) for details.
+The [repository agent skills guide](./docs/agent-skills.md) documents local skill
+invocation, authority, provenance, and upstream license notices.
 Frontend component and state work uses the project-local
 `$frontend-development` skill.

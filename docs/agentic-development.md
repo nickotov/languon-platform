@@ -4,6 +4,10 @@ This guide describes how a developer works effectively with Codex in Languon:
 how to state work, run the project, select verification tools, review evidence,
 and continue long-running features without relying on conversation memory.
 
+Repository-scoped workflows are documented in
+[`agent-skills.md`](./agent-skills.md), including invocation, authority, locally
+adapted skills, upstream provenance, and license notices.
+
 ## Responsibilities
 
 The developer owns product intent and the decisions that should not be inferred:
