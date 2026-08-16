@@ -100,6 +100,7 @@ handle it prints for subsequent commands.
 - `packages/database/` — PostgreSQL and Redis infrastructure factories.
 - `packages/prompts/` — local prompt fallbacks and Langfuse prompt access.
 - `infra/` — checked-in container definitions.
+- `design/` — design-system blueprints and editable visual design sources.
 - `docs/` — product, architecture, ADRs, setup, and development documentation.
 - `.agent/` — durable feature artifacts and lightweight correction plans.
 - `.agents/skills/` — repository-scoped Codex workflows.
