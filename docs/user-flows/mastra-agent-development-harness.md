@@ -10,6 +10,7 @@ surfaces:
     - system
 source_paths:
     - .agent/features/mastra-agent-development-harness/**
+    - .agent/features/mastra-deepseek-model/**
     - .env.example
     - README.md
     - docs/development.md
@@ -32,6 +33,7 @@ e2e_tests:
 e2e_scenarios:
     - playground-provision-run-persist-reset
 related_features:
+    - mastra-deepseek-model
     - user-authentication
 ---
 
@@ -70,6 +72,15 @@ must be loopback PostgreSQL, use a database name beginning with
 different from `DATABASE_URL`. Do not substitute shared, staging, production,
 or copied data.
 
+`MASTRA_MODEL_ID` defaults to `deepseek/deepseek-chat`. To exercise another
+Mastra-supported model, set its `provider/model` identifier as the primary and
+add that provider's standard API-key variable. DeepSeek Chat remains the fixed
+fallback, so every live agent run also requires a development-only
+`DEEPSEEK_API_KEY`. Deterministic checks require neither credential.
+Provider `*_BASE_URL` overrides are intentionally unsupported: the DeepSeek
+fallback uses its pinned HTTPS origin, and an alternate primary uses the
+selected Mastra provider's registered destination.
+
 Start the complete harness from the repository root:
 
 ```sh
@@ -84,9 +95,10 @@ then starts Mastra. Expected local URLs are:
 - Studio: `http://127.0.0.1:4111`
 - generated OpenAPI document: `http://127.0.0.1:4111/api/openapi.json`
 
-Normal startup never drops or truncates the playground. No OpenAI or Langfuse
-credential is needed for Studio, tool, workflow, or scorer verification. The
-command forces Mastra usage telemetry off.
+Normal startup never drops or truncates the playground. No DeepSeek,
+alternate-provider, or Langfuse credential is needed for Studio, tool,
+workflow, or scorer verification. The command forces Mastra usage telemetry
+off.
 
 ## CLI verification
 
@@ -110,9 +122,13 @@ command forces Mastra usage telemetry off.
    verification step and the result trace path to identify that step.
 6. Exercise the code scorer with the expected principal ID. Expect score `1`
    without a model request.
-7. Without `OPENAI_API_KEY`, invoke the agent. Expect a clear credential error
-   while deterministic primitives remain usable. With an intentional local
-   development key, the agent may be invoked as an opt-in live smoke only.
+7. Without `DEEPSEEK_API_KEY`, invoke the agent. Expect a clear credential
+   error while deterministic primitives remain usable. With an intentional
+   development-only DeepSeek key, the default agent may be invoked as an opt-in
+   live smoke. If `MASTRA_MODEL_ID` selects another primary, also configure
+   that provider's development key and confirm Studio shows the configured
+   primary. The ordered DeepSeek fallback is covered by the focused composition
+   test because Studio displays only the active primary model.
 8. Edit the checked-in development-harness prompt while the server is running,
    confirm the prompt package rebuilds and Studio reloads, then restore the
    intended text before committing.
@@ -138,10 +154,13 @@ Expect the same development primitive identifiers visible in Studio. The Hono
 backend at port `4000` is not part of this run and gains no generic Mastra route.
 The local generated server accepts only its documented loopback Host and Origin,
 including for internal refresh and workflow-restart hooks. Its API pins the
-checked-in prompt and configured model/provider/tool policy, bounds agent work,
-and rejects the generic Responses and Conversations model proxies. Use Studio
-for request-context form execution; exhaustive malformed input, policy-override,
-DNS-rebinding, and unsafe-target cases remain at unit and integration layers.
+checked-in prompt and configured primary/DeepSeek-fallback/provider/tool
+policy, rejects processor replacement and privileged message roles, bounds
+agent work, strips Studio's retry default before dispatch, and rejects the
+generic Responses and Conversations model proxies. Use Studio for
+request-context form execution; exhaustive
+malformed input, policy-override, DNS-rebinding, and unsafe-target cases remain
+at unit and integration layers.
 
 ## System verification
 
@@ -177,10 +196,16 @@ unit tests.
   rejected; request context is selection input, not authentication proof.
 - Cancellation aborts delayed tool/workflow work rather than continuing a
   database lookup.
-- Missing `OPENAI_API_KEY` affects only live agent invocation and never triggers
-  provider fallback.
+- Missing `DEEPSEEK_API_KEY` affects only live agent invocation and prevents a
+  run whose declared fallback would be unavailable.
+- With a different valid `MASTRA_MODEL_ID`, Mastra tries the configured primary
+  with no repeated request and then `deepseek/deepseek-chat`; fallback failure
+  is surfaced and no third provider is attempted.
+- `DEEPSEEK_BASE_URL` or the selected provider's `*_BASE_URL` override stops
+  startup rather than redirecting credentials or prompts.
 - Caller-provided model, prompt, provider, structured-output model, or tool
-  overrides are rejected at the generated HTTP boundary.
+  overrides, processor lists, privileged message roles, and other execution
+  options are rejected at the generated HTTP boundary.
 - A port conflict on `4111` or PostgreSQL startup failure produces a non-zero
   process result; stop the conflicting local process and retry.
 - Normal startup preserves data. Reset refuses unless confirmation exactly
@@ -222,8 +247,9 @@ name and removes only the container it started.
 - If prompt edits do not reload, confirm the `@languon/prompts` watch process is
   still running and its `dist` build succeeds.
 - If agent execution fails without a key, use the deterministic tool/workflow/
-  scorer checks or deliberately add a development-only OpenAI key. Never borrow
-  a production credential.
+  scorer checks or deliberately add a development-only `DEEPSEEK_API_KEY`.
+  An alternate `MASTRA_MODEL_ID` also needs that provider's normal key. Never
+  borrow a production credential.
 - Persistent Mastra datasets, experiment history, workflow state, and stored
   traces are intentionally unavailable in this feature.
 

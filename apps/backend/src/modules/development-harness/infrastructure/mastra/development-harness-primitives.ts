@@ -1,5 +1,9 @@
 import { Agent } from '@mastra/core/agent';
 import { createScorer } from '@mastra/core/evals';
+import type {
+    ModelRouterModelId,
+    OpenAICompatibleConfig,
+} from '@mastra/core/llm';
 import { createTool } from '@mastra/core/tools';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { getLocalPrompt } from '@languon/prompts';
@@ -41,15 +45,16 @@ const DevelopmentScorerInputSchema = z.object({
 export class DevelopmentModelConfigurationError extends Error {
     public constructor() {
         super(
-            'Live development agent execution requires OPENAI_API_KEY; deterministic tool, workflow, and scorer checks remain available.',
+            'Live development agent execution requires DEEPSEEK_API_KEY for the default and fallback model; deterministic tool, workflow, and scorer checks remain available.',
         );
         this.name = 'DevelopmentModelConfigurationError';
     }
 }
 
 export interface DevelopmentHarnessPrimitiveOptions {
-    modelCredentialAvailable: boolean;
-    modelId: `openai/${string}`;
+    deepSeekApiKey?: string;
+    fallbackModelId: `${string}/${string}`;
+    modelId: `${string}/${string}`;
     service: DevelopmentVerificationService;
 }
 
@@ -128,12 +133,17 @@ export function createDevelopmentHarnessPrimitives(
         .then(verificationStep)
         .commit();
 
+    const agentModel = createDevelopmentAgentModel(options);
     const verificationAgent = new Agent({
         defaultGenerateOptionsLegacy: {
+            maxRetries: 0,
             maxSteps: developmentHarnessMaximumAgentSteps,
         },
-        defaultOptions: { maxSteps: developmentHarnessMaximumAgentSteps },
+        defaultOptions: {
+            maxSteps: developmentHarnessMaximumAgentSteps,
+        },
         defaultStreamOptionsLegacy: {
+            maxRetries: 0,
             maxSteps: developmentHarnessMaximumAgentSteps,
         },
         id: 'development-verification-agent',
@@ -144,14 +154,14 @@ export function createDevelopmentHarnessPrimitives(
             {
                 id: 'development-model-credential-guard',
                 processInput: ({ abort, messageList }) => {
-                    if (!options.modelCredentialAvailable) {
+                    if (!options.deepSeekApiKey) {
                         abort(
                             new DevelopmentModelConfigurationError().message,
                             {
                                 metadata: {
                                     category: 'model_configuration',
                                     requiredEnvironmentVariable:
-                                        'OPENAI_API_KEY',
+                                        'DEEPSEEK_API_KEY',
                                 },
                                 retry: false,
                             },
@@ -161,7 +171,7 @@ export function createDevelopmentHarnessPrimitives(
                 },
             },
         ],
-        model: options.modelId,
+        model: agentModel,
         requestContextSchema: DevelopmentHarnessRequestContextSchema,
         tools: { verificationTool },
     });
@@ -191,6 +201,48 @@ export function createDevelopmentHarnessPrimitives(
         verificationTool,
         verificationWorkflow,
     };
+}
+
+function createDevelopmentAgentModel(
+    options: DevelopmentHarnessPrimitiveOptions,
+): Array<{
+    enabled: true;
+    id: string;
+    maxRetries: 0;
+    model: ModelRouterModelId | OpenAICompatibleConfig;
+}> {
+    const primaryModel = options.modelId as ModelRouterModelId;
+    const fallbackModel = {
+        ...(options.deepSeekApiKey ? { apiKey: options.deepSeekApiKey } : {}),
+        id: options.fallbackModelId,
+        url: 'https://api.deepseek.com',
+    } satisfies OpenAICompatibleConfig;
+
+    if (primaryModel === options.fallbackModelId) {
+        return [
+            {
+                enabled: true,
+                id: 'deepseek-default',
+                maxRetries: 0,
+                model: fallbackModel,
+            },
+        ];
+    }
+
+    return [
+        {
+            enabled: true,
+            id: 'configured-primary',
+            maxRetries: 0,
+            model: primaryModel,
+        },
+        {
+            enabled: true,
+            id: 'deepseek-fallback',
+            maxRetries: 0,
+            model: fallbackModel,
+        },
+    ];
 }
 
 async function abortableDelay(

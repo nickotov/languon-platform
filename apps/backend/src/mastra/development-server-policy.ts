@@ -4,6 +4,15 @@ import { developmentHarnessMaximumAgentSteps } from '../modules/development-harn
 
 const agentPath = '/api/agents/development-verification-agent';
 const allowedHosts = new Set(['127.0.0.1:4111', 'localhost:4111']);
+const allowedAgentRequestKeys = new Set([
+    'maxSteps',
+    'messages',
+    'modelSettings',
+    'requestContext',
+    'runId',
+    'untilIdle',
+]);
+const studioModelSettingsKeys = new Set(['maxRetries']);
 const forbiddenRequestKeys = new Set([
     'activeTools',
     'clientTools',
@@ -89,6 +98,12 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
                     return;
                 }
 
+                const pathname = new URL(context.req.url).pathname;
+                if (!isAgentModelExecutionPath(pathname)) {
+                    await next();
+                    return;
+                }
+
                 const requestFailure = await validateAgentRequestBody(
                     context.req.raw,
                 );
@@ -99,11 +114,10 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
                     );
                 }
 
-                const pathname = new URL(context.req.url).pathname;
-                if (!isAgentModelExecutionPath(pathname)) {
-                    await next();
-                    return;
-                }
+                context.req.raw = await normalizeAgentExecutionRequest(
+                    context.req.raw,
+                );
+                context.req.bodyCache = {};
 
                 if (activeAgentExecutions >= 1) {
                     return context.json(
@@ -136,6 +150,23 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
 export function enforceDevelopmentHarnessProcessPolicy(
     environment: NodeJS.ProcessEnv = process.env,
 ): void {
+    const configuredModelId =
+        environment.MASTRA_MODEL_ID ?? 'deepseek/deepseek-chat';
+    const configuredProvider = configuredModelId.split('/', 1)[0] ?? 'deepseek';
+    const baseUrlVariables = new Set([
+        'DEEPSEEK_BASE_URL',
+        `${configuredProvider.replace(/-/g, '_').toUpperCase()}_BASE_URL`,
+        `${configuredProvider.replace(/[^A-Za-z0-9]/g, '_').toUpperCase()}_BASE_URL`,
+    ]);
+    const configuredOverride = [...baseUrlVariables].find((name) =>
+        environment[name]?.trim(),
+    );
+    if (configuredOverride) {
+        throw new Error(
+            `${configuredOverride} is not supported by the development harness; model destinations are resolved from the selected Mastra provider and the DeepSeek fallback uses its pinned HTTPS origin.`,
+        );
+    }
+
     environment.MASTRA_TELEMETRY_DISABLED = 'true';
 }
 
@@ -183,7 +214,12 @@ export async function validateAgentRequestBody(
             status: 413,
         };
     }
-    if (!text) return;
+    if (!text) {
+        return {
+            message: 'The development agent request body must be an object.',
+            status: 400,
+        };
+    }
 
     let body: unknown;
     try {
@@ -195,10 +231,62 @@ export async function validateAgentRequestBody(
         };
     }
 
-    const forbiddenKey = findForbiddenKey(body);
+    if (!isRecord(body)) {
+        return {
+            message: 'The development agent request body must be an object.',
+            status: 400,
+        };
+    }
+
+    const unsupportedKey = Object.keys(body).find(
+        (key) => !allowedAgentRequestKeys.has(key),
+    );
+    if (unsupportedKey) {
+        return {
+            message: `The development agent request cannot set ${unsupportedKey}.`,
+            status: 403,
+        };
+    }
+
+    if (!isAllowedStudioModelSettings(body.modelSettings)) {
+        return {
+            message:
+                'The development agent request cannot override modelSettings.',
+            status: 403,
+        };
+    }
+
+    if (
+        body.runId !== undefined &&
+        (typeof body.runId !== 'string' || !isCanonicalUuid(body.runId))
+    ) {
+        return {
+            message:
+                'The development agent runId must use canonical UUID format.',
+            status: 400,
+        };
+    }
+
+    if (body.untilIdle !== undefined && body.untilIdle !== true) {
+        return {
+            message:
+                'The development agent untilIdle value must be true when provided.',
+            status: 400,
+        };
+    }
+
+    const forbiddenKey = findNestedForbiddenKey(body);
     if (forbiddenKey) {
         return {
             message: `The development agent request cannot override ${forbiddenKey}.`,
+            status: 403,
+        };
+    }
+
+    if (hasPrivilegedMessageRole(body.messages)) {
+        return {
+            message:
+                'The development agent request cannot include privileged message roles.',
             status: 403,
         };
     }
@@ -215,6 +303,55 @@ export async function validateAgentRequestBody(
             status: 400,
         };
     }
+}
+
+async function normalizeAgentExecutionRequest(
+    request: Request,
+): Promise<Request> {
+    const body = (await request.clone().json()) as Record<string, unknown>;
+    const normalizedBody: Record<string, unknown> = {
+        ...body,
+        maxSteps: body.maxSteps ?? developmentServerMaximumAgentSteps,
+    };
+    delete normalizedBody.modelSettings;
+
+    return new Request(request, {
+        body: JSON.stringify(normalizedBody),
+    });
+}
+
+function isAllowedStudioModelSettings(value: unknown): boolean {
+    if (value === undefined) return true;
+    if (!isRecord(value)) return false;
+
+    const keys = Object.keys(value);
+    if (keys.length === 0) return true;
+    return (
+        keys.every((key) => studioModelSettingsKeys.has(key)) &&
+        value.maxRetries === 2
+    );
+}
+
+function findNestedForbiddenKey(
+    body: Record<string, unknown>,
+): string | undefined {
+    for (const [key, value] of Object.entries(body)) {
+        if (key === 'modelSettings') continue;
+        const result = findForbiddenKey(value);
+        if (result) return result;
+    }
+}
+
+function hasPrivilegedMessageRole(messages: unknown): boolean {
+    if (!Array.isArray(messages)) return false;
+
+    return messages.some(
+        (message) =>
+            isRecord(message) &&
+            ['developer', 'system'].includes(
+                String(message.role).trim().toLowerCase(),
+            ),
+    );
 }
 
 function findForbiddenKey(value: unknown): string | undefined {
@@ -251,12 +388,7 @@ function isAllowedMutation(method: string, pathname: string): boolean {
     if (method.toUpperCase() !== 'POST') return false;
 
     if (pathname.startsWith(`${agentPath}/`)) {
-        const suffix = pathname.slice(agentPath.length + 1);
-        return (
-            isAgentModelExecutionPath(pathname) ||
-            /^threads\/(?:abort|subscribe)$/.test(suffix) ||
-            /^tools\/development-principal-verification\/execute$/.test(suffix)
-        );
+        return isAgentModelExecutionPath(pathname);
     }
 
     if (pathname === '/api/tools/development-principal-verification/execute') {
@@ -300,6 +432,12 @@ function isUnsupportedProxyPath(pathname: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
+}
+
+function isCanonicalUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        value,
+    );
 }
 
 function withCompletionLease(

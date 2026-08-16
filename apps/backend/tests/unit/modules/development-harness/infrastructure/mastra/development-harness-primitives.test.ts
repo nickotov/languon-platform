@@ -1,6 +1,7 @@
 import { noopObserve } from '@mastra/core/tools';
 import { RequestContext } from '@mastra/core/request-context';
-import { describe, expect, it } from 'vitest';
+import { inspect } from 'node:util';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createCanonicalMastra } from '../../../../../../src/mastra/composition';
 import { DevelopmentVerificationService } from '../../../../../../src/modules/development-harness/application/development-verification-service';
@@ -13,8 +14,8 @@ const principalId = '00000000-0000-4000-8000-000000000019';
 
 function createOptions() {
     return {
-        modelCredentialAvailable: false,
-        modelId: 'openai/gpt-5-mini' as const,
+        fallbackModelId: 'deepseek/deepseek-chat' as const,
+        modelId: 'deepseek/deepseek-chat' as const,
         service: new DevelopmentVerificationService(
             {
                 findById: async () => ({
@@ -47,6 +48,11 @@ function requestContextWithoutVariant() {
 }
 
 describe('development harness Mastra primitives', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
     it('registers fixtures only in explicit development composition', () => {
         const production = createCanonicalMastra();
         const development = createCanonicalMastra({
@@ -162,12 +168,95 @@ describe('development harness Mastra primitives', () => {
             tripwire: {
                 metadata: {
                     category: 'model_configuration',
-                    requiredEnvironmentVariable: 'OPENAI_API_KEY',
+                    requiredEnvironmentVariable: 'DEEPSEEK_API_KEY',
                 },
-                reason: expect.stringContaining('requires OPENAI_API_KEY'),
+                reason: expect.stringContaining('requires DEEPSEEK_API_KEY'),
                 retry: false,
             },
         });
+    });
+
+    it('uses DeepSeek once by default and orders an alternate primary before the fixed fallback', () => {
+        const defaultAgent =
+            createDevelopmentHarnessPrimitives(
+                createOptions(),
+            ).verificationAgent;
+        const alternateAgent = createDevelopmentHarnessPrimitives({
+            ...createOptions(),
+            modelId: 'anthropic/claude-sonnet-4-5',
+        }).verificationAgent;
+
+        expect(defaultAgent.model).toEqual([
+            {
+                enabled: true,
+                id: 'deepseek-default',
+                maxRetries: 0,
+                model: {
+                    id: 'deepseek/deepseek-chat',
+                    url: 'https://api.deepseek.com',
+                },
+            },
+        ]);
+        expect(alternateAgent.model).toEqual([
+            {
+                enabled: true,
+                id: 'configured-primary',
+                maxRetries: 0,
+                model: 'anthropic/claude-sonnet-4-5',
+            },
+            {
+                enabled: true,
+                id: 'deepseek-fallback',
+                maxRetries: 0,
+                model: {
+                    id: 'deepseek/deepseek-chat',
+                    url: 'https://api.deepseek.com',
+                },
+            },
+        ]);
+    });
+
+    it('pins DeepSeek to its HTTPS origin and suppresses prompt-bearing provider error logs', async () => {
+        const sentinel = 'sentinel-private-prompt-926c98e6';
+        const fetchMock = vi.fn().mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    error: { message: 'synthetic provider rejection' },
+                }),
+                {
+                    headers: { 'content-type': 'application/json' },
+                    status: 401,
+                },
+            ),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        const consoleCalls: unknown[][] = [];
+        for (const method of ['error', 'info', 'log', 'warn'] as const) {
+            vi.spyOn(console, method).mockImplementation((...values) => {
+                consoleCalls.push(values);
+            });
+        }
+
+        const mastra = createCanonicalMastra({
+            developmentHarness: {
+                ...createOptions(),
+                deepSeekApiKey: 'synthetic-deepseek-key',
+            },
+        });
+        const agent = mastra.listAgents().developmentVerificationAgent;
+        await agent
+            .generate(sentinel, {
+                requestContext: requestContext(),
+            })
+            .catch(() => undefined);
+
+        expect(fetchMock).toHaveBeenCalled();
+        const requestedUrl = String(fetchMock.mock.calls[0]?.[0]);
+        expect(requestedUrl).toBe('https://api.deepseek.com/chat/completions');
+        expect(inspect(consoleCalls, { depth: 8 })).not.toContain(sentinel);
+        expect(inspect(consoleCalls, { depth: 8 })).not.toContain(
+            'synthetic-deepseek-key',
+        );
     });
 
     it('pins modern and legacy agent executions to three steps', async () => {
@@ -179,10 +268,10 @@ describe('development harness Mastra primitives', () => {
         });
         expect(
             await verificationAgent.getDefaultGenerateOptionsLegacy(),
-        ).toMatchObject({ maxSteps: 3 });
+        ).toMatchObject({ maxRetries: 0, maxSteps: 3 });
         expect(
             await verificationAgent.getDefaultStreamOptionsLegacy(),
-        ).toMatchObject({ maxSteps: 3 });
+        ).toMatchObject({ maxRetries: 0, maxSteps: 3 });
     });
 
     it('cancels delayed tool execution', async () => {

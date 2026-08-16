@@ -76,15 +76,21 @@ Zod validated and cancellation is preserved.
 
 Checked-in local prompts are the only default resolver. Neither Langfuse nor a
 model key is required to boot or run the deterministic tool, workflow, and code
-scorer. Live agent invocation is explicit and fails with a sanitized error when
-`OPENAI_API_KEY` is absent; no provider fallback is attempted. The harness
-forces Mastra usage telemetry off. Its generated server accepts only the
-documented loopback Host and Origin values (including internal refresh/restart
-hooks), rejects caller overrides for the configured model, prompt, provider
-settings, and tools, limits agent requests and concurrent execution, and does not
-expose the generic Responses or Conversations model proxies. Persistent Mastra
-memory, workflow state, datasets, experiments, traces, and scorer history remain
-deferred.
+scorer. The live agent defaults to `deepseek/deepseek-chat`. When
+`MASTRA_MODEL_ID` selects another valid Mastra `provider/model`, that model is
+the primary and DeepSeek Chat remains the fixed fallback. Live invocation is
+explicit and fails with a sanitized error when `DEEPSEEK_API_KEY` is absent so
+the fallback is never silently unavailable; an alternate primary also requires
+its provider-specific environment key. The harness forces Mastra usage
+telemetry off, pins the fallback to DeepSeek's HTTPS API origin, rejects
+`*_BASE_URL` overrides for the active providers, and suppresses provider error
+payloads from harness logs. Its generated server accepts only the documented
+loopback Host and Origin values (including internal refresh/restart hooks),
+rejects caller overrides for the configured model list, prompt, provider
+settings, and tools, rejects per-request processor replacement, limits agent
+requests and concurrent execution, and does not expose the generic Responses
+or Conversations model proxies. Persistent Mastra memory, workflow state,
+datasets, experiments, traces, and scorer history remain deferred.
 
 Stop the harness with `Ctrl+C`. To intentionally discard only playground data,
 set `MASTRA_PLAYGROUND_RESET_CONFIRM` to the exact validated target name and

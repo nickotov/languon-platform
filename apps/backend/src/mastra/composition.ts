@@ -9,8 +9,9 @@ import {
 
 export interface CanonicalMastraOptions {
     developmentHarness?: {
-        modelCredentialAvailable: boolean;
-        modelId: `openai/${string}`;
+        deepSeekApiKey?: string;
+        fallbackModelId: `${string}/${string}`;
+        modelId: `${string}/${string}`;
         service: DevelopmentVerificationService;
     };
 }
@@ -40,6 +41,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
         agents: {
             developmentVerificationAgent: development.verificationAgent,
         },
+        logger: false,
         scorers: {
             developmentPrincipalMatch: development.verificationScorer,
         },

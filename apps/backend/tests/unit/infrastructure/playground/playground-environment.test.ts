@@ -25,9 +25,65 @@ describe('Mastra playground environment', () => {
         expect(loadPlaygroundEnvironment(environment())).toMatchObject({
             appEnvironment: 'test',
             databaseName: 'languon_mastra_playground_test',
-            modelId: 'openai/gpt-5-mini',
+            fallbackModelId: 'deepseek/deepseek-chat',
+            modelId: 'deepseek/deepseek-chat',
             promptMode: 'local',
         });
+    });
+
+    it('accepts an alternate primary model while retaining DeepSeek fallback configuration', () => {
+        expect(
+            loadPlaygroundEnvironment(
+                environment({
+                    DEEPSEEK_API_KEY: 'development-deepseek-key',
+                    MASTRA_MODEL_ID: 'anthropic/claude-sonnet-4-5',
+                }),
+            ),
+        ).toMatchObject({
+            deepSeekApiKey: 'development-deepseek-key',
+            fallbackModelId: 'deepseek/deepseek-chat',
+            modelId: 'anthropic/claude-sonnet-4-5',
+        });
+    });
+
+    it.each([
+        'cloudflare-workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+        'openrouter/~anthropic/claude-sonnet-latest',
+    ])('accepts pinned model-router identifier %s', (modelId) => {
+        expect(
+            loadPlaygroundEnvironment(environment({ MASTRA_MODEL_ID: modelId }))
+                .modelId,
+        ).toBe(modelId);
+    });
+
+    it.each(['', '   '])(
+        'does not treat an alternate provider key or blank DeepSeek key %j as fallback credentials',
+        (deepSeekApiKey) => {
+            const loaded = loadPlaygroundEnvironment(
+                environment({
+                    DEEPSEEK_API_KEY: deepSeekApiKey,
+                    MASTRA_MODEL_ID: 'openai/gpt-5-mini',
+                    OPENAI_API_KEY: 'development-openai-key',
+                }),
+            );
+
+            expect(loaded).not.toHaveProperty('deepSeekApiKey');
+            expect(loaded.modelId).toBe('openai/gpt-5-mini');
+        },
+    );
+
+    it.each([
+        'deepseek',
+        '/deepseek-chat',
+        'DeepSeek/deepseek-chat',
+        'deepseek/deepseek chat',
+        'deepseek/../../credential',
+    ])('rejects malformed model identifier %s', (modelId) => {
+        expect(() =>
+            loadPlaygroundEnvironment(
+                environment({ MASTRA_MODEL_ID: modelId }),
+            ),
+        ).toThrow();
     });
 
     it.each([

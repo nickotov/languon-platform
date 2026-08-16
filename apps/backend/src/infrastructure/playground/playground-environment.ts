@@ -2,6 +2,13 @@ import { z } from 'zod';
 
 const playgroundDatabaseNamePattern =
     /^languon_mastra_playground(?:_[a-z0-9]+)*$/;
+const mastraModelIdPattern =
+    /^[a-z0-9][a-z0-9._-]{0,63}\/[A-Za-z0-9@~][A-Za-z0-9._:/@~-]{0,190}$/;
+
+export type DevelopmentHarnessModelId = `${string}/${string}`;
+
+export const developmentHarnessDeepSeekModelId =
+    'deepseek/deepseek-chat' as const;
 
 const RawPlaygroundEnvironmentSchema = z.object({
     APP_ENV: z.enum(['development', 'test']),
@@ -9,16 +16,21 @@ const RawPlaygroundEnvironmentSchema = z.object({
     MASTRA_DEV_HARNESS: z.literal('true'),
     MASTRA_MODEL_ID: z
         .string()
-        .regex(/^openai\/[a-z0-9][a-z0-9._-]*$/)
-        .default('openai/gpt-5-mini'),
+        .max(255)
+        .regex(mastraModelIdPattern)
+        .refine((modelId) => !modelId.includes('..'))
+        .default(developmentHarnessDeepSeekModelId),
     MASTRA_PLAYGROUND_ADMIN_DATABASE_URL: z.url(),
     MASTRA_PLAYGROUND_DATABASE_URL: z.url(),
     MASTRA_PLAYGROUND_RESET_CONFIRM: z.string().optional(),
     MASTRA_PROMPT_MODE: z.literal('local').default('local'),
-    OPENAI_API_KEY: z
+    DEEPSEEK_API_KEY: z
         .preprocess(
-            (value) => (value === '' ? undefined : value),
-            z.string().min(1).optional(),
+            (value) =>
+                typeof value === 'string' && value.trim() === ''
+                    ? undefined
+                    : value,
+            z.string().trim().min(1).optional(),
         )
         .optional(),
 });
@@ -28,8 +40,9 @@ export interface PlaygroundEnvironment {
     appEnvironment: 'development' | 'test';
     databaseName: string;
     databaseUrl: string;
-    modelId: `openai/${string}`;
-    openAiApiKey?: string;
+    deepSeekApiKey?: string;
+    fallbackModelId: typeof developmentHarnessDeepSeekModelId;
+    modelId: DevelopmentHarnessModelId;
     promptMode: 'local';
     resetConfirmation?: string;
 }
@@ -91,8 +104,11 @@ export function loadPlaygroundEnvironment(
         appEnvironment: raw.APP_ENV,
         databaseName,
         databaseUrl: target.href,
-        modelId: raw.MASTRA_MODEL_ID as `openai/${string}`,
-        ...(raw.OPENAI_API_KEY ? { openAiApiKey: raw.OPENAI_API_KEY } : {}),
+        ...(raw.DEEPSEEK_API_KEY
+            ? { deepSeekApiKey: raw.DEEPSEEK_API_KEY }
+            : {}),
+        fallbackModelId: developmentHarnessDeepSeekModelId,
+        modelId: raw.MASTRA_MODEL_ID as DevelopmentHarnessModelId,
         promptMode: raw.MASTRA_PROMPT_MODE,
         ...(raw.MASTRA_PLAYGROUND_RESET_CONFIRM
             ? { resetConfirmation: raw.MASTRA_PLAYGROUND_RESET_CONFIRM }

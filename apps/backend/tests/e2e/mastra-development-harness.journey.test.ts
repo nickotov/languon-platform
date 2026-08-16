@@ -16,7 +16,7 @@ const enabled =
     process.env.ALLOW_MASTRA_PLAYGROUND_DATABASE_TESTS === 'true' &&
     typeof process.env.MASTRA_PLAYGROUND_TEST_ADMIN_DATABASE_URL === 'string';
 
-// @user-flow-revision mastra-agent-development-harness sha256:cc2c9d838f9e8b68
+// @user-flow-revision mastra-agent-development-harness sha256:964c8e21a3371c9c
 describe.runIf(enabled)('Mastra development harness journey', () => {
     // @user-flow mastra-agent-development-harness/playground-provision-run-persist-reset
     it('provisions, runs, persists, isolates, and safely resets the playground', async () => {
@@ -85,8 +85,8 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             developmentHarnessFixture.principalId,
         );
         const primitives = createDevelopmentHarnessPrimitives({
-            modelCredentialAvailable: false,
-            modelId: 'openai/gpt-5-mini',
+            fallbackModelId: 'deepseek/deepseek-chat',
+            modelId: 'deepseek/deepseek-chat',
             service,
         });
         const requestContext = new RequestContext<{

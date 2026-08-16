@@ -15,6 +15,7 @@
             "cache": false,
             "env": [
                 "APP_ENV",
+                "DEEPSEEK_API_KEY",
                 "MASTRA_DEV_HARNESS",
                 "MASTRA_MODEL_ID",
                 "MASTRA_PLAYGROUND_ADMIN_DATABASE_URL",

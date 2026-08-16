@@ -27,7 +27,10 @@ function createDevelopmentHarnessOptions() {
     const database = createDrizzleDatabase(sql, databaseSchema);
 
     return {
-        modelCredentialAvailable: environment.openAiApiKey !== undefined,
+        ...(environment.deepSeekApiKey
+            ? { deepSeekApiKey: environment.deepSeekApiKey }
+            : {}),
+        fallbackModelId: environment.fallbackModelId,
         modelId: environment.modelId,
         service: new DevelopmentVerificationService(
             new DrizzleDevelopmentPrincipalReader(database),
