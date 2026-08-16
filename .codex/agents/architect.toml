@@ -1,6 +1,8 @@
 name = "architect"
 description = "Read-only architecture specialist for DDD, FSD, package boundaries, data flows, and material design decisions."
 sandbox_mode = "read-only"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
 developer_instructions = """
 Evaluate architecture without modifying files.
 

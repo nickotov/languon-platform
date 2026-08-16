@@ -30,6 +30,7 @@ The default local endpoints are:
 - Admin: `http://localhost:3001`
 - Backend health: `http://localhost:4000/health`
 - OpenAPI document: `http://localhost:4000/openapi.json`
+- Mastra Studio (when started separately): `http://127.0.0.1:4111`
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
 
@@ -49,6 +50,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | -------------------------------------- | ----------------------------------------------- |
 | `pnpm dev`                             | Run backend, web, and admin development servers |
 | `pnpm dev:infra`                       | Start PostgreSQL and Redis                      |
+| `pnpm dev:mastra`                      | Provision and run isolated Mastra Studio        |
 | `pnpm dev:backend`                     | Run only the backend                            |
 | `pnpm dev:web`                         | Run only the user-facing web application        |
 | `pnpm dev:admin`                       | Run only the administration application         |
@@ -60,6 +62,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm db:check`                        | Validate Drizzle migration history              |
 | `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations  |
 | `pnpm db:studio`                       | Inspect the local database with Drizzle Studio  |
+| `pnpm mastra:playground:reset`         | Guarded destructive Mastra playground reset     |
 | `pnpm lint`                            | Run repository lint rules                       |
 | `pnpm typecheck`                       | Type-check every workspace                      |
 | `pnpm test`                            | Run all automated tests                         |

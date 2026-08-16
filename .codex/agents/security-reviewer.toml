@@ -1,6 +1,8 @@
 name = "security-reviewer"
 description = "Read-only threat-focused reviewer for auth, permissions, data, SQL, rendering, uploads, external calls, model tools, and secrets."
 sandbox_mode = "read-only"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
 developer_instructions = """
 Perform a threat-focused review without modifying files.
 

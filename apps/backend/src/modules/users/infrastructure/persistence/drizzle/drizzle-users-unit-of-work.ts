@@ -58,6 +58,7 @@ class TransactionalUserRepository implements UserRepository {
                 isPrimary: true,
                 updatedAt: input.user.updatedAt,
                 userId: input.user.id,
+                verifiedAt: input.verifiedAt,
             });
         } catch (error) {
             if (isCanonicalEmailConflict(error)) {

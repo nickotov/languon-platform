@@ -41,6 +41,65 @@ ignores forwarding headers received from every other peer.
 The individual commands build their workspace dependencies before starting the
 selected development server.
 
+### Mastra development harness
+
+Run Mastra Server and Studio independently from the product applications:
+
+```sh
+pnpm dev:mastra
+```
+
+This command builds required workspace packages, starts and waits for local
+PostgreSQL, provisions the explicitly configured
+`languon_mastra_playground*` database, applies canonical migrations, seeds the
+stable synthetic `mastra-playground@example.test` principal through the users
+unit-of-work, watches checked-in prompts, and binds Studio to
+`http://127.0.0.1:4111`. It does not start Hono, web, admin, mobile, or Redis.
+
+`MASTRA_PLAYGROUND_DATABASE_URL` and
+`MASTRA_PLAYGROUND_ADMIN_DATABASE_URL` are mandatory, independent of
+`DATABASE_URL`, and accepted only when they identify the same loopback
+PostgreSQL authority, the `postgres` admin database, and a safely prefixed
+target. Normal startup is non-destructive and preserves playground writes.
+
+The canonical registry lives at `apps/backend/src/mastra/index.ts`. Product
+agents, tools, workflows, processors, and scorers remain in their owning backend
+module infrastructure and are registered there. Permanent verification
+primitives appear only when `MASTRA_DEV_HARNESS=true`; the Hono server imports
+the same production composition without exposing generic Mastra routes.
+
+Studio provides `synthetic-principal` request-context presets. Context selects
+the allowlisted fixture but is not authentication proof: the development
+application service authorizes the stable ID and resolves the active verified
+row through the product users repository. Tool/workflow inputs and outputs are
+Zod validated and cancellation is preserved.
+
+Checked-in local prompts are the only default resolver. Neither Langfuse nor a
+model key is required to boot or run the deterministic tool, workflow, and code
+scorer. Live agent invocation is explicit and fails with a sanitized error when
+`OPENAI_API_KEY` is absent; no provider fallback is attempted. The harness
+forces Mastra usage telemetry off. Its generated server accepts only the
+documented loopback Host and Origin values (including internal refresh/restart
+hooks), rejects caller overrides for the configured model, prompt, provider
+settings, and tools, limits agent requests and concurrent execution, and does not
+expose the generic Responses or Conversations model proxies. Persistent Mastra
+memory, workflow state, datasets, experiments, traces, and scorer history remain
+deferred.
+
+Stop the harness with `Ctrl+C`. To intentionally discard only playground data,
+set `MASTRA_PLAYGROUND_RESET_CONFIRM` to the exact validated target name and
+run:
+
+```sh
+pnpm mastra:playground:reset
+```
+
+The reset command refuses missing/mismatched confirmation and any unsafe target,
+then recreates the playground from migrations and synthetic fixtures. Full
+startup, Studio/API checks, side-effect boundaries, and disposable database
+verification are documented in the
+[Mastra harness user flow](./user-flows/mastra-agent-development-harness.md).
+
 Stop the containers with `pnpm infra:down`. Add `--volumes` manually only when
 you intentionally want to destroy local database and Redis data.
 
@@ -117,12 +176,13 @@ Keep shared build and quality tooling at the repository root. Commit
 
 ## Local services
 
-| Service    | Default                 | Configuration  |
-| ---------- | ----------------------- | -------------- |
-| Backend    | `http://localhost:4000` | `BACKEND_PORT` |
-| PostgreSQL | `localhost:5432`        | `DATABASE_URL` |
-| Redis      | `localhost:6379`        | `REDIS_URL`    |
-| Langfuse   | Cloud URL by default    | `LANGFUSE_*`   |
+| Service    | Default                 | Configuration                 |
+| ---------- | ----------------------- | ----------------------------- |
+| Backend    | `http://localhost:4000` | `BACKEND_PORT`                |
+| Mastra     | `http://127.0.0.1:4111` | fixed loopback harness server |
+| PostgreSQL | `localhost:5432`        | `DATABASE_URL`                |
+| Redis      | `localhost:6379`        | `REDIS_URL`                   |
+| Langfuse   | Cloud URL by default    | `LANGFUSE_*`                  |
 
 The prompt package does not require Langfuse credentials for local tests: it
 uses checked-in local prompt definitions. Never silently use production

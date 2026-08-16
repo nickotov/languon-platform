@@ -6,6 +6,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Mastra Agent Development Harness](./mastra-agent-development-harness.md) —
+  isolated playground provisioning, Studio/API discovery, deterministic
+  primitives, persistence, and safe reset.
 - [Web Internationalization and Language Switching](./web-i18n-support.md) —
   localized SSR routes, language selection, and preference persistence.
 - [User Authentication](./user-authentication.md) — signup, verification,

@@ -1,0 +1,10 @@
+{
+    "synthetic-principal": {
+        "syntheticPrincipalId": "00000000-0000-4000-8000-000000000019",
+        "variant": "concise"
+    },
+    "synthetic-principal-diagnostic": {
+        "syntheticPrincipalId": "00000000-0000-4000-8000-000000000019",
+        "variant": "diagnostic"
+    }
+}

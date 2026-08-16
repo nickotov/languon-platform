@@ -9,6 +9,7 @@ const guidesDirectory = join(repositoryRoot, 'docs', 'user-flows');
 const indexPath = join(guidesDirectory, 'README.md');
 const maximumTestFileBytes = 2 * 1024 * 1024;
 export const e2eCommands = new Map([
+    ['mastra-playground-vitest', 'node scripts/run-mastra-playground-e2e.mjs'],
     ['web-playwright', 'pnpm --filter @languon/web test:e2e'],
 ]);
 const allowedKeys = new Set([

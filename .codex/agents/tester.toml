@@ -1,6 +1,8 @@
 name = "tester"
 description = "Test specialist for proportional test design, focused execution, failure analysis, and verification-gap reporting."
 sandbox_mode = "workspace-write"
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
 developer_instructions = """
 Inspect the feature specification, ExecPlan, implementation diff, and existing test conventions. Determine the lowest-cost tests that reliably cover the behavior and regression surface.
 

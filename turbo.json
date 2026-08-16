@@ -10,6 +10,26 @@
             "cache": false,
             "persistent": true
         },
+        "dev:mastra": {
+            "dependsOn": ["^build"],
+            "cache": false,
+            "env": [
+                "APP_ENV",
+                "MASTRA_DEV_HARNESS",
+                "MASTRA_MODEL_ID",
+                "MASTRA_PLAYGROUND_ADMIN_DATABASE_URL",
+                "MASTRA_PLAYGROUND_DATABASE_URL",
+                "MASTRA_PLAYGROUND_RESET_CONFIRM",
+                "MASTRA_PROMPT_MODE",
+                "MASTRA_TELEMETRY_DISABLED",
+                "OPENAI_API_KEY",
+                "POSTGRES_DB",
+                "POSTGRES_PASSWORD",
+                "POSTGRES_PORT",
+                "POSTGRES_USER"
+            ],
+            "persistent": true
+        },
         "dev:docker": {
             "dependsOn": ["^build"],
             "cache": false,

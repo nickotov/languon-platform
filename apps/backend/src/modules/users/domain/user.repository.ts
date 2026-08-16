@@ -11,6 +11,7 @@ export interface AddUserWithPrimaryEmailInput {
     emailId: string;
     primaryEmail: EmailAddress;
     user: User;
+    verifiedAt?: Date;
 }
 
 export class UserEmailAlreadyExistsError extends Error {
