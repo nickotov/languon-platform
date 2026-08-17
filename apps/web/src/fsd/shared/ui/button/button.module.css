@@ -1,0 +1,73 @@
+.button {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: var(--sys-radius-md);
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 700;
+    gap: var(--sys-space-2);
+    justify-content: center;
+    text-decoration: none;
+    transition: background var(--sys-motion-fast) var(--sys-ease-standard);
+}
+.small {
+    min-height: var(--sys-size-control-sm);
+    padding: 0 var(--sys-space-4);
+}
+.medium {
+    min-height: var(--sys-size-control-md);
+    padding: 0 var(--sys-space-5);
+}
+.large {
+    min-height: var(--sys-size-control-lg);
+    padding: 0 var(--sys-space-6);
+}
+.button:disabled {
+    background: var(--sys-color-disabled-surface);
+    border-color: var(--sys-color-disabled-border);
+    color: var(--sys-color-disabled-content);
+    cursor: not-allowed;
+}
+.primary {
+    background: var(--sys-color-action-primary);
+    color: var(--sys-color-action-on-primary);
+}
+.primary:hover:not(:disabled) {
+    background: var(--sys-color-action-primary-hover);
+}
+.primary:active:not(:disabled),
+.primary[data-state='pressed']:not(:disabled) {
+    background: var(--sys-color-action-primary-pressed);
+}
+.secondary:active:not(:disabled),
+.secondary[data-state='pressed']:not(:disabled),
+.quiet:active:not(:disabled),
+.quiet[data-state='pressed']:not(:disabled) {
+    background: var(--sys-color-action-primary-soft-pressed);
+}
+.secondary {
+    background: var(--sys-color-surface-default);
+    border-color: var(--sys-color-action-primary);
+    color: var(--sys-color-action-primary);
+}
+.secondary:hover:not(:disabled) {
+    background: var(--sys-color-action-primary-soft);
+}
+.quiet {
+    background: transparent;
+    color: var(--sys-color-action-primary);
+}
+.quiet:hover:not(:disabled) {
+    background: var(--sys-color-action-primary-soft);
+}
+.danger {
+    background: var(--sys-color-danger);
+    color: var(--sys-color-on-danger);
+}
+.danger:hover:not(:disabled) {
+    background: var(--sys-color-danger-hover);
+}
+.danger:active:not(:disabled),
+.danger[data-state='pressed']:not(:disabled) {
+    background: var(--sys-color-danger-pressed);
+}

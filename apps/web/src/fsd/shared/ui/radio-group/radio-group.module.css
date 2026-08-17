@@ -1,0 +1,19 @@
+.group {
+    border: 0;
+    display: grid;
+    gap: var(--sys-space-2);
+    margin: 0;
+    padding: 0;
+}
+.group legend {
+    font-weight: 700;
+}
+.choice {
+    align-items: center;
+    display: flex;
+    gap: var(--sys-space-2);
+    min-height: 44px;
+}
+.choice input {
+    accent-color: var(--sys-color-action-primary);
+}

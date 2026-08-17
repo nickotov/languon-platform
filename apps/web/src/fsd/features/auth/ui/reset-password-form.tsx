@@ -7,11 +7,13 @@ import { type FormEvent, useState } from 'react';
 
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
+import { Button, Field, Input } from '@/fsd/shared/ui';
 
 import { localizedAuthError } from '../lib/auth-error-message';
 import { FormMessage } from './auth-shell';
 import { PasswordField } from './password-field';
 import { useAuth } from '../model/auth-provider';
+import styles from './auth-ui.module.css';
 
 export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
     const { href, t } = useI18n();
@@ -59,7 +61,7 @@ export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
 
     return (
         <>
-            <p className='auth-intro'>{t('reset.intro')}</p>
+            <p className={styles.intro}>{t('reset.intro')}</p>
             {!flowId ? (
                 <FormMessage>
                     {t('reset.incomplete')}{' '}
@@ -69,31 +71,26 @@ export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
                 </FormMessage>
             ) : null}
             {error ? <FormMessage>{error}</FormMessage> : null}
-            <form aria-busy={pending} className='auth-form' onSubmit={submit}>
-                <label className='field'>
-                    <span>{t('reset.code')}</span>
-                    <input
+            <form aria-busy={pending} className={styles.form} onSubmit={submit}>
+                <Field label={t('reset.code')} required>
+                    <Input
                         autoComplete='one-time-code'
-                        className='code-input'
+                        className={styles.code}
                         inputMode='numeric'
                         maxLength={4}
                         name='code'
                         pattern='[0-9]{4}'
                         required
                     />
-                </label>
+                </Field>
                 <PasswordField
                     autoComplete='new-password'
                     label={t('common.newPassword')}
                     name='newPassword'
                 />
-                <button
-                    className='primary-button'
-                    disabled={pending || !flowId}
-                    type='submit'
-                >
+                <Button disabled={pending || !flowId} type='submit'>
                     {pending ? t('reset.pending') : t('reset.submit')}
-                </button>
+                </Button>
             </form>
         </>
     );

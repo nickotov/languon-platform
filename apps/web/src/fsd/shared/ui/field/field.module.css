@@ -1,0 +1,29 @@
+.field {
+    display: grid;
+    font-size: 14px;
+    gap: var(--sys-space-2);
+}
+
+.label {
+    font-weight: 700;
+}
+.label[data-required]::after {
+    content: ' *';
+}
+
+.optional,
+.hint {
+    color: var(--sys-color-text-secondary);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.error {
+    color: var(--sys-color-danger);
+    font-size: 14px;
+}
+.success {
+    color: var(--sys-color-success);
+    font-size: 14px;
+    font-weight: 600;
+}

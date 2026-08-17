@@ -1,0 +1,16 @@
+.state {
+    background: var(--sys-color-surface-subtle);
+    border-radius: var(--sys-radius-lg);
+    padding: var(--sys-space-6);
+    text-align: center;
+}
+.state h2 {
+    font-family: var(--sys-font-display);
+    margin: 0;
+}
+.state p {
+    color: var(--sys-color-text-secondary);
+}
+.error {
+    border: 1px solid var(--sys-color-danger);
+}

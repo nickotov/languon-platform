@@ -1,17 +1,18 @@
 # Languon design system blueprint
 
-Status: Approved foundation for visual exploration
-Version: 0.1
-Updated: 2026-08-16
+Status: Approved design contract with public-web implementation
+Version: 0.2
+Updated: 2026-08-17
 Platforms: Public web and native mobile
 Primary audience: Adult learners and tutors, approximately 18–45
 
 ## 1. Purpose
 
 This document is the source brief for generating and evaluating Languon's first
-design system. It defines a visual direction, cross-platform design semantics,
-accessible component requirements, and starter values. It does not implement a
-runtime component library and it does not replace platform behavior.
+design system. It defines the authoritative visual direction, cross-platform
+design semantics, accessible component requirements, and starter values. The
+public web implementation consumes this contract; platform behavior and native
+semantics still take precedence over decorative fidelity.
 
 The desired experience is modern, warm, editorial, calm, and quietly
 intelligent. It should make serious language learning feel inviting without
@@ -43,14 +44,26 @@ This version does not define:
 - a logo, custom wordmark, mascot, or illustration library;
 - complete navigation, onboarding, AI chat, course, lesson, workbook, canvas,
   tutor-management, or gamification patterns;
-- runtime CSS variables, TypeScript exports, React components, React Native
-  components, dependencies, or a cross-application package;
-- runtime implementation of the component board in `main.pen`; the board is a
-  design-time token and reusable-symbol library, not a substitute for accessible
-  web or native primitives.
+- React Native components or a cross-application runtime package;
+- runtime behavior in `main.pen`; the board remains a design-time token and
+  reusable-symbol library, not a substitute for accessible web or native primitives.
 
 Those additions should extend these foundations rather than silently changing
 their semantic meaning.
+
+### Public web implementation
+
+The public Next.js app implements this contract locally:
+
+- semantic variables and theme mappings — `apps/web/src/app/globals.css`;
+- SSR theme resolution — `apps/web/src/fsd/shared/theme`;
+- accessible primitives — `apps/web/src/fsd/shared/ui`;
+- component and state catalogue — `apps/web/.storybook` plus colocated stories.
+
+`design/DESIGN_SYSTEM.md` and `design/main.pen` remain the design authority.
+Runtime code and Storybook demonstrate that contract but do not silently redefine
+it. A deliberate visual or semantic change updates both design artifacts first or
+in the same feature, then updates the web implementation and verification.
 
 ## 3. Research and design position
 
@@ -127,17 +140,16 @@ Token names express meaning, not appearance. Do not name a semantic token
 `purple`, `white`, `desktop`, or `large-screen`. A dark theme changes values,
 not token names.
 
-Future web code should map system tokens to CSS custom properties. Future mobile
+Web code maps system tokens to CSS custom properties. Future mobile
 code should map the same semantics to a typed theme object. This document does
 not choose a package or permit application-source imports across `apps/*`.
 
 ### CSS custom-property handoff
 
-The following are the approved future web names. They are a handoff contract for
+The following are the approved web names. They are the handoff contract for
 app-local theme files, not a shared runtime package or a license to add raw values
-to components. Define the values on the theme root, switch them using the chosen
-theme mechanism, and consume `var(--sys-...)` only through semantic component
-styles.
+to components. Values are defined on the document theme root and components
+consume `var(--sys-...)` through semantic styles.
 
 | CSS custom property                  | System token / value               | Use                                      |
 | ------------------------------------ | ---------------------------------- | ---------------------------------------- |
@@ -163,7 +175,7 @@ styles.
 | `--sys-motion-fast` / `standard`     | `120ms` / `180ms`                  | Press/hover / small reveal and selection |
 | `--sys-ease-standard`                | `cubic-bezier(0.2, 0.8, 0.2, 1)`   | Entry and spatial change                 |
 
-For example, a future app-local Button should use
+For example, the app-local Button uses
 `background: var(--sys-color-action-primary)`,
 `min-height: var(--sys-size-control-md)`, and
 `transition-duration: var(--sys-motion-fast)`. Its hover, pressed, focus, and
@@ -733,26 +745,30 @@ where doing so improves normal use.
 - Labels accommodate translation expansion of at least 30% in Latin/Cyrillic
   layouts. Avoid embedding English words inside images.
 
-## 13. Future implementation guidance
+## 13. Implementation and synchronization guidance
 
-When implementation begins:
+For the current and future platform implementations:
 
-1. Introduce semantic tokens and theme selection before visual primitives.
-2. Build app-local shared primitives under `src/fsd/shared/ui` for web in
-   accordance with ADR-0005; use semantic HTML, CSS Modules, and colocated stories.
+1. Keep semantic tokens and theme selection below visual primitives.
+2. Build and extend app-local shared primitives under `src/fsd/shared/ui` for web
+   in accordance with ADR-0005 and ADR-0008; use semantic HTML, CSS Modules, and
+   colocated stories.
 3. Build native mobile equivalents from React Native/platform primitives, not
    DOM behavior copied into mobile.
 4. Cover every material visual, interaction, disabled, error, loading, theme,
    accessibility, responsive, and mixed-language state in stories or native equivalents.
-5. Migrate current pages incrementally; do not combine token adoption with
+5. Migrate pages incrementally; do not combine token adoption with
    unrelated product redesign.
 6. Verify in real browsers/devices and with assistive settings. Automated
    accessibility checks supplement, but do not replace, keyboard and screen-reader
    review.
 
-The blueprint defines no public runtime API. A future feature must decide token
-file format, generation, app ownership, font assets, icon dependency, Storybook
-configuration, and migration strategy in the repository's feature workflow.
+The web API is app-local and exported from `apps/web/src/fsd/shared/ui/index.ts`.
+Do not import it across applications or create a competing token source. Any
+feature that changes approved values, component semantics, or the board updates
+this document, `main.pen`, stories, affected runtime code, and acceptance evidence
+together. New dependencies or cross-application ownership remain feature-sized
+architecture decisions.
 
 ## 14. Visual-generation brief
 

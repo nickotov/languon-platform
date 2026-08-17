@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import '@fontsource-variable/literata';
+import '@fontsource-variable/manrope';
+
 import { AuthProvider } from '@/fsd/features/auth';
 import { I18nProvider } from '@/fsd/shared/i18n';
 import { getRequestI18n } from '@/fsd/shared/i18n/server';
+import { ThemeProvider } from '@/fsd/shared/theme';
+import { getRequestTheme } from '@/fsd/shared/theme/server';
 import { SiteHeader } from '@/fsd/widgets/site-header';
 
 import './globals.css';
@@ -18,16 +23,21 @@ export default async function RootLayout({
 }: {
     children: ReactNode;
 }) {
-    const { locale, messages } = await getRequestI18n();
+    const [{ locale, messages }, theme] = await Promise.all([
+        getRequestI18n(),
+        getRequestTheme(),
+    ]);
 
     return (
-        <html lang={locale}>
+        <html data-theme={theme} lang={locale}>
             <body>
                 <I18nProvider locale={locale} messages={messages}>
-                    <AuthProvider>
-                        <SiteHeader />
-                        {children}
-                    </AuthProvider>
+                    <ThemeProvider preference={theme}>
+                        <AuthProvider>
+                            <SiteHeader />
+                            {children}
+                        </AuthProvider>
+                    </ThemeProvider>
                 </I18nProvider>
             </body>
         </html>

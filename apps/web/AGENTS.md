@@ -22,6 +22,10 @@ hooks, state, API clients, shared UI, or imports between FSD slices. Its
 component folders, CSS Modules, native-element, and state-communication rules
 are the frontend implementation standard.
 
+For visual work, treat `design/DESIGN_SYSTEM.md` and `design/main.pen` as the
+source of truth. Shared primitives consume semantic `--sys-*` tokens, live in
+`shared/ui`, and retain colocated Storybook stories.
+
 ## State and rendering
 
 - Prefer Server Components and server-side data access when interactivity is not

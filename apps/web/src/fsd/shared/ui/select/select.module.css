@@ -1,0 +1,18 @@
+.select {
+    background: var(--sys-color-surface-default);
+    border: 1px solid var(--sys-color-border-control);
+    border-radius: var(--sys-radius-sm);
+    color: var(--sys-color-text-primary);
+    min-height: var(--sys-size-control-md);
+    padding: 0 var(--sys-space-3);
+    width: 100%;
+}
+.select:hover:not(:disabled) {
+    border-color: var(--sys-color-action-primary);
+}
+.select:disabled {
+    background: var(--sys-color-disabled-surface);
+    border-color: var(--sys-color-disabled-border);
+    color: var(--sys-color-disabled-content);
+    cursor: not-allowed;
+}

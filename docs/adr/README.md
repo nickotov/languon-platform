@@ -21,6 +21,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0005](./0005-frontend-component-and-fsd-standards.md)     | Frontend component and FSD standards     | Accepted               |
 | [ADR-0006](./0006-web-internationalization-strategy.md)        | Web internationalization strategy        | Superseded by ADR-0007 |
 | [ADR-0007](./0007-web-request-locale-strategy.md)              | Web request locale strategy              | Accepted               |
+| [ADR-0008](./0008-web-ui-kit-and-design-source-authority.md)   | Web UI kit and design-source authority   | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

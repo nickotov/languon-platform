@@ -9,6 +9,7 @@ import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
+import { Button, Field, Input } from '@/fsd/shared/ui';
 
 import { getPasskey, supportsPasskeys } from '../lib/webauthn';
 import { localizedAuthError } from '../lib/auth-error-message';
@@ -16,6 +17,7 @@ import { useAuth } from '../model/auth-provider';
 import { AuthLinks, FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
 import { PasswordField } from './password-field';
+import styles from './auth-ui.module.css';
 
 export function LoginForm({
     passwordReset,
@@ -100,7 +102,7 @@ export function LoginForm({
 
     return (
         <>
-            <p className='auth-intro'>{t('login.intro')}</p>
+            <p className={styles.intro}>{t('login.intro')}</p>
             {passwordReset === 'complete' ? (
                 <FormMessage tone='success'>
                     {t('login.passwordResetComplete')}
@@ -110,33 +112,31 @@ export function LoginForm({
             {error ? <FormMessage>{error}</FormMessage> : null}
             <form
                 aria-busy={pending === 'password'}
-                className='auth-form'
+                className={styles.form}
                 onSubmit={submitPassword}
             >
-                <label className='field'>
-                    <span>{t('common.email')}</span>
-                    <input
+                <Field label={t('common.email')} required>
+                    <Input
                         autoComplete='username'
                         inputMode='email'
                         name='email'
                         required
                         type='email'
                     />
-                </label>
+                </Field>
                 <PasswordField
                     autoComplete='current-password'
                     label={t('common.password')}
                     name='password'
                 />
                 {capabilities?.email.passwordRecovery ? (
-                    <div className='field-row'>
+                    <div className={styles.endRow}>
                         <Link href={href('/forgot-password')}>
                             {t('login.forgotPassword')}
                         </Link>
                     </div>
                 ) : null}
-                <button
-                    className='primary-button'
+                <Button
                     disabled={
                         pending !== null ||
                         sessionStatus === 'bootstrapping' ||
@@ -147,13 +147,12 @@ export function LoginForm({
                     {pending === 'password'
                         ? t('login.pending')
                         : t('auth.signIn')}
-                </button>
+                </Button>
             </form>
             {capabilities?.passkeys.authentication ? (
-                <div className='alternative-action'>
+                <div className={styles.alternative}>
                     <span>{t('login.or')}</span>
-                    <button
-                        className='secondary-button'
+                    <Button
                         disabled={
                             pending !== null ||
                             sessionStatus === 'bootstrapping' ||
@@ -161,11 +160,12 @@ export function LoginForm({
                         }
                         onClick={() => void submitPasskey()}
                         type='button'
+                        variant='secondary'
                     >
                         {pending === 'passkey'
                             ? t('login.passkeyPending')
                             : t('login.passkey')}
-                    </button>
+                    </Button>
                     {!passkeySupported ? (
                         <small>{t('passkey.unsupported')}</small>
                     ) : null}

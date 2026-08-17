@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { type ReactNode, useEffect, useRef } from 'react';
 
 import { useI18n } from '@/fsd/shared/i18n';
+import { Card, InlineAlert } from '@/fsd/shared/ui';
+import styles from './auth-ui.module.css';
 
 export function AuthShell({
     children,
@@ -16,19 +18,21 @@ export function AuthShell({
 }) {
     const { href, t } = useI18n();
     return (
-        <main className='auth-layout'>
-            <section className='auth-card' aria-labelledby='auth-title'>
+        <main className={styles.layout}>
+            <Card className={styles.card} aria-labelledby='auth-title'>
                 <Link
-                    className='brand-link'
+                    className={styles.brand}
                     href={href('/')}
                     aria-label={t('auth.brandHome')}
                 >
                     Languon
                 </Link>
-                <p className='eyebrow'>{eyebrow}</p>
-                <h1 id='auth-title'>{title}</h1>
+                <p className={styles.eyebrow}>{eyebrow}</p>
+                <h1 className={styles.title} id='auth-title'>
+                    {title}
+                </h1>
                 {children}
-            </section>
+            </Card>
         </main>
     );
 }
@@ -46,14 +50,9 @@ export function FormMessage({
     }, [tone]);
 
     return (
-        <div
-            className={`form-message form-message--${tone}`}
-            role={tone === 'error' ? 'alert' : 'status'}
-            ref={message}
-            tabIndex={-1}
-        >
+        <InlineAlert ref={message} tone={tone === 'error' ? 'danger' : tone}>
             {children}
-        </div>
+        </InlineAlert>
     );
 }
 
@@ -67,7 +66,7 @@ export function AuthLinks({
     const { href, t } = useI18n();
     if (mode === 'login' && !signupAvailable) return null;
     return (
-        <p className='auth-switch'>
+        <p className={styles.switch}>
             {mode === 'login'
                 ? `${t('auth.newToLanguon')} `
                 : `${t('auth.alreadyAccount')} `}

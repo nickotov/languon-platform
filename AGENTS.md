@@ -23,6 +23,10 @@ Repository files are authoritative over conversation memory. Read, in order:
 4. Relevant accepted ADRs and architecture documentation.
 5. Affected source, analogous implementations, and focused tests.
 
+For visual or shared-UI work, read `design/DESIGN_SYSTEM.md` and inspect the
+relevant `design/main.pen` symbols before changing runtime styles. The `design/`
+directory is the visual source of truth; keep its contract and UI stories in sync.
+
 After context compaction or uncertainty, reread durable state, inspect
 `git status`, `git diff`, and relevant commits, then continue from recorded
 remaining work. Never reconstruct progress from memory when the repository can

@@ -1,0 +1,40 @@
+.input {
+    background: var(--sys-color-surface-default);
+    border: 1px solid var(--sys-color-border-control);
+    border-radius: var(--sys-radius-sm);
+    color: var(--sys-color-text-primary);
+    padding: 0 var(--sys-space-3);
+    width: 100%;
+}
+.small {
+    min-height: var(--sys-size-control-sm);
+}
+.medium {
+    min-height: var(--sys-size-control-md);
+}
+.large {
+    min-height: var(--sys-size-control-lg);
+}
+
+.input:hover:not(:disabled) {
+    border-color: var(--sys-color-action-primary);
+}
+
+.input[aria-invalid='true'] {
+    border-color: var(--sys-color-danger);
+}
+
+.input[data-validation='success'] {
+    border-color: var(--sys-color-success);
+}
+
+.input:read-only {
+    background: var(--sys-color-surface-subtle);
+    border-color: var(--sys-color-border-control-strong);
+}
+
+.input:disabled {
+    background: var(--sys-color-disabled-surface);
+    border-color: var(--sys-color-disabled-border);
+    color: var(--sys-color-disabled-content);
+}

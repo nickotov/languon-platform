@@ -8,11 +8,13 @@ export default tseslint.config(
     {
         ignores: [
             '**/.next/**',
+            '**/.next-e2e/**',
             '**/.mastra/**',
             '**/.turbo/**',
             '**/coverage/**',
             '**/dist/**',
             '**/node_modules/**',
+            '**/storybook-static/**',
             'apps/mobile/.expo/**',
         ],
     },
@@ -43,6 +45,7 @@ export default tseslint.config(
             boundaries,
         },
         settings: {
+            'boundaries/root-path': import.meta.dirname,
             'boundaries/elements': [
                 {
                     type: 'app',

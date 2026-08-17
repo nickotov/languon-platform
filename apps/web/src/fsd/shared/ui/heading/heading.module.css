@@ -1,0 +1,5 @@
+.heading {
+    font-family: var(--sys-font-display);
+    line-height: 1.2;
+    margin: 0;
+}

@@ -8,12 +8,14 @@ import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
+import { Button, Field, Input } from '@/fsd/shared/ui';
 
 import { useAuth } from '../model/auth-provider';
 import { localizedAuthError } from '../lib/auth-error-message';
 import { AuthLinks, FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
 import { PasswordField } from './password-field';
+import styles from './auth-ui.module.css';
 
 export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
     const { href, t } = useI18n();
@@ -64,27 +66,25 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
 
     return (
         <>
-            <p className='auth-intro'>{t('signup.intro')}</p>
+            <p className={styles.intro}>{t('signup.intro')}</p>
             <CapabilityState />
             {error ? <FormMessage>{error}</FormMessage> : null}
-            <form aria-busy={pending} className='auth-form' onSubmit={submit}>
-                <label className='field'>
-                    <span>{t('common.email')}</span>
-                    <input
+            <form aria-busy={pending} className={styles.form} onSubmit={submit}>
+                <Field label={t('common.email')} required>
+                    <Input
                         autoComplete='username'
                         inputMode='email'
                         name='email'
                         required
                         type='email'
                     />
-                </label>
+                </Field>
                 <PasswordField
                     autoComplete='new-password'
                     label={t('common.password')}
                     name='password'
                 />
-                <button
-                    className='primary-button'
+                <Button
                     disabled={
                         pending ||
                         !capabilities ||
@@ -93,7 +93,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                     type='submit'
                 >
                     {pending ? t('signup.pending') : t('signup.submit')}
-                </button>
+                </Button>
             </form>
             <AuthLinks mode='signup' />
         </>

@@ -7,10 +7,12 @@ import { type FormEvent, useEffect, useState } from 'react';
 
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
+import { Button, Field, Input } from '@/fsd/shared/ui';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 
 import { useAuth } from '../model/auth-provider';
+import styles from './auth-ui.module.css';
 import { localizedAuthError } from '../lib/auth-error-message';
 import { FormMessage } from './auth-shell';
 
@@ -115,7 +117,7 @@ export function VerifyEmailForm({
     const waitSeconds = Math.max(0, Math.ceil((nextResendAt - now) / 1_000));
     return (
         <>
-            <p className='auth-intro'>{t('verify.intro')}</p>
+            <p className={styles.intro}>{t('verify.intro')}</p>
             {!activeFlowId ? (
                 <FormMessage>
                     {t('verify.incomplete')}{' '}
@@ -128,23 +130,21 @@ export function VerifyEmailForm({
             ) : null}
             <form
                 aria-busy={pending === 'verify'}
-                className='auth-form'
+                className={styles.form}
                 onSubmit={submit}
             >
-                <label className='field'>
-                    <span>{t('verify.code')}</span>
-                    <input
+                <Field label={t('verify.code')} required>
+                    <Input
                         autoComplete='one-time-code'
-                        className='code-input'
+                        className={styles.code}
                         inputMode='numeric'
                         maxLength={4}
                         name='code'
                         pattern='[0-9]{4}'
                         required
                     />
-                </label>
-                <button
-                    className='primary-button'
+                </Field>
+                <Button
                     disabled={
                         pending !== null ||
                         sessionStatus === 'bootstrapping' ||
@@ -155,10 +155,9 @@ export function VerifyEmailForm({
                     {pending === 'verify'
                         ? t('verify.checking')
                         : t('verify.submit')}
-                </button>
+                </Button>
             </form>
-            <button
-                className='secondary-button'
+            <Button
                 disabled={
                     pending !== null ||
                     sessionStatus === 'bootstrapping' ||
@@ -167,13 +166,14 @@ export function VerifyEmailForm({
                 }
                 onClick={() => void resend()}
                 type='button'
+                variant='secondary'
             >
                 {pending === 'resend'
                     ? t('verify.sending')
                     : waitSeconds > 0
                       ? t('verify.resendIn', { seconds: waitSeconds })
                       : t('verify.resend')}
-            </button>
+            </Button>
         </>
     );
 }

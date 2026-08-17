@@ -1,0 +1,20 @@
+.main {
+    display: grid;
+    min-height: 100vh;
+    padding: clamp(16px, 5vw, 64px);
+    place-items: center;
+}
+.card {
+    max-width: 672px;
+    width: 100%;
+}
+.eyebrow {
+    color: var(--sys-color-action-primary);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.description {
+    color: var(--sys-color-text-secondary);
+}

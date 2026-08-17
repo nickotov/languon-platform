@@ -1,0 +1,122 @@
+.layout {
+    display: grid;
+    min-height: 100vh;
+    padding: clamp(16px, 5vw, 64px);
+    place-items: center;
+}
+.card {
+    max-width: 672px;
+    padding: clamp(24px, 5vw, 56px);
+    width: 100%;
+}
+.brand {
+    color: var(--sys-color-action-primary);
+    display: inline-block;
+    font-weight: 800;
+    margin-bottom: var(--sys-space-6);
+    text-decoration: none;
+}
+.eyebrow {
+    color: var(--sys-color-action-primary);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 0 0 var(--sys-space-2);
+    text-transform: uppercase;
+}
+.title {
+    font-family: var(--sys-font-display);
+    font-size: clamp(32px, 8vw, 48px);
+    line-height: 1.1;
+    margin: 0;
+}
+.intro {
+    color: var(--sys-color-text-secondary);
+    line-height: 1.6;
+}
+.form,
+.stack {
+    display: grid;
+    gap: var(--sys-space-4);
+}
+.row,
+.actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-3);
+}
+.endRow {
+    display: flex;
+    justify-content: flex-end;
+}
+.switch {
+    border-top: 1px solid var(--sys-color-border-subtle);
+    padding-top: var(--sys-space-4);
+}
+.alternative {
+    display: grid;
+    gap: var(--sys-space-3);
+    text-align: center;
+}
+.password {
+    display: grid;
+    position: relative;
+}
+.password input {
+    grid-area: 1 / 1;
+    padding-right: 80px;
+}
+.password button {
+    align-self: center;
+    grid-area: 1 / 1;
+    justify-self: end;
+    margin-right: 4px;
+}
+.code {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5em;
+    max-width: 192px;
+    text-align: center;
+}
+.panel {
+    display: grid;
+    gap: var(--sys-space-3);
+}
+.metadata {
+    display: grid;
+    gap: var(--sys-space-3);
+    margin: 0;
+}
+.metadata div {
+    display: grid;
+    gap: 4px;
+}
+.metadata dt {
+    color: var(--sys-color-text-secondary);
+    font-size: 14px;
+}
+.metadata dd {
+    margin: 0;
+}
+.list {
+    display: grid;
+    gap: var(--sys-space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.listItem {
+    border-top: 1px solid var(--sys-color-border-subtle);
+    padding-top: var(--sys-space-3);
+}
+.srOnly {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}

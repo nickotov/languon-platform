@@ -3,29 +3,26 @@
 import { useAuth } from '../model/auth-provider';
 import { FormMessage } from './auth-shell';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Button, LoadingState } from '@/fsd/shared/ui';
 
 export function CapabilityState() {
     const { t } = useI18n();
     const { capabilities, capabilitiesError, refreshCapabilities } = useAuth();
     if (!capabilities && !capabilitiesError) {
-        return (
-            <p className='loading-state' role='status'>
-                {t('auth.capabilitiesChecking')}
-            </p>
-        );
+        return <LoadingState>{t('auth.capabilitiesChecking')}</LoadingState>;
     }
     if (!capabilitiesError) return null;
 
     return (
         <FormMessage>
             <p>{capabilitiesError}</p>
-            <button
-                className='text-button'
+            <Button
                 onClick={() => void refreshCapabilities()}
                 type='button'
+                variant='quiet'
             >
                 {t('common.retry')}
-            </button>
+            </Button>
         </FormMessage>
     );
 }

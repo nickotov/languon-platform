@@ -1,0 +1,35 @@
+.root {
+    display: inline-block;
+    position: relative;
+}
+.trigger {
+    background: transparent;
+    border: 0;
+    color: currentColor;
+    cursor: pointer;
+    font: inherit;
+    min-height: 44px;
+}
+.menu {
+    background: var(--sys-color-surface-raised);
+    border: 1px solid var(--sys-color-border-subtle);
+    border-radius: var(--sys-radius-md);
+    display: grid;
+    min-width: 180px;
+    padding: var(--sys-space-1);
+    position: absolute;
+    right: 0;
+    z-index: 20;
+}
+.menu button {
+    background: transparent;
+    border: 0;
+    border-radius: var(--sys-radius-sm);
+    color: var(--sys-color-text-primary);
+    min-height: 40px;
+    padding: 0 var(--sys-space-3);
+    text-align: start;
+}
+.menu button:hover {
+    background: var(--sys-color-action-primary-soft);
+}

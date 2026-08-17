@@ -7,6 +7,10 @@ description: Build and refactor Languon React/Next.js frontend code using the re
 
 ## Establish the slice
 
+For Languon visual work, read `design/DESIGN_SYSTEM.md` and inspect relevant
+`design/main.pen` symbols first. Treat `design/` as the visual source of truth;
+runtime tokens, component styles, and stories implement that contract.
+
 Read the closest `AGENTS.md`, the active feature or correction artifact, and
 analogous frontend code. Place behavior in the lowest appropriate layer and keep
 the dependency direction:

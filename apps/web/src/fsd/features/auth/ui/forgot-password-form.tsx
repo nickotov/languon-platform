@@ -7,11 +7,13 @@ import { type FormEvent, useState } from 'react';
 
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
+import { Button, Field, Input } from '@/fsd/shared/ui';
 
 import { localizedAuthError } from '../lib/auth-error-message';
 import { useAuth } from '../model/auth-provider';
 import { FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
+import styles from './auth-ui.module.css';
 
 export function ForgotPasswordForm() {
     const { href, t } = useI18n();
@@ -57,29 +59,24 @@ export function ForgotPasswordForm() {
 
     return (
         <>
-            <p className='auth-intro'>{t('forgot.intro')}</p>
+            <p className={styles.intro}>{t('forgot.intro')}</p>
             <CapabilityState />
             {error ? <FormMessage>{error}</FormMessage> : null}
-            <form aria-busy={pending} className='auth-form' onSubmit={submit}>
-                <label className='field'>
-                    <span>{t('common.email')}</span>
-                    <input
+            <form aria-busy={pending} className={styles.form} onSubmit={submit}>
+                <Field label={t('common.email')} required>
+                    <Input
                         autoComplete='username'
                         inputMode='email'
                         name='email'
                         required
                         type='email'
                     />
-                </label>
-                <button
-                    className='primary-button'
-                    disabled={pending || !capabilities}
-                    type='submit'
-                >
+                </Field>
+                <Button disabled={pending || !capabilities} type='submit'>
                     {pending ? t('forgot.pending') : t('forgot.submit')}
-                </button>
+                </Button>
             </form>
-            <p className='auth-switch'>
+            <p className={styles.switch}>
                 <Link href={href('/login')}>{t('forgot.back')}</Link>
             </p>
         </>

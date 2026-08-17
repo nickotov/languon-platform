@@ -1,0 +1,7 @@
+.state {
+    align-items: center;
+    color: var(--sys-color-text-secondary);
+    display: flex;
+    gap: var(--sys-space-2);
+    min-height: 48px;
+}

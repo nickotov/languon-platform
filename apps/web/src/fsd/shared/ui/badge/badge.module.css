@@ -1,0 +1,25 @@
+.badge,
+.chip {
+    border-radius: 999px;
+    display: inline-flex;
+    padding: 4px 8px;
+}
+.info {
+    background: var(--sys-color-info-soft);
+}
+.success {
+    background: var(--sys-color-success-soft);
+}
+.warning {
+    background: var(--sys-color-warning-soft);
+}
+.danger {
+    background: var(--sys-color-danger-soft);
+}
+.chip {
+    background: var(--sys-color-action-primary-soft);
+}
+.divider {
+    border: 0;
+    border-top: 1px solid var(--sys-color-border-subtle);
+}

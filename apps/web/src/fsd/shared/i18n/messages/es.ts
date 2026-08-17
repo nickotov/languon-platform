@@ -1,6 +1,10 @@
 import type { Messages } from './en';
 
 export const es = {
+    'theme.label': 'Tema',
+    'theme.option.light': 'Claro',
+    'theme.option.dark': 'Oscuro',
+    'theme.option.system': 'Sistema',
     'language.label': 'Idioma',
     'language.option.en': 'English',
     'language.option.es': 'Español',

@@ -1,6 +1,10 @@
 import type { Messages } from './en';
 
 export const ru = {
+    'theme.label': 'Тема',
+    'theme.option.light': 'Светлая',
+    'theme.option.dark': 'Тёмная',
+    'theme.option.system': 'Системная',
     'language.label': 'Язык',
     'language.option.en': 'English',
     'language.option.es': 'Español',

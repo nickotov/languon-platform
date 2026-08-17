@@ -3,6 +3,8 @@
 import { useId, useState } from 'react';
 
 import { useI18n } from '@/fsd/shared/i18n';
+import { Button, Input } from '@/fsd/shared/ui';
+import styles from './auth-ui.module.css';
 
 export function PasswordField({
     autoComplete,
@@ -19,10 +21,10 @@ export function PasswordField({
     const [visible, setVisible] = useState(false);
 
     return (
-        <div className='field'>
+        <div className={styles.form}>
             <label htmlFor={inputId}>{label}</label>
-            <span className='password-input'>
-                <input
+            <span className={styles.password}>
+                <Input
                     aria-describedby={
                         autoComplete === 'new-password' ? hintId : undefined
                     }
@@ -33,17 +35,17 @@ export function PasswordField({
                     required
                     type={visible ? 'text' : 'password'}
                 />
-                <button
+                <Button
                     aria-label={t('password.toggleLabel', {
                         action: visible ? t('common.hide') : t('common.show'),
                         label: label.toLowerCase(),
                     })}
-                    className='text-button password-input__toggle'
+                    variant='quiet'
                     onClick={() => setVisible((current) => !current)}
                     type='button'
                 >
                     {visible ? t('common.hide') : t('common.show')}
-                </button>
+                </Button>
             </span>
             {autoComplete === 'new-password' ? (
                 <small id={hintId}>{t('password.hint')}</small>

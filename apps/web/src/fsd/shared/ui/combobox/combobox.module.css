@@ -1,0 +1,42 @@
+.root {
+    position: relative;
+}
+.input {
+    background: var(--sys-color-surface-default);
+    border: 1px solid var(--sys-color-border-control);
+    border-radius: var(--sys-radius-sm);
+    color: var(--sys-color-text-primary);
+    min-height: var(--sys-size-control-md);
+    padding: 0 var(--sys-space-3);
+    width: 100%;
+}
+.listbox {
+    background: var(--sys-color-surface-raised);
+    border: 1px solid var(--sys-color-border-control);
+    border-radius: var(--sys-radius-sm);
+    box-shadow: 0 8px 24px rgb(23 19 27 / 10%);
+    left: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: var(--sys-space-1);
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--sys-space-1));
+    z-index: 30;
+}
+.option,
+.message {
+    border-radius: var(--sys-radius-sm);
+    min-height: 44px;
+    padding: 11px var(--sys-space-3);
+}
+.option {
+    cursor: pointer;
+}
+.option[aria-selected='true'] {
+    background: var(--sys-color-action-primary-soft);
+    color: var(--sys-color-action-on-primary-soft);
+}
+.message {
+    color: var(--sys-color-text-secondary);
+}

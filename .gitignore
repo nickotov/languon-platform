@@ -8,6 +8,7 @@ dist/
 coverage/
 .expo/
 web-build/
+storybook-static/
 
 # Local configuration and credentials
 .env

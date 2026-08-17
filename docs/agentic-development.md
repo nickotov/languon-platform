@@ -91,6 +91,22 @@ The `dev:*` application commands build required workspace packages before
 starting the selected server. Web and admin journeys that call the API also
 need the backend.
 
+### Work on the public-web design system
+
+Before changing shared web visuals, read `design/DESIGN_SYSTEM.md` and inspect
+the relevant reusable symbols in `design/main.pen`; those files are the visual
+source of truth. Implement app-local primitives under
+`apps/web/src/fsd/shared/ui/<component>/` with TSX, a same-named CSS Module, and
+a colocated Storybook story. Prefer semantic native HTML, keep caller-provided
+content localizable, and use the public `shared/ui` export instead of duplicating
+control styles in a page or feature.
+
+Run the component catalog with `pnpm --filter @languon/web storybook` and verify
+the production catalog with `pnpm --filter @languon/web storybook:build`. A
+design-system feature keeps `design/`, stories, runtime code, guide/E2E mappings,
+and browser evidence synchronized; Storybook is an implementation catalog, not a
+replacement source of truth.
+
 Backend and Next.js host processes bind to `127.0.0.1` by default. Compose also
 publishes application and infrastructure ports only on loopback; the containers
 listen on their internal interfaces so host access still works. These defaults

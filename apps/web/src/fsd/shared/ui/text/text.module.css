@@ -1,0 +1,5 @@
+.text {
+    color: var(--sys-color-text-primary);
+    margin: 0;
+    max-width: 65ch;
+}

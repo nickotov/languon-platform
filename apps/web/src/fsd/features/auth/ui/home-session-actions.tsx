@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { useI18n } from '@/fsd/shared/i18n';
+import { ButtonLink, LoadingState } from '@/fsd/shared/ui';
 import { useAuth } from '../model/auth-provider';
+import styles from './auth-ui.module.css';
 
 export function HomeSessionActions() {
     const { href, t } = useI18n();
@@ -13,36 +13,35 @@ export function HomeSessionActions() {
     const { capabilities } = useAuth();
 
     if (status === 'bootstrapping') {
-        return (
-            <p className='loading-state' role='status'>
-                {t('home.restoring')}
-            </p>
-        );
+        return <LoadingState>{t('home.restoring')}</LoadingState>;
     }
 
     if (status === 'authenticated') {
         return (
-            <div className='home__account'>
+            <div className={styles.stack}>
                 <p>
                     {t('home.signedInAs', { email: user?.primaryEmail ?? '' })}
                 </p>
-                <Link className='primary-button' href={href('/security')}>
+                <ButtonLink href={href('/security')}>
                     {t('home.security')}
-                </Link>
+                </ButtonLink>
             </div>
         );
     }
 
     return (
-        <nav className='home__actions' aria-label={t('home.accountNavigation')}>
+        <nav
+            className={styles.actions}
+            aria-label={t('home.accountNavigation')}
+        >
             {capabilities?.email.signUp ? (
-                <Link className='primary-button' href={href('/signup')}>
+                <ButtonLink href={href('/signup')}>
                     {t('home.getStarted')}
-                </Link>
+                </ButtonLink>
             ) : null}
-            <Link className='secondary-button' href={href('/login')}>
+            <ButtonLink href={href('/login')} variant='secondary'>
                 {t('home.signIn')}
-            </Link>
+            </ButtonLink>
         </nav>
     );
 }

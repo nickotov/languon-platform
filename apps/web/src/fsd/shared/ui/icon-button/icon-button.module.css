@@ -1,0 +1,33 @@
+.button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--sys-radius-sm);
+    color: var(--sys-color-action-primary);
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+}
+.small {
+    height: var(--sys-size-control-sm);
+    width: var(--sys-size-control-sm);
+}
+.medium {
+    height: var(--sys-size-control-md);
+    width: var(--sys-size-control-md);
+}
+.large {
+    height: var(--sys-size-control-lg);
+    width: var(--sys-size-control-lg);
+}
+.button:hover:not(:disabled) {
+    background: var(--sys-color-action-primary-soft);
+}
+.button:active:not(:disabled),
+.button[data-state='pressed']:not(:disabled) {
+    background: var(--sys-color-action-primary-soft-pressed);
+}
+.button:disabled {
+    color: var(--sys-color-disabled-content);
+    cursor: not-allowed;
+}

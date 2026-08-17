@@ -9,6 +9,7 @@ import {
     locales,
     useI18n,
 } from '@/fsd/shared/i18n';
+import { Select } from '@/fsd/shared/ui';
 
 import styles from './language-switcher.module.css';
 
@@ -30,7 +31,7 @@ export function LanguageSwitcher() {
     return (
         <label className={styles.field}>
             <span className={styles.label}>{t('language.label')}</span>
-            <select
+            <Select
                 aria-label={t('language.label')}
                 className={styles.select}
                 disabled={pending}
@@ -42,7 +43,7 @@ export function LanguageSwitcher() {
                         {t(`language.option.${supportedLocale}`)}
                     </option>
                 ))}
-            </select>
+            </Select>
         </label>
     );
 }

@@ -1,0 +1,6 @@
+.skeleton {
+    background: var(--sys-color-surface-subtle);
+    border-radius: var(--sys-radius-sm);
+    display: block;
+    width: 100%;
+}

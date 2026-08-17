@@ -1,0 +1,21 @@
+.list {
+    border-bottom: 1px solid var(--sys-color-border-subtle);
+    display: flex;
+    gap: var(--sys-space-2);
+    overflow: auto;
+}
+.list button {
+    background: none;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    color: var(--sys-color-text-secondary);
+    min-height: 44px;
+    padding: 0 var(--sys-space-3);
+}
+.list button[aria-selected='true'] {
+    border-color: var(--sys-color-action-primary);
+    color: var(--sys-color-text-primary);
+}
+.panel {
+    padding: var(--sys-space-4) 0;
+}

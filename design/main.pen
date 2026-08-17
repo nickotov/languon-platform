@@ -1,18 +1,1305 @@
 {
-  "version": "2.17",
-  "children": [
-    {
-      "type": "frame",
-      "id": "bi8Au",
-      "x": 0,
-      "y": 0,
-      "name": "Frame",
-      "clip": true,
-      "width": 800,
-      "height": 600,
-      "fill": "#FFFFFF",
-      "layout": "none"
-    }
-  ],
-  "fileToken": "d288031c-bc89-485c-84e1-57b50520af06"
+    "version": "2.17",
+    "children": [
+        {
+            "type": "frame",
+            "id": "dsRoot",
+            "x": 0,
+            "y": 0,
+            "name": "Languon Design System",
+            "clip": false,
+            "width": 2400,
+            "height": 2680,
+            "fill": "#FBF8F6",
+            "layout": "none",
+            "children": [
+                {
+                    "type": "text",
+                    "id": "dsTitle",
+                    "x": 56,
+                    "y": 48,
+                    "name": "Board title",
+                    "content": "Languon design system",
+                    "fontFamily": "Literata",
+                    "fontSize": 48,
+                    "fontWeight": 650,
+                    "fill": "#211C26"
+                },
+                {
+                    "type": "text",
+                    "id": "dsSubtitle",
+                    "x": 56,
+                    "y": 116,
+                    "name": "Board subtitle",
+                    "content": "Warm editorial foundations · accessible native-first primitives · light and dark themes",
+                    "fontFamily": "Manrope",
+                    "fontSize": 20,
+                    "fill": "#5F5564"
+                },
+                {
+                    "type": "frame",
+                    "id": "foundation",
+                    "x": 56,
+                    "y": 176,
+                    "name": "Foundations · semantic themes",
+                    "width": 2288,
+                    "height": 380,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 20,
+                    "layout": "none",
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "foundationTitle",
+                            "x": 32,
+                            "y": 28,
+                            "content": "Foundations",
+                            "fontFamily": "Literata",
+                            "fontSize": 32,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "foundationCopy",
+                            "x": 32,
+                            "y": 82,
+                            "content": "4px spacing base · radii 6 / 10 / 14 / 20 / 28 · controls 40 / 48 / 56 · 3px focus ring · motion 120 / 180 / 280ms",
+                            "fontFamily": "Manrope",
+                            "fontSize": 18,
+                            "fill": "#5F5564"
+                        },
+                        {
+                            "type": "frame",
+                            "id": "lightCanvas",
+                            "x": 32,
+                            "y": 138,
+                            "name": "Light · canvas",
+                            "width": 244,
+                            "height": 140,
+                            "fill": "#FBF8F6",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "lightCanvasText",
+                                    "x": 20,
+                                    "y": 88,
+                                    "content": "Canvas #FBF8F6",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#211C26"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "lightPrimary",
+                            "x": 292,
+                            "y": 138,
+                            "name": "Light · primary",
+                            "width": 244,
+                            "height": 140,
+                            "fill": "#5C3CCB",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "lightPrimaryText",
+                                    "x": 20,
+                                    "y": 88,
+                                    "content": "Primary #5C3CCB",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FFFFFF"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "lightAccent",
+                            "x": 552,
+                            "y": 138,
+                            "name": "Light · accent",
+                            "width": 244,
+                            "height": 140,
+                            "fill": "#B7472F",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "lightAccentText",
+                                    "x": 20,
+                                    "y": 88,
+                                    "content": "Accent #B7472F",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FFFFFF"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "darkCanvas",
+                            "x": 828,
+                            "y": 138,
+                            "name": "Dark · canvas",
+                            "width": 244,
+                            "height": 140,
+                            "fill": "#17131B",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "darkCanvasText",
+                                    "x": 20,
+                                    "y": 88,
+                                    "content": "Canvas #17131B",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FBF8FC"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "darkSurface",
+                            "x": 1088,
+                            "y": 138,
+                            "name": "Dark · surface",
+                            "width": 244,
+                            "height": 140,
+                            "fill": "#211C26",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "darkSurfaceText",
+                                    "x": 20,
+                                    "y": 88,
+                                    "content": "Surface #211C26",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FBF8FC"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "darkPrimary",
+                            "x": 1348,
+                            "y": 138,
+                            "name": "Dark · primary",
+                            "width": 244,
+                            "height": 140,
+                            "fill": "#BBA6FF",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "darkPrimaryText",
+                                    "x": 20,
+                                    "y": 88,
+                                    "content": "Primary #BBA6FF",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#23144E"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "success",
+                            "x": 1624,
+                            "y": 138,
+                            "name": "Success",
+                            "width": 180,
+                            "height": 140,
+                            "fill": "#16715B",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "successText",
+                                    "x": 18,
+                                    "y": 88,
+                                    "content": "Success",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FFFFFF"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "warning",
+                            "x": 1820,
+                            "y": 138,
+                            "name": "Warning",
+                            "width": 180,
+                            "height": 140,
+                            "fill": "#7A4B00",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "warningText",
+                                    "x": 18,
+                                    "y": 88,
+                                    "content": "Warning",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FFFFFF"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "danger",
+                            "x": 2016,
+                            "y": 138,
+                            "name": "Danger",
+                            "width": 180,
+                            "height": 140,
+                            "fill": "#B32646",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "dangerText",
+                                    "x": 18,
+                                    "y": 88,
+                                    "content": "Danger",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FFFFFF"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "text",
+                    "id": "primitivesTitle",
+                    "x": 56,
+                    "y": 620,
+                    "content": "Reusable primitives",
+                    "fontFamily": "Literata",
+                    "fontSize": 36,
+                    "fontWeight": 650,
+                    "fill": "#211C26"
+                },
+                {
+                    "type": "text",
+                    "id": "primitivesCopy",
+                    "x": 56,
+                    "y": 674,
+                    "content": "Each symbol names its semantic contract and material states. Runtime examples live in Storybook.",
+                    "fontFamily": "Manrope",
+                    "fontSize": 18,
+                    "fill": "#5F5564"
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpText",
+                    "x": 56,
+                    "y": 736,
+                    "name": "Text",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 150,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpTextLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Text · Heading · Link",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpTextBody",
+                            "x": 24,
+                            "y": 72,
+                            "content": "Semantic levels, readable measure, underlined links",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpIcon",
+                    "x": 596,
+                    "y": 736,
+                    "name": "Icon",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 150,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpIconLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Icon · Icon button",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpIconBody",
+                            "x": 24,
+                            "y": 72,
+                            "content": "24px grid · 2px stroke · named compact action",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpCard",
+                    "x": 1136,
+                    "y": 736,
+                    "name": "Card",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 150,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpCardLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Card · Divider",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpCardBody",
+                            "x": 24,
+                            "y": 72,
+                            "content": "Grouped content · subtle boundary · optional elevation",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpBadge",
+                    "x": 1676,
+                    "y": 736,
+                    "name": "Badge and Chip",
+                    "reusable": true,
+                    "width": 668,
+                    "height": 150,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpBadgeLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Badge · Chip",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpBadgeBody",
+                            "x": 24,
+                            "y": 72,
+                            "content": "Named status/count · removable value/filter · non-color cue",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpButton",
+                    "x": 56,
+                    "y": 906,
+                    "name": "Button",
+                    "reusable": true,
+                    "width": 736,
+                    "height": 190,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpButtonLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Button",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "frame",
+              "id": "buttonPrimary",
+              "x": 24,
+              "y": 76,
+              "name": "Button · Primary",
+              "reusable": true,
+                            "width": 150,
+                            "height": 48,
+                            "fill": "#5C3CCB",
+                            "cornerRadius": 14,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "buttonPrimaryText",
+                                    "x": 26,
+                                    "y": 13,
+                                    "content": "Start lesson",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fontWeight": 650,
+                                    "fill": "#FFFFFF"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpButtonBody",
+                            "x": 196,
+                            "y": 86,
+                            "content": "Primary · secondary · quiet · destructive\n40 / 48 / 56 · hover · press · focus · busy · disabled",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpField",
+                    "x": 812,
+                    "y": 906,
+                    "name": "Input and Field",
+                    "reusable": true,
+                    "width": 736,
+                    "height": 190,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpFieldLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Input · Field · Textarea",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "frame",
+              "id": "fieldControl",
+              "x": 24,
+              "y": 74,
+              "name": "Input · Default",
+              "reusable": true,
+                            "width": 330,
+                            "height": 48,
+                            "fill": "#FFFFFF",
+                            "stroke": "#8B7F90",
+                            "strokeWidth": 1,
+                            "cornerRadius": 10,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "fieldControlText",
+                                    "x": 16,
+                                    "y": 13,
+                                    "content": "learner@example.test",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 16,
+                                    "fill": "#211C26"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpFieldBody",
+                            "x": 376,
+                            "y": 78,
+                            "content": "Visible label · hint · error\nrequired · read-only · disabled",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpSelection",
+                    "x": 1568,
+                    "y": 906,
+                    "name": "Selection Controls",
+                    "reusable": true,
+                    "width": 776,
+                    "height": 190,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpSelectionLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Checkbox · Radio group · Switch",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpSelectionBody",
+                            "x": 24,
+                            "y": 78,
+                            "content": "Native semantics · 44px targets · checked / mixed / disabled\nVisible group label · arrow-key radio navigation · immediate switch state",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpSelect",
+                    "x": 56,
+                    "y": 1116,
+                    "name": "Select",
+                    "reusable": true,
+                    "width": 736,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpSelectLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Select",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpSelectBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Native picker for short, static, single-choice options",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpCombobox",
+                    "x": 812,
+                    "y": 1116,
+                    "name": "Combobox",
+                    "reusable": true,
+                    "width": 736,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpComboboxLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Combobox",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpComboboxBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Searchable long list · typeahead · clear · empty/error/loading states",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpTabs",
+                    "x": 1568,
+                    "y": 1116,
+                    "name": "Tabs",
+                    "reusable": true,
+                    "width": 776,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpTabsLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Tabs · Tab panel",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpTabsBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Selected shape + text · Arrow keys · Home / End · owned panel",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpTooltip",
+                    "x": 56,
+                    "y": 1306,
+                    "name": "Tooltip",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpTooltipLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Tooltip",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpTooltipBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Supplemental text · 500ms pointer delay\nfocus reveal · hover persistence · Escape",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpPopover",
+                    "x": 596,
+                    "y": 1306,
+                    "name": "Popover",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpPopoverLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Popover",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpPopoverBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Named interactive disclosure\ndeliberate focus · outside/Escape dismissal",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpMenu",
+                    "x": 1136,
+                    "y": 1306,
+                    "name": "Menu",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpMenuLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Menu",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpMenuBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Actions only · Arrow keys · Home / End\nEscape returns focus",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpInlineAlert",
+                    "x": 1676,
+                    "y": 1306,
+                    "name": "Inline Alert",
+                    "reusable": true,
+                    "width": 668,
+                    "height": 170,
+                    "fill": "#FFF0EA",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpInlineAlertLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Inline alert",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#6C2A20"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpInlineAlertBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Info · success · warning · danger\nText and shape/icon; never color alone",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#6C2A20"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpDialog",
+                    "x": 56,
+                    "y": 1496,
+                    "name": "Dialog",
+                    "reusable": true,
+                    "width": 736,
+                    "height": 190,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 20,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpDialogLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Dialog · Alert dialog",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpDialogBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Native modal lifecycle · labelled title/description\n400 / 560 / 720 · focus containment/restore · safe action",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpSheet",
+                    "x": 812,
+                    "y": 1496,
+                    "name": "Bottom Sheet",
+                    "reusable": true,
+                    "width": 736,
+                    "height": 190,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 28,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpSheetLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Bottom sheet",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpSheetBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Compact contextual task · max-height 90%\nexplicit close · keyboard/safe-area resilient",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpToast",
+                    "x": 1568,
+                    "y": 1496,
+                    "name": "Toast",
+                    "reusable": true,
+                    "width": 776,
+                    "height": 190,
+                    "fill": "#352C3A",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpToastLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Toast · Notification region",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#FBF8FC"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpToastBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Polite live region · max 3 visible · queue additional\n6s minimum; pause hover/focus; actions persist",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#D1C7D4"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpSpinner",
+                    "x": 56,
+                    "y": 1706,
+                    "name": "Spinner",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpSpinnerLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Spinner",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpSpinnerBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Unknown short wait · named status\nstatic in reduced motion",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpProgress",
+                    "x": 596,
+                    "y": 1706,
+                    "name": "Progress",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpProgressLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Progress",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpProgressBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Known completion · native min/max/value\nuseful description, no fake precision",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpSkeleton",
+                    "x": 1136,
+                    "y": 1706,
+                    "name": "Skeleton",
+                    "reusable": true,
+                    "width": 520,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpSkeletonLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Skeleton",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "frame",
+              "id": "skeletonLine",
+              "x": 24,
+              "y": 82,
+              "name": "Skeleton · Line",
+              "reusable": true,
+                            "width": 420,
+                            "height": 20,
+                            "fill": "#DED5DF",
+                            "cornerRadius": 10
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "cmpStates",
+                    "x": 1676,
+                    "y": 1706,
+                    "name": "Empty Loading Error States",
+                    "reusable": true,
+                    "width": 668,
+                    "height": 170,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 14,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "cmpStatesLabel",
+                            "x": 24,
+                            "y": 24,
+                            "content": "Empty · Loading · Error states",
+                            "fontFamily": "Literata",
+                            "fontSize": 24,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "text",
+                            "id": "cmpStatesBody",
+                            "x": 24,
+                            "y": 76,
+                            "content": "Specific explanation · stable layout · useful recovery\nlong localized copy · no focus theft",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#5F5564"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "responsive",
+                    "x": 56,
+                    "y": 1948,
+                    "name": "Responsive and accessibility states",
+                    "width": 2288,
+                    "height": 620,
+                    "fill": "#211C26",
+                    "cornerRadius": 20,
+                    "layout": "none",
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "responsiveTitle",
+                            "x": 32,
+                            "y": 28,
+                            "content": "Responsive and accessibility states",
+                            "fontFamily": "Literata",
+                            "fontSize": 32,
+                            "fontWeight": 650,
+                            "fill": "#FBF8FC"
+                        },
+                        {
+                            "type": "text",
+                            "id": "responsiveCopy",
+                            "x": 32,
+                            "y": 82,
+                            "content": "320px reflow · 200% text · dark theme · visible keyboard focus · reduced motion · increased/forced contrast",
+                            "fontFamily": "Manrope",
+                            "fontSize": 18,
+                            "fill": "#D1C7D4"
+                        },
+                        {
+                            "type": "frame",
+                            "id": "mobileExample",
+                            "x": 32,
+                            "y": 138,
+                            "name": "320px mobile example",
+                            "width": 320,
+                            "height": 416,
+                            "fill": "#FBF8F6",
+                            "cornerRadius": 20,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "mobileExampleTitle",
+                                    "x": 20,
+                                    "y": 24,
+                                    "content": "Sign in",
+                                    "fontFamily": "Literata",
+                                    "fontSize": 28,
+                                    "fontWeight": 650,
+                                    "fill": "#211C26"
+                                },
+                                {
+                                    "type": "frame",
+                  "id": "mobileField",
+                  "x": 20,
+                  "y": 88,
+                  "name": "Input · Compact reflow",
+                  "reusable": true,
+                                    "width": 280,
+                                    "height": 48,
+                                    "fill": "#FFFFFF",
+                                    "stroke": "#8B7F90",
+                                    "strokeWidth": 1,
+                                    "cornerRadius": 10
+                                },
+                                {
+                                    "type": "frame",
+                                    "id": "mobileButton",
+                                    "x": 20,
+                                    "y": 156,
+                                    "name": "Mobile button",
+                                    "width": 280,
+                                    "height": 48,
+                                    "fill": "#5C3CCB",
+                                    "cornerRadius": 14,
+                                    "children": [
+                                        {
+                                            "type": "text",
+                                            "id": "mobileButtonText",
+                                            "x": 112,
+                                            "y": 13,
+                                            "content": "Sign in",
+                                            "fontFamily": "Manrope",
+                                            "fontSize": 16,
+                                            "fontWeight": 650,
+                                            "fill": "#FFFFFF"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "darkExample",
+                            "x": 392,
+                            "y": 138,
+                            "name": "Dark focus example",
+                            "width": 880,
+                            "height": 416,
+                            "fill": "#17131B",
+                            "cornerRadius": 20,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "darkExampleTitle",
+                                    "x": 32,
+                                    "y": 28,
+                                    "content": "Keyboard focus remains visible",
+                                    "fontFamily": "Literata",
+                                    "fontSize": 28,
+                                    "fontWeight": 650,
+                                    "fill": "#FBF8FC"
+                                },
+                                {
+                                    "type": "frame",
+                  "id": "darkFocus",
+                  "x": 32,
+                  "y": 96,
+                  "name": "Button · Dark focus",
+                  "reusable": true,
+                                    "width": 240,
+                                    "height": 56,
+                                    "fill": "#BBA6FF",
+                                    "stroke": "#8EC5FF",
+                                    "strokeWidth": 3,
+                                    "cornerRadius": 14,
+                                    "children": [
+                                        {
+                                            "type": "text",
+                                            "id": "darkFocusText",
+                                            "x": 54,
+                                            "y": 17,
+                                            "content": "Continue practice",
+                                            "fontFamily": "Manrope",
+                                            "fontSize": 16,
+                                            "fontWeight": 650,
+                                            "fill": "#23144E"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "text",
+                                    "id": "darkExampleCopy",
+                                    "x": 32,
+                                    "y": 190,
+                                    "content": "Focus is distinct from selection.\nControl boundaries and state marks remain visible in forced colors.\nReduced motion removes shimmer and nonessential transitions.",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 18,
+                                    "fill": "#D1C7D4"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "localeExample",
+                            "x": 1312,
+                            "y": 138,
+                            "name": "Localization example",
+                            "width": 944,
+                            "height": 416,
+                            "fill": "#352C3A",
+                            "cornerRadius": 20,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "localeExampleTitle",
+                                    "x": 32,
+                                    "y": 28,
+                                    "content": "Localization expansion",
+                                    "fontFamily": "Literata",
+                                    "fontSize": 28,
+                                    "fontWeight": 650,
+                                    "fill": "#FBF8FC"
+                                },
+                                {
+                                    "type": "text",
+                                    "id": "localeExampleCopy",
+                                    "x": 32,
+                                    "y": 94,
+                                    "content": "EN  Continue learning\nES  Continuar aprendiendo\nFR  Continuer l’apprentissage\nRU  Продолжить обучение",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 22,
+                                    "fill": "#D1C7D4"
+                                },
+                                {
+                                    "type": "text",
+                                    "id": "localeExampleNote",
+                                    "x": 32,
+                                    "y": 246,
+                                    "content": "Labels allow at least 30% expansion. Mixed-language learning content carries language metadata in runtime UI.",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 17,
+                                    "fill": "#AFA2B3"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "fileToken": "d288031c-bc89-485c-84e1-57b50520af06"
 }

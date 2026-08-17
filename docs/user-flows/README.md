@@ -11,6 +11,8 @@ evidence with a repeatable manual/browser/API/device recipe.
   primitives, persistence, and safe reset.
 - [Web Internationalization and Language Switching](./web-i18n-support.md) —
   localized SSR routes, language selection, and preference persistence.
+- [Web UI Kit](./web-ui-kit.md) — semantic themes, shared controls, responsive
+  rendering, and persisted appearance preference.
 - [User Authentication](./user-authentication.md) — signup, verification,
   sessions, passwords, recovery, logout, and passkeys through the browser and
   HTTP API.

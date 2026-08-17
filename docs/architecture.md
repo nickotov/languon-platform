@@ -70,6 +70,13 @@ lifetime. Root ESLint configuration enforces the FSD dependency direction for
 both web applications; `.agents/skills/frontend-development/SKILL.md` defines
 the implementation workflow.
 
+For public-web visual work, `design/DESIGN_SYSTEM.md` and `design/main.pen` are
+the authoritative contract. The app maps that contract to global semantic
+`--sys-*` variables, an SSR-resolved Light/Dark/System preference, app-local
+primitives in `apps/web/src/fsd/shared/ui`, and colocated Storybook stories.
+Visual or semantic changes synchronize the design files, stories, implementation,
+and browser evidence in one feature. ADR-0008 defines this ownership boundary.
+
 The web application keeps URLs independent of language. Its root layout selects
 an allowlisted locale from the preference cookie, then `Accept-Language`, with
 English fallback; server-loads a typed shared message catalog; and provides

@@ -1,0 +1,11 @@
+.choice {
+    align-items: center;
+    display: flex;
+    gap: var(--sys-space-2);
+    min-height: 44px;
+}
+.choice input {
+    accent-color: var(--sys-color-action-primary);
+    height: 20px;
+    width: 20px;
+}

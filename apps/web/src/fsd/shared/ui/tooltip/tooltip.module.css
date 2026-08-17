@@ -1,0 +1,19 @@
+.root {
+    display: inline-flex;
+    position: relative;
+}
+.tooltip {
+    background: var(--sys-color-text-primary);
+    border-radius: var(--sys-radius-xs, 6px);
+    bottom: calc(100% + 8px);
+    color: var(--sys-color-surface-default);
+    left: 50%;
+    max-width: 240px;
+    padding: 6px 8px;
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+.tooltip[hidden] {
+    display: none;
+}

@@ -1,0 +1,49 @@
+.dialog {
+    background: var(--sys-color-surface-raised);
+    border: 0;
+    border-radius: var(--sys-radius-lg);
+    color: var(--sys-color-text-primary);
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    padding: var(--sys-space-6);
+    width: calc(100vw - 32px);
+}
+.small {
+    max-width: 400px;
+}
+.medium {
+    max-width: 560px;
+}
+.large {
+    max-width: 720px;
+}
+.header {
+    align-items: start;
+    display: flex;
+    gap: var(--sys-space-4);
+    justify-content: space-between;
+}
+.header h2 {
+    margin: 0;
+}
+.close {
+    background: transparent;
+    border: 0;
+    border-radius: var(--sys-radius-sm);
+    color: currentColor;
+    font: inherit;
+    min-height: 44px;
+    min-width: 44px;
+}
+.dialog::backdrop {
+    background: var(--sys-color-overlay-scrim);
+}
+@media (max-width: 639px) {
+    .sheet {
+        border-radius: var(--sys-radius-xl) var(--sys-radius-xl) 0 0;
+        margin-block-end: 0;
+        max-height: 90dvh;
+        max-width: none;
+        width: 100%;
+    }
+}

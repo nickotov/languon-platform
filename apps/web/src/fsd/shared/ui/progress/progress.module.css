@@ -1,0 +1,5 @@
+.progress {
+    accent-color: var(--sys-color-action-primary);
+    height: 8px;
+    width: 100%;
+}

@@ -1,0 +1,27 @@
+.main {
+    display: grid;
+    min-height: 100vh;
+    padding: clamp(24px, 6vw, 80px);
+    place-items: center;
+}
+.content {
+    max-width: 720px;
+}
+.eyebrow {
+    color: var(--sys-color-action-primary);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.title {
+    font-family: var(--sys-font-display);
+    font-size: clamp(40px, 10vw, 64px);
+    line-height: 1;
+    margin: var(--sys-space-4) 0;
+}
+.description {
+    color: var(--sys-color-text-secondary);
+    font-size: 18px;
+    line-height: 1.6;
+}

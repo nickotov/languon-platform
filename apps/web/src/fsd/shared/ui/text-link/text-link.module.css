@@ -1,0 +1,5 @@
+.link {
+    color: var(--sys-color-action-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}

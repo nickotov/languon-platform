@@ -1,4 +1,8 @@
 export const en = {
+    'theme.label': 'Theme',
+    'theme.option.light': 'Light',
+    'theme.option.dark': 'Dark',
+    'theme.option.system': 'System',
     'language.label': 'Language',
     'language.option.en': 'English',
     'language.option.es': 'Español',

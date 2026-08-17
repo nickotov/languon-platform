@@ -1,0 +1,21 @@
+.alert {
+    border: 1px solid;
+    border-radius: var(--sys-radius-sm);
+    padding: var(--sys-space-3);
+}
+.info {
+    background: var(--sys-color-info-soft);
+    border-color: var(--sys-color-info);
+}
+.success {
+    background: var(--sys-color-success-soft);
+    border-color: var(--sys-color-success);
+}
+.warning {
+    background: var(--sys-color-warning-soft);
+    border-color: var(--sys-color-warning);
+}
+.danger {
+    background: var(--sys-color-danger-soft);
+    border-color: var(--sys-color-danger);
+}
