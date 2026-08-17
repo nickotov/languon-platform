@@ -46,6 +46,8 @@ export async function runMastraDevelopmentHarness({
     const childEnvironment = {
         ...process.env,
         ...environment,
+        MASTRA_AGENT_SIGNALS: 'false',
+        MASTRA_AUTO_DETECT_URL: 'true',
         MASTRA_DEV_HARNESS: 'true',
         MASTRA_TELEMETRY_DISABLED: 'true',
     };

@@ -62,7 +62,7 @@ const { appendFileSync } = require('node:fs');
 const { basename } = require('node:path');
 const executable = basename(process.argv[1]);
 const args = process.argv.slice(2);
-const record = (event) => appendFileSync(process.env.MASTRA_TEST_LOG, JSON.stringify({ args, event, executable, gate: process.env.MASTRA_DEV_HARNESS, sentinel: process.env.MASTRA_TEST_SENTINEL, telemetryDisabled: process.env.MASTRA_TELEMETRY_DISABLED }) + '\\n');
+const record = (event) => appendFileSync(process.env.MASTRA_TEST_LOG, JSON.stringify({ agentSignals: process.env.MASTRA_AGENT_SIGNALS, args, autoDetectUrl: process.env.MASTRA_AUTO_DETECT_URL, event, executable, gate: process.env.MASTRA_DEV_HARNESS, sentinel: process.env.MASTRA_TEST_SENTINEL, telemetryDisabled: process.env.MASTRA_TELEMETRY_DISABLED }) + '\\n');
 record('start');
 if (executable === 'docker' || args.includes('mastra:playground:provision')) process.exit(0);
 if (args.includes('@languon/prompts')) process.exit(17);
@@ -119,6 +119,14 @@ setInterval(() => {}, 1_000);
         );
         assert.equal(
             records.every(({ gate }) => gate === 'true'),
+            true,
+        );
+        assert.equal(
+            records.every(({ autoDetectUrl }) => autoDetectUrl === 'true'),
+            true,
+        );
+        assert.equal(
+            records.every(({ agentSignals }) => agentSignals === 'false'),
             true,
         );
         assert.equal(

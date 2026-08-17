@@ -13,13 +13,17 @@ const agentGenerateUrl =
     'http://127.0.0.1:4111/api/agents/development-verification-agent/generate';
 
 describe('Mastra development server policy', () => {
-    it('forces Mastra telemetry off after CLI environment loading', () => {
+    it('forces same-origin Studio discovery and telemetry off after CLI environment loading', () => {
         const environment = {
+            MASTRA_AGENT_SIGNALS: 'true',
+            MASTRA_AUTO_DETECT_URL: 'false',
             MASTRA_TELEMETRY_DISABLED: 'false',
         } as NodeJS.ProcessEnv;
 
         enforceDevelopmentHarnessProcessPolicy(environment);
 
+        expect(environment.MASTRA_AGENT_SIGNALS).toBe('false');
+        expect(environment.MASTRA_AUTO_DETECT_URL).toBe('true');
         expect(environment.MASTRA_TELEMETRY_DISABLED).toBe('true');
     });
 
@@ -175,6 +179,10 @@ describe('Mastra development server policy', () => {
             'http://127.0.0.1:4111/api/agents/development-verification-agent/stream',
             jsonRequestInit({
                 maxSteps: 3,
+                memory: {
+                    resource: 'development-verification-agent',
+                    thread: '00000000-0000-4000-8000-000000000021',
+                },
                 messages: 'hello',
                 modelSettings: { maxRetries: 2 },
                 runId: '00000000-0000-4000-8000-000000000020',
@@ -189,6 +197,18 @@ describe('Mastra development server policy', () => {
             runId: '00000000-0000-4000-8000-000000000020',
             untilIdle: true,
         });
+
+        const memoryOverride = await app.request(
+            'http://127.0.0.1:4111/api/agents/development-verification-agent/stream',
+            jsonRequestInit({
+                memory: {
+                    resource: 'another-agent',
+                    thread: '00000000-0000-4000-8000-000000000021',
+                },
+                messages: 'hello',
+            }),
+        );
+        expect(memoryOverride.status).toBe(403);
 
         const lowerBound = await app.request(
             'http://127.0.0.1:4111/api/agents/development-verification-agent/stream',
@@ -344,6 +364,10 @@ describe('Mastra development server policy', () => {
             [
                 'POST',
                 'http://127.0.0.1:4111/api/agents/development-verification-agent/threads/abort',
+            ],
+            [
+                'POST',
+                'http://127.0.0.1:4111/api/agents/development-verification-agent/threads/subscribe',
             ],
             [
                 'PUT',

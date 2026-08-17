@@ -6,12 +6,14 @@ const agentPath = '/api/agents/development-verification-agent';
 const allowedHosts = new Set(['127.0.0.1:4111', 'localhost:4111']);
 const allowedAgentRequestKeys = new Set([
     'maxSteps',
+    'memory',
     'messages',
     'modelSettings',
     'requestContext',
     'runId',
     'untilIdle',
 ]);
+const studioMemoryKeys = new Set(['resource', 'thread']);
 const studioModelSettingsKeys = new Set(['maxRetries']);
 const forbiddenRequestKeys = new Set([
     'activeTools',
@@ -167,6 +169,8 @@ export function enforceDevelopmentHarnessProcessPolicy(
         );
     }
 
+    environment.MASTRA_AGENT_SIGNALS = 'false';
+    environment.MASTRA_AUTO_DETECT_URL = 'true';
     environment.MASTRA_TELEMETRY_DISABLED = 'true';
 }
 
@@ -256,6 +260,14 @@ export async function validateAgentRequestBody(
         };
     }
 
+    if (!isAllowedStudioMemory(body.memory)) {
+        return {
+            message:
+                'The development agent request cannot override memory settings.',
+            status: 403,
+        };
+    }
+
     if (
         body.runId !== undefined &&
         (typeof body.runId !== 'string' || !isCanonicalUuid(body.runId))
@@ -313,11 +325,26 @@ async function normalizeAgentExecutionRequest(
         ...body,
         maxSteps: body.maxSteps ?? developmentServerMaximumAgentSteps,
     };
+    delete normalizedBody.memory;
     delete normalizedBody.modelSettings;
 
     return new Request(request, {
         body: JSON.stringify(normalizedBody),
     });
+}
+
+function isAllowedStudioMemory(value: unknown): boolean {
+    if (value === undefined) return true;
+    if (!isRecord(value)) return false;
+
+    const keys = Object.keys(value);
+    return (
+        keys.length === 2 &&
+        keys.every((key) => studioMemoryKeys.has(key)) &&
+        value.resource === 'development-verification-agent' &&
+        typeof value.thread === 'string' &&
+        isCanonicalUuid(value.thread)
+    );
 }
 
 function isAllowedStudioModelSettings(value: unknown): boolean {

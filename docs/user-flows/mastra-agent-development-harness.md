@@ -95,6 +95,13 @@ then starts Mastra. Expected local URLs are:
 - Studio: `http://127.0.0.1:4111`
 - generated OpenAPI document: `http://127.0.0.1:4111/api/openapi.json`
 
+The harness makes Studio derive its API from the page origin. A
+`http://localhost:4111` alias that resolves to IPv4 loopback is therefore also
+same-origin, but `127.0.0.1` is canonical because some systems resolve
+`localhost` only to unbound IPv6 `::1`. The command also disables Studio's
+agent thread-signaling mode because persistent Mastra memory is unavailable;
+agent chat uses the bounded, normalized stream route instead.
+
 Normal startup never drops or truncates the playground. No DeepSeek,
 alternate-provider, or Langfuse credential is needed for Studio, tool,
 workflow, or scorer verification. The command forces Mastra usage telemetry
@@ -157,7 +164,9 @@ including for internal refresh and workflow-restart hooks. Its API pins the
 checked-in prompt and configured primary/DeepSeek-fallback/provider/tool
 policy, rejects processor replacement and privileged message roles, bounds
 agent work, strips Studio's retry default before dispatch, and rejects the
-generic Responses and Conversations model proxies. Use Studio for
+generic Responses and Conversations model proxies. It disables unsupported
+thread signaling and strips Studio's inert memory envelope before dispatching
+the legacy chat stream. Use Studio for
 request-context form execution; exhaustive
 malformed input, policy-override, DNS-rebinding, and unsafe-target cases remain
 at unit and integration layers.
@@ -244,8 +253,21 @@ name and removes only the container it started.
   the harness at another environment as a workaround.
 - If Studio has no fixtures, verify `MASTRA_DEV_HARNESS=true` in the harness
   process and confirm provisioning completed before Mastra startup.
+- If Studio says “Failed to load studio” while `pnpm dev:mastra` is still
+  running, first stop and restart the harness so its forced same-origin Studio
+  setting is active, then open canonical `http://127.0.0.1:4111`. If the error
+  remains, select **Reset Studio Configuration**. Mastra Studio persists its
+  connection under browser-local `mastra-studio-config`, so an old instance URL
+  or API prefix can survive server restarts. After the reset, Settings should
+  show the page's loopback origin and API prefix `/api`. If the reset control is
+  unavailable, clear site data only for the loopback Studio origin and reload;
+  do not relax the server's Host/Origin policy.
 - If prompt edits do not reload, confirm the `@languon/prompts` watch process is
   still running and its `dist` build succeeds.
+- If agent chat returns the harness's registered-primitives mutation 403, stop
+  and restart `pnpm dev:mastra`, then reload Studio. The thread-signaling flag is
+  fixed when Studio starts; the restarted page must use the registered agent
+  `/stream` route rather than `/threads/subscribe`.
 - If agent execution fails without a key, use the deterministic tool/workflow/
   scorer checks or deliberately add a development-only `DEEPSEEK_API_KEY`.
   An alternate `MASTRA_MODEL_ID` also needs that provider's normal key. Never

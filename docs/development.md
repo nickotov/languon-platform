@@ -56,17 +56,70 @@ stable synthetic `mastra-playground@example.test` principal through the users
 unit-of-work, watches checked-in prompts, and binds Studio to
 `http://127.0.0.1:4111`. It does not start Hono, web, admin, mobile, or Redis.
 
+The harness forces Studio to derive its API URL from the page origin. Opening a
+working `http://localhost:4111` alias therefore stays same-origin instead of
+mixing `localhost` with `127.0.0.1`; `http://127.0.0.1:4111` remains canonical
+because some systems resolve `localhost` to unbound IPv6 `::1`. It also disables
+Studio's agent thread-signaling mode because persistent Mastra memory is not
+enabled; chat uses the harness's bounded, normalized agent stream route.
+
 `MASTRA_PLAYGROUND_DATABASE_URL` and
 `MASTRA_PLAYGROUND_ADMIN_DATABASE_URL` are mandatory, independent of
 `DATABASE_URL`, and accepted only when they identify the same loopback
 PostgreSQL authority, the `postgres` admin database, and a safely prefixed
 target. Normal startup is non-destructive and preserves playground writes.
 
-The canonical registry lives at `apps/backend/src/mastra/index.ts`. Product
+The canonical CLI entry lives at `apps/backend/src/mastra/index.ts`, and its
+registry factory lives at `apps/backend/src/mastra/composition.ts`. Product
 agents, tools, workflows, processors, and scorers remain in their owning backend
-module infrastructure and are registered there. Permanent verification
-primitives appear only when `MASTRA_DEV_HARNESS=true`; the Hono server imports
-the same production composition without exposing generic Mastra routes.
+module infrastructure and are registered through that factory. Permanent
+verification primitives appear only when `MASTRA_DEV_HARNESS=true`; the Hono
+server imports the same production composition without exposing generic Mastra
+routes.
+
+#### Registering Mastra primitives
+
+Mastra Studio does not scan the repository for new files. A new agent, tool,
+workflow, processor, or scorer becomes available only after it is connected to
+the canonical composition. Use this checklist whenever one is added or
+materially changed:
+
+1. Define the primitive in the infrastructure layer of the module that owns the
+   behavior. Keep business decisions in domain/application code and reach them
+   through ports rather than querying a database from a tool.
+2. Export the primitive from a focused module composition factory. Reuse this
+   factory from production and development wiring; do not create a second copy
+   for Studio.
+3. Add the returned primitive to the appropriate `agents`, `tools`,
+   `workflows`, `processors`, or `scorers` map in
+   `apps/backend/src/mastra/composition.ts`. Register a tool in the canonical
+   `tools` map when it should be independently runnable, and attach it to each
+   registered agent that may invoke it.
+4. Decide explicitly whether the primitive is production-capable,
+   development-only, or shared. Keep fixtures and verification-only primitives
+   behind `MASTRA_DEV_HARNESS`; do not hide a real product primitive behind that
+   flag merely to make it visible in Studio.
+5. For Studio execution, update
+   `apps/backend/src/mastra/development-server-policy.ts` with only the exact
+   primitive ID, mutation route, validated body, and bounded execution controls
+   it requires. Add focused policy regressions. Never enable a prefix-wide
+   mutation, caller-selected model/prompt/tool override, or generic model proxy
+   as a shortcut.
+6. Give development wiring isolated playground adapters and synthetic fixture
+   data. For production requests, authenticate at the Hono interface boundary,
+   derive the real user ID from verified claims, and create Mastra request
+   context server-side. A user ID supplied by Studio, a browser body, or model
+   output is selection input and must never be treated as authentication.
+7. Run focused composition, schema, credential-gating, and HTTP-policy tests.
+   Start `pnpm dev:mastra`, confirm the primitive appears under its stable ID,
+   and exercise a deterministic path with the documented synthetic context.
+   Update the Mastra user-flow guide and its mapped evidence when commands,
+   expected results, failure behavior, or the visible journey changes.
+
+Registration in the canonical composition makes the primitive available to
+Studio on reload or hot reload; no Studio-specific implementation is needed.
+Work is incomplete if an intended playground primitive merely compiles but is
+missing from Studio or is blocked by the exact-route development policy.
 
 Studio provides `synthetic-principal` request-context presets. Context selects
 the allowlisted fixture but is not authentication proof: the development
