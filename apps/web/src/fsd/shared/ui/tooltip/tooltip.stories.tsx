@@ -24,3 +24,37 @@ export const LongLocalizedCopy: StoryObj<typeof meta> = {
         content: 'Ваш прогресс обновляется после каждого завершённого урока.',
     },
 };
+export const RichContent: StoryObj<typeof meta> = {
+    args: {
+        children: (
+            <button aria-label='Streak information' type='button'>
+                i
+            </button>
+        ),
+        content: (
+            <span>
+                <strong>7 day streak</strong>
+                <br />
+                Complete one lesson today to keep it.
+            </span>
+        ),
+        placement: 'top-end',
+    },
+    decorators: [
+        (Story) => (
+            <div
+                style={{
+                    alignItems: 'flex-start',
+                    display: 'flex',
+                    height: 180,
+                    justifyContent: 'flex-end',
+                    overflow: 'hidden',
+                    width: '100%',
+                }}
+            >
+                <Story />
+            </div>
+        ),
+    ],
+    parameters: { viewport: { defaultViewport: 'mobile1' } },
+};

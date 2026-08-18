@@ -1,93 +1,66 @@
 'use client';
 
-import {
-    createContext,
-    type ReactNode,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { useStore } from 'zustand';
+import { createStore } from 'zustand/vanilla';
 
 import styles from './toast.module.css';
 
+export type ToastId = number;
+export type ToastTone = 'danger' | 'info' | 'success' | 'warning';
 export type ToastInput = {
     action?: ReactNode;
     content: ReactNode;
     dismissLabel: string;
     duration?: number | null;
+    tone?: ToastTone;
 };
 
-type QueuedToast = ToastInput & { id: number };
-type ToastContextValue = {
-    dismissToast(id: number): void;
-    showToast(toast: ToastInput): number;
+type QueuedToast = ToastInput & { id: ToastId };
+type ToastState = {
+    clear(): void;
+    dismiss(id: ToastId): void;
+    queue: QueuedToast[];
+    show(toast: ToastInput): ToastId;
 };
 
-const ToastContext = createContext<ToastContextValue | null>(null);
+let nextToastId = 0;
+const toastStore = createStore<ToastState>((set) => ({
+    clear: () => set({ queue: [] }),
+    dismiss: (id) =>
+        set((state) => ({
+            queue: state.queue.filter((toast) => toast.id !== id),
+        })),
+    queue: [],
+    show: (toast) => {
+        nextToastId += 1;
+        const id = nextToastId;
+        set((state) => ({ queue: [...state.queue, { ...toast, id }] }));
+        return id;
+    },
+}));
 
-export function ToastProvider({
-    children,
+export function showToast(toast: ToastInput): ToastId {
+    return toastStore.getState().show(toast);
+}
+
+export function dismissToast(id: ToastId) {
+    toastStore.getState().dismiss(id);
+}
+
+export function clearToasts() {
+    toastStore.getState().clear();
+}
+
+export function ToastHost({
     label,
     limit = 3,
 }: {
-    children: ReactNode;
     label: string;
     limit?: number;
 }) {
-    const nextId = useRef(0);
-    const [queue, setQueue] = useState<QueuedToast[]>([]);
-    const dismissToast = useCallback((id: number) => {
-        setQueue((current) => current.filter((toast) => toast.id !== id));
-    }, []);
-    const showToast = useCallback((toast: ToastInput) => {
-        nextId.current += 1;
-        const id = nextId.current;
-        setQueue((current) => [...current, { ...toast, id }]);
-        return id;
-    }, []);
-    const value = useMemo(
-        () => ({ dismissToast, showToast }),
-        [dismissToast, showToast],
-    );
+    const queue = useStore(toastStore, (state) => state.queue);
 
-    return (
-        <ToastContext.Provider value={value}>
-            {children}
-            <ToastRegion label={label}>
-                {queue.slice(0, Math.max(1, limit)).map((toast) => (
-                    <Toast
-                        action={toast.action}
-                        dismissLabel={toast.dismissLabel}
-                        key={toast.id}
-                        onDismiss={() => dismissToast(toast.id)}
-                        {...(toast.duration !== undefined
-                            ? { duration: toast.duration }
-                            : {})}
-                    >
-                        {toast.content}
-                    </Toast>
-                ))}
-            </ToastRegion>
-        </ToastContext.Provider>
-    );
-}
-
-export function useToast() {
-    const value = useContext(ToastContext);
-    if (!value) throw new Error('useToast must be used within ToastProvider');
-    return value;
-}
-
-export function ToastRegion({
-    children,
-    label,
-}: {
-    children: ReactNode;
-    label: string;
-}) {
     return (
         <section
             aria-atomic='false'
@@ -96,8 +69,27 @@ export function ToastRegion({
             className={styles.region}
             role='status'
         >
-            {children}
+            {queue.slice(0, Math.min(3, Math.max(1, limit))).map((toast) => (
+                <HostedToast key={toast.id} toast={toast} />
+            ))}
         </section>
+    );
+}
+
+function HostedToast({ toast }: { toast: QueuedToast }) {
+    const handleDismiss = useCallback(() => dismissToast(toast.id), [toast.id]);
+    return (
+        <Toast
+            action={toast.action}
+            dismissLabel={toast.dismissLabel}
+            onDismiss={handleDismiss}
+            {...(toast.duration !== undefined
+                ? { duration: toast.duration }
+                : {})}
+            {...(toast.tone !== undefined ? { tone: toast.tone } : {})}
+        >
+            {toast.content}
+        </Toast>
     );
 }
 
@@ -107,16 +99,17 @@ export function Toast({
     dismissLabel,
     duration,
     onDismiss,
+    tone = 'info',
 }: {
     action?: ReactNode;
     children: ReactNode;
     dismissLabel?: string;
     duration?: number | null;
     onDismiss?(): void;
+    tone?: ToastTone;
 }) {
     const [paused, setPaused] = useState(false);
-    const effectiveDuration =
-        duration === undefined ? (action ? null : 6_000) : duration;
+    const effectiveDuration = action ? null : (duration ?? 6_000);
 
     useEffect(() => {
         if (!onDismiss || effectiveDuration === null || paused) return;
@@ -126,7 +119,8 @@ export function Toast({
 
     return (
         <div
-            className={styles.toast}
+            className={[styles.toast, styles[tone]].join(' ')}
+            data-tone={tone}
             onBlurCapture={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget))
                     setPaused(false);
@@ -135,7 +129,7 @@ export function Toast({
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
         >
-            <span>{children}</span>
+            <span className={styles.content}>{children}</span>
             {action ? <span className={styles.action}>{action}</span> : null}
             {onDismiss && dismissLabel ? (
                 <button

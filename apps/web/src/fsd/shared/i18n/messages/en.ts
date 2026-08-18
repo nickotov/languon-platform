@@ -8,6 +8,7 @@ export const en = {
     'language.option.es': 'Español',
     'language.option.fr': 'Français',
     'language.option.ru': 'Русский',
+    'toast.notifications': 'Notifications',
     'meta.description': 'AI-first language learning for students and tutors.',
     'meta.notFound': 'Page not found · Languon',
     'meta.forgotPassword': 'Reset password · Languon',

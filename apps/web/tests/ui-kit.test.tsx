@@ -1,26 +1,30 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
     Button,
     Checkbox,
+    clearToasts,
     Combobox,
     Dialog,
+    dismissToast,
     Field,
     Input,
     Menu,
     Popover,
+    showToast,
     Tabs,
     Toast,
-    ToastProvider,
+    ToastHost,
     Tooltip,
-    useToast,
 } from '@/fsd/shared/ui';
 
 import { render } from './render';
 
 describe('shared UI accessibility contracts', () => {
+    afterEach(() => act(clearToasts));
+
     it('connects a field label, hint, required state, and error to its control', () => {
         const { rerender } = render(
             <>
@@ -173,7 +177,13 @@ describe('shared UI accessibility contracts', () => {
     it('describes the real tooltip trigger and dismisses with Escape', async () => {
         const user = userEvent.setup();
         render(
-            <Tooltip content='Progress updates after each lesson.'>
+            <Tooltip
+                content={
+                    <span>
+                        <strong>Progress</strong> updates after each lesson.
+                    </span>
+                }
+            >
                 <button type='button'>Progress information</button>
             </Tooltip>,
         );
@@ -190,12 +200,36 @@ describe('shared UI accessibility contracts', () => {
         expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     });
 
+    it('delays pointer tooltips and lets Escape dismiss them globally', async () => {
+        vi.useFakeTimers();
+        try {
+            render(
+                <Tooltip content='Delayed explanation'>
+                    <button type='button'>More information</button>
+                </Tooltip>,
+            );
+            const trigger = screen.getByRole('button', {
+                name: 'More information',
+            });
+            fireEvent.mouseEnter(trigger.parentElement!);
+            await act(async () => vi.advanceTimersByTimeAsync(499));
+            expect(trigger).not.toHaveAccessibleDescription();
+            await act(async () => vi.advanceTimersByTimeAsync(1));
+            expect(trigger).toHaveAccessibleDescription('Delayed explanation');
+            fireEvent.keyDown(document, { key: 'Escape' });
+            expect(trigger).not.toHaveAccessibleDescription();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('limits visible toasts to three and advances the queue on dismissal', async () => {
         const user = userEvent.setup();
         render(
-            <ToastProvider label='Notifications'>
+            <>
                 <ToastQueueHarness />
-            </ToastProvider>,
+                <ToastHost label='Notifications' />
+            </>,
         );
 
         await user.click(
@@ -209,6 +243,100 @@ describe('shared UI accessibility contracts', () => {
         await user.click(screen.getByRole('button', { name: 'Dismiss 1' }));
         expect(screen.getByText('Notification 4')).toBeVisible();
         expect(screen.getAllByRole('status')).toHaveLength(1);
+    });
+
+    it('dispatches, dismisses, and clears toasts without a provider', () => {
+        render(<ToastHost label='Notifications' />);
+        let first = 0;
+        act(() => {
+            first = showToast({
+                content: 'First notification',
+                dismissLabel: 'Dismiss first',
+                duration: null,
+                tone: 'success',
+            });
+            showToast({
+                content: 'Second notification',
+                dismissLabel: 'Dismiss second',
+                duration: null,
+            });
+        });
+        expect(
+            screen.getByText('First notification').parentElement,
+        ).toHaveAttribute('data-tone', 'success');
+        act(() => dismissToast(first));
+        expect(
+            screen.queryByText('First notification'),
+        ).not.toBeInTheDocument();
+        expect(screen.getByText('Second notification')).toBeVisible();
+        act(clearToasts);
+        expect(
+            screen.queryByText('Second notification'),
+        ).not.toBeInTheDocument();
+    });
+
+    it('does not restart an active toast timer when another toast is queued', async () => {
+        vi.useFakeTimers();
+        try {
+            render(<ToastHost label='Notifications' limit={10} />);
+            act(() => {
+                showToast({
+                    content: 'Timed notification',
+                    dismissLabel: 'Dismiss timed notification',
+                    duration: 6_000,
+                });
+            });
+            await act(async () => vi.advanceTimersByTimeAsync(3_000));
+            act(() => {
+                showToast({
+                    content: 'Persistent notification',
+                    dismissLabel: 'Dismiss persistent notification',
+                    duration: null,
+                });
+                showToast({
+                    content: 'Third notification',
+                    dismissLabel: 'Dismiss third notification',
+                    duration: null,
+                });
+                showToast({
+                    content: 'Queued notification',
+                    dismissLabel: 'Dismiss queued notification',
+                    duration: null,
+                });
+            });
+            expect(
+                screen.queryByText('Queued notification'),
+            ).not.toBeInTheDocument();
+            await act(async () => vi.advanceTimersByTimeAsync(2_999));
+            expect(screen.getByText('Timed notification')).toBeVisible();
+            await act(async () => vi.advanceTimersByTimeAsync(1));
+            expect(
+                screen.queryByText('Timed notification'),
+            ).not.toBeInTheDocument();
+            expect(screen.getByText('Queued notification')).toBeVisible();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps action toasts persistent even when a duration is supplied', async () => {
+        vi.useFakeTimers();
+        try {
+            render(<ToastHost label='Notifications' />);
+            act(() => {
+                showToast({
+                    action: <button type='button'>Undo</button>,
+                    content: 'Lesson removed',
+                    dismissLabel: 'Dismiss lesson removal',
+                    duration: 6_000,
+                });
+            });
+            await act(async () => vi.advanceTimersByTimeAsync(60_000));
+            expect(screen.getByText('Lesson removed')).toBeVisible();
+            expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('moves through enabled menu items and restores trigger focus', async () => {
@@ -250,6 +378,18 @@ describe('shared UI accessibility contracts', () => {
             screen.getByRole('button', { name: 'Practice information' }),
         );
         expect(screen.getByRole('dialog')).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Practice information' }),
+        ).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('dialog')).toHaveFocus();
+        await user.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: 'Practice information' }),
+        ).toHaveFocus();
+        await user.click(
+            screen.getByRole('button', { name: 'Practice information' }),
+        );
         await user.tab();
         expect(
             screen.getByRole('button', { name: 'Use calm pace' }),
@@ -259,6 +399,78 @@ describe('shared UI accessibility contracts', () => {
             screen.getByRole('button', { name: 'After popover' }),
         ).toHaveFocus();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('synchronizes focus and expanded state with native popover toggles', () => {
+        const originalShowPopover = HTMLElement.prototype.showPopover;
+        const originalHidePopover = HTMLElement.prototype.hidePopover;
+        vi.stubGlobal('CSS', { supports: () => true });
+        Object.defineProperty(HTMLElement.prototype, 'showPopover', {
+            configurable: true,
+            value: vi.fn(),
+        });
+        Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
+            configurable: true,
+            value: vi.fn(function hidePopoverForTest(this: HTMLElement) {
+                fireEvent(
+                    this,
+                    Object.assign(new Event('toggle'), { newState: 'closed' }),
+                );
+            }),
+        });
+        try {
+            render(
+                <Popover label='Native information' trigger='Open native'>
+                    Native content
+                </Popover>,
+            );
+            const trigger = screen.getByRole('button', {
+                name: 'Native information',
+            });
+            const panel = document.getElementById(
+                trigger.getAttribute('aria-controls')!,
+            )!;
+            expect(panel).toHaveAttribute('role', 'dialog');
+            expect(panel).toHaveAttribute('aria-label', 'Native information');
+            expect(trigger).toHaveAttribute('popovertarget', panel.id);
+            expect(panel).toHaveAttribute('popover', 'auto');
+
+            fireEvent(
+                panel,
+                Object.assign(new Event('toggle'), { newState: 'open' }),
+            );
+            expect(trigger).toHaveAttribute('aria-expanded', 'true');
+            expect(panel).toHaveFocus();
+
+            fireEvent.keyDown(panel, { key: 'Escape' });
+            expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledOnce();
+            expect(trigger).toHaveAttribute('aria-expanded', 'false');
+            expect(trigger).toHaveFocus();
+
+            fireEvent(
+                panel,
+                Object.assign(new Event('toggle'), { newState: 'closed' }),
+            );
+            expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        } finally {
+            vi.unstubAllGlobals();
+            if (originalShowPopover) {
+                Object.defineProperty(HTMLElement.prototype, 'showPopover', {
+                    configurable: true,
+                    value: originalShowPopover,
+                });
+            } else {
+                Reflect.deleteProperty(HTMLElement.prototype, 'showPopover');
+            }
+            if (originalHidePopover) {
+                Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
+                    configurable: true,
+                    value: originalHidePopover,
+                });
+            } else {
+                Reflect.deleteProperty(HTMLElement.prototype, 'hidePopover');
+            }
+        }
     });
 
     it('notifies once when the native dialog close button is used', async () => {
@@ -325,7 +537,6 @@ describe('shared UI accessibility contracts', () => {
 });
 
 function ToastQueueHarness() {
-    const { showToast } = useToast();
     return (
         <button
             onClick={() => {

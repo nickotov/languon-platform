@@ -737,7 +737,7 @@
                             "id": "cmpTooltipBody",
                             "x": 24,
                             "y": 76,
-                            "content": "Supplemental text · 500ms pointer delay\nfocus reveal · hover persistence · Escape",
+                            "content": "React content, noninteractive · 500ms pointer delay\nTop layer · auto offset/flip/shift · focus · Escape",
                             "fontFamily": "Manrope",
                             "fontSize": 16,
                             "fill": "#5F5564"
@@ -772,7 +772,7 @@
                             "id": "cmpPopoverBody",
                             "x": 24,
                             "y": 76,
-                            "content": "Named interactive disclosure\ndeliberate focus · outside/Escape dismissal",
+                            "content": "Native top-layer interactive disclosure\nAuto offset/flip/shift · 16px edge · light dismiss/Escape",
                             "fontFamily": "Manrope",
                             "fontSize": 16,
                             "fill": "#5F5564"
@@ -947,7 +947,7 @@
                             "id": "cmpToastBody",
                             "x": 24,
                             "y": 76,
-                            "content": "Polite live region · max 3 visible · queue additional\n6s minimum; pause hover/focus; actions persist",
+                            "content": "One ToastHost + shared store · no provider · show/dismiss/clear\nPolite live region · max 3 · 6s/pause · actions persist",
                             "fontFamily": "Manrope",
                             "fontSize": 16,
                             "fill": "#D1C7D4"

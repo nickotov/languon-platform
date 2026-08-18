@@ -1,6 +1,14 @@
 'use client';
 
 import {
+    autoUpdate,
+    flip,
+    offset,
+    type Placement,
+    shift,
+    useFloating,
+} from '@floating-ui/react';
+import {
     cloneElement,
     type FocusEvent,
     type KeyboardEvent,
@@ -11,6 +19,7 @@ import {
     useRef,
     useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import styles from './tooltip.module.css';
 
@@ -24,27 +33,72 @@ type TriggerProps = {
 export function Tooltip({
     children,
     content,
+    placement = 'top',
 }: {
     children: ReactElement<TriggerProps>;
     content: ReactNode;
+    placement?: Placement;
 }) {
     const id = useId();
+    const panelRef = useRef<HTMLDivElement | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [nativePopover, setNativePopover] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
+    const { floatingStyles, refs } = useFloating({
+        middleware: [offset(8), flip({ padding: 16 }), shift({ padding: 16 })],
+        onOpenChange: setOpen,
+        open,
+        placement,
+        strategy: 'fixed',
+        whileElementsMounted: open ? autoUpdate : undefined,
+    });
 
-    useEffect(
-        () => () => {
+    useEffect(() => {
+        setMounted(true);
+        setNativePopover(
+            Boolean(
+                'showPopover' in HTMLElement.prototype &&
+                typeof CSS !== 'undefined' &&
+                CSS.supports?.('selector(:popover-open)'),
+            ),
+        );
+        return () => {
             if (timer.current) clearTimeout(timer.current);
-        },
-        [],
-    );
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!open) return;
+        function dismissWithEscape(event: globalThis.KeyboardEvent) {
+            if (event.key !== 'Escape') return;
+            if (timer.current) clearTimeout(timer.current);
+            if (nativePopover) panelRef.current?.hidePopover();
+            setOpen(false);
+        }
+        document.addEventListener('keydown', dismissWithEscape);
+        return () => document.removeEventListener('keydown', dismissWithEscape);
+    }, [nativePopover, open]);
+
+    function setPanel(node: HTMLDivElement | null) {
+        panelRef.current = node;
+        refs.setFloating(node);
+    }
+
+    function show() {
+        if (timer.current) clearTimeout(timer.current);
+        if (nativePopover) panelRef.current?.showPopover();
+        setOpen(true);
+    }
 
     function showAfterDelay() {
-        timer.current = setTimeout(() => setOpen(true), 500);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(show, 500);
     }
 
     function hide() {
         if (timer.current) clearTimeout(timer.current);
+        if (nativePopover) panelRef.current?.hidePopover();
         setOpen(false);
     }
 
@@ -58,7 +112,7 @@ export function Tooltip({
         },
         onFocus(event: FocusEvent) {
             children.props.onFocus?.(event);
-            setOpen(true);
+            show();
         },
         onKeyDown(event: KeyboardEvent) {
             children.props.onKeyDown?.(event);
@@ -73,17 +127,26 @@ export function Tooltip({
             className={styles.root}
             onMouseEnter={showAfterDelay}
             onMouseLeave={hide}
+            ref={refs.setReference}
         >
             {trigger}
-            <span
-                className={styles.tooltip}
-                hidden={!open}
-                id={id}
-                onMouseEnter={() => setOpen(true)}
-                role='tooltip'
-            >
-                {content}
-            </span>
+            {mounted
+                ? createPortal(
+                      <div
+                          className={styles.tooltip}
+                          hidden={!nativePopover && !open}
+                          id={id}
+                          onMouseEnter={show}
+                          popover={nativePopover ? 'manual' : undefined}
+                          ref={setPanel}
+                          role='tooltip'
+                          style={floatingStyles}
+                      >
+                          {content}
+                      </div>,
+                      document.body,
+                  )
+                : null}
         </span>
     );
 }

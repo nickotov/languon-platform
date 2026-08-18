@@ -35,10 +35,13 @@ export { Text } from './text/text';
 export { Textarea } from './textarea/textarea';
 export { TextLink } from './text-link/text-link';
 export {
+    clearToasts,
+    dismissToast,
+    showToast,
     Toast,
+    ToastHost,
+    type ToastId,
     type ToastInput,
-    ToastProvider,
-    ToastRegion,
-    useToast,
+    type ToastTone,
 } from './toast/toast';
 export { Tooltip } from './tooltip/tooltip';

@@ -597,13 +597,20 @@ a label.
 
 - A tooltip provides supplemental, noninteractive text. Essential instructions
   remain visible elsewhere.
+- Tooltip content may be structured React content for emphasis, icons, or
+  multi-line layout, but it remains noninteractive: no links, buttons, fields, or
+  required action may be placed inside it.
 - Pointer tooltips appear after about 500ms; keyboard focus reveals immediately.
   They stay open while pointer/focus is over trigger or tooltip, dismiss with
-  Escape, and do not obscure the trigger.
+  Escape, and do not obscure the trigger. On web they render in the top layer and
+  offset, flip, then shift inside a 16px viewport boundary as space changes.
 - Do not depend on hover on touch devices. Use visible helper text or a named
   disclosure/popover for mobile explanations.
 - A popover may contain interactive content and receives an accessible name and
-  deliberate focus/dismissal behavior.
+  deliberate focus/dismissal behavior. On web, use the native Popover API for
+  top-layer stacking, light dismissal, and Escape behavior. Anchor positioning
+  must auto-update while open and apply offset, flip, and shift collision handling
+  with at least 16px viewport padding; parent overflow must never clip the panel.
 - A menu contains actions, not arbitrary form layout. Arrow-key behavior follows
   the platform/WAI-ARIA menu pattern.
 
@@ -645,6 +652,10 @@ a label.
   not make touch, switch, voice-control, or slow-reading users race a timer.
 - Maximum three visible toasts; queue additional items. Recommended maximum width
   is 400 on web and viewport minus 32 on compact screens.
+- Web applications render exactly one ToastHost near the application root. Toast
+  producers dispatch ephemeral notifications through the shared client store and
+  never require a context provider. The store exposes show, dismiss, and clear;
+  the host alone owns queue rendering and the single localized live region.
 - Inline alerts sit near the affected content and support info, success, warning,
   and danger. Each uses text plus icon/shape, not color alone.
 

@@ -10,6 +10,7 @@ export const ru = {
     'language.option.es': 'Español',
     'language.option.fr': 'Français',
     'language.option.ru': 'Русский',
+    'toast.notifications': 'Уведомления',
     'meta.description': 'Изучение языков с ИИ для учеников и преподавателей.',
     'meta.notFound': 'Страница не найдена · Languon',
     'meta.forgotPassword': 'Сброс пароля · Languon',

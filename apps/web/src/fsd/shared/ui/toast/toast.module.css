@@ -18,6 +18,28 @@
     justify-content: space-between;
     padding: var(--sys-space-3);
 }
+.toast::before {
+    align-self: stretch;
+    background: var(--toast-accent, var(--sys-color-info));
+    border-radius: var(--sys-radius-sm);
+    content: '';
+    flex: 0 0 4px;
+}
+.info {
+    --toast-accent: var(--sys-color-info);
+}
+.success {
+    --toast-accent: var(--sys-color-success);
+}
+.warning {
+    --toast-accent: var(--sys-color-warning);
+}
+.danger {
+    --toast-accent: var(--sys-color-danger);
+}
+.content {
+    flex: 1;
+}
 .action {
     display: inline-flex;
 }

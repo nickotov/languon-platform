@@ -10,6 +10,7 @@ export const es = {
     'language.option.es': 'Español',
     'language.option.fr': 'Français',
     'language.option.ru': 'Русский',
+    'toast.notifications': 'Notificaciones',
     'meta.description':
         'Aprendizaje de idiomas con IA para estudiantes y tutores.',
     'meta.notFound': 'Página no encontrada · Languon',
