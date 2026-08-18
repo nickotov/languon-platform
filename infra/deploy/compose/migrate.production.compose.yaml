@@ -1,0 +1,6 @@
+services:
+    migrator:
+        environment:
+            NODE_EXTRA_CA_CERTS: /run/secrets/languon-data-ca.pem
+        volumes:
+            - ${DATA_TLS_CA_PATH:?required}:/run/secrets/languon-data-ca.pem:ro

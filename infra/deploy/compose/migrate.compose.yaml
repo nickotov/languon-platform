@@ -1,0 +1,23 @@
+name: languon-migration
+
+services:
+    migrator:
+        image: ${MIGRATOR_IMAGE:?MIGRATOR_IMAGE must be an immutable digest reference}
+        restart: 'no'
+        init: true
+        environment:
+            APP_ENV: ${APP_ENV:?required}
+            MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?required}
+            RELEASE_SHA: ${RELEASE_SHA:?required}
+        networks:
+            - data
+        security_opt:
+            - no-new-privileges:true
+        read_only: true
+        tmpfs:
+            - /tmp:size=32m,mode=1777
+
+networks:
+    data:
+        external: true
+        name: ${DEPLOY_PROJECT_PREFIX:?required}-data

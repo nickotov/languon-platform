@@ -1,0 +1,107 @@
+name: languon-app-slot
+
+x-app-defaults: &app-defaults
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 300s
+    networks:
+        - edge
+        - data
+    security_opt:
+        - no-new-privileges:true
+    read_only: true
+    tmpfs:
+        - /tmp:size=64m,mode=1777
+
+services:
+    backend:
+        <<: *app-defaults
+        image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be an immutable digest reference}
+        environment:
+            APP_ENV: ${APP_ENV:?required}
+            AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:?required}
+            AUTH_CODE_HMAC_SECRET: ${AUTH_CODE_HMAC_SECRET:?required}
+            AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?required}
+            AUTH_TRUST_PROXY: 'true'
+            AUTH_TRUSTED_PROXY_CIDRS: ${EDGE_SUBNET:?required}
+            AUTH_WEBAUTHN_RP_ID: ${AUTH_WEBAUTHN_RP_ID:?required}
+            BACKEND_HOST: 0.0.0.0
+            BACKEND_PORT: 4000
+            DATABASE_MAX_CONNECTIONS: ${DATABASE_MAX_CONNECTIONS:-10}
+            DATABASE_URL: ${DATABASE_URL:?required}
+            REDIS_URL: ${REDIS_URL:?required}
+            RELEASE_SHA: ${RELEASE_SHA:?required}
+            SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-295000}
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:4000/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+                ]
+            interval: 5s
+            timeout: 3s
+            retries: 24
+            start_period: 10s
+        networks:
+            edge:
+                aliases:
+                    - ${DEPLOY_SLOT:?required}-backend
+            data: {}
+
+    web:
+        <<: *app-defaults
+        image: ${WEB_IMAGE:?WEB_IMAGE must be an immutable digest reference}
+        environment:
+            HOSTNAME: 0.0.0.0
+            PORT: 3333
+            RELEASE_SHA: ${RELEASE_SHA:?required}
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:3333/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+                ]
+            interval: 5s
+            timeout: 3s
+            retries: 24
+            start_period: 10s
+        networks:
+            edge:
+                aliases:
+                    - ${DEPLOY_SLOT:?required}-web
+
+    admin:
+        <<: *app-defaults
+        image: ${ADMIN_IMAGE:?ADMIN_IMAGE must be an immutable digest reference}
+        environment:
+            HOSTNAME: 0.0.0.0
+            PORT: 3001
+            RELEASE_SHA: ${RELEASE_SHA:?required}
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:3001/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+                ]
+            interval: 5s
+            timeout: 3s
+            retries: 24
+            start_period: 10s
+        networks:
+            edge:
+                aliases:
+                    - ${DEPLOY_SLOT:?required}-admin
+
+networks:
+    edge:
+        external: true
+        name: ${DEPLOY_PROJECT_PREFIX:?required}-edge
+    data:
+        external: true
+        name: ${DEPLOY_PROJECT_PREFIX:?required}-data

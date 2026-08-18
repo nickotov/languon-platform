@@ -21,8 +21,13 @@ function values(
                   AUTH_ALLOWED_ORIGINS: 'https://app.languon.example',
                   AUTH_WEBAUTHN_RP_ID: 'app.languon.example',
                   DATABASE_URL:
-                      'postgres://app:secret@db.internal:5432/languon',
-                  REDIS_URL: 'rediss://cache.internal:6379',
+                      appEnvironment === 'production'
+                          ? 'postgres://app:secret@db.internal:5432/languon?sslmode=verify-full'
+                          : 'postgres://app:secret@db.internal:5432/languon',
+                  REDIS_URL:
+                      appEnvironment === 'production'
+                          ? 'rediss://languon_app:secret@cache.internal:6379'
+                          : 'redis://cache.internal:6379',
               }
             : {}),
         ...overrides,
@@ -52,6 +57,9 @@ describe('loadEnvironment authentication settings', () => {
                     ? 'fixed'
                     : 'unavailable',
                 BACKEND_HOST: '127.0.0.1',
+                DATABASE_MAX_CONNECTIONS: 10,
+                RELEASE_SHA: 'development',
+                SHUTDOWN_TIMEOUT_MS: 295_000,
             });
         },
     );
@@ -110,6 +118,55 @@ describe('loadEnvironment authentication settings', () => {
         expect(() =>
             loadEnvironment(
                 values('development', { BACKEND_HOST: '192.0.2.10' }),
+            ),
+        ).toThrow();
+    });
+
+    it('accepts bounded deployment lifecycle configuration', () => {
+        const environment = loadEnvironment(
+            values('production', {
+                DATABASE_MAX_CONNECTIONS: '6',
+                RELEASE_SHA: 'abcdef1234567890',
+                SHUTDOWN_TIMEOUT_MS: '290000',
+            }),
+        );
+
+        expect(environment).toMatchObject({
+            DATABASE_MAX_CONNECTIONS: 6,
+            RELEASE_SHA: 'abcdef1234567890',
+            SHUTDOWN_TIMEOUT_MS: 290_000,
+        });
+    });
+
+    it('requires authenticated TLS for production data services', () => {
+        expect(() =>
+            loadEnvironment(
+                values('production', {
+                    DATABASE_URL: 'postgres://app:secret@db.internal/languon',
+                }),
+            ),
+        ).toThrow(/sslmode=verify-full/);
+        expect(() =>
+            loadEnvironment(
+                values('production', {
+                    REDIS_URL: 'redis://languon_app:secret@cache.internal:6379',
+                }),
+            ),
+        ).toThrow(/rediss/);
+    });
+
+    it('rejects invalid pool, release, and shutdown limits', () => {
+        expect(() =>
+            loadEnvironment(
+                values('production', { DATABASE_MAX_CONNECTIONS: '0' }),
+            ),
+        ).toThrow();
+        expect(() =>
+            loadEnvironment(values('production', { RELEASE_SHA: 'latest' })),
+        ).toThrow();
+        expect(() =>
+            loadEnvironment(
+                values('production', { SHUTDOWN_TIMEOUT_MS: '300001' }),
             ),
         ).toThrow();
     });
@@ -257,8 +314,9 @@ describe('loadEnvironment authentication settings', () => {
                     'prod-code-secret-7wQdZK6F8pN2XvRt4mHs9LcB',
                 AUTH_JWT_SECRET: 'prod-jwt-secret-3JpQ8vWz7cNk2sMx5tRy6HdF',
                 AUTH_WEBAUTHN_RP_ID: 'app.languon.example',
-                DATABASE_URL: 'postgres://app:secret@db.internal:5432/languon',
-                REDIS_URL: 'rediss://cache.internal:6379',
+                DATABASE_URL:
+                    'postgres://app:secret@db.internal:5432/languon?sslmode=verify-full',
+                REDIS_URL: 'rediss://languon_app:secret@cache.internal:6379',
             }),
         );
 

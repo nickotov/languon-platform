@@ -1,0 +1,4 @@
+# Replace both placeholders before installation. Keep this file mode 0600.
+user default off
+user languon_app on >replace-with-application-password ~languon:auth:v1:* +ping +get +set +del +eval +incr +pttl +pexpire +info +time +zremrangebyscore +zcard +zrange +zadd +quit
+user languon_health on >replace-with-health-only-password ~* +ping

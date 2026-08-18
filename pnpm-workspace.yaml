@@ -3,6 +3,7 @@ packages:
     - 'packages/*'
 
 preferWorkspacePackages: true
+injectWorkspacePackages: true
 
 onlyBuiltDependencies:
     - esbuild

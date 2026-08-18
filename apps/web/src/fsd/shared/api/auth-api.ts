@@ -77,9 +77,20 @@ interface RequestOptions<TBody, TResponse> {
     signal?: AbortSignal | undefined;
 }
 
-const apiUrl = (
-    process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
-).replace(/\/$/, '');
+export function resolveApiUrl(
+    nodeEnvironment: string | undefined,
+    configuredUrl: string | undefined,
+): string {
+    return (
+        configuredUrl ??
+        (nodeEnvironment === 'production' ? '/api' : 'http://localhost:4000')
+    ).replace(/\/$/, '');
+}
+
+const apiUrl = resolveApiUrl(
+    process.env.NODE_ENV,
+    process.env.NEXT_PUBLIC_API_URL,
+);
 
 export class AuthApiError extends Error {
     readonly detail: AuthError;

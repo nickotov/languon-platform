@@ -1,0 +1,153 @@
+name: Deploy production release
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: Successful stable release to deploy (vMAJOR.MINOR.PATCH)
+                required: true
+                type: string
+
+permissions:
+    contents: read
+    actions: read
+    attestations: read
+
+concurrency:
+    group: deploy-production
+    cancel-in-progress: false
+
+jobs:
+    resolve-build:
+        name: Resolve successful immutable build
+        runs-on: ubuntu-24.04
+        permissions:
+            actions: read
+            attestations: read
+            contents: read
+        outputs:
+            source_sha: ${{ steps.manifest.outputs.source_sha }}
+        steps:
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  fetch-depth: 0
+            - name: Validate requested release version
+              env:
+                  RELEASE_VERSION: ${{ inputs.version }}
+              run: node scripts/release-ref.mjs release "$RELEASE_VERSION"
+            - name: Reject draft or prerelease records
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_VERSION: ${{ inputs.version }}
+              run: |
+                  release="$(gh release view "$RELEASE_VERSION" --json isDraft,isPrerelease,tagName)"
+                  test "$(printf '%s' "$release" | jq -r .tagName)" = "$RELEASE_VERSION"
+                  test "$(printf '%s' "$release" | jq -r .isDraft)" = false
+                  test "$(printf '%s' "$release" | jq -r .isPrerelease)" = false
+            - name: Download build-ready release manifest
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_VERSION: ${{ inputs.version }}
+              run: gh release download "$RELEASE_VERSION" --pattern "languon-release-manifest-$RELEASE_VERSION.json" --output release-manifest.json
+            - name: Validate manifest and successful release workflow
+              id: manifest
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  EXPECTED_VERSION: ${{ inputs.version }}
+                  REPOSITORY: ${{ github.repository }}
+              run: |
+                  gh attestation verify release-manifest.json --repo "$REPOSITORY"
+                  manifest="$(node scripts/release-manifest.mjs validate --input release-manifest.json --expected-version "$EXPECTED_VERSION")"
+                  source_sha="$(printf '%s' "$manifest" | jq -r .sourceSha)"
+                  workflow_run="$(printf '%s' "$manifest" | jq -r .workflowRun)"
+                  run="$(gh run view "$workflow_run" --json conclusion,event,headSha,workflowName)"
+                  test "$(printf '%s' "$run" | jq -r .conclusion)" = success
+                  test "$(printf '%s' "$run" | jq -r .event)" = release
+                  test "$(printf '%s' "$run" | jq -r .headSha)" = "$source_sha"
+                  test "$(printf '%s' "$run" | jq -r .workflowName)" = "Production release verify and build"
+                  mkdir canonical-manifest
+                  gh run download "$workflow_run" --name "release-manifest-$EXPECTED_VERSION" --dir canonical-manifest
+                  cmp --silent release-manifest.json canonical-manifest/release-manifest.json
+                  gh attestation verify canonical-manifest/release-manifest.json --repo "$REPOSITORY"
+                  expected_prefix="ghcr.io/${REPOSITORY,,}/"
+                  node scripts/release-manifest.mjs validate --input canonical-manifest/release-manifest.json --expected-source-sha "$source_sha" --expected-version "$EXPECTED_VERSION" --expected-image-prefix "$expected_prefix"
+                  echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+            - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: production-deploy-manifest-${{ github.run_id }}
+                  path: release-manifest.json
+                  if-no-files-found: error
+                  retention-days: 90
+
+    deploy:
+        name: Deploy approved production release
+        needs: resolve-build
+        runs-on: ubuntu-24.04
+        timeout-minutes: 20
+        environment: production
+        permissions:
+            actions: read
+            attestations: read
+            contents: read
+        steps:
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  ref: ${{ needs.resolve-build.outputs.source_sha }}
+            - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  name: production-deploy-manifest-${{ github.run_id }}
+                  path: .release
+            - name: Revalidate exact source and version
+              env:
+                  EXPECTED_SOURCE_SHA: ${{ needs.resolve-build.outputs.source_sha }}
+                  RELEASE_VERSION: ${{ inputs.version }}
+              run: >-
+                  node scripts/release-manifest.mjs validate
+                  --input .release/release-manifest.json
+                  --expected-source-sha "$EXPECTED_SOURCE_SHA"
+                  --expected-version "$RELEASE_VERSION"
+            - name: Join private deployment network
+              uses: tailscale/github-action@6cae46e2d796f265265cfcf628b72a32b4d7cade # v3
+              with:
+                  oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+                  oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+                  tags: tag:ci-production
+            - name: Configure pinned SSH identity
+              env:
+                  DEPLOY_SSH_HOST_KEY: ${{ secrets.DEPLOY_SSH_HOST_KEY }}
+                  DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+              run: |
+                  install -m 700 -d "$HOME/.ssh"
+                  printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+                  chmod 600 "$HOME/.ssh/id_ed25519"
+                  printf '%s\n' "$DEPLOY_SSH_HOST_KEY" > "$HOME/.ssh/known_hosts"
+                  chmod 600 "$HOME/.ssh/known_hosts"
+            - name: Copy deployment bundle and deploy exact manifest
+              env:
+                  DEPLOY_ACTOR: ${{ github.actor }}
+                  DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+                  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+                  SOURCE_SHA: ${{ needs.resolve-build.outputs.source_sha }}
+              run: |
+                  remote_dir="/opt/languon/releases/$SOURCE_SHA"
+                  target="$DEPLOY_USER@$DEPLOY_HOST"
+                  ssh_options=(-i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+                  ssh "${ssh_options[@]}" "$target" "install -d '$remote_dir/infra/backup' '$remote_dir/infra/deploy' '$remote_dir/infra/nginx' '$remote_dir/scripts'"
+                  scp "${ssh_options[@]}" -r infra/backup/. "$target:$remote_dir/infra/backup/"
+                  scp "${ssh_options[@]}" infra/deploy/cli.mjs "$target:$remote_dir/infra/deploy/"
+                  scp "${ssh_options[@]}" -r infra/deploy/lib infra/deploy/compose "$target:$remote_dir/infra/deploy/"
+                  scp "${ssh_options[@]}" infra/nginx/nginx.conf "$target:$remote_dir/infra/nginx/"
+                  scp "${ssh_options[@]}" scripts/deploy-release.mjs "$target:$remote_dir/scripts/"
+                  scp "${ssh_options[@]}" .release/release-manifest.json "$target:$remote_dir/"
+                  audit_tmp="$(mktemp)"
+                  printf -v remote_command 'GITHUB_ACTOR=%q node %q --environment production --manifest %q' "$DEPLOY_ACTOR" "$remote_dir/scripts/deploy-release.mjs" "$remote_dir/release-manifest.json"
+                  ssh "${ssh_options[@]}" "$target" "$remote_command" > "$audit_tmp"
+                  mv "$audit_tmp" .release/deployment-audit.json
+            - name: Upload deployment audit
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: production-deployment-audit-${{ github.run_id }}
+                  path: .release/deployment-audit.json
+                  if-no-files-found: warn
+                  retention-days: 365

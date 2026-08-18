@@ -1,0 +1,7 @@
+{
+    "schemaVersion": 1,
+    "reviewedThrough": "0004_mature_alex_power",
+    "reviewedMigrationsSha256": "97e11e5bff25fe090bfaf140ddb2bd6bc53d2a2c32c879ec0ee4749f757f140e",
+    "compatibility": "expand",
+    "rationale": "The reviewed migrations are additive or remain compatible with both application slots during the deployment window."
+}

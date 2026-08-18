@@ -1,0 +1,40 @@
+name: languon-stream-fixture
+
+x-service: &service
+    image: ${STREAM_FIXTURE_IMAGE:-languon-deploy-stream-fixture:local}
+    init: true
+    command: ['node', '/fixture/server.mjs']
+    volumes:
+        - ${STREAM_FIXTURE_SERVER:?required}:/fixture/server.mjs:ro
+    networks: [edge]
+
+services:
+    blue-backend:
+        <<: *service
+        environment: { PORT: 4000, RELEASE_LABEL: blue }
+        networks: { edge: { aliases: [blue-backend] } }
+    blue-web:
+        <<: *service
+        environment: { PORT: 3333, RELEASE_LABEL: blue }
+        networks: { edge: { aliases: [blue-web] } }
+    blue-admin:
+        <<: *service
+        environment: { PORT: 3001, RELEASE_LABEL: blue }
+        networks: { edge: { aliases: [blue-admin] } }
+    green-backend:
+        <<: *service
+        environment: { PORT: 4000, RELEASE_LABEL: green }
+        networks: { edge: { aliases: [green-backend] } }
+    green-web:
+        <<: *service
+        environment: { PORT: 3333, RELEASE_LABEL: green }
+        networks: { edge: { aliases: [green-web] } }
+    green-admin:
+        <<: *service
+        environment: { PORT: 3001, RELEASE_LABEL: green }
+        networks: { edge: { aliases: [green-admin] } }
+
+networks:
+    edge:
+        external: true
+        name: languon-stream-test-edge

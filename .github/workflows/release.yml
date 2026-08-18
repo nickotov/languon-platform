@@ -1,0 +1,85 @@
+name: Production release verify and build
+
+on:
+    release:
+        types: [published]
+
+permissions:
+    contents: write
+    packages: write
+    attestations: write
+    id-token: write
+
+concurrency:
+    group: release-${{ github.event.release.tag_name }}
+    cancel-in-progress: false
+
+jobs:
+    validate-release:
+        name: Validate stable release from main
+        if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
+        runs-on: ubuntu-24.04
+        permissions:
+            contents: read
+        outputs:
+            source_sha: ${{ steps.ref.outputs.source_sha }}
+        steps:
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  ref: refs/tags/${{ github.event.release.tag_name }}
+                  fetch-depth: 0
+            - name: Fetch main ancestry
+              run: git fetch --no-tags origin main:refs/remotes/origin/main
+            - name: Validate SemVer and main ancestry
+              id: ref
+              env:
+                  RELEASE_VERSION: ${{ github.event.release.tag_name }}
+              run: node scripts/release-ref.mjs release "$RELEASE_VERSION"
+
+    verify-build:
+        name: Verify and build release images
+        needs: validate-release
+        uses: ./.github/workflows/reusable-verify-build.yml
+        permissions:
+            attestations: write
+            contents: read
+            id-token: write
+            packages: write
+        with:
+            source_sha: ${{ needs.validate-release.outputs.source_sha }}
+            identity: ${{ github.event.release.tag_name }}
+            version: ${{ github.event.release.tag_name }}
+            artifact_name: release-manifest-${{ github.event.release.tag_name }}
+
+    mark-build-ready:
+        name: Publish build-ready manifest
+        needs: [validate-release, verify-build]
+        runs-on: ubuntu-24.04
+        permissions:
+            actions: read
+            contents: write
+        steps:
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  ref: ${{ needs.validate-release.outputs.source_sha }}
+            - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  name: release-manifest-${{ github.event.release.tag_name }}
+                  path: .release
+            - name: Validate release identity
+              env:
+                  EXPECTED_SOURCE_SHA: ${{ needs.validate-release.outputs.source_sha }}
+                  RELEASE_VERSION: ${{ github.event.release.tag_name }}
+              run: >-
+                  node scripts/release-manifest.mjs validate
+                  --input .release/release-manifest.json
+                  --expected-source-sha "$EXPECTED_SOURCE_SHA"
+                  --expected-version "$RELEASE_VERSION"
+            - name: Attach immutable manifest to GitHub release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_VERSION: ${{ github.event.release.tag_name }}
+              run: |
+                  asset=".release/languon-release-manifest-$RELEASE_VERSION.json"
+                  cp .release/release-manifest.json "$asset"
+                  gh release upload "$RELEASE_VERSION" "$asset"

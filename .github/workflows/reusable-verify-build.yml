@@ -1,0 +1,178 @@
+name: Reusable verify and build
+
+on:
+    workflow_call:
+        inputs:
+            source_sha:
+                description: Immutable source commit to verify and package
+                required: true
+                type: string
+            identity:
+                description: Release-safe manifest identity and OCI tag
+                required: true
+                type: string
+            version:
+                description: Stable SemVer release, or an empty string for staging
+                required: false
+                default: ''
+                type: string
+            artifact_name:
+                description: Unique manifest artifact name
+                required: true
+                type: string
+
+permissions:
+    contents: read
+    packages: write
+    attestations: write
+    id-token: write
+
+jobs:
+    verify:
+        name: Verify immutable source
+        runs-on: ubuntu-24.04
+        timeout-minutes: 45
+        permissions:
+            contents: read
+        steps:
+            - name: Check out selected commit
+              uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  ref: ${{ inputs.source_sha }}
+                  fetch-depth: 0
+            - name: Reject a substituted checkout
+              env:
+                  EXPECTED_SHA: ${{ inputs.source_sha }}
+              run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+            - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+            - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - name: Install frozen dependencies
+              run: pnpm install --frozen-lockfile
+            - name: Check formatting
+              run: pnpm format:check
+            - name: Check agent and user-flow contracts
+              run: pnpm agent-skills:check && pnpm docs:user-flows:check
+            - name: Lint
+              run: pnpm lint
+            - name: Typecheck
+              run: pnpm typecheck
+            - name: Test
+              run: pnpm test
+            - name: Test release workflow contracts
+              run: node --test scripts/release-manifest.test.mjs scripts/release-workflow-contract.test.mjs
+            - name: Verify migration history
+              run: pnpm db:check
+            - name: Build production workspaces
+              run: pnpm build
+
+    build-images:
+        name: Build immutable images
+        needs: verify
+        runs-on: ubuntu-24.04
+        timeout-minutes: 45
+        permissions:
+            attestations: write
+            contents: read
+            id-token: write
+            packages: write
+        steps:
+            - name: Check out verified commit
+              uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  ref: ${{ inputs.source_sha }}
+            - name: Resolve lowercase GHCR prefix
+              id: registry
+              env:
+                  REPOSITORY: ${{ github.repository }}
+              run: echo "prefix=ghcr.io/${REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+            - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+            - name: Authenticate to GHCR
+              uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Build and publish backend
+              id: backend
+              uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+              with:
+                  context: .
+                  file: infra/docker/prod.backend.Dockerfile
+                  push: true
+                  tags: ${{ steps.registry.outputs.prefix }}/backend:${{ inputs.identity }}
+                  build-args: RELEASE_SHA=${{ inputs.source_sha }}
+                  provenance: mode=max
+                  sbom: true
+            - name: Build and publish web
+              id: web
+              uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+              with:
+                  context: .
+                  file: infra/docker/prod.web.Dockerfile
+                  push: true
+                  tags: ${{ steps.registry.outputs.prefix }}/web:${{ inputs.identity }}
+                  build-args: RELEASE_SHA=${{ inputs.source_sha }}
+                  provenance: mode=max
+                  sbom: true
+            - name: Build and publish admin
+              id: admin
+              uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+              with:
+                  context: .
+                  file: infra/docker/prod.admin.Dockerfile
+                  push: true
+                  tags: ${{ steps.registry.outputs.prefix }}/admin:${{ inputs.identity }}
+                  build-args: RELEASE_SHA=${{ inputs.source_sha }}
+                  provenance: mode=max
+                  sbom: true
+            - name: Build and publish migrator
+              id: migrator
+              uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+              with:
+                  context: .
+                  file: infra/docker/prod.migrator.Dockerfile
+                  push: true
+                  tags: ${{ steps.registry.outputs.prefix }}/migrator:${{ inputs.identity }}
+                  build-args: RELEASE_SHA=${{ inputs.source_sha }}
+                  provenance: mode=max
+                  sbom: true
+            - name: Create immutable manifest
+              env:
+                  ADMIN_DIGEST: ${{ steps.admin.outputs.digest }}
+                  BACKEND_DIGEST: ${{ steps.backend.outputs.digest }}
+                  IMAGE_PREFIX: ${{ steps.registry.outputs.prefix }}
+                  MANIFEST_IDENTITY: ${{ inputs.identity }}
+                  MIGRATOR_DIGEST: ${{ steps.migrator.outputs.digest }}
+                  RELEASE_VERSION: ${{ inputs.version }}
+                  SOURCE_SHA: ${{ inputs.source_sha }}
+                  WEB_DIGEST: ${{ steps.web.outputs.digest }}
+                  WORKFLOW_RUN: ${{ github.run_id }}
+              run: |
+                  migration_ledger="$(git rev-parse HEAD:apps/backend/drizzle)"
+                  migration_compatibility="$(node scripts/migration-classification.mjs)"
+                  node scripts/release-manifest.mjs create \
+                    --output release-manifest.json \
+                    --source-sha "$SOURCE_SHA" \
+                    --identity "$MANIFEST_IDENTITY" \
+                    --version "$RELEASE_VERSION" \
+                    --workflow-run "$WORKFLOW_RUN" \
+                    --migration-compatibility "$migration_compatibility" \
+                    --migration-ledger "$migration_ledger" \
+                    --image "backend=$IMAGE_PREFIX/backend@$BACKEND_DIGEST" \
+                    --image "web=$IMAGE_PREFIX/web@$WEB_DIGEST" \
+                    --image "admin=$IMAGE_PREFIX/admin@$ADMIN_DIGEST" \
+                    --image "migrator=$IMAGE_PREFIX/migrator@$MIGRATOR_DIGEST"
+            - name: Attest manifest
+              uses: actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc # v2
+              with:
+                  subject-path: release-manifest.json
+            - name: Upload immutable manifest
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: ${{ inputs.artifact_name }}
+                  path: release-manifest.json
+                  if-no-files-found: error
+                  retention-days: 90

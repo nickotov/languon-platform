@@ -4,9 +4,19 @@ import {
     authApi,
     AuthApiError,
     authErrorMessage,
+    resolveApiUrl,
 } from '@/fsd/shared/api/auth-api';
 
 describe('auth API boundary', () => {
+    it('uses environment-neutral same-origin routing in production', () => {
+        expect(resolveApiUrl('production', undefined)).toBe('/api');
+        expect(resolveApiUrl('development', undefined)).toBe(
+            'http://localhost:4000',
+        );
+        expect(resolveApiUrl('production', 'https://api.example.test/')).toBe(
+            'https://api.example.test',
+        );
+    });
     it('validates successful remote data against the shared schema', async () => {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
             new Response(JSON.stringify({ email: { signUp: true } }), {

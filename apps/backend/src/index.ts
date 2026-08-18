@@ -5,6 +5,7 @@ import { serve } from '@hono/node-server';
 
 import { createApp } from './app';
 import { loadEnvironment } from './config/environment';
+import { createGracefulShutdown } from './infrastructure/server/graceful-shutdown';
 import { createAuthenticationComposition } from './modules/authentication/infrastructure/authentication-composition';
 
 const localEnvironmentFile = new URL('../../../.env.local', import.meta.url);
@@ -15,7 +16,15 @@ if (existsSync(localEnvironmentFile)) {
 
 const environment = loadEnvironment();
 const authentication = await createAuthenticationComposition(environment);
-const app = createApp({ authentication: authentication.options });
+let shuttingDown = false;
+const app = createApp({
+    authentication: authentication.options,
+    operational: {
+        isShuttingDown: () => shuttingDown,
+        readiness: authentication.readiness,
+        releaseSha: environment.RELEASE_SHA,
+    },
+});
 const server = serve(
     {
         fetch: app.fetch,
@@ -29,22 +38,22 @@ const server = serve(
     },
 );
 
-let shuttingDown = false;
+const performShutdown = createGracefulShutdown({
+    closeResources: authentication.close,
+    onDeadline: () => {
+        process.exitCode = 1;
+    },
+    onError: (error) => {
+        console.error(error);
+        process.exitCode = 1;
+    },
+    server,
+    timeoutMs: environment.SHUTDOWN_TIMEOUT_MS,
+});
 
 function shutdown(signal: string): void {
-    if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`Received ${signal}; shutting down.`);
-    server.close(async (error) => {
-        if (error) {
-            console.error(error);
-            process.exitCode = 1;
-        }
-        await authentication.close().catch((closeError: unknown) => {
-            console.error(closeError);
-            process.exitCode = 1;
-        });
-    });
+    performShutdown(signal);
 }
 
 process.once('SIGINT', () => shutdown('SIGINT'));

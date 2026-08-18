@@ -8,6 +8,7 @@
         "db:check": "drizzle-kit check",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "tsx src/infrastructure/database/migrate-command.ts",
+        "db:migrate:built": "node dist/infrastructure/database/migrate-command.js",
         "db:studio": "drizzle-kit studio",
         "dev": "tsx watch src/index.ts",
         "dev:mastra": "node ../../scripts/dev-mastra.mjs",

@@ -64,6 +64,12 @@ const RawEnvironmentSchema = z
         AUTH_WEBAUTHN_RP_NAME: z.string().min(1).max(100).default('Languon'),
         BACKEND_HOST: z.enum(['127.0.0.1', '0.0.0.0']).default('127.0.0.1'),
         BACKEND_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
+        DATABASE_MAX_CONNECTIONS: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(100)
+            .default(10),
         DATABASE_URL: z
             .url()
             .default('postgres://languon:languon-local@localhost:5432/languon'),
@@ -74,6 +80,16 @@ const RawEnvironmentSchema = z
             .enum(['development', 'test', 'production'])
             .default('development'),
         REDIS_URL: z.url().default('redis://localhost:6379'),
+        RELEASE_SHA: z
+            .string()
+            .regex(/^(development|[0-9a-f]{7,64})$/)
+            .default('development'),
+        SHUTDOWN_TIMEOUT_MS: z.coerce
+            .number()
+            .int()
+            .min(1_000)
+            .max(300_000)
+            .default(295_000),
     })
     .superRefine((environment, context) => {
         if (environment.AUTH_JWT_SECRET === environment.AUTH_CODE_HMAC_SECRET) {
@@ -249,6 +265,26 @@ export function loadEnvironment(
             throw configurationError(
                 'REDIS_URL',
                 'Deployed environments require an explicit non-local Redis service.',
+            );
+        }
+    }
+    if (raw.APP_ENV === 'production') {
+        const database = new URL(raw.DATABASE_URL);
+        const redis = new URL(raw.REDIS_URL);
+        if (database.searchParams.get('sslmode') !== 'verify-full') {
+            throw configurationError(
+                'DATABASE_URL',
+                'Production PostgreSQL must use sslmode=verify-full.',
+            );
+        }
+        if (
+            redis.protocol !== 'rediss:' ||
+            !redis.username ||
+            redis.username === 'default'
+        ) {
+            throw configurationError(
+                'REDIS_URL',
+                'Production Redis must use rediss:// with a restricted named user.',
             );
         }
     }

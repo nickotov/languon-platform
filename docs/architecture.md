@@ -107,6 +107,34 @@ The backend uses the same schemas to generate and validate OpenAPI operations.
   test, and staging workflows. Configured environments may resolve managed
   prompts through Langfuse, with local fallback on an unavailable prompt.
 
+## Release and deployment
+
+Languon production artifacts are four immutable OCI images: web, admin,
+backend, and a one-shot migrator. GitHub Actions publishes exact digest
+manifests to GHCR. A manually dispatched staging run qualifies, builds, and
+deploys the current `stage` commit; publishing a stable SemVer release from
+`main` qualifies/builds only, and a separate protected manual workflow promotes
+that already-built manifest to production. Ordinary pushes and pull requests do
+not start release CI.
+
+Every application host has one stable NGINX edge and blue/green Docker Compose
+application slots. Deployment applies a backward-compatible singleton
+migration, gates the inactive slot on dependency-aware readiness, validates and
+reloads NGINX, then retains the previous containers while old connections drain
+for up to five minutes. Application rollback promotes the previous digest
+manifest through the same gates and never automatically reverses schema.
+
+Staging initially places edge, both transient application generations,
+PostgreSQL, and Redis on one VPS while keeping data volumes outside application
+slots. Production separates the application host from a PostgreSQL/Redis data
+host connected only by a provider private network. Admin and host management
+remain on the private operator network; database/cache ports are never public.
+
+The deployment core uses OCI, Compose, NGINX, SSH/Tailscale, and S3-compatible
+storage so the provider remains replaceable. Timeweb panel/network details are
+an operations adapter. See [ADR-0009](./adr/0009-release-and-deployment-platform.md)
+and the [operations handbook](./operations/README.md).
+
 This document describes the current structure and boundaries. ADRs under
 [`docs/adr`](./adr/README.md) explain why durable choices were made. Read the
 relevant accepted ADRs before changing a boundary. Keep feature-local choices in

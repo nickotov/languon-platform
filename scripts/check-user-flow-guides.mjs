@@ -9,6 +9,10 @@ const guidesDirectory = join(repositoryRoot, 'docs', 'user-flows');
 const indexPath = join(guidesDirectory, 'README.md');
 const maximumTestFileBytes = 2 * 1024 * 1024;
 export const e2eCommands = new Map([
+    [
+        'deployment-local-rehearsal',
+        'LANGUON_DEPLOY_E2E=true node --test infra/deploy/tests/local-rehearsal.journeys.test.mjs',
+    ],
     ['mastra-playground-vitest', 'node scripts/run-mastra-playground-e2e.mjs'],
     ['web-playwright', 'pnpm --filter @languon/web test:e2e'],
 ]);

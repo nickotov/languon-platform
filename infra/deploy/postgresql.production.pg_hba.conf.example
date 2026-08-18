@@ -1,0 +1,5 @@
+# Replace the example private source with the application VPS private /32.
+local all all scram-sha-256
+hostssl languon languon_app 10.0.0.20/32 scram-sha-256
+hostssl languon languon_migrator 10.0.0.20/32 scram-sha-256
+hostssl languon languon_backup 10.0.0.10/32 scram-sha-256

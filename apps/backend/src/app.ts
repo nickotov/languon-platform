@@ -5,7 +5,10 @@ import type { AuthenticationHttpOperations } from './modules/authentication/inte
 import type { PasskeyHttpOperations } from './modules/authentication/interface/http/passkey-http-operations';
 import { createPasskeyAuthRoutes } from './modules/authentication/interface/http/passkey-auth.routes';
 import { createPasswordAuthRoutes } from './modules/authentication/interface/http/password-auth.routes';
-import { healthRoutes } from './modules/health/interface/http/health.route';
+import {
+    createHealthRoutes,
+    type DependencyReadiness,
+} from './modules/health/interface/http/health.route';
 
 export interface AppAuthenticationOptions {
     operations: AuthenticationHttpOperations;
@@ -13,12 +16,19 @@ export interface AppAuthenticationOptions {
     policy: AuthHttpPolicy;
 }
 
+export interface AppOperationalOptions {
+    isShuttingDown: () => boolean;
+    readiness: () => Promise<DependencyReadiness>;
+    releaseSha: string;
+}
+
 export function createApp(options?: {
     authentication?: AppAuthenticationOptions;
+    operational?: AppOperationalOptions;
 }): OpenAPIHono {
     const app = new OpenAPIHono();
 
-    app.route('/', healthRoutes);
+    app.route('/', createHealthRoutes(options?.operational));
     if (options?.authentication) {
         app.route(
             '/',

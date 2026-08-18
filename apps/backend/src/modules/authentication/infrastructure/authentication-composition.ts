@@ -28,6 +28,7 @@ import { DrizzleAuthStore } from './persistence/drizzle/drizzle-auth-store';
 import { DrizzleSecurityEventRecorder } from './persistence/drizzle/drizzle-security-event-recorder';
 import {
     createAuthenticationRedisClient,
+    runBoundedRedisOperation,
     type AuthenticationRedisClient,
 } from './rate-limit/bounded-redis-client';
 import { RedisRateLimiter } from './rate-limit/redis-rate-limiter';
@@ -39,12 +40,19 @@ import { PasswordPolicy } from '../domain/password-policy';
 export interface AuthenticationComposition {
     close(): Promise<void>;
     options: AppAuthenticationOptions;
+    readiness(): Promise<{
+        postgres: 'ok' | 'unavailable';
+        redis: 'ok' | 'unavailable';
+    }>;
 }
 
 export async function createAuthenticationComposition(
     environment: Environment,
 ): Promise<AuthenticationComposition> {
-    const sql = createPostgresClient({ databaseUrl: environment.DATABASE_URL });
+    const sql = createPostgresClient({
+        databaseUrl: environment.DATABASE_URL,
+        maxConnections: environment.DATABASE_MAX_CONNECTIONS,
+    });
     const redis = createAuthenticationRedisClient({
         url: environment.REDIS_URL,
     });
@@ -146,6 +154,23 @@ export async function createAuthenticationComposition(
                     accessTokens,
                 ),
                 policy,
+            },
+            readiness: async () => {
+                const [postgresResult, redisResult] = await Promise.allSettled([
+                    sql`select 1`,
+                    runBoundedRedisOperation(redis, () => redis.ping()),
+                ]);
+
+                return {
+                    postgres:
+                        postgresResult.status === 'fulfilled'
+                            ? 'ok'
+                            : 'unavailable',
+                    redis:
+                        redisResult.status === 'fulfilled'
+                            ? 'ok'
+                            : 'unavailable',
+                };
             },
         };
     } catch (error) {

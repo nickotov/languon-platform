@@ -124,6 +124,7 @@ context compaction. Bounded low-risk maintenance uses one lightweight plan under
 See [architecture](./docs/architecture.md),
 [architecture decisions](./docs/adr/README.md),
 [development](./docs/development.md),
+[release and deployment operations](./docs/operations/README.md),
 [user-flow testing guides](./docs/user-flows/README.md), and
 [agentic development](./docs/agentic-development.md) for details.
 The [repository agent skills guide](./docs/agent-skills.md) documents local skill

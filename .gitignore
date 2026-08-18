@@ -9,6 +9,7 @@ coverage/
 .expo/
 web-build/
 storybook-static/
+.artifacts/resource-profile/
 
 # Local configuration and credentials
 .env
