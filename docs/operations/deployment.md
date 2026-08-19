@@ -146,6 +146,134 @@ staging/production environment file into the rehearsal.
 Treat local success as a prerequisite, not a substitute, for the first real
 staging rehearsal, external closed-port test, alert test, and restore drill.
 
+## Remote deploy from your laptop
+
+You can run exactly the same remote deploy bundle from your local machine when you
+already have a build-ready manifest and remote VPS access:
+
+```sh
+pnpm deploy:remote deploy \
+  --environment stage \
+  --target root@<remote-host-or-ip> \
+  --manifest .release/languon-stage-manifest.json \
+  --config /etc/languon/stage.env \
+  --ssh-key ~/.ssh/languon-deploy-key \
+  --known-hosts ~/.ssh/known_hosts
+
+pnpm deploy:remote verify \
+  --environment stage \
+  --target root@<remote-host-or-ip> \
+  --manifest .release/languon-stage-manifest.json \
+  --config /etc/languon/stage.env
+
+pnpm deploy:remote rollback \
+  --environment stage \
+  --target root@<remote-host-or-ip> \
+  --manifest .release/languon-stage-manifest.json \
+  --config /etc/languon/stage.env
+```
+
+The command uploads a temporary release directory under
+`/opt/languon/releases/<source-sha>` on the target host, copies the same deploy
+bundle used by GitHub Actions (`infra/deploy/**`, `infra/nginx/nginx.conf`,
+`infra/backup/**`, production scripts), then executes
+`scripts/deploy-release.mjs` remotely. The runner stays unchanged:
+
+### What each argument means
+
+- `--environment <stage|production>`
+  - Required. Selects the deployment mode and validates environment-specific rules.
+    This affects runtime/state defaults and the migration + backup guardrails.
+- `--target <user@host-or-ip>`
+  - Required unless both `--host` + `--user` are provided.
+  - Can be an IP (`root@192.0.2.10`) or DNS name (`root@stage.example.com`).
+- `--manifest <path>`
+  - Required. Path to a verified release manifest JSON on the local machine.
+- `--config <remote path>`
+  - Optional override to point to the remote environment file used by deploy
+    runtime (for example `/etc/languon/stage.env` or `/etc/languon/production.env`).
+  - Keep this file root-owned (`chown root:root`) and `0600`.
+- `--ssh-key <path>`
+  - Optional. SSH private key used for authentication. Defaults to
+    `~/.ssh/id_ed25519`.
+- `--known-hosts <path>`
+  - Optional. File used for SSH host-key checking. Defaults to
+    `~/.ssh/known_hosts`.
+- `--host <host>` and `--user <user>`
+  - Optional alternative to `--target` when host and user are managed separately.
+- `--remote-root <dir>`
+  - Optional. Remote base directory where release payload is copied. Default:
+    `/opt/languon/releases`.
+- `--runtime-directory <dir>`
+  - Optional. Directory where runtime compose and app files live.
+    Default: `/opt/languon/runtime/<environment>`.
+- `--state-directory <dir>`
+  - Optional. Deploy state file location. Default: `/var/lib/languon/<environment>`.
+- `--drain-seconds <number>`
+  - Optional. Grace period for active-connection drain before stop/kill. Default: `300`.
+- `--ssh-port <number>`
+  - Optional. SSH port for the transport. Default: `22`.
+- `--allow-local-registry true|false`
+  - Optional. Enables manifests with localhost/docker registry image refs.
+- `--local-config <path>`
+  - Optional. Uploads local config to remote temporary path and uses it as
+    `--config` for this run.
+- `--audit-path <path>`
+  - Optional. Writes remote JSON command output locally for audit retention.
+
+`DEPLOY_HOST` and `DEPLOY_USER` environment variables are also supported as
+`--target` fallbacks, but explicit CLI flags are preferred for auditable local
+runs.
+
+### Timeweb-friendly examples
+
+From your laptop, deploy, verify, and rollback with the same artifact:
+
+```sh
+# Stage deploy
+pnpm deploy:remote deploy \
+  --environment stage \
+  --target root@<timeweb-stage-vps-ip> \
+  --manifest .release/languon-stage-manifest.json \
+  --config /etc/languon/stage.env \
+  --ssh-key ~/.ssh/id_ed25519 \
+  --known-hosts ~/.ssh/known_hosts
+
+# Stage verify (same manifest)
+pnpm deploy:remote verify \
+  --environment stage \
+  --target deploy@<timeweb-stage-vps-ip> \
+  --manifest .release/languon-stage-manifest.json \
+  --config /etc/languon/stage.env \
+  --ssh-key ~/.ssh/id_ed25519 \
+  --known-hosts ~/.ssh/known_hosts \
+  --audit-path ./logs/stage-verify-audit.json
+
+# Stage rollback with local operator config file (if /etc file does not exist)
+pnpm deploy:remote rollback \
+  --environment stage \
+  --host <timeweb-stage-vps-ip> \
+  --user deploy \
+  --manifest .release/languon-stage-manifest.json \
+  --local-config ./config/stage.env \
+  --ssh-key ~/.ssh/id_ed25519 \
+  --known-hosts ~/.ssh/known_hosts \
+  --drain-seconds 240
+```
+
+Production is identical, with `--environment production` and a production manifest:
+
+```sh
+pnpm deploy:remote deploy \
+  --environment production \
+  --target root@<timeweb-prod-vps-ip> \
+  --manifest /path/to/languon-release-manifest-vX.Y.Z.json \
+  --config /etc/languon/production.env \
+  --ssh-key ~/.ssh/id_ed25519 \
+  --known-hosts ~/.ssh/known_hosts \
+  --drain-seconds 360
+```
+
 ## Staging delivery
 
 1. Push the intended commit to `stage` only after local `pnpm check` succeeds.

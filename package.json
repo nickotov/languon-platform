@@ -34,6 +34,7 @@
         "deploy:local:verify": "node infra/deploy/local-rehearsal.mjs verify",
         "deploy:local:rollback": "node infra/deploy/local-rehearsal.mjs rollback",
         "deploy:local:down": "node infra/deploy/local-rehearsal.mjs down",
+        "deploy:remote": "node scripts/deploy-remote.mjs",
         "docs:user-flows:check": "node --test scripts/check-user-flow-guides.test.mjs && node scripts/check-user-flow-guides.mjs",
         "feature:new": "node scripts/create-feature.mjs",
         "format": "prettier --write .",

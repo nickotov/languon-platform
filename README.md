@@ -70,10 +70,24 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm test:coverage`                   | Run tests with coverage                         |
 | `pnpm build`                           | Build all workspaces in dependency order        |
 | `pnpm check`                           | Run formatting, lint, types, tests, and builds  |
+| `pnpm deploy:remote`                   | Deploy a verified manifest to a remote VPS over SSH |
 | `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections  |
 | `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability      |
 | `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability     |
 | `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace             |
+
+Quick one-command style remote flow (Timeweb-ready):
+
+```sh
+pnpm deploy:remote deploy \
+  --environment stage \
+  --target root@<vps-ip-or-dns> \
+  --manifest .release/languon-stage-manifest.json \
+  --config /etc/languon/stage.env
+```
+
+See full flag reference and staging/production examples in  
+[Deployment runbook → Remote deploy from your laptop](./docs/operations/deployment.md#remote-deploy-from-your-laptop).
 
 Target one workspace with pnpm filters, for example:
 
