@@ -274,6 +274,163 @@ pnpm deploy:remote deploy \
   --drain-seconds 360
 ```
 
+## Manual manifest and release-commit path (for local machine deploy)
+
+This section is for cases where you want to deploy from your laptop or need an
+offline/explicitly controlled package you can audit before remote execution.
+
+### Why a manifest must exist first
+
+The deploy runner refuses free-form tags and unverified references because the
+deploy contract is **identity + content + policy**, not just "some image tag":
+
+- It enforces the same four immutable image refs (`backend`, `web`, `admin`,
+  `migrator`) as a digest map, so both environments always receive identical
+  bits.
+- It pins the exact `RELEASE_SHA` and migration compatibility for that source,
+  allowing rollback/audit/smoke parity and blocking mixed commits.
+- It guarantees the source commit and migration policy that were tested are exactly
+  what runs remotely.
+- It enables the same file to be used by local rehearsal, stage deploy, and
+  production deploy checks.
+- It preserves a forensically useful audit trail when something goes wrong after
+  rollout.
+
+`deploy` and `verify` both fail if the manifest is invalid, stale, or policy-violating,
+so the manifest is the control point for safety.
+
+### 1) Create a manifest for local/staging deployment (manual mode)
+
+Use this when you explicitly need local control or an ad-hoc deployment rehearsal.
+
+1. Build/publish the exact images and capture **digest references**.
+   1. For GHCR, tag/tag and push your digest-bearing image tags.
+   2. For local-only rehearsal, use `localhost:<port>/<name>@sha256:...` digests
+      and enable local registry mode on deploy.
+
+Example (conceptual):
+
+```sh
+TAG_PREFIX=ghcr.io/<owner>/<repo>
+RELEASE_SHA=<40-char-commit-sha>
+
+docker buildx build --platform linux/amd64 \
+  --build-arg RELEASE_SHA="$RELEASE_SHA" \
+  --file infra/docker/prod.backend.Dockerfile \
+  --tag "$TAG_PREFIX/backend:$RELEASE_SHA" \
+  --push .
+BACKEND_DIGEST="$(docker inspect --format '{{index .RepoDigests 0}}' "$TAG_PREFIX/backend:$RELEASE_SHA")"
+```
+
+Repeat for `web`, `admin`, `migrator`, then use the resulting values in
+`--image` arguments.
+2. Resolve metadata:
+
+```sh
+COMMIT_SHA=<40-char-commit-sha>                  # e.g. 79f1d8...
+WORKFLOW_RUN=1                                  # local placeholder for manual flow
+MIGRATION_COMPATIBILITY=$(node scripts/migration-classification.mjs)   # none | expand | migrate
+MIGRATION_LEDGER="$(git rev-parse "${COMMIT_SHA}:apps/backend/drizzle")"
+```
+
+`migration-classification` must not be `contract` for blue/green traffic switching.
+
+3. Build the manifest JSON:
+
+```sh
+node scripts/release-manifest.mjs create \
+  --output .release/manual-languon-manifest.json \
+  --source-sha "$COMMIT_SHA" \
+  --identity "local-$(git rev-parse --short "$COMMIT_SHA")" \
+  --version "" \
+  --workflow-run "$WORKFLOW_RUN" \
+  --migration-compatibility "$MIGRATION_COMPATIBILITY" \
+  --migration-ledger "$MIGRATION_LEDGER" \
+  --image "backend=ghcr.io/<owner>/<repo>/backend@sha256:<digest>" \
+  --image "web=ghcr.io/<owner>/<repo>/web@sha256:<digest>" \
+  --image "admin=ghcr.io/<owner>/<repo>/admin@sha256:<digest>" \
+  --image "migrator=ghcr.io/<owner>/<repo>/migrator@sha256:<digest>"
+```
+
+4. Validate it before using it:
+
+```sh
+node scripts/release-manifest.mjs validate \
+  --input .release/manual-languon-manifest.json \
+  --expected-source-sha "$COMMIT_SHA"
+```
+
+For local-rehearsal-like deployments where image refs are from localhost/registry,
+pass local mode in the deploy command:
+
+```sh
+pnpm deploy:remote deploy \
+  --environment stage \
+  --target root@<vps-ip> \
+  --manifest .release/manual-languon-manifest.json \
+  --config /etc/languon/stage.env \
+  --allow-local-registry true
+```
+
+If you plan to use it remotely for anything beyond rehearsal, prefer CI-generated
+manifests from `.github/workflows/stage.yml`; they carry full workflow provenance.
+
+### 2) Create a production release commit/tag (release manifest source)
+
+Production deployment does **not** use an arbitrary stage manifest. It expects a
+GitHub release-bound manifest identity and a stable SemVer release tag:
+
+- Tag must be stable `vMAJOR.MINOR.PATCH` (no `-rc`, `-beta`, `-alpha`).
+- The tag must point to a commit reachable from `main`.
+- The release event triggers validation/build and immutable manifest attachment.
+
+Flow:
+
+```sh
+# On clean main at the desired commit
+git checkout main
+git pull --ff-only
+git status --short         # must be clean
+
+git tag -a v1.4.0 -m "Release v1.4.0"
+git push origin v1.4.0
+```
+
+Then create/publish the GitHub Release for that tag. The safest option is:
+
+```sh
+gh release create v1.4.0 --generate-notes
+```
+
+After release publish, the `.github/workflows/release.yml` pipeline runs and then
+attaches:
+
+`languon-release-manifest-v1.4.0.json`
+
+as a release asset. This is your deployment artifact for production remote run:
+
+```sh
+pnpm deploy:remote deploy \
+  --environment production \
+  --target root@<prod-vps-ip> \
+  --manifest /path/to/languon-release-manifest-v1.4.0.json \
+  --config /etc/languon/production.env
+```
+
+Production deployment flow (`.github/workflows/deploy-production.yml`) expects that
+asset identity/versioning and performs manifest-source validation before applying
+rollout.
+
+### What this allows and what it does not replace
+
+- **Allows** reproducible blue/green deploys, deterministic rollback, and
+  explicit auditability of exactly what ran.
+- **Allows** local dry runs against a real remote host with a locally prepared
+  manifest (including verification before a production promotion).
+- **Does not replace** the standard release pipeline for production trust: it
+  does not grant bypass of attestations, release validation, branch ancestry checks,
+  or environment approvals.
+
 ## Staging delivery
 
 1. Push the intended commit to `stage` only after local `pnpm check` succeeds.
