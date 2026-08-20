@@ -10,7 +10,10 @@ repository operators.
 - Public application hosts accept only HTTPS (`443`) and optional HTTP (`80`)
   for redirect/certificate challenges. Restrict SSH to the private operator
   network or a narrow emergency source.
-- Admin is private. Do not publish or DNS-route its container port publicly.
+- Admin is private. Bind its edge listener to loopback, reach it through the
+  accountable SSH/Tailscale operator path, and require a named NGINX Basic Auth
+  identity before application owner authentication. Do not publish or
+  load-balancer-route its container port publicly.
 - Production PostgreSQL and Redis bind only to the private provider interface
   and accept only explicit application-host sources. Staging database/cache
   ports stay on Docker networks and are not published by Compose.
@@ -48,6 +51,14 @@ are process-visible, or repository examples. Prefer file/stdin-based secret
 delivery supported by the implementation. An `.env` file on a host is still a
 secret: directory `0700`, file `0600`, owned by the deploy/runtime account, and
 excluded from backup logs.
+
+The private-admin edge keeps the host htpasswd file at mode `0600`, copies it to
+container tmpfs as worker-owned mode `0400`, and never forwards Basic
+credentials upstream. Browser application JWTs use a dedicated edge-only
+header that is stripped and translated to backend `Authorization`. Private
+access logs use `$uri` without `$args`; administrator operations pass their
+structured request through a mode-`0600` transfer file and container stdin, not
+Docker process arguments.
 
 ## Access setup and review
 

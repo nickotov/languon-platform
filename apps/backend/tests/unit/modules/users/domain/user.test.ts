@@ -69,4 +69,59 @@ describe('User', () => {
             InvalidUserTransitionError,
         );
     });
+
+    it('disables active and pending identities with a new version', () => {
+        const disabledAt = new Date('2026-08-13T09:00:00.000Z');
+        const pending = User.createPending({ id: userId, now: createdAt });
+        const active = pending.activate(new Date('2026-08-13T08:05:00.000Z'));
+
+        expect(pending.disable(disabledAt)).toMatchObject({
+            status: 'disabled',
+            updatedAt: disabledAt,
+            version: 2,
+        });
+        expect(active.disable(disabledAt)).toMatchObject({
+            status: 'disabled',
+            updatedAt: disabledAt,
+            version: 3,
+        });
+    });
+
+    it('rejects repeated disablement', () => {
+        const disabled = User.createPending({
+            id: userId,
+            now: createdAt,
+        }).disable(new Date('2026-08-13T09:00:00.000Z'));
+
+        expect(() => disabled.disable(new Date())).toThrow(
+            InvalidUserTransitionError,
+        );
+    });
+
+    it('restores verified identities to active and unverified identities to pending', () => {
+        const restoredAt = new Date('2026-08-13T10:00:00.000Z');
+        const disabled = User.createPending({
+            id: userId,
+            now: createdAt,
+        }).disable(new Date('2026-08-13T09:00:00.000Z'));
+
+        expect(disabled.restoreAvailability(true, restoredAt)).toMatchObject({
+            status: 'active',
+            updatedAt: restoredAt,
+            version: 3,
+        });
+        expect(disabled.restoreAvailability(false, restoredAt)).toMatchObject({
+            status: 'pending',
+            updatedAt: restoredAt,
+            version: 3,
+        });
+    });
+
+    it('only restores disabled identities', () => {
+        const pending = User.createPending({ id: userId, now: createdAt });
+
+        expect(() => pending.restoreAvailability(true, new Date())).toThrow(
+            InvalidUserTransitionError,
+        );
+    });
 });

@@ -6,6 +6,7 @@ import { serve } from '@hono/node-server';
 import { createApp } from './app';
 import { loadEnvironment } from './config/environment';
 import { createGracefulShutdown } from './infrastructure/server/graceful-shutdown';
+import { createAdministrationComposition } from './modules/administration/infrastructure/administration-composition';
 import { createAuthenticationComposition } from './modules/authentication/infrastructure/authentication-composition';
 
 const localEnvironmentFile = new URL('../../../.env.local', import.meta.url);
@@ -16,8 +17,13 @@ if (existsSync(localEnvironmentFile)) {
 
 const environment = loadEnvironment();
 const authentication = await createAuthenticationComposition(environment);
+const administration = createAdministrationComposition(
+    environment,
+    authentication,
+);
 let shuttingDown = false;
 const app = createApp({
+    administration,
     authentication: authentication.options,
     operational: {
         isShuttingDown: () => shuttingDown,

@@ -24,6 +24,8 @@ const manifest = {
     ),
 };
 const config = {
+    ADMIN_BASE_URL: 'https://admin.stage.test',
+    ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
     AUTH_ALLOWED_ORIGINS: 'https://stage.test',
     AUTH_CODE_HMAC_SECRET: 'a',
     AUTH_JWT_SECRET: 'b',

@@ -1,17 +1,18 @@
 {
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
-        "jsx": "preserve",
-        "plugins": [{ "name": "next" }],
+        "jsx": "react-jsx",
         "paths": {
             "@/*": ["./src/*"]
-        }
+        },
+        "types": ["vite/client", "vitest/globals"]
     },
     "include": [
-        "next-env.d.ts",
         "src/**/*.ts",
         "src/**/*.tsx",
-        ".next/types/**/*.ts"
-    ],
-    "exclude": ["node_modules"]
+        "tests/**/*.ts",
+        "tests/**/*.tsx",
+        "vite.config.ts",
+        "playwright.config.ts"
+    ]
 }

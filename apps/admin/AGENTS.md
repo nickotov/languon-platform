@@ -1,27 +1,39 @@
-# Admin web architecture instructions
+# Admin application instructions
 
-Follow the web application's pages-first Feature-Sliced Design and dependency
-direction: `app -> pages -> widgets -> features -> entities -> shared`. Keep
-Next.js route files thin and never import another slice's implementation
-internals. Keep the FSD layers under `src/fsd`; Next.js reserves a top-level
-`src/pages` directory for the legacy Pages Router.
+`apps/admin` is a Vite React SPA built with Refine, React Router, and Ant Design.
+ADR-0010 is authoritative for this framework boundary; do not add Next.js
+routes or import source from another application.
 
-Use `$frontend-development` whenever creating or restructuring components,
-hooks, state, API clients, shared UI, or imports between FSD slices. Follow its
-component folders, CSS Modules, native-element, and state-communication rules.
+Use the dependency direction `app -> pages -> widgets -> shared`. Route
+registration, providers, and global composition belong in `src/app`; route
+screens in `src/pages`; reusable page composition in `src/widgets`; and API,
+auth, theme, i18n, and low-level UI in `src/shared`. Import only through a
+lower layer's public module, and keep route components lazy-loaded.
 
-Admin operations require explicit authorization, confirmation for destructive
-or bulk actions, actionable failure states, and auditable outcomes. Do not rely
-on hidden UI controls for authorization; the backend must enforce every access
-decision. Treat exported data and user impersonation as security-review triggers.
+Use `$frontend-development` for components, hooks, state, API clients, shared
+UI, or layer changes. Follow `design/DESIGN_SYSTEM.md` and the Admin operations
+board in `design/main.pen` for visible behavior. Keep Refine resource labels
+and reusable application copy behind the English i18n provider, and keep Light,
+Dark, and System preferences synchronized with Ant Design tokens.
+
+Admin operations require backend-enforced active membership, explicit reasons
+for security-state mutations, actionable failure states, and auditable
+outcomes. UI visibility is never authorization. Preserve the dedicated admin
+refresh-cookie and coordination namespace. Treat permissions, user data,
+exports, bulk operations, and impersonation as security-review triggers.
+
+Run affected checks from the repository root:
 
 ```sh
 pnpm dev:admin
+pnpm --filter @languon/admin lint
 pnpm --filter @languon/admin test
 pnpm --filter @languon/admin typecheck
 pnpm --filter @languon/admin build
 ```
 
-Use `$browser-verification` for changed admin journeys and request
-`security-reviewer` for permissions, user data, bulk operations, exports, and
-impersonation.
+For changed journeys, update `docs/user-flows/admin-user-management.md`, run its
+mapped Playwright suite against disposable PostgreSQL/Redis, and use
+`$browser-verification` for desktop and narrow real-browser evidence. Completion
+requires no unexpected console errors or failed requests and a security review
+for authorization or personal-data changes.

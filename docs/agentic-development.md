@@ -496,10 +496,17 @@ pnpm --filter @languon/web build
 ### Admin
 
 ```sh
+pnpm --filter @languon/admin lint
 pnpm --filter @languon/admin test
 pnpm --filter @languon/admin typecheck
 pnpm --filter @languon/admin build
 ```
+
+`apps/admin` is a Vite/Refine SPA, not a Next.js application. Follow
+`apps/admin/AGENTS.md` and ADR-0010. User-management journey changes also run
+`pnpm --filter @languon/admin test:e2e` with explicitly disposable loopback
+PostgreSQL and Redis URLs from
+`docs/user-flows/admin-user-management.md`.
 
 ### Full repository
 

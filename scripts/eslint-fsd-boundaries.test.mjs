@@ -55,10 +55,10 @@ test('rejects imports across slices in the same FSD layer', async () => {
     );
 });
 
-test('allows Next app composition to import lower FSD layers', async () => {
+test('allows the admin app composition to import its pages', async () => {
     const messages = await lintSource(
         'apps/admin/src/app/boundary-probe.ts',
-        "import { DashboardPage } from '@/fsd/pages/dashboard/ui/dashboard-page';\nvoid DashboardPage;\n",
+        "import { DashboardPage } from '@/pages/dashboard/dashboard-page';\nvoid DashboardPage;\n",
     );
 
     assert.deepEqual(boundaryErrors(messages), []);
@@ -81,7 +81,7 @@ test('allows recognized Next framework files to import same-app FSD slices', asy
 test('rejects imports across frontend applications', async () => {
     const messages = await lintSource(
         'apps/web/src/app/boundary-probe.ts',
-        "import { DashboardPage } from '../../../admin/src/fsd/pages/dashboard/ui/dashboard-page';\nvoid DashboardPage;\n",
+        "import { DashboardPage } from '../../../admin/src/pages/dashboard/dashboard-page';\nvoid DashboardPage;\n",
     );
 
     assert.equal(boundaryErrors(messages).length, 1);
@@ -94,7 +94,7 @@ test('rejects imports across frontend applications', async () => {
 test('rejects cross-app imports from root Next framework files', async () => {
     const messages = await lintSource(
         'apps/web/instrumentation.ts',
-        "import { DashboardPage } from '../admin/src/fsd/pages/dashboard/ui/dashboard-page';\nvoid DashboardPage;\n",
+        "import { DashboardPage } from '../admin/src/pages/dashboard/dashboard-page';\nvoid DashboardPage;\n",
     );
 
     assert.equal(boundaryErrors(messages).length, 1);

@@ -182,44 +182,44 @@ bundle used by GitHub Actions (`infra/deploy/**`, `infra/nginx/nginx.conf`,
 ### What each argument means
 
 - `--environment <stage|production>`
-  - Required. Selects the deployment mode and validates environment-specific rules.
-    This affects runtime/state defaults and the migration + backup guardrails.
+    - Required. Selects the deployment mode and validates environment-specific rules.
+      This affects runtime/state defaults and the migration + backup guardrails.
 - `--target <user@host-or-ip>`
-  - Required unless both `--host` + `--user` are provided.
-  - Can be an IP (`root@192.0.2.10`) or DNS name (`root@stage.example.com`).
+    - Required unless both `--host` + `--user` are provided.
+    - Can be an IP (`root@192.0.2.10`) or DNS name (`root@stage.example.com`).
 - `--manifest <path>`
-  - Required. Path to a verified release manifest JSON on the local machine.
+    - Required. Path to a verified release manifest JSON on the local machine.
 - `--config <remote path>`
-  - Optional override to point to the remote environment file used by deploy
-    runtime (for example `/etc/languon/stage.env` or `/etc/languon/production.env`).
-  - Keep this file root-owned (`chown root:root`) and `0600`.
+    - Optional override to point to the remote environment file used by deploy
+      runtime (for example `/etc/languon/stage.env` or `/etc/languon/production.env`).
+    - Keep this file root-owned (`chown root:root`) and `0600`.
 - `--ssh-key <path>`
-  - Optional. SSH private key used for authentication. Defaults to
-    `~/.ssh/id_ed25519`.
+    - Optional. SSH private key used for authentication. Defaults to
+      `~/.ssh/id_ed25519`.
 - `--known-hosts <path>`
-  - Optional. File used for SSH host-key checking. Defaults to
-    `~/.ssh/known_hosts`.
+    - Optional. File used for SSH host-key checking. Defaults to
+      `~/.ssh/known_hosts`.
 - `--host <host>` and `--user <user>`
-  - Optional alternative to `--target` when host and user are managed separately.
+    - Optional alternative to `--target` when host and user are managed separately.
 - `--remote-root <dir>`
-  - Optional. Remote base directory where release payload is copied. Default:
-    `/opt/languon/releases`.
+    - Optional. Remote base directory where release payload is copied. Default:
+      `/opt/languon/releases`.
 - `--runtime-directory <dir>`
-  - Optional. Directory where runtime compose and app files live.
-    Default: `/opt/languon/runtime/<environment>`.
+    - Optional. Directory where runtime compose and app files live.
+      Default: `/opt/languon/runtime/<environment>`.
 - `--state-directory <dir>`
-  - Optional. Deploy state file location. Default: `/var/lib/languon/<environment>`.
+    - Optional. Deploy state file location. Default: `/var/lib/languon/<environment>`.
 - `--drain-seconds <number>`
-  - Optional. Grace period for active-connection drain before stop/kill. Default: `300`.
+    - Optional. Grace period for active-connection drain before stop/kill. Default: `300`.
 - `--ssh-port <number>`
-  - Optional. SSH port for the transport. Default: `22`.
+    - Optional. SSH port for the transport. Default: `22`.
 - `--allow-local-registry true|false`
-  - Optional. Enables manifests with localhost/docker registry image refs.
+    - Optional. Enables manifests with localhost/docker registry image refs.
 - `--local-config <path>`
-  - Optional. Uploads local config to remote temporary path and uses it as
-    `--config` for this run.
+    - Optional. Uploads local config to remote temporary path and uses it as
+      `--config` for this run.
 - `--audit-path <path>`
-  - Optional. Writes remote JSON command output locally for audit retention.
+    - Optional. Writes remote JSON command output locally for audit retention.
 
 `DEPLOY_HOST` and `DEPLOY_USER` environment variables are also supported as
 `--target` fallbacks, but explicit CLI flags are preferred for auditable local
@@ -304,9 +304,9 @@ so the manifest is the control point for safety.
 Use this when you explicitly need local control or an ad-hoc deployment rehearsal.
 
 1. Build/publish the exact images and capture **digest references**.
-   1. For GHCR, tag/tag and push your digest-bearing image tags.
-   2. For local-only rehearsal, use `localhost:<port>/<name>@sha256:...` digests
-      and enable local registry mode on deploy.
+    1. For GHCR, tag/tag and push your digest-bearing image tags.
+    2. For local-only rehearsal, use `localhost:<port>/<name>@sha256:...` digests
+       and enable local registry mode on deploy.
 
 Example (conceptual):
 
@@ -323,8 +323,7 @@ BACKEND_DIGEST="$(docker inspect --format '{{index .RepoDigests 0}}' "$TAG_PREFI
 ```
 
 Repeat for `web`, `admin`, `migrator`, then use the resulting values in
-`--image` arguments.
-2. Resolve metadata:
+`--image` arguments. 2. Resolve metadata:
 
 ```sh
 COMMIT_SHA=<40-char-commit-sha>                  # e.g. 79f1d8...
@@ -472,6 +471,83 @@ serialized concurrency policy; never bypass that lock from a shell.
    switches NGINX, drains, and writes its audit artifact.
 6. Observe production signals and complete the post-deploy checklist. Do not
    rebuild during promotion or replace a digest with a tag.
+
+## Administration access and owner membership
+
+The admin image is part of every immutable release, but the admin listener is
+not public. The edge binds `ADMIN_PORT` only to `ADMIN_BIND_ADDRESS`, which must
+be loopback, and requires an htpasswd credential before the React application
+can load. Application password/passkey login and an active PostgreSQL owner
+membership are a second, independent control.
+
+Create the host credential interactively so the plaintext password never enters
+shell history or deployment configuration:
+
+```sh
+sudo install -d -m 0700 /etc/languon
+sudo htpasswd -c /etc/languon/admin.htpasswd named-operator
+sudo chown root:root /etc/languon/admin.htpasswd
+sudo chmod 0600 /etc/languon/admin.htpasswd
+```
+
+Set `ADMIN_HTPASSWD_PATH=/etc/languon/admin.htpasswd` in the root-owned deploy
+environment. Use a named Basic Auth identity per human operator, rotate it after
+staff changes, and do not reuse the Languon account password.
+
+The edge does not expose this mode-`0600` host file directly to request workers.
+Its root startup step copies the file into container-only tmpfs, assigns it to
+the unprivileged `nginx` worker as mode `0400`, and then starts NGINX. Keep the
+host file private; do not weaken it to make container UID mappings work. The
+private listener consumes browser Basic credentials at the edge. Production
+admin code sends the application JWT in the scoped
+`X-Languon-Admin-Authorization` header; NGINX strips that header and replaces
+the upstream `Authorization` value only after Basic authentication succeeds.
+Basic credentials are never forwarded to the backend or static admin server.
+The private access-log format omits query strings so user-search emails do not
+enter edge logs.
+
+Reach the loopback listener through the operator SSH/Tailscale path. For
+example, with `ADMIN_PORT=8444`:
+
+```sh
+ssh -N -L 127.0.0.1:8444:127.0.0.1:8444 deploy@stage-vps
+```
+
+The browser URL must retain the exact configured `ADMIN_BASE_URL` hostname for
+TLS and WebAuthn. Resolve that hostname to `127.0.0.1` in a temporary operator
+DNS/hosts override while the tunnel is active, then open
+`https://admin.stage.example.com:8444`. Remove the override when the session
+ends. Do not weaken certificate verification or change the WebAuthn RP ID to
+`localhost` in staging/production.
+
+The first database owner is granted only after that user has completed normal
+email verification. From a laptop, use the guarded remote wrapper:
+
+```sh
+pnpm admin:membership:remote -- grant \
+  --environment stage \
+  --target deploy@stage-vps \
+  --manifest .release/stage-manifest.json \
+  --email owner@example.com \
+  --reason 'Bootstrap the initial accountable stage owner' \
+  --confirm admin-membership-change \
+  --ssh-key ~/.ssh/id_ed25519 \
+  --known-hosts ~/.ssh/known_hosts
+```
+
+Only the zero-owner bootstrap omits `--actor-email`. Every later grant, revoke,
+or prune names an existing active owner with `--actor-email`. The wrapper uses
+strict host-key checking, verifies the exact manifest against active deployment
+state, and executes the built CLI inside the active backend image. It does not
+copy database credentials to the laptop. It also does not overwrite deploy code
+on the VPS: the active release must already contain
+`infra/deploy/admin-cli.mjs`, and only a short-lived mode-`0600` JSON request is
+uploaded. The backend command receives the validated request on standard input,
+so email addresses and audit reasons do not appear in Docker or process
+arguments. If an older release lacks the immutable operator bundle, deploy a
+release containing it before using the remote membership command. See the full
+behavior and list/prune examples in the
+[admin user-management guide](../user-flows/admin-user-management.md#cli-verification).
 
 ## Migration and traffic-switch order
 

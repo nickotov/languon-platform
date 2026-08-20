@@ -1,0 +1,52 @@
+.page {
+    align-items: center;
+    background:
+        radial-gradient(
+            circle at 15% 15%,
+            color-mix(in srgb, var(--admin-accent) 17%, transparent),
+            transparent 38%
+        ),
+        var(--admin-canvas);
+    display: grid;
+    gap: 64px;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 480px);
+    min-height: 100vh;
+    padding: clamp(28px, 7vw, 100px);
+}
+.intro {
+    max-width: 650px;
+}
+.intro h1 {
+    font-family: Literata, Georgia, serif;
+    font-size: clamp(42px, 6vw, 78px);
+    letter-spacing: -0.045em;
+    line-height: 1.03;
+    margin: 16px 0 22px;
+}
+.intro p {
+    color: var(--admin-text-secondary);
+    font-size: 18px;
+    max-width: 54ch;
+}
+.eyebrow {
+    color: var(--admin-accent);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+.card {
+    background: var(--admin-surface-raised);
+    border-color: var(--admin-border);
+    box-shadow: 0 24px 60px rgba(28, 33, 30, 0.12);
+    padding: 18px;
+}
+@media (max-width: 850px) {
+    .page {
+        gap: 30px;
+        grid-template-columns: 1fr;
+    }
+    .intro h1 {
+        font-size: 42px;
+    }
+}

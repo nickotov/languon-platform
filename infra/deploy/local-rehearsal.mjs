@@ -2,6 +2,7 @@
 import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { main as deployMain } from './cli.mjs';
 import { runCommand } from './lib/runner.mjs';
 
@@ -17,6 +18,7 @@ const manifestPath = path.join(localDirectory, 'manifest.json');
 const tlsDirectory = path.join(localDirectory, 'tls');
 const tlsCertificatePath = path.join(tlsDirectory, 'tls.crt');
 const tlsPrivateKeyPath = path.join(tlsDirectory, 'tls.key');
+const adminHtpasswdPath = path.join(localDirectory, 'admin.htpasswd');
 const registryPort = '5500';
 const projectPrefix = 'languon-local-stage';
 const releaseShaFallback = '0000000000000000000000000000000000000000';
@@ -148,10 +150,18 @@ async function generateLocalTlsCertificate() {
 async function writeConfig() {
     const secretA = 'local-rehearsal-jwt-secret-0000000000000001';
     const secretB = 'local-rehearsal-code-secret-000000000000002';
+    const passwordDigest = createHash('sha1')
+        .update('local-admin-only')
+        .digest('base64');
+    await writeFile(adminHtpasswdPath, `admin:{SHA}${passwordDigest}\n`, {
+        mode: 0o600,
+    });
     await writeFile(
         configPath,
         [
-            'AUTH_ALLOWED_ORIGINS=https://localhost:18443',
+            'ADMIN_BASE_URL=https://localhost:18444',
+            `ADMIN_HTPASSWD_PATH=${adminHtpasswdPath}`,
+            'AUTH_ALLOWED_ORIGINS=https://localhost:18443,https://localhost:18444',
             `AUTH_CODE_HMAC_SECRET=${secretB}`,
             `AUTH_JWT_SECRET=${secretA}`,
             'AUTH_WEBAUTHN_RP_ID=localhost',
@@ -284,6 +294,8 @@ async function down() {
     const env = {
         ...process.env,
         ADMIN_BIND_ADDRESS: '127.0.0.1',
+        ADMIN_BASE_URL: 'https://localhost:18444',
+        ADMIN_HTPASSWD_PATH: adminHtpasswdPath,
         ADMIN_PORT: '18444',
         ADMIN_IMAGE:
             'local-cleanup.invalid/admin@sha256:0000000000000000000000000000000000000000000000000000000000000000',

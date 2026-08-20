@@ -91,7 +91,7 @@ services:
             dockerfile: infra/docker/dev.Dockerfile
         command: ['pnpm', 'dev:admin:docker']
         environment:
-            NEXT_PUBLIC_API_URL: http://localhost:4000
+            ADMIN_API_PROXY_TARGET: http://backend:4000
         ports:
             - '${LANGUON_APP_BIND_HOST:-127.0.0.1}:3001:3001'
 

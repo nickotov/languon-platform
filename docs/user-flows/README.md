@@ -16,6 +16,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [User Authentication](./user-authentication.md) — signup, verification,
   sessions, passwords, recovery, logout, and passkeys through the browser and
   HTTP API.
+- [Admin User Management](./admin-user-management.md) — owner authentication,
+  user inspection, safe disable/restore operations, audit history, and guarded
+  membership commands.
 - [Release and Deployment Platform](./release-deployment-platform.md) —
   disposable production-image deployment, verification, blue/green promotion,
   and rollback through local Docker.

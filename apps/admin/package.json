@@ -2,22 +2,40 @@
     "name": "@languon/admin",
     "version": "0.0.0",
     "private": true,
+    "type": "module",
     "scripts": {
-        "build": "next build",
-        "dev": "next dev --turbopack -p 3001 -H 127.0.0.1",
-        "dev:docker": "next dev --turbopack -p 3001 -H 0.0.0.0",
+        "build": "vite build",
+        "dev": "vite --host 127.0.0.1 --port 3001",
+        "dev:docker": "vite --host 0.0.0.0 --port 3001",
         "lint": "eslint .",
-        "start": "next start -p 3001 -H 127.0.0.1",
+        "preview": "vite preview --host 127.0.0.1 --port 3001",
         "test": "vitest run --passWithNoTests",
+        "test:e2e": "playwright test",
         "test:coverage": "vitest run --coverage --passWithNoTests",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@ant-design/icons": "^6.1.0",
+        "@ant-design/v5-patch-for-react-19": "^1.0.3",
+        "@languon/browser-auth": "workspace:*",
         "@languon/contracts": "workspace:*",
-        "@tanstack/react-query": "^5.101.4",
-        "next": "^16.3.0",
+        "@refinedev/antd": "^6.0.3",
+        "@refinedev/core": "^5.0.12",
+        "@refinedev/react-router": "^2.0.4",
+        "antd": "^5.29.3",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",
+        "react-router": "^7.18.2",
         "zustand": "^5.0.14"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.62.1",
+        "@testing-library/jest-dom": "^7.0.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.4",
+        "@vitejs/plugin-react": "^6.1.0",
+        "jsdom": "^30.0.1",
+        "postgres": "^3.4.9",
+        "vite": "^8.2.2"
     }
 }

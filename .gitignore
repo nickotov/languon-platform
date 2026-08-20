@@ -2,6 +2,8 @@
 node_modules/
 .next/
 .next-e2e/
+.next-admin-e2e/
+.vite/
 .mastra/
 .turbo/
 dist/

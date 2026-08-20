@@ -45,8 +45,8 @@ persistence representations out of domain objects.
 
 ## Web and admin
 
-Both Next.js applications use a pages-first Feature-Sliced Design. The allowed
-dependency direction is:
+The public Next.js application uses a pages-first Feature-Sliced Design. Its
+allowed dependency direction is:
 
 ```text
 app -> pages -> widgets -> features -> entities -> shared
@@ -66,9 +66,18 @@ and include colocated stories. Prefer semantic native elements, including
 `dialog` and popover primitives, before custom interaction machinery. Avoid
 prop drilling through unrelated components by selecting scoped context, shared
 client state, or a typed `shared/lib` event bus according to ownership and
-lifetime. Root ESLint configuration enforces the FSD dependency direction for
-both web applications; `.agents/skills/frontend-development/SKILL.md` defines
-the implementation workflow.
+lifetime. Root ESLint configuration enforces the public-web FSD direction;
+`.agents/skills/frontend-development/SKILL.md` defines the implementation
+workflow.
+
+The private administration application is a Vite SPA built with Refine, React
+Router, and Ant Design. It uses `app -> pages -> widgets -> shared`: `app` owns
+route/provider composition, `pages` owns route screens, `widgets` owns reusable
+page composition, and `shared` owns API/auth/theme/i18n and low-level UI. It
+shares only framework-neutral browser authentication protocol and coordination
+through `@languon/browser-auth`; it never imports public-web application source.
+ADR-0010 defines the framework, persistent owner membership, per-request
+authorization, dedicated refresh cookie, and private-edge boundary.
 
 For public-web visual work, `design/DESIGN_SYSTEM.md` and `design/main.pen` are
 the authoritative contract. The app maps that contract to global semantic
@@ -76,6 +85,12 @@ the authoritative contract. The app maps that contract to global semantic
 primitives in `apps/web/src/fsd/shared/ui`, and colocated Storybook stories.
 Visual or semantic changes synchronize the design files, stories, implementation,
 and browser evidence in one feature. ADR-0008 defines this ownership boundary.
+
+The same design sources contain a separate Administration application variant
+for dense operational screens. Admin maps those tokens to Ant Design light and
+dark algorithms, retains a System preference, and implements tables, filters,
+status labels, explicit mutation dialogs, and responsive navigation without
+reusing the public web component implementation.
 
 The web application keeps URLs independent of language. Its root layout selects
 an allowlisted locale from the preference cookie, then `Accept-Language`, with

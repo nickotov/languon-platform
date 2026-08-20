@@ -2,6 +2,7 @@ import {
     createDrizzleDatabase,
     createPostgresClient,
     type PostgresClient,
+    type PostgresJsDatabase,
 } from '@languon/database';
 
 import type { AppAuthenticationOptions } from '../../../app';
@@ -38,6 +39,13 @@ import { PasskeyHttpController } from '../interface/http/passkey-http-controller
 import { PasswordPolicy } from '../domain/password-policy';
 
 export interface AuthenticationComposition {
+    administrationDependencies: {
+        accessTokens: JoseAccessTokenSigner;
+        authentication: AuthenticationService;
+        clock: SystemClock;
+        database: PostgresJsDatabase<typeof databaseSchema>;
+        ids: NodeIdGenerator;
+    };
     close(): Promise<void>;
     options: AppAuthenticationOptions;
     readiness(): Promise<{
@@ -143,6 +151,13 @@ export async function createAuthenticationComposition(
         }
 
         return {
+            administrationDependencies: {
+                accessTokens,
+                authentication,
+                clock,
+                database,
+                ids,
+            },
             close: () => closeAuthenticationResources(sql, redis),
             options: {
                 operations: new AuthenticationHttpController(

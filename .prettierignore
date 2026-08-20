@@ -1,5 +1,7 @@
 .next
 .next-e2e
+.next-admin-e2e
+.vite
 .serena
 .turbo
 coverage

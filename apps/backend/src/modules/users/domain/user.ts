@@ -67,4 +67,35 @@ export class User implements UserProperties {
             version: this.version + 1,
         });
     }
+
+    public disable(now: Date): User {
+        if (this.status === 'disabled') {
+            throw new InvalidUserTransitionError(this.status, 'disabled');
+        }
+
+        return new User({
+            createdAt: this.createdAt,
+            id: this.id,
+            status: 'disabled',
+            updatedAt: now,
+            version: this.version + 1,
+        });
+    }
+
+    public restoreAvailability(emailVerified: boolean, now: Date): User {
+        if (this.status !== 'disabled') {
+            throw new InvalidUserTransitionError(
+                this.status,
+                emailVerified ? 'active' : 'pending',
+            );
+        }
+
+        return new User({
+            createdAt: this.createdAt,
+            id: this.id,
+            status: emailVerified ? 'active' : 'pending',
+            updatedAt: now,
+            version: this.version + 1,
+        });
+    }
 }

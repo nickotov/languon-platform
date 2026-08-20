@@ -19,6 +19,7 @@ services:
         image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be an immutable digest reference}
         environment:
             APP_ENV: ${APP_ENV:?required}
+            ADMIN_BASE_URL: ${ADMIN_BASE_URL:?required}
             AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:?required}
             AUTH_CODE_HMAC_SECRET: ${AUTH_CODE_HMAC_SECRET:?required}
             AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?required}
@@ -77,17 +78,14 @@ services:
     admin:
         <<: *app-defaults
         image: ${ADMIN_IMAGE:?ADMIN_IMAGE must be an immutable digest reference}
-        environment:
-            HOSTNAME: 0.0.0.0
-            PORT: 3001
-            RELEASE_SHA: ${RELEASE_SHA:?required}
         healthcheck:
             test:
                 [
                     'CMD',
-                    'node',
-                    '-e',
-                    "fetch('http://127.0.0.1:3001/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+                    'wget',
+                    '--quiet',
+                    '--spider',
+                    'http://127.0.0.1:3001/healthz',
                 ]
             interval: 5s
             timeout: 3s

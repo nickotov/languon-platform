@@ -52,10 +52,14 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
         union all select count(*) from auth_sessions
         union all select count(*) from auth_passkeys
         union all select count(*) from auth_security_events
+        union all select count(*) from admin_memberships
+        union all select count(*) from admin_audit_events
       ) counts
     `;
 
         expect(tables.map(({ table_name }) => table_name)).toEqual([
+            'admin_audit_events',
+            'admin_memberships',
             'auth_passkeys',
             'auth_security_events',
             'auth_sessions',
@@ -82,6 +86,8 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
           'auth_sessions',
           'auth_passkeys',
           'auth_security_events'
+          ,'admin_memberships'
+          ,'admin_audit_events'
         )
       order by constraint_name
     `;
@@ -97,6 +103,8 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
           'auth_sessions',
           'auth_passkeys',
           'auth_security_events'
+          ,'admin_memberships'
+          ,'admin_audit_events'
         )
       order by indexname
     `;
@@ -121,6 +129,10 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 'auth_sessions_rotation_state',
                 'auth_passkeys_counter_nonnegative',
                 'auth_security_events_metadata_bounded',
+                'admin_memberships_reason_length',
+                'admin_memberships_revocation_pair',
+                'admin_audit_events_metadata_bounded',
+                'admin_audit_events_expiry_after_occurrence',
             ]),
         );
         expect(indexes.map(({ indexname }) => indexname)).toEqual(
@@ -134,6 +146,9 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 'auth_sessions_refresh_digest_unique',
                 'auth_passkeys_credential_id_unique',
                 'auth_security_events_expiry_idx',
+                'admin_memberships_one_active_per_user',
+                'admin_audit_events_correlation_idx',
+                'admin_audit_events_expiry_idx',
             ]),
         );
     });
@@ -147,7 +162,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
       from languon_migrations.history
     `;
 
-        expect(history[0]?.count).toBe('5');
+        expect(history[0]?.count).toBe('8');
     });
 
     it('serializes simultaneous migration runners with the advisory lock', async () => {
@@ -168,7 +183,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
         from languon_migrations.history
       `;
 
-            expect(history[0]?.count).toBe('5');
+            expect(history[0]?.count).toBe('8');
         } finally {
             await secondClient.end();
         }

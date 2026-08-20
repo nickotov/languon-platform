@@ -38,9 +38,8 @@ tutor experiences in the public Next.js web app and Expo/React Native mobile
 app. The two clients share semantic intent, names, color relationships, and
 content guidance, while interaction details remain native to each platform.
 
-This version does not define:
+This version does not yet define:
 
-- a compact or data-dense admin variant;
 - a logo, custom wordmark, mascot, or illustration library;
 - complete navigation, onboarding, AI chat, course, lesson, workbook, canvas,
   tutor-management, or gamification patterns;
@@ -780,6 +779,50 @@ feature that changes approved values, component semantics, or the board updates
 this document, `main.pen`, stories, affected runtime code, and acceptance evidence
 together. New dependencies or cross-application ownership remain feature-sized
 architecture decisions.
+
+### Administration application variant
+
+The administration application is a dense operational surface built with
+Refine and Ant Design. It uses the same semantic color, typography, spacing,
+focus, motion, and content contracts as the public product, but it does not
+reuse the public web component implementations. Ant Design theme tokens map to
+the semantic values in this document; product meaning must never depend on an
+Ant Design default color alone.
+
+- The desktop shell uses a persistent 240px navigation rail, a compact header,
+  and a content region no wider than 1440px. At narrow widths navigation becomes
+  a dismissible drawer and tables preserve access to every action without
+  horizontal page overflow.
+- Dashboard summaries use compact cards with a visible label, current value,
+  and optional supporting description. Decorative charts are not a substitute
+  for exact values.
+- User tables expose search, status filtering, pagination, loading, empty,
+  retry, and offline states. Row actions have accessible names and remain
+  keyboard reachable. Email values may wrap; identifiers use copyable text and
+  are never the only human-readable label.
+- Status is communicated by text and shape in addition to color. `active` uses
+  success semantics, `pending` uses warning semantics, and `disabled` uses
+  danger semantics.
+- User details group identity, account state, authentication metadata, and safe
+  operational metadata into titled cards. Password hashes, tokens, passkey
+  credential material, recovery codes, and secret values are never rendered.
+- Disable and restore actions open a clearly titled confirmation dialog. The
+  reason field is required, displays its 5–500 character constraint, and the
+  destructive action is visually distinct. Recent-authentication, version
+  conflict, and permission failures preserve the entered reason but never
+  replay the mutation automatically.
+- Audit rows show action, outcome, actor, target, reason, occurrence time, and
+  correlation reference. Dense rows retain a minimum 40px interactive target.
+- Light, dark, and system themes are first-class. Loading, empty, denied,
+  offline, conflict, retry, and unexpected-error states must be represented in
+  stories or journey fixtures for each surface where they can occur.
+- English is the initial locale, but every visible label is supplied through
+  the admin i18n provider. Tables and dialogs allow translated labels to wrap.
+
+The `Admin operations` board in `design/main.pen` is the visual source for the
+shell, summary cards, user table/status treatment, detail grouping, audit table,
+and confirmation dialog. Runtime changes to those patterns update this contract
+and that board in the same feature.
 
 ## 14. Visual-generation brief
 

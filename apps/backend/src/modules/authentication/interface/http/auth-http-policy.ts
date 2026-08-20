@@ -8,6 +8,7 @@ export interface AuthHttpPolicyOptions {
     appEnvironment: AuthHttpAppEnvironment;
     now?: () => Date;
     refreshTokenTtlSeconds: number;
+    refreshCookieNamespace?: 'admin' | 'public';
     trustProxy?: boolean;
     trustedProxyCidrs?: readonly string[];
 }
@@ -70,9 +71,11 @@ export class AuthHttpPolicy {
     }
 
     public refreshCookieName(): string {
+        const namespace = this.options.refreshCookieNamespace ?? 'public';
+        const suffix = namespace === 'admin' ? 'admin_refresh' : 'refresh';
         return this.productionLike()
-            ? '__Host-languon_refresh'
-            : 'languon_refresh';
+            ? `__Host-languon_${suffix}`
+            : `languon_${suffix}`;
     }
 
     public clearRefreshCookie(): string {

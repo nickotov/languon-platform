@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -16,6 +17,7 @@ function compose(run, file, project, args, env) {
 
 function appEnvironment(prefix, slot, images, releaseSha) {
     return {
+        ADMIN_BASE_URL: 'https://localhost:18081',
         APP_ENV: 'test',
         AUTH_ALLOWED_ORIGINS: 'https://localhost:18480',
         AUTH_CODE_HMAC_SECRET: SECRET,
@@ -73,6 +75,7 @@ export function createResourceRuntime({
     const runtimeDirectory = resolve(rawDirectory, 'nginx');
     const tlsCertificatePath = resolve(runtimeDirectory, 'tls.crt');
     const tlsPrivateKeyPath = resolve(runtimeDirectory, 'tls.key');
+    const adminHtpasswdPath = resolve(runtimeDirectory, 'admin.htpasswd');
 
     return {
         projects,
@@ -97,6 +100,11 @@ export function createResourceRuntime({
                 tlsCertificatePath,
             ]);
             await chmod(tlsPrivateKeyPath, 0o600);
+            await writeFile(
+                adminHtpasswdPath,
+                `admin:{SHA}${createHash('sha1').update('resource-profile-only').digest('base64')}\n`,
+                { mode: 0o600 },
+            );
             await chmod(tlsCertificatePath, 0o600);
             await writeFile(
                 resolve(runtimeDirectory, 'active-upstream.conf'),
@@ -145,6 +153,7 @@ export function createResourceRuntime({
                 ['up', '--detach', '--wait'],
                 {
                     ADMIN_BIND_ADDRESS: '127.0.0.1',
+                    ADMIN_HTPASSWD_PATH: adminHtpasswdPath,
                     ADMIN_PORT: '18081',
                     DEPLOY_PROJECT_PREFIX: prefix,
                     DEPLOY_RUNTIME_DIR: runtimeDirectory,
@@ -191,6 +200,7 @@ export function createResourceRuntime({
             try {
                 quietDown(files.edge, projects.edge, {
                     ADMIN_BIND_ADDRESS: '127.0.0.1',
+                    ADMIN_HTPASSWD_PATH: adminHtpasswdPath,
                     ADMIN_PORT: '18081',
                     DEPLOY_PROJECT_PREFIX: prefix,
                     DEPLOY_RUNTIME_DIR: runtimeDirectory,

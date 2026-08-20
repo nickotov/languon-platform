@@ -62,6 +62,7 @@ const RawEnvironmentSchema = z
         AUTH_TRUSTED_PROXY_CIDRS: z.string().optional(),
         AUTH_WEBAUTHN_RP_ID: z.string().min(1).max(253).optional(),
         AUTH_WEBAUTHN_RP_NAME: z.string().min(1).max(100).default('Languon'),
+        ADMIN_BASE_URL: z.url().optional(),
         BACKEND_HOST: z.enum(['127.0.0.1', '0.0.0.0']).default('127.0.0.1'),
         BACKEND_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
         DATABASE_MAX_CONNECTIONS: z.coerce
@@ -149,6 +150,7 @@ export type AuthVerificationCodeMode = 'fixed' | 'unavailable';
 
 export type Environment = Omit<
     RawEnvironment,
+    | 'ADMIN_BASE_URL'
     | 'AUTH_ACCESS_TOKEN_TTL'
     | 'AUTH_ALLOWED_ORIGINS'
     | 'AUTH_ALLOW_INSECURE_FIXED_CODE'
@@ -157,6 +159,7 @@ export type Environment = Omit<
     | 'AUTH_TRUSTED_PROXY_CIDRS'
     | 'AUTH_WEBAUTHN_RP_ID'
 > & {
+    ADMIN_BASE_URL: string;
     AUTH_ACCESS_TOKEN_TTL: number;
     AUTH_ALLOWED_ORIGINS: string[];
     AUTH_EMAIL_DELIVERY_MODE: AuthEmailDeliveryMode;
@@ -206,9 +209,13 @@ export function loadEnvironment(
     }
 
     const deployed = raw.APP_ENV === 'staging' || raw.APP_ENV === 'production';
-    const allowedOrigins = parseAllowedOrigins(
+    const configuredAuthOrigins = parseAllowedOrigins(
         raw.AUTH_ALLOWED_ORIGINS,
         deployed,
+    );
+    const adminBaseUrl = parseAdminBaseUrl(raw.ADMIN_BASE_URL, deployed);
+    const allowedOrigins = Array.from(
+        new Set([...configuredAuthOrigins, adminBaseUrl]),
     );
     const webAuthnRpId =
         raw.AUTH_WEBAUTHN_RP_ID ?? (deployed ? undefined : 'localhost');
@@ -308,6 +315,7 @@ export function loadEnvironment(
 
     return {
         ...environment,
+        ADMIN_BASE_URL: adminBaseUrl,
         AUTH_ACCESS_TOKEN_TTL: accessTokenTtl,
         AUTH_ALLOWED_ORIGINS: allowedOrigins,
         AUTH_EMAIL_DELIVERY_MODE: fixedCodeEnabled
@@ -320,6 +328,33 @@ export function loadEnvironment(
         AUTH_VERIFICATION_CODE_MODE: fixedCodeEnabled ? 'fixed' : 'unavailable',
         AUTH_WEBAUTHN_RP_ID: webAuthnRpId,
     };
+}
+
+function parseAdminBaseUrl(
+    value: string | undefined,
+    deployed: boolean,
+): string {
+    if (!value) {
+        if (deployed) {
+            throw configurationError(
+                'ADMIN_BASE_URL',
+                'Deployed environments require an exact administration HTTPS origin.',
+            );
+        }
+        return 'http://localhost:3001';
+    }
+    const parsed = new URL(value);
+    if (
+        parsed.origin !== value ||
+        (deployed && parsed.protocol !== 'https:') ||
+        (!deployed && !['http:', 'https:'].includes(parsed.protocol))
+    ) {
+        throw configurationError(
+            'ADMIN_BASE_URL',
+            'Administration base URL must be an exact origin and use HTTPS outside local environments.',
+        );
+    }
+    return parsed.origin;
 }
 
 function parseTrustedProxyCidrs(value: string | undefined): string[] {

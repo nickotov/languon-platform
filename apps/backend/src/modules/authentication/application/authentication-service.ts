@@ -871,6 +871,26 @@ export class AuthenticationService {
         return { account, session };
     }
 
+    public async requireRecentlyAuthenticatedSession(input: {
+        sessionId: string;
+        userId: string;
+    }): Promise<{
+        account: AuthenticationAccount;
+        session: NonNullable<
+            Awaited<ReturnType<AuthStore['getActiveSession']>>
+        >;
+    }> {
+        const active = await this.requireActiveSession(input);
+        if (
+            !this.dependencies.sessionIssuer.isRecentlyAuthenticated(
+                active.session,
+            )
+        ) {
+            throw new RecentAuthenticationRequiredError();
+        }
+        return active;
+    }
+
     public async listPasskeys(input: {
         sessionId: string;
         userId: string;

@@ -35,7 +35,9 @@ establish it.
 ## Repository and commands
 
 - `apps/backend` — Hono and Mastra; DDD boundaries apply.
-- `apps/web`, `apps/admin` — Next.js; pages-first FSD boundaries apply.
+- `apps/web` — Next.js; pages-first FSD boundaries apply.
+- `apps/admin` — Vite/Refine React SPA; follow `apps/admin/AGENTS.md` and
+  ADR-0010 for its app/pages/widgets/shared boundaries.
 - `apps/mobile` — Expo/React Native.
 - `packages/*` — shared contracts, database factories, prompts, and other
   stable cross-app capabilities.

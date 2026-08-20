@@ -4,7 +4,9 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "tsup src/index.ts src/infrastructure/database/migrate-command.ts src/infrastructure/playground/playground-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
+        "admin:membership": "tsx src/infrastructure/administration/admin-command.ts",
+        "admin:membership:built": "node dist/infrastructure/administration/admin-command.js",
+        "build": "tsup src/index.ts src/infrastructure/database/migrate-command.ts src/infrastructure/administration/admin-command.ts src/infrastructure/playground/playground-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
         "db:check": "drizzle-kit check",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "tsx src/infrastructure/database/migrate-command.ts",

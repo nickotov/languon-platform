@@ -66,6 +66,26 @@ describe('AuthHttpPolicy', () => {
         );
     });
 
+    it('isolates the administration refresh cookie namespace', () => {
+        const production = new AuthHttpPolicy({
+            allowedOrigins: ['https://admin.example.com'],
+            appEnvironment: 'production',
+            refreshCookieNamespace: 'admin',
+            refreshTokenTtlSeconds: 120,
+        });
+        const development = new AuthHttpPolicy({
+            allowedOrigins: ['http://localhost:3001'],
+            appEnvironment: 'development',
+            refreshCookieNamespace: 'admin',
+            refreshTokenTtlSeconds: 120,
+        });
+
+        expect(production.refreshCookieName()).toBe(
+            '__Host-languon_admin_refresh',
+        );
+        expect(development.refreshCookieName()).toBe('languon_admin_refresh');
+    });
+
     it('clears the same cookie and parses exactly one Bearer credential', () => {
         const policy = new AuthHttpPolicy({
             allowedOrigins: ['https://app.languon.example'],

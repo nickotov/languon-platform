@@ -38,8 +38,8 @@ export default tseslint.config(
     },
     {
         files: [
-            'apps/{web,admin}/src/**/*.{ts,tsx}',
-            'apps/{web,admin}/{instrumentation,instrumentation-client,proxy}.ts',
+            'apps/web/src/**/*.{ts,tsx}',
+            'apps/web/{instrumentation,instrumentation-client,proxy}.ts',
         ],
         plugins: {
             boundaries,
@@ -49,63 +49,62 @@ export default tseslint.config(
             'boundaries/elements': [
                 {
                     type: 'app',
-                    pattern: 'apps/*/src/app',
+                    pattern: 'apps/web/src/app',
                     partialMatch: false,
-                    capture: ['application'],
                 },
                 {
                     type: 'page',
-                    pattern: 'apps/*/src/fsd/pages/*',
+                    pattern: 'apps/web/src/fsd/pages/*',
                     partialMatch: false,
-                    capture: ['application', 'slice'],
+                    capture: ['slice'],
                 },
                 {
                     type: 'widget',
-                    pattern: 'apps/*/src/fsd/widgets/*',
+                    pattern: 'apps/web/src/fsd/widgets/*',
                     partialMatch: false,
-                    capture: ['application', 'slice'],
+                    capture: ['slice'],
                 },
                 {
                     type: 'feature',
-                    pattern: 'apps/*/src/fsd/features/*',
+                    pattern: 'apps/web/src/fsd/features/*',
                     partialMatch: false,
-                    capture: ['application', 'slice'],
+                    capture: ['slice'],
                 },
                 {
                     type: 'entity',
-                    pattern: 'apps/*/src/fsd/entities/*',
+                    pattern: 'apps/web/src/fsd/entities/*',
                     partialMatch: false,
-                    capture: ['application', 'slice'],
+                    capture: ['slice'],
                 },
                 {
                     type: 'shared',
-                    pattern: 'apps/*/src/fsd/shared',
+                    pattern: 'apps/web/src/fsd/shared',
                     partialMatch: false,
-                    capture: ['application'],
+                },
+                {
+                    type: 'other-frontend',
+                    pattern: 'apps/admin/src',
+                    partialMatch: false,
                 },
             ],
             'boundaries/files': [
                 {
                     category: 'next-framework',
                     pattern: [
-                        'apps/*/instrumentation.ts',
-                        'apps/*/instrumentation-client.ts',
-                        'apps/*/proxy.ts',
-                        'apps/*/src/instrumentation.ts',
-                        'apps/*/src/instrumentation-client.ts',
-                        'apps/*/src/proxy.ts',
+                        'apps/web/instrumentation.ts',
+                        'apps/web/instrumentation-client.ts',
+                        'apps/web/proxy.ts',
+                        'apps/web/src/instrumentation.ts',
+                        'apps/web/src/instrumentation-client.ts',
+                        'apps/web/src/proxy.ts',
                     ],
-                    capture: ['application'],
                 },
             ],
             'boundaries/legacy-templates': false,
             'import/resolver': {
                 typescript: {
                     noWarnOnMultipleProjects: true,
-                    project: [
-                        'apps/web/tsconfig.json',
-                        'apps/admin/tsconfig.json',
-                    ],
+                    project: ['apps/web/tsconfig.json'],
                 },
             },
         },
@@ -129,10 +128,6 @@ export default tseslint.config(
                                             'entity',
                                             'shared',
                                         ],
-                                        captured: {
-                                            application:
-                                                '{{from.file.captured.application}}',
-                                        },
                                     },
                                 },
                             },
@@ -149,10 +144,6 @@ export default tseslint.config(
                                             'entity',
                                             'shared',
                                         ],
-                                        captured: {
-                                            application:
-                                                '{{from.element.captured.application}}',
-                                        },
                                     },
                                 },
                             },
@@ -168,10 +159,6 @@ export default tseslint.config(
                                             'entity',
                                             'shared',
                                         ],
-                                        captured: {
-                                            application:
-                                                '{{from.element.captured.application}}',
-                                        },
                                     },
                                 },
                             },
@@ -182,10 +169,6 @@ export default tseslint.config(
                                 to: {
                                     element: {
                                         type: ['feature', 'entity', 'shared'],
-                                        captured: {
-                                            application:
-                                                '{{from.element.captured.application}}',
-                                        },
                                     },
                                 },
                             },
@@ -196,10 +179,6 @@ export default tseslint.config(
                                 to: {
                                     element: {
                                         type: ['entity', 'shared'],
-                                        captured: {
-                                            application:
-                                                '{{from.element.captured.application}}',
-                                        },
                                     },
                                 },
                             },
@@ -210,10 +189,6 @@ export default tseslint.config(
                                 to: {
                                     element: {
                                         type: 'shared',
-                                        captured: {
-                                            application:
-                                                '{{from.element.captured.application}}',
-                                        },
                                     },
                                 },
                             },
@@ -224,12 +199,116 @@ export default tseslint.config(
                                 to: {
                                     element: {
                                         type: 'shared',
-                                        captured: {
-                                            application:
-                                                '{{from.element.captured.application}}',
-                                        },
                                     },
                                 },
+                            },
+                        },
+                    ],
+                },
+            ],
+            'boundaries/no-unknown-files': 'error',
+        },
+    },
+    {
+        files: ['apps/admin/src/**/*.{ts,tsx}'],
+        plugins: { boundaries },
+        settings: {
+            'boundaries/root-path': import.meta.dirname,
+            'boundaries/elements': [
+                {
+                    type: 'admin-app',
+                    pattern: 'apps/admin/src/app',
+                    partialMatch: false,
+                },
+                {
+                    type: 'admin-page',
+                    pattern: 'apps/admin/src/pages/*',
+                    partialMatch: false,
+                    capture: ['slice'],
+                },
+                {
+                    type: 'admin-widget',
+                    pattern: 'apps/admin/src/widgets/*',
+                    partialMatch: false,
+                    capture: ['slice'],
+                },
+                {
+                    type: 'admin-shared',
+                    pattern: 'apps/admin/src/shared',
+                    partialMatch: false,
+                },
+            ],
+            'boundaries/files': [
+                {
+                    category: 'admin-entry',
+                    pattern: [
+                        'apps/admin/src/main.tsx',
+                        'apps/admin/src/vite-env.d.ts',
+                    ],
+                },
+            ],
+            'boundaries/legacy-templates': false,
+            'import/resolver': {
+                typescript: {
+                    noWarnOnMultipleProjects: true,
+                    project: ['apps/admin/tsconfig.json'],
+                },
+            },
+        },
+        rules: {
+            'boundaries/dependencies': [
+                'error',
+                {
+                    default: 'disallow',
+                    policies: [
+                        {
+                            from: { file: { categories: 'admin-entry' } },
+                            allow: {
+                                to: {
+                                    element: {
+                                        type: ['admin-app', 'admin-shared'],
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            from: { element: { type: 'admin-app' } },
+                            allow: {
+                                to: {
+                                    element: {
+                                        type: [
+                                            'admin-page',
+                                            'admin-widget',
+                                            'admin-shared',
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            from: { element: { type: 'admin-page' } },
+                            allow: {
+                                to: {
+                                    element: {
+                                        type: [
+                                            'admin-page',
+                                            'admin-widget',
+                                            'admin-shared',
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            from: { element: { type: 'admin-widget' } },
+                            allow: {
+                                to: { element: { type: 'admin-shared' } },
+                            },
+                        },
+                        {
+                            from: { element: { type: 'admin-shared' } },
+                            allow: {
+                                to: { element: { type: 'admin-shared' } },
                             },
                         },
                     ],

@@ -9,6 +9,10 @@
     },
     "scripts": {
         "agent": "headroom wrap codex",
+        "admin:audit:prune": "pnpm --filter @languon/backend admin:membership -- prune",
+        "admin:membership": "pnpm --filter @languon/backend admin:membership",
+        "admin:membership:stdin": "pnpm --filter @languon/backend admin:membership -- --request-stdin",
+        "admin:membership:remote": "node scripts/admin-membership-remote.mjs",
         "agent-skills:check": "node --test scripts/check-agent-skills.test.mjs && node scripts/check-agent-skills.mjs",
         "browser": "node scripts/agent-browser.mjs",
         "browser:check": "node --test scripts/agent-browser.test.mjs scripts/agent-browser.integration.test.mjs && node scripts/agent-browser.mjs --doctor",
@@ -46,6 +50,7 @@
         "resources:profile": "node scripts/resources/profile.mjs",
         "test": "pnpm test:agent-browser && pnpm test:frontend-architecture && pnpm test:mastra-harness && pnpm test:release-deployment && turbo run test",
         "test:agent-browser": "node --test scripts/agent-browser.test.mjs",
+        "test:e2e:admin-user-management": "node scripts/run-admin-user-management-e2e.mjs",
         "test:frontend-architecture": "node --test scripts/eslint-fsd-boundaries.test.mjs",
         "test:mastra-harness": "node --test scripts/dev-mastra.test.mjs",
         "test:release-deployment": "node --test infra/backup/backup.test.mjs infra/deploy/tests/*.test.mjs scripts/migration-classification.test.mjs scripts/release-manifest.test.mjs scripts/release-workflow-contract.test.mjs scripts/resources/resources.test.mjs",

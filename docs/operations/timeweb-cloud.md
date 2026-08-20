@@ -131,6 +131,31 @@ evidence that a Compose port is private.
 4. Validate NGINX and HTTPS before opening user traffic. Add external certificate
    expiry alerts and rehearse graceful reload after renewal.
 
+## Private administration on Timeweb
+
+Do not add a public firewall rule or load-balancer route for the admin port.
+Keep `ADMIN_BIND_ADDRESS=127.0.0.1`; the checked-in deploy validator rejects
+non-loopback values. Set `ADMIN_PORT`, `ADMIN_BASE_URL`, and the absolute
+`ADMIN_HTPASSWD_PATH` in `/etc/languon/stage.env`, owned by the deploy account
+with mode `0600`.
+
+Create the htpasswd file interactively on the VPS as described in the
+[deployment runbook](./deployment.md#administration-access-and-owner-membership).
+Then use Tailscale or the restricted SSH source allowed by the Timeweb firewall
+to establish a local port forward. The operator browser must use the exact
+`ADMIN_BASE_URL` hostname through a temporary local DNS/hosts override so the
+certificate and WebAuthn RP checks remain valid. Validate all three boundaries:
+
+1. an external request to the admin port cannot connect;
+2. the SSH-tunneled request without Basic Auth receives `401` and the expected
+   realm; and
+3. the tunneled request with Basic Auth loads the application, after which a
+   non-owner Languon account is still denied.
+
+Record named operator access and owner membership separately. Timeweb server or
+SSH access does not imply application owner membership, and PostgreSQL changes
+must use the guarded local/remote membership command rather than ad-hoc SQL.
+
 ## Private backup storage
 
 1. Create a private bucket through Timeweb's

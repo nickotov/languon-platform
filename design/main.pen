@@ -1299,6 +1299,189 @@
                     ]
                 }
             ]
+        },
+        {
+            "type": "frame",
+            "id": "adminOperations",
+            "x": 2500,
+            "y": 0,
+            "name": "Admin operations",
+            "width": 1440,
+            "height": 1800,
+            "fill": "#F7F4F8",
+            "layout": "none",
+            "children": [
+                {
+                    "type": "text",
+                    "id": "adminBoardTitle",
+                    "x": 48,
+                    "y": 40,
+                    "content": "Languon administration",
+                    "fontFamily": "Literata",
+                    "fontSize": 40,
+                    "fontWeight": 650,
+                    "fill": "#211C26"
+                },
+                {
+                    "type": "text",
+                    "id": "adminBoardCopy",
+                    "x": 48,
+                    "y": 96,
+                    "content": "Dense operations · desktop shell · narrow drawer · light / dark / system",
+                    "fontFamily": "Manrope",
+                    "fontSize": 17,
+                    "fill": "#5F5564"
+                },
+                {
+                    "type": "frame",
+                    "id": "adminShell",
+                    "x": 48,
+                    "y": 144,
+                    "name": "Admin shell · desktop",
+                    "reusable": true,
+                    "width": 1344,
+                    "height": 760,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 16,
+                    "children": [
+                        {
+                            "type": "frame",
+                            "id": "adminNav",
+                            "x": 0,
+                            "y": 0,
+                            "name": "Admin navigation rail",
+                            "width": 240,
+                            "height": 760,
+                            "fill": "#211C26",
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "adminNavText",
+                                    "x": 24,
+                                    "y": 28,
+                                    "content": "LANGUON ADMIN\n\nOverview\n\nUsers\n\nAudit log",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 17,
+                                    "fontWeight": 650,
+                                    "fill": "#FBF8FC"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "id": "adminPageTitle",
+                            "x": 280,
+                            "y": 34,
+                            "content": "Users",
+                            "fontFamily": "Literata",
+                            "fontSize": 30,
+                            "fontWeight": 650,
+                            "fill": "#211C26"
+                        },
+                        {
+                            "type": "frame",
+                            "id": "adminSummary",
+                            "x": 280,
+                            "y": 92,
+                            "name": "Admin summary cards",
+                            "reusable": true,
+                            "width": 1016,
+                            "height": 96,
+                            "fill": "#F7F4F8",
+                            "cornerRadius": 12,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "adminSummaryText",
+                                    "x": 20,
+                                    "y": 18,
+                                    "content": "TOTAL USERS     ACTIVE     PENDING     DISABLED\n12,408          11,982     318         108",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 17,
+                                    "fontWeight": 650,
+                                    "fill": "#352C3A"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "frame",
+                            "id": "adminUserTable",
+                            "x": 280,
+                            "y": 216,
+                            "name": "User table · dense",
+                            "reusable": true,
+                            "width": 1016,
+                            "height": 466,
+                            "fill": "#FFFFFF",
+                            "stroke": "#D1C7D4",
+                            "strokeWidth": 1,
+                            "cornerRadius": 12,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "id": "adminTableText",
+                                    "x": 20,
+                                    "y": 18,
+                                    "content": "Search email or user ID                         Status: All\n\nUSER                              STATUS       CREATED          ACTIONS\n\nmira@example.test                 ACTIVE       20 Aug 2026      View\n\nnikita@example.test               PENDING      19 Aug 2026      View\n\nrestricted@example.test           DISABLED     18 Aug 2026      View\n\nStates: loading · empty · offline · retry · denied · conflict",
+                                    "fontFamily": "Manrope",
+                                    "fontSize": 15,
+                                    "fill": "#352C3A"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "adminDetail",
+                    "x": 48,
+                    "y": 944,
+                    "name": "User detail and audit",
+                    "reusable": true,
+                    "width": 828,
+                    "height": 760,
+                    "fill": "#FFFFFF",
+                    "cornerRadius": 16,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "adminDetailText",
+                            "x": 28,
+                            "y": 28,
+                            "content": "mira@example.test\n\nACCOUNT\nStatus                 ACTIVE\nEmail verified         Yes\nCreated                20 Aug 2026\nVersion                4\n\nAUTHENTICATION\nActive sessions         3\nLast authenticated      20 Aug 2026, 14:03\n\nAUDIT HISTORY\n20 Aug  Account restored   SUCCESS\n19 Aug  Account disabled   SUCCESS",
+                            "fontFamily": "Manrope",
+                            "fontSize": 17,
+                            "fill": "#352C3A"
+                        }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "adminDisableDialog",
+                    "x": 916,
+                    "y": 944,
+                    "name": "Disable user dialog",
+                    "reusable": true,
+                    "width": 476,
+                    "height": 520,
+                    "fill": "#FFFFFF",
+                    "stroke": "#D1C7D4",
+                    "strokeWidth": 1,
+                    "cornerRadius": 16,
+                    "children": [
+                        {
+                            "type": "text",
+                            "id": "adminDialogText",
+                            "x": 28,
+                            "y": 28,
+                            "content": "Disable this user?\n\nAll active sessions will be revoked.\nThis action is recorded in the audit log.\n\nReason (5–500 characters)\nRequired operational explanation\n\nCancel                 Disable user\n\nRecent sign-in required · conflict\nReason is preserved; never auto-replay.",
+                            "fontFamily": "Manrope",
+                            "fontSize": 16,
+                            "fill": "#352C3A"
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "fileToken": "d288031c-bc89-485c-84e1-57b50520af06"

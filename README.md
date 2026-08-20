@@ -46,35 +46,38 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 
 ## Canonical commands
 
-| Command                                | Purpose                                         |
-| -------------------------------------- | ----------------------------------------------- |
-| `pnpm dev`                             | Run backend, web, and admin development servers |
-| `pnpm dev:infra`                       | Start PostgreSQL and Redis                      |
-| `pnpm dev:mastra`                      | Provision and run isolated Mastra Studio        |
-| `pnpm dev:backend`                     | Run only the backend                            |
-| `pnpm dev:web`                         | Run only the user-facing web application        |
-| `pnpm dev:admin`                       | Run only the administration application         |
-| `pnpm dev:mobile`                      | Run only the Expo development server            |
-| `pnpm browser:install`                 | Install Chrome for agent-led browser checks     |
-| `pnpm browser:check`                   | Test the safe wrapper and live browser launch   |
-| `pnpm agent-skills:check`              | Validate repository-scoped agent skill packages |
-| `pnpm db:generate`                     | Generate reviewed Drizzle SQL migrations        |
-| `pnpm db:check`                        | Validate Drizzle migration history              |
-| `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations  |
-| `pnpm db:studio`                       | Inspect the local database with Drizzle Studio  |
-| `pnpm mastra:playground:reset`         | Guarded destructive Mastra playground reset     |
-| `pnpm lint`                            | Run repository lint rules                       |
-| `pnpm typecheck`                       | Type-check every workspace                      |
-| `pnpm test`                            | Run all automated tests                         |
-| `pnpm test:frontend-architecture`      | Test web/admin FSD import boundaries            |
-| `pnpm test:coverage`                   | Run tests with coverage                         |
-| `pnpm build`                           | Build all workspaces in dependency order        |
-| `pnpm check`                           | Run formatting, lint, types, tests, and builds  |
+| Command                                | Purpose                                             |
+| -------------------------------------- | --------------------------------------------------- |
+| `pnpm dev`                             | Run backend, web, and admin development servers     |
+| `pnpm dev:infra`                       | Start PostgreSQL and Redis                          |
+| `pnpm dev:mastra`                      | Provision and run isolated Mastra Studio            |
+| `pnpm dev:backend`                     | Run only the backend                                |
+| `pnpm dev:web`                         | Run only the user-facing web application            |
+| `pnpm dev:admin`                       | Run only the administration application             |
+| `pnpm dev:mobile`                      | Run only the Expo development server                |
+| `pnpm browser:install`                 | Install Chrome for agent-led browser checks         |
+| `pnpm browser:check`                   | Test the safe wrapper and live browser launch       |
+| `pnpm agent-skills:check`              | Validate repository-scoped agent skill packages     |
+| `pnpm db:generate`                     | Generate reviewed Drizzle SQL migrations            |
+| `pnpm db:check`                        | Validate Drizzle migration history                  |
+| `pnpm db:migrate`                      | Explicitly apply pending PostgreSQL migrations      |
+| `pnpm db:studio`                       | Inspect the local database with Drizzle Studio      |
+| `pnpm mastra:playground:reset`         | Guarded destructive Mastra playground reset         |
+| `pnpm lint`                            | Run repository lint rules                           |
+| `pnpm typecheck`                       | Type-check every workspace                          |
+| `pnpm test`                            | Run all automated tests                             |
+| `pnpm test:frontend-architecture`      | Test web/admin FSD import boundaries                |
+| `pnpm test:coverage`                   | Run tests with coverage                             |
+| `pnpm build`                           | Build all workspaces in dependency order            |
+| `pnpm check`                           | Run formatting, lint, types, tests, and builds      |
 | `pnpm deploy:remote`                   | Deploy a verified manifest to a remote VPS over SSH |
-| `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections  |
-| `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability      |
-| `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability     |
-| `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace             |
+| `pnpm admin:membership`                | Guarded local admin owner/list/prune operations     |
+| `pnpm admin:membership:stdin`          | Run a local admin operation from private JSON stdin |
+| `pnpm admin:membership:remote`         | Run guarded admin operations on an active VPS image |
+| `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections      |
+| `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability          |
+| `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability         |
+| `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace                 |
 
 Quick one-command style remote flow (Timeweb-ready):
 
@@ -111,7 +114,8 @@ handle it prints for subsequent commands.
 
 - `apps/backend/` — Hono API and Mastra runtime; follows DDD dependency rules.
 - `apps/web/` — Next.js student/tutor web experience; follows pages-first FSD.
-- `apps/admin/` — Next.js operations interface; follows pages-first FSD.
+- `apps/admin/` — Vite/Refine operations SPA with React Router and Ant Design;
+  follows `app -> pages -> widgets -> shared` boundaries.
 - `apps/mobile/` — Expo/React Native mobile client.
 - `packages/contracts/` — shared Zod schemas and API types.
 - `packages/database/` — PostgreSQL and Redis infrastructure factories.

@@ -14,6 +14,18 @@ export {
     authVerificationPurposeEnum,
     passwordCredentialsTable,
 } from '../../modules/authentication/infrastructure/persistence/drizzle/schema';
+export {
+    adminAuditActionEnum,
+    adminAuditEventsTable,
+    adminAuditOutcomeEnum,
+    adminMembershipRoleEnum,
+    adminMembershipsTable,
+} from '../../modules/administration/infrastructure/persistence/drizzle/schema';
+
+import {
+    adminAuditEventsTable,
+    adminMembershipsTable,
+} from '../../modules/administration/infrastructure/persistence/drizzle/schema';
 
 import {
     authPasskeysTable,
@@ -29,6 +41,8 @@ import {
 } from '../../modules/users/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    adminAuditEvents: adminAuditEventsTable,
+    adminMemberships: adminMembershipsTable,
     authPasskeys: authPasskeysTable,
     authSecurityEvents: authSecurityEventsTable,
     authSessions: authSessionsTable,

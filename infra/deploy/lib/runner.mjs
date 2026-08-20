@@ -5,12 +5,21 @@ export async function runCommand(command, args, options = {}) {
         const child = spawn(command, args, {
             cwd: options.cwd,
             env: options.env,
-            stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+            stdio: options.capture
+                ? [
+                      options.input === undefined ? 'ignore' : 'pipe',
+                      'pipe',
+                      'pipe',
+                  ]
+                : 'inherit',
         });
         let stdout = '';
         let stderr = '';
         child.stdout?.on('data', (chunk) => (stdout += chunk));
         child.stderr?.on('data', (chunk) => (stderr += chunk));
+        if (options.capture && options.input !== undefined) {
+            child.stdin?.end(options.input);
+        }
         child.on('error', reject);
         child.on('close', (code) => {
             if (code === 0) return resolve({ stdout, stderr });

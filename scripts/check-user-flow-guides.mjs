@@ -9,6 +9,7 @@ const guidesDirectory = join(repositoryRoot, 'docs', 'user-flows');
 const indexPath = join(guidesDirectory, 'README.md');
 const maximumTestFileBytes = 2 * 1024 * 1024;
 export const e2eCommands = new Map([
+    ['admin-user-management', 'pnpm test:e2e:admin-user-management'],
     [
         'deployment-local-rehearsal',
         'LANGUON_DEPLOY_E2E=true node --test infra/deploy/tests/local-rehearsal.journeys.test.mjs',

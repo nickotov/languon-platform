@@ -141,7 +141,8 @@ async function main() {
         ? `${process.env.DEPLOY_USER ? `${process.env.DEPLOY_USER}@` : ''}${process.env.DEPLOY_HOST}`
         : null;
 
-    const target = explicitTarget || (host && user ? `${user}@${host}` : envTarget);
+    const target =
+        explicitTarget || (host && user ? `${user}@${host}` : envTarget);
     if (!target) {
         fail('Either --target, or both --host and --user are required.');
     }
@@ -166,24 +167,19 @@ async function main() {
     };
 
     const runRemote = (args, options = {}) =>
-        runCommand('ssh', [
-            ...optionsForSsh,
-            target,
-            ...args,
-        ], options);
+        runCommand('ssh', [...optionsForSsh, target, ...args], options);
 
     const home = process.env.HOME;
     if (!home) fail('HOME is required for default SSH paths.');
 
-    const sshKey = expandPath(options.get('ssh-key') || path.join(home, '.ssh', 'id_ed25519'));
+    const sshKey = expandPath(
+        options.get('ssh-key') || path.join(home, '.ssh', 'id_ed25519'),
+    );
     const knownHosts = expandPath(
         options.get('known-hosts') || path.join(home, '.ssh', 'known_hosts'),
     );
     const remoteRoot = options.get('remote-root') || '/opt/languon/releases';
-    const remoteDir = path.posix.join(
-        remoteRoot,
-        manifest.sourceSha,
-    );
+    const remoteDir = path.posix.join(remoteRoot, manifest.sourceSha);
     const remoteScript = path.posix.join(
         remoteDir,
         'scripts',
@@ -209,10 +205,13 @@ async function main() {
     }
 
     const knownHostPort = Number(options.get('ssh-port') || '22');
-    if (!Number.isFinite(knownHostPort) || knownHostPort < 1 || knownHostPort > 65535) {
+    if (
+        !Number.isFinite(knownHostPort) ||
+        knownHostPort < 1 ||
+        knownHostPort > 65535
+    ) {
         fail('--ssh-port must be between 1 and 65535');
     }
-
 
     await assertReadablePath(sshKey);
     await assertReadablePath(knownHosts);
@@ -239,9 +238,7 @@ async function main() {
         path.posix.join(remoteDir, 'scripts'),
     ]);
 
-    const scpBase = [
-        ...optionsForSsh,
-    ];
+    const scpBase = [...optionsForSsh];
 
     const remoteBundle = [
         {
@@ -251,6 +248,11 @@ async function main() {
         },
         {
             local: 'infra/deploy/cli.mjs',
+            remote: `${remoteDir}/infra/deploy/`,
+            recursive: false,
+        },
+        {
+            local: 'infra/deploy/admin-cli.mjs',
             remote: `${remoteDir}/infra/deploy/`,
             recursive: false,
         },
@@ -270,6 +272,11 @@ async function main() {
             recursive: false,
         },
         {
+            local: 'infra/nginx/edge-entrypoint.sh',
+            remote: `${remoteDir}/infra/nginx/`,
+            recursive: false,
+        },
+        {
             local: 'scripts/deploy-release.mjs',
             remote: `${remoteDir}/scripts/`,
             recursive: false,
@@ -277,12 +284,15 @@ async function main() {
     ];
 
     for (const bundle of remoteBundle) {
-        await runLocal('scp', [
-            ...scpBase,
-            bundle.recursive ? '-r' : undefined,
-            bundle.local,
-            `${target}:${bundle.remote}`,
-        ].filter((value) => value !== undefined));
+        await runLocal(
+            'scp',
+            [
+                ...scpBase,
+                bundle.recursive ? '-r' : undefined,
+                bundle.local,
+                `${target}:${bundle.remote}`,
+            ].filter((value) => value !== undefined),
+        );
     }
 
     await runLocal('scp', [
@@ -297,11 +307,7 @@ async function main() {
             localConfig,
             `${target}:${remoteConfig}`,
         ]);
-        await runRemote([
-            'chmod',
-            '600',
-            remoteConfig,
-        ]);
+        await runRemote(['chmod', '600', remoteConfig]);
     }
 
     const remoteCommand = [
@@ -328,7 +334,9 @@ async function main() {
     if (stdout.trim()) {
         process.stdout.write(stdout);
     } else {
-        process.stdout.write(remoteResult.stderr || 'Deployment command returned no output.\n');
+        process.stdout.write(
+            remoteResult.stderr || 'Deployment command returned no output.\n',
+        );
     }
 
     const auditPath = options.get('audit-path');

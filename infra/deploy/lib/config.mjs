@@ -54,8 +54,39 @@ export async function readDeployConfig(path) {
     return parseEnvironmentFile(await readFile(path, 'utf8'));
 }
 
+export async function validateAdminPasswordFile(path) {
+    const metadata = await lstat(path);
+    if (!metadata.isFile() || metadata.isSymbolicLink()) {
+        throw new Error(
+            'ADMIN_HTPASSWD_PATH must be a regular file, not a symlink.',
+        );
+    }
+    if ((metadata.mode & 0o077) !== 0) {
+        throw new Error('ADMIN_HTPASSWD_PATH must have mode 0600 or stricter.');
+    }
+    const currentUser = process.getuid?.();
+    if (currentUser !== undefined && ![0, currentUser].includes(metadata.uid)) {
+        throw new Error(
+            'ADMIN_HTPASSWD_PATH must be owned by root or the deployment user.',
+        );
+    }
+    const entries = (await readFile(path, 'utf8'))
+        .split(/\r?\n/)
+        .filter(Boolean);
+    if (
+        entries.length === 0 ||
+        entries.some((entry) => !/^[^:\s]+:[^\s]+$/.test(entry))
+    ) {
+        throw new Error(
+            'ADMIN_HTPASSWD_PATH must contain at least one valid htpasswd entry.',
+        );
+    }
+}
+
 export function assertDeployConfig(environment, config) {
     const common = [
+        'ADMIN_BASE_URL',
+        'ADMIN_HTPASSWD_PATH',
         'AUTH_ALLOWED_ORIGINS',
         'AUTH_CODE_HMAC_SECRET',
         'AUTH_JWT_SECRET',
@@ -79,6 +110,23 @@ export function assertDeployConfig(environment, config) {
     }
     if (new URL(config.PUBLIC_BASE_URL).protocol !== 'https:') {
         throw new Error('PUBLIC_BASE_URL must use HTTPS.');
+    }
+    const adminBaseUrl = new URL(config.ADMIN_BASE_URL);
+    if (
+        adminBaseUrl.protocol !== 'https:' ||
+        adminBaseUrl.origin !== config.ADMIN_BASE_URL
+    ) {
+        throw new Error('ADMIN_BASE_URL must be an exact HTTPS origin.');
+    }
+    const relyingPartyId = config.AUTH_WEBAUTHN_RP_ID;
+    if (
+        adminBaseUrl.hostname !== relyingPartyId &&
+        !adminBaseUrl.hostname.endsWith(`.${relyingPartyId}`)
+    ) {
+        throw new Error('AUTH_WEBAUTHN_RP_ID must cover ADMIN_BASE_URL.');
+    }
+    if (!config.ADMIN_HTPASSWD_PATH.startsWith('/')) {
+        throw new Error('ADMIN_HTPASSWD_PATH must be an absolute host path.');
     }
     if (
         config.ADMIN_BIND_ADDRESS &&

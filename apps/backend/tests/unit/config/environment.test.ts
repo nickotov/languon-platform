@@ -18,6 +18,7 @@ function values(
         AUTH_JWT_SECRET: jwtSecret,
         ...(appEnvironment === 'staging' || appEnvironment === 'production'
             ? {
+                  ADMIN_BASE_URL: 'https://admin.app.languon.example',
                   AUTH_ALLOWED_ORIGINS: 'https://app.languon.example',
                   AUTH_WEBAUTHN_RP_ID: 'app.languon.example',
                   DATABASE_URL:
@@ -262,7 +263,11 @@ describe('loadEnvironment authentication settings', () => {
 
     it('provides localhost WebAuthn and origin defaults only outside deployed environments', () => {
         expect(loadEnvironment(values('development'))).toMatchObject({
-            AUTH_ALLOWED_ORIGINS: ['http://localhost:3333'],
+            ADMIN_BASE_URL: 'http://localhost:3001',
+            AUTH_ALLOWED_ORIGINS: [
+                'http://localhost:3333',
+                'http://localhost:3001',
+            ],
             AUTH_TRUST_PROXY: false,
             AUTH_TRUSTED_PROXY_CIDRS: [],
             AUTH_WEBAUTHN_RP_ID: 'localhost',
@@ -322,7 +327,11 @@ describe('loadEnvironment authentication settings', () => {
 
         expect(deployed.AUTH_ALLOWED_ORIGINS).toEqual([
             'https://app.languon.example',
+            'https://admin.app.languon.example',
         ]);
+        expect(deployed.ADMIN_BASE_URL).toBe(
+            'https://admin.app.languon.example',
+        );
         expect(() =>
             loadEnvironment(
                 values('production', {
@@ -334,5 +343,12 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+        expect(() =>
+            loadEnvironment(
+                values('production', {
+                    ADMIN_BASE_URL: 'https://admin.app.languon.example/path',
+                }),
+            ),
+        ).toThrow(/ADMIN_BASE_URL|base URL/i);
     });
 });

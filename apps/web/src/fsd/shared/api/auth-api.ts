@@ -1,3 +1,4 @@
+import { BrowserApiError, createBrowserApiClient } from '@languon/browser-auth';
 import {
     AuthCapabilitiesResponseSchema,
     AuthErrorResponseSchema,
@@ -64,19 +65,6 @@ import {
     type SignUpResponse,
 } from '@languon/contracts';
 
-interface RuntimeSchema<T> {
-    parse(value: unknown): T;
-}
-
-interface RequestOptions<TBody, TResponse> {
-    accessToken?: string | undefined;
-    body?: TBody | undefined;
-    bodySchema?: RuntimeSchema<TBody> | undefined;
-    method?: 'DELETE' | 'GET' | 'PATCH' | 'POST' | undefined;
-    responseSchema: RuntimeSchema<TResponse>;
-    signal?: AbortSignal | undefined;
-}
-
 export function resolveApiUrl(
     nodeEnvironment: string | undefined,
     configuredUrl: string | undefined,
@@ -91,93 +79,21 @@ const apiUrl = resolveApiUrl(
     process.env.NODE_ENV,
     process.env.NEXT_PUBLIC_API_URL,
 );
-
-export class AuthApiError extends Error {
-    readonly detail: AuthError;
-    readonly status: number;
-
-    constructor(status: number, detail: AuthError) {
-        super(detail.message);
-        this.name = 'AuthApiError';
-        this.status = status;
-        this.detail = detail;
-    }
+export class AuthApiError extends BrowserApiError<AuthError> {
+    public override readonly name = 'AuthApiError';
 }
 
-async function readJson(response: Response): Promise<unknown> {
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) return undefined;
-
-    try {
-        return await response.json();
-    } catch {
-        return undefined;
-    }
-}
-
-async function request<TBody, TResponse>(
-    path: string,
-    options: RequestOptions<TBody, TResponse>,
-): Promise<TResponse> {
-    const body = options.bodySchema?.parse(options.body);
-    let response: Response;
-
-    try {
-        response = await fetch(`${apiUrl}${path}`, {
-            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-            cache: 'no-store',
-            credentials: 'include',
-            headers: {
-                Accept: 'application/json',
-                ...(body === undefined
-                    ? {}
-                    : { 'Content-Type': 'application/json' }),
-                ...(options.accessToken
-                    ? { Authorization: `Bearer ${options.accessToken}` }
-                    : {}),
-            },
-            method: options.method ?? 'GET',
-            ...(options.signal ? { signal: options.signal } : {}),
-        });
-    } catch (cause) {
-        if (cause instanceof DOMException && cause.name === 'AbortError')
-            throw cause;
-        throw new AuthApiError(0, {
-            code: 'service_unavailable',
-            correlationId: 'client-network-error',
-            message:
-                'Authentication is temporarily unavailable. Please try again.',
-        });
-    }
-
-    const payload = await readJson(response);
-    if (!response.ok) {
-        const parsed = AuthErrorResponseSchema.safeParse(payload);
-        throw new AuthApiError(
-            response.status,
-            parsed.success
-                ? parsed.data.error
-                : {
-                      code: 'service_unavailable',
-                      correlationId:
-                          response.headers.get('x-correlation-id') ??
-                          'invalid-api-response',
-                      message:
-                          'Authentication is temporarily unavailable. Please try again.',
-                  },
-        );
-    }
-
-    try {
-        return options.responseSchema.parse(payload);
-    } catch {
-        throw new AuthApiError(502, {
-            code: 'service_unavailable',
-            correlationId: 'invalid-api-response',
-            message: 'The authentication service returned an invalid response.',
-        });
-    }
-}
+const request = createBrowserApiClient<AuthError>({
+    baseUrl: apiUrl,
+    createError: (status, detail) => new AuthApiError(status, detail),
+    errorResponseSchema: AuthErrorResponseSchema,
+    invalidErrorResponseMessage:
+        'Authentication is temporarily unavailable. Please try again.',
+    invalidResponseMessage:
+        'The authentication service returned an invalid response.',
+    networkErrorMessage:
+        'Authentication is temporarily unavailable. Please try again.',
+}).request;
 
 export const authApi = {
     capabilities: (signal?: AbortSignal) =>

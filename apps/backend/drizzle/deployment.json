@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
-    "reviewedThrough": "0004_mature_alex_power",
-    "reviewedMigrationsSha256": "97e11e5bff25fe090bfaf140ddb2bd6bc53d2a2c32c879ec0ee4749f757f140e",
+    "reviewedThrough": "0007_dark_lord_hawal",
+    "reviewedMigrationsSha256": "05277e53797585241ca3d771c6fe48dbf1f9566babdf17a1a9fba5fa4a642662",
     "compatibility": "expand",
-    "rationale": "The reviewed migrations are additive or remain compatible with both application slots during the deployment window."
+    "rationale": "Migrations 0005 and 0006 add administration tables and an audit enum value. Migration 0007 replaces a unique correlation index with a normal lookup index so repeated trace identifiers cannot break administrative outcomes. All changes remain compatible with both application slots during deployment."
 }

@@ -24,6 +24,14 @@ test('web and admin cannot reach the data network and readiness is private', asy
         'infra/deploy/compose/apps.compose.yaml',
         'utf8',
     );
+    const edgeCompose = await readFile(
+        'infra/deploy/compose/edge.compose.yaml',
+        'utf8',
+    );
+    const edgeEntrypoint = await readFile(
+        'infra/nginx/edge-entrypoint.sh',
+        'utf8',
+    );
     const nginx = await readFile('infra/nginx/nginx.conf', 'utf8');
     const web = apps.slice(
         apps.indexOf('    web:'),
@@ -36,4 +44,56 @@ test('web and admin cannot reach the data network and readiness is private', asy
     assert.doesNotMatch(web, /data:/);
     assert.doesNotMatch(admin, /data:/);
     assert.match(nginx, /location = \/api\/readyz[\s\S]*deny all/);
+    assert.match(nginx, /location \^~ \/api\/admin\/[\s\S]*return 404/);
+    assert.match(nginx, /listen 8444 ssl;/);
+    assert.match(nginx, /auth_basic "Languon administration"/);
+    assert.match(nginx, /auth_basic_user_file \/etc\/nginx\/admin\/htpasswd/);
+    assert.match(
+        edgeCompose,
+        /ADMIN_HTPASSWD_PATH[^\n]+:\/run\/secrets\/languon-admin-htpasswd:ro/,
+    );
+    assert.match(edgeCompose, /\/etc\/nginx\/admin:size=64k/);
+    assert.match(edgeEntrypoint, /chown nginx:nginx \/etc\/nginx\/admin/);
+    assert.match(edgeEntrypoint, /chmod 0400 \/etc\/nginx\/admin\/htpasswd/);
+    assert.match(
+        nginx,
+        /proxy_set_header Authorization \$http_x_languon_admin_authorization/,
+    );
+    assert.match(nginx, /proxy_set_header X-Languon-Admin-Authorization ""/);
+    assert.match(nginx, /access_log \/dev\/stdout admin_safe/);
+    assert.match(
+        nginx.slice(nginx.indexOf('listen 8444 ssl;')),
+        /error_log \/dev\/stderr crit/,
+    );
+    assert.match(nginx, /"\$request_method \$uri \$server_protocol"/);
+    assert.doesNotMatch(
+        nginx.slice(nginx.indexOf('listen 8444 ssl;')),
+        /\$request_uri/,
+    );
+    assert.ok(
+        nginx.indexOf('location ^~ /api/admin/') <
+            nginx.indexOf('location /api/'),
+        'public admin denial must precede the general API proxy',
+    );
+});
+
+test('admin is a static unprivileged NGINX image with SPA fallback', async () => {
+    const dockerfile = await readFile(
+        'infra/docker/prod.admin.Dockerfile',
+        'utf8',
+    );
+    const nginx = await readFile('infra/docker/admin.nginx.conf', 'utf8');
+    assert.match(dockerfile, /FROM nginx:[^\s]+@sha256:/);
+    assert.match(dockerfile, /USER nginx/);
+    assert.match(nginx, /try_files \$uri \$uri\/ \/index\.html/);
+    assert.match(nginx, /max-age=31536000, immutable/);
+    assert.match(nginx, /location = \/healthz[\s\S]*no-store/);
+    for (const header of [
+        'Content-Security-Policy',
+        'Referrer-Policy',
+        'X-Content-Type-Options',
+        'X-Frame-Options',
+    ]) {
+        assert.match(nginx, new RegExp(`add_header ${header}`));
+    }
 });

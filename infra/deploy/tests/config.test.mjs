@@ -7,6 +7,7 @@ import {
     assertDeployConfig,
     parseEnvironmentFile,
     readDeployConfig,
+    validateAdminPasswordFile,
 } from '../lib/config.mjs';
 
 test('parses values without evaluating shell syntax', () => {
@@ -25,6 +26,8 @@ test('parses values without evaluating shell syntax', () => {
 
 test('production refuses local data addresses', () => {
     const config = {
+        ADMIN_BASE_URL: 'https://admin.example.test',
+        ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
         AUTH_CODE_HMAC_SECRET: 'a',
         AUTH_JWT_SECRET: 'b',
@@ -60,6 +63,8 @@ test('deployment config must be a private regular file', async () => {
 
 test('admin binding fails closed outside loopback', () => {
     const required = {
+        ADMIN_BASE_URL: 'https://admin.example.test',
+        ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
         AUTH_CODE_HMAC_SECRET: 'a',
         AUTH_JWT_SECRET: 'b',
@@ -74,4 +79,58 @@ test('admin binding fails closed outside loopback', () => {
         ADMIN_BIND_ADDRESS: '0.0.0.0',
     };
     assert.throws(() => assertDeployConfig('stage', required), /loopback/);
+});
+
+test('admin origin and password file fail closed', () => {
+    const required = {
+        ADMIN_BASE_URL: 'http://admin.example.test',
+        ADMIN_HTPASSWD_PATH: 'relative.htpasswd',
+        AUTH_ALLOWED_ORIGINS: 'https://example.test',
+        AUTH_CODE_HMAC_SECRET: 'a',
+        AUTH_JWT_SECRET: 'b',
+        AUTH_WEBAUTHN_RP_ID: 'example.test',
+        DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
+        MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',
+        REDIS_URL: 'redis://stage-redis:6379',
+        EDGE_SUBNET: '172.30.20.0/24',
+        PUBLIC_BASE_URL: 'https://example.test',
+        TLS_CERTIFICATE_PATH: '/tls/cert',
+        TLS_PRIVATE_KEY_PATH: '/tls/key',
+    };
+    assert.throws(
+        () => assertDeployConfig('stage', required),
+        /ADMIN_BASE_URL/,
+    );
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...required,
+                ADMIN_BASE_URL: 'https://admin.other.test',
+            }),
+        /RP_ID/,
+    );
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...required,
+                ADMIN_BASE_URL: 'https://admin.example.test',
+            }),
+        /absolute host path/,
+    );
+});
+
+test('admin password file is private, regular, and contains an entry', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'admin-password-'));
+    const passwordPath = path.join(directory, 'admin.htpasswd');
+    await writeFile(passwordPath, 'operator:$2y$05$local-test-hash\n', {
+        mode: 0o644,
+    });
+    await assert.rejects(() => validateAdminPasswordFile(passwordPath), /0600/);
+    await chmod(passwordPath, 0o600);
+    await validateAdminPasswordFile(passwordPath);
+    await writeFile(passwordPath, 'not-an-entry\n', { mode: 0o600 });
+    await assert.rejects(
+        () => validateAdminPasswordFile(passwordPath),
+        /valid htpasswd entry/,
+    );
 });

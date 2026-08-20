@@ -6,6 +6,10 @@ import type { PasskeyHttpOperations } from './modules/authentication/interface/h
 import { createPasskeyAuthRoutes } from './modules/authentication/interface/http/passkey-auth.routes';
 import { createPasswordAuthRoutes } from './modules/authentication/interface/http/password-auth.routes';
 import {
+    createAdministrationRoutes,
+    type AdministrationRouteDependencies,
+} from './modules/administration/interface/http/administration.routes';
+import {
     createHealthRoutes,
     type DependencyReadiness,
 } from './modules/health/interface/http/health.route';
@@ -16,6 +20,8 @@ export interface AppAuthenticationOptions {
     policy: AuthHttpPolicy;
 }
 
+export type AppAdministrationOptions = AdministrationRouteDependencies;
+
 export interface AppOperationalOptions {
     isShuttingDown: () => boolean;
     readiness: () => Promise<DependencyReadiness>;
@@ -23,6 +29,7 @@ export interface AppOperationalOptions {
 }
 
 export function createApp(options?: {
+    administration?: AppAdministrationOptions;
     authentication?: AppAuthenticationOptions;
     operational?: AppOperationalOptions;
 }): OpenAPIHono {
@@ -44,6 +51,9 @@ export function createApp(options?: {
                 policy: options.authentication.policy,
             }),
         );
+    }
+    if (options?.administration) {
+        app.route('/', createAdministrationRoutes(options.administration));
     }
     app.doc('/openapi.json', {
         info: {

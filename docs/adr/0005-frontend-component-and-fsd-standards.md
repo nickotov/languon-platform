@@ -3,6 +3,7 @@
 Status: Accepted
 Date: 2026-08-14
 Supersedes: None
+Superseded in part by: ADR-0010 for the `apps/admin` framework and structure
 
 ## Context
 

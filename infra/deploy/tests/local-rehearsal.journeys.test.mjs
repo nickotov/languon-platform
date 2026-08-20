@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import test from 'node:test';
 import { runCommand } from '../lib/runner.mjs';
 
-// @user-flow-revision release-deployment-platform sha256:550be74b36f843db
+// @user-flow-revision release-deployment-platform sha256:626f48fafb9cd546
 
 async function rehearsal(command) {
     return await new Promise((resolve, reject) => {

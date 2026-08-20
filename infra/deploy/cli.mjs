@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
     assertDeployConfig,
     readDeployConfig,
+    validateAdminPasswordFile,
     validateEnvironment,
 } from './lib/config.mjs';
 import { Deployment } from './lib/deployment.mjs';
@@ -48,6 +49,7 @@ export async function main(values = process.argv.slice(2)) {
         environment,
         await readDeployConfig(configPath),
     );
+    await validateAdminPasswordFile(config.ADMIN_HTPASSWD_PATH);
     const repositoryRoot = path.resolve(
         path.dirname(fileURLToPath(import.meta.url)),
         '../..',

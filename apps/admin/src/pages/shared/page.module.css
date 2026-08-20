@@ -1,0 +1,55 @@
+.stack {
+    display: grid;
+    gap: 22px;
+}
+.heading {
+    align-items: end;
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+}
+.heading h1 {
+    font-family: Literata, Georgia, serif;
+    letter-spacing: -0.025em;
+    margin: 4px 0 0 !important;
+}
+.eyebrow {
+    color: var(--admin-accent);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+.toolbar {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.tableCard {
+    overflow: hidden;
+}
+.details {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+}
+.danger {
+    border-color: color-mix(
+        in srgb,
+        var(--admin-danger) 35%,
+        var(--admin-border)
+    );
+}
+.muted {
+    color: var(--admin-text-secondary);
+}
+@media (max-width: 800px) {
+    .heading {
+        align-items: start;
+        flex-direction: column;
+    }
+    .details {
+        grid-template-columns: 1fr;
+    }
+}

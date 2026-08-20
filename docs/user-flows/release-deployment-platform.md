@@ -11,8 +11,8 @@ source_paths:
     - .github/workflows/**
     - .env.example
     - README.md
-    - apps/admin/next.config.mjs
-    - apps/admin/src/app/healthz/**
+    - apps/admin/vite.config.ts
+    - infra/docker/admin.nginx.conf
     - apps/backend/package.json
     - apps/backend/src/app.ts
     - apps/backend/src/config/environment.ts
@@ -159,9 +159,11 @@ While a local deployment is active:
    `/api` and backend readiness proves PostgreSQL and Redis connectivity.
 4. Request `https://localhost:18443/edge-healthz`. Expect HTTP `200` from the
    stable edge.
-5. Request `https://localhost:18444/healthz` from the local machine. Expect the
-   admin release identity. Confirm the port is bound to loopback, not a LAN
-   address.
+5. Request `https://localhost:18444/healthz` without the generated admin Basic
+   Auth credential. Expect HTTP `401` with realm `Languon administration`.
+   Repeat with that credential and expect the admin release identity. Confirm
+   the port is bound to loopback, not a LAN address, and confirm the public edge
+   returns `404` for `/api/admin/*`.
 6. Inspect the fixed rehearsal projects and confirm one active application slot,
    one stable edge, and one data project. During a switch both app slots may
    coexist; after drain only the active slot remains.
