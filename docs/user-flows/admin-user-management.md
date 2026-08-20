@@ -158,51 +158,101 @@ traffic cannot reach administration routes.
 
 ## CLI verification
 
-The first owner and later owner changes are intentionally not exposed in the
-browser. The target must already be an active verified Languon user.
+### Add the first administrator
 
-For a local development database, the short argument form is convenient for
-synthetic data:
+Administration membership is intentionally managed outside the browser. The
+membership command **does not create a user**: it grants the `owner` role to a
+user already stored in the same PostgreSQL database.
+
+Before the first grant:
+
+1. Register the intended administrator through the ordinary Languon web app.
+2. Complete email verification. The account must be `active` and its primary
+   email must be verified.
+3. Confirm the command will use the intended database. The local command loads
+   the repository-root `.env.local` and connects directly through
+   `DATABASE_URL`; the backend process does not need to be running, although
+   PostgreSQL must be available. Never point a local bootstrap command at stage
+   or production.
+4. Replace every example address below with the real registered email. An
+   address such as `your-email@example.com` is a placeholder and will correctly
+   fail with user-not-found if it was never registered.
+
+For the first owner in a local development database, omit `--actor-email`:
 
 ```sh
 pnpm admin:membership -- grant \
-  --email owner@example.test \
-  --reason 'Initial local administration owner' \
+  --email your-registered-email@example.com \
+  --reason 'Bootstrap the initial local administrator' \
   --confirm admin-membership-change
 
 pnpm admin:membership -- list
 ```
 
-For a real operator email or a reason that should not appear in shell history or
-the process table, create a mode-`0600` JSON file with your editor and pass it on
-standard input:
+The literal `--confirm admin-membership-change` is a safety acknowledgement, not
+a password. A successful result prints the granted membership as JSON. The list
+command should then show the canonical email and `owner` role. Only a database
+with zero active owners may bootstrap without `--actor-email`; the invariant is
+enforced transactionally.
+
+For a real email or audit reason that should not appear in shell history, create
+a short-lived JSON file using your editor:
+
+```json
+{
+    "command": "grant",
+    "email": "your-registered-email@example.com",
+    "reason": "Bootstrap the initial accountable local administrator",
+    "confirm": "admin-membership-change"
+}
+```
+
+Restrict the file before use, then pass it through standard input:
 
 ```sh
+chmod 0600 /safe/private/admin-request.json
 pnpm admin:membership:stdin < /safe/private/admin-request.json
 ```
 
-The strict object uses `command`, optional `actorEmail`, `email`, `reason`, and
-literal `confirm`. Delete the short-lived request file after the command
-completes. Do not paste production rationale into shell arguments.
+The strict request accepts `command`, optional `actorEmail`, `email`, `reason`,
+and literal `confirm`. Delete the file after the command completes. The stdin
+form avoids placing the email and reason in the local process arguments.
 
-The first grant omits `--actor-email` only when the database contains zero
-active owners. Every later grant and revoke supplies an active owner actor:
+Every later grant or revoke must identify an existing active owner so the audit
+record has an accountable actor:
 
 ```sh
 pnpm admin:membership -- grant \
   --email second-owner@example.test \
-  --actor-email owner@example.test \
+  --actor-email your-registered-email@example.com \
   --reason 'Add the on-call operations owner' \
   --confirm admin-membership-change
 ```
 
-For a deployed VPS, use the guarded SSH wrapper with the exact active release
-manifest:
+### Add the first administrator on a deployed VPS
+
+First register and verify the intended owner against that environment's public
+web app. Then run the guarded SSH wrapper from the repository checkout, using
+the exact manifest for the release currently active on the VPS:
+
+```sh
+pnpm admin:membership:remote -- grant \
+  --environment stage \
+  --target deploy@203.0.113.10 \
+  --manifest .release/stage-manifest.json \
+  --email your-registered-email@example.com \
+  --reason 'Bootstrap the initial accountable stage owner' \
+  --confirm admin-membership-change \
+  --ssh-key ~/.ssh/id_ed25519 \
+  --known-hosts ~/.ssh/known_hosts
+```
+
+Verify the result without changing state:
 
 ```sh
 pnpm admin:membership:remote -- list \
   --environment stage \
-  --target root@203.0.113.10 \
+  --target deploy@203.0.113.10 \
   --manifest .release/stage-manifest.json \
   --ssh-key ~/.ssh/id_ed25519 \
   --known-hosts ~/.ssh/known_hosts
@@ -216,6 +266,18 @@ inactive manifest or a release without that immutable operator bundle. The
 validated request reaches the container through standard input, not
 process-visible arguments. Use `--config` or `--state-directory` only when the
 Timeweb host uses non-default paths.
+
+Logging into the deployed admin application then requires two independent
+layers:
+
+1. the NGINX Basic Authentication credential provisioned for the private admin
+   edge; and
+2. the user's normal Languon password or passkey plus the active `owner`
+   membership granted above.
+
+Granting membership does not create or replace the NGINX credential. Likewise,
+passing Basic Authentication alone never grants application administration
+access.
 
 Prune expired audit events through the same local or remote command with an
 active actor, a reason, and the literal confirmation. Pruning writes its own

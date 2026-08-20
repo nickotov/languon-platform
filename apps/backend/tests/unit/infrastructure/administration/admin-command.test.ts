@@ -3,9 +3,39 @@ import { describe, expect, it } from 'vitest';
 import {
     parseAdministrationCommand,
     parseAdministrationRequest,
+    readsAdministrationRequestFromStandardInput,
 } from '../../../../src/infrastructure/administration/admin-command';
 
 describe('administration operator command', () => {
+    it('ignores the pnpm argument separator forwarded by the root wrapper', () => {
+        expect(
+            parseAdministrationCommand([
+                '--',
+                'grant',
+                '--email',
+                'Owner@Example.com',
+                '--reason',
+                'Initial owner bootstrap',
+                '--confirm',
+                'admin-membership-change',
+            ]),
+        ).toEqual({
+            command: 'grant',
+            confirm: 'admin-membership-change',
+            email: 'owner@example.com',
+            reason: 'Initial owner bootstrap',
+        });
+        expect(
+            readsAdministrationRequestFromStandardInput([
+                '--',
+                '--request-stdin',
+            ]),
+        ).toBe(true);
+        expect(
+            readsAdministrationRequestFromStandardInput(['--request-stdin']),
+        ).toBe(true);
+    });
+
     it('parses a confirmed bootstrap grant without inventing an actor', () => {
         expect(
             parseAdministrationCommand([

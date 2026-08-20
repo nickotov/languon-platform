@@ -46,7 +46,7 @@ export type AdministrationCommand =
 export function parseAdministrationCommand(
     arguments_: string[],
 ): AdministrationCommand {
-    const [command, ...tokens] = arguments_;
+    const [command, ...tokens] = withoutPnpmSeparator(arguments_);
     if (!['grant', 'list', 'prune', 'revoke'].includes(command ?? '')) {
         throw new Error(
             'Usage: admin-command <grant|revoke|list|prune> [--email value] [--actor-email value] [--reason value] [--confirm admin-membership-change]',
@@ -72,6 +72,13 @@ export function parseAdministrationCommand(
         email: parsed.email,
         reason: parsed.reason,
     };
+}
+
+export function readsAdministrationRequestFromStandardInput(
+    arguments_: string[],
+): boolean {
+    const normalized = withoutPnpmSeparator(arguments_);
+    return normalized.length === 1 && normalized[0] === '--request-stdin';
 }
 
 export function parseAdministrationRequest(
@@ -114,12 +121,12 @@ async function main() {
         import.meta.url,
     );
     if (existsSync(localEnvironmentFile)) loadEnvFile(localEnvironmentFile);
-    const input =
-        process.argv.length === 3 && process.argv[2] === '--request-stdin'
-            ? parseAdministrationRequest(
-                  JSON.parse(await readStandardInput(8 * 1024)),
-              )
-            : parseAdministrationCommand(process.argv.slice(2));
+    const commandArguments = process.argv.slice(2);
+    const input = readsAdministrationRequestFromStandardInput(commandArguments)
+        ? parseAdministrationRequest(
+              JSON.parse(await readStandardInput(8 * 1024)),
+          )
+        : parseAdministrationCommand(commandArguments);
     const environment = loadEnvironment();
     const sql = createPostgresClient({
         databaseUrl: environment.DATABASE_URL,
@@ -157,6 +164,10 @@ async function main() {
     } finally {
         await sql.end();
     }
+}
+
+function withoutPnpmSeparator(arguments_: string[]): string[] {
+    return arguments_[0] === '--' ? arguments_.slice(1) : arguments_;
 }
 
 async function readStandardInput(maximumBytes: number): Promise<string> {

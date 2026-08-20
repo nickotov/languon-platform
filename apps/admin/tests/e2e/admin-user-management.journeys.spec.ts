@@ -12,7 +12,7 @@ import {
 } from '@playwright/test';
 import postgres from 'postgres';
 
-// @user-flow-revision admin-user-management sha256:7906dbb455be4f3b
+// @user-flow-revision admin-user-management sha256:7cd7a676cf5edf65
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(
@@ -264,7 +264,8 @@ test.describe.serial('admin user management journeys', () => {
         await page.getByRole('menuitem', { name: 'Audit' }).click();
         const auditRow = page
             .getByRole('row')
-            .filter({ hasText: 'Confirmed restoration in the E2E journey' });
+            .filter({ hasText: 'Confirmed restoration in the E2E journey' })
+            .filter({ hasText: ownerEmail });
         await expect(auditRow).toContainText(ownerEmail);
         await expect(auditRow).toContainText(targetEmail);
         await expect(auditRow).toContainText(

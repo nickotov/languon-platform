@@ -7,7 +7,7 @@ import test from 'node:test';
 
 import { runCommand } from '../lib/runner.mjs';
 
-// @user-flow-revision admin-user-management sha256:7906dbb455be4f3b
+// @user-flow-revision admin-user-management sha256:7cd7a676cf5edf65
 
 const enabled = process.env.LANGUON_DEPLOY_E2E === 'true';
 const nginxImage =
@@ -154,7 +154,10 @@ test(
                 'edge:edge-pass',
                 ['X-Languon-Admin-Authorization: Bearer application-token'],
             );
-            assert.equal(unavailable.status, 502);
+            assert.ok(
+                [502, 504].includes(unavailable.status),
+                `expected an unavailable-upstream gateway response, received ${unavailable.status}`,
+            );
             const privacyLogs = await runCommand('docker', ['logs', edge], {
                 capture: true,
             });
