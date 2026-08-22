@@ -1,0 +1,6 @@
+interface:
+    display_name: 'Web dev panel'
+    short_description: 'Create or reconcile the safe local command panel'
+    default_prompt: 'Use $web-dev-panel to reconcile the local command panel with root package scripts and explicitly named docs.'
+policy:
+    allow_implicit_invocation: false

@@ -8,6 +8,8 @@ node_modules/
 .turbo/
 dist/
 coverage/
+test-results/
+playwright-report/
 .expo/
 web-build/
 storybook-static/

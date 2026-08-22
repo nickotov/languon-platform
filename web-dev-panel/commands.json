@@ -1,0 +1,928 @@
+{
+    "commands": [
+        {
+            "batchEligible": false,
+            "category": "Administration",
+            "conflictsWith": [],
+            "description": "Prunes eligible administration audit records through the guarded backend membership CLI.",
+            "disabledReason": "Performs an administrative membership operation and may mutate data.",
+            "enabled": false,
+            "id": "admin:audit:prune",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:2b437fa569cf67f4378c99efb78844c649a99b102a353816737cf8baa0e73944",
+                "script": "admin:audit:prune",
+                "type": "package-script"
+            },
+            "title": "Admin · Audit · Prune"
+        },
+        {
+            "batchEligible": false,
+            "category": "Administration",
+            "conflictsWith": [],
+            "description": "Runs guarded local administration membership operations against the configured backend.",
+            "disabledReason": "Performs an administrative membership operation and may mutate data.",
+            "enabled": false,
+            "id": "admin:membership",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:f6ccd5cafa628a2cbab41831341c5a7b23d449964fb22b4255e1076e75ca113f",
+                "script": "admin:membership",
+                "type": "package-script"
+            },
+            "title": "Admin · Membership"
+        },
+        {
+            "batchEligible": false,
+            "category": "Administration",
+            "conflictsWith": [],
+            "description": "Runs guarded membership operations against an active remote deployment image.",
+            "disabledReason": "Performs an administrative membership operation and may mutate data.",
+            "enabled": false,
+            "id": "admin:membership:remote",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:228583dc4ae7c65f649ff058fbf8ded481946deade5763f32751c9a3a9ed4ed9",
+                "script": "admin:membership:remote",
+                "type": "package-script"
+            },
+            "title": "Admin · Membership · Remote"
+        },
+        {
+            "batchEligible": false,
+            "category": "Administration",
+            "conflictsWith": [],
+            "description": "Reads a private JSON membership request from stdin and applies it through the backend CLI.",
+            "disabledReason": "Performs an administrative membership operation and may mutate data.",
+            "enabled": false,
+            "id": "admin:membership:stdin",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:035d9148a4cda7bcd898863a03fe8242c3f76dd8a1c3baae81a0904bfc9cbd03",
+                "script": "admin:membership:stdin",
+                "type": "package-script"
+            },
+            "title": "Admin · Membership · Stdin"
+        },
+        {
+            "batchEligible": false,
+            "category": "Agent workflow",
+            "conflictsWith": [],
+            "description": "Launches the interactive Codex terminal through the repository Headroom wrapper.",
+            "disabledReason": "Requires an interactive terminal session.",
+            "enabled": false,
+            "id": "agent",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:711b7d4666b12c42151165c9d4e3ff50a9829988df4f4a5b69cfc856a2928950",
+                "script": "agent",
+                "type": "package-script"
+            },
+            "title": "Agent"
+        },
+        {
+            "batchEligible": false,
+            "category": "Agent workflow",
+            "conflictsWith": [],
+            "description": "Validates repository agent skill structure and policy.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "agent-skills:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:4fbb7622b96cdf24396940be4cea96f141586d1bd6aba81c6d8400035b30b562",
+                "script": "agent-skills:check",
+                "type": "package-script"
+            },
+            "title": "Agent Skills · Check"
+        },
+        {
+            "batchEligible": false,
+            "category": "Browser tooling",
+            "conflictsWith": [],
+            "description": "Runs the repository browser-verification wrapper with a required reviewed subcommand.",
+            "disabledReason": "Requires reviewed command arguments and a browser-verification session.",
+            "enabled": false,
+            "id": "browser",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:738d35eb8aa43e6e5ee9eaf24b1407408f2f8157683e65ff1786a795fc2e7720",
+                "script": "browser",
+                "type": "package-script"
+            },
+            "title": "Browser"
+        },
+        {
+            "batchEligible": true,
+            "category": "Browser tooling",
+            "conflictsWith": [],
+            "description": "Tests and diagnoses the pinned local browser-verification wrapper.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "browser:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:08ba3c547cdef2348e0669e7a093d7fd21b8fdb2d5abde0a07b8e1e3e97410e1",
+                "script": "browser:check",
+                "type": "package-script"
+            },
+            "title": "Browser · Check"
+        },
+        {
+            "batchEligible": false,
+            "category": "Browser tooling",
+            "conflictsWith": [],
+            "description": "Installs the browser runtime used by the repository verification wrapper.",
+            "disabledReason": "Installs browser tooling and may access the network.",
+            "enabled": false,
+            "id": "browser:install",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:482bcae4e58d869690be62d26c9d213cdac9d34daac226d6ae503b2820b29419",
+                "script": "browser:install",
+                "type": "package-script"
+            },
+            "title": "Browser · Install"
+        },
+        {
+            "batchEligible": true,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Builds all buildable workspaces.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "build",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:4942ac6077cde91f9cf64275a817763e6991f92ee88e9698398646c383660e32",
+                "script": "build",
+                "type": "package-script"
+            },
+            "title": "Build"
+        },
+        {
+            "batchEligible": true,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Runs the complete repository quality and build gate.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:d13d5b1c854fce43782d5f59dba22adffa73543afa9044967cb86fcf66b9da3a",
+                "script": "check",
+                "type": "package-script"
+            },
+            "title": "Check"
+        },
+        {
+            "batchEligible": true,
+            "category": "Database",
+            "conflictsWith": [],
+            "description": "Validates the backend Drizzle migration history.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "db:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:1de0fe952e21fde88db0a30709aad870a73137e60bfd524cf933879e482dbf0e",
+                "script": "db:check",
+                "type": "package-script"
+            },
+            "title": "Db · Check"
+        },
+        {
+            "batchEligible": false,
+            "category": "Database",
+            "conflictsWith": [],
+            "description": "Generates Drizzle SQL migration files from backend schema changes.",
+            "disabledReason": "May generate or apply database schema changes.",
+            "enabled": false,
+            "id": "db:generate",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:06bf284244f963cd2a8571c5f68e724b643682328aef7d976ba8d0d2bb8e8e56",
+                "script": "db:generate",
+                "type": "package-script"
+            },
+            "title": "Db · Generate"
+        },
+        {
+            "batchEligible": false,
+            "category": "Database",
+            "conflictsWith": [],
+            "description": "Applies pending backend PostgreSQL migrations.",
+            "disabledReason": "May generate or apply database schema changes.",
+            "enabled": false,
+            "id": "db:migrate",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:c00d61a9c95353075adad83044141642cc25a2cc0628a1b5e557e3c9c86779b0",
+                "script": "db:migrate",
+                "type": "package-script"
+            },
+            "title": "Db · Migrate"
+        },
+        {
+            "batchEligible": false,
+            "category": "Database",
+            "conflictsWith": [],
+            "description": "Starts Drizzle Studio for interactive local database inspection.",
+            "disabledReason": "Starts an interactive database administration interface.",
+            "enabled": false,
+            "id": "db:studio",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:879c1e43f6d37573a9c128be890f5b7d3964f08301b3f16336ebac7f6a4007f3",
+                "script": "db:studio",
+                "type": "package-script"
+            },
+            "title": "Db · Studio"
+        },
+        {
+            "batchEligible": false,
+            "category": "Deployment",
+            "conflictsWith": [],
+            "description": "Runs the disposable local deployment rehearsal journey.",
+            "disabledReason": "Performs deployment or rollback lifecycle operations.",
+            "enabled": false,
+            "id": "deploy:local",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:fd155fb52bf5c9498e8cf26e86840527f2cdd79af1540515de4efd5afbd0c84f",
+                "script": "deploy:local",
+                "type": "package-script"
+            },
+            "title": "Deploy · Local"
+        },
+        {
+            "batchEligible": false,
+            "category": "Deployment",
+            "conflictsWith": [],
+            "description": "Stops the disposable local deployment rehearsal environment.",
+            "disabledReason": "Performs deployment or rollback lifecycle operations.",
+            "enabled": false,
+            "id": "deploy:local:down",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:5e3867fe90f8b2dfc0fbe7a93c1c2e15d3faa080a28d7db4240767e6ad98b5c4",
+                "script": "deploy:local:down",
+                "type": "package-script"
+            },
+            "title": "Deploy · Local · Down"
+        },
+        {
+            "batchEligible": false,
+            "category": "Deployment",
+            "conflictsWith": [],
+            "description": "Exercises rollback in the disposable local deployment rehearsal.",
+            "disabledReason": "Performs deployment or rollback lifecycle operations.",
+            "enabled": false,
+            "id": "deploy:local:rollback",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:8d9212340b94edbc1ce8a9968e8e5464d3836c4c8570a2afb965873a00e35a8a",
+                "script": "deploy:local:rollback",
+                "type": "package-script"
+            },
+            "title": "Deploy · Local · Rollback"
+        },
+        {
+            "batchEligible": false,
+            "category": "Deployment",
+            "conflictsWith": [],
+            "description": "Verifies the disposable local deployment rehearsal environment.",
+            "disabledReason": "Performs deployment or rollback lifecycle operations.",
+            "enabled": false,
+            "id": "deploy:local:verify",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:e1f28c8d8bcbb77c9a13921800b7c7b2e30613bce10cb6f79412bfd7c62a380e",
+                "script": "deploy:local:verify",
+                "type": "package-script"
+            },
+            "title": "Deploy · Local · Verify"
+        },
+        {
+            "batchEligible": false,
+            "category": "Deployment",
+            "conflictsWith": [],
+            "description": "Runs guarded remote VPS deployment operations.",
+            "disabledReason": "Performs deployment or rollback lifecycle operations.",
+            "enabled": false,
+            "id": "deploy:remote",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:8e3c04eef38565061f88320a8f00095748c55f96f32ece437ced05d0f2c49342",
+                "script": "deploy:remote",
+                "type": "package-script"
+            },
+            "title": "Deploy · Remote"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": [
+                "dev:admin",
+                "dev:apps:docker",
+                "dev:backend",
+                "dev:web"
+            ],
+            "description": "Starts the main local application development services in parallel.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:2160344a4a82ab07ce39c9a8cdca0626a73a6dfaaff3f360877e505c1b91fb73",
+                "script": "dev",
+                "type": "package-script"
+            },
+            "title": "Dev"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": ["dev", "dev:apps:docker"],
+            "description": "Starts only the administration application development server.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:admin",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:a5a7057fbc5538d45863a331bcdeb888fa44dc1f578839e0459c9e16ae1773f3",
+                "script": "dev:admin",
+                "type": "package-script"
+            },
+            "title": "Dev · Admin"
+        },
+        {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Builds and starts the administration application development container.",
+            "disabledReason": "Exposes or rebuilds an individual application container and needs explicit review.",
+            "enabled": false,
+            "id": "dev:admin:docker",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:85bf8bfce42d88c7483459fe3b98b132441a74ac7ca08939108c7d8c54486dd5",
+                "script": "dev:admin:docker",
+                "type": "package-script"
+            },
+            "title": "Dev · Admin · Docker"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": ["dev", "dev:admin", "dev:backend", "dev:web"],
+            "description": "Builds and starts backend, web, and admin with local infrastructure in Docker.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:apps:docker",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:9def6a38643ca9ccd54367e6a36dcc4b8d3c9eb3ae051943cde0df30ae9cc019",
+                "script": "dev:apps:docker",
+                "type": "package-script"
+            },
+            "title": "Dev · Apps · Docker"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": ["dev", "dev:apps:docker"],
+            "description": "Starts only the backend development server.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:backend",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:5bc2210c5e5c057db748060f27906ad6d5fb14ff13e0b992f9a8c50fd0924738",
+                "script": "dev:backend",
+                "type": "package-script"
+            },
+            "title": "Dev · Backend"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Starts the local PostgreSQL and Redis containers.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:infra",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:a1d041b8cd1c4b7164d14f765f778eaa081bb41ed49a40a3148a83e978eba1d8",
+                "script": "dev:infra",
+                "type": "package-script"
+            },
+            "title": "Dev · Infra"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Provisions and starts isolated local Mastra Studio.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:mastra",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:073368f280271e982d1b9bf99f8365a326b41649cc14a2776bc9deeb48b994ca",
+                "script": "dev:mastra",
+                "type": "package-script"
+            },
+            "title": "Dev · Mastra"
+        },
+        {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Starts the Expo mobile development server, whose default host mode is LAN.",
+            "disabledReason": "Expo defaults to LAN hosting, outside the panel local-only command policy.",
+            "enabled": false,
+            "id": "dev:mobile",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:5f7c6954d5c9a766e1ab129ec06c72b809cf0ede7eae523c0fc10c41df20f4be",
+                "script": "dev:mobile",
+                "type": "package-script"
+            },
+            "title": "Dev · Mobile"
+        },
+        {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Builds and starts the mobile development container.",
+            "disabledReason": "Exposes or rebuilds an individual application container and needs explicit review.",
+            "enabled": false,
+            "id": "dev:mobile:docker",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:75f97ea676ea9e3fc4e86433b702c7ba20a2b27ad6421e14d6dd31d1b7863223",
+                "script": "dev:mobile:docker",
+                "type": "package-script"
+            },
+            "title": "Dev · Mobile · Docker"
+        },
+        {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Starts this web dev command panel; disabled here to prevent recursion.",
+            "disabledReason": "Starting the panel from itself would recurse.",
+            "enabled": false,
+            "id": "dev:panel",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:e02e722188de97d6a74a8cff8a10aa06a117bae78f79b86365298823240443c8",
+                "script": "dev:panel",
+                "type": "package-script"
+            },
+            "title": "Dev · Panel"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": ["dev", "dev:apps:docker"],
+            "description": "Starts only the public Next.js development server.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:web",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:0a95917c6078f26fa99e98029d21629a8fca8957a5a44f354b2821bd9cd642be",
+                "script": "dev:web",
+                "type": "package-script"
+            },
+            "title": "Dev · Web"
+        },
+        {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Builds and starts the public web development container.",
+            "disabledReason": "Exposes or rebuilds an individual application container and needs explicit review.",
+            "enabled": false,
+            "id": "dev:web:docker",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:a7991185cc1e102e80f4e98f3e41f659b10b767b28db6ccbca5f5e57557eea5b",
+                "script": "dev:web:docker",
+                "type": "package-script"
+            },
+            "title": "Dev · Web · Docker"
+        },
+        {
+            "batchEligible": true,
+            "category": "Documentation",
+            "conflictsWith": [],
+            "description": "Validates user-flow guide structure and traceability.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "docs:user-flows:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:6dab68fcc548e81d28336532a45f3391a0deb2bc1dc5263ea90ea1f5f6e9a20e",
+                "script": "docs:user-flows:check",
+                "type": "package-script"
+            },
+            "title": "Docs · User Flows · Check"
+        },
+        {
+            "batchEligible": false,
+            "category": "Agent workflow",
+            "conflictsWith": [],
+            "description": "Creates a feature branch and its durable specification, plan, evidence, and review artifacts.",
+            "disabledReason": "Creates a feature branch and durable workflow artifacts.",
+            "enabled": false,
+            "id": "feature:new",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:eed9a40847c29ad523f5f2ade90339d75e706354a66431768a2f49aee9ad52a1",
+                "script": "feature:new",
+                "type": "package-script"
+            },
+            "title": "Feature · New"
+        },
+        {
+            "batchEligible": false,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Writes repository files using the configured Prettier formatter.",
+            "disabledReason": "Writes formatting changes across the repository.",
+            "enabled": false,
+            "id": "format",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:b1cd4964d03a818f7cdd3b5bcdd7d733f131c06b76dc3aa09d607106f97b5ecd",
+                "script": "format",
+                "type": "package-script"
+            },
+            "title": "Format"
+        },
+        {
+            "batchEligible": true,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Checks repository formatting without changing files.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "format:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:651578ab83c80dbe071ca28f1874ba6c386cc6665800b7b79a2af2824b340e24",
+                "script": "format:check",
+                "type": "package-script"
+            },
+            "title": "Format · Check"
+        },
+        {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Stops local PostgreSQL and Redis containers without deleting volumes.",
+            "disabledReason": "Stops local infrastructure and can interrupt other work.",
+            "enabled": false,
+            "id": "infra:down",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:236ff093a721c200a2872ca84ad3e32f2766905f975ea111c28f3cf25e34ba83",
+                "script": "infra:down",
+                "type": "package-script"
+            },
+            "title": "Infra · Down"
+        },
+        {
+            "batchEligible": true,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Runs repository ESLint checks.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "lint",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:dfa4263483116e3d10031eac1dca7f5b0936d7ad00d099d30d40515fac89dbb7",
+                "script": "lint",
+                "type": "package-script"
+            },
+            "title": "Lint"
+        },
+        {
+            "batchEligible": false,
+            "category": "Other",
+            "conflictsWith": [],
+            "description": "Resets guarded local Mastra playground state.",
+            "disabledReason": "Resets local playground state.",
+            "enabled": false,
+            "id": "mastra:playground:reset",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:161ec59b56b685ccd4e46d69b2c66a0791a435bc440d32f5d2e304ceb8d44051",
+                "script": "mastra:playground:reset",
+                "type": "package-script"
+            },
+            "title": "Mastra · Playground · Reset"
+        },
+        {
+            "batchEligible": true,
+            "category": "Resources",
+            "conflictsWith": [],
+            "description": "Generates a local runtime-resource dashboard HTML artifact from recorded history.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "resources:dashboard",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:0fb89aad1ae1876527a9bef3abea112d7730bd9b7ea7c909cfdc1e339ce06dc9",
+                "script": "resources:dashboard",
+                "type": "package-script"
+            },
+            "title": "Resources · Dashboard"
+        },
+        {
+            "batchEligible": false,
+            "category": "Resources",
+            "conflictsWith": [],
+            "description": "Profiles a named local command and writes bounded diagnostic artifacts.",
+            "disabledReason": "Requires profiling arguments and writes diagnostic artifacts.",
+            "enabled": false,
+            "id": "resources:profile",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:11109f624f03bf8691c05640284411a564b25f1070d2592ffe5e965442c7e7cd",
+                "script": "resources:profile",
+                "type": "package-script"
+            },
+            "title": "Resources · Profile"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Runs the repository automated test suite.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:9a8216c073907dcd620567b1aebe0956c369d8897abee75a5a227cba08e0ecc1",
+                "script": "test",
+                "type": "package-script"
+            },
+            "title": "Test"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Runs unit tests for the safe browser wrapper.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:agent-browser",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:15d49398dec65aaa0dc0fd63f39ddb42d0349249426e03d4db33d3f8442aa5f8",
+                "script": "test:agent-browser",
+                "type": "package-script"
+            },
+            "title": "Test · Agent Browser"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Runs workspace tests with coverage collection.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:coverage",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:35c150cd2ebe036e5168fe3da7be2b67120048f673ba497ce2bd67a1126e2088",
+                "script": "test:coverage",
+                "type": "package-script"
+            },
+            "title": "Test · Coverage"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Runs the administration user-management end-to-end journey.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:e2e:admin-user-management",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:53426922685628f6c2ee49fc90bbcefe71ee34f43f3e46744d0b45fdee100982",
+                "script": "test:e2e:admin-user-management",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Admin User Management"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Runs web dev panel Playwright journeys against synthetic commands.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:e2e:web-dev-panel",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:a41939b24078c7f83a777e2b71794f0e4c18b101261445c0aad139cfa4c6b070",
+                "script": "test:e2e:web-dev-panel",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Web Dev Panel"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Tests public web and admin Feature-Sliced Design import boundaries.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:frontend-architecture",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:e70b4fc2046d5c7f634bac02d6bd7e55f4c691b701e7827e080a6f2a29b155af",
+                "script": "test:frontend-architecture",
+                "type": "package-script"
+            },
+            "title": "Test · Frontend Architecture"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Tests the isolated Mastra development harness lifecycle.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:mastra-harness",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:1332ef4b0dd2fc4025d6a49d2b392767e552a81d778f72f7c99b2b6d35867dae",
+                "script": "test:mastra-harness",
+                "type": "package-script"
+            },
+            "title": "Test · Mastra Harness"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Runs release, backup, migration, deployment, and resource contract tests.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:release-deployment",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:3ec844c824502e79f9f583a54c03fcaacf1c91cbec45afba74f7ac58edb31973",
+                "script": "test:release-deployment",
+                "type": "package-script"
+            },
+            "title": "Test · Release Deployment"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Runs web dev panel unit and native HTTP integration tests.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:web-dev-panel",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:46000b113864200f2105bc9890f06e51271e6158050fe5350ae54d8c68e01118",
+                "script": "test:web-dev-panel",
+                "type": "package-script"
+            },
+            "title": "Test · Web Dev Panel"
+        },
+        {
+            "batchEligible": true,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Runs TypeScript checks across the workspace.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "typecheck",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:48341e857cfbc8d450b0cddc1bb74a797e6fe72e7a83aae1b5d5061bb8d40d72",
+                "script": "typecheck",
+                "type": "package-script"
+            },
+            "title": "Typecheck"
+        },
+        {
+            "batchEligible": false,
+            "category": "Documentation",
+            "conflictsWith": [],
+            "description": "Inspects or validates a named user-flow guide through a required subcommand.",
+            "disabledReason": "Requires a reviewed journey subcommand and arguments.",
+            "enabled": false,
+            "id": "user-flow:e2e",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:05969164f54e7164e2d4f43af0cca5a82e2be6dab8879322a575d103854a048c",
+                "script": "user-flow:e2e",
+                "type": "package-script"
+            },
+            "title": "User Flow · E2e"
+        },
+        {
+            "batchEligible": true,
+            "category": "Documentation",
+            "conflictsWith": [],
+            "description": "Validates all mapped user-flow E2E markers without executing journeys.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "user-flow:e2e:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:c5b431423caffc042bf7371d10ef17e5ece2c750a13d9e8478d3f4b8b1f11493",
+                "script": "user-flow:e2e:check",
+                "type": "package-script"
+            },
+            "title": "User Flow · E2e · Check"
+        },
+        {
+            "batchEligible": true,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Validates this panel command catalog against current sources.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "web-dev-panel:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:9c11235b4b4ebe349ba941e45f1eae013f13dfa7e610910a5b2a43789f50ffdf",
+                "script": "web-dev-panel:check",
+                "type": "package-script"
+            },
+            "title": "Web Dev Panel · Check"
+        }
+    ],
+    "version": 1
+}

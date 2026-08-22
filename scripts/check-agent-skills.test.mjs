@@ -58,6 +58,11 @@ test('requires explicit-only policy for exploratory skills', () => {
         }),
         'prototype',
     );
+
+    assert.throws(
+        () => validate('web-dev-panel'),
+        /disable implicit invocation/,
+    );
 });
 
 test('rejects unsupported interface metadata', () => {

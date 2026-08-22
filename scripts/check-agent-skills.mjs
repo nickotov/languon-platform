@@ -8,6 +8,7 @@ const skillsDirectory = join(repositoryRoot, '.agents', 'skills');
 const explicitlyInvokedSkills = new Set([
     'improve-codebase-architecture',
     'prototype',
+    'web-dev-panel',
 ]);
 
 function fail(path, message) {

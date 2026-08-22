@@ -31,6 +31,7 @@ The default local endpoints are:
 - Backend health: `http://localhost:4000/health`
 - OpenAPI document: `http://localhost:4000/openapi.json`
 - Mastra Studio (when started separately): `http://127.0.0.1:4111`
+- Web dev command panel (when started separately): `http://127.0.0.1:4400`
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
 
@@ -55,6 +56,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm dev:web`                         | Run only the user-facing web application            |
 | `pnpm dev:admin`                       | Run only the administration application             |
 | `pnpm dev:mobile`                      | Run only the Expo development server                |
+| `pnpm dev:panel`                       | Run the local reviewed-command web panel            |
 | `pnpm browser:install`                 | Install Chrome for agent-led browser checks         |
 | `pnpm browser:check`                   | Test the safe wrapper and live browser launch       |
 | `pnpm agent-skills:check`              | Validate repository-scoped agent skill packages     |
@@ -68,6 +70,9 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm test`                            | Run all automated tests                             |
 | `pnpm test:frontend-architecture`      | Test web/admin FSD import boundaries                |
 | `pnpm test:coverage`                   | Run tests with coverage                             |
+| `pnpm test:web-dev-panel`              | Test the local command panel                        |
+| `pnpm test:e2e:web-dev-panel`          | Run panel Playwright journeys against fixtures      |
+| `pnpm web-dev-panel:check`             | Validate reviewed panel command sources             |
 | `pnpm build`                           | Build all workspaces in dependency order            |
 | `pnpm check`                           | Run formatting, lint, types, tests, and builds      |
 | `pnpm deploy:remote`                   | Deploy a verified manifest to a remote VPS over SSH |
@@ -120,6 +125,7 @@ handle it prints for subsequent commands.
 - `packages/contracts/` — shared Zod schemas and API types.
 - `packages/database/` — PostgreSQL and Redis infrastructure factories.
 - `packages/prompts/` — local prompt fallbacks and Langfuse prompt access.
+- `web-dev-panel/` — native local dashboard for reviewed development commands.
 - `infra/` — checked-in container definitions.
 - `design/` — design-system blueprints and editable visual design sources.
 - `docs/` — product, architecture, ADRs, setup, and development documentation.

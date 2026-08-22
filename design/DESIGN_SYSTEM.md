@@ -824,6 +824,38 @@ shell, summary cards, user table/status treatment, detail grouping, audit table,
 and confirmation dialog. Runtime changes to those patterns update this contract
 and that board in the same feature.
 
+### Developer tooling variant
+
+The local web dev command panel is a plain HTML/CSS/JavaScript operational tool,
+not a product application or a consumer of the public web component package. It
+uses native controls while preserving this system's semantic color, typography,
+spacing, focus, state, and responsive intent.
+
+- The page prioritizes command identity, safety status, lifecycle state, and
+  logs over decorative product content. Every command card keeps title,
+  description, exact displayed source, status text, controls, and latest-run log
+  visually connected.
+- Checkbox selection is tab-local presentation. Running/disabled state is
+  visually distinct and communicated with text in addition to color. A disabled
+  reason remains readable and is never hidden behind hover.
+- Primary Run selected and individual Start actions use the normal action
+  hierarchy. Stop is a visible danger-outline action; Stop All requires a named
+  native confirmation dialog.
+- Log regions use a legible monospace face, preserve whitespace, scroll within
+  the card, and keep sufficient contrast in both themes. Raw terminal color is
+  stripped, so ANSI output never becomes a visual-state dependency.
+- At compact widths, toolbar actions stack, command cards become one column, and
+  no page-level horizontal scroll is introduced. Native targets remain at least
+  40px for the pointer-rich developer context.
+- Connection, running, stopping, success, failure, cancellation, drift, and
+  disabled states require text labels. Motion is limited to quick control and
+  connection feedback and respects reduced-motion preference.
+
+The `Developer Tooling / Web Dev Command Panel` screen in `design/main.pen` is
+the visual source for this variant. Runtime changes to its command-card,
+selection, status, log, confirmation, or compact-layout contract update both
+design artifacts in the same feature.
+
 ## 14. Visual-generation brief
 
 Use the following prompt as the starting point for a design-system board. Keep

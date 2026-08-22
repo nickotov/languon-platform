@@ -43,6 +43,8 @@ establish it.
   stable cross-app capabilities.
 - `infra`, `docs`, `.agent`, `.agents/skills`, and `.codex` — infrastructure,
   documentation, durable work state, workflows, and trusted configuration.
+- `web-dev-panel` — development-only native HTTP/SSE dashboard for reviewed
+  commands; follow its local instructions and ADR-0013 execution boundary.
 
 Do not import application source across `apps/*`. Share stable behavior through
 a focused package with public exports. Document new top-level directories in

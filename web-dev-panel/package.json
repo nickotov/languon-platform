@@ -1,0 +1,20 @@
+{
+    "name": "@languon/web-dev-panel",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=24 <25"
+    },
+    "scripts": {
+        "catalog:check": "node src/catalog-check.mjs",
+        "catalog:update": "node scripts/reconcile-catalog.mjs",
+        "dev": "node src/main.mjs",
+        "lint": "eslint .",
+        "test": "node --test test/*.test.mjs",
+        "test:e2e": "playwright test"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.62.1"
+    }
+}

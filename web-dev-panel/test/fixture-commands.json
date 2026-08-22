@@ -1,0 +1,68 @@
+{
+    "commands": [
+        {
+            "batchEligible": true,
+            "category": "Fixtures",
+            "conflictsWith": [],
+            "description": "Runs the first long-lived safe fixture command.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "alpha",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "args": ["scripts/command.mjs", "alpha", "4000"],
+                "command": "node scripts/command.mjs alpha 4000",
+                "cwd": ".",
+                "executable": "node",
+                "path": "docs/commands.md",
+                "revision": "sha256:2bc1d09e6fd2511422f8d0b26ac5feab40b685442cee40247adc2e89045ee461",
+                "type": "documented-command"
+            },
+            "title": "Alpha fixture"
+        },
+        {
+            "batchEligible": true,
+            "category": "Fixtures",
+            "conflictsWith": [],
+            "description": "Runs the second long-lived safe fixture command.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "beta",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "args": ["scripts/command.mjs", "beta", "4000"],
+                "command": "node scripts/command.mjs beta 4000",
+                "cwd": ".",
+                "executable": "node",
+                "path": "docs/commands.md",
+                "revision": "sha256:a1d6757d62f4869bc3b90033fba895c127f66c92d1ef188122ce68fd6abb29d0",
+                "type": "documented-command"
+            },
+            "title": "Beta fixture"
+        },
+        {
+            "batchEligible": true,
+            "category": "Fixtures",
+            "conflictsWith": [],
+            "description": "Runs a short safe fixture command.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "quick",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "args": ["scripts/command.mjs", "quick", "40"],
+                "command": "node scripts/command.mjs quick 40",
+                "cwd": ".",
+                "executable": "node",
+                "path": "docs/commands.md",
+                "revision": "sha256:d8428e9f60a5fc5ae12f53e14fd1e33e09e15bdbce945396656486522f5dc388",
+                "type": "documented-command"
+            },
+            "title": "Quick fixture"
+        }
+    ],
+    "version": 1
+}

@@ -14,9 +14,10 @@ Languon testing, browser, database, review, and user-flow skills.
 
 Invoke a skill explicitly with its `$name` when you want to require it. Codex
 may invoke other skills automatically when their frontmatter description
-matches the task. `prototype` and `improve-codebase-architecture` are configured
-for explicit invocation only because they create exploratory work rather than
-routine delivery steps.
+matches the task. `prototype`, `improve-codebase-architecture`, and
+`web-dev-panel` are configured for explicit invocation only because they create
+exploratory work or alter the reviewed local command-execution boundary rather
+than providing routine delivery steps.
 
 Start a new Codex session after adding or changing repository skills so their
 descriptions and UI metadata are reloaded.

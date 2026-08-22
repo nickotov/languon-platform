@@ -78,18 +78,41 @@ The Docker aggregate also excludes mobile.
 Keep infrastructure running and use a separate terminal for each required
 service:
 
-| Service        | Command            | Default URL                     |
-| -------------- | ------------------ | ------------------------------- |
-| Backend        | `pnpm dev:backend` | `http://localhost:4000`         |
-| Frontend / web | `pnpm dev:web`     | `http://localhost:3333`         |
-| Admin          | `pnpm dev:admin`   | `http://localhost:3001`         |
-| Mobile / Expo  | `pnpm dev:mobile`  | Metro normally uses port `8081` |
-| PostgreSQL     | `pnpm dev:infra`   | `localhost:5432`                |
-| Redis          | `pnpm dev:infra`   | `localhost:6379`                |
+| Service           | Command            | Default URL                     |
+| ----------------- | ------------------ | ------------------------------- |
+| Backend           | `pnpm dev:backend` | `http://localhost:4000`         |
+| Frontend / web    | `pnpm dev:web`     | `http://localhost:3333`         |
+| Admin             | `pnpm dev:admin`   | `http://localhost:3001`         |
+| Mobile / Expo     | `pnpm dev:mobile`  | Metro normally uses port `8081` |
+| PostgreSQL        | `pnpm dev:infra`   | `localhost:5432`                |
+| Redis             | `pnpm dev:infra`   | `localhost:6379`                |
+| Dev command panel | `pnpm dev:panel`   | `http://127.0.0.1:4400`         |
 
 The `dev:*` application commands build required workspace packages before
 starting the selected server. Web and admin journeys that call the API also
 need the backend.
+
+### Run reviewed commands from the local web panel
+
+Start `pnpm dev:panel` and open the private launch URL printed in that terminal
+to select one or more reviewed root commands, start compatible commands
+concurrently, stop individual runs, and inspect isolated latest-run logs. The
+URL authorizes the browser profile and redirects to `http://127.0.0.1:4400`;
+the bare origin cannot create a session. The panel is a separate native Node
+development server and is intentionally excluded from `pnpm dev`.
+
+All tabs share the server's process and log state; selections remain local to a
+tab. Disabled entries are informational and cannot be bypassed through the
+browser. The panel accepts no arbitrary shell text, arguments, stdin, or PTY
+input, retains no logs across restart, and cannot observe Codex or other
+processes started in an external terminal. For panel-launched `codex exec
+--json`, it can show conservative structured activity, but the CLI does not
+reliably report the active skill.
+
+After a root package script changes, run `pnpm web-dev-panel:check`. Explicitly
+invoke `$web-dev-panel` to reconcile reviewed script metadata or to consider
+commands from documentation paths named in that request; the skill does not scan
+or execute documentation commands implicitly.
 
 ### Work on the public-web design system
 

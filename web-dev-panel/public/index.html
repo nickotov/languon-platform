@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light dark" />
+        <title>Languon dev commands</title>
+        <link rel="stylesheet" href="/styles.css" />
+        <script src="/app.js" type="module"></script>
+    </head>
+    <body>
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Local developer tooling</p>
+                <h1>Languon commands</h1>
+                <p class="subtitle">
+                    Run reviewed repository commands with shared state and
+                    session-only logs.
+                </p>
+            </div>
+            <div class="connection" aria-live="polite">
+                <span id="connection-dot" class="connection__dot"></span>
+                <span id="connection-status">Connecting…</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="toolbar" aria-label="Command actions">
+                <label class="select-all">
+                    <input id="select-all" type="checkbox" />
+                    <span>Select all compatible</span>
+                </label>
+                <span id="selection-count" class="selection-count"
+                    >0 selected</span
+                >
+                <div class="toolbar__actions">
+                    <button
+                        id="run-selected"
+                        class="button button--primary"
+                        disabled
+                    >
+                        Run selected
+                    </button>
+                    <button
+                        id="stop-all"
+                        class="button button--danger"
+                        disabled
+                    >
+                        Stop all
+                    </button>
+                </div>
+            </section>
+
+            <div id="notice" class="notice" aria-live="polite" hidden></div>
+            <div
+                id="catalog-issues"
+                class="notice notice--warning"
+                hidden
+            ></div>
+            <div
+                id="command-groups"
+                class="command-groups"
+                aria-busy="true"
+            ></div>
+        </main>
+
+        <dialog id="stop-all-dialog" class="dialog">
+            <form method="dialog">
+                <h2>Stop every running command?</h2>
+                <p>
+                    The panel will interrupt all child processes it owns.
+                    Commands that already exited after starting detached
+                    infrastructure are not affected.
+                </p>
+                <div class="dialog__actions">
+                    <button class="button" value="cancel">Keep running</button>
+                    <button class="button button--danger" value="confirm">
+                        Stop all
+                    </button>
+                </div>
+            </form>
+        </dialog>
+    </body>
+</html>
