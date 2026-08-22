@@ -1,0 +1,4 @@
+interface:
+    display_name: 'UI/UX Composition'
+    short_description: 'Compose and review usable product screens'
+    default_prompt: 'Use $ui-ux-composition to compose and verify this screen using the project design system.'
