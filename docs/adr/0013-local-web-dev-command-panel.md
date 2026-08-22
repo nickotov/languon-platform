@@ -1,6 +1,6 @@
 # ADR-0013: Local web dev command panel
 
-Status: Accepted
+Status: Superseded by ADR-0014
 Date: 2026-08-22
 Supersedes: None
 

@@ -8,15 +8,20 @@ import {
     validateBatchBody,
     validateEmptyBody,
     validateStopBody,
+    validateStopSelectedBody,
 } from './http-validation.mjs';
 import { PanelOperationError, ProcessManager } from './process-manager.mjs';
 
-const maximumRequestBytes = 8 * 1024;
+const maximumRequestBytes = 32 * 1024;
 const maximumSubscriberBufferBytes = 8 * 1024 * 1024;
 const sessionCookie = 'languon_web_dev_panel_session';
 const staticFiles = new Map([
     ['/', ['index.html', 'text/html; charset=utf-8']],
     ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
+    [
+        '/custom-sections.js',
+        ['custom-sections.js', 'text/javascript; charset=utf-8'],
+    ],
     ['/selection.js', ['selection.js', 'text/javascript; charset=utf-8']],
     ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
 ]);
@@ -346,6 +351,18 @@ export function createWebDevPanelServer({
                 );
             }
             const runs = await processManager.stopAll();
+            writeJson(response, 202, { runs });
+            return true;
+        }
+        if (pathname === '/api/stop-selected') {
+            if (!validateStopSelectedBody(body)) {
+                throw new PanelOperationError(
+                    'invalid_request',
+                    'Expected exactly one bounded runs array of commandId and runId pairs.',
+                    { status: 400 },
+                );
+            }
+            const runs = await processManager.stopSelected(body.runs);
             writeJson(response, 202, { runs });
             return true;
         }

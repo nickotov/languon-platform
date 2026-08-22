@@ -12,19 +12,20 @@ constraints, while feature-local decisions belong in the feature's
 
 ## Index
 
-| ADR                                                            | Decision                                 | Status                 |
-| -------------------------------------------------------------- | ---------------------------------------- | ---------------------- |
-| [ADR-0001](./0001-user-authentication-and-session-strategy.md) | User authentication and session strategy | Accepted               |
-| [ADR-0002](./0002-drizzle-schema-and-migration-strategy.md)    | Drizzle schema and migration strategy    | Accepted               |
-| [ADR-0003](./0003-user-flow-e2e-traceability.md)               | User-flow E2E traceability               | Superseded by ADR-0004 |
-| [ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)     | User-flow E2E traceability hardening     | Accepted               |
-| [ADR-0005](./0005-frontend-component-and-fsd-standards.md)     | Frontend component and FSD standards     | Accepted               |
-| [ADR-0006](./0006-web-internationalization-strategy.md)        | Web internationalization strategy        | Superseded by ADR-0007 |
-| [ADR-0007](./0007-web-request-locale-strategy.md)              | Web request locale strategy              | Accepted               |
-| [ADR-0008](./0008-web-ui-kit-and-design-source-authority.md)   | Web UI kit and design-source authority   | Accepted               |
-| [ADR-0009](./0009-release-and-deployment-platform.md)          | Release and deployment platform          | Accepted               |
-| [ADR-0010](./0010-admin-application-and-authorization.md)      | Admin application and authorization      | Accepted               |
-| [ADR-0013](./0013-local-web-dev-command-panel.md)              | Local web dev command panel              | Accepted               |
+| ADR                                                             | Decision                                  | Status                 |
+| --------------------------------------------------------------- | ----------------------------------------- | ---------------------- |
+| [ADR-0001](./0001-user-authentication-and-session-strategy.md)  | User authentication and session strategy  | Accepted               |
+| [ADR-0002](./0002-drizzle-schema-and-migration-strategy.md)     | Drizzle schema and migration strategy     | Accepted               |
+| [ADR-0003](./0003-user-flow-e2e-traceability.md)                | User-flow E2E traceability                | Superseded by ADR-0004 |
+| [ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)      | User-flow E2E traceability hardening      | Accepted               |
+| [ADR-0005](./0005-frontend-component-and-fsd-standards.md)      | Frontend component and FSD standards      | Accepted               |
+| [ADR-0006](./0006-web-internationalization-strategy.md)         | Web internationalization strategy         | Superseded by ADR-0007 |
+| [ADR-0007](./0007-web-request-locale-strategy.md)               | Web request locale strategy               | Accepted               |
+| [ADR-0008](./0008-web-ui-kit-and-design-source-authority.md)    | Web UI kit and design-source authority    | Accepted               |
+| [ADR-0009](./0009-release-and-deployment-platform.md)           | Release and deployment platform           | Accepted               |
+| [ADR-0010](./0010-admin-application-and-authorization.md)       | Admin application and authorization       | Accepted               |
+| [ADR-0013](./0013-local-web-dev-command-panel.md)               | Local web dev command panel               | Superseded by ADR-0014 |
+| [ADR-0014](./0014-web-dev-panel-local-quick-access-sections.md) | Web dev panel local quick-access sections | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

@@ -52,3 +52,30 @@ export function validateStopBody(value) {
         /^[a-f0-9-]{36}$/u.test(value.runId)
     );
 }
+
+export function validateStopSelectedBody(value) {
+    if (
+        value === null ||
+        typeof value !== 'object' ||
+        Array.isArray(value) ||
+        Object.keys(value).length !== 1 ||
+        !Object.hasOwn(value, 'runs') ||
+        !Array.isArray(value.runs) ||
+        value.runs.length === 0 ||
+        value.runs.length > 64
+    ) {
+        return false;
+    }
+    return value.runs.every(
+        (run) =>
+            run !== null &&
+            typeof run === 'object' &&
+            !Array.isArray(run) &&
+            Object.keys(run).length === 2 &&
+            Object.hasOwn(run, 'commandId') &&
+            Object.hasOwn(run, 'runId') &&
+            validateCommandId(run.commandId) &&
+            typeof run.runId === 'string' &&
+            /^[a-f0-9-]{36}$/u.test(run.runId),
+    );
+}

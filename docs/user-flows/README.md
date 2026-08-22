@@ -7,7 +7,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 ## Guide index
 
 - [Web Dev Command Panel](./web-dev-panel.md) — reviewed command selection,
-  isolated logs, lifecycle control, and synchronized multi-tab state.
+  portable quick-access layouts, isolated logs, lifecycle control, and
+  synchronized multi-tab state.
 - [Mastra Agent Development Harness](./mastra-agent-development-harness.md) —
   isolated playground provisioning, Studio/API discovery, deterministic
   primitives, persistence, and safe reset.

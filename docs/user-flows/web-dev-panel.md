@@ -18,6 +18,9 @@ e2e_tests:
 e2e_scenarios:
     - parallel-command-control-and-isolated-logs
     - cross-tab-single-source-of-truth
+    - portable-custom-command-sections
+related_features:
+    - web-dev-panel-custom-sections
 ---
 
 # Web Dev Command Panel
@@ -26,10 +29,11 @@ e2e_scenarios:
 
 This guide verifies the development-only browser panel for reviewed repository
 commands: complete catalog presentation, compatible batch starts, independent
-controls, isolated latest-run logs, and one server-authoritative state shared by
-multiple tabs. It does not verify arbitrary terminal input, interactive Codex,
-external process monitoring, persistent history, or production deployment;
-those capabilities are intentionally absent.
+controls, isolated latest-run logs, portable local quick-access layouts, and one
+server-authoritative state shared by multiple tabs. It does not verify arbitrary
+terminal input, interactive Codex, external process monitoring, persistent run
+history, server/cloud layout storage, or production deployment; those
+capabilities are intentionally absent.
 
 ## Start the development environment
 
@@ -57,17 +61,39 @@ merely for testing.
 ## Browser verification
 
 1. Open the panel and confirm the connection indicator becomes Connected.
-   Every root package script has a title, description, displayed source command,
-   and either an Idle state or a concrete disabled reason.
-2. Select multiple enabled compatible fixture commands and choose Run selected.
-   Each card enters Running independently and its terminal area contains only
-   that command's output.
-3. Stop one command. Its card enters Cancelled while the other fixture remains
-   Running. Stop All requires dialog confirmation.
-4. Resize from a desktop viewport to a narrow mobile viewport. Cards and
-   controls remain readable, keyboard reachable, and horizontally safe; logs
-   scroll inside their own regions.
-5. Confirm the page reports no console errors or failed application requests.
+   The sidebar lists every category and every category panel is collapsed.
+   Following a sidebar link opens its matching panel. Every root package script
+   has a collapsed command card whose summary shows title, description, and
+   current status. Expanding it shows the displayed source command, controls,
+   latest log, and either an available action or labeled “Why unavailable”
+   explanation. Snapshot updates do not close an expanded card.
+2. Open Services, select multiple enabled compatible fixture commands, and
+   choose Run selected. Each card enters Running independently, its terminal
+   area contains only that command's output, and the checkbox selection clears.
+3. Select two incompatible inactive fixture commands. The server rejects the
+   atomic batch and an in-viewport alert shows the full conflict explanation.
+4. Stop one running command. Its card enters Cancelled while the other fixture
+   remains Running. Stop All requires dialog confirmation.
+5. Create a quick-access section named `Daily workspace`. Add two compatible
+   fixture commands from their expanded cards and confirm the custom section is
+   first and visually separate in both content and sidebar. Use its Start all,
+   confirm both catalog and duplicate cards show one Running state/log, then use
+   its confirmed Stop all and verify an unrelated running fixture is untouched.
+6. Open Manage quick access and copy the versioned JSON. An import containing a
+   missing command ID must show an alert and retain the current layout without
+   executing anything. Import the valid JSON in a clean profile or cleared
+   fixture layout and confirm names, order, and memberships reproduce exactly.
+   Existing disabled IDs remain visible with their explanation.
+7. Open a second tab in the same profile. Creating/removing a section in one tab
+   updates the other through browser storage, while status/log changes continue
+   to arrive through SSE. Reload the page and restart the fixture server to
+   confirm the layout persists but run/log history does not move into JSON.
+8. Resize from a desktop viewport to a narrow mobile viewport. The sidebar
+   stacks above the disclosures, cards and controls remain readable, keyboard
+   reachable, and horizontally safe; logs scroll inside their own regions.
+9. Confirm the page reports no console errors or unexpected failed application
+   requests. The deliberately rejected conflict request returns 409 and is
+   represented by the visible alert.
 
 ## CLI verification
 
@@ -91,13 +117,24 @@ merely for testing.
    integration test. The server rejects it and leaves the newer process running.
 5. Open a fresh tab while a fixture is active. Its first SSE snapshot matches
    the current state and latest logs without browser storage coordination.
+6. Create a quick-access section in either tab. The other tab receives only its
+   versioned layout through the browser storage event; process state remains
+   unchanged until a reviewed start/stop API is invoked.
 
 ## E2E coverage
 
 - `parallel-command-control-and-isolated-logs` proves that two fixture commands
-  can start together, expose separate output, and stop independently.
+  can be found through collapsed sections, start together, clear their selection,
+  expose separate output, show rejected-batch feedback, explain an unavailable
+  command, and stop independently.
 - `cross-tab-single-source-of-truth` proves that a start in one tab and a stop in
   another update both tabs through one authoritative server state.
+- `portable-custom-command-sections` proves collapsed summaries, custom-first
+  navigation, one command in multiple sections, atomic section start/stop,
+  cross-tab rejection when membership changes during stop confirmation,
+  confirmed section deletion, JSON export, failed missing-ID import without
+  replacement, valid import, storage synchronization, reload persistence, and
+  rollback with a persistent alert when browser storage rejects a mutation.
 
 Closed request validation, source drift, racing duplicate requests, stale run
 IDs, bounded/redacted logs, and structured Codex event projection stay at the
@@ -111,7 +148,17 @@ faster unit and native HTTP integration layers.
   process-scoped session cookie.
 - Unknown, disabled, missing, changed, unreviewed, duplicate, already-running,
   conflicting, or stale selections reject the entire batch before any spawn.
+- Malformed, oversized, unsupported, duplicated, or current-catalog-incomplete
+  quick-access JSON is rejected without replacing the prior layout or starting a
+  command. Browser storage failures redraw the unchanged saved layout, leave the
+  ordinary catalog usable, and show a persistent in-page alert.
+- A stored layout whose command later disappears is preserved with a missing
+  placeholder and cannot Start all until repaired. An existing disabled command
+  remains reproducible but makes that section's atomic Start all fail visibly.
 - A stop with an old run ID returns a conflict and cannot stop the latest run.
+- A section Stop all confirmation whose membership or active run set changes in
+  another tab is rejected before any request; the developer must inspect and
+  confirm the current set again.
 - Requests with a wrong Host, control Origin, SSE same-origin metadata, session
   cookie, content type, custom header, shape, or body size are rejected and
   receive no CORS permission.
@@ -136,9 +183,10 @@ pnpm docs:user-flows:check
 pnpm user-flow:e2e -- check web-dev-panel
 ```
 
-The Node suite covers catalog, request, process, log, Codex projection, and
-native HTTP/SSE behavior. Playwright uses only committed synthetic commands and
-covers the two declared cross-tab journeys.
+The Node suite covers catalog, portable layout validation/storage, selection,
+request, process, log, Codex projection, and native HTTP/SSE behavior.
+Playwright uses only committed synthetic commands and covers the three declared
+browser/cross-tab journeys.
 
 ## Troubleshooting
 
@@ -149,6 +197,9 @@ covers the two declared cross-tab journeys.
   revision. Do not hand-bypass the drift check.
 - If Connected changes to Reconnecting, confirm the singleton server is still
   running and reload `/` to establish its current process-scoped session.
+- If imported quick access cannot be reproduced, inspect the alert's missing
+  command IDs. Reconcile the reviewed catalog or remove those memberships in the
+  source layout; never paste executable definitions into the JSON.
 - If browser tests cannot listen on loopback in a restricted sandbox, rerun the
   reviewed fixture command with local-server permission rather than weakening
   Host, Origin, or session checks.

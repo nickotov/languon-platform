@@ -835,9 +835,22 @@ spacing, focus, state, and responsive intent.
   logs over decorative product content. Every command card keeps title,
   description, exact displayed source, status text, controls, and latest-run log
   visually connected.
+- A sticky section index lists every command category with a count. Each
+  category is a native disclosure panel that starts collapsed; following a
+  section link opens its target while expansion remains local to the tab.
+- Quick-access sections form a distinct, primary group above catalog categories
+  in both the sidebar and content. Each has visible Start all, Stop all, and
+  Remove actions while its command grid is collapsible. Empty sections remain
+  legible and manageable.
+- Every command card is a disclosure collapsed by default. The collapsed row
+  always exposes title, description, and a text status; expanding reveals the
+  source, unavailable reason, actions, quick-access memberships, agent metadata,
+  and latest-run log. Duplicate cards use the same status and log source while
+  keeping expansion local to their placement and tab.
 - Checkbox selection is tab-local presentation. Running/disabled state is
-  visually distinct and communicated with text in addition to color. A disabled
-  reason remains readable and is never hidden behind hover.
+  visually distinct and communicated with text in addition to color. Every
+  unavailable command uses a bordered “Why unavailable” callout associated with
+  its disabled controls; the reason is never hidden behind hover.
 - Primary Run selected and individual Start actions use the normal action
   hierarchy. Stop is a visible danger-outline action; Stop All requires a named
   native confirmation dialog.
@@ -850,11 +863,20 @@ spacing, focus, state, and responsive intent.
 - Connection, running, stopping, success, failure, cancellation, drift, and
   disabled states require text labels. Motion is limited to quick control and
   connection feedback and respects reduced-motion preference.
+- Successful starts clear tab-local checkbox selections. Mutation failures use
+  an in-viewport alert containing the complete safe server explanation, so a
+  conflict cannot be missed while the user is scrolled within a section.
+- The quick-access manager separates section creation from portable JSON. The
+  JSON editor uses a monospaced multiline control with explicit Copy JSON and
+  Import and replace actions. Import failures retain the prior layout and use
+  the same in-viewport alert; confirmation dialogs protect section removal and
+  section-scoped Stop all.
 
 The `Developer Tooling / Web Dev Command Panel` screen in `design/main.pen` is
-the visual source for this variant. Runtime changes to its command-card,
-selection, status, log, confirmation, or compact-layout contract update both
-design artifacts in the same feature.
+the visual source for this variant. Runtime changes to its navigation,
+disclosures, command-card, unavailable reason, selection, feedback, status, log,
+confirmation, or compact-layout contract update both design artifacts in the
+same correction or feature.
 
 ## 14. Visual-generation brief
 

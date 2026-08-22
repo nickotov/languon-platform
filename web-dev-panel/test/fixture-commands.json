@@ -2,8 +2,8 @@
     "commands": [
         {
             "batchEligible": true,
-            "category": "Fixtures",
-            "conflictsWith": [],
+            "category": "Services",
+            "conflictsWith": ["aggregate"],
             "description": "Runs the first long-lived safe fixture command.",
             "disabledReason": null,
             "enabled": true,
@@ -23,7 +23,7 @@
         },
         {
             "batchEligible": true,
-            "category": "Fixtures",
+            "category": "Services",
             "conflictsWith": [],
             "description": "Runs the second long-lived safe fixture command.",
             "disabledReason": null,
@@ -44,7 +44,7 @@
         },
         {
             "batchEligible": true,
-            "category": "Fixtures",
+            "category": "Tasks",
             "conflictsWith": [],
             "description": "Runs a short safe fixture command.",
             "disabledReason": null,
@@ -62,6 +62,48 @@
                 "type": "documented-command"
             },
             "title": "Quick fixture"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tasks",
+            "conflictsWith": ["alpha"],
+            "description": "Represents an aggregate fixture that conflicts with the active alpha service.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "aggregate",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "args": ["scripts/command.mjs", "quick", "40"],
+                "command": "node scripts/command.mjs quick 40",
+                "cwd": ".",
+                "executable": "node",
+                "path": "docs/commands.md",
+                "revision": "sha256:d8428e9f60a5fc5ae12f53e14fd1e33e09e15bdbce945396656486522f5dc388",
+                "type": "documented-command"
+            },
+            "title": "Aggregate fixture"
+        },
+        {
+            "batchEligible": false,
+            "category": "Unavailable",
+            "conflictsWith": [],
+            "description": "Represents a fixture that is unsafe for browser execution.",
+            "disabledReason": "This fixture requires an interactive terminal and cannot be launched from the panel.",
+            "enabled": false,
+            "id": "disabled-fixture",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "args": ["scripts/command.mjs", "quick", "40"],
+                "command": "node scripts/command.mjs quick 40",
+                "cwd": ".",
+                "executable": "node",
+                "path": "docs/commands.md",
+                "revision": "sha256:d8428e9f60a5fc5ae12f53e14fd1e33e09e15bdbce945396656486522f5dc388",
+                "type": "documented-command"
+            },
+            "title": "Disabled fixture"
         }
     ],
     "version": 1

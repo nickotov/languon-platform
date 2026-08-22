@@ -160,6 +160,13 @@ export class ProcessManager extends EventEmitter {
                 });
                 continue;
             }
+            if (selections.length > 1 && !command.batchEligible) {
+                issues.push({
+                    commandId,
+                    reason: 'command is not eligible for batch start',
+                });
+                continue;
+            }
             if (selection.sourceRevision !== command.actualRevision) {
                 issues.push({
                     commandId,
@@ -394,6 +401,54 @@ export class ProcessManager extends EventEmitter {
             if (!terminalStatus(run.status)) this.#requestStop(run);
             return snapshotRun(run);
         });
+    }
+
+    async stopBatch(runs) {
+        return this.#enqueue(() => this.#stopSelected(runs));
+    }
+
+    async stopSelected(runs) {
+        return this.stopBatch(runs);
+    }
+
+    async #stopSelected(selections) {
+        const issues = [];
+        const uniqueIds = new Set();
+        const runs = [];
+        for (const selection of selections) {
+            const { commandId, runId } = selection;
+            if (uniqueIds.has(commandId)) {
+                issues.push({
+                    commandId,
+                    reason: 'command selected more than once',
+                });
+            } else {
+                uniqueIds.add(commandId);
+            }
+            const run = this.#runs.get(commandId);
+            if (!run) {
+                issues.push({ commandId, reason: 'no current run' });
+                continue;
+            }
+            if (run.id !== runId) {
+                issues.push({ commandId, reason: 'run ID is stale' });
+                continue;
+            }
+            if (terminalStatus(run.status)) {
+                issues.push({ commandId, reason: 'run is not active' });
+                continue;
+            }
+            runs.push(run);
+        }
+        if (issues.length > 0) {
+            throw new PanelOperationError(
+                'stop_selected_invalid',
+                'No commands were stopped because the selection is invalid.',
+                { issues },
+            );
+        }
+        for (const run of runs) this.#requestStop(run);
+        return runs.map(snapshotRun);
     }
 
     async stopAll() {

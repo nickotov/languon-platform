@@ -27,3 +27,50 @@ export function compatibleCommandIds(commands) {
     }
     return selected;
 }
+
+export function sectionStartSelections(commands, commandIds) {
+    const commandsById = new Map(
+        commands.map((command) => [command.id, command]),
+    );
+    const missingIds = commandIds.filter((id) => !commandsById.has(id));
+    const unavailable = commandIds
+        .filter(
+            (id) =>
+                commandsById.has(id) &&
+                commandsById.get(id).available === false,
+        )
+        .map((id) => ({
+            id,
+            reason:
+                commandsById.get(id).runtimeReason ??
+                'command is unavailable for browser execution',
+        }));
+    const nonBatchIds = commandIds.filter(
+        (id) =>
+            commandsById.has(id) &&
+            commandsById.get(id).available !== false &&
+            commandsById.get(id).batchEligible === false,
+    );
+    return {
+        missingIds,
+        nonBatchIds,
+        unavailable,
+        selections:
+            missingIds.length || unavailable.length || nonBatchIds.length
+                ? []
+                : commandIds.map((id) => ({
+                      id,
+                      sourceRevision: commandsById.get(id).actualRevision,
+                  })),
+    };
+}
+
+export function sectionActiveRuns(commands, commandIds) {
+    const commandIdsSet = new Set(commandIds);
+    return commands
+        .filter((command) => commandIdsSet.has(command.id) && active(command))
+        .map((command) => ({
+            commandId: command.id,
+            runId: command.run.id,
+        }));
+}

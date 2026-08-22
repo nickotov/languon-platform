@@ -1,8 +1,8 @@
 # Web dev panel instructions
 
 This directory owns a development-only local command runner. Preserve the
-security boundary in accepted ADR-0013 and the active feature or correction
-state before changing it.
+security boundary in accepted ADR-0014 and its inherited, superseded ADR-0013
+constraints, plus the active feature or correction state, before changing it.
 
 - Keep runtime code dependency-free and use only Node.js and browser built-ins.
 - Keep the server fixed to `127.0.0.1:4400` in the production entrypoint. Tests

@@ -8,6 +8,7 @@ import { createWebDevPanelServer } from '../src/server.mjs';
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const panelRoot = resolve(testDirectory, '..');
+const revision = `sha256:${'a'.repeat(64)}`;
 
 function rawRequest(origin, { headers = {}, method = 'GET', path = '/' } = {}) {
     const url = new URL(origin);
@@ -61,6 +62,15 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
         const cookie = authorization.headers.get('set-cookie').split(';', 1)[0];
         const bootstrap = await fetch(origin, { headers: { Cookie: cookie } });
         assert.equal(bootstrap.status, 200);
+        const customSectionsModule = await fetch(
+            `${origin}/custom-sections.js`,
+            { headers: { Cookie: cookie } },
+        );
+        assert.equal(customSectionsModule.status, 200);
+        assert.match(
+            customSectionsModule.headers.get('content-type'),
+            /^text\/javascript/u,
+        );
         assert.equal(
             bootstrap.headers.get('access-control-allow-origin'),
             null,
@@ -104,7 +114,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
         });
         assert.equal(malformed.status, 400);
         const oversized = await fetch(`${origin}/api/start`, {
-            body: JSON.stringify({ value: 'x'.repeat(9_000) }),
+            body: JSON.stringify({ value: 'x'.repeat(33_000) }),
             headers: controlHeaders,
             method: 'POST',
         });
@@ -115,6 +125,18 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             method: 'POST',
         });
         assert.equal(unknownField.status, 400);
+        const emptyStopSelected = await fetch(`${origin}/api/stop-selected`, {
+            body: JSON.stringify({ runs: [] }),
+            headers: controlHeaders,
+            method: 'POST',
+        });
+        assert.equal(emptyStopSelected.status, 400);
+        const openStopSelected = await fetch(`${origin}/api/stop-selected`, {
+            body: JSON.stringify({ runs: [], unexpected: true }),
+            headers: controlHeaders,
+            method: 'POST',
+        });
+        assert.equal(openStopSelected.status, 400);
         const options = await fetch(`${origin}/api/start`, {
             method: 'OPTIONS',
         });
@@ -139,6 +161,26 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             method: 'POST',
         });
         assert.equal(forbidden.status, 403);
+        const forbiddenStopSelected = await fetch(
+            `${origin}/api/stop-selected`,
+            {
+                body: JSON.stringify({
+                    runs: [
+                        {
+                            commandId: 'alpha',
+                            runId: '00000000-0000-0000-0000-000000000000',
+                        },
+                    ],
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    Cookie: cookie,
+                    'X-Languon-Dev-Panel': '1',
+                },
+                method: 'POST',
+            },
+        );
+        assert.equal(forbiddenStopSelected.status, 403);
 
         const post = (path, body) =>
             fetch(`${origin}${path}`, {
@@ -151,6 +193,36 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
                 },
                 method: 'POST',
             });
+        const maximumStopBody = JSON.stringify({
+            runs: Array.from({ length: 64 }, (_, index) => ({
+                commandId: `a${index.toString(16).padStart(78, '0')}z`,
+                runId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
+            })),
+        });
+        assert.ok(Buffer.byteLength(maximumStopBody) > 8 * 1024);
+        assert.ok(Buffer.byteLength(maximumStopBody) <= 32 * 1024);
+        const maximumStopRequest = await fetch(`${origin}/api/stop-selected`, {
+            body: maximumStopBody,
+            headers: controlHeaders,
+            method: 'POST',
+        });
+        assert.equal(maximumStopRequest.status, 409);
+
+        const maximumStartBody = JSON.stringify({
+            selections: Array.from({ length: 128 }, (_, index) => ({
+                id: `a${index.toString(16).padStart(78, '0')}z`,
+                sourceRevision: revision,
+            })),
+        });
+        assert.ok(Buffer.byteLength(maximumStartBody) > 8 * 1024);
+        assert.ok(Buffer.byteLength(maximumStartBody) <= 32 * 1024);
+        const maximumStartRequest = await fetch(`${origin}/api/start`, {
+            body: maximumStartBody,
+            headers: controlHeaders,
+            method: 'POST',
+        });
+        assert.equal(maximumStartRequest.status, 409);
+
         const selection = {
             id: 'alpha',
             sourceRevision:
@@ -189,6 +261,77 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
         });
         assert.equal(stopped.status, 202);
         await waitForStatus(origin, cookie, 'alpha', 'cancelled');
+
+        const alphaSelection = selection;
+        const betaSelection = {
+            id: 'beta',
+            sourceRevision:
+                'sha256:a1d6757d62f4869bc3b90033fba895c127f66c92d1ef188122ce68fd6abb29d0',
+        };
+        const batchStart = await post('/api/start', {
+            selections: [alphaSelection, betaSelection],
+        });
+        assert.equal(batchStart.status, 202);
+        const batchRuns = (await batchStart.json()).runs;
+
+        const invalidStopSelected = await post('/api/stop-selected', {
+            runs: [
+                {
+                    commandId: 'alpha',
+                    runId: batchRuns.find(
+                        ({ commandId }) => commandId === 'alpha',
+                    ).id,
+                },
+                {
+                    commandId: 'beta',
+                    runId: '00000000-0000-0000-0000-000000000000',
+                },
+            ],
+        });
+        assert.equal(invalidStopSelected.status, 409);
+        const invalidStopBody = await invalidStopSelected.json();
+        assert.deepEqual(invalidStopBody.issues, [
+            { commandId: 'beta', reason: 'run ID is stale' },
+        ]);
+        assert.equal(
+            (await waitForStatus(origin, cookie, 'alpha', 'running')).run
+                .status,
+            'running',
+        );
+        assert.equal(
+            (await waitForStatus(origin, cookie, 'beta', 'running')).run.status,
+            'running',
+        );
+
+        const stopSelected = await post('/api/stop-selected', {
+            runs: batchRuns.map(({ commandId, id }) => ({
+                commandId,
+                runId: id,
+            })),
+        });
+        assert.equal(stopSelected.status, 202);
+        assert.equal(
+            stopSelected.headers.get('access-control-allow-origin'),
+            null,
+        );
+        assert.match(
+            stopSelected.headers.get('content-security-policy'),
+            /default-src 'none'/u,
+        );
+        assert.deepEqual(
+            (await stopSelected.json()).runs.map(({ commandId, status }) => ({
+                commandId,
+                status,
+            })),
+            [
+                { commandId: 'alpha', status: 'stopping' },
+                { commandId: 'beta', status: 'stopping' },
+            ],
+        );
+        await Promise.all([
+            waitForStatus(origin, cookie, 'alpha', 'cancelled'),
+            waitForStatus(origin, cookie, 'beta', 'cancelled'),
+        ]);
     } finally {
         await application.close();
     }

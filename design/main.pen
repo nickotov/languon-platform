@@ -4446,515 +4446,726 @@
         },
         {
           "type": "frame",
-          "id": "BkOTU",
-          "name": "Development commands",
+          "id": "iJptH",
+          "name": "Command navigation and collapsible sections",
           "width": "fill_container",
-          "gap": 16,
+          "height": 520,
+          "gap": 20,
           "children": [
             {
               "type": "frame",
-              "id": "QvRU1",
-              "name": "Backend command",
-              "width": "fill_container",
+              "id": "CkiEE",
+              "name": "Section sidebar",
+              "width": 236,
+              "height": "fill_container",
               "fill": "#FFFFFF",
               "cornerRadius": 12,
               "stroke": "#DFD6DC",
               "strokeWidth": 1,
               "layout": "vertical",
-              "gap": 14,
-              "padding": 20,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "TkAlu",
-                  "name": "Backend command heading",
-                  "width": "fill_container",
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "xWwIy",
-                      "name": "Backend command title group",
-                      "layout": "vertical",
-                      "gap": 4,
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "F5ScN",
-                          "name": "Backend command title",
-                          "fill": "#2C2329",
-                          "content": "Dev · Backend",
-                          "fontFamily": "Inter",
-                          "fontSize": 18,
-                          "fontWeight": "700"
-                        },
-                        {
-                          "type": "text",
-                          "id": "WsWMp",
-                          "name": "Backend command source",
-                          "fill": "#7A6C75",
-                          "content": "package.json · dev:backend",
-                          "fontFamily": "JetBrains Mono",
-                          "fontSize": 11,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "PVyut",
-                      "name": "Backend command status",
-                      "fill": "#E7F4EC",
-                      "cornerRadius": 999,
-                      "padding": [
-                        6,
-                        10
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "SNq27",
-                          "name": "Backend command status label",
-                          "fill": "#3C3439",
-                          "content": "Running",
-                          "fontFamily": "Inter",
-                          "fontSize": 12,
-                          "fontWeight": "700"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "id": "Op4LV",
-                  "name": "Backend command description",
-                  "fill": "#655A62",
-                  "textGrowth": "fixed-width",
-                  "width": "fill_container",
-                  "content": "Runs the backend development server with its reviewed workspace configuration.",
-                  "lineHeight": 1.4,
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "normal"
-                },
-                {
-                  "type": "frame",
-                  "id": "JQyIK",
-                  "name": "Backend command command",
-                  "width": "fill_container",
-                  "fill": "#F4EFF2",
-                  "cornerRadius": 8,
-                  "padding": [
-                    10,
-                    12
-                  ],
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "zUJ70",
-                      "name": "Backend command command text",
-                      "fill": "#573149",
-                      "content": "pnpm run dev:backend",
-                      "fontFamily": "JetBrains Mono",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "D87Tr",
-                  "name": "Backend command actions",
-                  "width": "fill_container",
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "sVIne",
-                      "name": "Backend command selection",
-                      "gap": 8,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "id": "rUb3V",
-                          "type": "ref",
-                          "ref": "gEtCq",
-                          "name": "Backend command checkbox"
-                        },
-                        {
-                          "type": "text",
-                          "id": "dOya8",
-                          "name": "Backend command select label",
-                          "fill": "#433840",
-                          "content": "Select",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "JY5SV",
-                      "name": "Backend command action button",
-                      "fill": "#FFF3F2",
-                      "cornerRadius": 8,
-                      "stroke": "#C95B52",
-                      "strokeWidth": 1,
-                      "padding": [
-                        8,
-                        14
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "Q0Pu9W",
-                          "name": "Backend command action label",
-                          "fill": "#9D3B34",
-                          "content": "Stop",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "700"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "KB3Yx",
-                  "name": "Backend command log",
-                  "width": "fill_container",
-                  "height": 160,
-                  "fill": "#181519",
-                  "cornerRadius": 8,
-                  "layout": "vertical",
-                  "gap": 8,
-                  "padding": 14,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "OagUa",
-                      "name": "Backend command log heading",
-                      "fill": "#B69BAD",
-                      "content": "COMMAND LOG",
-                      "fontFamily": "JetBrains Mono",
-                      "fontSize": 10,
-                      "fontWeight": "700",
-                      "letterSpacing": 1
-                    },
-                    {
-                      "type": "text",
-                      "id": "EshEL",
-                      "name": "Backend command log text",
-                      "fill": "#F2EAF0",
-                      "textGrowth": "fixed-width",
-                      "width": "fill_container",
-                      "content": "12:08:31 [OUT] backend: dev server started\n12:08:31 [OUT] listening on 127.0.0.1:4000\n12:08:34 [OUT] request GET /health 200",
-                      "lineHeight": 1.5,
-                      "fontFamily": "JetBrains Mono",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "Sd069",
-              "name": "Lint command",
-              "width": "fill_container",
-              "fill": "#FFFFFF",
-              "cornerRadius": 12,
-              "stroke": "#DFD6DC",
-              "strokeWidth": 1,
-              "layout": "vertical",
-              "gap": 14,
-              "padding": 20,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "c2bLM",
-                  "name": "Lint command heading",
-                  "width": "fill_container",
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "YkDju",
-                      "name": "Lint command title group",
-                      "layout": "vertical",
-                      "gap": 4,
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "JxG0M",
-                          "name": "Lint command title",
-                          "fill": "#2C2329",
-                          "content": "Lint",
-                          "fontFamily": "Inter",
-                          "fontSize": 18,
-                          "fontWeight": "700"
-                        },
-                        {
-                          "type": "text",
-                          "id": "kaXY1",
-                          "name": "Lint command source",
-                          "fill": "#7A6C75",
-                          "content": "package.json · lint",
-                          "fontFamily": "JetBrains Mono",
-                          "fontSize": 11,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "cwG5h",
-                      "name": "Lint command status",
-                      "fill": "#F0EBEE",
-                      "cornerRadius": 999,
-                      "padding": [
-                        6,
-                        10
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "CCllN",
-                          "name": "Lint command status label",
-                          "fill": "#3C3439",
-                          "content": "Idle",
-                          "fontFamily": "Inter",
-                          "fontSize": 12,
-                          "fontWeight": "700"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "id": "V8C22",
-                  "name": "Lint command description",
-                  "fill": "#655A62",
-                  "textGrowth": "fixed-width",
-                  "width": "fill_container",
-                  "content": "Runs repository ESLint checks without changing project files.",
-                  "lineHeight": 1.4,
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "normal"
-                },
-                {
-                  "type": "frame",
-                  "id": "R6kqg",
-                  "name": "Lint command command",
-                  "width": "fill_container",
-                  "fill": "#F4EFF2",
-                  "cornerRadius": 8,
-                  "padding": [
-                    10,
-                    12
-                  ],
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "pHU93",
-                      "name": "Lint command command text",
-                      "fill": "#573149",
-                      "content": "pnpm run lint",
-                      "fontFamily": "JetBrains Mono",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "PFWUB",
-                  "name": "Lint command actions",
-                  "width": "fill_container",
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "UHKV8",
-                      "name": "Lint command selection",
-                      "gap": 8,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "id": "fTfbO",
-                          "type": "ref",
-                          "ref": "gEtCq",
-                          "name": "Lint command checkbox"
-                        },
-                        {
-                          "type": "text",
-                          "id": "PCfBD",
-                          "name": "Lint command select label",
-                          "fill": "#433840",
-                          "content": "Select",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "MZWEw",
-                      "name": "Lint command action button",
-                      "fill": "#7C3F68",
-                      "cornerRadius": 8,
-                      "stroke": "#7C3F68",
-                      "strokeWidth": 1,
-                      "padding": [
-                        8,
-                        14
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "N0t8I",
-                          "name": "Lint command action label",
-                          "fill": "#FFFFFF",
-                          "content": "Start",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "700"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "djgoB",
-                  "name": "Lint command log",
-                  "width": "fill_container",
-                  "height": 160,
-                  "fill": "#181519",
-                  "cornerRadius": 8,
-                  "layout": "vertical",
-                  "gap": 8,
-                  "padding": 14,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "vlQxS",
-                      "name": "Lint command log heading",
-                      "fill": "#B69BAD",
-                      "content": "COMMAND LOG",
-                      "fontFamily": "JetBrains Mono",
-                      "fontSize": 10,
-                      "fontWeight": "700",
-                      "letterSpacing": 1
-                    },
-                    {
-                      "type": "text",
-                      "id": "kbyvZ",
-                      "name": "Lint command log text",
-                      "fill": "#F2EAF0",
-                      "textGrowth": "fixed-width",
-                      "width": "fill_container",
-                      "content": "No run in this server session.",
-                      "lineHeight": 1.5,
-                      "fontFamily": "JetBrains Mono",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "faMNh",
-          "name": "Disabled command example",
-          "width": "fill_container",
-          "fill": "#F5F0F3",
-          "cornerRadius": 12,
-          "stroke": "#DFD6DC",
-          "strokeWidth": 1,
-          "gap": 16,
-          "padding": [
-            16,
-            20
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "frame",
-              "id": "s3upmV",
-              "name": "Disabled command copy",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 5,
+              "gap": 8,
+              "padding": 18,
               "children": [
                 {
                   "type": "text",
-                  "id": "wdxYT",
-                  "name": "Disabled command title",
-                  "fill": "#635961",
-                  "content": "Agent",
+                  "id": "dQhwM",
+                  "name": "Section sidebar title",
+                  "fill": "#29212A",
+                  "content": "Sections",
                   "fontFamily": "Inter",
                   "fontSize": 16,
                   "fontWeight": "700"
                 },
                 {
-                  "type": "text",
-                  "id": "tB5TG",
-                  "name": "Disabled command description",
-                  "fill": "#7A6C75",
-                  "content": "Interactive Codex TUI · visible for discovery, unavailable for browser execution",
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "normal"
+                  "type": "frame",
+                  "id": "Ya7PE",
+                  "name": "Development section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "W1EWr",
+                      "name": "Development link label",
+                      "fill": "#635961",
+                      "content": "Development",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "JDWsT",
+                      "name": "Development command count",
+                      "fill": "#7A6C75",
+                      "content": "11",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "T4r5s8",
+                  "name": "Quality section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "PufUf",
+                      "name": "Quality link label",
+                      "fill": "#635961",
+                      "content": "Quality",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "V0ejsU",
+                      "name": "Quality command count",
+                      "fill": "#7A6C75",
+                      "content": "7",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TOkvj",
+                  "name": "Tests section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "A5WQgY",
+                      "name": "Tests link label",
+                      "fill": "#635961",
+                      "content": "Tests",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "GCpNg",
+                      "name": "Tests command count",
+                      "fill": "#7A6C75",
+                      "content": "9",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "EH79Z",
+                  "name": "Database section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LTJHL",
+                      "name": "Database link label",
+                      "fill": "#635961",
+                      "content": "Database",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "L3hZs",
+                      "name": "Database command count",
+                      "fill": "#7A6C75",
+                      "content": "4",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TkHYr",
+                  "name": "Deployment section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MMKsb",
+                      "name": "Deployment link label",
+                      "fill": "#635961",
+                      "content": "Deployment",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SUNbN",
+                      "name": "Deployment command count",
+                      "fill": "#7A6C75",
+                      "content": "5",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "B184Fl",
+                  "name": "Administration section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RppBU",
+                      "name": "Administration link label",
+                      "fill": "#635961",
+                      "content": "Administration",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ct2so",
+                      "name": "Administration command count",
+                      "fill": "#7A6C75",
+                      "content": "4",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vJBTr",
+                  "name": "Documentation section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MAsvI",
+                      "name": "Documentation link label",
+                      "fill": "#635961",
+                      "content": "Documentation",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "CbNkD",
+                      "name": "Documentation command count",
+                      "fill": "#7A6C75",
+                      "content": "2",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "jAlGz",
+                  "name": "Agent workflow section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#F5F0F3",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "XnJJL",
+                      "name": "Agent workflow link label",
+                      "fill": "#29212A",
+                      "content": "Agent workflow",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "GYuqC",
+                      "name": "Agent workflow command count",
+                      "fill": "#7A6C75",
+                      "content": "3",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ze1LQ",
+                  "name": "Browser tooling section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "p6rrCM",
+                      "name": "Browser tooling link label",
+                      "fill": "#635961",
+                      "content": "Browser tooling",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hXHrQ",
+                      "name": "Browser tooling command count",
+                      "fill": "#7A6C75",
+                      "content": "3",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "RsV5i",
+                  "name": "Resources section link",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pdRYq",
+                      "name": "Resources link label",
+                      "fill": "#635961",
+                      "content": "Resources",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FuxZQ",
+                      "name": "Resources command count",
+                      "fill": "#7A6C75",
+                      "content": "2",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
                 }
               ]
             },
             {
               "type": "frame",
-              "id": "qgWqH",
-              "name": "Disabled reason",
-              "fill": "#FBE9E7",
-              "cornerRadius": 8,
-              "gap": 8,
-              "padding": [
-                8,
-                12
-              ],
-              "alignItems": "center",
+              "id": "fXxRk",
+              "name": "Collapsible command sections",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
               "children": [
                 {
-                  "type": "icon",
-                  "id": "Y95UTX",
-                  "name": "Disabled warning icon",
-                  "width": 16,
-                  "height": 16,
-                  "icon": "lock-keyhole",
-                  "library": "lucide",
-                  "fill": "#A6473F"
+                  "type": "frame",
+                  "id": "eO9d7",
+                  "name": "Development collapsed panel",
+                  "width": "fill_container",
+                  "height": 58,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "stroke": "#DFD6DC",
+                  "strokeWidth": 1,
+                  "padding": [
+                    15,
+                    18
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "zgphR",
+                      "name": "Development collapsed chevron",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "chevron-right",
+                      "library": "lucide",
+                      "fill": "#635961"
+                    },
+                    {
+                      "type": "text",
+                      "id": "sm3Ij",
+                      "name": "Development panel title",
+                      "fill": "#29212A",
+                      "content": "Development",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "OZyaJ",
+                      "name": "Development panel count",
+                      "fill": "#7A6C75",
+                      "content": "11 commands",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
                 },
                 {
-                  "type": "text",
-                  "id": "B7bRM4",
-                  "name": "Disabled reason label",
-                  "fill": "#8F3731",
-                  "content": "Requires an interactive terminal session",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fontWeight": "600"
+                  "type": "frame",
+                  "id": "DCHWV",
+                  "name": "Quality collapsed panel",
+                  "width": "fill_container",
+                  "height": 58,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "stroke": "#DFD6DC",
+                  "strokeWidth": 1,
+                  "padding": [
+                    15,
+                    18
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "B3JMeP",
+                      "name": "Quality collapsed chevron",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "chevron-right",
+                      "library": "lucide",
+                      "fill": "#635961"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ffNin",
+                      "name": "Quality panel title",
+                      "fill": "#29212A",
+                      "content": "Quality",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "m5bRbx",
+                      "name": "Quality panel count",
+                      "fill": "#7A6C75",
+                      "content": "7 commands",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ib4gT",
+                  "name": "Tests collapsed panel",
+                  "width": "fill_container",
+                  "height": 58,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "stroke": "#DFD6DC",
+                  "strokeWidth": 1,
+                  "padding": [
+                    15,
+                    18
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "tW48x",
+                      "name": "Tests collapsed chevron",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "chevron-right",
+                      "library": "lucide",
+                      "fill": "#635961"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FDj6P",
+                      "name": "Tests panel title",
+                      "fill": "#29212A",
+                      "content": "Tests",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ffz8y",
+                      "name": "Tests panel count",
+                      "fill": "#7A6C75",
+                      "content": "9 commands",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ntt47",
+                  "name": "Agent workflow opened panel",
+                  "width": "fill_container",
+                  "height": 250,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "stroke": "#DFD6DC",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "T9bUzc",
+                      "name": "Agent workflow expanded summary",
+                      "width": "fill_container",
+                      "height": 58,
+                      "padding": [
+                        15,
+                        18
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "v1Vgc",
+                          "name": "Expanded chevron",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-down",
+                          "library": "lucide",
+                          "fill": "#635961"
+                        },
+                        {
+                          "type": "text",
+                          "id": "stZVc",
+                          "name": "Expanded panel title",
+                          "fill": "#29212A",
+                          "content": "Agent workflow",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "bvMyj",
+                          "name": "Expanded panel count",
+                          "fill": "#7A6C75",
+                          "content": "3 commands · closed by default",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mCKMK",
+                      "name": "Unavailable Agent command",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "#FBF8F6",
+                      "stroke": "#DFD6DC",
+                      "strokeWidth": {
+                        "top": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": [
+                        14,
+                        18
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "YGhJL",
+                          "name": "Unavailable command heading",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "B6brY",
+                              "name": "Unavailable command title group",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "s70OHC",
+                                  "name": "Unavailable command title",
+                                  "fill": "#29212A",
+                                  "content": "Agent",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 15,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "UMyY4",
+                                  "name": "Unavailable command description",
+                                  "fill": "#635961",
+                                  "content": "Launches the interactive Codex terminal",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "aRHVa",
+                              "name": "Disabled status",
+                              "fill": "#8F3731",
+                              "content": "Disabled",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "T5gvdn",
+                          "name": "Why unavailable callout",
+                          "width": "fill_container",
+                          "fill": "#FFF1CF",
+                          "cornerRadius": 8,
+                          "stroke": "#B47A18",
+                          "strokeWidth": 1,
+                          "layout": "vertical",
+                          "gap": 4,
+                          "padding": [
+                            10,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "BYx8T",
+                              "name": "Why unavailable label",
+                              "fill": "#7A4B00",
+                              "content": "WHY UNAVAILABLE",
+                              "fontFamily": "Inter",
+                              "fontSize": 10,
+                              "fontWeight": "700",
+                              "letterSpacing": 0.3
+                            },
+                            {
+                              "type": "text",
+                              "id": "y6J2K",
+                              "name": "Unavailable reason text",
+                              "fill": "#63510E",
+                              "content": "Requires an interactive terminal session, so browser launch is intentionally blocked.",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -4983,7 +5194,7 @@
               "id": "Q0KSeK",
               "name": "Responsive note",
               "fill": "#7C3F68",
-              "content": "Compact: toolbar actions stack · cards become one column",
+              "content": "Sidebar stacks above closed panels ≤ 760 px",
               "fontFamily": "Inter",
               "fontSize": 12,
               "fontWeight": "600"

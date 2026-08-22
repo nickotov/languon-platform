@@ -35,6 +35,13 @@
                 >
                 <div class="toolbar__actions">
                     <button
+                        id="manage-custom-sections"
+                        class="button"
+                        type="button"
+                    >
+                        Manage quick access
+                    </button>
+                    <button
                         id="run-selected"
                         class="button button--primary"
                         disabled
@@ -51,18 +58,201 @@
                 </div>
             </section>
 
-            <div id="notice" class="notice" aria-live="polite" hidden></div>
+            <div
+                id="notice"
+                class="notice notice--action"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
             <div
                 id="catalog-issues"
                 class="notice notice--warning"
                 hidden
             ></div>
             <div
-                id="command-groups"
-                class="command-groups"
-                aria-busy="true"
+                id="preference-issues"
+                class="notice notice--warning"
+                role="alert"
+                aria-live="polite"
+                hidden
             ></div>
+            <div class="panel-layout">
+                <aside class="section-sidebar">
+                    <nav aria-label="Command sections">
+                        <h2>Sections</h2>
+                        <div
+                            class="section-nav-group section-nav-group--custom"
+                        >
+                            <p>Quick access</p>
+                            <ul
+                                id="custom-section-links"
+                                class="section-links"
+                            ></ul>
+                        </div>
+                        <div class="section-nav-group">
+                            <p>All commands</p>
+                            <ul id="section-links" class="section-links"></ul>
+                        </div>
+                    </nav>
+                </aside>
+                <div class="panel-content">
+                    <section
+                        id="custom-sections-area"
+                        class="custom-sections-area"
+                        aria-labelledby="custom-sections-title"
+                    >
+                        <div class="custom-sections-heading">
+                            <div>
+                                <p class="eyebrow">Personal command sets</p>
+                                <h2 id="custom-sections-title">Quick access</h2>
+                                <p>
+                                    Saved in this browser as portable
+                                    reviewed-ID JSON.
+                                </p>
+                            </div>
+                            <button
+                                id="manage-custom-sections-inline"
+                                class="button"
+                                type="button"
+                            >
+                                Manage layouts
+                            </button>
+                        </div>
+                        <div id="custom-sections" class="command-groups"></div>
+                        <div id="custom-sections-empty" class="empty-state">
+                            <strong>No quick-access sections yet.</strong>
+                            <span>
+                                Create one, then add commands from an expanded
+                                command card.
+                            </span>
+                        </div>
+                    </section>
+                    <div class="catalog-separator" aria-hidden="true">
+                        <span>All commands</span>
+                    </div>
+                    <div
+                        id="command-groups"
+                        class="command-groups"
+                        aria-busy="true"
+                    ></div>
+                </div>
+            </div>
         </main>
+
+        <dialog
+            id="custom-sections-dialog"
+            class="dialog dialog--wide"
+            aria-labelledby="custom-sections-dialog-title"
+        >
+            <div class="dialog__header">
+                <div>
+                    <p class="eyebrow">Local presentation preference</p>
+                    <h2 id="custom-sections-dialog-title">
+                        Manage quick access
+                    </h2>
+                </div>
+                <form method="dialog">
+                    <button class="button" value="cancel">Close</button>
+                </form>
+            </div>
+            <div
+                id="custom-sections-dialog-notice"
+                class="notice"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+            <div class="custom-sections-manager">
+                <form id="create-custom-section" class="manager-column">
+                    <h3>Create a section</h3>
+                    <label for="custom-section-name">Section name</label>
+                    <input
+                        id="custom-section-name"
+                        name="name"
+                        maxlength="64"
+                        autocomplete="off"
+                        required
+                    />
+                    <button class="button button--primary" type="submit">
+                        Create section
+                    </button>
+                    <p class="manager-help">
+                        A command can belong to several sections without
+                        creating another process or log.
+                    </p>
+                </form>
+                <div class="manager-column manager-column--json">
+                    <div class="manager-json-heading">
+                        <div>
+                            <h3>Portable JSON</h3>
+                            <p>
+                                Copy this document or replace it with a
+                                colleague's layout.
+                            </p>
+                        </div>
+                        <button
+                            id="copy-custom-json"
+                            class="button"
+                            type="button"
+                        >
+                            Copy JSON
+                        </button>
+                    </div>
+                    <label class="visually-hidden" for="custom-sections-json">
+                        Portable custom sections JSON
+                    </label>
+                    <textarea
+                        id="custom-sections-json"
+                        rows="12"
+                        spellcheck="false"
+                    ></textarea>
+                    <button
+                        id="import-custom-json"
+                        class="button button--primary"
+                        type="button"
+                    >
+                        Import and replace
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <dialog
+            id="remove-custom-section-dialog"
+            class="dialog"
+            aria-labelledby="remove-custom-section-title"
+        >
+            <form method="dialog">
+                <h2 id="remove-custom-section-title">
+                    Remove quick-access section?
+                </h2>
+                <p id="remove-custom-section-description"></p>
+                <div class="dialog__actions">
+                    <button class="button" value="cancel">Keep section</button>
+                    <button class="button button--danger" value="confirm">
+                        Remove section
+                    </button>
+                </div>
+            </form>
+        </dialog>
+
+        <dialog
+            id="stop-custom-section-dialog"
+            class="dialog"
+            aria-labelledby="stop-custom-section-title"
+        >
+            <form method="dialog">
+                <h2 id="stop-custom-section-title">Stop this section?</h2>
+                <p id="stop-custom-section-description"></p>
+                <div class="dialog__actions">
+                    <button class="button" value="cancel">Keep running</button>
+                    <button class="button button--danger" value="confirm">
+                        Stop section
+                    </button>
+                </div>
+            </form>
+        </dialog>
 
         <dialog id="stop-all-dialog" class="dialog">
             <form method="dialog">
