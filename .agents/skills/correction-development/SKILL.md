@@ -20,8 +20,10 @@ Typical corrections include:
 - fixing a small reproducible bug without changing a public contract;
 - correcting a command, environment example, or narrow internal implementation.
 
-Escalate to `$feature-development` before expanded implementation whenever any
-root correction condition becomes false. Non-exhaustive triggers include a new
+Escalate to `$improvement-development` when the work remains a focused
+non-capability enhancement but no longer meets every correction condition.
+Before expanded implementation, pause and request explicit feature authorization
+when discovery finds a new
 journey, capability, endpoint, integration, public contract, persisted data or
 migration, sensitive-data/security/auth policy, billing/legal behavior,
 deployment or rollout change, framework/runtime dependency, cross-cutting
@@ -54,9 +56,10 @@ Make one coherent patch and preserve unrelated work. Add a regression test first
 for a reproducible bug or deterministic rule when useful. Do not add tests that
 only restate static implementation details without protecting behavior.
 
-If scope crosses the recorded escalation boundary, stop the correction, mark
-its status `Escalated`, preserve discoveries, and start the feature workflow
-before implementing the expanded scope.
+If scope crosses the recorded escalation boundary, stop the correction and mark
+its status `Escalated`. Start the improvement workflow only when its conditions
+hold; otherwise preserve discoveries and request explicit feature authorization
+before continuing.
 
 ## Verify proportionally
 

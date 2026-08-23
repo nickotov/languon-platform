@@ -44,8 +44,9 @@ This version does not yet define:
 - complete navigation, onboarding, AI chat, course, lesson, workbook, canvas,
   tutor-management, or gamification patterns;
 - React Native components or a cross-application runtime package;
-- runtime behavior in `main.pen`; the board remains a design-time token and
-  reusable-symbol library, not a substitute for accessible web or native primitives.
+- runtime behavior in a visual source; Figma Make is preferred when MCP-accessible
+  and `main.pen` remains a legacy design-time token and reusable-symbol library,
+  neither a substitute for accessible web or native primitives.
 
 Those additions should extend these foundations rather than silently changing
 their semantic meaning.
@@ -59,10 +60,13 @@ The public Next.js app implements this contract locally:
 - accessible primitives — `apps/web/src/fsd/shared/ui`;
 - component and state catalogue — `apps/web/.storybook` plus colocated stories.
 
-`design/DESIGN_SYSTEM.md` and `design/main.pen` remain the design authority.
-Runtime code and Storybook demonstrate that contract but do not silently redefine
-it. A deliberate visual or semantic change updates both design artifacts first or
-in the same feature, then updates the web implementation and verification.
+`design/DESIGN_SYSTEM.md` remains the semantic design authority. Figma Make is
+the preferred visual-composition source when it is available through the
+configured MCP; `design/main.pen` is retained as the legacy reference for
+unmigrated screens. Runtime code and Storybook demonstrate that contract but do
+not silently redefine it. A deliberate visual or semantic change updates the
+applicable design source first or in the same delivery, then updates web
+implementation and verification.
 
 ## 3. Research and design position
 
@@ -775,10 +779,10 @@ For the current and future platform implementations:
 
 The web API is app-local and exported from `apps/web/src/fsd/shared/ui/index.ts`.
 Do not import it across applications or create a competing token source. Any
-feature that changes approved values, component semantics, or the board updates
-this document, `main.pen`, stories, affected runtime code, and acceptance evidence
-together. New dependencies or cross-application ownership remain feature-sized
-architecture decisions.
+delivery that changes approved values or component semantics updates this
+document, the applicable Figma Make or legacy Pencil source, stories, affected
+runtime code, and acceptance evidence together. New dependencies or
+cross-application ownership remain feature-sized architecture decisions.
 
 ### Administration application variant
 

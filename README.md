@@ -129,7 +129,8 @@ handle it prints for subsequent commands.
 - `infra/` — checked-in container definitions.
 - `design/` — design-system blueprints and editable visual design sources.
 - `docs/` — product, architecture, ADRs, setup, and development documentation.
-- `.agent/` — durable feature artifacts and lightweight correction plans.
+- `.agent/` — durable feature artifacts plus lightweight correction and
+  improvement plans.
 - `.agents/skills/` — repository-scoped Codex workflows.
 - `.codex/` — trusted-project Codex configuration and custom agents.
 
@@ -138,12 +139,13 @@ and native mobile build directories are ignored.
 
 ## Engineering workflow
 
-Read [AGENTS.md](./AGENTS.md) before changing the repository. Non-trivial work
-starts with a feature directory generated under `.agent/features/`. The
-`EXEC_PLAN.md` is living state: it records requirements, milestones, decisions,
-discoveries, validation, and remaining work so another agent can continue after
-context compaction. Bounded low-risk maintenance uses one lightweight plan under
-`.agent/corrections/` instead.
+Read [AGENTS.md](./AGENTS.md) before changing the repository. An explicitly
+requested feature starts with a directory generated under `.agent/features/`.
+The `EXEC_PLAN.md` is living state: it records requirements, milestones,
+decisions, discoveries, validation, and remaining work so another agent can
+continue after context compaction. Bounded low-risk maintenance uses one
+lightweight plan under `.agent/corrections/`; focused developer, tooling, and
+existing-contract UX enhancements use `.agent/improvements/`.
 
 See [architecture](./docs/architecture.md),
 [architecture decisions](./docs/adr/README.md),

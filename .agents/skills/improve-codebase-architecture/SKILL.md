@@ -10,7 +10,7 @@ description: Survey a focused Languon subsystem for evidence-backed architecture
 Use the subsystem, concept, or pain point named by the user. If none is named,
 inspect recent history for repeatedly changed paths and select one coherent hot
 spot; state the selection before widening it. Read applicable `AGENTS.md`, the
-historical feature or correction artifacts governing the surveyed subsystem,
+historical feature, correction, or improvement artifacts governing the surveyed subsystem,
 accepted ADRs, architecture documentation, related user-flow guides, and domain
 language before evaluating source. Inspect unrelated active durable work only
 to detect overlap or scope conflicts; do not treat it as the surveyed
@@ -61,7 +61,7 @@ when the user requests an artifact; use no CDN resources, store it under
 
 This skill reports and recommends; it does not modify application code. If the
 user asks to implement a candidate, classify that work independently under the
-root correction/feature rules—significant module and cross-boundary refactors
+root correction/improvement/feature rules—significant module and cross-boundary refactors
 are feature-sized. Record rejected candidates only when their rationale is
 durable and the active workflow has an appropriate authoritative home.
 

@@ -1,18 +1,19 @@
 ---
 name: feature-development
-description: Implement a Languon feature autonomously from repository specification through exploration, ExecPlan milestones, proportional testing, real-app verification, independent review, remediation, and recorded evidence. Use for new capabilities or journeys, cross-boundary work, public contracts, persistence/migrations, auth/security policy, deployment decisions, significant refactors, multi-milestone delivery, or whenever FEATURE.md and EXEC_PLAN.md govern. Do not use for work that satisfies the root correction-flow criteria; use correction-development instead.
+description: Implement a Languon feature autonomously from repository specification through exploration, ExecPlan milestones, proportional testing, real-app verification, independent review, remediation, and recorded evidence. Use only when the user explicitly asks to create a feature, use $feature-development, or use the full feature lifecycle. Do not use for corrections or focused improvements; follow the root routing rules and use correction-development or improvement-development when they apply.
 ---
 
 # Feature development
 
 ## Confirm feature classification
 
-Apply the correction-versus-feature routing rules in root `AGENTS.md` before
-creating a branch or feature artifacts. Do not launch this workflow merely
-because a small change also needs tests, documentation, or several matching
-configuration edits. If all correction conditions hold, use
-`$correction-development` instead unless the user explicitly requires the full
-feature lifecycle.
+Confirm that the user explicitly asks to create a feature, use
+`$feature-development`, or use the full feature lifecycle, then apply the
+routing rules in root `AGENTS.md` before creating a branch or feature artifacts.
+Do not launch this workflow merely because a small change also needs tests,
+documentation, a development dependency, or several matching configuration
+edits. Use `$correction-development` or `$improvement-development` when their
+conditions hold.
 
 Never downgrade feature-sized work to a correction to avoid review. New user
 capabilities, public contracts, data/migration work, auth or security policy,

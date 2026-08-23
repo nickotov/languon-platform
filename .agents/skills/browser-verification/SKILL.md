@@ -7,7 +7,7 @@ description: Verify Languon web or admin behavior with the project-pinned agent-
 
 ## Prepare
 
-Read the active correction outcome or feature acceptance criteria and identify
+Read the active correction or improvement outcome, or feature acceptance criteria, and identify
 the smallest set of journeys, roles, data states, and viewports needed. Start the
 relevant infrastructure and application with documented commands. Use
 deterministic non-production data and never enter real credentials or personal
@@ -83,7 +83,7 @@ pnpm browser -- --session <returned-session-handle> close
 
 Record the tool/version, session name, environment, browser, viewport, exact
 scenario, observed result, console/network state, and artifact paths in the
-single correction document or feature `EVIDENCE.md`. State separately which
+single correction or improvement document, or feature `EVIDENCE.md`. State separately which
 Playwright E2E command ran, or why E2E was not applicable. For failures, include
 reproduction steps and the narrowest supporting evidence. If `agent-browser` or
 the required environment is unavailable, complete safe automated checks and

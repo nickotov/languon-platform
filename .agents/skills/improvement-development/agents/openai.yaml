@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Improvement Development'
+    short_description: 'Ship focused engineering improvements'
+    default_prompt: 'Use $improvement-development to deliver this focused improvement with proportional proof.'

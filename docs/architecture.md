@@ -79,12 +79,15 @@ through `@languon/browser-auth`; it never imports public-web application source.
 ADR-0010 defines the framework, persistent owner membership, per-request
 authorization, dedicated refresh cookie, and private-edge boundary.
 
-For public-web visual work, `design/DESIGN_SYSTEM.md` and `design/main.pen` are
-the authoritative contract. The app maps that contract to global semantic
+For public-web visual work, `design/DESIGN_SYSTEM.md` is the semantic authority.
+Use Figma Make through the configured Figma MCP for accessible current visual
+composition; `design/main.pen` remains the legacy visual reference until a
+screen is migrated. The app maps that contract to global semantic
 `--sys-*` variables, an SSR-resolved Light/Dark/System preference, app-local
 primitives in `apps/web/src/fsd/shared/ui`, and colocated Storybook stories.
-Visual or semantic changes synchronize the design files, stories, implementation,
-and browser evidence in one feature. ADR-0008 defines this ownership boundary.
+Visual or semantic changes synchronize the applicable design source, stories,
+implementation, and browser evidence in the governing correction, improvement,
+or feature delivery. ADR-0008 defines this ownership boundary.
 
 The same design sources contain a separate Administration application variant
 for dense operational screens. Admin maps those tokens to Ant Design light and

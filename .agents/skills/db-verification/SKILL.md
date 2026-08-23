@@ -7,7 +7,7 @@ description: Safely verify Languon PostgreSQL or Redis changes, including migrat
 
 ## Establish safety and invariants
 
-Read the active correction document or feature/ExecPlan, migration, repository
+Read the active correction or improvement document, or feature/ExecPlan, migration, repository
 code, and applicable backend instructions. State data invariants, compatibility,
 expected query behavior, and rollback expectations before running commands.
 
@@ -40,5 +40,5 @@ the accidental durable source of truth.
 
 Record exact commands, target identity without secrets, migration direction,
 integration results, invariant checks, query-plan findings when relevant, and
-remaining risk in the single correction document or feature `EVIDENCE.md`. Keep
+remaining risk in the single correction or improvement document, or feature `EVIDENCE.md`. Keep
 large dumps and credentials out of durable work artifacts.

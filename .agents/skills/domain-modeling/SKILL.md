@@ -7,7 +7,7 @@ description: Sharpen Languon's ubiquitous language by reconciling product terms,
 
 ## Gather authoritative usage
 
-Read the applicable `AGENTS.md`, active feature or correction state, relevant
+Read the applicable `AGENTS.md`, active feature, correction, or improvement state, relevant
 user-flow guides, accepted ADRs, contracts, domain source, and existing product
 documentation. Search for every material use of the disputed terms. Treat code
 and documentation contradictions as findings to resolve, not as permission to

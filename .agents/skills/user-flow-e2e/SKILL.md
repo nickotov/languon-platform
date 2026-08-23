@@ -11,7 +11,7 @@ code template.
 
 ## Inspect the flow
 
-1. Read the closest `AGENTS.md`, active correction document or feature artifacts,
+1. Read the closest `AGENTS.md`, active correction or improvement document, or feature artifacts,
    and the complete `docs/user-flows/<feature>.md`.
 2. Run `pnpm user-flow:e2e -- inspect <guide-feature-slug>` when metadata exists. Use its
    scenarios, exact test files, expected revision, and errors as the working
@@ -46,7 +46,7 @@ behavior it proves.
 - Reuse existing journeys when they already prove the documented behavior;
   attach traceability instead of rewriting legitimate tests.
 - If safe reliable E2E is genuinely impossible, keep the guide `draft`, record
-  the blocker in the active correction document or feature ExecPlan, and never
+  the blocker in the active correction or improvement document, or feature ExecPlan, and never
   add a marker to a non-test.
 
 ## Author or update the tests
@@ -86,13 +86,13 @@ pnpm docs:user-flows:check
 ```
 
 5. Run affected lint/typecheck/build/test suites and the handoff gate required by
-   the active correction or feature flow.
+   the active correction, improvement, or feature flow.
 
 ## Record and review
 
 - Record scenario IDs, test files, exact environment/command, result, browser or
   device, infrastructure identity, cleanup, and remaining gaps in the single
-  correction document or `.agent/features/<active-feature>/EVIDENCE.md`.
+  correction/improvement document or `.agent/features/<active-feature>/EVIDENCE.md`.
 - Update `last_verified` only after the mapped tests and documented journey are
   current and executed proportionally.
 - For features, ask the independent reviewer to compare guide behavior, scenario

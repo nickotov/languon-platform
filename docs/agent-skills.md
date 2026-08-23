@@ -7,7 +7,7 @@ govern, and discovered when Codex starts in the project root.
 ## Authority and invocation
 
 Skills add focused execution guidance. They do not supersede the closest
-applicable `AGENTS.md`, active correction or feature state, accepted ADRs,
+applicable `AGENTS.md`, active correction, improvement, or feature state, accepted ADRs,
 source and configuration, or the repository Definition of Done. When a skill
 touches an established verification surface, it routes to the existing
 Languon testing, browser, database, review, and user-flow skills.
@@ -40,6 +40,7 @@ the repository automatically.
 | `$codebase-design`               | Evaluate module depth, seam placement, caller burden, locality, and testability.                    | [Original `codebase-design`](https://github.com/mattpocock/skills/tree/068b6e0c62393147daf03530149cdce209c93da8/skills/engineering/codebase-design). The local version retains established DDD, FSD, HTTP, React, package, port, and adapter terminology instead of imposing a competing vocabulary.                                                          |
 | `$prototype`                     | Answer one product, state-model, interaction, visual, or feasibility question with disposable code. | [Original `prototype`](https://github.com/mattpocock/skills/tree/068b6e0c62393147daf03530149cdce209c93da8/skills/engineering/prototype). The local version uses temporary, dependency-free artifacts by default and never creates unmanaged branches or commits.                                                                                              |
 | `$improve-codebase-architecture` | Survey a bounded subsystem for evidence-backed deepening opportunities.                             | [Original `improve-codebase-architecture`](https://github.com/mattpocock/skills/tree/068b6e0c62393147daf03530149cdce209c93da8/skills/engineering/improve-codebase-architecture). The local version is report-only, uses accepted ADRs and existing terminology, defaults to Markdown, and avoids CDN or GUI side effects.                                     |
+| `$improvement-development`       | Deliver focused developer, tooling, or existing-contract UX improvements with proportional proof.   | Local Languon workflow; it preserves correction and feature boundaries, uses one durable improvement record, and requires explicit authorization before feature-sized expansion.                                                                                                                                                                              |
 
 The original references came from
 [`mattpocock/skills`](https://github.com/mattpocock/skills), reviewed at commit

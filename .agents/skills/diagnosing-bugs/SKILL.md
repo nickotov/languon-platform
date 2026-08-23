@@ -7,7 +7,7 @@ description: Diagnose difficult Languon failures with a tight, evidence-led feed
 
 ## Establish scope and authority
 
-Read the applicable `AGENTS.md`, active correction or feature state, related
+Read the applicable `AGENTS.md`, active correction, improvement, or feature state, related
 user-flow guides, accepted ADRs, relevant source, and recent changes. Respect
 the request mode: diagnosis authorizes investigation and reporting, while
 `fix`, `implement`, or `change` also authorizes an in-scope implementation.
@@ -85,7 +85,7 @@ not authorize a code change.
 Remove all temporary instrumentation and throwaway artifacts. Report the
 reproduction command, minimized trigger, rejected hypotheses, causal chain,
 regression coverage, verification results, and residual uncertainty. Update
-the correction document or feature `EXEC_PLAN.md` and `EVIDENCE.md` when one is
+the correction/improvement document or feature `EXEC_PLAN.md` and `EVIDENCE.md` when one is
 active.
 
 ## Provenance

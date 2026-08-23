@@ -6,15 +6,18 @@ continue the work.
 
 ## When an ExecPlan is required
 
-Create an ExecPlan for work that spans multiple modules or workspaces, changes
-architecture or persistence, introduces a user journey, requires migration or
-rollout coordination, or cannot be safely completed and verified in one small
-change.
+Create an ExecPlan only for a feature the user explicitly requests. Features
+normally span multiple modules or workspaces, change architecture or
+persistence, introduce a user journey, require migration or rollout
+coordination, or cannot be safely completed and verified in one small change.
 
-Do not create an ExecPlan for work that satisfies the correction criteria in
-root `AGENTS.md`. Use one `.agent/corrections/<slug>.md` document based on
-`.agent/templates/CORRECTION.md` instead. Escalate to an ExecPlan if discovery
-crosses the correction boundary.
+Do not create an ExecPlan for work that satisfies the correction or improvement
+criteria in root `AGENTS.md`. Use one `.agent/corrections/<slug>.md` document
+based on `.agent/templates/CORRECTION.md`, or one
+`.agent/improvements/<slug>.md` document based on
+`.agent/templates/IMPROVEMENT.md`, instead. If discovery crosses a lightweight
+boundary, preserve it and request explicit feature authorization before creating
+an ExecPlan.
 
 ## Required sections
 

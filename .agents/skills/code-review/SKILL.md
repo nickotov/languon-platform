@@ -7,7 +7,7 @@ description: Independently review Languon changes for functional correctness, ac
 
 ## Establish review scope
 
-Read applicable `AGENTS.md`, the active correction document or feature
+Read applicable `AGENTS.md`, the active correction or improvement document, or feature
 `FEATURE.md`/`EXEC_PLAN.md`/`EVIDENCE.md`, architecture docs, the complete diff,
 and relevant surrounding code. Review independently from authoring reasoning.
 
@@ -41,5 +41,5 @@ Lead with findings in severity order. For each finding provide:
 
 Do not invent issues to populate a report and do not report formatter concerns.
 If no material findings exist, say so and list residual risks or verification
-gaps. Record review and resolutions in the single correction document or feature
+gaps. Record review and resolutions in the single correction or improvement document, or feature
 `REVIEW.md`, according to the active flow.

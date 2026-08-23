@@ -1,14 +1,15 @@
 ---
 name: codebase-design
-description: Design or evaluate deep, testable Languon modules at established DDD, FSD, package, and infrastructure seams. Use for module interface design, significant refactors, shallow pass-through layers, duplicated orchestration, misplaced dependencies, difficult test seams, or comparison of alternative internal designs. Do not use for routine component styling or mechanical cleanup. Route implementation through the root correction/feature classifier; significant or cross-boundary design changes require the feature workflow.
+description: Design or evaluate deep, testable Languon modules at established DDD, FSD, package, and infrastructure seams. Use for module interface design, significant refactors, shallow pass-through layers, duplicated orchestration, misplaced dependencies, difficult test seams, or comparison of alternative internal designs. Do not use for routine component styling or mechanical cleanup. Route implementation through the root correction/improvement/feature classifier; significant or cross-boundary design changes need explicit feature authorization.
 ---
 
 # Codebase design
 
 ## Read the established architecture
 
-Read the applicable `AGENTS.md`, active durable state, historical feature or
-correction artifacts that established the target seam, relevant accepted ADRs,
+Read the applicable `AGENTS.md`, active durable state, historical feature,
+correction, or improvement artifacts that established the target seam, relevant
+accepted ADRs,
 architecture documentation, public exports, callers, adapters, and tests. When
 the current active work is unrelated, treat it only as scope context and use the
 target seam's governing artifacts for design evidence. Use the repository's
@@ -59,9 +60,9 @@ chosen seam.
 
 A design or review request produces evidence, alternatives, recommendation,
 affected paths, and residual risks without changing code. An implementation
-request follows the active correction or feature workflow; significant module
-or cross-boundary changes remain feature-sized. Surface an ADR conflict instead
-of silently designing around it.
+request follows the active correction, improvement, or feature workflow;
+significant module or cross-boundary changes need explicit feature
+authorization. Surface an ADR conflict instead of silently designing around it.
 
 ## Provenance
 

@@ -6,6 +6,7 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, '..');
 const skillsDirectory = join(repositoryRoot, '.agents', 'skills');
 const explicitlyInvokedSkills = new Set([
+    'feature-development',
     'improve-codebase-architecture',
     'prototype',
     'web-dev-panel',
