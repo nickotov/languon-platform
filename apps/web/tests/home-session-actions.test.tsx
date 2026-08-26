@@ -57,6 +57,9 @@ describe('HomeSessionActions', () => {
         expect(
             await screen.findByRole('link', { name: 'Security settings' }),
         ).toHaveAttribute('href', '/security');
+        expect(
+            screen.getByRole('link', { name: 'Dictionaries' }),
+        ).toHaveAttribute('href', '/dictionaries');
         expect(screen.getByText(/learner@example.com/)).toBeInTheDocument();
     });
 });

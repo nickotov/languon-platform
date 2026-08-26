@@ -1,0 +1,27 @@
+.section,
+.formats {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.eyebrow {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.format {
+    align-items: center;
+    display: flex;
+    gap: var(--space-4);
+    justify-content: space-between;
+}
+
+@media (max-width: 40rem) {
+    .format {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

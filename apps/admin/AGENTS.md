@@ -11,10 +11,12 @@ auth, theme, i18n, and low-level UI in `src/shared`. Import only through a
 lower layer's public module, and keep route components lazy-loaded.
 
 Use `$frontend-development` for components, hooks, state, API clients, shared
-UI, or layer changes. Follow `design/DESIGN_SYSTEM.md` and the Admin operations
-board in `design/main.pen` for visible behavior. Keep Refine resource labels
-and reusable application copy behind the English i18n provider, and keep Light,
-Dark, and System preferences synchronized with Ant Design tokens.
+UI, or layer changes. Compose visible behavior from Ant Design, the app's theme
+tokens, existing screens, and runtime verification. `design/DESIGN_SYSTEM.md`
+and the Admin operations board in `design/main.pen` are optional references.
+Keep Refine resource labels and reusable application copy behind the English
+i18n provider, and keep Light, Dark, and System preferences synchronized with
+Ant Design tokens.
 
 Admin operations require backend-enforced active membership, explicit reasons
 for security-state mutations, actionable failure states, and auditable

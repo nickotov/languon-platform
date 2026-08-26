@@ -3,6 +3,36 @@ import { lstat, readFile } from 'node:fs/promises';
 const ENVIRONMENT_PATTERN = /^(stage|production)$/;
 const SAFE_KEY_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 
+function isPrivateAddress(hostname) {
+    const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    if (host === 'localhost' || host.endsWith('.localhost')) return true;
+    if (host.includes(':')) {
+        if (host.startsWith('::ffff:')) {
+            return isPrivateAddress(host.slice('::ffff:'.length));
+        }
+        return (
+            host === '::' ||
+            host === '::1' ||
+            host.startsWith('fc') ||
+            host.startsWith('fd') ||
+            /^fe[89ab]/.test(host)
+        );
+    }
+    if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return false;
+    const [first, second] = host.split('.').map(Number);
+    return (
+        first === 0 ||
+        first === 10 ||
+        first === 127 ||
+        (first === 100 && second >= 64 && second <= 127) ||
+        (first === 169 && second === 254) ||
+        (first === 172 && second >= 16 && second <= 31) ||
+        (first === 192 && second === 168) ||
+        (first === 198 && [18, 19].includes(second)) ||
+        first >= 224
+    );
+}
+
 export function validateEnvironment(value) {
     if (!ENVIRONMENT_PATTERN.test(value ?? '')) {
         throw new Error('Environment must be stage or production.');
@@ -92,6 +122,8 @@ export function assertDeployConfig(environment, config) {
         'AUTH_JWT_SECRET',
         'AUTH_WEBAUTHN_RP_ID',
         'DATABASE_URL',
+        'DICTIONARY_HMAC_SECRET',
+        'DICTIONARY_WORKER_DATABASE_URL',
         'EDGE_SUBNET',
         'MIGRATION_DATABASE_URL',
         'PUBLIC_BASE_URL',
@@ -134,6 +166,153 @@ export function assertDeployConfig(environment, config) {
     ) {
         throw new Error('ADMIN_BIND_ADDRESS must be a loopback address.');
     }
+    for (const [key, minimum, maximum] of [
+        ['DICTIONARY_WORKER_DATABASE_MAX_CONNECTIONS', 1, 50],
+        ['DICTIONARY_WORKER_CONCURRENCY', 1, 32],
+        ['DICTIONARY_WORKER_POLL_INTERVAL_MS', 50, 60_000],
+        ['DICTIONARY_WORKER_READINESS_TIMEOUT_MS', 100, 30_000],
+        ['DICTIONARY_WORKER_DRAIN_TIMEOUT_MS', 1_000, 295_000],
+    ]) {
+        if (config[key] === undefined) continue;
+        const value = Number(config[key]);
+        if (
+            !Number.isSafeInteger(value) ||
+            value < minimum ||
+            value > maximum
+        ) {
+            throw new Error(
+                `${key} must be an integer between ${minimum} and ${maximum}.`,
+            );
+        }
+    }
+    const dictionaryProviderMode =
+        config.DICTIONARY_GENERATION_PROVIDER_MODE || 'unavailable';
+    if (!['unavailable', 'mastra'].includes(dictionaryProviderMode)) {
+        throw new Error(
+            'DICTIONARY_GENERATION_PROVIDER_MODE must be unavailable or mastra for deployment.',
+        );
+    }
+    const dictionaryModelKeys = [
+        'DICTIONARY_GENERATION_MODEL_ID',
+        'DICTIONARY_GENERATION_MODEL_BASE_URL',
+        'DICTIONARY_GENERATION_MODEL_API_KEY',
+    ];
+    const dictionaryBudgetBounds = {
+        DICTIONARY_GENERATION_MAX_INPUT_TOKENS: [32_768, 262_144],
+        DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: [128, 40_960],
+        DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS: [
+            1, 1_000_000_000,
+        ],
+        DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS: [
+            1, 1_000_000_000,
+        ],
+        DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: [1, 10_000_000],
+    };
+    const dictionaryBudgetKeys = Object.keys(dictionaryBudgetBounds);
+    const configuredDictionaryBudgetKeys = dictionaryBudgetKeys.filter(
+        (key) => config[key] !== undefined && config[key] !== '',
+    );
+    if (
+        configuredDictionaryBudgetKeys.length > 0 &&
+        configuredDictionaryBudgetKeys.length !== dictionaryBudgetKeys.length
+    ) {
+        throw new Error(
+            'Dictionary generation budget settings must be provided together.',
+        );
+    }
+    if (
+        dictionaryProviderMode === 'mastra' &&
+        configuredDictionaryBudgetKeys.length !== dictionaryBudgetKeys.length
+    ) {
+        throw new Error(
+            `Live dictionary generation is missing required budget keys: ${dictionaryBudgetKeys.filter((key) => !configuredDictionaryBudgetKeys.includes(key)).join(', ')}.`,
+        );
+    }
+    const dictionaryBudget = {};
+    if (configuredDictionaryBudgetKeys.length === dictionaryBudgetKeys.length) {
+        for (const key of dictionaryBudgetKeys) {
+            const [minimum, maximum] = dictionaryBudgetBounds[key];
+            const value = Number(config[key]);
+            if (
+                typeof config[key] !== 'string' ||
+                !/^\d+$/.test(config[key]) ||
+                !Number.isSafeInteger(value) ||
+                value < minimum ||
+                value > maximum
+            ) {
+                throw new Error(
+                    `${key} must be an integer between ${minimum} and ${maximum}.`,
+                );
+            }
+            dictionaryBudget[key] = value;
+        }
+        const maximumCalculatedCost =
+            Math.ceil(
+                (dictionaryBudget.DICTIONARY_GENERATION_MAX_INPUT_TOKENS *
+                    dictionaryBudget.DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS) /
+                    1_000_000,
+            ) +
+            Math.ceil(
+                (dictionaryBudget.DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS *
+                    dictionaryBudget.DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS) /
+                    1_000_000,
+            );
+        if (
+            dictionaryBudget.DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT <
+            maximumCalculatedCost
+        ) {
+            throw new Error(
+                'DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT must cover the configured input and output token ceilings and rates.',
+            );
+        }
+    }
+    if (dictionaryProviderMode === 'mastra') {
+        const missingModelKeys = dictionaryModelKeys.filter(
+            (key) => !config[key],
+        );
+        if (missingModelKeys.length) {
+            throw new Error(
+                `Mastra dictionary generation is missing required keys: ${missingModelKeys.join(', ')}.`,
+            );
+        }
+        if (
+            !/^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*$/i.test(
+                config.DICTIONARY_GENERATION_MODEL_ID,
+            )
+        ) {
+            throw new Error(
+                'DICTIONARY_GENERATION_MODEL_ID must use provider/model format.',
+            );
+        }
+        let modelBaseUrl;
+        try {
+            modelBaseUrl = new URL(config.DICTIONARY_GENERATION_MODEL_BASE_URL);
+        } catch {
+            throw new Error(
+                'DICTIONARY_GENERATION_MODEL_BASE_URL must be a valid provider base URL.',
+            );
+        }
+        if (
+            modelBaseUrl.protocol !== 'https:' ||
+            modelBaseUrl.username !== '' ||
+            modelBaseUrl.password !== '' ||
+            modelBaseUrl.search !== '' ||
+            modelBaseUrl.hash !== '' ||
+            modelBaseUrl.pathname.length > 200 ||
+            !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/.test(
+                modelBaseUrl.pathname,
+            ) ||
+            isPrivateAddress(modelBaseUrl.hostname)
+        ) {
+            throw new Error(
+                'DICTIONARY_GENERATION_MODEL_BASE_URL must be a bounded credential-free HTTPS provider URL outside private addresses.',
+            );
+        }
+    } else if (dictionaryModelKeys.some((key) => config[key])) {
+        throw new Error(
+            'Dictionary generation model settings require DICTIONARY_GENERATION_PROVIDER_MODE=mastra.',
+        );
+    }
     if (environment === 'production') {
         if (!config.BACKUP_MANIFEST_PATH) {
             throw new Error(
@@ -143,7 +322,11 @@ export function assertDeployConfig(environment, config) {
         if (!config.DATA_TLS_CA_PATH) {
             throw new Error('Production deployment requires DATA_TLS_CA_PATH.');
         }
-        for (const key of ['DATABASE_URL', 'MIGRATION_DATABASE_URL']) {
+        for (const key of [
+            'DATABASE_URL',
+            'DICTIONARY_WORKER_DATABASE_URL',
+            'MIGRATION_DATABASE_URL',
+        ]) {
             if (
                 new URL(config[key]).searchParams.get('sslmode') !==
                 'verify-full'
@@ -152,6 +335,21 @@ export function assertDeployConfig(environment, config) {
                     `${key} must use sslmode=verify-full in production.`,
                 );
             }
+        }
+        const applicationDatabaseUser = new URL(config.DATABASE_URL).username;
+        const workerDatabaseUser = new URL(
+            config.DICTIONARY_WORKER_DATABASE_URL,
+        ).username;
+        const migrationDatabaseUser = new URL(config.MIGRATION_DATABASE_URL)
+            .username;
+        if (
+            !workerDatabaseUser ||
+            workerDatabaseUser === applicationDatabaseUser ||
+            workerDatabaseUser === migrationDatabaseUser
+        ) {
+            throw new Error(
+                'DICTIONARY_WORKER_DATABASE_URL must use a dedicated production database user.',
+            );
         }
         const redis = new URL(config.REDIS_URL);
         if (redis.protocol !== 'rediss:') {
@@ -162,7 +360,11 @@ export function assertDeployConfig(environment, config) {
                 'REDIS_URL must use a restricted named Redis user.',
             );
         }
-        for (const key of ['DATABASE_URL', 'REDIS_URL']) {
+        for (const key of [
+            'DATABASE_URL',
+            'DICTIONARY_WORKER_DATABASE_URL',
+            'REDIS_URL',
+        ]) {
             const hostname = new URL(config[key]).hostname;
             if (
                 ['localhost', '127.0.0.1', 'postgres', 'redis'].includes(

@@ -4,6 +4,9 @@ FROM node:24-bookworm-slim@sha256:3638d9a6fe4030bd716be989438248074489337ba32756
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
+# The migrator image builds the same backend declaration bundle as the API and
+# worker image. Keep that build-only worker heap explicit on bounded builders.
+ENV NODE_OPTIONS=--max-old-space-size=2048
 WORKDIR /workspace
 
 RUN corepack enable && corepack prepare pnpm@10.13.1 --activate

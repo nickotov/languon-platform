@@ -1,0 +1,141 @@
+.section {
+    display: grid;
+    gap: var(--sys-space-4);
+    min-width: 0;
+}
+.header,
+.cardHeader {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-3);
+    justify-content: space-between;
+}
+.header h2,
+.cardHeader h3,
+.eyebrow,
+.version,
+.feedback p {
+    margin: 0;
+}
+.header h2,
+.cardHeader h3 {
+    font-family: var(--sys-font-display);
+}
+.eyebrow,
+.version {
+    color: var(--sys-color-text-secondary);
+}
+.eyebrow {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.progressCard,
+.original,
+.proposal {
+    display: grid;
+    gap: var(--sys-space-4);
+    min-width: 0;
+    padding: var(--sys-space-5);
+}
+.progressCard {
+    background: var(--sys-color-info-soft);
+    border-color: var(--sys-color-info);
+}
+.progressCard progress {
+    width: 100%;
+}
+.comparison {
+    display: grid;
+    gap: var(--sys-space-4);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.proposal {
+    border: 2px solid var(--sys-color-action-primary);
+}
+.valueList,
+.fields,
+.overrideGrid {
+    display: grid;
+    gap: var(--sys-space-3);
+    margin: 0;
+}
+.valueList div,
+.proposalField {
+    border-inline-start: 3px solid var(--sys-color-border-subtle);
+    min-width: 0;
+    padding-inline-start: var(--sys-space-3);
+}
+.valueList dt {
+    color: var(--sys-color-text-secondary);
+    font-size: 0.875rem;
+}
+.valueList dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.proposalField {
+    display: grid;
+    gap: var(--sys-space-2);
+}
+.changeMarker {
+    color: var(--sys-color-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+.feedback {
+    background: var(--sys-color-info-soft);
+    border-radius: var(--sys-radius-md);
+    display: grid;
+    gap: var(--sys-space-2);
+    overflow-wrap: anywhere;
+    padding: var(--sys-space-3);
+}
+.feedback ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-2);
+    list-style: none;
+    margin: var(--sys-space-2) 0 0;
+    padding: 0;
+}
+.advanced summary {
+    cursor: pointer;
+    font-weight: 700;
+    min-height: 44px;
+    padding-block: var(--sys-space-3);
+}
+.overrideGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.reviewActions {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-3);
+    justify-content: space-between;
+}
+.instructionForm {
+    display: grid;
+    flex: 1 1 320px;
+    gap: var(--sys-space-3);
+}
+@media (max-width: 720px) {
+    .comparison,
+    .overrideGrid {
+        grid-template-columns: 1fr;
+    }
+    .reviewActions > button,
+    .instructionForm button {
+        width: 100%;
+    }
+}
+@media (forced-colors: active) {
+    .proposalField,
+    .valueList div {
+        border-inline-start-color: CanvasText;
+    }
+}

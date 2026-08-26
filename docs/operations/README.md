@@ -17,7 +17,9 @@ environment:
    profiler history, scaling thresholds, and provisional VPS sizes.
 4. [Security operations](./security.md) — network boundaries, secrets, access,
    rotation, and incident response.
-5. [Timeweb Cloud appendix](./timeweb-cloud.md) — current control-panel and guest
+5. [Dictionary jobs and documents](./dictionary-jobs-and-documents.md) — planned
+   worker, product-upload, scanner/OCR, cleanup, and capability boundaries.
+6. [Timeweb Cloud appendix](./timeweb-cloud.md) — current control-panel and guest
    OS preparation for the first staging VPS and later split production.
 
 The operator-facing local rehearsal is documented in the

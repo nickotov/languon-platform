@@ -1,0 +1,53 @@
+.card {
+    padding: var(--sys-space-5);
+}
+.card h2 {
+    font-family: var(--sys-font-display);
+    margin-top: 0;
+}
+.form {
+    display: grid;
+    gap: var(--sys-space-5);
+}
+.twoColumns {
+    display: grid;
+    gap: var(--sys-space-4);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.fieldset {
+    border: 1px solid var(--sys-color-border-subtle);
+    border-radius: var(--sys-radius-md);
+    display: grid;
+    gap: var(--sys-space-3);
+    padding: var(--sys-space-4);
+}
+.fieldset legend {
+    font-weight: 700;
+    padding-inline: var(--sys-space-2);
+}
+.indented {
+    margin-inline-start: var(--sys-space-6);
+    max-width: 420px;
+}
+.hint,
+.outcome {
+    color: var(--sys-color-text-secondary);
+    margin: 0;
+}
+.outcome {
+    min-height: 1.5em;
+}
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-3);
+    justify-content: end;
+}
+@media (max-width: 560px) {
+    .twoColumns {
+        grid-template-columns: 1fr;
+    }
+    .actions > * {
+        flex: 1 1 auto;
+    }
+}

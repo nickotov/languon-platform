@@ -88,8 +88,9 @@ accept browser-provided executables, argv, cwd, environment, or shell text.
 
 ## Synchronize and verify
 
-Update only affected panel docs, tests, Figma Make or legacy Pencil design/user-flow sources, and root command
-indexes. If observable behavior or commands change, follow the repository
+Update only affected panel docs, tests, user-flow sources, and root command
+indexes. Update Figma Make or legacy Pencil artifacts only when the request
+explicitly includes them. If observable behavior or commands change, follow the repository
 user-flow policy and keep mapped Playwright markers current. Test with synthetic
 fixture commands; never launch real databases, deployment, formatting, model,
 or admin commands for verification.

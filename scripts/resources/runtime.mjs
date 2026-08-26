@@ -22,6 +22,7 @@ function appEnvironment(prefix, slot, images, releaseSha) {
         AUTH_ALLOWED_ORIGINS: 'https://localhost:18480',
         AUTH_CODE_HMAC_SECRET: SECRET,
         AUTH_JWT_SECRET: `${SECRET}-${SECRET}`,
+        DICTIONARY_HMAC_SECRET: `${SECRET}-dictionary`,
         AUTH_WEBAUTHN_RP_ID: 'localhost',
         BACKEND_IMAGE: images.backend,
         WEB_IMAGE: images.web,

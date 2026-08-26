@@ -14,12 +14,16 @@ web / admin / mobile
    HTTP contracts
         |
         v
-     backend
-        |
-        +--> PostgreSQL
-        +--> Redis
-        +--> Mastra / model providers
-        +--> Langfuse
+     backend --------> (planned) private product object storage
+        |                            |
+        |                            v
+        |                     scanner quarantine
+        v                            |
+   PostgreSQL <--------------- dictionary worker
+        |                    |
+        +--> Redis           +--> credentialless parser child process
+                             +--> Mastra / model and OCR providers
+                             +--> Langfuse
 ```
 
 ## Backend
@@ -39,6 +43,18 @@ interface/infrastructure --> application --> domain
   Redis, Mastra, model providers, and Langfuse.
 - Interface code owns Hono routes, authentication boundaries, request/response
   mapping, and OpenAPI declarations.
+
+The dictionary worker is a separate process built from the backend image;
+private product storage, scanning, parser sandboxing, and OCR remain planned for
+the document milestone. Root worker composition owns timers, process signals,
+concurrency, and readiness, then calls a dictionary application worker service
+that owns the job/lease state machine. Dictionary infrastructure implements
+PostgreSQL and provider ports. HTTP handlers will enqueue bounded work and return without
+waiting for providers. Model, OCR, scanner, and object-storage SDKs will remain
+behind application ports. Native document parsing will run in a separate
+credentialless, egress-denied child-process sandbox inside the worker service;
+the worker will validate its bounded IPC output before use. No additional
+service/image topology is authorized by this sandbox boundary.
 
 Validate all external data with Zod at its system boundary. Keep transport and
 persistence representations out of domain objects.
@@ -79,15 +95,13 @@ through `@languon/browser-auth`; it never imports public-web application source.
 ADR-0010 defines the framework, persistent owner membership, per-request
 authorization, dedicated refresh cookie, and private-edge boundary.
 
-For public-web visual work, `design/DESIGN_SYSTEM.md` is the semantic authority.
-Use Figma Make through the configured Figma MCP for accessible current visual
-composition; `design/main.pen` remains the legacy visual reference until a
-screen is migrated. The app maps that contract to global semantic
-`--sys-*` variables, an SSR-resolved Light/Dark/System preference, app-local
-primitives in `apps/web/src/fsd/shared/ui`, and colocated Storybook stories.
-Visual or semantic changes synchronize the applicable design source, stories,
-implementation, and browser evidence in the governing correction, improvement,
-or feature delivery. ADR-0008 defines this ownership boundary.
+Public-web visual behavior is owned by global semantic `--sys-*` variables, the
+SSR-resolved Light/Dark/System preference, app-local primitives in
+`apps/web/src/fsd/shared/ui`, colocated Storybook stories, and verified runtime
+composition. `design/DESIGN_SYSTEM.md`, Figma Make, and `design/main.pen` may
+provide design input but do not gate implementation. Visual changes synchronize
+runtime code, affected stories/tests, and browser evidence; design artifacts are
+updated only when explicitly in scope. ADR-0016 defines this ownership boundary.
 
 The same design sources contain a separate Administration application variant
 for dense operational screens. Admin maps those tokens to Ant Design light and
@@ -125,11 +139,39 @@ The backend uses the same schemas to generate and validate OpenAPI operations.
   test, and staging workflows. Configured environments may resolve managed
   prompts through Langfuse, with local fallback on an unavailable prompt.
 
+## Dictionary platform
+
+This section records the accepted target boundary for implementation beginning
+in Dictionary Platform M1. The `dictionaries` backend module owns typed current
+dictionary, settings, card,
+revision, job, proposal, and upload metadata. Current vocabulary will be
+relational and directly queryable; schema-versioned JSON is limited to immutable
+revision snapshots and untrusted review proposals. Each card belongs to one
+dictionary, and a fork creates independent identities rather than shared mutable
+content.
+
+Future workbook, lesson, course, and exercise modules compose vocabulary through
+explicit link tables to stable dictionary or card IDs. They may later pin an
+immutable revision for publication, but do not depend on a generic asset payload.
+[ADR-0011](./adr/0011-dictionary-persistence-and-composition.md) defines this
+boundary.
+
+AI generation and document ingestion are review-first asynchronous workflows.
+PostgreSQL is their durable queue; a separately scalable worker command from the
+backend image leases versioned jobs. Private product uploads enter quarantine,
+must pass fail-closed malware scanning, and are deleted after terminal processing
+or abandoned-input cleanup. Product storage credentials and lifecycle are
+separate from database backups. [ADR-0012](./adr/0012-dictionary-worker-and-document-ingestion.md)
+and the [operations design](./operations/dictionary-jobs-and-documents.md) define
+the execution and trust boundaries.
+
 ## Release and deployment
 
-Languon production artifacts are four immutable OCI images: web, admin,
-backend, and a one-shot migrator. GitHub Actions publishes exact digest
-manifests to GHCR. A manually dispatched staging run qualifies, builds, and
+Languon production artifacts remain four immutable OCI images: web, admin,
+backend, and a one-shot migrator. The backend image supplies both the HTTP and
+dictionary-worker commands; a worker is a separately managed service role, not
+a fifth image identity. GitHub Actions publishes exact digest manifests to GHCR.
+A manually dispatched staging run qualifies, builds, and
 deploys the current `stage` commit; publishing a stable SemVer release from
 `main` qualifies/builds only, and a separate protected manual workflow promotes
 that already-built manifest to production. Ordinary pushes and pull requests do
@@ -141,6 +183,16 @@ migration, gates the inactive slot on dependency-aware readiness, validates and
 reloads NGINX, then retains the previous containers while old connections drain
 for up to five minutes. Application rollback promotes the previous digest
 manifest through the same gates and never automatically reverses schema.
+
+Each slot's worker overlaps during
+promotion only for compatible versioned job formats and immutable generation
+budget envelopes. The release manifest binds the shared API/worker token and
+price ceilings, and deployment rejects a candidate whose jobs could not be
+claimed by either the candidate or rollback-floor worker. A terminating worker will
+stop leasing, cancel or finish bounded provider work, and release recoverable
+leases. API readiness will not require live model, OCR, scanner, or
+product-storage capability; worker capability and queue health will be separate
+deployment and monitoring gates.
 
 Staging initially places edge, both transient application generations,
 PostgreSQL, and Redis on one VPS while keeping data volumes outside application

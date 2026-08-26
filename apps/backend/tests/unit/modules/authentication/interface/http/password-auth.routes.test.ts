@@ -114,6 +114,20 @@ function createRoutes(operations = createOperations()) {
 }
 
 describe('password auth HTTP routes', () => {
+    it('does not consume preflight requests for unrelated application routes', async () => {
+        const { app } = createRoutes();
+
+        const response = await app.request('/dictionaries', {
+            headers: {
+                Origin: 'https://app.languon.example',
+                'Access-Control-Request-Method': 'POST',
+            },
+            method: 'OPTIONS',
+        });
+
+        expect(response.status).toBe(404);
+    });
+
     it('publishes capabilities with no-store security headers', async () => {
         const { app } = createRoutes();
         const response = await app.request('/auth/capabilities');

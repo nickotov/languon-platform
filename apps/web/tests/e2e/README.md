@@ -72,6 +72,12 @@ shell is interrupted before its trap runs, inspect
 `docker ps --filter name=languon-auth-e2e-` and stop only containers you confirm
 came from your run.
 
+Each Playwright invocation derives a fresh opaque authentication Redis namespace
+from `AUTH_E2E_RUN_ID` (or a generated run ID). This keeps rate-limit and passkey
+state isolated across reruns without flushing the selected Redis database. When
+reusing servers, keep one stable `AUTH_E2E_RUN_ID` for the server and test
+processes.
+
 The dedicated ports are PostgreSQL `55432`, Redis `56379`, web `3100`, and
 backend `4100`. If one is occupied, identify the owner and stop it deliberately;
 the guide does not reuse or terminate unknown processes.

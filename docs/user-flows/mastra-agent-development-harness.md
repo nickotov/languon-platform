@@ -22,6 +22,7 @@ source_paths:
     - apps/backend/src/infrastructure/database/**
     - apps/backend/src/infrastructure/playground/**
     - apps/backend/src/mastra/**
+    - apps/backend/src/modules/dictionaries/infrastructure/ai/**
     - apps/backend/src/modules/development-harness/**
     - apps/backend/src/modules/users/**
     - apps/backend/tests/e2e/mastra-development-harness.journey.test.ts
@@ -52,6 +53,14 @@ The harness never starts Languon's Hono, web, admin, or mobile servers. It does
 not expose Mastra through the public backend, use copied user data, or provide
 persistent Mastra memory, datasets, experiments, workflow state, or trace
 storage. Use only the checked-in `example.test` fixture.
+
+The dictionary card-generation agent is intentionally absent from this Studio
+harness. Its canonical factory is composed only by the dictionary worker with a
+server-selected provider and structured job input; exposing it in Studio would
+create a second execution path for user vocabulary and custom instructions.
+Deterministic adapter, canonical-registration, structured-output, no-tool, and
+trace-redaction behavior is verified in focused backend tests and the dictionary
+platform worker journey instead.
 
 ## Start the development environment
 
@@ -121,6 +130,7 @@ off.
 1. Open `http://127.0.0.1:4111` in a local browser.
 2. Confirm the development verification agent, principal-verification tool,
    verification workflow, and principal-match scorer are discoverable.
+   Confirm the product dictionary card-generation agent is not listed.
 3. Select the `synthetic-principal` request-context preset.
 4. Run the tool with `{"message":"studio tool check","delayMs":0}`. Expect
    the stable synthetic principal ID, `example.test` email, selected variant,

@@ -4,6 +4,10 @@ FROM node:24-bookworm-slim@sha256:3638d9a6fe4030bd716be989438248074489337ba32756
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
+# The backend declaration rollup runs in a worker thread and now includes both
+# HTTP and durable-worker entry points. Keep its build-only heap explicit so the
+# production image remains reproducible on the bounded local/CI builders.
+ENV NODE_OPTIONS=--max-old-space-size=2048
 WORKDIR /workspace
 
 RUN corepack enable && corepack prepare pnpm@10.13.1 --activate
@@ -23,6 +27,14 @@ LABEL org.opencontainers.image.title="Languon backend" \
 ENV NODE_ENV=production
 ENV RELEASE_SHA=$RELEASE_SHA
 WORKDIR /app
+
+# The document parser remains capability-gated, but the production image owns
+# its reviewed confinement executables. Runtime readiness still fails closed
+# unless the deployment supplies the narrow seccomp profile and passes the
+# production-like escape suite.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bubblewrap util-linux \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=node:node /production/backend/node_modules ./node_modules
 COPY --from=builder --chown=node:node /workspace/apps/backend/dist ./dist

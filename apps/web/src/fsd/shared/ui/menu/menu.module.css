@@ -17,8 +17,6 @@
     display: grid;
     min-width: 180px;
     padding: var(--sys-space-1);
-    position: absolute;
-    right: 0;
     z-index: 20;
 }
 .menu button {
@@ -32,4 +30,10 @@
 }
 .menu button:hover {
     background: var(--sys-color-action-primary-soft);
+}
+.menu button[data-tone='danger'] {
+    color: var(--sys-color-danger);
+}
+.menu button[data-tone='danger']:hover {
+    background: var(--sys-color-danger-soft);
 }

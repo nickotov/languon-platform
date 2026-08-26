@@ -16,7 +16,7 @@ source_paths:
     - apps/web/src/fsd/widgets/site-header/**
     - apps/web/tests/e2e/ui-kit.journeys.spec.ts
     - design/**
-    - docs/adr/0008-web-ui-kit-and-design-source-authority.md
+    - docs/adr/0016-runtime-ui-kit-authority.md
 e2e_command: web-playwright
 e2e_tests:
     - apps/web/tests/e2e/ui-kit.journeys.spec.ts

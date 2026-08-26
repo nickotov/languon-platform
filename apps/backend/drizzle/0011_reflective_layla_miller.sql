@@ -1,0 +1,3 @@
+ALTER TABLE "dictionary_generation_jobs" ADD COLUMN "provider_reserved_attempts" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+CREATE INDEX "dictionary_generation_jobs_provider_budget_idx" ON "dictionary_generation_jobs" USING btree ("provider_reservation_state","provider_reservation_settled_at","owner_id");--> statement-breakpoint
+ALTER TABLE "dictionary_generation_jobs" ADD CONSTRAINT "dictionary_generation_jobs_provider_reserved_attempts" CHECK ("dictionary_generation_jobs"."provider_reserved_attempts" between 0 and "dictionary_generation_jobs"."max_attempts");

@@ -13,10 +13,17 @@ import { IMAGE_NAMES, validateManifest } from './release-manifest.mjs';
 
 const SOURCE_SHA = 'a'.repeat(40);
 const DIGEST = 'b'.repeat(64);
+const generationBudget = {
+    maxInputTokensPerAttempt: 65_536,
+    maxOutputTokensPerAttempt: 1_024,
+    inputCostMicrosPerMillionTokens: 1_000_000,
+    outputCostMicrosPerMillionTokens: 4_000_000,
+    maxCostMicrosPerAttempt: 70_000,
+};
 
 function fixture(overrides = {}) {
     return {
-        schemaVersion: 1,
+        schemaVersion: 2,
         identity: 'v1.2.3',
         version: 'v1.2.3',
         sourceSha: SOURCE_SHA,
@@ -24,6 +31,18 @@ function fixture(overrides = {}) {
         workflowRun: 1234,
         createdAt: '2026-08-18T00:00:00.000Z',
         migration: { compatibility: 'expand', ledger: 'drizzle-tree-sha' },
+        dictionaryJobs: {
+            phase: 'expand',
+            workerProcessable: ['single-card:v1'],
+            apiReadable: ['single-card:v1'],
+            apiCancellable: ['single-card:v1'],
+            apiDiscardable: ['single-card:v1'],
+            apiAcceptable: ['single-card:v1'],
+            apiEnqueued: [],
+            webReadable: ['single-card:v1'],
+            retireFormats: [],
+            generationBudget,
+        },
         images: Object.fromEntries(
             IMAGE_NAMES.map((name) => [
                 name,
@@ -183,6 +202,30 @@ test('create CLI writes a canonical manifest once and validate CLI checks expect
         'expand',
         '--migration-ledger',
         'ledger',
+        '--dictionary-job-phase',
+        'expand',
+        '--dictionary-job-worker-processable',
+        'single-card:v1',
+        '--dictionary-job-api-readable',
+        'single-card:v1',
+        '--dictionary-job-api-cancellable',
+        'single-card:v1',
+        '--dictionary-job-api-discardable',
+        'single-card:v1',
+        '--dictionary-job-api-acceptable',
+        'single-card:v1',
+        '--dictionary-job-web-readable',
+        'single-card:v1',
+        '--dictionary-job-max-input-tokens-per-attempt',
+        '65536',
+        '--dictionary-job-max-output-tokens-per-attempt',
+        '1024',
+        '--dictionary-job-input-cost-micros-per-million-tokens',
+        '1000000',
+        '--dictionary-job-output-cost-micros-per-million-tokens',
+        '4000000',
+        '--dictionary-job-max-cost-micros-per-attempt',
+        '70000',
         ...IMAGE_NAMES.flatMap((name) => [
             '--image',
             `${name}=ghcr.io/nickkotov/languon-platform/${name}@sha256:${DIGEST}`,
@@ -196,6 +239,15 @@ test('create CLI writes a canonical manifest once and validate CLI checks expect
         assert.equal(manifest.version, null);
         assert.equal(manifest.sourceSha, SOURCE_SHA);
         assert.equal(manifest.migration.ledger, 'ledger');
+        assert.deepEqual(manifest.dictionaryJobs.apiEnqueued, []);
+        assert.deepEqual(manifest.dictionaryJobs.workerProcessable, [
+            'single-card:v1',
+        ]);
+        assert.deepEqual(manifest.dictionaryJobs.retireFormats, []);
+        assert.deepEqual(
+            manifest.dictionaryJobs.generationBudget,
+            generationBudget,
+        );
 
         const duplicate = spawnSync(process.execPath, args, {
             encoding: 'utf8',

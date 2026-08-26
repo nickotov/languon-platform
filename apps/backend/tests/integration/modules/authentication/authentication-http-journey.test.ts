@@ -53,6 +53,8 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
                 AUTH_CODE_HMAC_SECRET:
                     'http-journey-code-secret-40-bytes-aaaaaaaa',
                 AUTH_JWT_SECRET: 'http-journey-jwt-secret-40-bytes-bbbbbbbb',
+                DICTIONARY_HMAC_SECRET:
+                    'http-journey-dictionary-secret-40-bytes-cccccccc',
                 AUTH_WEBAUTHN_RP_ID: 'localhost',
                 DATABASE_URL: getTestDatabaseUrl(),
                 NODE_ENV: 'test',

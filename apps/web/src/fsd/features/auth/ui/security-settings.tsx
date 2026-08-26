@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 
-import { useSessionStore } from '@/fsd/entities/session/model/session-store';
+import { useSessionStore } from '@/fsd/entities/session';
 import { authApi, AuthApiError } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { Button, Card, Field, Input, LoadingState } from '@/fsd/shared/ui';

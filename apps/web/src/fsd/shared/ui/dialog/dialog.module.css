@@ -5,6 +5,7 @@
     color: var(--sys-color-text-primary);
     max-height: calc(100dvh - 32px);
     overflow: auto;
+    overscroll-behavior: contain;
     padding: var(--sys-space-6);
     width: calc(100vw - 32px);
 }
@@ -44,6 +45,8 @@
         margin-block-end: 0;
         max-height: 90dvh;
         max-width: none;
+        padding: var(--sys-space-4) var(--sys-space-4)
+            calc(var(--sys-space-4) + env(safe-area-inset-bottom));
         width: 100%;
     }
 }

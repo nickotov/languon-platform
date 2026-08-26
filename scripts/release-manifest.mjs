@@ -52,6 +52,21 @@ function required(options, name) {
     return value;
 }
 
+function commaSeparated(options, name) {
+    const value = options.get(name);
+    if (value === undefined || value === '') return [];
+    if (typeof value !== 'string') fail(`--${name} may be provided once`);
+    return value.split(',').filter(Boolean);
+}
+
+function requiredInteger(options, name) {
+    const value = required(options, name);
+    if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) {
+        fail(`--${name} must be a non-negative safe integer`);
+    }
+    return Number(value);
+}
+
 function createManifest(options) {
     const sourceSha = required(options, 'source-sha');
     const identity = required(options, 'identity');
@@ -71,7 +86,7 @@ function createManifest(options) {
     }
 
     return validateReleaseManifest({
-        schemaVersion: 1,
+        schemaVersion: 2,
         identity,
         version: versionText || null,
         sourceSha,
@@ -81,6 +96,54 @@ function createManifest(options) {
         migration: {
             compatibility: required(options, 'migration-compatibility'),
             ledger: required(options, 'migration-ledger'),
+        },
+        dictionaryJobs: {
+            phase: required(options, 'dictionary-job-phase'),
+            workerProcessable: commaSeparated(
+                options,
+                'dictionary-job-worker-processable',
+            ),
+            apiReadable: commaSeparated(options, 'dictionary-job-api-readable'),
+            apiCancellable: commaSeparated(
+                options,
+                'dictionary-job-api-cancellable',
+            ),
+            apiDiscardable: commaSeparated(
+                options,
+                'dictionary-job-api-discardable',
+            ),
+            apiAcceptable: commaSeparated(
+                options,
+                'dictionary-job-api-acceptable',
+            ),
+            apiEnqueued: commaSeparated(options, 'dictionary-job-api-enqueued'),
+            webReadable: commaSeparated(options, 'dictionary-job-web-readable'),
+            retireFormats: commaSeparated(
+                options,
+                'dictionary-job-retire-formats',
+            ),
+            generationBudget: {
+                maxInputTokensPerAttempt: requiredInteger(
+                    options,
+                    'dictionary-job-max-input-tokens-per-attempt',
+                ),
+                maxOutputTokensPerAttempt: requiredInteger(
+                    options,
+                    'dictionary-job-max-output-tokens-per-attempt',
+                ),
+                inputCostMicrosPerMillionTokens: requiredInteger(
+                    options,
+                    'dictionary-job-input-cost-micros-per-million-tokens',
+                ),
+                outputCostMicrosPerMillionTokens: requiredInteger(
+                    options,
+                    'dictionary-job-output-cost-micros-per-million-tokens',
+                ),
+                maxCostMicrosPerAttempt: requiredInteger(
+                    options,
+                    'dictionary-job-max-cost-micros-per-attempt',
+                ),
+            },
         },
         images,
     });

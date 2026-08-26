@@ -1,4 +1,4 @@
-export { AuthProvider } from './model/auth-provider';
+export { AuthProvider, useAuth } from './model/auth-provider';
 export { AuthShell } from './ui/auth-shell';
 export { ForgotPasswordForm } from './ui/forgot-password-form';
 export { HomeSessionActions } from './ui/home-session-actions';

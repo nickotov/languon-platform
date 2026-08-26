@@ -42,6 +42,8 @@ function membershipEnvironment() {
         AUTH_CODE_HMAC_SECRET:
             'admin-e2e-code-secret-do-not-use-outside-local-tests',
         AUTH_JWT_SECRET: 'admin-e2e-jwt-secret-do-not-use-outside-local-tests',
+        DICTIONARY_HMAC_SECRET:
+            'admin-e2e-dictionary-secret-do-not-use-outside-local-tests',
         AUTH_WEBAUTHN_RP_ID: new URL(adminOrigin).hostname,
         DATABASE_URL: databaseUrl,
         REDIS_URL: redisUrl,

@@ -19,6 +19,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [User Authentication](./user-authentication.md) — signup, verification,
   sessions, passwords, recovery, logout, and passkeys through the browser and
   HTTP API.
+- [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
+  card authoring, lifecycle recovery, unlisted reading, and private forks.
 - [Admin User Management](./admin-user-management.md) — owner authentication,
   user inspection, safe disable/restore operations, audit history, and guarded
   membership commands.

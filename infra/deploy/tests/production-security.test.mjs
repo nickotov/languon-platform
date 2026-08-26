@@ -33,6 +33,15 @@ test('web and admin cannot reach the data network and readiness is private', asy
         'utf8',
     );
     const nginx = await readFile('infra/nginx/nginx.conf', 'utf8');
+    assert.match(nginx, /client_max_body_size 2250k;/);
+    assert.match(
+        nginx,
+        /limit_req_zone \$binary_remote_addr zone=dictionary_import_requests:10m rate=30r\/m;/,
+    );
+    assert.match(
+        nginx,
+        /location = \/api\/dictionary-imports\/preview[\s\S]*limit_conn dictionary_import_connections 2;[\s\S]*limit_req zone=dictionary_import_requests burst=5 nodelay;[\s\S]*proxy_pass http:\/\/languon_backend\/dictionary-imports\/preview;/,
+    );
     const web = apps.slice(
         apps.indexOf('    web:'),
         apps.indexOf('    admin:'),
@@ -95,5 +104,42 @@ test('admin is a static unprivileged NGINX image with SPA fallback', async () =>
         'X-Frame-Options',
     ]) {
         assert.match(nginx, new RegExp(`add_header ${header}`));
+    }
+});
+
+test('dictionary worker reuses the backend image without HTTP or auth/cache authority', async () => {
+    const apps = await readFile(
+        'infra/deploy/compose/apps.compose.yaml',
+        'utf8',
+    );
+    const worker = apps.slice(
+        apps.indexOf('    dictionary-worker:'),
+        apps.indexOf('    web:'),
+    );
+    assert.match(worker, /image: \$\{BACKEND_IMAGE/);
+    assert.match(worker, /dictionary-worker-command\.js/);
+    assert.match(worker, /DICTIONARY_WORKER_DATABASE_URL/);
+    assert.doesNotMatch(worker, /^\s+DATABASE_URL:/m);
+    assert.doesNotMatch(worker, /AUTH_|REDIS_URL|BACKEND_PORT|edge:/);
+    assert.match(worker, /DICTIONARY_JOB_API_ENQUEUED_FORMATS/);
+    assert.match(worker, /DICTIONARY_GENERATION_PROVIDER_MODE/);
+    assert.match(worker, /DICTIONARY_GENERATION_MODEL_API_KEY/);
+    const backend = apps.slice(
+        apps.indexOf('    backend:'),
+        apps.indexOf('    dictionary-worker:'),
+    );
+    assert.match(backend, /DICTIONARY_HMAC_SECRET/);
+    assert.doesNotMatch(worker, /DICTIONARY_HMAC_SECRET/);
+    assert.doesNotMatch(backend, /DICTIONARY_GENERATION_MODEL_API_KEY/);
+    for (const policy of [
+        'DICTIONARY_GENERATION_MAX_INPUT_TOKENS',
+        'DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS',
+        'DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS',
+        'DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS',
+        'DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT',
+    ]) {
+        const mapping = `${policy}: ` + '${' + `${policy}:-}`;
+        assert.equal(backend.includes(mapping), true);
+        assert.equal(worker.includes(mapping), true);
     }
 });

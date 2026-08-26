@@ -713,7 +713,7 @@
             "kind": "task",
             "outputProtocol": "plain",
             "source": {
-                "revision": "sha256:9a8216c073907dcd620567b1aebe0956c369d8897abee75a5a227cba08e0ecc1",
+                "revision": "sha256:b1b93140ffa5ef05bc148fd25124f22889026bf10e63397fd512715a13c51e11",
                 "script": "test",
                 "type": "package-script"
             },
@@ -752,6 +752,23 @@
                 "type": "package-script"
             },
             "title": "Test · Coverage"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Validates disposable document-service isolation and generates temporary clean and infected fixtures.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:document-services",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:0610b1de6db2b4df7e6d87e4f3da93694914dc86ed6bfc9005baf931324ef586",
+                "script": "test:document-services",
+                "type": "package-script"
+            },
+            "title": "Test · Document Services"
         },
         {
             "batchEligible": true,

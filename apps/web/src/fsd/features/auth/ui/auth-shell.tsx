@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { type ReactNode, useEffect, useRef } from 'react';
 
 import { useI18n } from '@/fsd/shared/i18n';
+import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
+import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { Card, InlineAlert } from '@/fsd/shared/ui';
 import styles from './auth-ui.module.css';
 
@@ -58,19 +60,31 @@ export function FormMessage({
 
 export function AuthLinks({
     mode,
+    returnTo,
     signupAvailable = true,
 }: {
     mode: 'login' | 'signup';
+    returnTo?: string | undefined;
     signupAvailable?: boolean;
 }) {
     const { href, t } = useI18n();
+    const destination = safeReturnPath(returnTo);
+    const path = mode === 'login' ? '/signup' : '/login';
+    const target =
+        destination === '/'
+            ? path
+            : `${path}?${new URLSearchParams({ returnTo: destination }).toString()}`;
     if (mode === 'login' && !signupAvailable) return null;
     return (
         <p className={styles.switch}>
             {mode === 'login'
                 ? `${t('auth.newToLanguon')} `
                 : `${t('auth.alreadyAccount')} `}
-            <Link href={href(mode === 'login' ? '/signup' : '/login')}>
+            <Link
+                href={href(
+                    preserveCapabilityReturnFragment(target, destination),
+                )}
+            >
                 {mode === 'login' ? t('auth.createAccount') : t('auth.signIn')}
             </Link>
         </p>

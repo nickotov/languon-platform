@@ -8,7 +8,8 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
-import { useSessionStore } from '@/fsd/entities/session/model/session-store';
+import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
+import { useSessionStore } from '@/fsd/entities/session';
 import { Button, Field, Input } from '@/fsd/shared/ui';
 
 import { getPasskey, supportsPasskeys } from '../lib/webauthn';
@@ -64,10 +65,21 @@ export function LoginForm({
                     resendAvailableAt: response.verification.resendAvailableAt,
                     returnTo: destination,
                 });
-                router.push(href(`/verify-email?${query.toString()}`));
+                router.push(
+                    href(
+                        preserveCapabilityReturnFragment(
+                            `/verify-email?${query.toString()}`,
+                            destination,
+                        ),
+                    ),
+                );
                 return;
             }
-            router.replace(href(destination));
+            router.replace(
+                href(
+                    preserveCapabilityReturnFragment(destination, destination),
+                ),
+            );
         } catch (caught) {
             setError(localizedAuthError(caught, t));
         } finally {
@@ -92,7 +104,11 @@ export function LoginForm({
                 },
                 (result) => result,
             );
-            router.replace(href(destination));
+            router.replace(
+                href(
+                    preserveCapabilityReturnFragment(destination, destination),
+                ),
+            );
         } catch (caught) {
             setError(localizedAuthError(caught, t));
         } finally {
@@ -173,6 +189,7 @@ export function LoginForm({
             ) : null}
             <AuthLinks
                 mode='login'
+                returnTo={destination}
                 signupAvailable={capabilities?.email.signUp !== false}
             />
         </>

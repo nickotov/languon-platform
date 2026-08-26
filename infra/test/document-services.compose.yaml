@@ -1,0 +1,130 @@
+name: ${DOCUMENT_TEST_COMPOSE_PROJECT:-languon-document-test}
+
+# Disposable-only M4 dependencies. This file deliberately does not extend the
+# development or production compose projects: document objects must never share
+# the backup bucket or credentials.
+services:
+    minio:
+        image: minio/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
+        command: ['server', '/data', '--console-address', ':9001']
+        environment:
+            MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:3000,http://localhost:3000,http://127.0.0.1:3333,http://localhost:3333
+            MINIO_ROOT_PASSWORD: ${DOCUMENT_TEST_MINIO_SECRET_KEY:?required}
+            MINIO_ROOT_USER: ${DOCUMENT_TEST_MINIO_ACCESS_KEY:?required}
+        ports:
+            - '127.0.0.1:${DOCUMENT_TEST_MINIO_PORT:-59000}:9000'
+            - '127.0.0.1:${DOCUMENT_TEST_MINIO_CONSOLE_PORT:-59001}:9001'
+        tmpfs:
+            - /data:rw,noexec,nosuid,size=256m
+        networks: [document-test, document-test-host]
+
+    minio-init:
+        image: minio/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3
+        depends_on:
+            minio:
+                condition: service_started
+        environment:
+            DOCUMENT_TEST_API_ACCESS_KEY: ${DOCUMENT_TEST_API_ACCESS_KEY:-languon-document-api-test}
+            DOCUMENT_TEST_API_SECRET_KEY: ${DOCUMENT_TEST_API_SECRET_KEY:-languon-document-api-test-secret}
+            DOCUMENT_TEST_BUCKET: languon-document-test
+            DOCUMENT_TEST_WORKER_ACCESS_KEY: ${DOCUMENT_TEST_WORKER_ACCESS_KEY:-languon-document-worker-test}
+            DOCUMENT_TEST_WORKER_SECRET_KEY: ${DOCUMENT_TEST_WORKER_SECRET_KEY:-languon-document-worker-test-secret}
+            MINIO_ROOT_PASSWORD: ${DOCUMENT_TEST_MINIO_SECRET_KEY:?required}
+            MINIO_ROOT_USER: ${DOCUMENT_TEST_MINIO_ACCESS_KEY:?required}
+        entrypoint: ['/bin/sh', '-ec']
+        command:
+            - >-
+                until /usr/bin/mc alias set document-test http://minio:9000
+                "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 1; done;
+                /usr/bin/mc mb --ignore-existing "document-test/$${DOCUMENT_TEST_BUCKET}";
+                /usr/bin/mc version enable "document-test/$${DOCUMENT_TEST_BUCKET}";
+                /usr/bin/mc anonymous set none "document-test/$${DOCUMENT_TEST_BUCKET}";
+                /usr/bin/mc admin policy create document-test document-api /policies/api.json;
+                /usr/bin/mc admin policy create document-test document-worker /policies/worker.json;
+                /usr/bin/mc admin user add document-test "$${DOCUMENT_TEST_API_ACCESS_KEY}"
+                "$${DOCUMENT_TEST_API_SECRET_KEY}";
+                /usr/bin/mc admin user add document-test "$${DOCUMENT_TEST_WORKER_ACCESS_KEY}"
+                "$${DOCUMENT_TEST_WORKER_SECRET_KEY}";
+                /usr/bin/mc admin policy attach document-test document-api
+                --user "$${DOCUMENT_TEST_API_ACCESS_KEY}";
+                /usr/bin/mc admin policy attach document-test document-worker
+                --user "$${DOCUMENT_TEST_WORKER_ACCESS_KEY}";
+        volumes:
+            - ./document-storage-api-policy.json:/policies/api.json:ro
+            - ./document-storage-worker-policy.json:/policies/worker.json:ro
+        networks: [document-test]
+
+    clamav:
+        image: clamav/clamav@sha256:629a3050df6a706aedb31859fbb8139e9aaf8f56b0ffefbf251b8358a7c9e76c
+        platform: linux/amd64
+        depends_on:
+            clamav-signature-updater:
+                condition: service_completed_successfully
+        entrypoint: ['/bin/sh', '-ec']
+        command:
+            - >-
+                sed -i
+                -e 's|^LogFile .*|LogFile /tmp/clamd.log|'
+                -e '/^TCPAddr /d'
+                -e '/^StreamMaxLength /d'
+                -e '/^MaxRecursion /d'
+                -e '/^MaxFiles /d'
+                /etc/clamav/clamd.conf;
+                printf '%s\n' 'TCPAddr 0.0.0.0' 'StreamMaxLength 25M'
+                'MaxRecursion 10' 'MaxFiles 2048'
+                >> /etc/clamav/clamd.conf;
+                export CLAMAV_NO_FRESHCLAMD=true;
+                exec /init
+        ports:
+            - '127.0.0.1:${DOCUMENT_TEST_CLAMAV_PORT:-53310}:3310'
+        # ClamAV's upstream init must update its own signature and log paths.
+        # There is no mounted volume, credential, or product object data; the
+        # writable container layer is discarded with this disposable project.
+        read_only: false
+        security_opt:
+            - no-new-privileges:true
+        cap_drop: [ALL]
+        cap_add: [CHOWN, SETGID, SETUID]
+        volumes:
+            - clamav-signatures:/var/lib/clamav
+        tmpfs:
+            - /run/clamav:rw,noexec,nosuid,size=8m
+            - /tmp:rw,noexec,nosuid,size=32m
+        networks: [document-test]
+
+    clamav-signature-updater:
+        image: clamav/clamav@sha256:629a3050df6a706aedb31859fbb8139e9aaf8f56b0ffefbf251b8358a7c9e76c
+        platform: linux/amd64
+        entrypoint: ['/init']
+        command: ['freshclam', '--foreground', '--stdout']
+        volumes:
+            - clamav-signatures:/var/lib/clamav
+        networks: [scanner-updates]
+
+    parser-sandbox-probe:
+        build:
+            context: ../..
+            dockerfile: infra/test/document-parser-sandbox.Dockerfile
+        environment: []
+        network_mode: none
+        read_only: true
+        security_opt:
+            - no-new-privileges:true
+        cap_drop: [ALL]
+        pids_limit: 32
+        mem_limit: 128m
+        cpus: 0.25
+        tmpfs:
+            - /tmp:rw,noexec,nosuid,size=16m
+
+networks:
+    document-test:
+        internal: true
+    # Docker Desktop does not publish host ports for containers attached only
+    # to an internal network. This bridge is used solely by MinIO; the published
+    # ports remain bound to loopback and the bucket still denies anonymous access.
+    document-test-host:
+    scanner-updates:
+
+volumes:
+    clamav-signatures:

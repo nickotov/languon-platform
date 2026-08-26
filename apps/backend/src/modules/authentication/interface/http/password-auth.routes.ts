@@ -100,7 +100,7 @@ export function createPasswordAuthRoutes(input: {
         type: 'http',
     });
 
-    app.use('*', async (context, next) => {
+    app.use('/auth/*', async (context, next) => {
         for (const [name, value] of Object.entries(policy.securityHeaders())) {
             context.header(name, value);
         }
@@ -118,7 +118,7 @@ export function createPasswordAuthRoutes(input: {
         await next();
     });
 
-    app.use('*', authHttpBodyLimit);
+    app.use('/auth/*', authHttpBodyLimit);
 
     app.onError((error, context) => {
         const correlationId = safeCorrelationId(
@@ -159,7 +159,7 @@ export function createPasswordAuthRoutes(input: {
     const bearer = (authorization: string | undefined) =>
         policy.parseBearerAuthorization(authorization ?? null);
 
-    app.options('*', (context) => {
+    app.options('/auth/*', (context) => {
         const origin = assertOrigin(context.req.header('Origin'));
         context.header('Access-Control-Allow-Origin', origin);
         context.header('Access-Control-Allow-Credentials', 'true');

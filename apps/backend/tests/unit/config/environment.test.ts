@@ -7,6 +7,15 @@ import {
 
 const jwtSecret = 'jwt-secret-with-at-least-thirty-two-bytes-123456';
 const codeSecret = 'code-secret-with-at-least-thirty-two-bytes-654321';
+const dictionarySecret =
+    'dictionary-secret-with-at-least-thirty-two-bytes-123456';
+const liveProviderBudget = {
+    DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS: '1000000',
+    DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '100000',
+    DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '65536',
+    DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '1024',
+    DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS: '10000000',
+};
 
 function values(
     appEnvironment: 'development' | 'production' | 'staging' | 'test',
@@ -16,6 +25,7 @@ function values(
         APP_ENV: appEnvironment,
         AUTH_CODE_HMAC_SECRET: codeSecret,
         AUTH_JWT_SECRET: jwtSecret,
+        DICTIONARY_HMAC_SECRET: dictionarySecret,
         ...(appEnvironment === 'staging' || appEnvironment === 'production'
             ? {
                   ADMIN_BASE_URL: 'https://admin.app.languon.example',
@@ -54,6 +64,7 @@ describe('loadEnvironment authentication settings', () => {
                     : 'unavailable',
                 AUTH_FIXED_VERIFICATION_CODE_ENABLED: fixedCodeEnabled,
                 AUTH_REFRESH_TOKEN_TTL: 14 * 24 * 60 * 60,
+                AUTH_REDIS_NAMESPACE: 'languon:auth:v1',
                 AUTH_VERIFICATION_CODE_MODE: fixedCodeEnabled
                     ? 'fixed'
                     : 'unavailable',
@@ -70,6 +81,7 @@ describe('loadEnvironment authentication settings', () => {
             loadEnvironment({
                 AUTH_CODE_HMAC_SECRET: codeSecret,
                 AUTH_JWT_SECRET: jwtSecret,
+                DICTIONARY_HMAC_SECRET: dictionarySecret,
                 NODE_ENV: 'development',
             }),
         ).toThrow();
@@ -85,6 +97,144 @@ describe('loadEnvironment authentication settings', () => {
 
         expect(environment.AUTH_ACCESS_TOKEN_TTL).toBe(10 * 60);
         expect(environment.AUTH_REFRESH_TOKEN_TTL).toBe(7 * 24 * 60 * 60);
+    });
+
+    it('accepts a bounded Redis namespace and rejects unsafe values', () => {
+        expect(
+            loadEnvironment(
+                values('test', {
+                    AUTH_REDIS_NAMESPACE: 'languon:auth:e2e:run-123',
+                }),
+            ).AUTH_REDIS_NAMESPACE,
+        ).toBe('languon:auth:e2e:run-123');
+        expect(() =>
+            loadEnvironment(
+                values('test', {
+                    AUTH_REDIS_NAMESPACE: 'Languon auth e2e',
+                }),
+            ),
+        ).toThrow();
+    });
+
+    it('parses dictionary job lifecycle capabilities and fails closed by default', () => {
+        expect(loadEnvironment(values('development'))).toMatchObject({
+            DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: [],
+            DICTIONARY_JOB_API_CANCELLABLE_FORMATS: [],
+            DICTIONARY_JOB_API_DISCARDABLE_FORMATS: [],
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: [],
+            DICTIONARY_JOB_API_READABLE_FORMATS: [],
+            DICTIONARY_GENERATION_PROVIDER_BUDGET: {
+                inputCostMicrosPerMillionTokens: 0,
+                maxCostMicrosPerAttempt: 50_000,
+                maxInputTokensPerAttempt: 262_144,
+                maxOutputTokensPerAttempt: 40_960,
+                outputCostMicrosPerMillionTokens: 0,
+            },
+        });
+
+        expect(
+            loadEnvironment(
+                values('development', {
+                    DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: 'single-card:v1',
+                    DICTIONARY_JOB_API_CANCELLABLE_FORMATS: 'single-card:v1',
+                    DICTIONARY_JOB_API_DISCARDABLE_FORMATS: 'single-card:v1',
+                    DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v1',
+                    DICTIONARY_JOB_API_READABLE_FORMATS: 'single-card:v1',
+                }),
+            ),
+        ).toMatchObject({
+            DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: ['single-card:v1'],
+            DICTIONARY_JOB_API_CANCELLABLE_FORMATS: ['single-card:v1'],
+            DICTIONARY_JOB_API_DISCARDABLE_FORMATS: ['single-card:v1'],
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: ['single-card:v1'],
+            DICTIONARY_JOB_API_READABLE_FORMATS: ['single-card:v1'],
+        });
+
+        for (const invalid of [
+            'single-card:v1,single-card:v1',
+            'single-card:v1, single-card:v2',
+            'not-a-format',
+        ]) {
+            expect(() =>
+                loadEnvironment(
+                    values('development', {
+                        DICTIONARY_JOB_API_ENQUEUED_FORMATS: invalid,
+                    }),
+                ),
+            ).toThrow(/DICTIONARY_JOB_API_ENQUEUED_FORMATS|formats/i);
+        }
+
+        expect(() =>
+            loadEnvironment(
+                values('development', {
+                    DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v1',
+                }),
+            ),
+        ).toThrow(/must also be acceptable/i);
+    });
+
+    it('requires one validated provider budget for deployed generation activation', () => {
+        const capabilities = {
+            DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: 'single-card:v1',
+            DICTIONARY_JOB_API_CANCELLABLE_FORMATS: 'single-card:v1',
+            DICTIONARY_JOB_API_DISCARDABLE_FORMATS: 'single-card:v1',
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v1',
+            DICTIONARY_JOB_API_READABLE_FORMATS: 'single-card:v1',
+        };
+        expect(() => loadEnvironment(values('staging', capabilities))).toThrow(
+            /all five/i,
+        );
+        expect(
+            loadEnvironment(
+                values('staging', {
+                    ...capabilities,
+                    ...liveProviderBudget,
+                }),
+            ).DICTIONARY_GENERATION_PROVIDER_BUDGET,
+        ).toEqual({
+            inputCostMicrosPerMillionTokens: 1_000_000,
+            maxCostMicrosPerAttempt: 100_000,
+            maxInputTokensPerAttempt: 65_536,
+            maxOutputTokensPerAttempt: 1_024,
+            outputCostMicrosPerMillionTokens: 10_000_000,
+        });
+        expect(() =>
+            loadEnvironment(
+                values('development', {
+                    DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '65536',
+                }),
+            ),
+        ).toThrow(/all five/i);
+    });
+
+    it('rejects pasted-term API activation below the worker aggregate envelope', () => {
+        const capabilities = {
+            DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: 'pasted-terms:v1',
+            DICTIONARY_JOB_API_CANCELLABLE_FORMATS: 'pasted-terms:v1',
+            DICTIONARY_JOB_API_DISCARDABLE_FORMATS: 'pasted-terms:v1',
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'pasted-terms:v1',
+            DICTIONARY_JOB_API_READABLE_FORMATS: 'pasted-terms:v1',
+        };
+
+        expect(() =>
+            loadEnvironment(
+                values('staging', {
+                    ...capabilities,
+                    ...liveProviderBudget,
+                }),
+            ),
+        ).toThrow(/262144 input-token and 40960 output-token/i);
+        expect(
+            loadEnvironment(
+                values('staging', {
+                    ...capabilities,
+                    ...liveProviderBudget,
+                    DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '700000',
+                    DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '262144',
+                    DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '40960',
+                }),
+            ).DICTIONARY_JOB_API_ENQUEUED_FORMATS,
+        ).toEqual(['pasted-terms:v1']);
     });
 
     it('normalizes blank optional Langfuse credentials and preserves configured values', () => {
@@ -194,7 +344,7 @@ describe('loadEnvironment authentication settings', () => {
         ).toThrow();
     });
 
-    it('requires separate secrets containing at least 32 UTF-8 bytes', () => {
+    it('requires separate auth and dictionary secrets containing at least 32 UTF-8 bytes', () => {
         expect(() =>
             loadEnvironment(
                 values('development', {
@@ -209,6 +359,65 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+        expect(() =>
+            loadEnvironment(
+                values('development', {
+                    DICTIONARY_HMAC_SECRET: codeSecret,
+                }),
+            ),
+        ).toThrow(/dictionary.*secret.*different/i);
+        expect(() =>
+            loadEnvironment(
+                values('development', {
+                    DICTIONARY_HMAC_SECRET: jwtSecret,
+                }),
+            ),
+        ).toThrow(/dictionary.*secret.*different/i);
+        expect(() =>
+            loadEnvironment(
+                values('development', {
+                    DICTIONARY_HMAC_SECRET: 'short',
+                }),
+            ),
+        ).toThrow();
+        const withoutDictionarySecret = values('development');
+        delete withoutDictionarySecret.DICTIONARY_HMAC_SECRET;
+        expect(() => loadEnvironment(withoutDictionarySecret)).toThrow();
+    });
+
+    it('keeps the dictionary key independent when the verification-code key rotates', () => {
+        const before = loadEnvironment(values('development'));
+        const after = loadEnvironment(
+            values('development', {
+                AUTH_CODE_HMAC_SECRET:
+                    'rotated-code-secret-with-at-least-thirty-two-bytes',
+            }),
+        );
+
+        expect(after.AUTH_CODE_HMAC_SECRET).not.toBe(
+            before.AUTH_CODE_HMAC_SECRET,
+        );
+        expect(after.DICTIONARY_HMAC_SECRET).toBe(
+            before.DICTIONARY_HMAC_SECRET,
+        );
+    });
+
+    it('does not include a rejected dictionary secret in validation output', () => {
+        const rejectedSecret =
+            'development-only-dictionary-secret-sensitive-value';
+        let validationError: unknown;
+        try {
+            loadEnvironment(
+                values('production', {
+                    DICTIONARY_HMAC_SECRET: rejectedSecret,
+                }),
+            );
+        } catch (error) {
+            validationError = error;
+        }
+
+        expect(validationError).toBeDefined();
+        expect(String(validationError)).not.toContain(rejectedSecret);
     });
 
     it('enables staging fixed code only with the exact unsafe acknowledgement', () => {
@@ -243,6 +452,14 @@ describe('loadEnvironment authentication settings', () => {
                 values('production', {
                     AUTH_JWT_SECRET:
                         'development-only-jwt-secret-change-me-123456789',
+                }),
+            ),
+        ).toThrow();
+        expect(() =>
+            loadEnvironment(
+                values('production', {
+                    DICTIONARY_HMAC_SECRET:
+                        'development-only-dictionary-secret-change-me',
                 }),
             ),
         ).toThrow();
@@ -311,6 +528,62 @@ describe('loadEnvironment authentication settings', () => {
         });
     });
 
+    it('requires dedicated private storage before document upload activation', () => {
+        const capabilities = {
+            DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: 'document-terms:v1',
+            DICTIONARY_JOB_API_CANCELLABLE_FORMATS: 'document-terms:v1',
+            DICTIONARY_JOB_API_DISCARDABLE_FORMATS: 'document-terms:v1',
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'document-terms:v1',
+            DICTIONARY_JOB_API_READABLE_FORMATS: 'document-terms:v1',
+            DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS:
+                '1000000',
+            DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '700000',
+            DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '262144',
+            DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '40960',
+            DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS:
+                '10000000',
+        };
+        expect(() => loadEnvironment(values('test', capabilities))).toThrow(
+            /Document storage is required/,
+        );
+        const stopEnqueueCapabilities = {
+            ...capabilities,
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: '',
+        };
+        expect(() =>
+            loadEnvironment(values('test', stopEnqueueCapabilities)),
+        ).toThrow(/Document storage is required/);
+        const storage = {
+            DICTIONARY_DOCUMENT_STORAGE_API_ACCESS_KEY_ID: 'api-key',
+            DICTIONARY_DOCUMENT_STORAGE_API_SECRET_ACCESS_KEY:
+                'api-secret-at-least-sixteen',
+            DICTIONARY_DOCUMENT_STORAGE_BUCKET: 'documents-test',
+            DICTIONARY_DOCUMENT_STORAGE_ENDPOINT: 'http://127.0.0.1:59000',
+            DICTIONARY_DOCUMENT_STORAGE_FORCE_PATH_STYLE: 'true',
+            DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
+            DICTIONARY_DOCUMENT_STORAGE_REGION: 'us-east-1',
+        };
+        expect(
+            loadEnvironment(values('test', { ...capabilities, ...storage })),
+        ).toMatchObject({
+            DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: true,
+            DICTIONARY_DOCUMENT_UPLOAD_AUTHORIZATION_ENABLED: true,
+            DICTIONARY_DOCUMENT_STORAGE: {
+                accessKeyId: 'api-key',
+                bucket: 'documents-test',
+                forcePathStyle: true,
+            },
+        });
+        expect(
+            loadEnvironment(
+                values('test', { ...stopEnqueueCapabilities, ...storage }),
+            ),
+        ).toMatchObject({
+            DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: true,
+            DICTIONARY_DOCUMENT_UPLOAD_AUTHORIZATION_ENABLED: false,
+        });
+    });
+
     it('requires exact HTTPS origins, matching RP ID, and explicit data services in staging and production', () => {
         const deployed = loadEnvironment(
             values('production', {
@@ -318,6 +591,8 @@ describe('loadEnvironment authentication settings', () => {
                 AUTH_CODE_HMAC_SECRET:
                     'prod-code-secret-7wQdZK6F8pN2XvRt4mHs9LcB',
                 AUTH_JWT_SECRET: 'prod-jwt-secret-3JpQ8vWz7cNk2sMx5tRy6HdF',
+                DICTIONARY_HMAC_SECRET:
+                    'prod-dictionary-secret-5VnQ7zWp4cKs8mRx2tHy9LdF',
                 AUTH_WEBAUTHN_RP_ID: 'app.languon.example',
                 DATABASE_URL:
                     'postgres://app:secret@db.internal:5432/languon?sslmode=verify-full',

@@ -2,7 +2,7 @@
 feature: release-deployment-platform
 title: Release and Deployment Platform
 status: current
-last_verified: 2026-08-18
+last_verified: 2026-08-21
 surfaces:
     - cli
     - system
@@ -53,7 +53,8 @@ related_features:
 This guide proves that an operator can exercise the production packaging and
 one-host staging deployment contract without a server or cloud account. The
 disposable journey builds the real production images, starts isolated
-PostgreSQL/Redis and the stable NGINX edge, deploys an application slot, verifies
+PostgreSQL/Redis and the stable NGINX edge, deploys an application slot with its
+private dictionary worker, verifies
 it, proves a real migrator connection failure leaves that slot active, promotes
 a distinct second release identity, rolls back to the previous immutable
 manifest, and verifies again.
@@ -114,7 +115,10 @@ pnpm deploy:local:down
     ```
 
     Expect the state to identify the same source SHA/slot and all dependency-aware
-    readiness plus edge smoke checks to pass.
+    readiness plus edge smoke checks to pass. Compose also requires the private
+    worker's bounded PostgreSQL readiness command and, in live mode, a bounded
+    non-generation provider connectivity/authentication probe to pass. API
+    readiness remains independent of the provider.
 
 3. Run another local deployment to exercise the inactive slot and graceful
    NGINX switch:
@@ -125,8 +129,10 @@ pnpm deploy:local:down
     ```
 
     Expect the active slot to change to `green`; only after NGINX has reloaded and
-    old workers have drained may `blue` be removed. PostgreSQL and Redis volumes
-    remain running and intact.
+    old workers have drained may `blue` be removed. The old and new dictionary
+    workers overlap until slot cleanup, process only their declared compatible
+    job formats, and stop claiming before bounded shutdown. PostgreSQL and Redis
+    volumes remain running and intact.
 
 4. Promote the recorded previous immutable manifest through the ordinary gates:
 
@@ -165,8 +171,10 @@ While a local deployment is active:
    the port is bound to loopback, not a LAN address, and confirm the public edge
    returns `404` for `/api/admin/*`.
 6. Inspect the fixed rehearsal projects and confirm one active application slot,
-   one stable edge, and one data project. During a switch both app slots may
-   coexist; after drain only the active slot remains.
+   one stable edge, and one data project. The active slot contains backend, web,
+   admin, and dictionary-worker services, while the manifest still contains
+   exactly four image identities. The worker has only the data network. During
+   a switch both app slots may coexist; after drain only the active slot remains.
 
 The production topology additionally requires external denial tests for
 PostgreSQL/Redis/admin and a private app-to-data readiness check. Do not point
@@ -190,18 +198,23 @@ test and staging acceptance evidence; the mapped journey must not overclaim it.
 
 ## Expected failure and edge cases
 
-| Condition                                                  | Expected result                                                     |
-| ---------------------------------------------------------- | ------------------------------------------------------------------- |
-| `DOCKER_HOST` is set or context endpoint is not local Unix | Rehearsal refuses before creating resources.                        |
-| Production image or migration build fails                  | No traffic switch; command reports the failing build/log.           |
-| Migrator fails                                             | Inactive applications do not start and current slot remains active. |
-| Backend cannot reach PostgreSQL/Redis                      | `/readyz` fails; inactive slot is removed without switching.        |
-| Web/admin release identity differs from manifest           | Readiness fails closed.                                             |
-| NGINX configuration validation fails                       | Previous upstream file/active slot remains selected.                |
-| Existing connection exceeds drain deadline                 | Audit records forced drain; bounded Compose termination applies.    |
-| Rollback has no previous manifest                          | Command refuses without changing traffic or schema.                 |
-| Loopback ports already in use                              | Startup fails without using alternate/public ports implicitly.      |
-| Interrupted run leaves local resources                     | Inspect fixed prefix, then run scoped `deploy:local:down`.          |
+| Condition                                                      | Expected result                                                     |
+| -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `DOCKER_HOST` is set or context endpoint is not local Unix     | Rehearsal refuses before creating resources.                        |
+| Production image or migration build fails                      | No traffic switch; command reports the failing build/log.           |
+| Migrator fails                                                 | Inactive applications do not start and current slot remains active. |
+| Backend cannot reach PostgreSQL/Redis                          | `/readyz` fails; inactive slot is removed without switching.        |
+| Web/admin release identity differs from manifest               | Readiness fails closed.                                             |
+| NGINX configuration validation fails                           | Previous upstream file/active slot remains selected.                |
+| Existing connection exceeds drain deadline                     | Audit records forced drain; bounded Compose termination applies.    |
+| Rollback has no previous manifest                              | Command refuses without changing traffic or schema.                 |
+| Candidate/rollback-floor job capabilities are incompatible     | Preflight refuses before migration or candidate startup.            |
+| Job budget cannot be claimed by both overlapping workers       | Budget preflight refuses before migration or candidate startup.     |
+| Expand adds enqueue or activate adds no new format             | Phase preflight refuses before migration or candidate startup.      |
+| Removed job format still has queued/running or reviewable work | Retirement preflight refuses before migration or startup.           |
+| Worker cannot reach PostgreSQL or its configured live provider | Private worker health fails; inactive slot never switches.          |
+| Loopback ports already in use                                  | Startup fails without using alternate/public ports implicitly.      |
+| Interrupted run leaves local resources                         | Inspect fixed prefix, then run scoped `deploy:local:down`.          |
 
 Migration and readiness failure assertions run against controlled deployment
 fixtures. A real shared database failure or destructive migration is never
@@ -213,6 +226,7 @@ Validate deterministic deployment, workflow, manifest, and guide contracts:
 
 ```sh
 node --test infra/deploy/tests/*.test.mjs
+node --test infra/deploy/tests/dictionary-worker-overlap.journey.test.mjs
 node --test scripts/release-manifest.test.mjs scripts/release-workflow-contract.test.mjs
 pnpm user-flow:e2e -- inspect release-deployment-platform
 pnpm user-flow:e2e -- check release-deployment-platform

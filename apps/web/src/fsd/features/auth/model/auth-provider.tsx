@@ -16,10 +16,7 @@ import {
     useState,
 } from 'react';
 
-import {
-    currentAccessToken,
-    useSessionStore,
-} from '@/fsd/entities/session/model/session-store';
+import { currentAccessToken, useSessionStore } from '@/fsd/entities/session';
 import { authApi, AuthApiError } from '@/fsd/shared/api/auth-api';
 import { useI18n } from '@/fsd/shared/i18n';
 

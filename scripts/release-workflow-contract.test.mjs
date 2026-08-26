@@ -111,6 +111,32 @@ test('reusable verification builds all images and emits exact digests after chec
     assert.match(source, /actions\/attest@[a-f0-9]{40}/);
     assert.match(source, /migration-classification\.mjs/);
     assert.doesNotMatch(source, /--migration-compatibility expand/);
+    assert.match(source, /--dictionary-job-phase "expand"/);
+    for (const capability of [
+        'worker-processable',
+        'api-readable',
+        'api-cancellable',
+        'api-discardable',
+        'api-acceptable',
+        'web-readable',
+    ]) {
+        assert.match(source, new RegExp(`--dictionary-job-${capability} ""`));
+    }
+    assert.doesNotMatch(
+        source,
+        /--dictionary-job-(?:worker-processable|api-readable|api-cancellable|api-discardable|api-acceptable|web-readable) "[^"]+"/,
+    );
+    assert.doesNotMatch(source, /--dictionary-job-api-enqueued/);
+    assert.match(source, /--dictionary-job-retire-formats ""/);
+    for (const [flag, value] of [
+        ['max-input-tokens-per-attempt', '262144'],
+        ['max-output-tokens-per-attempt', '40960'],
+        ['input-cost-micros-per-million-tokens', '1000000'],
+        ['output-cost-micros-per-million-tokens', '4000000'],
+        ['max-cost-micros-per-attempt', '500000'],
+    ]) {
+        assert.match(source, new RegExp(`--dictionary-job-${flag} "${value}"`));
+    }
 });
 
 test('stage selects current stage head, serializes, then deploys the same manifest', () => {

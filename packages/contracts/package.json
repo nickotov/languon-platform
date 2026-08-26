@@ -17,6 +17,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@languon/languages": "workspace:*",
         "zod": "^4.4.3"
     }
 }

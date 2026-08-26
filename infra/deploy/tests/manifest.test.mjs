@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { validateReleaseManifest } from '../lib/manifest.mjs';
+import {
+    assertDictionaryJobRollbackCompatibility,
+    validateReleaseManifest,
+} from '../lib/manifest.mjs';
 
 const digest = 'a'.repeat(64);
+const generationBudget = {
+    maxInputTokensPerAttempt: 65_536,
+    maxOutputTokensPerAttempt: 1_024,
+    inputCostMicrosPerMillionTokens: 1_000_000,
+    outputCostMicrosPerMillionTokens: 4_000_000,
+    maxCostMicrosPerAttempt: 70_000,
+};
 const valid = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     identity: 'stage-abc',
     version: null,
     sourceSha: 'b'.repeat(40),
@@ -18,6 +28,18 @@ const valid = {
         ]),
     ),
     migration: { compatibility: 'expand', ledger: 'drizzle' },
+    dictionaryJobs: {
+        phase: 'expand',
+        workerProcessable: ['single-card:v1'],
+        apiReadable: ['single-card:v1'],
+        apiCancellable: ['single-card:v1'],
+        apiDiscardable: ['single-card:v1'],
+        apiAcceptable: ['single-card:v1'],
+        apiEnqueued: [],
+        webReadable: ['single-card:v1'],
+        retireFormats: [],
+        generationBudget,
+    },
 };
 
 test('accepts an exact build-ready immutable manifest', () => {
@@ -68,5 +90,346 @@ test('permits local digest registry only with an explicit rehearsal option', () 
             { allowLocalRegistry: true },
         ).images.web,
         images.web,
+    );
+});
+
+test('normalizes historical schema-v1 manifests to no dictionary job capabilities', () => {
+    const { dictionaryJobs: _, ...historical } = valid;
+    const normalized = validateReleaseManifest({
+        ...historical,
+        schemaVersion: 1,
+    });
+    assert.deepEqual(normalized.dictionaryJobs.apiEnqueued, []);
+    assert.deepEqual(normalized.dictionaryJobs.workerProcessable, []);
+    assert.deepEqual(normalized.dictionaryJobs.retireFormats, []);
+    assert.equal(normalized.dictionaryJobs.generationBudget, null);
+    assert.throws(
+        () => validateReleaseManifest({ ...valid, schemaVersion: 1 }),
+        /cannot declare dictionaryJobs/,
+    );
+});
+
+test('requires a complete self-covering generation budget in schema v2', () => {
+    assert.throws(
+        () =>
+            validateReleaseManifest({
+                ...valid,
+                dictionaryJobs: {
+                    ...valid.dictionaryJobs,
+                    generationBudget: undefined,
+                },
+            }),
+        /generationBudget compatibility metadata is required/,
+    );
+    assert.throws(
+        () =>
+            validateReleaseManifest({
+                ...valid,
+                dictionaryJobs: {
+                    ...valid.dictionaryJobs,
+                    generationBudget: {
+                        ...generationBudget,
+                        maxInputTokensPerAttempt: 262_145,
+                    },
+                },
+            }),
+        /maxInputTokensPerAttempt/,
+    );
+    assert.throws(
+        () =>
+            validateReleaseManifest({
+                ...valid,
+                dictionaryJobs: {
+                    ...valid.dictionaryJobs,
+                    generationBudget: {
+                        ...generationBudget,
+                        maxInputTokensPerAttempt: 32_767,
+                    },
+                },
+            }),
+        /maxInputTokensPerAttempt/,
+    );
+    assert.equal(
+        validateReleaseManifest({
+            ...valid,
+            dictionaryJobs: {
+                ...valid.dictionaryJobs,
+                generationBudget: {
+                    maxInputTokensPerAttempt: 32_768,
+                    maxOutputTokensPerAttempt: 128,
+                    inputCostMicrosPerMillionTokens: 1,
+                    outputCostMicrosPerMillionTokens: 1,
+                    maxCostMicrosPerAttempt: 2,
+                },
+            },
+        }).dictionaryJobs.generationBudget.maxInputTokensPerAttempt,
+        32_768,
+    );
+    assert.throws(
+        () =>
+            validateReleaseManifest({
+                ...valid,
+                dictionaryJobs: {
+                    ...valid.dictionaryJobs,
+                    generationBudget: {
+                        ...generationBudget,
+                        maxCostMicrosPerAttempt: 69_631,
+                    },
+                },
+            }),
+        /must cover/,
+    );
+});
+
+test('requires explicit complete self-compatible capabilities in schema v2', () => {
+    assert.throws(
+        () =>
+            validateReleaseManifest({
+                ...valid,
+                dictionaryJobs: undefined,
+            }),
+        /compatibility metadata is required/,
+    );
+    assert.throws(
+        () =>
+            validateReleaseManifest({
+                ...valid,
+                dictionaryJobs: {
+                    ...valid.dictionaryJobs,
+                    phase: 'activate',
+                    apiEnqueued: ['single-card:v1'],
+                    apiAcceptable: [],
+                },
+            }),
+        /Candidate apiAcceptable does not support/,
+    );
+});
+
+test('preflight enforces full lifecycle compatibility in both rollback directions', () => {
+    const expand = validateReleaseManifest(valid);
+    const activate = validateReleaseManifest({
+        ...valid,
+        identity: 'stage-activate',
+        dictionaryJobs: {
+            ...valid.dictionaryJobs,
+            phase: 'activate',
+            apiEnqueued: ['single-card:v1'],
+        },
+    });
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(activate, expand),
+        [],
+    );
+
+    const historical = validateReleaseManifest({
+        ...valid,
+        schemaVersion: 1,
+        dictionaryJobs: undefined,
+    });
+    assert.throws(
+        () => assertDictionaryJobRollbackCompatibility(activate, historical),
+        /Rollback-floor release workerProcessable/,
+    );
+    assert.throws(
+        () =>
+            assertDictionaryJobRollbackCompatibility(
+                {
+                    ...expand,
+                    dictionaryJobs: {
+                        ...expand.dictionaryJobs,
+                        workerProcessable: [],
+                    },
+                },
+                activate,
+            ),
+        /Candidate release workerProcessable/,
+    );
+});
+
+test('expand cannot add enqueue formats and activate must add one', () => {
+    const expand = validateReleaseManifest(valid);
+    const enqueuingExpand = validateReleaseManifest({
+        ...valid,
+        identity: 'stage-invalid-expand',
+        dictionaryJobs: {
+            ...valid.dictionaryJobs,
+            apiEnqueued: ['single-card:v1'],
+        },
+    });
+    assert.throws(
+        () => assertDictionaryJobRollbackCompatibility(enqueuingExpand, expand),
+        /expand phase cannot add API-enqueued formats/,
+    );
+
+    const activate = validateReleaseManifest({
+        ...enqueuingExpand,
+        identity: 'stage-activate',
+        dictionaryJobs: {
+            ...enqueuingExpand.dictionaryJobs,
+            phase: 'activate',
+        },
+    });
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(activate, expand),
+        [],
+    );
+    assert.throws(
+        () => assertDictionaryJobRollbackCompatibility(activate, activate),
+        /activate phase must add at least one API-enqueued format/,
+    );
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(activate, activate, {
+            direction: 'rollback',
+        }),
+        [],
+    );
+});
+
+test('lifecycle support removal requires an exact retirement declaration', () => {
+    const rollbackFloor = validateReleaseManifest(valid);
+    const withoutLifecycleSupport = {
+        ...rollbackFloor,
+        identity: 'stage-retire',
+        dictionaryJobs: {
+            phase: 'expand',
+            workerProcessable: [],
+            apiReadable: [],
+            apiCancellable: [],
+            apiDiscardable: [],
+            apiAcceptable: [],
+            apiEnqueued: [],
+            webReadable: [],
+            retireFormats: [],
+        },
+    };
+
+    assert.throws(
+        () =>
+            assertDictionaryJobRollbackCompatibility(
+                withoutLifecycleSupport,
+                rollbackFloor,
+            ),
+        /retireFormats must exactly declare.*single-card:v1/,
+    );
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(
+            {
+                ...withoutLifecycleSupport,
+                dictionaryJobs: {
+                    ...withoutLifecycleSupport.dictionaryJobs,
+                    retireFormats: ['single-card:v1'],
+                },
+            },
+            rollbackFloor,
+        ),
+        ['single-card:v1'],
+    );
+    const historical = validateReleaseManifest({
+        ...valid,
+        schemaVersion: 1,
+        dictionaryJobs: undefined,
+    });
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(historical, rollbackFloor, {
+            direction: 'rollback',
+        }),
+        ['single-card:v1'],
+    );
+});
+
+test('activation and steady releases preserve claimable budget envelopes across rollback', () => {
+    const floor = validateReleaseManifest(valid);
+    const underpricedActivation = validateReleaseManifest({
+        ...valid,
+        identity: 'stage-underpriced-activation',
+        dictionaryJobs: {
+            ...valid.dictionaryJobs,
+            phase: 'activate',
+            apiEnqueued: ['single-card:v1'],
+            generationBudget: {
+                ...generationBudget,
+                inputCostMicrosPerMillionTokens: 500_000,
+                maxCostMicrosPerAttempt: 70_000,
+            },
+        },
+    });
+    assert.throws(
+        () =>
+            assertDictionaryJobRollbackCompatibility(
+                underpricedActivation,
+                floor,
+            ),
+        /Rollback-floor worker cannot claim.*inputCostMicrosPerMillionTokens/,
+    );
+
+    const activation = validateReleaseManifest({
+        ...valid,
+        identity: 'stage-budget-activation',
+        dictionaryJobs: {
+            ...valid.dictionaryJobs,
+            phase: 'activate',
+            apiEnqueued: ['single-card:v1'],
+        },
+    });
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(activation, floor),
+        [],
+    );
+
+    const underpricedSteady = validateReleaseManifest({
+        ...activation,
+        identity: 'stage-underpriced-steady',
+        dictionaryJobs: {
+            ...activation.dictionaryJobs,
+            phase: 'expand',
+            generationBudget: {
+                ...generationBudget,
+                outputCostMicrosPerMillionTokens: 3_000_000,
+            },
+        },
+    });
+    assert.throws(
+        () =>
+            assertDictionaryJobRollbackCompatibility(
+                underpricedSteady,
+                activation,
+            ),
+        /Rollback-floor worker cannot claim.*outputCostMicrosPerMillionTokens/,
+    );
+
+    const changedAfterStopEnqueue = validateReleaseManifest({
+        ...underpricedSteady,
+        identity: 'stage-changed-after-stop-enqueue',
+        dictionaryJobs: {
+            ...underpricedSteady.dictionaryJobs,
+            apiEnqueued: [],
+        },
+    });
+    assert.throws(
+        () =>
+            assertDictionaryJobRollbackCompatibility(
+                changedAfterStopEnqueue,
+                activation,
+            ),
+        /generationBudget must remain identical while worker formats overlap/,
+    );
+
+    const steady = validateReleaseManifest({
+        ...activation,
+        identity: 'stage-budget-steady',
+        dictionaryJobs: {
+            ...activation.dictionaryJobs,
+            phase: 'expand',
+        },
+    });
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(steady, activation),
+        [],
+    );
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(activation, steady, {
+            direction: 'rollback',
+        }),
+        [],
     );
 });

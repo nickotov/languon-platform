@@ -1,0 +1,6 @@
+CREATE INDEX "dictionary_document_uploads_created_idx" ON "dictionary_document_uploads" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "dictionary_document_uploads_upload_completed_idx" ON "dictionary_document_uploads" USING btree ("upload_completed_at") WHERE "dictionary_document_uploads"."upload_completed_at" is not null;--> statement-breakpoint
+CREATE INDEX "dictionary_document_uploads_scan_completed_idx" ON "dictionary_document_uploads" USING btree ("scan_completed_at") WHERE "dictionary_document_uploads"."scan_completed_at" is not null;--> statement-breakpoint
+CREATE INDEX "dictionary_generation_jobs_completed_idx" ON "dictionary_generation_jobs" USING btree ("completed_at") WHERE "dictionary_generation_jobs"."completed_at" is not null;--> statement-breakpoint
+CREATE INDEX "dictionary_generation_jobs_current_observation_idx" ON "dictionary_generation_jobs" USING btree ("execution_state","created_at") WHERE "dictionary_generation_jobs"."execution_state" in ('queued', 'running');--> statement-breakpoint
+CREATE INDEX "dictionary_generation_proposals_terminal_idx" ON "dictionary_generation_proposals" USING btree ("terminal_at") WHERE "dictionary_generation_proposals"."terminal_at" is not null;

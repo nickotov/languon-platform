@@ -7,7 +7,7 @@ export const Default: StoryObj<typeof meta> = {
         items: [
             { label: 'Rename', onSelect() {} },
             { disabled: true, label: 'Duplicate', onSelect() {} },
-            { label: 'Remove', onSelect() {} },
+            { label: 'Remove', onSelect() {}, tone: 'danger' },
         ],
         label: 'Passkey actions',
         trigger: 'Actions',

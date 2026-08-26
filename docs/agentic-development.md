@@ -116,15 +116,11 @@ or execute documentation commands implicitly.
 
 ### Work on the public-web design system
 
-Before changing shared web visuals, read `design/DESIGN_SYSTEM.md` and inspect
-the relevant Figma Make source through the configured Figma MCP resource
-workflow. Provide the shared Make project link, list the available project files,
-and fetch the relevant context; Figma Design file/node calls are a separate
-workflow. The versioned `design/ai generated languon design.make` archive cannot
-itself be addressed by MCP tools. If the Make link or MCP resource support is
-unavailable, use the applicable `design/main.pen` symbol, record the handoff,
-and request the Make link before claiming Figma-derived fidelity. Implement
-app-local primitives under
+Before changing shared web visuals, inspect the runtime semantic tokens,
+existing shared primitives, their stories, and comparable rendered screens.
+Use Figma Make or `design/main.pen` when the request explicitly supplies or
+requires that design context; missing design-tool access is not a blocker.
+Implement app-local primitives under
 `apps/web/src/fsd/shared/ui/<component>/` with TSX, a same-named CSS Module, and
 a colocated Storybook story. Prefer semantic native HTML, keep caller-provided
 content localizable, and use the public `shared/ui` export instead of duplicating

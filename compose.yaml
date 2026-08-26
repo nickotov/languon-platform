@@ -65,6 +65,7 @@ services:
             AUTH_ALLOWED_ORIGINS: http://localhost:3333
             AUTH_CODE_HMAC_SECRET: development-only-code-secret-change-me-36a29d70c54e
             AUTH_JWT_SECRET: development-only-jwt-secret-change-me-9f87c82b4d31
+            DICTIONARY_HMAC_SECRET: development-only-dictionary-secret-change-me-c9741f0e52ab
             AUTH_WEBAUTHN_RP_ID: localhost
             BACKEND_HOST: 0.0.0.0
             BACKEND_PORT: 4000

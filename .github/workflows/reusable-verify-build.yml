@@ -161,6 +161,19 @@ jobs:
                     --workflow-run "$WORKFLOW_RUN" \
                     --migration-compatibility "$migration_compatibility" \
                     --migration-ledger "$migration_ledger" \
+                    --dictionary-job-phase "expand" \
+                    --dictionary-job-worker-processable "" \
+                    --dictionary-job-api-readable "" \
+                    --dictionary-job-api-cancellable "" \
+                    --dictionary-job-api-discardable "" \
+                    --dictionary-job-api-acceptable "" \
+                    --dictionary-job-web-readable "" \
+                    --dictionary-job-retire-formats "" \
+                    --dictionary-job-max-input-tokens-per-attempt "262144" \
+                    --dictionary-job-max-output-tokens-per-attempt "40960" \
+                    --dictionary-job-input-cost-micros-per-million-tokens "1000000" \
+                    --dictionary-job-output-cost-micros-per-million-tokens "4000000" \
+                    --dictionary-job-max-cost-micros-per-attempt "500000" \
                     --image "backend=$IMAGE_PREFIX/backend@$BACKEND_DIGEST" \
                     --image "web=$IMAGE_PREFIX/web@$WEB_DIGEST" \
                     --image "admin=$IMAGE_PREFIX/admin@$ADMIN_DIGEST" \

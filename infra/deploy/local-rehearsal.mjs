@@ -107,7 +107,7 @@ async function buildManifest(sha) {
         manifestPath,
         `${JSON.stringify(
             {
-                schemaVersion: 1,
+                schemaVersion: 2,
                 identity: `local-${sha.slice(0, 12)}`,
                 version: null,
                 sourceSha: sha,
@@ -116,6 +116,24 @@ async function buildManifest(sha) {
                 createdAt: new Date().toISOString(),
                 images,
                 migration: { compatibility: 'expand', ledger: 'drizzle' },
+                dictionaryJobs: {
+                    phase: 'expand',
+                    workerProcessable: ['single-card:v1'],
+                    apiReadable: ['single-card:v1'],
+                    apiCancellable: ['single-card:v1'],
+                    apiDiscardable: ['single-card:v1'],
+                    apiAcceptable: ['single-card:v1'],
+                    apiEnqueued: [],
+                    webReadable: ['single-card:v1'],
+                    retireFormats: [],
+                    generationBudget: {
+                        maxInputTokensPerAttempt: 65_536,
+                        maxOutputTokensPerAttempt: 1_024,
+                        inputCostMicrosPerMillionTokens: 1_000_000,
+                        outputCostMicrosPerMillionTokens: 4_000_000,
+                        maxCostMicrosPerAttempt: 70_000,
+                    },
+                },
             },
             null,
             2,
@@ -164,8 +182,15 @@ async function writeConfig() {
             'AUTH_ALLOWED_ORIGINS=https://localhost:18443,https://localhost:18444',
             `AUTH_CODE_HMAC_SECRET=${secretB}`,
             `AUTH_JWT_SECRET=${secretA}`,
+            `DICTIONARY_HMAC_SECRET=${secretA}-dictionary`,
             'AUTH_WEBAUTHN_RP_ID=localhost',
             'DATABASE_URL=postgres://languon_local:languon_local@stage-postgres:5432/languon_local',
+            'DICTIONARY_WORKER_DATABASE_URL=postgres://languon_local:languon_local@stage-postgres:5432/languon_local',
+            'DICTIONARY_GENERATION_MAX_INPUT_TOKENS=65536',
+            'DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS=1024',
+            'DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS=1000000',
+            'DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS=4000000',
+            'DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT=70000',
             'MIGRATION_DATABASE_URL=postgres://languon_local:languon_local@stage-postgres:5432/languon_local',
             'REDIS_URL=redis://:languon_local@stage-redis:6379/0',
             `DEPLOY_PROJECT_PREFIX=${projectPrefix}`,
@@ -270,10 +295,11 @@ async function proveFailedMigrationPreservesActive() {
     await invoke('verify');
 }
 
-async function writeDistinctSecondManifest() {
+async function writeSecondManifestForSameImages() {
     const value = JSON.parse(await readFile(manifestPath, 'utf8'));
     value.identity = `${value.identity}-second`;
-    value.sourceSha = '1'.repeat(40);
+    value.workflowRun += 1;
+    value.createdAt = new Date().toISOString();
     await writeFile(manifestPath, `${JSON.stringify(value, null, 2)}\n`, {
         mode: 0o600,
     });
@@ -303,10 +329,13 @@ async function down() {
         AUTH_ALLOWED_ORIGINS: 'https://localhost:18443',
         AUTH_CODE_HMAC_SECRET: 'local-cleanup-placeholder',
         AUTH_JWT_SECRET: 'local-cleanup-placeholder',
+        DICTIONARY_HMAC_SECRET: 'local-cleanup-dictionary-placeholder',
         AUTH_WEBAUTHN_RP_ID: 'localhost',
         BACKEND_IMAGE:
             'local-cleanup.invalid/backend@sha256:0000000000000000000000000000000000000000000000000000000000000000',
         DATABASE_URL: 'postgres://cleanup:cleanup@stage-postgres:5432/cleanup',
+        DICTIONARY_WORKER_DATABASE_URL:
+            'postgres://cleanup:cleanup@stage-postgres:5432/cleanup',
         DEPLOY_PROJECT_PREFIX: projectPrefix,
         DEPLOY_RUNTIME_DIR: runtimeDirectory,
         DEPLOY_SLOT: 'cleanup',
@@ -389,7 +418,7 @@ async function main() {
     if (command === 'journey') {
         await invoke('verify');
         await proveFailedMigrationPreservesActive();
-        await writeDistinctSecondManifest();
+        await writeSecondManifestForSameImages();
         await invoke('deploy');
         await invoke('rollback');
         await invoke('verify');

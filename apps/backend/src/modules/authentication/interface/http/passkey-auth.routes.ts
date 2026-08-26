@@ -93,7 +93,7 @@ export function createPasskeyAuthRoutes(input: {
         return context.json(mapped.response(correlationId), mapped.status);
     });
 
-    app.use('*', async (context, next) => {
+    app.use('/auth/*', async (context, next) => {
         for (const [name, value] of Object.entries(
             input.policy.securityHeaders(),
         )) {
@@ -113,7 +113,7 @@ export function createPasskeyAuthRoutes(input: {
         await next();
     });
 
-    app.use('*', authHttpBodyLimit);
+    app.use('/auth/*', authHttpBodyLimit);
 
     app.openapi(
         createRoute({

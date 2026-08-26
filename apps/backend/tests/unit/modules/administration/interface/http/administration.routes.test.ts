@@ -79,6 +79,16 @@ function setup(options: { denyMembership?: boolean } = {}) {
 }
 
 describe('administration routes', () => {
+    it('does not apply the admin origin policy to unrelated application routes', async () => {
+        const { app } = setup();
+
+        const response = await app.request('/languages', {
+            headers: { Origin: 'http://localhost:3333' },
+        });
+
+        expect(response.status).toBe(404);
+    });
+
     it('sets only the dedicated admin refresh cookie after membership check', async () => {
         const { administration, app } = setup();
 

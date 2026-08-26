@@ -3,11 +3,22 @@ import { isIP } from 'node:net';
 
 import { z } from 'zod';
 
+import type { DictionaryGenerationProviderBudgetPolicy } from '../modules/dictionaries/application/ports/dictionary-generation-provider-policy';
+import {
+    assertDictionaryGenerationProviderBudgetSupportsFormats,
+    loadDictionaryGenerationProviderBudgetPolicy,
+} from '../modules/dictionaries/infrastructure/dictionary-generation-provider-policy';
+import {
+    loadDictionaryDocumentS3Environment,
+    type DictionaryDocumentS3Environment,
+} from '../modules/dictionaries/infrastructure/document/dictionary-document-environment';
+
 export const insecureFixedCodeStagingAcknowledgement =
     '0000_IS_INSECURE_USE_ONLY_IN_PRIVATE_STAGING';
 
 const minimumSecretBytes = 32;
 const durationPattern = /^([1-9]\d*)([smhd])$/;
+const dictionaryJobFormatPattern = /^[a-z][a-z0-9-]{0,63}:v(?:0|[1-9]\d*)$/;
 const durationUnitSeconds = {
     d: 24 * 60 * 60,
     h: 60 * 60,
@@ -20,6 +31,15 @@ const SecretSchema = z.string().superRefine((secret, context) => {
         context.addIssue({
             code: 'custom',
             message: `Authentication secrets must contain at least ${minimumSecretBytes} bytes.`,
+        });
+    }
+});
+
+const DictionarySecretSchema = z.string().superRefine((secret, context) => {
+    if (Buffer.byteLength(secret, 'utf8') < minimumSecretBytes) {
+        context.addIssue({
+            code: 'custom',
+            message: `Dictionary secrets must contain at least ${minimumSecretBytes} bytes.`,
         });
     }
 });
@@ -58,6 +78,10 @@ const RawEnvironmentSchema = z
         AUTH_JWT_ISSUER: z.string().min(1).max(200).default('languon'),
         AUTH_JWT_SECRET: SecretSchema,
         AUTH_REFRESH_TOKEN_TTL: z.string().optional(),
+        AUTH_REDIS_NAMESPACE: z
+            .string()
+            .regex(/^[a-z][a-z0-9:-]{0,127}$/)
+            .default('languon:auth:v1'),
         AUTH_TRUST_PROXY: z.enum(['true', 'false']).default('false'),
         AUTH_TRUSTED_PROXY_CIDRS: z.string().optional(),
         AUTH_WEBAUTHN_RP_ID: z.string().min(1).max(253).optional(),
@@ -74,6 +98,15 @@ const RawEnvironmentSchema = z
         DATABASE_URL: z
             .url()
             .default('postgres://languon:languon-local@localhost:5432/languon'),
+        DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: z.string().default(''),
+        DICTIONARY_JOB_API_CANCELLABLE_FORMATS: z.string().default(''),
+        DICTIONARY_JOB_API_DISCARDABLE_FORMATS: z.string().default(''),
+        DICTIONARY_JOB_API_ENQUEUED_FORMATS: z.string().default(''),
+        DICTIONARY_JOB_API_READABLE_FORMATS: z.string().default(''),
+        DICTIONARY_HMAC_SECRET: DictionarySecretSchema,
+        DICTIONARY_DOCUMENT_OCR_MODE: z
+            .enum(['deterministic', 'unavailable'])
+            .default('unavailable'),
         LANGFUSE_BASE_URL: z.url().default('https://cloud.langfuse.com'),
         LANGFUSE_PUBLIC_KEY: OptionalNonEmptyStringSchema,
         LANGFUSE_SECRET_KEY: OptionalNonEmptyStringSchema,
@@ -102,6 +135,19 @@ const RawEnvironmentSchema = z
         }
 
         if (
+            environment.DICTIONARY_HMAC_SECRET ===
+                environment.AUTH_CODE_HMAC_SECRET ||
+            environment.DICTIONARY_HMAC_SECRET === environment.AUTH_JWT_SECRET
+        ) {
+            context.addIssue({
+                code: 'custom',
+                message:
+                    'Dictionary and authentication secrets must be different.',
+                path: ['DICTIONARY_HMAC_SECRET'],
+            });
+        }
+
+        if (
             environment.APP_ENV === 'production' &&
             (isObviousPlaceholder(environment.AUTH_JWT_SECRET) ||
                 isObviousPlaceholder(environment.AUTH_CODE_HMAC_SECRET))
@@ -111,6 +157,18 @@ const RawEnvironmentSchema = z
                 message:
                     'Production authentication secrets cannot be placeholders.',
                 path: ['AUTH_JWT_SECRET'],
+            });
+        }
+
+        if (
+            environment.APP_ENV === 'production' &&
+            isObviousPlaceholder(environment.DICTIONARY_HMAC_SECRET)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                message:
+                    'Production dictionary secrets cannot be placeholders.',
+                path: ['DICTIONARY_HMAC_SECRET'],
             });
         }
 
@@ -158,6 +216,11 @@ export type Environment = Omit<
     | 'AUTH_TRUST_PROXY'
     | 'AUTH_TRUSTED_PROXY_CIDRS'
     | 'AUTH_WEBAUTHN_RP_ID'
+    | 'DICTIONARY_JOB_API_ACCEPTABLE_FORMATS'
+    | 'DICTIONARY_JOB_API_CANCELLABLE_FORMATS'
+    | 'DICTIONARY_JOB_API_DISCARDABLE_FORMATS'
+    | 'DICTIONARY_JOB_API_ENQUEUED_FORMATS'
+    | 'DICTIONARY_JOB_API_READABLE_FORMATS'
 > & {
     ADMIN_BASE_URL: string;
     AUTH_ACCESS_TOKEN_TTL: number;
@@ -169,6 +232,15 @@ export type Environment = Omit<
     AUTH_TRUSTED_PROXY_CIDRS: string[];
     AUTH_VERIFICATION_CODE_MODE: AuthVerificationCodeMode;
     AUTH_WEBAUTHN_RP_ID: string;
+    DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: string[];
+    DICTIONARY_JOB_API_CANCELLABLE_FORMATS: string[];
+    DICTIONARY_JOB_API_DISCARDABLE_FORMATS: string[];
+    DICTIONARY_JOB_API_ENQUEUED_FORMATS: string[];
+    DICTIONARY_JOB_API_READABLE_FORMATS: string[];
+    DICTIONARY_GENERATION_PROVIDER_BUDGET: DictionaryGenerationProviderBudgetPolicy;
+    DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: boolean;
+    DICTIONARY_DOCUMENT_STORAGE: DictionaryDocumentS3Environment | undefined;
+    DICTIONARY_DOCUMENT_UPLOAD_AUTHORIZATION_ENABLED: boolean;
 };
 
 export function loadEnvironment(
@@ -310,8 +382,72 @@ export function loadEnvironment(
         AUTH_TRUST_PROXY: _rawTrustProxy,
         AUTH_TRUSTED_PROXY_CIDRS: _rawTrustedProxyCidrs,
         AUTH_WEBAUTHN_RP_ID: _rawWebAuthnRpId,
+        DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: _rawAcceptableFormats,
+        DICTIONARY_JOB_API_CANCELLABLE_FORMATS: _rawCancellableFormats,
+        DICTIONARY_JOB_API_DISCARDABLE_FORMATS: _rawDiscardableFormats,
+        DICTIONARY_JOB_API_ENQUEUED_FORMATS: _rawEnqueuedFormats,
+        DICTIONARY_JOB_API_READABLE_FORMATS: _rawReadableFormats,
         ...environment
     } = raw;
+    const dictionaryJobCapabilities = {
+        acceptable: parseDictionaryJobFormats(
+            _rawAcceptableFormats,
+            'DICTIONARY_JOB_API_ACCEPTABLE_FORMATS',
+        ),
+        cancellable: parseDictionaryJobFormats(
+            _rawCancellableFormats,
+            'DICTIONARY_JOB_API_CANCELLABLE_FORMATS',
+        ),
+        discardable: parseDictionaryJobFormats(
+            _rawDiscardableFormats,
+            'DICTIONARY_JOB_API_DISCARDABLE_FORMATS',
+        ),
+        enqueued: parseDictionaryJobFormats(
+            _rawEnqueuedFormats,
+            'DICTIONARY_JOB_API_ENQUEUED_FORMATS',
+        ),
+        readable: parseDictionaryJobFormats(
+            _rawReadableFormats,
+            'DICTIONARY_JOB_API_READABLE_FORMATS',
+        ),
+    };
+    for (const [capability, formats] of Object.entries(
+        dictionaryJobCapabilities,
+    )) {
+        if (capability === 'enqueued') continue;
+        const missing = dictionaryJobCapabilities.enqueued.filter(
+            (format) => !formats.includes(format),
+        );
+        if (missing.length > 0) {
+            throw configurationError(
+                'DICTIONARY_JOB_API_ENQUEUED_FORMATS',
+                `Enqueued dictionary job formats must also be ${capability}.`,
+            );
+        }
+    }
+    const dictionaryGenerationProviderBudget =
+        loadDictionaryGenerationProviderBudgetPolicy(values, {
+            requireExplicit:
+                deployed && dictionaryJobCapabilities.enqueued.length > 0,
+        });
+    assertDictionaryGenerationProviderBudgetSupportsFormats(
+        dictionaryGenerationProviderBudget,
+        dictionaryJobCapabilities.enqueued,
+    );
+    const documentTermsLifecycleEnabled = Object.values(
+        dictionaryJobCapabilities,
+    ).some((formats) => formats.includes('document-terms:v1'));
+    const documentUploadAuthorizationEnabled =
+        dictionaryJobCapabilities.enqueued.includes('document-terms:v1');
+    const dictionaryDocumentStorage = loadDictionaryDocumentS3Environment(
+        values,
+        { deployed, required: documentTermsLifecycleEnabled, role: 'api' },
+    );
+    if (deployed && raw.DICTIONARY_DOCUMENT_OCR_MODE === 'deterministic')
+        throw configurationError(
+            'DICTIONARY_DOCUMENT_OCR_MODE',
+            'Deterministic document OCR is local/test-only.',
+        );
 
     return {
         ...environment,
@@ -327,7 +463,41 @@ export function loadEnvironment(
         AUTH_TRUSTED_PROXY_CIDRS: trustedProxyCidrs,
         AUTH_VERIFICATION_CODE_MODE: fixedCodeEnabled ? 'fixed' : 'unavailable',
         AUTH_WEBAUTHN_RP_ID: webAuthnRpId,
+        DICTIONARY_JOB_API_ACCEPTABLE_FORMATS:
+            dictionaryJobCapabilities.acceptable,
+        DICTIONARY_JOB_API_CANCELLABLE_FORMATS:
+            dictionaryJobCapabilities.cancellable,
+        DICTIONARY_JOB_API_DISCARDABLE_FORMATS:
+            dictionaryJobCapabilities.discardable,
+        DICTIONARY_JOB_API_ENQUEUED_FORMATS: dictionaryJobCapabilities.enqueued,
+        DICTIONARY_JOB_API_READABLE_FORMATS: dictionaryJobCapabilities.readable,
+        DICTIONARY_GENERATION_PROVIDER_BUDGET:
+            dictionaryGenerationProviderBudget,
+        DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: documentTermsLifecycleEnabled,
+        DICTIONARY_DOCUMENT_STORAGE: dictionaryDocumentStorage,
+        DICTIONARY_DOCUMENT_UPLOAD_AUTHORIZATION_ENABLED:
+            documentUploadAuthorizationEnabled,
     };
+}
+
+function parseDictionaryJobFormats(value: string, path: string): string[] {
+    if (value === '') return [];
+    const formats = value.split(',');
+    if (
+        formats.length > 16 ||
+        formats.some(
+            (format) =>
+                format.trim() !== format ||
+                !dictionaryJobFormatPattern.test(format),
+        ) ||
+        new Set(formats).size !== formats.length
+    ) {
+        throw configurationError(
+            path,
+            'Dictionary job formats must be unique comma-separated composite format identifiers.',
+        );
+    }
+    return formats.sort();
 }
 
 function parseAdminBaseUrl(

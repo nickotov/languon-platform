@@ -4212,7 +4212,7 @@
       "name": "Developer Tooling / Web Dev Command Panel · Reviewed",
       "clip": true,
       "width": 1440,
-      "height": 1040,
+      "height": 1980,
       "fill": "#FBF8F6",
       "layout": "vertical",
       "gap": 24,
@@ -4446,17 +4446,17 @@
         },
         {
           "type": "frame",
-          "id": "iJptH",
-          "name": "Command navigation and collapsible sections",
+          "id": "rWjkj",
+          "name": "Quick access and catalog navigation",
           "width": "fill_container",
-          "height": 520,
+          "height": 850,
           "gap": 20,
           "children": [
             {
               "type": "frame",
-              "id": "CkiEE",
-              "name": "Section sidebar",
-              "width": 236,
+              "id": "jVAU5",
+              "name": "Quick access section sidebar",
+              "width": 250,
               "height": "fill_container",
               "fill": "#FFFFFF",
               "cornerRadius": 12,
@@ -4468,20 +4468,80 @@
               "children": [
                 {
                   "type": "text",
-                  "id": "dQhwM",
-                  "name": "Section sidebar title",
+                  "id": "qom5z",
+                  "name": "Quick access sidebar title",
                   "fill": "#29212A",
-                  "content": "Sections",
+                  "content": "Quick access",
                   "fontFamily": "Inter",
                   "fontSize": 16,
                   "fontWeight": "700"
                 },
                 {
                   "type": "frame",
-                  "id": "Ya7PE",
-                  "name": "Development section link",
+                  "id": "RoAwa",
+                  "name": "Manage quick access button",
                   "width": "fill_container",
-                  "height": 34,
+                  "height": 40,
+                  "fill": "#7C3F68",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vFgT0",
+                      "name": "Manage quick access label",
+                      "fill": "#FFFFFF",
+                      "content": "Manage quick access",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "b0rmW",
+                  "name": "Daily workspace sidebar link",
+                  "width": "fill_container",
+                  "height": 36,
+                  "fill": "#F1E8EF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JWA25",
+                      "name": "Daily workspace link label",
+                      "fill": "#29212A",
+                      "content": "Daily workspace",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jYnos",
+                      "name": "Daily workspace command count",
+                      "fill": "#7A6C75",
+                      "content": "3",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WGafh",
+                  "name": "Review checks sidebar link",
+                  "width": "fill_container",
+                  "height": 36,
                   "fill": "#FFFFFF",
                   "cornerRadius": 8,
                   "padding": [
@@ -4493,7 +4553,63 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "W1EWr",
+                      "id": "j0qp8",
+                      "name": "Review checks link label",
+                      "fill": "#635961",
+                      "content": "Review checks",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "VnhIg",
+                      "name": "Review checks command count",
+                      "fill": "#7A6C75",
+                      "content": "2",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dBgwr",
+                  "name": "Custom and catalog divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "#DFD6DC"
+                },
+                {
+                  "type": "text",
+                  "id": "Esk36",
+                  "name": "Catalog sidebar title",
+                  "fill": "#635961",
+                  "content": "All commands",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "700",
+                  "letterSpacing": 0.5
+                },
+                {
+                  "type": "frame",
+                  "id": "pzUQj",
+                  "name": "Development sidebar link",
+                  "width": "fill_container",
+                  "height": 36,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": [
+                    7,
+                    9
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lwB7F",
                       "name": "Development link label",
                       "fill": "#635961",
                       "content": "Development",
@@ -4503,7 +4619,7 @@
                     },
                     {
                       "type": "text",
-                      "id": "JDWsT",
+                      "id": "X5HTcw",
                       "name": "Development command count",
                       "fill": "#7A6C75",
                       "content": "11",
@@ -4515,10 +4631,10 @@
                 },
                 {
                   "type": "frame",
-                  "id": "T4r5s8",
-                  "name": "Quality section link",
+                  "id": "kwDDV",
+                  "name": "Quality sidebar link",
                   "width": "fill_container",
-                  "height": 34,
+                  "height": 36,
                   "fill": "#FFFFFF",
                   "cornerRadius": 8,
                   "padding": [
@@ -4530,7 +4646,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "PufUf",
+                      "id": "NfRMh",
                       "name": "Quality link label",
                       "fill": "#635961",
                       "content": "Quality",
@@ -4540,7 +4656,7 @@
                     },
                     {
                       "type": "text",
-                      "id": "V0ejsU",
+                      "id": "c7YKHu",
                       "name": "Quality command count",
                       "fill": "#7A6C75",
                       "content": "7",
@@ -4552,10 +4668,10 @@
                 },
                 {
                   "type": "frame",
-                  "id": "TOkvj",
-                  "name": "Tests section link",
+                  "id": "ajzeF",
+                  "name": "Tests sidebar link",
                   "width": "fill_container",
-                  "height": 34,
+                  "height": 36,
                   "fill": "#FFFFFF",
                   "cornerRadius": 8,
                   "padding": [
@@ -4567,7 +4683,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "A5WQgY",
+                      "id": "gcRQI",
                       "name": "Tests link label",
                       "fill": "#635961",
                       "content": "Tests",
@@ -4577,7 +4693,7 @@
                     },
                     {
                       "type": "text",
-                      "id": "GCpNg",
+                      "id": "MVnKW",
                       "name": "Tests command count",
                       "fill": "#7A6C75",
                       "content": "9",
@@ -4589,10 +4705,10 @@
                 },
                 {
                   "type": "frame",
-                  "id": "EH79Z",
-                  "name": "Database section link",
+                  "id": "H1Jp1i",
+                  "name": "Database sidebar link",
                   "width": "fill_container",
-                  "height": 34,
+                  "height": 36,
                   "fill": "#FFFFFF",
                   "cornerRadius": 8,
                   "padding": [
@@ -4604,7 +4720,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "LTJHL",
+                      "id": "eku8r",
                       "name": "Database link label",
                       "fill": "#635961",
                       "content": "Database",
@@ -4614,7 +4730,7 @@
                     },
                     {
                       "type": "text",
-                      "id": "L3hZs",
+                      "id": "hikI1",
                       "name": "Database command count",
                       "fill": "#7A6C75",
                       "content": "4",
@@ -4626,10 +4742,10 @@
                 },
                 {
                   "type": "frame",
-                  "id": "TkHYr",
-                  "name": "Deployment section link",
+                  "id": "LG7oU",
+                  "name": "Agent workflow sidebar link",
                   "width": "fill_container",
-                  "height": 34,
+                  "height": 36,
                   "fill": "#FFFFFF",
                   "cornerRadius": 8,
                   "padding": [
@@ -4641,128 +4757,17 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "MMKsb",
-                      "name": "Deployment link label",
-                      "fill": "#635961",
-                      "content": "Deployment",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "500"
-                    },
-                    {
-                      "type": "text",
-                      "id": "SUNbN",
-                      "name": "Deployment command count",
-                      "fill": "#7A6C75",
-                      "content": "5",
-                      "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "B184Fl",
-                  "name": "Administration section link",
-                  "width": "fill_container",
-                  "height": 34,
-                  "fill": "#FFFFFF",
-                  "cornerRadius": 8,
-                  "padding": [
-                    7,
-                    9
-                  ],
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "RppBU",
-                      "name": "Administration link label",
-                      "fill": "#635961",
-                      "content": "Administration",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "500"
-                    },
-                    {
-                      "type": "text",
-                      "id": "ct2so",
-                      "name": "Administration command count",
-                      "fill": "#7A6C75",
-                      "content": "4",
-                      "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "vJBTr",
-                  "name": "Documentation section link",
-                  "width": "fill_container",
-                  "height": 34,
-                  "fill": "#FFFFFF",
-                  "cornerRadius": 8,
-                  "padding": [
-                    7,
-                    9
-                  ],
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "MAsvI",
-                      "name": "Documentation link label",
-                      "fill": "#635961",
-                      "content": "Documentation",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "500"
-                    },
-                    {
-                      "type": "text",
-                      "id": "CbNkD",
-                      "name": "Documentation command count",
-                      "fill": "#7A6C75",
-                      "content": "2",
-                      "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "jAlGz",
-                  "name": "Agent workflow section link",
-                  "width": "fill_container",
-                  "height": 34,
-                  "fill": "#F5F0F3",
-                  "cornerRadius": 8,
-                  "padding": [
-                    7,
-                    9
-                  ],
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "XnJJL",
+                      "id": "yBI9Y",
                       "name": "Agent workflow link label",
-                      "fill": "#29212A",
+                      "fill": "#635961",
                       "content": "Agent workflow",
                       "fontFamily": "Inter",
                       "fontSize": 12,
-                      "fontWeight": "700"
+                      "fontWeight": "500"
                     },
                     {
                       "type": "text",
-                      "id": "GYuqC",
+                      "id": "rPlw1",
                       "name": "Agent workflow command count",
                       "fill": "#7A6C75",
                       "content": "3",
@@ -4774,10 +4779,10 @@
                 },
                 {
                   "type": "frame",
-                  "id": "ze1LQ",
-                  "name": "Browser tooling section link",
+                  "id": "TwyNG",
+                  "name": "Resources sidebar link",
                   "width": "fill_container",
-                  "height": 34,
+                  "height": 36,
                   "fill": "#FFFFFF",
                   "cornerRadius": 8,
                   "padding": [
@@ -4789,44 +4794,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "p6rrCM",
-                      "name": "Browser tooling link label",
-                      "fill": "#635961",
-                      "content": "Browser tooling",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "500"
-                    },
-                    {
-                      "type": "text",
-                      "id": "hXHrQ",
-                      "name": "Browser tooling command count",
-                      "fill": "#7A6C75",
-                      "content": "3",
-                      "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "RsV5i",
-                  "name": "Resources section link",
-                  "width": "fill_container",
-                  "height": 34,
-                  "fill": "#FFFFFF",
-                  "cornerRadius": 8,
-                  "padding": [
-                    7,
-                    9
-                  ],
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "pdRYq",
+                      "id": "xelXe",
                       "name": "Resources link label",
                       "fill": "#635961",
                       "content": "Resources",
@@ -4836,7 +4804,7 @@
                     },
                     {
                       "type": "text",
-                      "id": "FuxZQ",
+                      "id": "jUmUm",
                       "name": "Resources command count",
                       "fill": "#7A6C75",
                       "content": "2",
@@ -4850,33 +4818,696 @@
             },
             {
               "type": "frame",
-              "id": "fXxRk",
-              "name": "Collapsible command sections",
+              "id": "P6PCcO",
+              "name": "Custom sections and catalog panels",
               "width": "fill_container",
               "height": "fill_container",
               "layout": "vertical",
-              "gap": 12,
+              "gap": 14,
               "children": [
                 {
                   "type": "frame",
-                  "id": "eO9d7",
-                  "name": "Development collapsed panel",
+                  "id": "gS1DU",
+                  "name": "Quick access content header",
+                  "width": "fill_container",
+                  "height": 54,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "P74A1y",
+                      "name": "Quick access heading text",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "w1qAu",
+                          "name": "Quick access heading",
+                          "fill": "#29212A",
+                          "content": "Quick access",
+                          "fontFamily": "Inter",
+                          "fontSize": 20,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "WqpYl",
+                          "name": "Quick access description",
+                          "fill": "#635961",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Personal command sets saved as portable reviewed-ID JSON.",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "tbswb",
+                      "name": "Manage layouts button",
+                      "height": 38,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": "#CFC4CB",
+                      "strokeWidth": 1,
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "oRV31",
+                          "name": "Manage layouts button label",
+                          "fill": "#433840",
+                          "content": "Manage layouts",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bGYrV",
+                  "name": "Daily workspace expanded custom section",
+                  "width": "fill_container",
+                  "height": 326,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "stroke": "#BFA8B7",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "K8uDe",
+                      "name": "Daily workspace section header",
+                      "width": "fill_container",
+                      "height": 64,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "BrABN",
+                          "name": "Daily workspace title group",
+                          "gap": 10,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "PeWOH",
+                              "name": "Daily workspace expanded chevron",
+                              "width": 18,
+                              "height": 18,
+                              "icon": "chevron-down",
+                              "library": "lucide",
+                              "fill": "#7C3F68"
+                            },
+                            {
+                              "type": "text",
+                              "id": "l8e4M",
+                              "name": "Daily workspace title",
+                              "fill": "#29212A",
+                              "content": "Daily workspace",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "rMkLF",
+                              "name": "Daily workspace count",
+                              "fill": "#7A6C75",
+                              "content": "3 commands",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "HHTP9",
+                          "name": "Daily workspace actions",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "ArPnc",
+                              "name": "Daily workspace start all",
+                              "height": 38,
+                              "fill": "#7C3F68",
+                              "cornerRadius": 8,
+                              "stroke": "#CFC4CB",
+                              "strokeWidth": 1,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "IQqcs",
+                                  "name": "Daily workspace start all label",
+                                  "fill": "#FFFFFF",
+                                  "content": "Start all",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "EpU3y",
+                              "name": "Daily workspace stop all",
+                              "height": 38,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 8,
+                              "stroke": "#B44444",
+                              "strokeWidth": 1,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "vdJj0",
+                                  "name": "Daily workspace stop all label",
+                                  "fill": "#A43838",
+                                  "content": "Stop all",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "W5TAP",
+                              "name": "Daily workspace remove",
+                              "height": 38,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 8,
+                              "stroke": "#CFC4CB",
+                              "strokeWidth": 1,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "sshcE",
+                                  "name": "Daily workspace remove label",
+                                  "fill": "#433840",
+                                  "content": "Remove",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "x20L1C",
+                      "name": "Daily workspace collapsed command cards",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "#FBF8F6",
+                      "stroke": "#DFD6DC",
+                      "strokeWidth": {
+                        "top": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 8,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "pJEf2",
+                          "name": "Backend server collapsed command card",
+                          "width": "fill_container",
+                          "height": 66,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 10,
+                          "stroke": "#DFD6DC",
+                          "strokeWidth": 1,
+                          "gap": 12,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "m8vbTw",
+                              "name": "Backend server collapsed chevron",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "#635961"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Zfa44",
+                              "name": "Backend server summary text",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "gPvpG",
+                                  "name": "Backend server title",
+                                  "fill": "#29212A",
+                                  "content": "Backend server",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "z1gZGt",
+                                  "name": "Backend server description",
+                                  "fill": "#635961",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "Starts the local API and agent services.",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "vnVCl",
+                              "name": "Backend server status",
+                              "fill": "#E7F4EC",
+                              "cornerRadius": 999,
+                              "padding": [
+                                5,
+                                9
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "gaoGP",
+                                  "name": "Backend server status label",
+                                  "fill": "#215F3F",
+                                  "content": "Running",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n3tr5",
+                          "name": "Web application collapsed command card",
+                          "width": "fill_container",
+                          "height": 66,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 10,
+                          "stroke": "#DFD6DC",
+                          "strokeWidth": 1,
+                          "gap": 12,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "b2by3",
+                              "name": "Web application collapsed chevron",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "#635961"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "govq6",
+                              "name": "Web application summary text",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "z8P2qF",
+                                  "name": "Web application title",
+                                  "fill": "#29212A",
+                                  "content": "Web application",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "ht6Jf",
+                                  "name": "Web application description",
+                                  "fill": "#635961",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "Starts the public Next.js development server.",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "tuamq",
+                              "name": "Web application status",
+                              "fill": "#F5F0F3",
+                              "cornerRadius": 999,
+                              "padding": [
+                                5,
+                                9
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "T0Uoog",
+                                  "name": "Web application status label",
+                                  "fill": "#635961",
+                                  "content": "Idle",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "HedN7",
+                          "name": "Database studio collapsed command card",
+                          "width": "fill_container",
+                          "height": 66,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 10,
+                          "stroke": "#DFD6DC",
+                          "strokeWidth": 1,
+                          "gap": 12,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "soEbM",
+                              "name": "Database studio collapsed chevron",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "#635961"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "s9KQfo",
+                              "name": "Database studio summary text",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "cmI4l",
+                                  "name": "Database studio title",
+                                  "fill": "#29212A",
+                                  "content": "Database studio",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "UJCII",
+                                  "name": "Database studio description",
+                                  "fill": "#635961",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "Opens the reviewed local schema browser.",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "HoAKo",
+                              "name": "Database studio status",
+                              "fill": "#FFF1CF",
+                              "cornerRadius": 999,
+                              "padding": [
+                                5,
+                                9
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "isYHN",
+                                  "name": "Database studio status label",
+                                  "fill": "#7A4B00",
+                                  "content": "Disabled",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fTYFW",
+                  "name": "Review checks collapsed custom section",
+                  "width": "fill_container",
+                  "height": 60,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "stroke": "#BFA8B7",
+                  "strokeWidth": 1,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PA3Sm",
+                      "name": "Review checks title group",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "bXo1s",
+                          "name": "Review checks collapsed chevron",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "#7C3F68"
+                        },
+                        {
+                          "type": "text",
+                          "id": "dHOqD",
+                          "name": "Review checks title",
+                          "fill": "#29212A",
+                          "content": "Review checks",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "F9G3qj",
+                          "name": "Review checks count",
+                          "fill": "#7A6C75",
+                          "content": "2 commands",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QF4il",
+                      "name": "Review checks actions",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "jNQWY",
+                          "name": "Review checks start all",
+                          "height": 38,
+                          "fill": "#7C3F68",
+                          "cornerRadius": 8,
+                          "stroke": "#CFC4CB",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "eNtEE",
+                              "name": "Review checks start all label",
+                              "fill": "#FFFFFF",
+                              "content": "Start all",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ysABX",
+                          "name": "Review checks stop all",
+                          "height": 38,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 8,
+                          "stroke": "#B44444",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "WLoTI",
+                              "name": "Review checks stop all label",
+                              "fill": "#A43838",
+                              "content": "Stop all",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uxGvf",
+                  "name": "Custom catalog content divider",
+                  "width": "fill_container",
+                  "height": 28,
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "vZZPP",
+                      "name": "Left catalog divider",
+                      "width": 36,
+                      "height": 1,
+                      "fill": "#CFC4CB"
+                    },
+                    {
+                      "type": "text",
+                      "id": "EIAZP",
+                      "name": "All commands divider label",
+                      "fill": "#7C3F68",
+                      "content": "ALL COMMANDS",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ER1qB",
+                      "name": "Right catalog divider",
+                      "width": "fill_container",
+                      "height": 1,
+                      "fill": "#CFC4CB"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "G5oUPh",
+                  "name": "Development collapsed catalog panel",
                   "width": "fill_container",
                   "height": 58,
                   "fill": "#FFFFFF",
                   "cornerRadius": 12,
                   "stroke": "#DFD6DC",
                   "strokeWidth": 1,
+                  "gap": 10,
                   "padding": [
-                    15,
-                    18
+                    14,
+                    16
                   ],
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "icon",
-                      "id": "zgphR",
-                      "name": "Development collapsed chevron",
+                      "id": "govHF",
+                      "name": "Development catalog chevron",
                       "width": 18,
                       "height": 18,
                       "icon": "chevron-right",
@@ -4885,8 +5516,8 @@
                     },
                     {
                       "type": "text",
-                      "id": "sm3Ij",
-                      "name": "Development panel title",
+                      "id": "nSdAg",
+                      "name": "Development catalog title",
                       "fill": "#29212A",
                       "content": "Development",
                       "fontFamily": "Inter",
@@ -4895,8 +5526,8 @@
                     },
                     {
                       "type": "text",
-                      "id": "OZyaJ",
-                      "name": "Development panel count",
+                      "id": "Y2vnvg",
+                      "name": "Development catalog count",
                       "fill": "#7A6C75",
                       "content": "11 commands",
                       "fontFamily": "Inter",
@@ -4907,24 +5538,25 @@
                 },
                 {
                   "type": "frame",
-                  "id": "DCHWV",
-                  "name": "Quality collapsed panel",
+                  "id": "rnPqI",
+                  "name": "Quality collapsed catalog panel",
                   "width": "fill_container",
                   "height": 58,
                   "fill": "#FFFFFF",
                   "cornerRadius": 12,
                   "stroke": "#DFD6DC",
                   "strokeWidth": 1,
+                  "gap": 10,
                   "padding": [
-                    15,
-                    18
+                    14,
+                    16
                   ],
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "icon",
-                      "id": "B3JMeP",
-                      "name": "Quality collapsed chevron",
+                      "id": "K2d8lz",
+                      "name": "Quality catalog chevron",
                       "width": 18,
                       "height": 18,
                       "icon": "chevron-right",
@@ -4933,8 +5565,8 @@
                     },
                     {
                       "type": "text",
-                      "id": "ffNin",
-                      "name": "Quality panel title",
+                      "id": "GNpw4",
+                      "name": "Quality catalog title",
                       "fill": "#29212A",
                       "content": "Quality",
                       "fontFamily": "Inter",
@@ -4943,8 +5575,8 @@
                     },
                     {
                       "type": "text",
-                      "id": "m5bRbx",
-                      "name": "Quality panel count",
+                      "id": "HoSFF",
+                      "name": "Quality catalog count",
                       "fill": "#7A6C75",
                       "content": "7 commands",
                       "fontFamily": "Inter",
@@ -4955,24 +5587,25 @@
                 },
                 {
                   "type": "frame",
-                  "id": "ib4gT",
-                  "name": "Tests collapsed panel",
+                  "id": "X0heQs",
+                  "name": "Tests collapsed catalog panel",
                   "width": "fill_container",
                   "height": 58,
                   "fill": "#FFFFFF",
                   "cornerRadius": 12,
                   "stroke": "#DFD6DC",
                   "strokeWidth": 1,
+                  "gap": 10,
                   "padding": [
-                    15,
-                    18
+                    14,
+                    16
                   ],
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "icon",
-                      "id": "tW48x",
-                      "name": "Tests collapsed chevron",
+                      "id": "sDnFL",
+                      "name": "Tests catalog chevron",
                       "width": 18,
                       "height": 18,
                       "icon": "chevron-right",
@@ -4981,8 +5614,8 @@
                     },
                     {
                       "type": "text",
-                      "id": "FDj6P",
-                      "name": "Tests panel title",
+                      "id": "YVOar",
+                      "name": "Tests catalog title",
                       "fill": "#29212A",
                       "content": "Tests",
                       "fontFamily": "Inter",
@@ -4991,179 +5624,13 @@
                     },
                     {
                       "type": "text",
-                      "id": "ffz8y",
-                      "name": "Tests panel count",
+                      "id": "gYjVU",
+                      "name": "Tests catalog count",
                       "fill": "#7A6C75",
                       "content": "9 commands",
                       "fontFamily": "Inter",
                       "fontSize": 12,
                       "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "ntt47",
-                  "name": "Agent workflow opened panel",
-                  "width": "fill_container",
-                  "height": 250,
-                  "fill": "#FFFFFF",
-                  "cornerRadius": 12,
-                  "stroke": "#DFD6DC",
-                  "strokeWidth": 1,
-                  "layout": "vertical",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "T9bUzc",
-                      "name": "Agent workflow expanded summary",
-                      "width": "fill_container",
-                      "height": 58,
-                      "padding": [
-                        15,
-                        18
-                      ],
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "icon",
-                          "id": "v1Vgc",
-                          "name": "Expanded chevron",
-                          "width": 18,
-                          "height": 18,
-                          "icon": "chevron-down",
-                          "library": "lucide",
-                          "fill": "#635961"
-                        },
-                        {
-                          "type": "text",
-                          "id": "stZVc",
-                          "name": "Expanded panel title",
-                          "fill": "#29212A",
-                          "content": "Agent workflow",
-                          "fontFamily": "Inter",
-                          "fontSize": 16,
-                          "fontWeight": "700"
-                        },
-                        {
-                          "type": "text",
-                          "id": "bvMyj",
-                          "name": "Expanded panel count",
-                          "fill": "#7A6C75",
-                          "content": "3 commands · closed by default",
-                          "fontFamily": "Inter",
-                          "fontSize": 12,
-                          "fontWeight": "500"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "mCKMK",
-                      "name": "Unavailable Agent command",
-                      "width": "fill_container",
-                      "height": "fill_container",
-                      "fill": "#FBF8F6",
-                      "stroke": "#DFD6DC",
-                      "strokeWidth": {
-                        "top": 1
-                      },
-                      "layout": "vertical",
-                      "gap": 10,
-                      "padding": [
-                        14,
-                        18
-                      ],
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "YGhJL",
-                          "name": "Unavailable command heading",
-                          "width": "fill_container",
-                          "justifyContent": "space_between",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "B6brY",
-                              "name": "Unavailable command title group",
-                              "layout": "vertical",
-                              "gap": 3,
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "s70OHC",
-                                  "name": "Unavailable command title",
-                                  "fill": "#29212A",
-                                  "content": "Agent",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 15,
-                                  "fontWeight": "700"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "UMyY4",
-                                  "name": "Unavailable command description",
-                                  "fill": "#635961",
-                                  "content": "Launches the interactive Codex terminal",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "text",
-                              "id": "aRHVa",
-                              "name": "Disabled status",
-                              "fill": "#8F3731",
-                              "content": "Disabled",
-                              "fontFamily": "Inter",
-                              "fontSize": 11,
-                              "fontWeight": "700"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "T5gvdn",
-                          "name": "Why unavailable callout",
-                          "width": "fill_container",
-                          "fill": "#FFF1CF",
-                          "cornerRadius": 8,
-                          "stroke": "#B47A18",
-                          "strokeWidth": 1,
-                          "layout": "vertical",
-                          "gap": 4,
-                          "padding": [
-                            10,
-                            12
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "BYx8T",
-                              "name": "Why unavailable label",
-                              "fill": "#7A4B00",
-                              "content": "WHY UNAVAILABLE",
-                              "fontFamily": "Inter",
-                              "fontSize": 10,
-                              "fontWeight": "700",
-                              "letterSpacing": 0.3
-                            },
-                            {
-                              "type": "text",
-                              "id": "y6J2K",
-                              "name": "Unavailable reason text",
-                              "fill": "#63510E",
-                              "content": "Requires an interactive terminal session, so browser launch is intentionally blocked.",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            }
-                          ]
-                        }
-                      ]
                     }
                   ]
                 }
@@ -5184,7 +5651,7 @@
               "id": "wp73p",
               "name": "Memory note",
               "fill": "#7A6C75",
-              "content": "Latest-run logs are bounded and cleared when the panel stops.",
+              "content": "Quick-access JSON stores reviewed IDs only; runs and logs remain server-owned.",
               "fontFamily": "Inter",
               "fontSize": 12,
               "fontWeight": "normal"
@@ -5194,10 +5661,380 @@
               "id": "Q0KSeK",
               "name": "Responsive note",
               "fill": "#7C3F68",
-              "content": "Sidebar stacks above closed panels ≤ 760 px",
+              "content": "Custom sections precede catalog · cards closed by default",
               "fontFamily": "Inter",
               "fontSize": 12,
               "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "zikum",
+          "name": "Portable quick access management state",
+          "width": "fill_container",
+          "height": 390,
+          "fill": "#FFFFFF",
+          "cornerRadius": 14,
+          "stroke": "#CFC4CB",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "DvMFk",
+              "name": "Portable layout dialog header",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BwluE",
+                  "name": "Portable layout title group",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zba7G",
+                      "name": "Portable layout title",
+                      "fill": "#29212A",
+                      "content": "Manage quick access",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "eMnPw",
+                      "name": "Portable layout description",
+                      "fill": "#635961",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Create local sets or copy this reviewed-ID JSON to a colleague.",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p8wPyt",
+                  "name": "Close management button",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#CFC4CB",
+                  "strokeWidth": 1,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "ZeLr5",
+                      "name": "Close management icon",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "#433840"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MTI1E",
+              "name": "Portable layout dialog body",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tCdVy",
+                  "name": "Create custom section controls",
+                  "width": 360,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "h8yz1",
+                      "name": "Create section heading",
+                      "fill": "#29212A",
+                      "content": "Create a section",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "EJSWu",
+                      "name": "Section name label",
+                      "fill": "#433840",
+                      "content": "Section name",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "uTuyw",
+                      "name": "Section name field",
+                      "width": "fill_container",
+                      "height": 46,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": "#8B7F90",
+                      "strokeWidth": 1,
+                      "padding": [
+                        12,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pXjPF",
+                          "name": "Section name value",
+                          "fill": "#29212A",
+                          "content": "Frontend review",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lYTj4",
+                      "name": "Create section button",
+                      "width": "fill_container",
+                      "height": 44,
+                      "fill": "#7C3F68",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "R54uR",
+                          "name": "Create section button label",
+                          "fill": "#FFFFFF",
+                          "content": "Create section",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QEq3n",
+                      "name": "Quick access membership hint",
+                      "width": "fill_container",
+                      "fill": "#F7EFF4",
+                      "cornerRadius": 8,
+                      "gap": 8,
+                      "padding": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "srgx1",
+                          "name": "Membership hint icon",
+                          "width": 17,
+                          "height": 17,
+                          "icon": "layers",
+                          "library": "lucide",
+                          "fill": "#7C3F68"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VkLRq",
+                          "name": "Membership hint text",
+                          "fill": "#5E3652",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "A command can belong to several custom sections without creating another process.",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Ynacl",
+                  "name": "Portable JSON controls",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "jXz3B",
+                      "name": "Portable JSON heading row",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "w65cm3",
+                          "name": "Portable JSON heading",
+                          "fill": "#29212A",
+                          "content": "Portable JSON",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "sjSy2",
+                          "name": "Portable JSON actions",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Wg0S7",
+                              "name": "Copy JSON button",
+                              "height": 40,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 8,
+                              "stroke": "#CFC4CB",
+                              "strokeWidth": 1,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Ri1hD",
+                                  "name": "Copy JSON label",
+                                  "fill": "#433840",
+                                  "content": "Copy JSON",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "dTCT5",
+                              "name": "Import JSON button",
+                              "height": 40,
+                              "fill": "#7C3F68",
+                              "cornerRadius": 8,
+                              "stroke": "#7C3F68",
+                              "strokeWidth": 1,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "oF5Dz",
+                                  "name": "Import JSON label",
+                                  "fill": "#FFFFFF",
+                                  "content": "Import JSON",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HznUY",
+                      "name": "Portable JSON textarea",
+                      "width": "fill_container",
+                      "height": 150,
+                      "fill": "#231E24",
+                      "cornerRadius": 8,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "BSal5",
+                          "name": "Portable JSON sample",
+                          "fill": "#F8EEF5",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "{\n  \"schema\": \"languon.web-dev-panel.custom-sections\",\n  \"version\": 1,\n  \"sections\": [{ \"name\": \"Daily workspace\",\n    \"commandIds\": [\"dev:backend\", \"dev:web\"] }]\n}",
+                          "lineHeight": 1.45,
+                          "fontFamily": "Roboto Mono",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pDIwu",
+                      "name": "Unreproducible import alert",
+                      "width": "fill_container",
+                      "fill": "#FFE9EE",
+                      "cornerRadius": 8,
+                      "stroke": "#B32646",
+                      "strokeWidth": 1,
+                      "gap": 8,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "c0tZOq",
+                          "name": "Import alert icon",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "#B32646"
+                        },
+                        {
+                          "type": "text",
+                          "id": "asv7y",
+                          "name": "Import alert text",
+                          "fill": "#8F213C",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Import not applied: command “dev:legacy” is not in this catalog.",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }

@@ -346,7 +346,7 @@ describe('shared UI accessibility contracts', () => {
                 items={[
                     { label: 'Rename', onSelect: vi.fn() },
                     { disabled: true, label: 'Archive', onSelect: vi.fn() },
-                    { label: 'Remove', onSelect: vi.fn() },
+                    { label: 'Remove', onSelect: vi.fn(), tone: 'danger' },
                 ]}
                 label='Lesson actions'
                 trigger='Actions'
@@ -357,10 +357,32 @@ describe('shared UI accessibility contracts', () => {
         await user.click(trigger);
         expect(screen.getByRole('menuitem', { name: 'Rename' })).toHaveFocus();
         await user.keyboard('{ArrowDown}');
-        expect(screen.getByRole('menuitem', { name: 'Remove' })).toHaveFocus();
+        const remove = screen.getByRole('menuitem', { name: 'Remove' });
+        expect(remove).toHaveFocus();
+        expect(remove).toHaveAttribute('data-tone', 'danger');
         await user.keyboard('{Escape}');
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
         expect(trigger).toHaveFocus();
+    });
+
+    it('disables a menu trigger when every action is unavailable', () => {
+        render(
+            <Menu
+                items={[
+                    { disabled: true, label: 'Rename', onSelect: vi.fn() },
+                    { disabled: true, label: 'Archive', onSelect: vi.fn() },
+                ]}
+                label='Unavailable lesson actions'
+                trigger='Actions'
+            />,
+        );
+
+        expect(
+            screen.getByRole('button', {
+                name: 'Unavailable lesson actions',
+            }),
+        ).toBeDisabled();
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
     it('closes a popover when focus leaves its interactive surface', async () => {
@@ -504,6 +526,37 @@ describe('shared UI accessibility contracts', () => {
         } finally {
             HTMLDialogElement.prototype.showModal = showModal;
             HTMLDialogElement.prototype.close = close;
+        }
+    });
+
+    it('prevents close controls and Escape dismissal while a dialog is not dismissible', () => {
+        const showModal = HTMLDialogElement.prototype.showModal;
+        HTMLDialogElement.prototype.showModal = function showModalForTest() {
+            this.setAttribute('open', '');
+        };
+        const onClose = vi.fn();
+        try {
+            render(
+                <Dialog
+                    closeLabel='Close pending dialog'
+                    dismissible={false}
+                    onClose={onClose}
+                    open
+                    title='Saving card'
+                >
+                    Saving changes.
+                </Dialog>,
+            );
+
+            expect(
+                screen.getByRole('button', { name: 'Close pending dialog' }),
+            ).toBeDisabled();
+            const dialog = screen.getByRole('dialog');
+            const cancelEvent = new Event('cancel', { cancelable: true });
+            expect(dialog.dispatchEvent(cancelEvent)).toBe(false);
+            expect(onClose).not.toHaveBeenCalled();
+        } finally {
+            HTMLDialogElement.prototype.showModal = showModal;
         }
     });
 

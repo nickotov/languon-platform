@@ -1,6 +1,6 @@
 # ADR-0015: Figma Make visual-design trial
 
-Status: Accepted
+Status: Superseded by ADR-0016
 Date: 2026-08-23
 Supersedes: None
 

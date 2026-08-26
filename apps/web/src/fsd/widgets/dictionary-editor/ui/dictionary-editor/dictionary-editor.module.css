@@ -1,0 +1,54 @@
+.main {
+    display: grid;
+    gap: var(--sys-space-5);
+    margin: 0 auto;
+    max-width: 1180px;
+    padding: clamp(var(--sys-space-4), 5vw, 64px);
+}
+.header,
+.titleRow,
+.cardsHeader,
+.filters {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-4);
+    justify-content: space-between;
+}
+.header h1,
+.cardsHeader h2 {
+    font-family: var(--sys-font-display);
+    margin: 0;
+}
+.header p,
+.cardsHeader p {
+    color: var(--sys-color-text-secondary);
+    margin: var(--sys-space-2) 0 0;
+}
+.cardsSection {
+    display: grid;
+    gap: var(--sys-space-4);
+}
+.cardsActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-3);
+}
+.filters {
+    align-items: end;
+}
+.filters > :first-child {
+    flex: 1 1 280px;
+}
+.outcome {
+    color: var(--sys-color-text-secondary);
+    margin: 0;
+    min-height: 1.5em;
+}
+@media (max-width: 420px) {
+    .header > button,
+    .cardsActions,
+    .cardsActions > button {
+        width: 100%;
+    }
+}

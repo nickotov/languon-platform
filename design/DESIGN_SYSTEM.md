@@ -1,18 +1,17 @@
 # Languon design system blueprint
 
-Status: Approved design contract with public-web implementation
-Version: 0.2
-Updated: 2026-08-17
+Status: Reference guidance implemented by the public-web UI kit
+Version: 0.4
+Updated: 2026-08-25
 Platforms: Public web and native mobile
 Primary audience: Adult learners and tutors, approximately 18–45
 
 ## 1. Purpose
 
-This document is the source brief for generating and evaluating Languon's first
-design system. It defines the authoritative visual direction, cross-platform
-design semantics, accessible component requirements, and starter values. The
-public web implementation consumes this contract; platform behavior and native
-semantics still take precedence over decorative fidelity.
+This document records Languon's visual direction, cross-platform design
+semantics, accessible component requirements, and starter values. It guides the
+public web implementation, but runtime tokens, shared component contracts,
+stories, and verified platform behavior are authoritative when they differ.
 
 The desired experience is modern, warm, editorial, calm, and quietly
 intelligent. It should make serious language learning feel inviting without
@@ -60,13 +59,11 @@ The public Next.js app implements this contract locally:
 - accessible primitives — `apps/web/src/fsd/shared/ui`;
 - component and state catalogue — `apps/web/.storybook` plus colocated stories.
 
-`design/DESIGN_SYSTEM.md` remains the semantic design authority. Figma Make is
-the preferred visual-composition source when it is available through the
-configured MCP; `design/main.pen` is retained as the legacy reference for
-unmigrated screens. Runtime code and Storybook demonstrate that contract but do
-not silently redefine it. A deliberate visual or semantic change updates the
-applicable design source first or in the same delivery, then updates web
-implementation and verification.
+Runtime semantic tokens, shared UI contracts, Storybook stories, and verified
+application behavior are the implementation authority. This document, Figma
+Make, and `design/main.pen` are optional design references. A delivery may
+implement or revise a screen without first creating or approving a visual
+artifact; it updates design references only when they are explicitly in scope.
 
 ## 3. Research and design position
 
@@ -765,7 +762,7 @@ For the current and future platform implementations:
 
 1. Keep semantic tokens and theme selection below visual primitives.
 2. Build and extend app-local shared primitives under `src/fsd/shared/ui` for web
-   in accordance with ADR-0005 and ADR-0008; use semantic HTML, CSS Modules, and
+   in accordance with ADR-0005 and ADR-0016; use semantic HTML, CSS Modules, and
    colocated stories.
 3. Build native mobile equivalents from React Native/platform primitives, not
    DOM behavior copied into mobile.
@@ -779,10 +776,115 @@ For the current and future platform implementations:
 
 The web API is app-local and exported from `apps/web/src/fsd/shared/ui/index.ts`.
 Do not import it across applications or create a competing token source. Any
-delivery that changes approved values or component semantics updates this
-document, the applicable Figma Make or legacy Pencil source, stories, affected
-runtime code, and acceptance evidence together. New dependencies or
+delivery that changes runtime token values or component semantics updates
+stories, affected runtime code, and acceptance evidence together; update this
+document or a visual artifact when the change also revises that guidance. New dependencies or
 cross-application ownership remain feature-sized architecture decisions.
+
+### Dictionary authoring and generation patterns
+
+The public-web dictionary experience extends the shared primitives without
+changing their token or interaction semantics. The existing `Dictionary / …`
+screens in `design/main.pen` are optional composition references for library,
+authoring, sharing, AI review, batch, document, and transfer work. Runtime
+components and stories arrive with their implementation milestones; visual
+artifacts neither gate delivery nor imply that future behavior is available.
+
+Card creation and editing are focused contextual tasks: use a desktop dialog and
+a mobile bottom sheet, with required bilingual fields first and optional fields
+scrolling within the overlay. Collection cards expose their status and learning
+content directly; Edit, Regenerate with AI, and Archive live in a labelled
+three-dot popover rather than repeated card-level action rows.
+
+Document generation is a staged journey, never a mixed dashboard: select Upload
+file or Paste text, submit to durable scanning, extraction, and AI processing,
+then show one editable final card-proposal review only after processing and
+original-byte cleanup complete. Row failures appear in that same review; there
+is no separate extracted-term editing stage. Cancelled, failed, and no-terms
+outcomes preserve a clear return path and never present partial output as a
+completed result.
+
+#### Information hierarchy
+
+- The dictionary library prioritizes name, language direction, active-card
+  count, visibility, last update, and the create action. First-use empty,
+  filtered-no-results, loading, offline, and retry states remain distinct.
+- The editor keeps dictionary identity/settings separate from the ordered card
+  collection. Explicit Save and Cancel actions, dirty state, optimistic
+  conflicts, archive/restore, and sharing consequences are named in persistent
+  UI rather than communicated only by a toast.
+- Source and target selectors show language names and canonical tags without
+  flags. The source/target direction stays visible near card fields, and the
+  pair-lock explanation appears when cards prevent a language change.
+- Optional-field settings use labelled checkboxes within an explicit-save form,
+  not immediate switches. Definition/example language roles and transcription
+  notation appear only when applicable. Disabling a field explains that stored
+  values are preserved but inactive.
+- Card rows show the source phrase, translation, active optional content,
+  authorship text, and order. Card-level actions use an adjacent labelled
+  overflow popover. Editing opens a desktop dialog and a mobile bottom sheet
+  rather than compressing multilingual fields into a dense row.
+
+#### Card editor
+
+- Source and translation are always visible, required fields. Transcription,
+  definition, context example, and paired example translation appear according
+  to the effective dictionary settings plus card overrides.
+- Advanced settings use a named disclosure. Every optional field offers
+  **Inherit**, **Enabled**, and **Disabled** where an override is permitted;
+  applicable language roles use **Source language** and **Target language**.
+  The UI never exposes nullable database terminology.
+- The example and its translation are a semantic pair. The translation control
+  cannot be enabled without the example and uses the opposite language role.
+- Inactive preserved values remain available in an explained read-only preview
+  before re-enabling; disabling never visually implies that content was deleted.
+- Each source, translation, definition, example, and transcription passage has
+  its resolved BCP 47 `lang` metadata. Labels remain in the interface locale.
+
+#### AI proposal and batch review
+
+- AI work is review-first. The source card and editable proposed card are shown
+  side by side at expanded widths and in a clearly ordered original/proposal
+  stack on compact screens. Diff styling combines labels and changed-field
+  markers with color; unchanged and unavailable fields remain distinguishable.
+- Provenance is written as **Human**, **AI-generated**, or **Human + AI** and is
+  not represented by a sparkle, gradient, or violet color alone. Warnings,
+  reasons, and alternatives are explicit text associated with their field.
+- Persistent progress names only known stages, exposes cancellation, survives
+  navigation/reload, and changes to actionable retry or recovery after a
+  meaningful wait. Do not describe a provider as “thinking.”
+- Accepting a proposal replaces the candidate atomically after review. Discard,
+  regenerate, edit, conflict recovery, and accept are separate named actions;
+  the primary action never hides a stale-version warning.
+- Batch, document, and import candidates use a review table at expanded widths
+  and stacked candidate cards at compact widths. Selection, row errors,
+  duplicate warnings, source order, capacity, and atomic commit outcome remain
+  perceivable without horizontal page scrolling or color-only state.
+- Document upload shows accepted types and limits before selection, never
+  presents scanning as a guarantee of safety, and distinguishes upload,
+  scanning, extraction, OCR, proposal, cleanup, cancelled, and failed states
+  only when the backend actually knows them.
+
+#### Responsive and accessibility states
+
+- At 320px, the editor becomes one content column with source before target,
+  actions in document order, and no sticky region covering focused fields or
+  software keyboards. Reordering always has keyboard/tap alternatives to drag.
+- At 200% text, language labels, authorship, warnings, card actions, and counts
+  wrap without truncating essential information. A 10,000-card collection uses
+  pagination/incremental loading rather than rendering every card at once.
+- Loading, empty, error, offline, conflict, archived, private, and unlisted
+  states have text headings and recovery actions. Anonymous public pages expose
+  no owner-private metadata and keep the fork action separate from sign-in.
+- Public capability pages show dictionary identity, language direction, cards,
+  no-index state, and independent-copy consequences without owner-private data.
+  Signed-out fork returns to the same fragment capability after sign-in. Missing,
+  private, rotated, revoked, and archived links share one calm unavailable state
+  so presentation does not become an enumeration oracle.
+- Live regions announce explicit save, retry, proposal completion, cancellation,
+  and bulk commit outcomes without reading the entire multilingual card again.
+  Focus moves only for a blocking validation summary, dialog lifecycle, or when
+  the previous target disappears.
 
 ### Administration application variant
 
@@ -823,10 +925,10 @@ Ant Design default color alone.
 - English is the initial locale, but every visible label is supplied through
   the admin i18n provider. Tables and dialogs allow translated labels to wrap.
 
-The `Admin operations` board in `design/main.pen` is the visual source for the
-shell, summary cards, user table/status treatment, detail grouping, audit table,
-and confirmation dialog. Runtime changes to those patterns update this contract
-and that board in the same feature.
+The `Admin operations` board in `design/main.pen` is an optional reference for
+the shell, summary cards, user table/status treatment, detail grouping, audit
+table, and confirmation dialog. Runtime changes update affected components,
+stories, and browser evidence; the board changes only when explicitly in scope.
 
 ### Developer tooling variant
 
@@ -877,10 +979,10 @@ spacing, focus, state, and responsive intent.
   section-scoped Stop all.
 
 The `Developer Tooling / Web Dev Command Panel` screen in `design/main.pen` is
-the visual source for this variant. Runtime changes to its navigation,
-disclosures, command-card, unavailable reason, selection, feedback, status, log,
-confirmation, or compact-layout contract update both design artifacts in the
-same correction or feature.
+an optional reference for this variant. Runtime changes to navigation,
+disclosures, command cards, feedback, status, logs, confirmations, or compact
+layout are verified in the running panel and update design artifacts only when
+explicitly in scope.
 
 ## 14. Visual-generation brief
 
@@ -930,6 +1032,9 @@ Board sections:
    collection, failed region/retry, cards, badges, chips, links, and dividers.
 6. Desktop and mobile examples at 320px reflow/text scaling, dark theme, reduced
    motion, increased contrast, and visible keyboard focus.
+7. Dictionary authoring and AI review examples using explicit save, inherited
+   optional fields, mixed-language metadata, persistent progress, conflict and
+   compact stacked review states.
 
 Every state must preserve the blueprint's contrast, target size, visible labels,
 keyboard focus, non-color cues, and platform-native behavior. Show components as
@@ -953,4 +1058,6 @@ a coherent library, not as a finished marketing page or product dashboard.
       200% text, and 320px reflow.
 - [ ] Reduced motion/transparency and increased/forced contrast have defined outcomes.
 - [ ] AI, success, warning, error, and human content are not distinguished by color alone.
+- [ ] Dictionary fields expose resolved language metadata, inheritance, inactive
+      value preservation, explicit save/conflict, and compact review behavior.
 - [ ] The result feels adult, warm, and editorial without copying a reference product.

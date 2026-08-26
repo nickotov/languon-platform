@@ -82,12 +82,76 @@ requires PostgreSQL and Redis. The compatibility `/health` endpoint remains
 available but is not a deployment gate. Web and admin readiness is `/healthz`.
 NGINX routes same-origin `/api/*` to backend with the `/api` prefix removed.
 
+The backend digest also starts one private dictionary-worker service in each
+application slot; this is a process role, not a fifth image. Compose gates it
+with a bounded PostgreSQL/application-store healthcheck and, in live mode, a
+bounded provider connectivity/authentication probe that never generates paid
+content. HTTP readiness remains independent of model/provider availability,
+and the worker has no edge network, listener, Redis URL, or authentication
+secrets. The API receives `DATABASE_URL`; the worker receives only
+`DICTIONARY_WORKER_DATABASE_URL`. Production validation requires distinct API,
+worker, and migrator database users so grants can remain least privilege.
+Provision the worker login separately, then have the migration owner apply
+`infra/deploy/sql/dictionary-worker-role.sql` with
+`--set=dictionary_worker_role=<worker-user>` after schema expansion. Before
+starting the candidate worker, production deployment runs a one-off privilege
+probe and verifies the worker has every required generation/settings privilege
+and no extra privilege on those tables, no CREATE on the public schema, no table
+privilege on unrelated dictionary data, and none of SELECT, INSERT, UPDATE,
+DELETE, TRUNCATE, REFERENCES, or TRIGGER on user, authentication, or
+administration tables.
+
 Set backend `DATABASE_MAX_CONNECTIONS` deliberately. Budget both blue and green
 backend pools plus the one-connection migrator and operator headroom. For
 example, two pools of 10 require a PostgreSQL limit comfortably above 21;
 monitor actual saturation instead of treating that minimum as a target.
+Add both blue and green `DICTIONARY_WORKER_DATABASE_MAX_CONNECTIONS` pools to
+that budget during deployment overlap. Worker concurrency, polling, readiness,
+and drain limits use the matching `DICTIONARY_WORKER_*` keys in the sanitized
+environment examples.
 `SHUTDOWN_TIMEOUT_MS` defaults to 295 seconds and must remain below the Compose
 300-second stop grace so the process can close clients before forced kill.
+
+The API and worker receive the same explicit generation policy:
+`DICTIONARY_GENERATION_MAX_INPUT_TOKENS` (32,768–262,144),
+`DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS` (128–1,024), both input/output
+`*_COST_MICROS_PER_MILLION_TOKENS` rates (1–1,000,000,000), and
+`DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT` (1–10,000,000). Live mode
+requires all five. The attempt ceiling must cover the sum of the separately
+rounded input and output ceiling costs. Inactive unavailable deployments may
+omit all five host values; the schema-v2 manifest policy is still injected as
+the no-call runtime policy. Any partial or live host configuration must match
+it, and the sanitized examples pin an explicit policy for later activation.
+The 32,768-token input minimum reserves 16,384 tokens for provider framing and
+still leaves room for the prompt, structured-output schema, and smallest valid
+card request.
+Schema-v2 manifests bind that same five-field policy into immutable
+`dictionaryJobs.generationBudget` metadata. Deployment requires the host values
+to match the manifest before migration and passes the manifest values to both
+API and worker. For every enqueued format, an envelope's token maxima must fit
+both candidate and rollback-floor workers, while its input/output rates and
+maximum cost must cover both workers' requirements. Once both releases enqueue
+the format, those inequalities already force an identical tuple. Deployment
+conservatively keeps it identical whenever the same worker format overlaps, so
+a stop-enqueue release cannot hide queued work; change the tuple only after the
+old format has drained and retired, then use a new expand/activate sequence.
+
+Release-manifest schema v2 adds dictionary-job format capabilities while still
+pinning exactly four images. Deployment preflight runs before migration and
+requires the candidate to resolve every format the rollback floor can enqueue,
+and the rollback floor to resolve every format the candidate can enqueue,
+across worker processability, API read/cancel/discard/accept, and web reads. A
+new format is therefore shipped in an `expand` manifest without activation,
+then activated only after the previous release is a compatible rollback floor.
+Relative to that floor, `expand` may add no API-enqueued formats and `activate`
+must add at least one; enqueue removal is a separate expand/drain step.
+Removing lifecycle support requires an exact `retireFormats` declaration. Before
+migration or candidate startup, deployment queries the active slot with its
+worker credential and refuses retirement until the named formats have zero
+queued/running jobs and zero reviewable proposals. Schema-v1 manifests are
+treated as supporting no dictionary job formats. Rollback still runs symmetric
+lifecycle and database-drain checks, but does not require an older manifest to
+anticipate a later release's phase transition or retirement declaration.
 
 Host application configuration lives at `/etc/languon/stage.env` or
 `/etc/languon/production.env`; use the sanitized examples in `infra/deploy/` as
@@ -345,11 +409,31 @@ node scripts/release-manifest.mjs create \
   --workflow-run "$WORKFLOW_RUN" \
   --migration-compatibility "$MIGRATION_COMPATIBILITY" \
   --migration-ledger "$MIGRATION_LEDGER" \
+  --dictionary-job-phase "expand" \
+  --dictionary-job-worker-processable "single-card:v1,pasted-terms:v1,import-pairs:v1" \
+  --dictionary-job-api-readable "single-card:v1,pasted-terms:v1,import-pairs:v1" \
+  --dictionary-job-api-cancellable "single-card:v1,pasted-terms:v1,import-pairs:v1" \
+  --dictionary-job-api-discardable "single-card:v1,pasted-terms:v1,import-pairs:v1" \
+  --dictionary-job-api-acceptable "single-card:v1,pasted-terms:v1,import-pairs:v1" \
+  --dictionary-job-web-readable "single-card:v1,pasted-terms:v1,import-pairs:v1" \
+  --dictionary-job-max-input-tokens-per-attempt "262144" \
+  --dictionary-job-max-output-tokens-per-attempt "40960" \
+  --dictionary-job-input-cost-micros-per-million-tokens "1000000" \
+  --dictionary-job-output-cost-micros-per-million-tokens "4000000" \
+  --dictionary-job-max-cost-micros-per-attempt "500000" \
   --image "backend=ghcr.io/<owner>/<repo>/backend@sha256:<digest>" \
   --image "web=ghcr.io/<owner>/<repo>/web@sha256:<digest>" \
   --image "admin=ghcr.io/<owner>/<repo>/admin@sha256:<digest>" \
   --image "migrator=ghcr.io/<owner>/<repo>/migrator@sha256:<digest>"
 ```
+
+The first expand release omits API enqueue and retirement arguments. A later
+activation adds
+`--dictionary-job-api-enqueued "single-card:v1,pasted-terms:v1,import-pairs:v1"`.
+Deterministic import/export does not depend on this model-job activation. A retirement
+release first stops enqueue while keeping lifecycle capabilities; only after the
+database drains may a following manifest remove those capabilities and declare
+`--dictionary-job-retire-formats "single-card:v1"`.
 
 4. Validate it before using it:
 

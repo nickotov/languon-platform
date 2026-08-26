@@ -1,0 +1,103 @@
+.section,
+.inputForm,
+.review,
+.failures {
+    display: grid;
+    gap: var(--sys-space-4);
+}
+
+.section {
+    padding-bottom: max(var(--sys-space-4), env(safe-area-inset-bottom));
+}
+
+.eyebrow,
+.inputForm h3,
+.inputForm p,
+.reviewHeader h3,
+.reviewHeader p,
+.inputTerm {
+    margin: 0;
+}
+
+.eyebrow {
+    color: var(--sys-color-text-secondary);
+    font-size: var(--sys-font-size-label);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.inputForm > div:first-child,
+.reviewHeader > div {
+    display: grid;
+    gap: var(--sys-space-2);
+}
+
+.actions,
+.closeActions,
+.reviewActions,
+.rowHeader,
+.reviewHeader {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-3);
+    justify-content: space-between;
+}
+
+.progressCard,
+.row {
+    display: grid;
+    gap: var(--sys-space-3);
+}
+
+.progressCard p,
+.feedback,
+.inputTerm {
+    color: var(--sys-color-text-secondary);
+}
+
+.fields {
+    display: grid;
+    gap: var(--sys-space-3);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inputTerm span {
+    color: var(--sys-color-text-primary);
+}
+
+.feedback summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.feedback ul {
+    display: grid;
+    gap: var(--sys-space-2);
+    margin-bottom: 0;
+}
+
+.reviewActions {
+    background: var(--sys-color-surface-default);
+    border-top: 1px solid var(--sys-color-border-subtle);
+    bottom: 0;
+    padding-block: var(--sys-space-3);
+    position: sticky;
+    z-index: 1;
+}
+
+.closeActions {
+    justify-content: flex-end;
+}
+
+@media (max-width: 680px) {
+    .fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .actions > button,
+    .reviewActions > button {
+        width: 100%;
+    }
+}

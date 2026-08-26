@@ -6,6 +6,7 @@ export type DialogProps = {
     children: ReactNode;
     closeLabel?: string;
     description?: ReactNode;
+    dismissible?: boolean;
     onClose(): void;
     open: boolean;
     role?: 'alertdialog' | 'dialog';
@@ -18,6 +19,7 @@ export function Dialog({
     children,
     closeLabel,
     description,
+    dismissible = true,
     onClose,
     open,
     role = 'dialog',
@@ -41,7 +43,12 @@ export function Dialog({
             aria-describedby={description ? descriptionId : undefined}
             aria-labelledby={titleId}
             className={[styles.dialog, styles[size], styles[variant]].join(' ')}
-            onClose={onClose}
+            onCancel={(event) => {
+                if (!dismissible) event.preventDefault();
+            }}
+            onClose={() => {
+                if (dismissible) onClose();
+            }}
             ref={ref}
             role={role}
         >
@@ -51,6 +58,7 @@ export function Dialog({
                     <button
                         aria-label={closeLabel}
                         className={styles.close}
+                        disabled={!dismissible}
                         onClick={() => ref.current?.close()}
                         type='button'
                     >

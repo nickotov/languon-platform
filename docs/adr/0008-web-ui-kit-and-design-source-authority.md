@@ -1,6 +1,6 @@
 # ADR-0008: Web UI kit and design-source authority
 
-Status: Accepted
+Status: Superseded by ADR-0016
 Date: 2026-08-17
 Supersedes: None
 

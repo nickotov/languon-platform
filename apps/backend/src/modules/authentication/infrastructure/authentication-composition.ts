@@ -46,6 +46,15 @@ export interface AuthenticationComposition {
         database: PostgresJsDatabase<typeof databaseSchema>;
         ids: NodeIdGenerator;
     };
+    productDependencies: {
+        accessTokens: JoseAccessTokenSigner;
+        authentication: AuthenticationService;
+        clock: SystemClock;
+        database: PostgresJsDatabase<typeof databaseSchema>;
+        entropy: NodeEntropySource;
+        ids: NodeIdGenerator;
+        rateLimiter: RedisRateLimiter;
+    };
     close(): Promise<void>;
     options: AppAuthenticationOptions;
     readiness(): Promise<{
@@ -103,6 +112,11 @@ export async function createAuthenticationComposition(
             rpName: environment.AUTH_WEBAUTHN_RP_NAME,
         });
         const store = new DrizzleAuthStore(database);
+        const rateLimiter = new RedisRateLimiter({
+            hmacSecret: environment.AUTH_CODE_HMAC_SECRET,
+            namespace: environment.AUTH_REDIS_NAMESPACE,
+            redis,
+        });
         const authentication = new AuthenticationService({
             clock,
             codeDigester: new HmacVerificationCodeDigester(
@@ -120,16 +134,14 @@ export async function createAuthenticationComposition(
             passwordHasher,
             passwordPolicy: new PasswordPolicy(),
             passkeyVerifier,
-            rateLimiter: new RedisRateLimiter({
-                hmacSecret: environment.AUTH_CODE_HMAC_SECRET,
-                redis,
-            }),
+            rateLimiter,
             refreshCredentials,
             securityEvents: new DrizzleSecurityEventRecorder(database),
             sessionIssuer,
             store,
             webAuthnChallenges: new RedisWebAuthnChallengeStore({
                 hmacSecret: environment.AUTH_CODE_HMAC_SECRET,
+                namespace: environment.AUTH_REDIS_NAMESPACE,
                 redis,
             }),
         });
@@ -169,6 +181,15 @@ export async function createAuthenticationComposition(
                     accessTokens,
                 ),
                 policy,
+            },
+            productDependencies: {
+                accessTokens,
+                authentication,
+                clock,
+                database,
+                entropy,
+                ids,
+                rateLimiter,
             },
             readiness: async () => {
                 const [postgresResult, redisResult] = await Promise.allSettled([

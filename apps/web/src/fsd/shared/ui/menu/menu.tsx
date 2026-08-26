@@ -1,6 +1,13 @@
 'use client';
 
 import {
+    autoUpdate,
+    flip,
+    offset,
+    shift,
+    useFloating,
+} from '@floating-ui/react';
+import {
     type KeyboardEvent,
     type ReactNode,
     useEffect,
@@ -11,7 +18,12 @@ import {
 
 import styles from './menu.module.css';
 
-type MenuItem = { disabled?: boolean; label: string; onSelect(): void };
+type MenuItem = {
+    disabled?: boolean;
+    label: string;
+    onSelect(): void;
+    tone?: 'danger';
+};
 
 export function Menu({
     items,
@@ -27,6 +39,15 @@ export function Menu({
     const triggerRef = useRef<HTMLButtonElement>(null);
     const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const [open, setOpen] = useState(false);
+    const disabled = items.every((item) => item.disabled);
+    const { floatingStyles, refs } = useFloating({
+        middleware: [offset(4), flip({ padding: 8 }), shift({ padding: 8 })],
+        onOpenChange: setOpen,
+        open,
+        placement: 'bottom-end',
+        strategy: 'fixed',
+        whileElementsMounted: open ? autoUpdate : undefined,
+    });
 
     useEffect(() => {
         if (!open) return;
@@ -38,6 +59,10 @@ export function Menu({
         document.addEventListener('pointerdown', dismiss);
         return () => document.removeEventListener('pointerdown', dismiss);
     }, [open]);
+
+    useEffect(() => {
+        if (disabled && open) setOpen(false);
+    }, [disabled, open]);
 
     function move(event: KeyboardEvent<HTMLButtonElement>, index: number) {
         if (event.key === 'Escape') {
@@ -80,17 +105,28 @@ export function Menu({
                 aria-haspopup='menu'
                 aria-label={label}
                 className={styles.trigger}
+                disabled={disabled}
                 onClick={() => setOpen((current) => !current)}
-                ref={triggerRef}
+                ref={(node) => {
+                    triggerRef.current = node;
+                    refs.setReference(node);
+                }}
                 type='button'
             >
                 {trigger}
             </button>
             {open ? (
-                <div className={styles.menu} id={id} role='menu'>
+                <div
+                    className={styles.menu}
+                    id={id}
+                    ref={refs.setFloating}
+                    role='menu'
+                    style={floatingStyles}
+                >
                     {items.map((item, index) => (
                         <button
                             disabled={item.disabled}
+                            data-tone={item.tone}
                             key={item.label}
                             onClick={() => {
                                 item.onSelect();

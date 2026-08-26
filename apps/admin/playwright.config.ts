@@ -69,6 +69,8 @@ export default defineConfig({
                 AUTH_CODE_HMAC_SECRET: `admin-e2e-code-secret-do-not-use-outside-local-tests-${e2eRateLimitNamespace}`,
                 AUTH_JWT_SECRET:
                     'admin-e2e-jwt-secret-do-not-use-outside-local-tests',
+                DICTIONARY_HMAC_SECRET:
+                    'admin-e2e-dictionary-secret-do-not-use-outside-local-tests',
                 AUTH_WEBAUTHN_RP_ID: new URL(adminOrigin).hostname,
                 BACKEND_PORT: backendPort,
                 DATABASE_URL: databaseUrl,

@@ -9,7 +9,8 @@ import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { Button, Field, Input } from '@/fsd/shared/ui';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
-import { useSessionStore } from '@/fsd/entities/session/model/session-store';
+import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
+import { useSessionStore } from '@/fsd/entities/session';
 
 import { useAuth } from '../model/auth-provider';
 import styles from './auth-ui.module.css';
@@ -69,7 +70,12 @@ export function VerifyEmailForm({
                     }),
                 (result) => result,
             );
-            router.replace(href(safeReturnPath(returnTo)));
+            const destination = safeReturnPath(returnTo);
+            router.replace(
+                href(
+                    preserveCapabilityReturnFragment(destination, destination),
+                ),
+            );
         } catch (caught) {
             setError(localizedAuthError(caught, t));
         } finally {
@@ -96,7 +102,15 @@ export function VerifyEmailForm({
                 resendAvailableAt: response.verification.resendAvailableAt,
                 returnTo: safeReturnPath(returnTo),
             });
-            router.replace(href(`/verify-email?${query.toString()}`));
+            const destination = safeReturnPath(returnTo);
+            router.replace(
+                href(
+                    preserveCapabilityReturnFragment(
+                        `/verify-email?${query.toString()}`,
+                        destination,
+                    ),
+                ),
+            );
             setMessage(t('verify.resent'));
         } catch (caught) {
             setError(localizedAuthError(caught, t));
@@ -109,7 +123,18 @@ export function VerifyEmailForm({
         return (
             <FormMessage>
                 {t('verify.unavailable')}{' '}
-                <Link href={href('/login')}>{t('auth.returnToSignIn')}</Link>
+                <Link
+                    href={href(
+                        preserveCapabilityReturnFragment(
+                            `/login?${new URLSearchParams({
+                                returnTo: safeReturnPath(returnTo),
+                            }).toString()}`,
+                            safeReturnPath(returnTo),
+                        ),
+                    )}
+                >
+                    {t('auth.returnToSignIn')}
+                </Link>
             </FormMessage>
         );
     }

@@ -83,8 +83,8 @@ export function createAdministrationRoutes(
         scheme: 'bearer',
         type: 'http',
     });
-    app.use('*', authHttpBodyLimit);
-    app.use('*', async (context, next) => {
+    app.use('/admin/*', authHttpBodyLimit);
+    app.use('/admin/*', async (context, next) => {
         for (const [name, value] of Object.entries(
             dependencies.policy.securityHeaders(),
         )) {
@@ -128,7 +128,7 @@ export function createAdministrationRoutes(
     const bearer = (value: string | undefined) =>
         dependencies.policy.parseBearerAuthorization(value ?? null);
 
-    app.options('*', (context) => {
+    app.options('/admin/*', (context) => {
         const origin = context.req.header('Origin');
         assertOrigin(origin);
         context.header('Access-Control-Allow-Origin', origin!);

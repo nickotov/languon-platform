@@ -31,6 +31,7 @@ export interface AppOperationalOptions {
 export function createApp(options?: {
     administration?: AppAdministrationOptions;
     authentication?: AppAuthenticationOptions;
+    dictionaries?: OpenAPIHono;
     operational?: AppOperationalOptions;
 }): OpenAPIHono {
     const app = new OpenAPIHono();
@@ -54,6 +55,9 @@ export function createApp(options?: {
     }
     if (options?.administration) {
         app.route('/', createAdministrationRoutes(options.administration));
+    }
+    if (options?.dictionaries) {
+        app.route('/', options.dictionaries);
     }
     app.doc('/openapi.json', {
         info: {

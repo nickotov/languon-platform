@@ -7,7 +7,8 @@ import { type FormEvent, useState } from 'react';
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
-import { useSessionStore } from '@/fsd/entities/session/model/session-store';
+import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
+import { useSessionStore } from '@/fsd/entities/session';
 import { Button, Field, Input } from '@/fsd/shared/ui';
 
 import { useAuth } from '../model/auth-provider';
@@ -47,7 +48,15 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                 resendAvailableAt: response.verification.resendAvailableAt,
                 returnTo: safeReturnPath(returnTo),
             });
-            router.push(href(`/verify-email?${query.toString()}`));
+            const destination = safeReturnPath(returnTo);
+            router.push(
+                href(
+                    preserveCapabilityReturnFragment(
+                        `/verify-email?${query.toString()}`,
+                        destination,
+                    ),
+                ),
+            );
         } catch (caught) {
             setError(localizedAuthError(caught, t));
         } finally {
@@ -59,7 +68,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
         return (
             <>
                 <FormMessage>{t('signup.unavailable')}</FormMessage>
-                <AuthLinks mode='signup' />
+                <AuthLinks mode='signup' returnTo={safeReturnPath(returnTo)} />
             </>
         );
     }
@@ -95,7 +104,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                     {pending ? t('signup.pending') : t('signup.submit')}
                 </Button>
             </form>
-            <AuthLinks mode='signup' />
+            <AuthLinks mode='signup' returnTo={safeReturnPath(returnTo)} />
         </>
     );
 }

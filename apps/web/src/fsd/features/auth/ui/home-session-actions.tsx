@@ -1,6 +1,6 @@
 'use client';
 
-import { useSessionStore } from '@/fsd/entities/session/model/session-store';
+import { useSessionStore } from '@/fsd/entities/session';
 import { useI18n } from '@/fsd/shared/i18n';
 import { ButtonLink, LoadingState } from '@/fsd/shared/ui';
 import { useAuth } from '../model/auth-provider';
@@ -22,6 +22,9 @@ export function HomeSessionActions() {
                 <p>
                     {t('home.signedInAs', { email: user?.primaryEmail ?? '' })}
                 </p>
+                <ButtonLink href={href('/dictionaries')}>
+                    {t('home.dictionaries')}
+                </ButtonLink>
                 <ButtonLink href={href('/security')}>
                     {t('home.security')}
                 </ButtonLink>

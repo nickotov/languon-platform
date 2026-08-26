@@ -1,0 +1,60 @@
+.main {
+    display: grid;
+    gap: var(--sys-space-5);
+    margin: 0 auto;
+    max-width: 920px;
+    padding: clamp(var(--sys-space-4), 5vw, 64px);
+}
+.header h1,
+.forkCard h2 {
+    font-family: var(--sys-font-display);
+}
+.header h1 {
+    margin: var(--sys-space-2) 0;
+}
+.eyebrow {
+    color: var(--sys-color-action-primary);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.forkCard,
+.card {
+    padding: var(--sys-space-5);
+}
+.cards {
+    display: grid;
+    gap: var(--sys-space-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.pair {
+    display: grid;
+    gap: var(--sys-space-3);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.pair strong,
+.card dd {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.card dl {
+    display: grid;
+    gap: var(--sys-space-2);
+}
+.card dt {
+    color: var(--sys-color-text-secondary);
+}
+.card dd {
+    margin: 0;
+}
+@media (max-width: 420px) {
+    .pair {
+        grid-template-columns: 1fr;
+    }
+    .pair span {
+        display: none;
+    }
+}

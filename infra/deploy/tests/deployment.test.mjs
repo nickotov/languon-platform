@@ -29,8 +29,11 @@ const config = {
     AUTH_ALLOWED_ORIGINS: 'https://stage.test',
     AUTH_CODE_HMAC_SECRET: 'a',
     AUTH_JWT_SECRET: 'b',
+    DICTIONARY_HMAC_SECRET: 'c',
     AUTH_WEBAUTHN_RP_ID: 'stage.test',
     DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
+    DICTIONARY_WORKER_DATABASE_URL:
+        'postgres://worker:p@stage-postgres:5432/db',
     MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',
     REDIS_URL: 'redis://stage-redis:6379',
     DEPLOY_PROJECT_PREFIX: 'test-stage',
@@ -76,6 +79,48 @@ async function fixture(behavior = {}) {
             args.includes('down')
         ) {
             throw new Error('cleanup fixture failed');
+        }
+        if (
+            args.includes('--eval') &&
+            args.some((value) => String(value).includes('has_table_privilege'))
+        ) {
+            return {
+                stdout: JSON.stringify(
+                    behavior.workerPrivileges ?? {
+                        jobs: true,
+                        proposals: true,
+                        providerCircuit: true,
+                        documentUploads: true,
+                        documentObjectVersions: true,
+                        documentExtractions: true,
+                        settings: true,
+                        dictionaryCardDuplicateColumns: true,
+                        jobsUnexpected: false,
+                        proposalsUnexpected: false,
+                        providerCircuitUnexpected: false,
+                        documentUploadsUnexpected: false,
+                        documentObjectVersionsUnexpected: false,
+                        documentExtractionsUnexpected: false,
+                        settingsUnexpected: false,
+                        dictionaries: false,
+                        dictionaryCards: false,
+                        dictionaryCardsUnexpectedColumns: false,
+                        dictionaryCardRevisions: false,
+                        dictionaryIdempotencyKeys: false,
+                        schemaCreate: false,
+                        users: false,
+                        userEmails: false,
+                        passwordCredentials: false,
+                        authVerificationChallenges: false,
+                        authSessions: false,
+                        authPasskeys: false,
+                        authSecurityEvents: false,
+                        adminMemberships: false,
+                        adminAuditEvents: false,
+                    },
+                ),
+                stderr: '',
+            };
         }
         if (args.includes('sh') && args.includes('-c'))
             throw new Error('no old workers');
@@ -199,6 +244,86 @@ test('production backup gate is bound to production evidence', async () => {
         '--environment',
         'production',
     ]);
+});
+
+test('production verifies worker table privileges before readiness', async () => {
+    const behavior = {};
+    const { deployment, calls } = await fixture(behavior);
+    deployment.environment = 'production';
+
+    await deployment.verifyDictionaryWorkerDatabasePrivileges('blue');
+    assert.equal(
+        calls.some((call) => call.join(' ').includes('has_table_privilege')),
+        true,
+    );
+    assert.match(
+        calls.at(-1).join(' '),
+        /run --rm --no-deps dictionary-worker node/,
+    );
+    assert.match(calls.at(-1).join(' '), /has_table_privilege/);
+    assert.doesNotMatch(calls.at(-1).join(' '), / exec /);
+    behavior.workerPrivileges = {
+        jobs: true,
+        proposals: true,
+        providerCircuit: true,
+        documentUploads: true,
+        documentObjectVersions: true,
+        documentExtractions: true,
+        settings: true,
+        dictionaryCardDuplicateColumns: true,
+        jobsUnexpected: false,
+        proposalsUnexpected: false,
+        providerCircuitUnexpected: false,
+        documentUploadsUnexpected: false,
+        documentObjectVersionsUnexpected: false,
+        documentExtractionsUnexpected: false,
+        settingsUnexpected: false,
+        dictionaries: false,
+        dictionaryCards: false,
+        dictionaryCardsUnexpectedColumns: false,
+        dictionaryCardRevisions: false,
+        dictionaryIdempotencyKeys: false,
+        schemaCreate: false,
+        users: true,
+        userEmails: false,
+        passwordCredentials: false,
+        authVerificationChallenges: false,
+        authSessions: false,
+        authPasskeys: false,
+        authSecurityEvents: false,
+        adminMemberships: false,
+        adminAuditEvents: false,
+    };
+    await assert.rejects(
+        () => deployment.verifyDictionaryWorkerDatabasePrivileges('blue'),
+        /least-privilege boundary/,
+    );
+    behavior.workerPrivileges.users = false;
+    behavior.workerPrivileges.documentUploads = false;
+    await assert.rejects(
+        () => deployment.verifyDictionaryWorkerDatabasePrivileges('blue'),
+        /least-privilege boundary/,
+    );
+});
+
+test('production runs the trusted worker privilege gate before slot startup', async () => {
+    const { deployment, calls } = await fixture();
+    deployment.environment = 'production';
+    deployment.config = {
+        ...deployment.config,
+        BACKUP_MANIFEST_PATH: '/backup/latest.json',
+    };
+
+    await deployment.deploy();
+
+    const rendered = calls.map((call) => call.join(' '));
+    const privilegeGate = rendered.findIndex((line) =>
+        line.includes('has_table_privilege'),
+    );
+    const slotStart = rendered.findIndex((line) =>
+        line.includes('up --detach --no-build --wait'),
+    );
+    assert.ok(privilegeGate >= 0 && privilegeGate < slotStart);
 });
 
 test('failed NGINX validation restores the previously mounted upstream file', async () => {

@@ -135,7 +135,7 @@ jobs:
                   ssh "${ssh_options[@]}" "$target" "install -d '$remote_dir/infra/backup' '$remote_dir/infra/deploy' '$remote_dir/infra/nginx' '$remote_dir/scripts'"
                   scp "${ssh_options[@]}" -r infra/backup/. "$target:$remote_dir/infra/backup/"
                   scp "${ssh_options[@]}" infra/deploy/cli.mjs infra/deploy/admin-cli.mjs "$target:$remote_dir/infra/deploy/"
-                  scp "${ssh_options[@]}" -r infra/deploy/lib infra/deploy/compose "$target:$remote_dir/infra/deploy/"
+                  scp "${ssh_options[@]}" -r infra/deploy/lib infra/deploy/compose infra/deploy/sql "$target:$remote_dir/infra/deploy/"
                   scp "${ssh_options[@]}" infra/nginx/nginx.conf infra/nginx/edge-entrypoint.sh "$target:$remote_dir/infra/nginx/"
                   scp "${ssh_options[@]}" scripts/deploy-release.mjs "$target:$remote_dir/scripts/"
                   scp "${ssh_options[@]}" .release/release-manifest.json "$target:$remote_dir/"
