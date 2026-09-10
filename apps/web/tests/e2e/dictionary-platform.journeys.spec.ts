@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:f582db9e4d60e702
+// @user-flow-revision dictionary-platform sha256:e88d848310a72c33
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -1030,6 +1030,106 @@ test.describe('dictionary platform journeys', () => {
         expect(csv).toContain('café,coffee\r\n');
         expect(csv).toContain('café,coffee house\r\n');
         expect(csv).toContain(`${longUnbrokenSource},long source\r\n`);
+        assertNoBrowserErrors();
+    });
+
+    // @user-flow dictionary-platform/inline-ai-card-authoring-preserves-field-choices
+    test('creates a mixed card from retained inline AI field choices', async ({
+        page,
+    }, testInfo) => {
+        const assertNoBrowserErrors = captureBrowserErrors(page);
+        await signUpAndVerify(
+            page,
+            syntheticEmail(testInfo, 'inline-authoring'),
+            '/dictionaries',
+        );
+        await createDictionary(page, `Inline AI Spanish ${runId}`);
+        await page.getByLabel('Definition').check();
+        await page.getByRole('button', { name: 'Save settings' }).click();
+        await expect(
+            page.getByText('Dictionary settings saved.'),
+        ).toBeVisible();
+
+        await page.getByRole('button', { name: 'Add card' }).click();
+        const editor = page.getByRole('dialog', { name: 'Add card' });
+        const source = editor.getByLabel(/^Source phrase ·/);
+        const translation = editor.getByLabel(/^Translation ·/);
+        const definition = editor.getByLabel(/^Definition ·/);
+        await source.fill('atelier');
+        await editor.getByRole('button', { name: 'Generate with AI' }).click();
+
+        const translationSuggestions = editor.getByRole('region', {
+            name: 'AI suggestions for Translation',
+        });
+        await expect(
+            translationSuggestions.getByText('atelier (es)', { exact: true }),
+        ).toBeVisible({ timeout: 20_000 });
+        await translationSuggestions
+            .getByRole('button', { name: 'Accept Translation suggestion' })
+            .click();
+        await expect(translation).toHaveValue('atelier (es)');
+
+        await translationSuggestions
+            .getByRole('button', { name: 'Regenerate Translation' })
+            .click();
+        await expect(
+            translationSuggestions.getByText('atelier (es) · alternative 1', {
+                exact: true,
+            }),
+        ).toBeVisible({ timeout: 20_000 });
+        await expect(translationSuggestions.getByRole('listitem')).toHaveCount(
+            2,
+        );
+        await translationSuggestions
+            .getByRole('button', { name: 'Accept Translation suggestion' })
+            .nth(1)
+            .click();
+        await expect(translation).toHaveValue('atelier (es) · alternative 1');
+
+        await editor
+            .getByRole('button', { name: 'Regenerate all fields' })
+            .click();
+        await expect(
+            translationSuggestions.getByText('atelier (es) · alternative 2', {
+                exact: true,
+            }),
+        ).toBeVisible({ timeout: 20_000 });
+        await expect(translationSuggestions.getByRole('listitem')).toHaveCount(
+            3,
+        );
+        await translationSuggestions
+            .getByRole('button', { name: 'Discard Translation suggestion' })
+            .first()
+            .click();
+        await expect(
+            translationSuggestions.getByText('atelier (es)', { exact: true }),
+        ).not.toBeVisible();
+
+        await definition.fill('A manually refined place where artists work.');
+        await page.setViewportSize({ width: 320, height: 900 });
+        await page.evaluate(() => {
+            document.documentElement.style.fontSize = '200%';
+        });
+        expect(
+            await page.evaluate(
+                () =>
+                    document.documentElement.scrollWidth <=
+                    document.documentElement.clientWidth + 1,
+            ),
+        ).toBe(true);
+        await page.evaluate(() => {
+            document.documentElement.style.fontSize = '';
+        });
+        await page.setViewportSize({ width: 1280, height: 720 });
+
+        await editor.getByRole('button', { name: 'Save card' }).click();
+        await expect(page.getByText('atelier', { exact: true })).toBeVisible();
+        await expect(
+            page.getByText('atelier (es) · alternative 1', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('Human + AI', { exact: true }).first(),
+        ).toBeVisible();
         assertNoBrowserErrors();
     });
 });

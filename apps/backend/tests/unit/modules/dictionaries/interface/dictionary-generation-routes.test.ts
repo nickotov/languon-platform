@@ -6,6 +6,81 @@ import { dictionaryPastedTermsGenerationFormat } from '../../../../../src/module
 import { createDictionaryGenerationRoutes } from '../../../../../src/modules/dictionaries/interface/http/dictionary-generation.routes';
 
 describe('dictionary generation HTTP routes', () => {
+    it('validates and dispatches cardless authoring enqueue', async () => {
+        const enqueueCardAuthoring = vi.fn(async () => ({
+            cancellationRequested: false,
+            completedAt: null,
+            createdAt: '2026-08-26T12:00:00.000Z',
+            dictionaryId: '2db8e37d-48e9-41ae-af84-4f6cbbc56e57',
+            expectedDictionaryVersion: 1,
+            expectedSettingsVersion: 1,
+            expiresAt: null,
+            failure: null,
+            format: 'card-authoring:v1' as const,
+            id: '225238a3-da7f-4f73-8305-3c012296b757',
+            kind: 'card-authoring' as const,
+            outcome: null,
+            progress: { percent: 0, stage: 'queued' as const },
+            proposal: null,
+            sourceLanguage: 'en' as const,
+            state: 'queued' as const,
+            targetLanguage: 'fr' as const,
+            updatedAt: '2026-08-26T12:00:00.000Z',
+        }));
+        const routes = createDictionaryGenerationRoutes({
+            policy: new AuthHttpPolicy({
+                allowedOrigins: ['http://localhost:3333'],
+                appEnvironment: 'test',
+                refreshTokenTtlSeconds: 3_600,
+            }),
+            service: { enqueueCardAuthoring } as never,
+        });
+        const response = await routes.request(
+            '/dictionaries/2db8e37d-48e9-41ae-af84-4f6cbbc56e57/card-authoring-generations',
+            {
+                body: JSON.stringify({
+                    draft: {
+                        overrides: {
+                            definitionEnabled: null,
+                            definitionLanguage: null,
+                            exampleEnabled: null,
+                            exampleLanguage: null,
+                            exampleTranslationEnabled: null,
+                            transcriptionCustomLabel: null,
+                            transcriptionEnabled: null,
+                            transcriptionNotation: null,
+                        },
+                        values: {
+                            definition: null,
+                            example: null,
+                            exampleTranslation: null,
+                            transcription: null,
+                            translation: null,
+                        },
+                    },
+                    expectedDictionaryVersion: 1,
+                    expectedSettingsVersion: 1,
+                    scope: { kind: 'all' },
+                    source: 'hello',
+                }),
+                headers: {
+                    Authorization: 'Bearer valid.token.value',
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': 'authoring-route-idempotency-key',
+                },
+                method: 'POST',
+            },
+        );
+        expect(response.status, await response.clone().text()).toBe(202);
+        expect(enqueueCardAuthoring).toHaveBeenCalledWith(
+            'valid.token.value',
+            'authoring-route-idempotency-key',
+            '2db8e37d-48e9-41ae-af84-4f6cbbc56e57',
+            expect.objectContaining({ source: 'hello' }),
+            expect.objectContaining({ signal: expect.any(AbortSignal) }),
+        );
+    });
+
     it('validates and dispatches dictionary-scoped pasted-term enqueue', async () => {
         const enqueuePastedTerms = vi.fn(async () => ({
             cancellationRequested: false,

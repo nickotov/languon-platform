@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DictionaryGenerationWorkerService } from '../../../../../src/modules/dictionaries/application/dictionary-generation-worker-service';
 import { CardProposalGeneratorError } from '../../../../../src/modules/dictionaries/application/ports/card-proposal-generator';
+import { CardAuthoringProposalGeneratorError } from '../../../../../src/modules/dictionaries/application/ports/card-authoring-proposal-generator';
+import { DictionaryGenerationCompletionConflictError } from '../../../../../src/modules/dictionaries/application/dictionary-errors';
 import { defaultDictionaryGenerationProviderBudgetPolicy } from '../../../../../src/modules/dictionaries/application/ports/dictionary-generation-provider-policy';
 import type { PastedTermsProposalGeneratorRequest } from '../../../../../src/modules/dictionaries/application/ports/pasted-terms-proposal-generator';
 import type { ImportPairsProposalGeneratorRequest } from '../../../../../src/modules/dictionaries/application/ports/import-pairs-proposal-generator';
@@ -15,6 +17,7 @@ import {
 } from '../../../../../src/modules/dictionaries/domain/generation';
 import { InvalidDictionarySettingsError } from '../../../../../src/modules/dictionaries/domain/settings';
 import { dictionaryDocumentGenerationFormat } from '../../../../../src/modules/dictionaries/domain/document-ingestion';
+import { dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
 import {
     DictionaryDocumentGenerationError,
     DictionaryDocumentGenerationProcessor,
@@ -84,6 +87,31 @@ const proposal = {
     warnings: [],
 };
 
+const cardAuthoringInput = {
+    context: {
+        dictionaryId: '00000000-0000-4000-8000-000000000002',
+        expectedDictionaryVersion: 2,
+        expectedSettingsVersion: 1,
+        sourceLanguage: 'en',
+        targetLanguage: 'fr',
+    },
+    draft: {
+        overrides: input.original.overrides,
+        values: {
+            definition: null,
+            example: 'Hello there.',
+            exampleTranslation: null,
+            transcription: null,
+            translation: null,
+        },
+    },
+    effectiveSettings: input.original.effectiveSettings,
+    excludedValues: [],
+    format: dictionaryCardAuthoringGenerationFormat,
+    scope: { kind: 'all' as const },
+    source: 'hello',
+};
+
 function store(overrides: Partial<DictionaryGenerationStore> = {}) {
     const implementation = {
         claim: vi.fn(async () => ({
@@ -107,6 +135,385 @@ function store(overrides: Partial<DictionaryGenerationStore> = {}) {
 }
 
 describe('DictionaryGenerationWorkerService', () => {
+    it('dispatches card authoring to its provider and completes with a validated field delta under the claimed budget', async () => {
+        const generationStore = store({
+            claim: vi.fn(async () => ({
+                attempt: 1,
+                fencingToken: 1n,
+                id: '00000000-0000-4000-8000-000000000004',
+                input: cardAuthoringInput,
+                leaseDeadline: new Date('2026-08-21T12:00:00.100Z'),
+                providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
+                workerId: 'worker-a',
+            })),
+        });
+        const generate = vi.fn(async () => ({
+            delta: {
+                suggestions: [
+                    { field: 'translation' as const, value: 'bonjour' },
+                    {
+                        field: 'example' as const,
+                        value: 'Hello, my friend.',
+                    },
+                    {
+                        field: 'exampleTranslation' as const,
+                        value: 'Bonjour, mon ami.',
+                    },
+                ],
+            },
+            usage: { inputTokens: 80, outputTokens: 24 },
+        }));
+        const service = new DictionaryGenerationWorkerService(
+            {
+                cardAuthoringProvider: { generate },
+                clock: { now: () => new Date('2026-08-21T12:00:00.000Z') },
+                provider: { generate: vi.fn() },
+                store: generationStore,
+            },
+            {
+                heartbeatIntervalMs: 10,
+                leaseDurationMs: 100,
+                providerTimeoutMs: 50,
+            },
+        );
+
+        await expect(
+            service.processNext({
+                signal: new AbortController().signal,
+                supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+                workerId: 'worker-a',
+            }),
+        ).resolves.toBe(true);
+
+        expect(generate).toHaveBeenCalledWith({
+            idempotencyKey: '00000000-0000-4000-8000-000000000004/generate',
+            input: {
+                effectiveSettings: cardAuthoringInput.effectiveSettings,
+                fieldContext: [
+                    {
+                        currentValue: null,
+                        excludedValues: [],
+                        field: 'translation',
+                    },
+                    {
+                        currentValue: 'Hello there.',
+                        excludedValues: [],
+                        field: 'example',
+                    },
+                    {
+                        currentValue: null,
+                        excludedValues: [],
+                        field: 'exampleTranslation',
+                    },
+                ],
+                requestedFields: [
+                    'translation',
+                    'example',
+                    'exampleTranslation',
+                ],
+                source: 'hello',
+                sourceLanguage: 'en',
+                targetLanguage: 'fr',
+            },
+            providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
+            signal: expect.any(AbortSignal),
+        });
+        expect(generationStore.complete).toHaveBeenCalledWith(
+            expect.objectContaining({
+                proposal: {
+                    suggestions: [
+                        { field: 'translation', value: 'bonjour' },
+                        { field: 'example', value: 'Hello, my friend.' },
+                        {
+                            field: 'exampleTranslation',
+                            value: 'Bonjour, mon ami.',
+                        },
+                    ],
+                },
+                providerUsage: { inputTokens: 80, outputTokens: 24 },
+            }),
+        );
+    });
+
+    it('sanitizes card-authoring provider failures and rejects over-budget usage before completion', async () => {
+        const generationStore = store({
+            claim: vi.fn(async () => ({
+                attempt: 1,
+                fencingToken: 1n,
+                id: '00000000-0000-4000-8000-000000000004',
+                input: cardAuthoringInput,
+                leaseDeadline: new Date('2026-08-21T12:00:00.100Z'),
+                providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
+                workerId: 'worker-a',
+            })),
+        });
+        const service = new DictionaryGenerationWorkerService(
+            {
+                cardAuthoringProvider: {
+                    generate: vi.fn(async () => ({
+                        delta: { suggestions: [] },
+                        usage: {
+                            inputTokens:
+                                defaultDictionaryGenerationProviderBudgetPolicy.maxInputTokensPerAttempt +
+                                1,
+                            outputTokens: 1,
+                        },
+                    })),
+                },
+                clock: { now: () => new Date('2026-08-21T12:00:00.000Z') },
+                provider: { generate: vi.fn() },
+                store: generationStore,
+            },
+            {
+                heartbeatIntervalMs: 10,
+                leaseDurationMs: 100,
+                providerTimeoutMs: 50,
+            },
+        );
+
+        await service.processNext({
+            signal: new AbortController().signal,
+            supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+            workerId: 'worker-a',
+        });
+
+        expect(generationStore.complete).not.toHaveBeenCalled();
+        expect(generationStore.fail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                failureCategory: 'invalid_model_output',
+                retryAt: null,
+            }),
+        );
+
+        const providerFailureStore = store({
+            claim: generationStore.claim,
+        });
+        const providerFailure = new DictionaryGenerationWorkerService(
+            {
+                cardAuthoringProvider: {
+                    generate: vi.fn(async () => {
+                        throw new CardAuthoringProposalGeneratorError(
+                            'provider_rate_limited',
+                        );
+                    }),
+                },
+                clock: { now: () => new Date('2026-08-21T12:00:00.000Z') },
+                provider: { generate: vi.fn() },
+                store: providerFailureStore,
+            },
+            {
+                heartbeatIntervalMs: 10,
+                leaseDurationMs: 100,
+                providerTimeoutMs: 50,
+            },
+        );
+        await providerFailure.processNext({
+            signal: new AbortController().signal,
+            supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+            workerId: 'worker-a',
+        });
+        expect(providerFailureStore.fail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                failureCategory: 'provider_rate_limited',
+                retryAt: expect.any(Date),
+            }),
+        );
+    });
+
+    it('rejects a card-authoring delta containing a field outside the requested scope', async () => {
+        const fieldInput = {
+            ...cardAuthoringInput,
+            predecessor: {
+                discardedSuggestionIds: [],
+                jobId: '00000000-0000-4000-8000-000000000006',
+            },
+            scope: { kind: 'field' as const, field: 'translation' as const },
+        };
+        const generationStore = store({
+            claim: vi.fn(async () => ({
+                attempt: 1,
+                fencingToken: 1n,
+                id: '00000000-0000-4000-8000-000000000004',
+                input: fieldInput,
+                leaseDeadline: new Date('2026-08-21T12:00:00.100Z'),
+                providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
+                workerId: 'worker-a',
+            })),
+        });
+        const service = new DictionaryGenerationWorkerService(
+            {
+                cardAuthoringProvider: {
+                    generate: vi.fn(async () => ({
+                        suggestions: [
+                            { field: 'example' as const, value: 'Hello.' },
+                        ],
+                    })),
+                },
+                clock: { now: () => new Date('2026-08-21T12:00:00.000Z') },
+                provider: { generate: vi.fn() },
+                store: generationStore,
+            },
+            {
+                heartbeatIntervalMs: 10,
+                leaseDurationMs: 100,
+                providerTimeoutMs: 50,
+            },
+        );
+
+        await service.processNext({
+            signal: new AbortController().signal,
+            supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+            workerId: 'worker-a',
+        });
+
+        expect(generationStore.complete).not.toHaveBeenCalled();
+        expect(generationStore.fail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                failureCategory: 'invalid_model_output',
+                retryAt: null,
+            }),
+        );
+    });
+
+    it.each([
+        {
+            name: 'duplicate field output',
+            delta: {
+                suggestions: [
+                    { field: 'translation', value: 'bonjour' },
+                    { field: 'translation', value: 'salut' },
+                ],
+            },
+        },
+        { name: 'missing requested output', delta: { suggestions: [] } },
+    ])(
+        'terminally sanitizes $name and settles valid returned usage',
+        async ({ delta }) => {
+            const generationStore = store({
+                claim: vi.fn(async () => ({
+                    attempt: 1,
+                    fencingToken: 1n,
+                    id: '00000000-0000-4000-8000-000000000004',
+                    input: cardAuthoringInput,
+                    leaseDeadline: new Date('2026-08-21T12:00:00.100Z'),
+                    providerBudget:
+                        defaultDictionaryGenerationProviderBudgetPolicy,
+                    workerId: 'worker-a',
+                })),
+            });
+            const service = new DictionaryGenerationWorkerService(
+                {
+                    cardAuthoringProvider: {
+                        generate: vi.fn(async () => ({
+                            delta,
+                            usage: { inputTokens: 91, outputTokens: 17 },
+                        })) as never,
+                    },
+                    clock: {
+                        now: () => new Date('2026-08-21T12:00:00.000Z'),
+                    },
+                    provider: { generate: vi.fn() },
+                    store: generationStore,
+                },
+                {
+                    heartbeatIntervalMs: 10,
+                    leaseDurationMs: 100,
+                    providerTimeoutMs: 50,
+                },
+            );
+
+            await service.processNext({
+                signal: new AbortController().signal,
+                supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+                workerId: 'worker-a',
+            });
+
+            expect(generationStore.complete).not.toHaveBeenCalled();
+            expect(generationStore.fail).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    failureCategory: 'invalid_model_output',
+                    providerUsage: { inputTokens: 91, outputTokens: 17 },
+                    retryAt: null,
+                }),
+            );
+        },
+    );
+
+    it.each(['predecessor_changed', 'suggestion_capacity_reached'] as const)(
+        'terminally settles returned usage for the non-provider %s completion conflict',
+        async (reason) => {
+            const generationStore = store({
+                claim: vi.fn(async () => ({
+                    attempt: 1,
+                    fencingToken: 1n,
+                    id: '00000000-0000-4000-8000-000000000004',
+                    input: cardAuthoringInput,
+                    leaseDeadline: new Date('2026-08-21T12:00:00.100Z'),
+                    providerBudget:
+                        defaultDictionaryGenerationProviderBudgetPolicy,
+                    workerId: 'worker-a',
+                })),
+                complete: vi.fn(async () => {
+                    throw new DictionaryGenerationCompletionConflictError(
+                        reason,
+                    );
+                }),
+            });
+            const service = new DictionaryGenerationWorkerService(
+                {
+                    cardAuthoringProvider: {
+                        generate: vi.fn(async () => ({
+                            delta: {
+                                suggestions: [
+                                    {
+                                        field: 'translation' as const,
+                                        value: 'bonjour',
+                                    },
+                                    {
+                                        field: 'example' as const,
+                                        value: 'Hello, my friend.',
+                                    },
+                                    {
+                                        field: 'exampleTranslation' as const,
+                                        value: 'Bonjour, mon ami.',
+                                    },
+                                ],
+                            },
+                            usage: { inputTokens: 101, outputTokens: 23 },
+                        })),
+                    },
+                    clock: {
+                        now: () => new Date('2026-08-21T12:00:00.000Z'),
+                    },
+                    provider: { generate: vi.fn() },
+                    store: generationStore,
+                },
+                {
+                    heartbeatIntervalMs: 10,
+                    leaseDurationMs: 100,
+                    providerTimeoutMs: 50,
+                },
+            );
+
+            await expect(
+                service.processNext({
+                    signal: new AbortController().signal,
+                    supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+                    workerId: 'worker-a',
+                }),
+            ).resolves.toBe(true);
+
+            expect(generationStore.fail).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    countProviderFailure: false,
+                    failureCategory: 'generation_conflict',
+                    providerUsage: { inputTokens: 101, outputTokens: 23 },
+                    retryAt: null,
+                }),
+            );
+        },
+    );
+
     it('uses a stable provider key, validates output, records validating progress, and completes fenced work', async () => {
         const generationStore = store();
         const generate = vi.fn(async () => ({

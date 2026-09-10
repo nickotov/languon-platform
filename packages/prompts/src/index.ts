@@ -5,6 +5,7 @@ import { developmentHarnessPrompt } from './local/development-harness';
 import { dictionaryCardGenerationPrompt } from './local/dictionary-card-generation';
 import { dictionaryPastedTermsGenerationPrompt } from './local/dictionary-pasted-terms-generation';
 import { dictionaryImportPairsGenerationPrompt } from './local/dictionary-import-pairs-generation';
+import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring';
 
 const localPrompts = {
     [courseBuilderPrompt.name]: courseBuilderPrompt.system,
@@ -15,6 +16,7 @@ const localPrompts = {
         dictionaryPastedTermsGenerationPrompt.system,
     [dictionaryImportPairsGenerationPrompt.name]:
         dictionaryImportPairsGenerationPrompt.system,
+    [dictionaryCardAuthoringPrompt.name]: dictionaryCardAuthoringPrompt.system,
 } as const;
 
 export type LocalPromptName = keyof typeof localPrompts;

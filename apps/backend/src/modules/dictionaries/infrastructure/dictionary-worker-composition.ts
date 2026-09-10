@@ -3,6 +3,7 @@ import type { PostgresJsDatabase } from '@languon/database';
 import type { databaseSchema } from '../../../infrastructure/database/schema';
 import { DictionaryGenerationWorkerService } from '../application/dictionary-generation-worker-service';
 import type { CardProposalGenerator } from '../application/ports/card-proposal-generator';
+import type { CardAuthoringProposalGenerator } from '../application/ports/card-authoring-proposal-generator';
 import type { PastedTermsProposalGenerator } from '../application/ports/pasted-terms-proposal-generator';
 import type { ImportPairsProposalGenerator } from '../application/ports/import-pairs-proposal-generator';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../application/ports/dictionary-generation-provider-policy';
@@ -20,6 +21,7 @@ import {
     dictionaryPastedTermsGenerationFormat,
 } from '../domain/generation';
 import { dictionaryDocumentGenerationFormat } from '../domain/document-ingestion';
+import { dictionaryCardAuthoringGenerationFormat } from '../domain/card-authoring';
 import {
     DrizzleDictionaryGenerationStore,
     type DictionaryGenerationIdGenerator,
@@ -27,6 +29,7 @@ import {
 import { DrizzleDictionaryDocumentStore } from './persistence/drizzle/drizzle-dictionary-document-store';
 
 export interface DictionaryWorkerCompositionDependencies {
+    cardAuthoringProvider?: CardAuthoringProposalGenerator;
     clock: DictionaryClock;
     database: PostgresJsDatabase<typeof databaseSchema>;
     ids: DictionaryGenerationIdGenerator;
@@ -56,6 +59,15 @@ export function createDictionaryWorkerComposition(
         dependencies.ids,
         dependencies.providerBudget,
     );
+    if (
+        dependencies.supportedFormats.includes(
+            dictionaryCardAuthoringGenerationFormat,
+        ) &&
+        !dependencies.cardAuthoringProvider
+    )
+        throw new Error(
+            'Card-authoring provider is required for card-authoring:v1.',
+        );
     if (
         dependencies.supportedFormats.includes(
             dictionaryDocumentGenerationFormat,
@@ -121,6 +133,12 @@ export function createDictionaryWorkerComposition(
     return {
         service: new DictionaryGenerationWorkerService(
             {
+                ...(dependencies.cardAuthoringProvider
+                    ? {
+                          cardAuthoringProvider:
+                              dependencies.cardAuthoringProvider,
+                      }
+                    : {}),
                 clock: dependencies.clock,
                 ...(documentCleanup ? { documentCleanup } : {}),
                 ...(documentExecutor ? { documentExecutor } : {}),
@@ -132,6 +150,21 @@ export function createDictionaryWorkerComposition(
                 provider: dependencies.provider,
                 providerReadiness: async (signal) => {
                     const readiness: Array<Promise<void>> = [];
+                    if (
+                        dependencies.supportedFormats.includes(
+                            dictionaryCardAuthoringGenerationFormat,
+                        )
+                    ) {
+                        if (!dependencies.cardAuthoringProvider?.readiness)
+                            throw new Error(
+                                'Card-authoring provider readiness is unavailable.',
+                            );
+                        readiness.push(
+                            dependencies.cardAuthoringProvider.readiness(
+                                signal,
+                            ),
+                        );
+                    }
                     if (
                         dependencies.supportedFormats.includes(
                             dictionaryImportPairsGenerationFormat,

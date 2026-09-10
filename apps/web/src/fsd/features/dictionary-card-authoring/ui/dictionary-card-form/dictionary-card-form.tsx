@@ -4,6 +4,10 @@ import type {
     DictionaryCard,
     DictionaryCardOverrides,
     DictionaryCardValues,
+    DictionaryCardAuthoringField,
+    DictionaryCardAuthoringGenerationJob,
+    DictionaryCardAuthoringProposal,
+    DictionaryCardAuthoringSelectedSuggestion,
     DictionaryEnableOverride,
     OwnedDictionary,
 } from '@languon/contracts';
@@ -23,6 +27,7 @@ import {
     Field,
     Input,
     InlineAlert,
+    Progress,
     Select,
     Textarea,
 } from '@/fsd/shared/ui';
@@ -30,6 +35,7 @@ import {
 import styles from './dictionary-card-form.module.css';
 import { previewCardEffectiveSettings } from '../../lib/preview-card-effective-settings';
 import { hasLoadedSourceDuplicate } from '../../lib/duplicate-source';
+import { discardedSuggestionIdsForPredecessor } from '../../lib/authoring-job-cleanup';
 
 const EMPTY_VALUES: DictionaryCardValues = {
     definition: null,
@@ -55,8 +61,31 @@ export interface DictionaryCardDraft {
     values: DictionaryCardValues;
 }
 
+export type DictionaryCardAuthoringAction =
+    | { kind: 'cancel' }
+    | {
+          discardedSuggestionIds: string[];
+          draft: DictionaryCardDraft;
+          kind: 'generate';
+          scope:
+              | { kind: 'all' }
+              | { kind: 'field'; field: DictionaryCardAuthoringField };
+          successor: boolean;
+      };
+
+export interface DictionaryCardAuthoringAI {
+    available: boolean;
+    error?: string | null;
+    job?: DictionaryCardAuthoringGenerationJob | null;
+    onAction(action: DictionaryCardAuthoringAction): Promise<void>;
+    pending: boolean;
+    proposal?: DictionaryCardAuthoringProposal | null;
+    successorActive?: boolean;
+}
+
 export function DictionaryCardForm({
     card,
+    ai,
     dictionary,
     embedded = false,
     error,
@@ -69,6 +98,7 @@ export function DictionaryCardForm({
     showHeading = true,
 }: {
     card?: DictionaryCard | undefined;
+    ai?: DictionaryCardAuthoringAI | undefined;
     dictionary: OwnedDictionary;
     embedded?: boolean;
     error?: string | null;
@@ -76,7 +106,10 @@ export function DictionaryCardForm({
     languages: Parameters<typeof languageLabel>[0];
     onCancel(): void;
     onReloadConflict?: (() => Promise<void> | void) | undefined;
-    onSave(draft: DictionaryCardDraft): Promise<void>;
+    onSave(
+        draft: DictionaryCardDraft,
+        selectedSuggestions: DictionaryCardAuthoringSelectedSuggestion[],
+    ): Promise<void>;
     pending: boolean;
     showHeading?: boolean;
 }) {
@@ -85,16 +118,34 @@ export function DictionaryCardForm({
         overrides: card ? { ...card.overrides } : { ...EMPTY_OVERRIDES },
         values: card ? { ...card.values } : { ...EMPTY_VALUES },
     }));
-    useEffect(
-        () =>
-            setDraft({
-                overrides: card
-                    ? { ...card.overrides }
-                    : { ...EMPTY_OVERRIDES },
-                values: card ? { ...card.values } : { ...EMPTY_VALUES },
-            }),
-        [card],
+    const [hiddenSuggestionIds, setHiddenSuggestionIds] = useState<Set<string>>(
+        () => new Set(),
     );
+    const [selectedSuggestions, setSelectedSuggestions] = useState<
+        Partial<Record<DictionaryCardAuthoringField, string>>
+    >({});
+    useEffect(() => {
+        setDraft({
+            overrides: card ? { ...card.overrides } : { ...EMPTY_OVERRIDES },
+            values: card ? { ...card.values } : { ...EMPTY_VALUES },
+        });
+        setHiddenSuggestionIds(new Set());
+        setSelectedSuggestions({});
+    }, [card]);
+    useEffect(() => {
+        if (!ai?.proposal) return;
+        const predecessorIds = new Set(
+            ai.proposal.suggestions.map((suggestion) => suggestion.id),
+        );
+        setHiddenSuggestionIds((current) => {
+            const retained = [...current].filter((id) =>
+                predecessorIds.has(id),
+            );
+            return retained.length === current.size
+                ? current
+                : new Set(retained);
+        });
+    }, [ai?.proposal]);
     const effective = previewCardEffectiveSettings(
         dictionary.settings.values,
         draft.overrides,
@@ -107,11 +158,21 @@ export function DictionaryCardForm({
     function setValue<K extends keyof DictionaryCardValues>(
         key: K,
         value: DictionaryCardValues[K],
+        preserveSelection = false,
     ) {
         setDraft((current) => ({
             ...current,
             values: { ...current.values, [key]: value },
         }));
+        if (preserveSelection) return;
+        setSelectedSuggestions((current) => {
+            if (key === 'source') return {};
+            const field = key as DictionaryCardAuthoringField;
+            if (!current[field]) return current;
+            const next = { ...current };
+            delete next[field];
+            return next;
+        });
     }
     function setOverride<K extends keyof DictionaryCardOverrides>(
         key: K,
@@ -125,7 +186,27 @@ export function DictionaryCardForm({
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         try {
-            await onSave(draft);
+            await onSave(
+                draft,
+                stale
+                    ? []
+                    : Object.entries(selectedSuggestions)
+                          .map(([field, suggestionId]) => ({
+                              field: field as DictionaryCardAuthoringField,
+                              suggestionId,
+                          }))
+                          .filter(({ field }) =>
+                              field === 'translation'
+                                  ? true
+                                  : field === 'transcription'
+                                    ? effective.transcriptionEnabled
+                                    : field === 'definition'
+                                      ? effective.definitionEnabled
+                                      : field === 'example'
+                                        ? effective.exampleEnabled
+                                        : effective.exampleTranslationEnabled,
+                          ),
+            );
         } catch {
             // The owning mutation renders the recoverable error state.
         }
@@ -164,6 +245,59 @@ export function DictionaryCardForm({
         dictionary.sourceLanguage,
         dictionary.targetLanguage,
     );
+    const validSource = isValidCardAuthoringSource(draft.values.source);
+    const stale = Boolean(
+        ai?.proposal && ai.proposal.source !== draft.values.source.trim(),
+    );
+    const active = ai?.job?.state === 'queued' || ai?.job?.state === 'running';
+
+    function acceptSuggestion(
+        field: DictionaryCardAuthoringField,
+        suggestionId: string,
+        value: string,
+    ) {
+        if (stale) return;
+        setValue(field, value, true);
+        setSelectedSuggestions((current) => ({
+            ...current,
+            [field]: suggestionId,
+        }));
+    }
+
+    function discardSuggestion(
+        field: DictionaryCardAuthoringField,
+        suggestionId: string,
+    ) {
+        setHiddenSuggestionIds((current) => new Set(current).add(suggestionId));
+        setSelectedSuggestions((current) => {
+            if (current[field] !== suggestionId) return current;
+            const next = { ...current };
+            delete next[field];
+            return next;
+        });
+    }
+
+    async function generate(
+        scope:
+            | { kind: 'all' }
+            | { kind: 'field'; field: DictionaryCardAuthoringField },
+    ) {
+        if (!ai || !validSource || active) return;
+        try {
+            await ai.onAction({
+                discardedSuggestionIds: discardedSuggestionIdsForPredecessor(
+                    hiddenSuggestionIds,
+                    ai.proposal,
+                ),
+                draft,
+                kind: 'generate',
+                scope,
+                successor: Boolean(ai.proposal) && !stale,
+            });
+        } catch {
+            // The owning orchestration renders a safe recoverable error.
+        }
+    }
 
     return (
         <Card
@@ -198,14 +332,87 @@ export function DictionaryCardForm({
                     <Input
                         dir={sourceDirection}
                         lang={dictionary.sourceLanguage}
-                        maxLength={200}
                         onChange={(event) =>
-                            setValue('source', event.currentTarget.value)
+                            setValue(
+                                'source',
+                                [...event.currentTarget.value]
+                                    .slice(0, 200)
+                                    .join(''),
+                            )
                         }
                         required
                         value={draft.values.source}
                     />
                 </Field>
+                {!card && ai && validSource ? (
+                    <section
+                        aria-label={t('dictionary.authoring.aiSection')}
+                        className={styles.aiControls}
+                    >
+                        <div className={styles.aiActionRow}>
+                            <Button
+                                disabled={!ai.available || active || ai.pending}
+                                loading={ai.pending && !active}
+                                onClick={() => void generate({ kind: 'all' })}
+                                type='button'
+                                variant='secondary'
+                            >
+                                {ai.proposal && !stale
+                                    ? t('dictionary.authoring.regenerateAll')
+                                    : t('dictionary.authoring.generate')}
+                            </Button>
+                            <small>
+                                {t('dictionary.authoring.generateHelp')}
+                            </small>
+                        </div>
+                        {active && ai.job ? (
+                            <div className={styles.aiProgress}>
+                                <div aria-live='polite' role='status'>
+                                    {t(
+                                        ai.job.progress.stage === 'queued'
+                                            ? 'dictionary.authoring.stage.queued'
+                                            : ai.job.progress.stage ===
+                                                'validating'
+                                              ? 'dictionary.authoring.stage.validating'
+                                              : 'dictionary.authoring.stage.generating',
+                                    )}
+                                </div>
+                                <Progress
+                                    label={t('dictionary.authoring.progress')}
+                                    value={ai.job.progress.percent}
+                                />
+                                <Button
+                                    disabled={ai.job.cancellationRequested}
+                                    onClick={() =>
+                                        void ai
+                                            .onAction({ kind: 'cancel' })
+                                            .catch(() => undefined)
+                                    }
+                                    size='small'
+                                    type='button'
+                                    variant='quiet'
+                                >
+                                    {ai.job.cancellationRequested
+                                        ? t('dictionary.authoring.cancelling')
+                                        : t('dictionary.authoring.cancel')}
+                                </Button>
+                            </div>
+                        ) : null}
+                        {!ai.available ? (
+                            <InlineAlert>
+                                {t('dictionary.authoring.unavailable')}
+                            </InlineAlert>
+                        ) : null}
+                        {stale ? (
+                            <InlineAlert tone='warning'>
+                                {t('dictionary.authoring.stale')}
+                            </InlineAlert>
+                        ) : null}
+                        {ai.error ? (
+                            <InlineAlert tone='danger'>{ai.error}</InlineAlert>
+                        ) : null}
+                    </section>
+                ) : null}
                 {duplicate ? (
                     <InlineAlert tone='warning'>
                         {t('dictionary.card.duplicateWarning')}
@@ -218,7 +425,7 @@ export function DictionaryCardForm({
                     <Input
                         dir={targetDirection}
                         lang={dictionary.targetLanguage}
-                        maxLength={200}
+                        maxLength={400}
                         onChange={(event) =>
                             setValue('translation', event.currentTarget.value)
                         }
@@ -226,21 +433,53 @@ export function DictionaryCardForm({
                         value={draft.values.translation}
                     />
                 </Field>
+                <FieldSuggestions
+                    ai={ai}
+                    direction={targetDirection}
+                    disabled={stale}
+                    field='translation'
+                    hidden={hiddenSuggestionIds}
+                    lang={dictionary.targetLanguage}
+                    onAccept={acceptSuggestion}
+                    onDiscard={discardSuggestion}
+                    onRegenerate={(field) =>
+                        void generate({ kind: 'field', field })
+                    }
+                    regenerationDisabled={stale || active}
+                    selectedId={selectedSuggestions.translation}
+                />
                 {effective.transcriptionEnabled ? (
-                    <Field label={t('dictionary.field.transcription')}>
-                        <Input
-                            dir={sourceDirection}
+                    <>
+                        <Field label={t('dictionary.field.transcription')}>
+                            <Input
+                                dir={sourceDirection}
+                                lang={dictionary.sourceLanguage}
+                                maxLength={200}
+                                onChange={(event) =>
+                                    setValue(
+                                        'transcription',
+                                        event.currentTarget.value || null,
+                                    )
+                                }
+                                value={draft.values.transcription ?? ''}
+                            />
+                        </Field>
+                        <FieldSuggestions
+                            ai={ai}
+                            direction={sourceDirection}
+                            disabled={stale}
+                            field='transcription'
+                            hidden={hiddenSuggestionIds}
                             lang={dictionary.sourceLanguage}
-                            maxLength={200}
-                            onChange={(event) =>
-                                setValue(
-                                    'transcription',
-                                    event.currentTarget.value || null,
-                                )
+                            onAccept={acceptSuggestion}
+                            onDiscard={discardSuggestion}
+                            onRegenerate={(field) =>
+                                void generate({ kind: 'field', field })
                             }
-                            value={draft.values.transcription ?? ''}
+                            regenerationDisabled={stale || active}
+                            selectedId={selectedSuggestions.transcription}
                         />
-                    </Field>
+                    </>
                 ) : (
                     <InactiveValue
                         label={t('dictionary.field.transcription')}
@@ -250,29 +489,49 @@ export function DictionaryCardForm({
                     />
                 )}
                 {effective.definitionEnabled ? (
-                    <Field
-                        label={`${t('dictionary.field.definition')} · ${languageLabel(
-                            languages,
-                            definitionLanguage,
-                            locale,
-                        )}`}
-                    >
-                        <Textarea
-                            dir={languageDirection(
+                    <>
+                        <Field
+                            label={`${t('dictionary.field.definition')} · ${languageLabel(
+                                languages,
+                                definitionLanguage,
+                                locale,
+                            )}`}
+                        >
+                            <Textarea
+                                dir={languageDirection(
+                                    languages,
+                                    definitionLanguage,
+                                )}
+                                lang={definitionLanguage}
+                                maxLength={2000}
+                                onChange={(event) =>
+                                    setValue(
+                                        'definition',
+                                        event.currentTarget.value || null,
+                                    )
+                                }
+                                value={draft.values.definition ?? ''}
+                            />
+                        </Field>
+                        <FieldSuggestions
+                            ai={ai}
+                            direction={languageDirection(
                                 languages,
                                 definitionLanguage,
                             )}
+                            disabled={stale}
+                            field='definition'
+                            hidden={hiddenSuggestionIds}
                             lang={definitionLanguage}
-                            maxLength={2000}
-                            onChange={(event) =>
-                                setValue(
-                                    'definition',
-                                    event.currentTarget.value || null,
-                                )
+                            onAccept={acceptSuggestion}
+                            onDiscard={discardSuggestion}
+                            onRegenerate={(field) =>
+                                void generate({ kind: 'field', field })
                             }
-                            value={draft.values.definition ?? ''}
+                            regenerationDisabled={stale || active}
+                            selectedId={selectedSuggestions.definition}
                         />
-                    </Field>
+                    </>
                 ) : (
                     <InactiveValue
                         label={t('dictionary.field.definition')}
@@ -285,26 +544,49 @@ export function DictionaryCardForm({
                     />
                 )}
                 {effective.exampleEnabled ? (
-                    <Field
-                        label={`${t('dictionary.field.example')} · ${languageLabel(
-                            languages,
-                            exampleLanguage,
-                            locale,
-                        )}`}
-                    >
-                        <Textarea
-                            dir={languageDirection(languages, exampleLanguage)}
+                    <>
+                        <Field
+                            label={`${t('dictionary.field.example')} · ${languageLabel(
+                                languages,
+                                exampleLanguage,
+                                locale,
+                            )}`}
+                        >
+                            <Textarea
+                                dir={languageDirection(
+                                    languages,
+                                    exampleLanguage,
+                                )}
+                                lang={exampleLanguage}
+                                maxLength={2000}
+                                onChange={(event) =>
+                                    setValue(
+                                        'example',
+                                        event.currentTarget.value || null,
+                                    )
+                                }
+                                value={draft.values.example ?? ''}
+                            />
+                        </Field>
+                        <FieldSuggestions
+                            ai={ai}
+                            direction={languageDirection(
+                                languages,
+                                exampleLanguage,
+                            )}
+                            disabled={stale}
+                            field='example'
+                            hidden={hiddenSuggestionIds}
                             lang={exampleLanguage}
-                            maxLength={2000}
-                            onChange={(event) =>
-                                setValue(
-                                    'example',
-                                    event.currentTarget.value || null,
-                                )
+                            onAccept={acceptSuggestion}
+                            onDiscard={discardSuggestion}
+                            onRegenerate={(field) =>
+                                void generate({ kind: 'field', field })
                             }
-                            value={draft.values.example ?? ''}
+                            regenerationDisabled={stale || active}
+                            selectedId={selectedSuggestions.example}
                         />
-                    </Field>
+                    </>
                 ) : (
                     <InactiveValue
                         label={t('dictionary.field.example')}
@@ -317,29 +599,49 @@ export function DictionaryCardForm({
                     />
                 )}
                 {effective.exampleTranslationEnabled ? (
-                    <Field
-                        label={`${t('dictionary.field.exampleTranslation')} · ${languageLabel(
-                            languages,
-                            exampleTranslationLanguage,
-                            locale,
-                        )}`}
-                    >
-                        <Textarea
-                            dir={languageDirection(
+                    <>
+                        <Field
+                            label={`${t('dictionary.field.exampleTranslation')} · ${languageLabel(
+                                languages,
+                                exampleTranslationLanguage,
+                                locale,
+                            )}`}
+                        >
+                            <Textarea
+                                dir={languageDirection(
+                                    languages,
+                                    exampleTranslationLanguage,
+                                )}
+                                lang={exampleTranslationLanguage}
+                                maxLength={2000}
+                                onChange={(event) =>
+                                    setValue(
+                                        'exampleTranslation',
+                                        event.currentTarget.value || null,
+                                    )
+                                }
+                                value={draft.values.exampleTranslation ?? ''}
+                            />
+                        </Field>
+                        <FieldSuggestions
+                            ai={ai}
+                            direction={languageDirection(
                                 languages,
                                 exampleTranslationLanguage,
                             )}
+                            disabled={stale}
+                            field='exampleTranslation'
+                            hidden={hiddenSuggestionIds}
                             lang={exampleTranslationLanguage}
-                            maxLength={2000}
-                            onChange={(event) =>
-                                setValue(
-                                    'exampleTranslation',
-                                    event.currentTarget.value || null,
-                                )
+                            onAccept={acceptSuggestion}
+                            onDiscard={discardSuggestion}
+                            onRegenerate={(field) =>
+                                void generate({ kind: 'field', field })
                             }
-                            value={draft.values.exampleTranslation ?? ''}
+                            regenerationDisabled={stale || active}
+                            selectedId={selectedSuggestions.exampleTranslation}
                         />
-                    </Field>
+                    </>
                 ) : (
                     <InactiveValue
                         label={t('dictionary.field.exampleTranslation')}
@@ -461,12 +763,160 @@ export function DictionaryCardForm({
                     >
                         {t('common.cancel')}
                     </Button>
-                    <Button loading={pending} type='submit'>
+                    <Button
+                        disabled={ai?.successorActive}
+                        loading={pending}
+                        type='submit'
+                    >
                         {t('dictionary.card.save')}
                     </Button>
                 </div>
             </form>
         </Card>
+    );
+}
+
+function FieldSuggestions({
+    ai,
+    direction,
+    disabled,
+    field,
+    hidden,
+    lang,
+    onAccept,
+    onDiscard,
+    onRegenerate,
+    regenerationDisabled,
+    selectedId,
+}: {
+    ai?: DictionaryCardAuthoringAI | undefined;
+    direction: 'ltr' | 'rtl';
+    disabled: boolean;
+    field: DictionaryCardAuthoringField;
+    hidden: ReadonlySet<string>;
+    lang: string;
+    onAccept(
+        field: DictionaryCardAuthoringField,
+        id: string,
+        value: string,
+    ): void;
+    onDiscard(field: DictionaryCardAuthoringField, id: string): void;
+    onRegenerate(field: DictionaryCardAuthoringField): void;
+    regenerationDisabled: boolean;
+    selectedId?: string | undefined;
+}) {
+    const { t } = useI18n();
+    const suggestions =
+        ai?.proposal?.suggestions.filter(
+            (suggestion) =>
+                suggestion.field === field && !hidden.has(suggestion.id),
+        ) ?? [];
+    if (suggestions.length === 0) return null;
+    const fieldLabel = t(`dictionary.field.${field}`);
+    const atLimit = suggestions.length >= 6;
+    return (
+        <section
+            aria-label={t('dictionary.authoring.suggestionsFor', {
+                field: fieldLabel,
+            })}
+            className={styles.suggestions}
+        >
+            <div className={styles.suggestionHeading}>
+                <strong>{t('dictionary.authoring.suggestions')}</strong>
+            </div>
+            {atLimit ? (
+                <small>{t('dictionary.authoring.limitReached')}</small>
+            ) : null}
+            <ul className={styles.suggestionList}>
+                {suggestions.map((suggestion) => {
+                    const selected = selectedId === suggestion.id;
+                    return (
+                        <li
+                            className={styles.suggestion}
+                            data-selected={selected || undefined}
+                            key={suggestion.id}
+                        >
+                            <p dir={direction} lang={lang}>
+                                {suggestion.value}
+                            </p>
+                            <div className={styles.suggestionActions}>
+                                <Button
+                                    aria-label={t(
+                                        'dictionary.authoring.acceptNamed',
+                                        { field: fieldLabel },
+                                    )}
+                                    disabled={disabled}
+                                    onClick={() =>
+                                        onAccept(
+                                            field,
+                                            suggestion.id,
+                                            suggestion.value,
+                                        )
+                                    }
+                                    size='small'
+                                    type='button'
+                                    variant={selected ? 'secondary' : 'primary'}
+                                >
+                                    {selected
+                                        ? t('dictionary.authoring.accepted')
+                                        : t('dictionary.authoring.accept')}
+                                </Button>
+                                <Button
+                                    aria-label={t(
+                                        'dictionary.authoring.discardNamed',
+                                        { field: fieldLabel },
+                                    )}
+                                    disabled={disabled}
+                                    onClick={() =>
+                                        onDiscard(field, suggestion.id)
+                                    }
+                                    size='small'
+                                    type='button'
+                                    variant='quiet'
+                                >
+                                    {t('dictionary.authoring.discard')}
+                                </Button>
+                                <Button
+                                    aria-label={t(
+                                        'dictionary.authoring.regenerateFieldNamed',
+                                        { field: fieldLabel },
+                                    )}
+                                    disabled={
+                                        regenerationDisabled ||
+                                        ai?.pending ||
+                                        atLimit
+                                    }
+                                    onClick={() => onRegenerate(field)}
+                                    size='small'
+                                    type='button'
+                                    variant='quiet'
+                                >
+                                    {t('dictionary.authoring.regenerateField')}
+                                </Button>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+        </section>
+    );
+}
+
+function isValidCardAuthoringSource(source: string) {
+    const trimmed = source.trim();
+    return (
+        trimmed.length > 0 &&
+        [...trimmed].length <= 200 &&
+        ![...trimmed].some((character) => {
+            const code = character.codePointAt(0)!;
+            return (
+                code <= 8 ||
+                code === 11 ||
+                code === 12 ||
+                (code >= 14 && code <= 31) ||
+                (code >= 127 && code <= 159)
+            );
+        })
     );
 }
 

@@ -1,6 +1,8 @@
 import {
     AcceptDictionaryGenerationJobRequestSchema,
     AcceptDictionaryGenerationJobResponseSchema,
+    EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+    EnqueueDictionaryCardAuthoringGenerationResponseSchema,
     CancelDictionaryGenerationJobRequestSchema,
     CancelDictionaryGenerationJobResponseSchema,
     CompleteDictionaryDocumentUploadRequestSchema,
@@ -42,6 +44,8 @@ import {
     PreviewDictionaryImportResponseSchema,
     RegenerateDictionaryGenerationJobRequestSchema,
     RegenerateDictionaryGenerationJobResponseSchema,
+    RegenerateDictionaryCardAuthoringGenerationRequestSchema,
+    RegenerateDictionaryCardAuthoringGenerationResponseSchema,
     RotateDictionaryShareKeyRequestSchema,
     RotateDictionaryShareKeyResponseSchema,
     RetryDictionaryDocumentTermsGenerationRequestSchema,
@@ -67,6 +71,7 @@ import {
     type DictionaryLifecycleMutationRequest,
     type DiscardDictionaryGenerationJobRequest,
     type EnqueueDictionaryCardGenerationRequest,
+    type EnqueueDictionaryCardAuthoringGenerationRequest,
     type EnqueueDictionaryPastedTermsGenerationRequest,
     type DictionaryExportFormat,
     type ForkSharedDictionaryRequest,
@@ -77,6 +82,7 @@ import {
     type ListSharedDictionaryQuery,
     type ReorderDictionaryCardsRequest,
     type RegenerateDictionaryGenerationJobRequest,
+    type RegenerateDictionaryCardAuthoringGenerationRequest,
     type RotateDictionaryShareKeyRequest,
     type RetryDictionaryDocumentTermsGenerationRequest,
     type RetryDictionaryImportPairsGenerationRequest,
@@ -595,6 +601,27 @@ export const dictionaryApi = {
                 signal,
             },
         ),
+    enqueueCardAuthoringGeneration: (
+        accessToken: string,
+        dictionaryId: string,
+        body: EnqueueDictionaryCardAuthoringGenerationRequest,
+        idempotencyKey: string,
+        signal?: AbortSignal,
+    ) =>
+        ownerRequest(
+            accessToken,
+            `/dictionaries/${dictionaryId}/card-authoring-generations`,
+            {
+                body,
+                bodySchema:
+                    EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+                headers: idempotencyHeaders(idempotencyKey),
+                method: 'POST',
+                responseSchema:
+                    EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+                signal,
+            },
+        ),
     enqueuePastedTermsGeneration: (
         accessToken: string,
         dictionaryId: string,
@@ -677,6 +704,29 @@ export const dictionaryApi = {
                 method: 'POST',
                 responseSchema:
                     RetryDictionaryImportPairsGenerationResponseSchema,
+                signal,
+            },
+        );
+    },
+    regenerateCardAuthoringGeneration: (
+        accessToken: string,
+        jobId: string,
+        body: RegenerateDictionaryCardAuthoringGenerationRequest,
+        idempotencyKey: string,
+        signal?: AbortSignal,
+    ) => {
+        const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+        return ownerRequest(
+            accessToken,
+            `/dictionary-generation-jobs/${parsed.jobId}/regenerate-card-authoring`,
+            {
+                body,
+                bodySchema:
+                    RegenerateDictionaryCardAuthoringGenerationRequestSchema,
+                headers: idempotencyHeaders(idempotencyKey),
+                method: 'POST',
+                responseSchema:
+                    RegenerateDictionaryCardAuthoringGenerationResponseSchema,
                 signal,
             },
         );

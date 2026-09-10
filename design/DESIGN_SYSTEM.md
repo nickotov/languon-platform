@@ -843,6 +843,14 @@ completed result.
 
 #### AI proposal and batch review
 
+- New-card AI authoring stays inside the Add Card dialog/sheet. Once Source is
+  valid, **Generate with AI** proposes Translation and enabled optional values
+  directly below their inputs. Each plain-text choice keeps explicit **Accept**,
+  **Discard**, and **Regenerate field** actions; accepting fills only that input,
+  discarding never erases draft text, and field or whole-set regeneration appends
+  bounded choices without silently removing earlier alternatives. Manual editing
+  remains available throughout progress, and a Source change visibly stales the
+  old choices before any further acceptance.
 - AI work is review-first. The source card and editable proposed card are shown
   side by side at expanded widths and in a clearly ordered original/proposal
   stack on compact screens. Diff styling combines labels and changed-field

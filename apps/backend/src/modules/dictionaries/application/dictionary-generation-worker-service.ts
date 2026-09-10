@@ -3,6 +3,11 @@ import {
     type CardProposalGenerator,
     type CardProposalGeneratorResponse,
 } from './ports/card-proposal-generator';
+import {
+    CardAuthoringProposalGeneratorError,
+    type CardAuthoringProposalGenerator,
+    type CardAuthoringProposalGeneratorResponse,
+} from './ports/card-authoring-proposal-generator';
 import type { DictionaryGenerationProviderBudgetPolicy } from './ports/dictionary-generation-provider-policy';
 import { dictionaryGenerationProviderUsageCostMicros } from './ports/dictionary-generation-provider-policy';
 import {
@@ -30,6 +35,13 @@ import {
 } from '../domain/batch-generation';
 import { InvalidDictionarySettingsError } from '../domain/settings';
 import { dictionaryDocumentGenerationFormat } from '../domain/document-ingestion';
+import {
+    dictionaryCardAuthoringGenerationFormat,
+    dictionaryCardAuthoringProviderInput,
+    type DictionaryCardAuthoringProviderInput,
+    validateDictionaryCardAuthoringProviderDelta,
+} from '../domain/card-authoring';
+import { DictionaryGenerationCompletionConflictError } from './dictionary-errors';
 import { DictionaryDocumentGenerationError } from './dictionary-document-generation-processor';
 import type { DictionaryDocumentGenerationExecutor } from './dictionary-document-generation-executor';
 import type { DictionaryDocumentCleanupProcessor } from './dictionary-document-cleanup-processor';
@@ -60,6 +72,42 @@ function parseGeneratorResponse(
         throw new CardProposalGeneratorError('invalid_model_output');
     return {
         proposal: parseDictionaryGenerationProposal(result.proposal),
+        usage: result.usage,
+    };
+}
+
+function parseCardAuthoringGeneratorResponse(
+    response: CardAuthoringProposalGeneratorResponse,
+    providerBudget: DictionaryGenerationProviderBudgetPolicy,
+    providerInput: DictionaryCardAuthoringProviderInput,
+    onUsage: (usage: { inputTokens: number; outputTokens: number }) => void,
+) {
+    const result =
+        'delta' in response ? response : { delta: response, usage: undefined };
+    if (
+        result.usage &&
+        (!Number.isSafeInteger(result.usage.inputTokens) ||
+            result.usage.inputTokens < 0 ||
+            !Number.isSafeInteger(result.usage.outputTokens) ||
+            result.usage.outputTokens < 0 ||
+            result.usage.inputTokens >
+                providerBudget.maxInputTokensPerAttempt ||
+            result.usage.outputTokens >
+                providerBudget.maxOutputTokensPerAttempt)
+    )
+        throw new CardAuthoringProposalGeneratorError('invalid_model_output');
+    if (result.usage) onUsage(result.usage);
+    let proposal;
+    try {
+        proposal = validateDictionaryCardAuthoringProviderDelta(
+            providerInput,
+            result.delta,
+        );
+    } catch {
+        throw new CardAuthoringProposalGeneratorError('invalid_model_output');
+    }
+    return {
+        proposal,
         usage: result.usage,
     };
 }
@@ -271,6 +319,7 @@ export class DictionaryGenerationWorkerService {
             documentExecutor?: DictionaryDocumentGenerationExecutor;
             documentStore?: DictionaryDocumentStore;
             importPairsProvider?: ImportPairsProposalGenerator;
+            cardAuthoringProvider?: CardAuthoringProposalGenerator;
             pastedTermsProvider?: PastedTermsProposalGenerator;
             provider: CardProposalGenerator;
             providerReadiness?: (signal: AbortSignal) => Promise<void>;
@@ -398,6 +447,8 @@ export class DictionaryGenerationWorkerService {
         let timeout: ReturnType<typeof setTimeout> | undefined;
         let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
         let resolveHeartbeatWait: (() => void) | undefined;
+        let returnedProviderUsage:
+            { inputTokens: number; outputTokens: number } | undefined;
         let currentProgress: {
             percent: number;
             stage:
@@ -476,24 +527,42 @@ export class DictionaryGenerationWorkerService {
                 );
             });
             const generation =
-                claim.input.format === dictionaryImportPairsGenerationFormat
-                    ? this.dependencies.importPairsProvider
-                        ? generateImportPairsProposal({
-                              claim,
-                              provider: this.dependencies.importPairsProvider,
-                              signal: providerAbort.signal,
-                          })
+                claim.input.format === dictionaryCardAuthoringGenerationFormat
+                    ? this.dependencies.cardAuthoringProvider
+                        ? (() => {
+                              const providerInput =
+                                  dictionaryCardAuthoringProviderInput(
+                                      claim.input,
+                                  );
+                              return this.dependencies.cardAuthoringProvider
+                                  .generate({
+                                      idempotencyKey: `${claim.id}/generate`,
+                                      input: providerInput,
+                                      providerBudget: claim.providerBudget,
+                                      signal: providerAbort.signal,
+                                  })
+                                  .then((response) =>
+                                      parseCardAuthoringGeneratorResponse(
+                                          response,
+                                          claim.providerBudget,
+                                          providerInput,
+                                          (usage) => {
+                                              returnedProviderUsage = usage;
+                                          },
+                                      ),
+                                  );
+                          })()
                         : Promise.reject(
-                              new CardProposalGeneratorError(
+                              new CardAuthoringProposalGeneratorError(
                                   'provider_unavailable',
                               ),
                           )
                     : claim.input.format ===
-                        dictionaryPastedTermsGenerationFormat
-                      ? this.dependencies.pastedTermsProvider
-                          ? generatePastedTermsProposal({
+                        dictionaryImportPairsGenerationFormat
+                      ? this.dependencies.importPairsProvider
+                          ? generateImportPairsProposal({
                                 claim,
-                                provider: this.dependencies.pastedTermsProvider,
+                                provider: this.dependencies.importPairsProvider,
                                 signal: providerAbort.signal,
                             })
                           : Promise.reject(
@@ -501,47 +570,63 @@ export class DictionaryGenerationWorkerService {
                                     'provider_unavailable',
                                 ),
                             )
-                      : claim.input.format === dictionaryGenerationFormat
-                        ? this.dependencies.provider
-                              .generate({
-                                  idempotencyKey: `${claim.id}/generate`,
-                                  input: claim.input,
-                                  providerBudget: claim.providerBudget,
+                      : claim.input.format ===
+                          dictionaryPastedTermsGenerationFormat
+                        ? this.dependencies.pastedTermsProvider
+                            ? generatePastedTermsProposal({
+                                  claim,
+                                  provider:
+                                      this.dependencies.pastedTermsProvider,
                                   signal: providerAbort.signal,
                               })
-                              .then((response) =>
-                                  parseGeneratorResponse(
-                                      response,
-                                      claim.providerBudget,
+                            : Promise.reject(
+                                  new CardProposalGeneratorError(
+                                      'provider_unavailable',
                                   ),
                               )
-                        : claim.input.format ===
-                                dictionaryDocumentGenerationFormat &&
-                            this.dependencies.documentExecutor
-                          ? this.dependencies.documentExecutor.execute({
-                                attempt: claim.attempt,
-                                fencingToken: claim.fencingToken,
-                                input: claim.input,
-                                jobId: claim.id,
-                                leaseDeadline: claim.leaseDeadline,
-                                providerBudget: claim.providerBudget,
-                                reportStage: (stage, percent) => {
-                                    currentProgress = { percent, stage };
-                                    return Promise.resolve();
-                                },
-                                signal: providerAbort.signal,
-                                workerId: claim.workerId,
-                            })
-                          : Promise.reject(
-                                new CardProposalGeneratorError(
-                                    'provider_unavailable',
-                                ),
-                            );
+                        : claim.input.format === dictionaryGenerationFormat
+                          ? this.dependencies.provider
+                                .generate({
+                                    idempotencyKey: `${claim.id}/generate`,
+                                    input: claim.input,
+                                    providerBudget: claim.providerBudget,
+                                    signal: providerAbort.signal,
+                                })
+                                .then((response) =>
+                                    parseGeneratorResponse(
+                                        response,
+                                        claim.providerBudget,
+                                    ),
+                                )
+                          : claim.input.format ===
+                                  dictionaryDocumentGenerationFormat &&
+                              this.dependencies.documentExecutor
+                            ? this.dependencies.documentExecutor.execute({
+                                  attempt: claim.attempt,
+                                  fencingToken: claim.fencingToken,
+                                  input: claim.input,
+                                  jobId: claim.id,
+                                  leaseDeadline: claim.leaseDeadline,
+                                  providerBudget: claim.providerBudget,
+                                  reportStage: (stage, percent) => {
+                                      currentProgress = { percent, stage };
+                                      return Promise.resolve();
+                                  },
+                                  signal: providerAbort.signal,
+                                  workerId: claim.workerId,
+                              })
+                            : Promise.reject(
+                                  new CardProposalGeneratorError(
+                                      'provider_unavailable',
+                                  ),
+                              );
             const generated = await Promise.race([
                 generation,
                 deadline,
                 leaseLost,
             ]);
+            if ('usage' in generated && generated.usage)
+                returnedProviderUsage = generated.usage;
             if (shutdownRequested) return true;
             stopped = true;
             if (heartbeatTimer) clearTimeout(heartbeatTimer);
@@ -680,8 +765,13 @@ export class DictionaryGenerationWorkerService {
                 if (!retained) throw new WorkerLeaseLostError();
                 return true;
             }
-            const category =
-                error instanceof CardProposalGeneratorError
+            const completionConflict =
+                error instanceof DictionaryGenerationCompletionConflictError;
+            const category = completionConflict
+                ? 'generation_conflict'
+                : error instanceof CardProposalGeneratorError
+                  ? error.category
+                  : error instanceof CardAuthoringProposalGeneratorError
                     ? error.category
                     : error instanceof DictionaryDocumentGenerationError
                       ? error.category
@@ -698,7 +788,12 @@ export class DictionaryGenerationWorkerService {
                 fencingToken: claim.fencingToken,
                 jobId: claim.id,
                 leaseDeadline,
+                ...(completionConflict ? { countProviderFailure: false } : {}),
+                ...(returnedProviderUsage
+                    ? { providerUsage: returnedProviderUsage }
+                    : {}),
                 retryAt:
+                    category === 'generation_conflict' ||
                     category === 'invalid_model_output' ||
                     (error instanceof DictionaryDocumentGenerationError &&
                         !error.retryable)

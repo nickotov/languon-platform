@@ -10,6 +10,10 @@ import {
     createDictionaryPastedTermsGenerationAgent,
     type DictionaryPastedTermsGenerationAgentOptions,
 } from '../modules/dictionaries/infrastructure/ai/dictionary-pasted-terms-generation-agent';
+import {
+    createDictionaryCardAuthoringAgent,
+    type DictionaryCardAuthoringAgentOptions,
+} from '../modules/dictionaries/infrastructure/ai/dictionary-card-authoring-agent';
 import { createDictionaryImportPairsGenerationAgent } from '../modules/dictionaries/infrastructure/ai/dictionary-import-pairs-generation-agent';
 import {
     createDevelopmentServerMiddleware,
@@ -17,6 +21,7 @@ import {
 } from './development-server-policy';
 
 export interface CanonicalMastraOptions {
+    dictionaryCardAuthoring?: DictionaryCardAuthoringAgentOptions;
     dictionaryCardGeneration?: DictionaryCardGenerationAgentOptions;
     dictionaryImportPairsGeneration?: Parameters<
         typeof createDictionaryImportPairsGenerationAgent
@@ -44,6 +49,9 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
         : undefined;
     const dictionaryCardGenerationAgent = options.dictionaryCardGeneration
         ? createDictionaryCardGenerationAgent(options.dictionaryCardGeneration)
+        : undefined;
+    const dictionaryCardAuthoringAgent = options.dictionaryCardAuthoring
+        ? createDictionaryCardAuthoringAgent(options.dictionaryCardAuthoring)
         : undefined;
     const dictionaryImportPairsGenerationAgent =
         options.dictionaryImportPairsGeneration
@@ -74,6 +82,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 
     if (
         !development &&
+        !dictionaryCardAuthoringAgent &&
         !dictionaryCardGenerationAgent &&
         !dictionaryImportPairsGenerationAgent &&
         !dictionaryPastedTermsGenerationAgent
@@ -84,6 +93,9 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
     if (!development) {
         return new Mastra({
             agents: {
+                ...(dictionaryCardAuthoringAgent
+                    ? { dictionaryCardAuthoringAgent }
+                    : {}),
                 ...(dictionaryCardGenerationAgent
                     ? { dictionaryCardGenerationAgent }
                     : {}),
@@ -101,6 +113,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 
     return createDevelopmentMastra({
         development,
+        dictionaryCardAuthoringAgent,
         dictionaryCardGenerationAgent,
         dictionaryImportPairsGenerationAgent,
         dictionaryPastedTermsGenerationAgent,
@@ -112,6 +125,8 @@ function createDevelopmentMastra(options: {
     development: ReturnType<typeof createDevelopmentHarnessPrimitives>;
     dictionaryCardGenerationAgent:
         ReturnType<typeof createDictionaryCardGenerationAgent> | undefined;
+    dictionaryCardAuthoringAgent:
+        ReturnType<typeof createDictionaryCardAuthoringAgent> | undefined;
     dictionaryImportPairsGenerationAgent:
         | ReturnType<typeof createDictionaryImportPairsGenerationAgent>
         | undefined;
@@ -132,6 +147,12 @@ function createDevelopmentMastra(options: {
 }) {
     return new Mastra({
         agents: {
+            ...(options.dictionaryCardAuthoringAgent
+                ? {
+                      dictionaryCardAuthoringAgent:
+                          options.dictionaryCardAuthoringAgent,
+                  }
+                : {}),
             ...(options.dictionaryCardGenerationAgent
                 ? {
                       dictionaryCardGenerationAgent:

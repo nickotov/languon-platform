@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DictionaryGenerationService } from '../../../../../src/modules/dictionaries/application/dictionary-generation-service';
 import { isDictionaryGenerationFailureRetryable } from '../../../../../src/modules/dictionaries/application/dictionary-errors';
+import { dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
 import {
     dictionaryGenerationFormat,
     dictionaryImportPairsGenerationFormat,
@@ -218,6 +219,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
         await expect(
             service.capabilities('token', requestContext),
         ).resolves.toEqual({
+            cardAuthoringGeneration: { available: false },
             documentOcr: { available: false },
             documentTermsGeneration: { available: false },
             importPairsGeneration: { available: false },
@@ -245,6 +247,86 @@ describe('DictionaryGenerationService batch dispatch', () => {
                 ownerId: 'owner-id',
                 sharedContext: 'Art vocabulary',
                 text: 'canvas\npaint',
+            }),
+        );
+    });
+
+    it('dispatches field-targeted authoring successors and canonicalizes discarded identities', async () => {
+        const enqueueCardAuthoring = vi.fn(async () => ({
+            id: 'successor-id',
+        }));
+        const service = new DictionaryGenerationService({
+            authentication: {
+                authenticate: async () => ({
+                    sessionId: 'session-id',
+                    userId: 'owner-id',
+                }),
+            },
+            capabilities: {
+                acceptableFormats: [dictionaryCardAuthoringGenerationFormat],
+                cancellableFormats: [dictionaryCardAuthoringGenerationFormat],
+                discardableFormats: [dictionaryCardAuthoringGenerationFormat],
+                enqueuedFormats: [dictionaryCardAuthoringGenerationFormat],
+                readableFormats: [dictionaryCardAuthoringGenerationFormat],
+            },
+            clock: { now: () => new Date('2026-08-26T12:00:00.000Z') },
+            cryptography: {
+                fingerprint: (value: unknown) => JSON.stringify(value),
+            } as never,
+            rateLimiter: { consume: async () => ({ allowed: true }) },
+            store: {
+                enqueueCardAuthoring,
+                read: async () => ({
+                    dictionaryId: 'dictionary-id',
+                    format: dictionaryCardAuthoringGenerationFormat,
+                    kind: 'card-authoring',
+                }),
+            } as never,
+        });
+        const discardedSuggestionIds = [
+            '30000000-0000-4000-8000-000000000002',
+            '30000000-0000-4000-8000-000000000001',
+        ];
+        await service.regenerateCardAuthoring(
+            'token',
+            'prior-job-id',
+            'successor-idempotency-key',
+            {
+                discardedSuggestionIds,
+                draft: {
+                    overrides: {
+                        definitionEnabled: null,
+                        definitionLanguage: null,
+                        exampleEnabled: null,
+                        exampleLanguage: null,
+                        exampleTranslationEnabled: null,
+                        transcriptionCustomLabel: null,
+                        transcriptionEnabled: null,
+                        transcriptionNotation: null,
+                    },
+                    values: {
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                        transcription: null,
+                        translation: null,
+                    },
+                },
+                expectedDictionaryVersion: 1,
+                expectedSettingsVersion: 1,
+                format: dictionaryCardAuthoringGenerationFormat,
+                scope: { field: 'translation', kind: 'field' },
+                source: 'hello',
+            },
+            requestContext,
+        );
+        expect(enqueueCardAuthoring).toHaveBeenCalledWith(
+            expect.objectContaining({
+                predecessor: {
+                    discardedSuggestionIds: [...discardedSuggestionIds].sort(),
+                    jobId: 'prior-job-id',
+                },
+                scope: { field: 'translation', kind: 'field' },
             }),
         );
     });

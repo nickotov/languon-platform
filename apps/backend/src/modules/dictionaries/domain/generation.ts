@@ -2,6 +2,17 @@ import { z } from 'zod';
 
 import { dictionaryLimits } from './limits';
 import { dictionaryDocumentGenerationFormat } from './document-ingestion';
+import { DictionaryCardAuthoringGenerationInputPayloadSchema } from './card-authoring';
+export {
+    DictionaryGenerationCardOverridesSchema,
+    DictionaryGenerationCardValuesSchema,
+    DictionaryGenerationEffectiveSettingsSchema,
+} from './generation-card-context';
+import {
+    DictionaryGenerationCardOverridesSchema,
+    DictionaryGenerationCardValuesSchema,
+    DictionaryGenerationEffectiveSettingsSchema,
+} from './generation-card-context';
 
 export const dictionaryGenerationFormat = 'single-card:v1' as const;
 export const dictionaryPastedTermsGenerationFormat = 'pasted-terms:v1' as const;
@@ -32,58 +43,6 @@ const boundedText = (maximum: number) =>
                 }),
             'Control characters are not allowed',
         );
-
-export const DictionaryGenerationCardValuesSchema = z
-    .object({
-        definition: boundedText(
-            dictionaryLimits.optionalLongValueCodePoints,
-        ).nullable(),
-        example: boundedText(
-            dictionaryLimits.optionalLongValueCodePoints,
-        ).nullable(),
-        exampleTranslation: boundedText(
-            dictionaryLimits.optionalLongValueCodePoints,
-        ).nullable(),
-        source: boundedText(dictionaryLimits.requiredCardValueCodePoints),
-        transcription: boundedText(
-            dictionaryLimits.optionalShortValueCodePoints,
-        ).nullable(),
-        translation: boundedText(dictionaryLimits.requiredCardValueCodePoints),
-    })
-    .strict();
-
-export const DictionaryGenerationCardOverridesSchema = z
-    .object({
-        transcriptionCustomLabel: boundedText(
-            dictionaryLimits.customNotationLabelCodePoints,
-        ).nullable(),
-        definitionEnabled: z.enum(['enabled', 'disabled']).nullable(),
-        definitionLanguage: z.enum(['source', 'target']).nullable(),
-        exampleEnabled: z.enum(['enabled', 'disabled']).nullable(),
-        exampleLanguage: z.enum(['source', 'target']).nullable(),
-        exampleTranslationEnabled: z.enum(['enabled', 'disabled']).nullable(),
-        transcriptionEnabled: z.enum(['enabled', 'disabled']).nullable(),
-        transcriptionNotation: z
-            .enum(['ipa', 'romanization', 'custom'])
-            .nullable(),
-    })
-    .strict();
-
-export const DictionaryGenerationEffectiveSettingsSchema = z
-    .object({
-        transcriptionCustomLabel: boundedText(
-            dictionaryLimits.customNotationLabelCodePoints,
-        ).nullable(),
-        definitionEnabled: z.boolean(),
-        definitionLanguage: z.enum(['source', 'target']),
-        exampleEnabled: z.boolean(),
-        exampleLanguage: z.enum(['source', 'target']),
-        exampleTranslationEnabled: z.boolean(),
-        exampleTranslationLanguage: z.enum(['source', 'target']),
-        transcriptionEnabled: z.boolean(),
-        transcriptionNotation: z.enum(['ipa', 'romanization', 'custom']),
-    })
-    .strict();
 
 export const DictionarySingleCardGenerationInputPayloadSchema = z
     .object({
@@ -302,6 +261,7 @@ export const DictionaryGenerationInputPayloadSchema = z.discriminatedUnion(
     'format',
     [
         DictionarySingleCardGenerationInputPayloadSchema,
+        DictionaryCardAuthoringGenerationInputPayloadSchema,
         DictionaryPastedTermsGenerationInputPayloadSchema,
         DictionaryImportPairsGenerationInputPayloadSchema,
         DictionaryDocumentTermsGenerationInputPayloadSchema,
@@ -370,6 +330,9 @@ export type DictionaryGenerationInputPayload = z.infer<
 >;
 export type DictionarySingleCardGenerationInputPayload = z.infer<
     typeof DictionarySingleCardGenerationInputPayloadSchema
+>;
+export type DictionaryCardAuthoringGenerationInputPayload = z.infer<
+    typeof DictionaryCardAuthoringGenerationInputPayloadSchema
 >;
 export type DictionaryPastedTermsGenerationInputPayload = z.infer<
     typeof DictionaryPastedTermsGenerationInputPayloadSchema

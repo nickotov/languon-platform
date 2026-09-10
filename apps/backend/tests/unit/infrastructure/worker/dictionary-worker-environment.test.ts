@@ -65,6 +65,24 @@ describe('dictionary worker environment', () => {
         ).toThrow(/must be supported by this worker/);
     });
 
+    it('keeps card-authoring processable during stop-enqueue drain while defaults remain inert', () => {
+        expect(loadDictionaryWorkerEnvironment(base)).toMatchObject({
+            includeProviderReadiness: false,
+            supportedFormats: [],
+        });
+        expect(
+            loadDictionaryWorkerEnvironment({
+                ...base,
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
+                DICTIONARY_JOB_API_ENQUEUED_FORMATS: '',
+                DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'card-authoring:v1',
+            }),
+        ).toMatchObject({
+            includeProviderReadiness: true,
+            supportedFormats: ['card-authoring:v1'],
+        });
+    });
+
     it('requires Mastra for deployed drain-only processable formats', () => {
         expect(() =>
             loadDictionaryWorkerEnvironment({

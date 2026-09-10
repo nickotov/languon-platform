@@ -84,6 +84,7 @@ describe('dictionary API', () => {
         vi.mocked(fetch)
             .mockResolvedValueOnce(
                 jsonResponse({
+                    cardAuthoringGeneration: { available: true },
                     documentOcr: { available: false },
                     documentTermsGeneration: { available: true },
                     importPairsGeneration: { available: true },
@@ -99,6 +100,7 @@ describe('dictionary API', () => {
         await expect(
             dictionaryApi.readGenerationCapabilities('owner-token'),
         ).resolves.toEqual({
+            cardAuthoringGeneration: { available: true },
             documentOcr: { available: false },
             documentTermsGeneration: { available: true },
             importPairsGeneration: { available: true },
@@ -199,6 +201,106 @@ describe('dictionary API', () => {
         expect(JSON.parse(String(retryInit?.body))).toMatchObject({
             rowIndexes: [4, 1],
         });
+    });
+
+    it('uses typed card-authoring enqueue and successor boundaries with retained keys', async () => {
+        vi.mocked(fetch)
+            .mockResolvedValueOnce(jsonResponse({ job: null }))
+            .mockResolvedValueOnce(jsonResponse({ job: null }));
+        const draft = {
+            overrides: {
+                definitionEnabled: null,
+                definitionLanguage: null,
+                exampleEnabled: null,
+                exampleLanguage: null,
+                exampleTranslationEnabled: null,
+                transcriptionCustomLabel: null,
+                transcriptionEnabled: null,
+                transcriptionNotation: null,
+            },
+            values: {
+                definition: null,
+                example: null,
+                exampleTranslation: null,
+                transcription: null,
+                translation: null,
+            },
+        };
+
+        await expect(
+            dictionaryApi.enqueueCardAuthoringGeneration(
+                'owner-token',
+                '10000000-0000-4000-8000-000000000001',
+                {
+                    draft,
+                    expectedDictionaryVersion: 3,
+                    expectedSettingsVersion: 2,
+                    scope: { kind: 'all' },
+                    source: '  medium  ',
+                },
+                'authoring-key',
+            ),
+        ).rejects.toMatchObject({ status: 502 });
+        await expect(
+            dictionaryApi.regenerateCardAuthoringGeneration(
+                'owner-token',
+                '30000000-0000-4000-8000-000000000001',
+                {
+                    discardedSuggestionIds: [
+                        '40000000-0000-4000-8000-000000000001',
+                    ],
+                    draft,
+                    expectedDictionaryVersion: 3,
+                    expectedSettingsVersion: 2,
+                    format: 'card-authoring:v1',
+                    scope: { field: 'translation', kind: 'field' },
+                    source: 'medium',
+                },
+                'successor-key',
+            ),
+        ).rejects.toMatchObject({ status: 502 });
+
+        const [enqueueUrl, enqueueInit] = vi.mocked(fetch).mock.calls[0]!;
+        expect(String(enqueueUrl)).toContain(
+            '/dictionaries/10000000-0000-4000-8000-000000000001/card-authoring-generations',
+        );
+        expect(new Headers(enqueueInit?.headers).get('idempotency-key')).toBe(
+            'authoring-key',
+        );
+        expect(JSON.parse(String(enqueueInit?.body)).source).toBe('medium');
+        const [successorUrl, successorInit] = vi.mocked(fetch).mock.calls[1]!;
+        expect(String(successorUrl)).toContain(
+            '/dictionary-generation-jobs/30000000-0000-4000-8000-000000000001/regenerate-card-authoring',
+        );
+        expect(new Headers(successorInit?.headers).get('idempotency-key')).toBe(
+            'successor-key',
+        );
+    });
+
+    it('uses owner job actions for retry-safe authoring cleanup', async () => {
+        vi.mocked(fetch)
+            .mockResolvedValueOnce(jsonResponse({ job: null }))
+            .mockResolvedValueOnce(jsonResponse({ job: null }));
+        const activeJobId = '30000000-0000-4000-8000-000000000001';
+        const reviewJobId = '30000000-0000-4000-8000-000000000002';
+
+        await expect(
+            dictionaryApi.cancelGenerationJob('owner-token', activeJobId),
+        ).rejects.toMatchObject({ status: 502 });
+        await expect(
+            dictionaryApi.discardGenerationJob('owner-token', reviewJobId),
+        ).rejects.toMatchObject({ status: 502 });
+
+        const [cancelUrl, cancelInit] = vi.mocked(fetch).mock.calls[0]!;
+        expect(String(cancelUrl)).toContain(
+            `/dictionary-generation-jobs/${activeJobId}/cancel`,
+        );
+        expect(cancelInit?.method).toBe('POST');
+        const [discardUrl, discardInit] = vi.mocked(fetch).mock.calls[1]!;
+        expect(String(discardUrl)).toContain(
+            `/dictionary-generation-jobs/${reviewJobId}/discard`,
+        );
+        expect(discardInit?.method).toBe('POST');
     });
 
     it('puts document bytes only to the signed URL with the exact required headers', async () => {

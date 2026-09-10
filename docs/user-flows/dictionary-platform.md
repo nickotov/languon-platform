@@ -30,10 +30,12 @@ e2e_scenarios:
     - owner-creates-edits-and-restores-dictionary
     - anonymous-reader-forks-unlisted-dictionary
     - card-ai-proposal-survives-review-and-conflict
+    - inline-ai-card-authoring-preserves-field-choices
     - batch-generation-review-commits-selected-cards
     - document-generation-cleans-original-and-commits-final-review
     - quizlet-import-and-export-round-trip
 related_features:
+    - inline-ai-card-authoring
     - user-authentication
     - web-i18n-support
     - web-ui-kit
@@ -49,8 +51,9 @@ inherited card fields, authors and reorders
 cards, archives and restores content, and deliberately creates an unlisted
 capability link. An anonymous reader can use that complete link without seeing
 owner data, then sign in and make an independent private fork. An owner can also
-run persistent single-card AI regeneration, review an editable proposal, and
-recover explicitly when the source card becomes stale. Pasted terms can enter a
+create a card from only a source phrase by reviewing AI suggestions beside each
+enabled field, or run persistent single-card AI regeneration for a saved card
+and recover explicitly when the source card becomes stale. Pasted terms can enter a
 persistent batch proposal, where valid rows are reviewed and selected while
 failures and duplicate warnings remain visible before one atomic commit.
 An owner can also upload an explicit term-list document through private
@@ -82,9 +85,9 @@ pnpm dev:web
 ```
 
 AI generation additionally requires the local dictionary worker with the
-deterministic provider and both `single-card:v1` and `pasted-terms:v1` enabled for
-API enqueue and worker processing. Optional AI pair enrichment additionally uses
-`import-pairs:v1`. The mapped Playwright configuration supplies
+deterministic provider and `card-authoring:v1`, `single-card:v1`, and
+`pasted-terms:v1` enabled for API enqueue and worker processing. Optional AI pair
+enrichment additionally uses `import-pairs:v1`. The mapped Playwright configuration supplies
 those local-only settings and starts the third process automatically; it never
 calls a live model.
 
@@ -142,6 +145,37 @@ The source/target pair becomes locked after the first card, including when every
 card is archived. Disabled optional fields preserve dormant values. Version
 conflicts stay visible and require an explicit reload; the client does not
 silently overwrite or replay a stale edit.
+
+### Inline AI-assisted card creation
+
+1. In an editable dictionary, select **Add card** and enter only a valid Source
+   phrase. Select **Generate with AI**. Expect durable queued, generating, and
+   validating progress with cancellation while every manual field remains
+   editable; Source is never generated or replaced.
+2. Expect each generated value directly below its corresponding enabled field.
+   **Accept** fills only that input and keeps the suggestion visible. **Discard**
+   hides only that choice without clearing manual text. **Regenerate field**
+   requests only that field and appends a distinct choice without removing the
+   earlier suggestion. **Regenerate all fields** appends choices for all eligible
+   fields and does not overwrite accepted or manual values.
+3. Edit any field manually, accept at least one AI choice, and select **Save
+   card**. Expect one atomic card with **Human + AI** authorship. A draft saved
+   without accepting an AI suggestion follows the normal manual path and remains
+   **Human**; unaccepted and discarded suggestions are never persisted as card
+   values.
+4. Change Source after suggestions arrive. Expect the old choices to remain
+   visible but become unavailable for acceptance or successor generation. Start
+   generation again for the new Source to begin a new lineage while retaining
+   current manual field text.
+5. If AI authoring is unavailable, the form says so and remains fully usable for
+   manual creation. A provider, network, cancellation, admission, or version
+   failure retains the open draft and already loaded suggestions and never shows
+   raw provider detail.
+
+At 320 px and 200% text, suggestions and their named Accept, Discard, and
+Regenerate actions stack without horizontal page overflow. Status is announced
+politely, keyboard focus follows field order, and suggested values retain their
+resolved language and writing direction.
 
 ### Unlisted reading and independent fork
 
@@ -348,6 +382,11 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
   editable mixed-language fields, stale acceptance rejection, reload/compare,
   regeneration from current versions, and atomic acceptance with server-owned
   authorship.
+- `inline-ai-card-authoring-preserves-field-choices` proves source-only
+  generation in Add Card, adjacent atomic suggestions, retained alternatives
+  across field and whole-set regeneration, discard without draft loss,
+  responsive layout, and one mixed-authorship atomic save through the real
+  web/API/worker/PostgreSQL stack.
 - `batch-generation-review-commits-selected-cards` proves server-owned line
   parsing, deterministic chunked generation, persisted review restoration,
   row-level failure/duplicate handling, candidate editing and selection, and one

@@ -127,6 +127,13 @@
       "when": 1787737326993,
       "tag": "0017_redundant_wolfpack",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789059997729,
+      "tag": "0018_long_lord_hawal",
+      "breakpoints": true
     }
   ]
 }

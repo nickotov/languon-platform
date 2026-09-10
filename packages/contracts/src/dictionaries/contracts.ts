@@ -2,6 +2,13 @@ import { z } from 'zod';
 
 import { DictionaryErrorResponseSchema } from './errors';
 import {
+    AcceptDictionaryCardAuthoringGenerationJobRequestSchema,
+    EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+    EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+    RegenerateDictionaryCardAuthoringGenerationRequestSchema,
+    RegenerateDictionaryCardAuthoringGenerationResponseSchema,
+} from './card-authoring';
+import {
     AcceptDictionaryGenerationJobResponseSchema,
     DictionaryGenerationCandidateSchema,
     DictionaryGenerationJobResponseSchema,
@@ -394,6 +401,7 @@ export const ForkSharedDictionaryResponseSchema = z
 export const ReadDictionaryGenerationCapabilitiesResponseSchema = z
     .object({
         singleCardGeneration: z.object({ available: z.boolean() }).strict(),
+        cardAuthoringGeneration: z.object({ available: z.boolean() }).strict(),
         pastedTermsGeneration: z.object({ available: z.boolean() }).strict(),
         importPairsGeneration: z.object({ available: z.boolean() }).strict(),
         documentTermsGeneration: z.object({ available: z.boolean() }).strict(),
@@ -685,6 +693,7 @@ export const AcceptDictionaryImportPairsGenerationJobRequestSchema = z
 
 export const AcceptDictionaryGenerationJobRequestSchema = z.union([
     AcceptDictionarySingleCardGenerationJobRequestSchema,
+    AcceptDictionaryCardAuthoringGenerationJobRequestSchema,
     AcceptDictionaryPastedTermsGenerationJobRequestSchema,
     AcceptDictionaryImportPairsGenerationJobRequestSchema,
     AcceptDictionaryDocumentTermsGenerationJobRequestSchema,
@@ -825,6 +834,13 @@ export const DictionaryEndpointSchemas = {
         response: EnqueueDictionaryCardGenerationResponseSchema,
         error: DictionaryErrorResponseSchema,
     },
+    enqueueDictionaryCardAuthoringGeneration: {
+        params: DictionaryIdParamsSchema,
+        headers: DictionaryIdempotencyHeadersSchema,
+        body: EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+        response: EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+        error: DictionaryErrorResponseSchema,
+    },
     enqueueDictionaryPastedTermsGeneration: {
         params: DictionaryIdParamsSchema,
         headers: DictionaryIdempotencyHeadersSchema,
@@ -899,6 +915,13 @@ export const DictionaryEndpointSchemas = {
         headers: DictionaryIdempotencyHeadersSchema,
         body: RegenerateDictionaryGenerationJobRequestSchema,
         response: RegenerateDictionaryGenerationJobResponseSchema,
+        error: DictionaryErrorResponseSchema,
+    },
+    regenerateDictionaryCardAuthoringGeneration: {
+        params: DictionaryGenerationJobIdParamsSchema,
+        headers: DictionaryIdempotencyHeadersSchema,
+        body: RegenerateDictionaryCardAuthoringGenerationRequestSchema,
+        response: RegenerateDictionaryCardAuthoringGenerationResponseSchema,
         error: DictionaryErrorResponseSchema,
     },
 } as const;
@@ -1037,6 +1060,12 @@ export const DictionaryEndpointInventory = [
         access: 'owner',
     },
     {
+        name: 'enqueueDictionaryCardAuthoringGeneration',
+        method: 'POST',
+        path: '/dictionaries/:dictionaryId/card-authoring-generations',
+        access: 'owner',
+    },
+    {
         name: 'enqueueDictionaryPastedTermsGeneration',
         method: 'POST',
         path: '/dictionaries/:dictionaryId/batch-generations',
@@ -1108,6 +1137,12 @@ export const DictionaryEndpointInventory = [
         path: '/dictionary-generation-jobs/:jobId/regenerate',
         access: 'owner',
     },
+    {
+        name: 'regenerateDictionaryCardAuthoringGeneration',
+        method: 'POST',
+        path: '/dictionary-generation-jobs/:jobId/regenerate-card-authoring',
+        access: 'owner',
+    },
 ] as const;
 
 export type ListDictionariesQuery = z.infer<typeof ListDictionariesQuerySchema>;
@@ -1175,6 +1210,18 @@ export type EnqueueDictionaryCardGenerationRequest = z.infer<
 export type EnqueueDictionaryCardGenerationResponse = z.infer<
     typeof EnqueueDictionaryCardGenerationResponseSchema
 >;
+export type EnqueueDictionaryCardAuthoringGenerationRequest = z.infer<
+    typeof EnqueueDictionaryCardAuthoringGenerationRequestSchema
+>;
+export type EnqueueDictionaryCardAuthoringGenerationResponse = z.infer<
+    typeof EnqueueDictionaryCardAuthoringGenerationResponseSchema
+>;
+export type RegenerateDictionaryCardAuthoringGenerationRequest = z.infer<
+    typeof RegenerateDictionaryCardAuthoringGenerationRequestSchema
+>;
+export type RegenerateDictionaryCardAuthoringGenerationResponse = z.infer<
+    typeof RegenerateDictionaryCardAuthoringGenerationResponseSchema
+>;
 export type EnqueueDictionaryPastedTermsGenerationRequest = z.infer<
     typeof EnqueueDictionaryPastedTermsGenerationRequestSchema
 >;
@@ -1231,6 +1278,9 @@ export type AcceptDictionaryGenerationJobRequest = z.infer<
 >;
 export type AcceptDictionarySingleCardGenerationJobRequest = z.infer<
     typeof AcceptDictionarySingleCardGenerationJobRequestSchema
+>;
+export type AcceptDictionaryCardAuthoringGenerationJobRequest = z.infer<
+    typeof AcceptDictionaryCardAuthoringGenerationJobRequestSchema
 >;
 export type AcceptDictionaryPastedTermsGenerationJobRequest = z.infer<
     typeof AcceptDictionaryPastedTermsGenerationJobRequestSchema

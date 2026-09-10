@@ -26,6 +26,7 @@ import type {
 } from '@languon/contracts';
 
 import type { DictionaryImportPairsGenerationProposalPayload } from '../../../domain/batch-generation';
+import type { DictionaryCardAuthoringProposalPayload } from '../../../domain/card-authoring';
 import type { DictionaryCardRevisionSnapshot } from '../../../domain/revision';
 import { dictionaryGenerationMinimumSupportedInputTokens } from '../../../application/ports/dictionary-generation-provider-policy';
 import type {
@@ -705,8 +706,13 @@ export const dictionaryGenerationProposalsTable = pgTable(
             | DictionaryPastedTermsGenerationAcceptedOutcome
         >(),
         acceptedCandidateFingerprint: text('accepted_candidate_fingerprint'),
+        acceptedCardId: uuid('accepted_card_id').references(
+            () => dictionaryCardsTable.id,
+            { onDelete: 'restrict' },
+        ),
         acceptedCardVersion: integer('accepted_card_version'),
         acceptedDictionaryVersion: integer('accepted_dictionary_version'),
+        acceptedDuplicateSource: boolean('accepted_duplicate_source'),
         acceptedRevisionId: uuid('accepted_revision_id').references(
             () => dictionaryCardRevisionsTable.id,
             { onDelete: 'restrict' },
@@ -732,6 +738,7 @@ export const dictionaryGenerationProposalsTable = pgTable(
                 onDelete: 'cascade',
             }),
         payload: jsonb('payload').$type<
+            | DictionaryCardAuthoringProposalPayload
             | DictionaryGenerationProposalPayload
             | DictionaryImportPairsGenerationProposal
             | DictionaryImportPairsGenerationProposalPayload
@@ -759,19 +766,31 @@ export const dictionaryGenerationProposalsTable = pgTable(
         ),
         check(
             'dictionary_generation_proposals_payload_state',
-            sql`(${table.reviewState} = 'reviewable' and ${table.payload} is not null and ${table.terminalAt} is null and ${table.acceptedCandidateFingerprint} is null and ${table.acceptedCardVersion} is null and ${table.acceptedDictionaryVersion} is null and ${table.acceptedRevisionId} is null and ${table.acceptedBatchOutcome} is null) or (${table.reviewState} = 'accepted' and ${table.payload} is null and ${table.terminalAt} is not null and ((
+            sql`(${table.reviewState} = 'reviewable' and ${table.payload} is not null and ${table.terminalAt} is null and ${table.acceptedCandidateFingerprint} is null and ${table.acceptedCardId} is null and ${table.acceptedCardVersion} is null and ${table.acceptedDictionaryVersion} is null and ${table.acceptedDuplicateSource} is null and ${table.acceptedRevisionId} is null and ${table.acceptedBatchOutcome} is null) or (${table.reviewState} = 'accepted' and ${table.payload} is null and ${table.terminalAt} is not null and ((
                 ${table.acceptedCandidateFingerprint} is not null and
+                ${table.acceptedCardId} is null and
                 ${table.acceptedCardVersion} is not null and
                 ${table.acceptedDictionaryVersion} is not null and
+                ${table.acceptedDuplicateSource} is null and
                 ${table.acceptedRevisionId} is not null and
                 ${table.acceptedBatchOutcome} is null
             ) or (
                 ${table.acceptedCandidateFingerprint} is not null and
+                ${table.acceptedCardId} is not null and
+                ${table.acceptedCardVersion} is not null and
+                ${table.acceptedDictionaryVersion} is not null and
+                ${table.acceptedDuplicateSource} is not null and
+                ${table.acceptedRevisionId} is not null and
+                ${table.acceptedBatchOutcome} is null
+            ) or (
+                ${table.acceptedCandidateFingerprint} is not null and
+                ${table.acceptedCardId} is null and
                 ${table.acceptedCardVersion} is null and
                 ${table.acceptedDictionaryVersion} is null and
+                ${table.acceptedDuplicateSource} is null and
                 ${table.acceptedRevisionId} is null and
                 ${table.acceptedBatchOutcome} is not null
-            ))) or (${table.reviewState} in ('discarded', 'expired') and ${table.payload} is null and ${table.terminalAt} is not null and ${table.acceptedCandidateFingerprint} is null and ${table.acceptedCardVersion} is null and ${table.acceptedDictionaryVersion} is null and ${table.acceptedRevisionId} is null and ${table.acceptedBatchOutcome} is null)`,
+            ))) or (${table.reviewState} in ('discarded', 'expired') and ${table.payload} is null and ${table.terminalAt} is not null and ${table.acceptedCandidateFingerprint} is null and ${table.acceptedCardId} is null and ${table.acceptedCardVersion} is null and ${table.acceptedDictionaryVersion} is null and ${table.acceptedDuplicateSource} is null and ${table.acceptedRevisionId} is null and ${table.acceptedBatchOutcome} is null)`,
         ),
         check(
             'dictionary_generation_proposals_fingerprint_format',

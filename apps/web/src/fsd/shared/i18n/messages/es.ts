@@ -326,6 +326,34 @@ export const es = {
     'dictionary.conflict.help':
         'Otro cambio se guardó primero. Recarga, revísalo e inténtalo de nuevo.',
     'dictionary.conflict.reload': 'Recargar versión actual',
+    'dictionary.authoring.aiSection': 'Sugerencias de IA',
+    'dictionary.authoring.generate': 'Generar con IA',
+    'dictionary.authoring.generateHelp':
+        'La IA propone valores debajo de cada campo. Nada se aplica hasta que lo aceptes.',
+    'dictionary.authoring.regenerateAll': 'Regenerar todos los campos',
+    'dictionary.authoring.progress': 'Progreso de sugerencias de IA',
+    'dictionary.authoring.stage.queued': 'Esperando para generar sugerencias…',
+    'dictionary.authoring.stage.generating': 'Generando sugerencias…',
+    'dictionary.authoring.stage.validating': 'Comprobando sugerencias…',
+    'dictionary.authoring.cancel': 'Cancelar generación',
+    'dictionary.authoring.cancelling': 'Cancelando generación…',
+    'dictionary.authoring.unavailable':
+        'Las sugerencias de IA no están disponibles. Puedes completar la tarjeta manualmente.',
+    'dictionary.authoring.stale':
+        'La frase de origen cambió. Estas sugerencias son de la frase anterior y no se pueden usar.',
+    'dictionary.authoring.suggestions': 'Sugerencias de IA',
+    'dictionary.authoring.suggestionsFor': 'Sugerencias de IA para {field}',
+    'dictionary.authoring.regenerateField': 'Regenerar campo',
+    'dictionary.authoring.regenerateFieldNamed': 'Regenerar {field}',
+    'dictionary.authoring.limitReached':
+        'Descarta una sugerencia antes de generar otra.',
+    'dictionary.authoring.accept': 'Aceptar',
+    'dictionary.authoring.accepted': 'Aceptada',
+    'dictionary.authoring.acceptNamed': 'Aceptar sugerencia de {field}',
+    'dictionary.authoring.discard': 'Descartar',
+    'dictionary.authoring.discardNamed': 'Descartar sugerencia de {field}',
+    'dictionary.authoring.failed':
+        'No se pudieron generar sugerencias. Tus datos y sugerencias anteriores no cambiaron.',
     'dictionary.batch.open': 'Generar tarjetas desde términos pegados',
     'dictionary.batch.title': 'Generar tarjetas desde términos pegados',
     'dictionary.batch.sheetHelp':

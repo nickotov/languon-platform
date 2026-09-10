@@ -383,7 +383,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
       from languon_migrations.history
     `;
 
-        expect(history[0]?.count).toBe('18');
+        expect(history[0]?.count).toBe('19');
     });
 
     it('serializes simultaneous migration runners with the advisory lock', async () => {
@@ -404,7 +404,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
         from languon_migrations.history
       `;
 
-            expect(history[0]?.count).toBe('18');
+            expect(history[0]?.count).toBe('19');
         } finally {
             await secondClient.end();
         }

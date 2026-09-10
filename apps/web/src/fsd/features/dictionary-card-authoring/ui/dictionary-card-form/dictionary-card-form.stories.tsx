@@ -1,5 +1,6 @@
 import type { LanguageCatalogEntry, OwnedDictionary } from '@languon/contracts';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { userEvent, within } from 'storybook/test';
 
 import { I18nProvider } from '@/fsd/shared/i18n';
 import { en } from '@/fsd/shared/i18n/messages/en';
@@ -100,11 +101,50 @@ export const Compact320: Story = {
     args: NewCard.args,
     decorators: [
         (Story) => (
-            <div style={{ width: 320 }}>
+            <div style={{ maxWidth: 320, width: '100%' }}>
                 <Story />
             </div>
         ),
     ],
+};
+
+export const AIFieldSuggestions320: Story = {
+    args: {
+        ...NewCard.args,
+        ai: {
+            available: true,
+            onAction: async () => undefined,
+            pending: false,
+            proposal: {
+                source: 'curatorial medium',
+                suggestions: [
+                    {
+                        field: 'translation',
+                        id: '40000000-0000-4000-8000-000000000001',
+                        value: 'medio curatorial con una sugerencia deliberadamente larga que debe ajustarse sin desbordamiento',
+                    },
+                    {
+                        field: 'translation',
+                        id: '40000000-0000-4000-8000-000000000002',
+                        value: 'soporte curatorial',
+                    },
+                ],
+            },
+        },
+    },
+    decorators: [
+        (Story) => (
+            <div style={{ maxWidth: 320, width: '100%' }}>
+                <Story />
+            </div>
+        ),
+    ],
+    play: async ({ canvasElement }) => {
+        await userEvent.type(
+            within(canvasElement).getByLabelText(/^Source phrase/),
+            'curatorial medium',
+        );
+    },
 };
 
 export const FocusedEditorOverlay: Story = {

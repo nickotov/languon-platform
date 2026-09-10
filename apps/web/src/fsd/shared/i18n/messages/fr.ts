@@ -327,6 +327,34 @@ export const fr = {
     'dictionary.conflict.help':
         'Une autre modification a été enregistrée en premier. Rechargez, examinez et réessayez.',
     'dictionary.conflict.reload': 'Recharger la version actuelle',
+    'dictionary.authoring.aiSection': 'Suggestions de l’IA',
+    'dictionary.authoring.generate': 'Générer avec l’IA',
+    'dictionary.authoring.generateHelp':
+        'L’IA propose des valeurs sous chaque champ. Rien ne change avant votre acceptation.',
+    'dictionary.authoring.regenerateAll': 'Régénérer tous les champs',
+    'dictionary.authoring.progress': 'Progression des suggestions de l’IA',
+    'dictionary.authoring.stage.queued': 'En attente de génération…',
+    'dictionary.authoring.stage.generating': 'Génération des suggestions…',
+    'dictionary.authoring.stage.validating': 'Vérification des suggestions…',
+    'dictionary.authoring.cancel': 'Annuler la génération',
+    'dictionary.authoring.cancelling': 'Annulation de la génération…',
+    'dictionary.authoring.unavailable':
+        'Les suggestions de l’IA sont indisponibles. Vous pouvez remplir la carte manuellement.',
+    'dictionary.authoring.stale':
+        'La phrase source a changé. Ces suggestions concernent l’ancienne phrase et sont inutilisables.',
+    'dictionary.authoring.suggestions': 'Suggestions de l’IA',
+    'dictionary.authoring.suggestionsFor': 'Suggestions de l’IA pour {field}',
+    'dictionary.authoring.regenerateField': 'Régénérer le champ',
+    'dictionary.authoring.regenerateFieldNamed': 'Régénérer {field}',
+    'dictionary.authoring.limitReached':
+        'Supprimez une suggestion avant d’en générer une autre.',
+    'dictionary.authoring.accept': 'Accepter',
+    'dictionary.authoring.accepted': 'Acceptée',
+    'dictionary.authoring.acceptNamed': 'Accepter la suggestion pour {field}',
+    'dictionary.authoring.discard': 'Supprimer',
+    'dictionary.authoring.discardNamed': 'Supprimer la suggestion pour {field}',
+    'dictionary.authoring.failed':
+        'Les suggestions n’ont pas pu être générées. Vos saisies et anciennes suggestions sont conservées.',
     'dictionary.batch.open': 'Générer des cartes à partir de termes collés',
     'dictionary.batch.title': 'Générer des cartes à partir de termes collés',
     'dictionary.batch.sheetHelp':

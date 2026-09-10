@@ -1,5 +1,9 @@
 import type {
+    AcceptDictionaryCardAuthoringGenerationJobRequest,
     DictionaryAiImportResponse,
+    DictionaryCardAuthoringGenerationJob,
+    DictionaryCardValues,
+    DictionaryCardOverrides,
     DictionaryGenerationCandidate,
     DictionaryGenerationJob,
     DictionaryImportPairsGenerationAcceptedOutcome,
@@ -7,6 +11,11 @@ import type {
     DictionaryImportTarget,
 } from '@languon/contracts';
 
+import type {
+    DictionaryCardAuthoringDraft,
+    DictionaryCardAuthoringProviderDelta,
+    DictionaryCardAuthoringScope,
+} from '../../domain/card-authoring';
 import type {
     DictionaryBatchGenerationProposalPayload,
     DictionaryImportPairsGenerationProposalPayload,
@@ -29,6 +38,9 @@ export type DictionaryGenerationPublicState =
     | 'running';
 
 export type DictionaryGenerationJobView = DictionaryGenerationJob;
+type DictionaryCardAuthoringAcceptedOutcome = NonNullable<
+    DictionaryCardAuthoringGenerationJob['outcome']
+>;
 
 export interface ClaimedDictionaryGenerationJob {
     attempt: number;
@@ -56,10 +68,12 @@ export interface DictionaryOperationalMeasurement {
     queueRunningDepth: number;
     queueRetryDepth: number;
     queueOldestRunnableAgeMs: number;
+    queueCardAuthoringDepth: number;
     queueSingleCardDepth: number;
     queuePastedTermsDepth: number;
     queueDocumentTermsDepth: number;
     queueImportPairsDepth: number;
+    queueCardAuthoringOldestAgeMs: number;
     queueSingleCardOldestAgeMs: number;
     queuePastedTermsOldestAgeMs: number;
     queueDocumentTermsOldestAgeMs: number;
@@ -128,6 +142,20 @@ export interface DictionaryOperationalMeasurement {
 }
 
 export interface DictionaryGenerationStore {
+    acceptCardAuthoring(input: {
+        acceptanceFingerprint: string;
+        candidate: {
+            overrides: DictionaryCardOverrides;
+            values: DictionaryCardValues;
+        };
+        context: DictionaryOperationContext;
+        jobId: string;
+        ownerId: string;
+        selectedSuggestions: AcceptDictionaryCardAuthoringGenerationJobRequest['selectedSuggestions'];
+    }): Promise<{
+        job: DictionaryCardAuthoringGenerationJob;
+        outcome: DictionaryCardAuthoringAcceptedOutcome;
+    }>;
     acceptSingleCard(input: {
         candidate: DictionaryGenerationCandidate;
         candidateFingerprint: string;
@@ -187,6 +215,7 @@ export interface DictionaryGenerationStore {
     complete(
         input: DictionaryGenerationWorkerWrite & {
             proposal:
+                | DictionaryCardAuthoringProviderDelta
                 | DictionaryGenerationProposalPayload
                 | DictionaryBatchGenerationProposalPayload
                 | DictionaryImportPairsGenerationProposalPayload;
@@ -213,6 +242,22 @@ export interface DictionaryGenerationStore {
         idempotencyKey: string;
         instruction: string | null;
         ownerId: string;
+    }): Promise<DictionaryGenerationJobView>;
+    enqueueCardAuthoring(input: {
+        context: DictionaryOperationContext;
+        dictionaryId: string;
+        draft: DictionaryCardAuthoringDraft;
+        expectedDictionaryVersion: number;
+        expectedSettingsVersion: number;
+        fingerprint: string;
+        idempotencyKey: string;
+        ownerId: string;
+        predecessor?: {
+            discardedSuggestionIds: string[];
+            jobId: string;
+        };
+        scope: DictionaryCardAuthoringScope;
+        source: string;
     }): Promise<DictionaryGenerationJobView>;
     enqueuePastedTerms(
         input: {
@@ -277,7 +322,12 @@ export interface DictionaryGenerationStore {
     }): Promise<number>;
     fail(
         input: DictionaryGenerationWorkerWrite & {
+            countProviderFailure?: boolean;
             failureCategory: string;
+            providerUsage?: {
+                inputTokens: number;
+                outputTokens: number;
+            };
             retryAt: Date | null;
         },
     ): Promise<boolean>;

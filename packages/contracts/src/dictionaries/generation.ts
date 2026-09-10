@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 import {
+    AcceptDictionaryCardAuthoringGenerationJobResponseSchema,
+    DictionaryCardAuthoringGenerationJobSchema,
+} from './card-authoring';
+
+import {
     DictionaryCardEffectiveSettingsSchema,
     DictionaryCardOverridesSchema,
     DictionaryCardValuesSchema,
@@ -152,11 +157,20 @@ export const DictionaryGenerationSafeFailureSchema = z
             'extraction_failed',
             'ocr_failed',
             'cleanup_failed',
+            'generation_conflict',
         ]),
         message: DictionaryGenerationFeedbackTextSchema,
         retryable: z.boolean(),
     })
-    .strict();
+    .strict()
+    .superRefine((failure, context) => {
+        if (failure.code === 'generation_conflict' && failure.retryable)
+            context.addIssue({
+                code: 'custom',
+                path: ['retryable'],
+                message: 'Generation conflicts are not retryable',
+            });
+    });
 
 export const DictionaryGenerationAcceptedOutcomeSchema = z
     .object({
@@ -866,6 +880,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
 
 export const DictionaryGenerationJobSchema = z.discriminatedUnion('kind', [
     DictionarySingleCardGenerationJobSchema,
+    DictionaryCardAuthoringGenerationJobSchema,
     DictionaryPastedTermsGenerationJobSchema,
     DictionaryImportPairsGenerationJobSchema,
     DictionaryDocumentTermsGenerationJobSchema,
@@ -981,6 +996,7 @@ export const AcceptDictionaryImportPairsGenerationJobResponseSchema = z
 
 export const AcceptDictionaryGenerationJobResponseSchema = z.union([
     AcceptDictionarySingleCardGenerationJobResponseSchema,
+    AcceptDictionaryCardAuthoringGenerationJobResponseSchema,
     AcceptDictionaryPastedTermsGenerationJobResponseSchema,
     AcceptDictionaryImportPairsGenerationJobResponseSchema,
     AcceptDictionaryDocumentTermsGenerationJobResponseSchema,

@@ -129,9 +129,13 @@ describe('dictionary M3 generation schema contract', () => {
             proposalStateSql.match(
                 /"accepted_candidate_fingerprint" is not null/g,
             ),
-        ).toHaveLength(2);
+        ).toHaveLength(3);
         expect(proposalStateSql).toContain(
             '"accepted_batch_outcome" is not null',
+        );
+        expect(proposalStateSql).toContain('"accepted_card_id" is not null');
+        expect(proposalStateSql).toContain(
+            '"accepted_duplicate_source" is not null',
         );
         expect(providerPolicySql).toContain(
             '"provider_max_output_tokens_per_attempt" between 128 and 40960',

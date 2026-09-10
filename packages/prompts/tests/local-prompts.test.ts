@@ -18,6 +18,19 @@ describe('local prompts', () => {
         expect(prompt).toContain('explicitly accept');
     });
 
+    it('keeps inline card authoring atomic, targeted, and review-only', () => {
+        const prompt = getLocalPrompt('dictionary-card-authoring-agent');
+
+        expect(prompt).toContain('atomic review-only values');
+        expect(prompt).toContain('only the explicitly requested target fields');
+        expect(prompt).toContain('never generate or alter Source');
+        expect(prompt).toContain('server assigns stable identities');
+        expect(prompt).toContain(
+            'distinct from its current and excluded values',
+        );
+        expect(prompt).toContain('Do not use tools');
+    });
+
     it('keeps pasted-term generation ordered, row-complete, and review-only', () => {
         const prompt = getLocalPrompt(
             'dictionary-pasted-terms-generation-agent',

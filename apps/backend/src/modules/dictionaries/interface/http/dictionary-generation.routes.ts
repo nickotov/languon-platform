@@ -14,12 +14,16 @@ import {
     DictionaryIdempotencyHeadersSchema,
     DiscardDictionaryGenerationJobRequestSchema,
     DiscardDictionaryGenerationJobResponseSchema,
+    EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+    EnqueueDictionaryCardAuthoringGenerationResponseSchema,
     EnqueueDictionaryCardGenerationRequestSchema,
     EnqueueDictionaryCardGenerationResponseSchema,
     EnqueueDictionaryPastedTermsGenerationRequestSchema,
     EnqueueDictionaryPastedTermsGenerationResponseSchema,
     ReadDictionaryGenerationCapabilitiesResponseSchema,
     ReadLatestDictionaryCardGenerationResponseSchema,
+    RegenerateDictionaryCardAuthoringGenerationRequestSchema,
+    RegenerateDictionaryCardAuthoringGenerationResponseSchema,
     RegenerateDictionaryGenerationJobRequestSchema,
     RegenerateDictionaryGenerationJobResponseSchema,
     RetryDictionaryDocumentTermsGenerationRequestSchema,
@@ -158,6 +162,44 @@ export function createDictionaryGenerationRoutes(dependencies: {
             return context.json(
                 {
                     job: await dependencies.service.enqueuePastedTerms(
+                        bearer(context.req.header('Authorization')),
+                        context.req.valid('header')['idempotency-key'],
+                        params.dictionaryId,
+                        context.req.valid('json'),
+                        requestContext(context),
+                    ),
+                },
+                202,
+            );
+        },
+    );
+
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/dictionaries/{dictionaryId}/card-authoring-generations',
+            request: {
+                body: requestBody(
+                    EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+                ),
+                headers: DictionaryIdempotencyHeadersSchema.passthrough(),
+                params: DictionaryIdParamsSchema,
+            },
+            responses: {
+                202: jsonResponse(
+                    EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+                    'Card authoring generation enqueued.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Dictionaries'],
+        }),
+        async (context) => {
+            const params = context.req.valid('param');
+            return context.json(
+                {
+                    job: await dependencies.service.enqueueCardAuthoring(
                         bearer(context.req.header('Authorization')),
                         context.req.valid('header')['idempotency-key'],
                         params.dictionaryId,
@@ -473,6 +515,42 @@ export function createDictionaryGenerationRoutes(dependencies: {
             context.json(
                 {
                     job: await dependencies.service.regenerate(
+                        bearer(context.req.header('Authorization')),
+                        context.req.valid('param').jobId,
+                        context.req.valid('header')['idempotency-key'],
+                        context.req.valid('json'),
+                        requestContext(context),
+                    ),
+                },
+                202,
+            ),
+    );
+
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/dictionary-generation-jobs/{jobId}/regenerate-card-authoring',
+            request: {
+                body: requestBody(
+                    RegenerateDictionaryCardAuthoringGenerationRequestSchema,
+                ),
+                headers: DictionaryIdempotencyHeadersSchema.passthrough(),
+                params: DictionaryGenerationJobIdParamsSchema,
+            },
+            responses: {
+                202: jsonResponse(
+                    RegenerateDictionaryCardAuthoringGenerationResponseSchema,
+                    'Card authoring successor generation enqueued.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Dictionaries'],
+        }),
+        async (context) =>
+            context.json(
+                {
+                    job: await dependencies.service.regenerateCardAuthoring(
                         bearer(context.req.header('Authorization')),
                         context.req.valid('param').jobId,
                         context.req.valid('header')['idempotency-key'],

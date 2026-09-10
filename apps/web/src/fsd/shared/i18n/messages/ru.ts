@@ -314,6 +314,36 @@ export const ru = {
     'dictionary.conflict.help':
         'Другое изменение было сохранено раньше. Обновите словарь, проверьте его и повторите попытку.',
     'dictionary.conflict.reload': 'Загрузить текущую версию',
+    'dictionary.authoring.aiSection': 'Предложения ИИ',
+    'dictionary.authoring.generate': 'Создать с ИИ',
+    'dictionary.authoring.generateHelp':
+        'ИИ предложит значения под каждым полем. Они применяются только после подтверждения.',
+    'dictionary.authoring.regenerateAll': 'Пересоздать все поля',
+    'dictionary.authoring.progress': 'Прогресс создания предложений',
+    'dictionary.authoring.stage.queued': 'Ожидание создания предложений…',
+    'dictionary.authoring.stage.generating': 'Создание предложений…',
+    'dictionary.authoring.stage.validating': 'Проверка предложений…',
+    'dictionary.authoring.cancel': 'Отменить генерацию',
+    'dictionary.authoring.cancelling': 'Отмена генерации…',
+    'dictionary.authoring.unavailable':
+        'Предложения ИИ сейчас недоступны. Карточку можно заполнить вручную.',
+    'dictionary.authoring.stale':
+        'Исходная фраза изменилась. Эти предложения относятся к прежней фразе и недоступны.',
+    'dictionary.authoring.suggestions': 'Предложения ИИ',
+    'dictionary.authoring.suggestionsFor': 'Предложения ИИ для поля «{field}»',
+    'dictionary.authoring.regenerateField': 'Пересоздать поле',
+    'dictionary.authoring.regenerateFieldNamed': 'Пересоздать поле «{field}»',
+    'dictionary.authoring.limitReached':
+        'Удалите одно предложение, прежде чем создавать новое.',
+    'dictionary.authoring.accept': 'Принять',
+    'dictionary.authoring.accepted': 'Принято',
+    'dictionary.authoring.acceptNamed':
+        'Принять предложение для поля «{field}»',
+    'dictionary.authoring.discard': 'Удалить',
+    'dictionary.authoring.discardNamed':
+        'Удалить предложение для поля «{field}»',
+    'dictionary.authoring.failed':
+        'Не удалось создать предложения. Введённые данные и прежние предложения сохранены.',
     'dictionary.batch.open': 'Создать карточки из списка терминов',
     'dictionary.batch.title': 'Создать карточки из списка терминов',
     'dictionary.batch.sheetHelp':

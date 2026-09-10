@@ -246,6 +246,61 @@ test('preflight enforces full lifecycle compatibility in both rollback direction
     );
 });
 
+test('card-authoring format follows expand-before-activate and remains lifecycle-readable across rollback', () => {
+    const format = 'card-authoring:v1';
+    const lifecycle = {
+        workerProcessable: [format],
+        apiReadable: [format],
+        apiCancellable: [format],
+        apiDiscardable: [format],
+        apiAcceptable: [format],
+        webReadable: [format],
+    };
+    const expand = validateReleaseManifest({
+        ...valid,
+        identity: 'card-authoring-expand',
+        dictionaryJobs: {
+            ...valid.dictionaryJobs,
+            ...lifecycle,
+            apiEnqueued: [],
+        },
+    });
+    const activate = validateReleaseManifest({
+        ...expand,
+        identity: 'card-authoring-activate',
+        dictionaryJobs: {
+            ...expand.dictionaryJobs,
+            phase: 'activate',
+            apiEnqueued: [format],
+        },
+    });
+
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(activate, expand),
+        [],
+    );
+    assert.deepEqual(
+        assertDictionaryJobRollbackCompatibility(activate, expand, {
+            direction: 'rollback',
+        }),
+        [],
+    );
+    assert.throws(
+        () =>
+            assertDictionaryJobRollbackCompatibility(
+                {
+                    ...activate,
+                    dictionaryJobs: {
+                        ...activate.dictionaryJobs,
+                        apiReadable: [],
+                    },
+                },
+                expand,
+            ),
+        /retireFormats must exactly declare.*card-authoring:v1/i,
+    );
+});
+
 test('expand cannot add enqueue formats and activate must add one', () => {
     const expand = validateReleaseManifest(valid);
     const enqueuingExpand = validateReleaseManifest({

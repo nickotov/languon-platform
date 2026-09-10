@@ -319,6 +319,34 @@ export const en = {
     'dictionary.conflict.help':
         'Another change was saved first. Reload the current dictionary, review it, and try again.',
     'dictionary.conflict.reload': 'Reload current version',
+    'dictionary.authoring.aiSection': 'AI suggestions',
+    'dictionary.authoring.generate': 'Generate with AI',
+    'dictionary.authoring.generateHelp':
+        'AI proposes values below each field. Nothing is applied until you accept it.',
+    'dictionary.authoring.regenerateAll': 'Regenerate all fields',
+    'dictionary.authoring.progress': 'AI suggestion progress',
+    'dictionary.authoring.stage.queued': 'Waiting to generate suggestions…',
+    'dictionary.authoring.stage.generating': 'Generating suggestions…',
+    'dictionary.authoring.stage.validating': 'Checking suggestions…',
+    'dictionary.authoring.cancel': 'Cancel generation',
+    'dictionary.authoring.cancelling': 'Cancelling generation…',
+    'dictionary.authoring.unavailable':
+        'AI suggestions are unavailable right now. You can still complete the card manually.',
+    'dictionary.authoring.stale':
+        'The source phrase changed. These suggestions are from the previous source and cannot be used.',
+    'dictionary.authoring.suggestions': 'AI suggestions',
+    'dictionary.authoring.suggestionsFor': 'AI suggestions for {field}',
+    'dictionary.authoring.regenerateField': 'Regenerate field',
+    'dictionary.authoring.regenerateFieldNamed': 'Regenerate {field}',
+    'dictionary.authoring.limitReached':
+        'Discard a suggestion before generating another.',
+    'dictionary.authoring.accept': 'Accept',
+    'dictionary.authoring.accepted': 'Accepted',
+    'dictionary.authoring.acceptNamed': 'Accept {field} suggestion',
+    'dictionary.authoring.discard': 'Discard',
+    'dictionary.authoring.discardNamed': 'Discard {field} suggestion',
+    'dictionary.authoring.failed':
+        'AI suggestions could not be generated. Your entries and earlier suggestions are unchanged.',
     'dictionary.batch.open': 'Generate cards from pasted terms',
     'dictionary.batch.title': 'Generate cards from pasted terms',
     'dictionary.batch.sheetHelp':

@@ -418,6 +418,12 @@ describe('dictionary HTTP contracts', () => {
                     'owner',
                 ],
                 [
+                    'enqueueDictionaryCardAuthoringGeneration',
+                    'POST',
+                    '/dictionaries/:dictionaryId/card-authoring-generations',
+                    'owner',
+                ],
+                [
                     'enqueueDictionaryPastedTermsGeneration',
                     'POST',
                     '/dictionaries/:dictionaryId/batch-generations',
@@ -487,6 +493,12 @@ describe('dictionary HTTP contracts', () => {
                     'regenerateDictionaryGenerationJob',
                     'POST',
                     '/dictionary-generation-jobs/:jobId/regenerate',
+                    'owner',
+                ],
+                [
+                    'regenerateDictionaryCardAuthoringGeneration',
+                    'POST',
+                    '/dictionary-generation-jobs/:jobId/regenerate-card-authoring',
                     'owner',
                 ],
             ].map(([name, method, path, access]) => ({

@@ -8,6 +8,7 @@ import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
 
 import { databaseSchema } from '../database/schema';
 import { createCardProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-proposal-generators';
+import { createCardAuthoringProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators';
 import { createPastedTermsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators';
 import { createImportPairsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators';
 import { createDictionaryWorkerComposition } from '../../modules/dictionaries/infrastructure/dictionary-worker-composition';
@@ -16,6 +17,7 @@ import {
     dictionaryPastedTermsGenerationFormat,
 } from '../../modules/dictionaries/domain/generation';
 import { dictionaryDocumentGenerationFormat } from '../../modules/dictionaries/domain/document-ingestion';
+import { dictionaryCardAuthoringGenerationFormat } from '../../modules/dictionaries/domain/card-authoring';
 import { createDictionaryDocumentS3Client } from '../../modules/dictionaries/infrastructure/document/s3-document-client';
 import { S3PrivateDocumentStorage } from '../../modules/dictionaries/infrastructure/document/s3-dictionary-document-storage';
 import {
@@ -74,6 +76,23 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                   providerBudget: environment.providerBudget,
               }
             : { mode: environment.provider.mode },
+    );
+    const cardAuthoringProvider = createCardAuthoringProposalGenerator(
+        environment.supportedFormats.includes(
+            dictionaryCardAuthoringGenerationFormat,
+        )
+            ? environment.provider.mode === 'mastra'
+                ? {
+                      mode: 'mastra',
+                      model: {
+                          apiKey: environment.provider.apiKey,
+                          id: environment.provider.modelId,
+                          url: environment.provider.baseUrl,
+                      },
+                      providerBudget: environment.providerBudget,
+                  }
+                : { mode: environment.provider.mode }
+            : { mode: 'unavailable' },
     );
     const pastedTermsProvider = createPastedTermsProposalGenerator(
         environment.supportedFormats.includes(
@@ -163,6 +182,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                 }
               : undefined;
     const { service } = createDictionaryWorkerComposition({
+        cardAuthoringProvider,
         clock: { now: () => new Date() },
         database,
         ...(document ? { document } : {}),

@@ -10,8 +10,9 @@ const retryableDictionaryGenerationFailureCodes = new Set<
 ]);
 
 export function isDictionaryGenerationFailureRetryable(
-    code: DictionaryGenerationSafeFailure['code'],
+    code: DictionaryGenerationSafeFailure['code'] | 'generation_conflict',
 ): boolean {
+    if (code === 'generation_conflict') return false;
     return retryableDictionaryGenerationFailureCodes.has(code);
 }
 
@@ -110,6 +111,16 @@ export class DictionaryGenerationCandidateConflictError extends Error {
     public constructor() {
         super('A different candidate was already accepted.');
         this.name = 'DictionaryGenerationCandidateConflictError';
+    }
+}
+
+export class DictionaryGenerationCompletionConflictError extends Error {
+    public constructor(
+        public readonly reason:
+            'predecessor_changed' | 'suggestion_capacity_reached',
+    ) {
+        super('The generation predecessor changed before completion.');
+        this.name = 'DictionaryGenerationCompletionConflictError';
     }
 }
 

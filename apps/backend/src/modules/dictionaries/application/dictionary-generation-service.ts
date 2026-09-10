@@ -1,7 +1,10 @@
 import type {
+    AcceptDictionaryCardAuthoringGenerationJobRequest,
     AcceptDictionaryGenerationJobRequest,
+    EnqueueDictionaryCardAuthoringGenerationRequest,
     EnqueueDictionaryCardGenerationRequest,
     EnqueueDictionaryPastedTermsGenerationRequest,
+    RegenerateDictionaryCardAuthoringGenerationRequest,
     RegenerateDictionaryGenerationJobRequest,
     RetryDictionaryImportPairsGenerationRequest,
     RetryDictionaryDocumentTermsGenerationRequest,
@@ -14,6 +17,7 @@ import {
     dictionaryPastedTermsGenerationFormat,
 } from '../domain/generation';
 import { parseDictionaryBatchGenerationText } from '../domain/batch-generation';
+import { dictionaryCardAuthoringGenerationFormat } from '../domain/card-authoring';
 import {
     DictionaryGenerationNotAvailableError,
     DictionaryRateLimitError,
@@ -54,6 +58,12 @@ export class DictionaryGenerationService {
     ) {
         await this.owner(accessToken, context);
         return {
+            cardAuthoringGeneration: {
+                available: this.supports(
+                    'enqueued',
+                    dictionaryCardAuthoringGenerationFormat,
+                ),
+            },
             documentOcr: {
                 available:
                     this.dependencies.capabilities.documentOcrAvailable ??
@@ -81,6 +91,36 @@ export class DictionaryGenerationService {
                 ),
             },
         };
+    }
+
+    public async enqueueCardAuthoring(
+        accessToken: string,
+        idempotencyKey: string,
+        dictionaryId: string,
+        request: EnqueueDictionaryCardAuthoringGenerationRequest,
+        context: DictionaryRequestContext,
+    ) {
+        const ownerId = await this.owner(accessToken, context);
+        this.requireSupport(
+            'enqueued',
+            dictionaryCardAuthoringGenerationFormat,
+        );
+        await this.limitEnqueue(ownerId, context);
+        return this.dependencies.store.enqueueCardAuthoring({
+            context: this.context(context),
+            dictionaryId,
+            draft: request.draft,
+            expectedDictionaryVersion: request.expectedDictionaryVersion,
+            expectedSettingsVersion: request.expectedSettingsVersion,
+            fingerprint: this.dependencies.cryptography.fingerprint({
+                dictionaryId,
+                request,
+            }),
+            idempotencyKey,
+            ownerId,
+            scope: request.scope,
+            source: request.source,
+        });
     }
 
     public async enqueuePastedTerms(
@@ -331,6 +371,31 @@ export class DictionaryGenerationService {
             ownerId,
         });
         this.requireSupport('acceptable', job.format);
+        if (
+            'format' in request &&
+            request.format === dictionaryCardAuthoringGenerationFormat
+        ) {
+            if (job.kind !== 'card-authoring')
+                throw new DictionaryGenerationNotAvailableError();
+            const authoringRequest =
+                request as AcceptDictionaryCardAuthoringGenerationJobRequest;
+            const selectedSuggestions = [
+                ...authoringRequest.selectedSuggestions,
+            ].sort((left, right) => left.field.localeCompare(right.field));
+            return this.dependencies.store.acceptCardAuthoring({
+                acceptanceFingerprint:
+                    this.dependencies.cryptography.fingerprint({
+                        candidate: authoringRequest.candidate,
+                        format: authoringRequest.format,
+                        selectedSuggestions,
+                    }),
+                candidate: authoringRequest.candidate,
+                context: this.context(context),
+                jobId,
+                ownerId,
+                selectedSuggestions,
+            });
+        }
         if ('format' in request) {
             if (
                 job.kind !== 'pasted-terms' &&
@@ -365,6 +430,48 @@ export class DictionaryGenerationService {
             context: this.context(context),
             jobId,
             ownerId,
+        });
+    }
+
+    public async regenerateCardAuthoring(
+        accessToken: string,
+        jobId: string,
+        idempotencyKey: string,
+        request: RegenerateDictionaryCardAuthoringGenerationRequest,
+        context: DictionaryRequestContext,
+    ) {
+        const ownerId = await this.owner(accessToken, context);
+        this.requireSupport(
+            'enqueued',
+            dictionaryCardAuthoringGenerationFormat,
+        );
+        await this.limitEnqueue(ownerId, context);
+        const prior = await this.dependencies.store.read({
+            context: this.context(context),
+            jobId,
+            ownerId,
+        });
+        this.requireSupport('readable', prior.format);
+        if (prior.kind !== 'card-authoring' || prior.format !== request.format)
+            throw new DictionaryGenerationNotAvailableError();
+        const discardedSuggestionIds = [
+            ...request.discardedSuggestionIds,
+        ].sort();
+        return this.dependencies.store.enqueueCardAuthoring({
+            context: this.context(context),
+            dictionaryId: prior.dictionaryId,
+            draft: request.draft,
+            expectedDictionaryVersion: request.expectedDictionaryVersion,
+            expectedSettingsVersion: request.expectedSettingsVersion,
+            fingerprint: this.dependencies.cryptography.fingerprint({
+                priorJobId: jobId,
+                request: { ...request, discardedSuggestionIds },
+            }),
+            idempotencyKey,
+            ownerId,
+            predecessor: { discardedSuggestionIds, jobId },
+            scope: request.scope,
+            source: request.source,
         });
     }
 

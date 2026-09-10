@@ -28,6 +28,63 @@
     gap: var(--sys-space-4);
     margin-top: var(--sys-space-5);
 }
+.aiControls,
+.aiProgress,
+.suggestions,
+.suggestionList {
+    display: grid;
+    gap: var(--sys-space-3);
+}
+.aiControls {
+    border-inline-start: 3px solid var(--sys-color-action-primary);
+    padding-inline-start: var(--sys-space-3);
+}
+.aiActionRow,
+.suggestionHeading,
+.suggestionActions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sys-space-2);
+}
+.aiActionRow small,
+.suggestions > small {
+    color: var(--sys-color-text-secondary);
+}
+.aiProgress progress {
+    width: 100%;
+}
+.suggestions {
+    background: var(--sys-color-action-primary-soft);
+    border-radius: var(--sys-radius-md);
+    margin-top: calc(var(--sys-space-2) * -1);
+    padding: var(--sys-space-3);
+}
+.suggestionHeading {
+    justify-content: space-between;
+}
+.suggestionList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.suggestion {
+    background: var(--sys-color-surface-default);
+    border: 1px solid var(--sys-color-border-subtle);
+    border-radius: var(--sys-radius-sm);
+    display: grid;
+    gap: var(--sys-space-2);
+    min-width: 0;
+    padding: var(--sys-space-3);
+}
+.suggestion[data-selected] {
+    border-color: var(--sys-color-success);
+}
+.suggestion p {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
 .actions {
     background: var(--sys-color-surface-default);
     bottom: calc(var(--sys-space-4) * -1);
@@ -66,5 +123,13 @@
     }
     .actions > * {
         flex: 1 1 100%;
+    }
+    .aiActionRow > * {
+        flex: 1 1 100%;
+        white-space: normal;
+    }
+    .suggestionActions > * {
+        flex: 1 1 7rem;
+        white-space: normal;
     }
 }

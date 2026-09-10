@@ -257,6 +257,38 @@ test('expand, activate, slot overlap, and rollback preserve full dictionary job 
     );
 });
 
+test('card-authoring activation propagates every worker, API, and web capability through slot overlap', async () => {
+    const format = 'card-authoring:v1';
+    const lifecycle = {
+        workerProcessable: [format],
+        apiReadable: [format],
+        apiCancellable: [format],
+        apiDiscardable: [format],
+        apiAcceptable: [format],
+        webReadable: [format],
+    };
+    const expand = release('expand', 'expand', [], lifecycle);
+    const activate = release('activate', 'activate', [format], lifecycle);
+    const { deployment, environments } = await fixture(expand);
+
+    await deployment.deploy();
+    deployment.manifest = activate;
+    await deployment.deploy();
+
+    const activated = environments.find(
+        (environment) =>
+            environment.RELEASE_SHA === activate.sourceSha &&
+            environment.DICTIONARY_JOB_API_ENQUEUED_FORMATS === format,
+    );
+    assert.ok(activated);
+    assert.equal(activated.DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS, format);
+    assert.equal(activated.DICTIONARY_JOB_API_READABLE_FORMATS, format);
+    assert.equal(activated.DICTIONARY_JOB_API_CANCELLABLE_FORMATS, format);
+    assert.equal(activated.DICTIONARY_JOB_API_DISCARDABLE_FORMATS, format);
+    assert.equal(activated.DICTIONARY_JOB_API_ACCEPTABLE_FORMATS, format);
+    assert.equal(activated.DICTIONARY_JOB_WEB_READABLE_FORMATS, format);
+});
+
 test('activate, steady expand patch, and rollback restore the activated release', async () => {
     const expand = release('expand', 'expand', []);
     const activate = release('activate', 'activate', ['single-card:v1']);

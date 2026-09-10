@@ -2,6 +2,8 @@
 
 import type {
     DictionaryCard,
+    DictionaryCardAuthoringGenerationJob,
+    DictionaryCardAuthoringSelectedSuggestion,
     DictionaryExportFormat,
     DictionaryGenerationCandidate,
     DictionaryLifecycle,
@@ -28,7 +30,12 @@ import {
 } from '@/fsd/entities/dictionary';
 import {
     DictionaryCardForm,
+    type CardAuthoringIdempotencyAttempt,
+    type DictionaryCardAuthoringAction,
     type DictionaryCardDraft,
+    planCardAuthoringCleanup,
+    resolveCardAuthoringCleanupRead,
+    retainCardAuthoringIdempotencyAttempt,
 } from '@/fsd/features/dictionary-card-authoring';
 import {
     batchGenerationJobForDictionary,
@@ -88,6 +95,9 @@ export function DictionaryEditor({
     const [cardLifecycle, setCardLifecycle] =
         useState<DictionaryLifecycle>('active');
     const [editing, setEditing] = useState<DictionaryCard | 'new' | null>(null);
+    const [authoringJobId, setAuthoringJobId] = useState<string | null>(null);
+    const [authoringReviewJob, setAuthoringReviewJob] =
+        useState<DictionaryCardAuthoringGenerationJob | null>(null);
     const [generationTarget, setGenerationTarget] = useState<{
         cardId: string;
         jobId?: string | undefined;
@@ -111,12 +121,117 @@ export function DictionaryEditor({
     const documentRetryAttempt = useRef<IdempotencyAttempt | null>(null);
     const documentUploadAttempt = useRef<IdempotencyAttempt | null>(null);
     const interchangeAttempt = useRef<IdempotencyAttempt | null>(null);
+    const authoringAttempt = useRef<CardAuthoringIdempotencyAttempt | null>(
+        null,
+    );
+    const authoringCleanup = useRef({
+        cancelJobIds: new Set<string>(),
+        discardJobIds: new Set<string>(),
+    });
+    const authoringCleanupInFlight = useRef<Promise<void> | null>(null);
+    const authoringCleanupRequested = useRef(false);
     const cardsQueryKey = [
         'dictionary-cards',
         dictionaryId,
         cardLifecycle,
         search,
     ] as const;
+
+    function flushCardAuthoringCleanup(): Promise<void> {
+        if (authoringCleanupInFlight.current) {
+            authoringCleanupRequested.current = true;
+            return authoringCleanupInFlight.current;
+        }
+        const cleanup = async () => {
+            do {
+                authoringCleanupRequested.current = false;
+                for (const jobId of [
+                    ...authoringCleanup.current.cancelJobIds,
+                ]) {
+                    try {
+                        await requestWithSession((token) =>
+                            dictionaryApi.cancelGenerationJob(token, jobId),
+                        );
+                        authoringCleanup.current.cancelJobIds.delete(jobId);
+                    } catch {
+                        try {
+                            const { job } = await requestWithSession((token) =>
+                                dictionaryApi.readGenerationJob(token, jobId),
+                            );
+                            if (job.kind !== 'card-authoring') continue;
+                            const resolution =
+                                resolveCardAuthoringCleanupRead(job);
+                            if (resolution === 'discard') {
+                                authoringCleanup.current.cancelJobIds.delete(
+                                    jobId,
+                                );
+                                authoringCleanup.current.discardJobIds.add(
+                                    jobId,
+                                );
+                            } else if (resolution === 'complete') {
+                                authoringCleanup.current.cancelJobIds.delete(
+                                    jobId,
+                                );
+                            }
+                        } catch {
+                            // Retain the ID for the next bounded retry.
+                        }
+                    }
+                }
+                for (const jobId of [
+                    ...authoringCleanup.current.discardJobIds,
+                ]) {
+                    try {
+                        await requestWithSession((token) =>
+                            dictionaryApi.discardGenerationJob(token, jobId),
+                        );
+                        authoringCleanup.current.discardJobIds.delete(jobId);
+                    } catch {
+                        try {
+                            const { job } = await requestWithSession((token) =>
+                                dictionaryApi.readGenerationJob(token, jobId),
+                            );
+                            if (
+                                job.kind === 'card-authoring' &&
+                                resolveCardAuthoringCleanupRead(job) ===
+                                    'complete'
+                            )
+                                authoringCleanup.current.discardJobIds.delete(
+                                    jobId,
+                                );
+                        } catch {
+                            // Keep the review ID for the next bounded retry.
+                        }
+                    }
+                }
+            } while (authoringCleanupRequested.current);
+        };
+        const running = cleanup().finally(() => {
+            authoringCleanupInFlight.current = null;
+        });
+        authoringCleanupInFlight.current = running;
+        return running;
+    }
+
+    function queueCardAuthoringCleanup(): Promise<void> {
+        const plan = planCardAuthoringCleanup(
+            authoringJob.data,
+            authoringReviewJob,
+        );
+        plan.cancelJobIds.forEach((jobId) =>
+            authoringCleanup.current.cancelJobIds.add(jobId),
+        );
+        plan.discardJobIds.forEach((jobId) =>
+            authoringCleanup.current.discardJobIds.add(jobId),
+        );
+        return flushCardAuthoringCleanup();
+    }
+
+    useEffect(() => {
+        const retry = () => void flushCardAuthoringCleanup();
+        window.addEventListener('online', retry);
+        return () => window.removeEventListener('online', retry);
+    }, []);
 
     const languages = useQuery({
         queryKey: ['dictionary-languages'],
@@ -158,6 +273,25 @@ export function DictionaryEditor({
             ),
         staleTime: 30_000,
     });
+    const authoringJob = useQuery({
+        queryKey: ['dictionary-card-authoring-job', authoringJobId],
+        queryFn: async ({ signal }) => {
+            const response = await requestWithSession((token) =>
+                dictionaryApi.readGenerationJob(token, authoringJobId!, signal),
+            );
+            return response.job.kind === 'card-authoring' ? response.job : null;
+        },
+        enabled: editing === 'new' && authoringJobId !== null,
+        refetchInterval: (query) => {
+            const state = query.state.data?.state;
+            return state === 'queued' || state === 'running' ? 1_000 : false;
+        },
+    });
+    useEffect(() => {
+        if (authoringJob.data?.state === 'review') {
+            setAuthoringReviewJob(authoringJob.data);
+        }
+    }, [authoringJob.data]);
     useEffect(() => {
         const url = new URL(window.location.href);
         const cardId = url.searchParams.get('generationCard');
@@ -414,6 +548,12 @@ export function DictionaryEditor({
         },
         onSuccess: async (response, input) => {
             setGenerationCompared(false);
+            if (!input.card) {
+                await queueCardAuthoringCleanup();
+                setAuthoringJobId(null);
+                setAuthoringReviewJob(null);
+                authoringAttempt.current = null;
+            }
             setEditing((currentEditing) => {
                 if (input.card) {
                     return currentEditing !== 'new' &&
@@ -437,6 +577,140 @@ export function DictionaryEditor({
                 }),
                 queryClient.invalidateQueries({ queryKey: ['dictionaries'] }),
             ]);
+        },
+    });
+
+    const cardAuthoringAction = useMutation({
+        mutationFn: async (
+            action:
+                | DictionaryCardAuthoringAction
+                | {
+                      draft: DictionaryCardDraft;
+                      kind: 'accept';
+                      selectedSuggestions: DictionaryCardAuthoringSelectedSuggestion[];
+                  },
+        ) => {
+            const versions = cards.data?.pages[0];
+            if (!versions) throw new Error('Dictionary unavailable');
+            if (action.kind === 'cancel') {
+                if (!authoringJobId)
+                    throw new Error('Card authoring job unavailable');
+                return requestWithSession((token) =>
+                    dictionaryApi.cancelGenerationJob(token, authoringJobId),
+                );
+            }
+            if (action.kind === 'accept') {
+                if (!authoringReviewJob)
+                    throw new Error('Card authoring proposal unavailable');
+                return requestWithSession((token) =>
+                    dictionaryApi.acceptGenerationJob(
+                        token,
+                        authoringReviewJob.id,
+                        {
+                            candidate: action.draft,
+                            format: 'card-authoring:v1',
+                            selectedSuggestions: action.selectedSuggestions,
+                        },
+                    ),
+                );
+            }
+
+            const bodyDraft = {
+                overrides: action.draft.overrides,
+                values: {
+                    definition: action.draft.values.definition,
+                    example: action.draft.values.example,
+                    exampleTranslation: action.draft.values.exampleTranslation,
+                    transcription: action.draft.values.transcription,
+                    translation: action.draft.values.translation.trim() || null,
+                },
+            };
+            const source = action.draft.values.source.trim();
+            const base = {
+                draft: bodyDraft,
+                expectedDictionaryVersion: versions.dictionaryVersion,
+                expectedSettingsVersion: versions.settingsVersion,
+                source,
+            };
+            const fingerprint = JSON.stringify({
+                dictionaryId,
+                predecessorId: action.successor ? authoringReviewJob?.id : null,
+                request: action.successor
+                    ? {
+                          ...base,
+                          discardedSuggestionIds: action.discardedSuggestionIds,
+                          format: 'card-authoring:v1',
+                          scope: action.scope,
+                      }
+                    : { ...base, scope: { kind: 'all' } },
+            });
+            const attempt = retainCardAuthoringIdempotencyAttempt(
+                authoringAttempt.current,
+                fingerprint,
+            );
+            authoringAttempt.current = attempt;
+            const response = await requestWithSession((token) => {
+                if (action.successor) {
+                    if (!authoringReviewJob)
+                        throw new Error('Card authoring proposal unavailable');
+                    return dictionaryApi.regenerateCardAuthoringGeneration(
+                        token,
+                        authoringReviewJob.id,
+                        {
+                            ...base,
+                            discardedSuggestionIds:
+                                action.discardedSuggestionIds,
+                            format: 'card-authoring:v1',
+                            scope: action.scope,
+                        },
+                        attempt.key,
+                    );
+                }
+                return dictionaryApi.enqueueCardAuthoringGeneration(
+                    token,
+                    dictionaryId,
+                    { ...base, scope: { kind: 'all' } },
+                    attempt.key,
+                );
+            });
+            authoringAttempt.current = null;
+            return response;
+        },
+        onSuccess: async (response) => {
+            if (response.job.kind !== 'card-authoring') return;
+            if (response.job.state === 'accepted') {
+                setEditing(null);
+                setAuthoringJobId(null);
+                setAuthoringReviewJob(null);
+                setOutcome(
+                    'outcome' in response &&
+                        typeof response.outcome === 'object' &&
+                        response.outcome !== null &&
+                        'duplicateSource' in response.outcome &&
+                        response.outcome.duplicateSource
+                        ? t('dictionary.card.savedDuplicate')
+                        : t('dictionary.card.saved'),
+                );
+                await Promise.all([
+                    queryClient.invalidateQueries({
+                        queryKey: ['dictionary-cards', dictionaryId],
+                    }),
+                    queryClient.invalidateQueries({
+                        queryKey: ['dictionary', dictionaryId],
+                    }),
+                    queryClient.invalidateQueries({
+                        queryKey: ['dictionaries'],
+                    }),
+                ]);
+                return;
+            }
+            setAuthoringJobId(response.job.id);
+            queryClient.setQueryData(
+                ['dictionary-card-authoring-job', response.job.id],
+                response.job,
+            );
+            if (response.job.state === 'review')
+                setAuthoringReviewJob(response.job);
         },
     });
 
@@ -1275,7 +1549,14 @@ export function DictionaryEditor({
                             <div className={styles.cardsActions}>
                                 <Button
                                     disabled={cardMutation.isPending}
-                                    onClick={() => setEditing('new')}
+                                    onClick={() => {
+                                        void flushCardAuthoringCleanup();
+                                        setAuthoringJobId(null);
+                                        setAuthoringReviewJob(null);
+                                        authoringAttempt.current = null;
+                                        cardAuthoringAction.reset();
+                                        setEditing('new');
+                                    }}
                                     type='button'
                                 >
                                     {t('dictionary.cards.add')}
@@ -1776,8 +2057,16 @@ export function DictionaryEditor({
                         </BottomSheet>
                         <BottomSheet
                             closeLabel={t('common.cancel')}
-                            dismissible={!cardMutation.isPending}
-                            onClose={() => setEditing(null)}
+                            dismissible={
+                                !cardMutation.isPending &&
+                                !cardAuthoringAction.isPending
+                            }
+                            onClose={() => {
+                                setEditing(null);
+                                setAuthoringJobId(null);
+                                setAuthoringReviewJob(null);
+                                authoringAttempt.current = null;
+                            }}
                             open={editing !== null}
                             size='large'
                             title={
@@ -1788,6 +2077,47 @@ export function DictionaryEditor({
                         >
                             {editing ? (
                                 <DictionaryCardForm
+                                    ai={
+                                        editing === 'new'
+                                            ? {
+                                                  available:
+                                                      generationCapabilities
+                                                          .data
+                                                          ?.cardAuthoringGeneration
+                                                          .available === true,
+                                                  error:
+                                                      cardAuthoringAction.error ||
+                                                      authoringJob.isError ||
+                                                      authoringJob.data
+                                                          ?.state === 'failed'
+                                                          ? t(
+                                                                'dictionary.authoring.failed',
+                                                            )
+                                                          : null,
+                                                  job:
+                                                      authoringJob.data ?? null,
+                                                  onAction: async (action) => {
+                                                      await cardAuthoringAction.mutateAsync(
+                                                          action,
+                                                      );
+                                                  },
+                                                  pending:
+                                                      cardAuthoringAction.isPending,
+                                                  proposal:
+                                                      authoringReviewJob?.proposal ??
+                                                      null,
+                                                  successorActive: Boolean(
+                                                      authoringReviewJob &&
+                                                      (authoringJob.data
+                                                          ?.state ===
+                                                          'queued' ||
+                                                          authoringJob.data
+                                                              ?.state ===
+                                                              'running'),
+                                                  ),
+                                              }
+                                            : undefined
+                                    }
                                     card={
                                         editing === 'new' ? undefined : editing
                                     }
@@ -1812,7 +2142,12 @@ export function DictionaryEditor({
                                             : null
                                     }
                                     languages={catalog}
-                                    onCancel={() => setEditing(null)}
+                                    onCancel={() => {
+                                        setEditing(null);
+                                        setAuthoringJobId(null);
+                                        setAuthoringReviewJob(null);
+                                        authoringAttempt.current = null;
+                                    }}
                                     onReloadConflict={
                                         cardMutation.error instanceof
                                             DictionaryApiError &&
@@ -1821,7 +2156,33 @@ export function DictionaryEditor({
                                             ? reloadAfterConflict
                                             : undefined
                                     }
-                                    onSave={async (draft) => {
+                                    onSave={async (
+                                        draft,
+                                        selectedSuggestions,
+                                    ) => {
+                                        if (
+                                            editing === 'new' &&
+                                            authoringReviewJob
+                                        ) {
+                                            if (
+                                                authoringReviewJob &&
+                                                (authoringJob.data?.state ===
+                                                    'queued' ||
+                                                    authoringJob.data?.state ===
+                                                        'running')
+                                            )
+                                                throw new Error(
+                                                    'Card authoring successor is active',
+                                                );
+                                            await cardAuthoringAction.mutateAsync(
+                                                {
+                                                    draft,
+                                                    kind: 'accept',
+                                                    selectedSuggestions,
+                                                },
+                                            );
+                                            return;
+                                        }
                                         await cardMutation.mutateAsync({
                                             ...(editing === 'new'
                                                 ? {}
@@ -1829,7 +2190,12 @@ export function DictionaryEditor({
                                             draft,
                                         });
                                     }}
-                                    pending={cardMutation.isPending}
+                                    pending={
+                                        cardMutation.isPending ||
+                                        (cardAuthoringAction.isPending &&
+                                            cardAuthoringAction.variables
+                                                ?.kind === 'accept')
+                                    }
                                     showHeading={false}
                                 />
                             ) : null}

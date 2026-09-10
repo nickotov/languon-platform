@@ -274,10 +274,13 @@ function sanitizeOperationalMeasurement(
         queueRunningDepth: measurement.queueRunningDepth,
         queueRetryDepth: measurement.queueRetryDepth,
         queueOldestRunnableAgeMs: measurement.queueOldestRunnableAgeMs,
+        queueCardAuthoringDepth: measurement.queueCardAuthoringDepth,
         queueSingleCardDepth: measurement.queueSingleCardDepth,
         queuePastedTermsDepth: measurement.queuePastedTermsDepth,
         queueDocumentTermsDepth: measurement.queueDocumentTermsDepth,
         queueImportPairsDepth: measurement.queueImportPairsDepth,
+        queueCardAuthoringOldestAgeMs:
+            measurement.queueCardAuthoringOldestAgeMs,
         queueSingleCardOldestAgeMs: measurement.queueSingleCardOldestAgeMs,
         queuePastedTermsOldestAgeMs: measurement.queuePastedTermsOldestAgeMs,
         queueDocumentTermsOldestAgeMs:
