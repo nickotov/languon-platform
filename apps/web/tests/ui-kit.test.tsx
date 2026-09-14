@@ -11,6 +11,8 @@ import {
     dismissToast,
     Field,
     Input,
+    IconButton,
+    Logo,
     Menu,
     Popover,
     showToast,
@@ -24,6 +26,33 @@ import { render } from './render';
 
 describe('shared UI accessibility contracts', () => {
     afterEach(() => act(clearToasts));
+
+    it('exposes the Languon wordmark as a labelled home link', () => {
+        render(<Logo href='/' label='Languon home' />);
+
+        expect(
+            screen.getByRole('link', { name: 'Languon home' }),
+        ).toHaveAttribute('href', '/');
+        expect(screen.getByText('Languon')).toBeVisible();
+    });
+
+    it('supports canonical compact and default control size aliases', () => {
+        render(
+            <>
+                <Input aria-label='Default input' controlSize='default' />
+                <IconButton label='Compact action' size='compact'>
+                    ×
+                </IconButton>
+            </>,
+        );
+
+        expect(screen.getByLabelText('Default input').className).toContain(
+            'default',
+        );
+        expect(
+            screen.getByRole('button', { name: 'Compact action' }).className,
+        ).toContain('compact');
+    });
 
     it('connects a field label, hint, required state, and error to its control', () => {
         const { rerender } = render(

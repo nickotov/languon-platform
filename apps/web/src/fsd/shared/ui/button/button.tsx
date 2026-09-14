@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import type { ComponentProps, ButtonHTMLAttributes, ReactNode } from 'react';
 import styles from './button.module.css';
-export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'danger';
-export type ControlSize = 'small' | 'medium' | 'large';
+export type ButtonVariant =
+    'primary' | 'secondary' | 'ghost' | 'quiet' | 'danger';
+export type ControlSize = 'compact' | 'default' | 'large' | 'small' | 'medium';
 export function Button({
     children,
     className,
     loading = false,
-    size = 'medium',
+    size = 'default',
     variant = 'primary',
     ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -32,7 +33,7 @@ export function Button({
 
 export function ButtonLink({
     className,
-    size = 'medium',
+    size = 'default',
     variant = 'primary',
     ...props
 }: ComponentProps<typeof Link> & {

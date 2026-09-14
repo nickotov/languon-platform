@@ -8,10 +8,12 @@
     display: inline-flex;
     justify-content: center;
 }
+.compact,
 .small {
     height: var(--sys-size-control-sm);
     width: var(--sys-size-control-sm);
 }
+.default,
 .medium {
     height: var(--sys-size-control-md);
     width: var(--sys-size-control-md);

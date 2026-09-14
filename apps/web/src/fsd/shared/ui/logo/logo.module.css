@@ -1,0 +1,28 @@
+.logo {
+    align-items: center;
+    color: var(--sys-color-text-primary);
+    display: inline-flex;
+    font-weight: 800;
+    gap: var(--sys-space-2);
+    letter-spacing: -0.02em;
+    min-height: var(--sys-size-touch-min);
+    min-width: var(--sys-size-touch-min);
+    text-decoration: none;
+}
+
+.mark {
+    align-items: center;
+    background: var(--sys-color-action-primary);
+    border-radius: var(--sys-radius-sm);
+    color: var(--sys-color-action-on-primary);
+    display: inline-flex;
+    font-size: 17px;
+    height: 32px;
+    justify-content: center;
+    letter-spacing: -0.06em;
+    width: 32px;
+}
+
+.wordmark {
+    font-size: 20px;
+}

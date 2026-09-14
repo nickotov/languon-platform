@@ -1,38 +1,62 @@
 :root {
     color-scheme: light;
-    --sys-color-background-canvas: #fbf8f6;
+    --ref-neutral-50: #f8f9fb;
+    --ref-neutral-100: #f2f4f7;
+    --ref-neutral-200: #e4e7ec;
+    --ref-neutral-300: #d0d5dd;
+    --ref-neutral-400: #98a2b3;
+    --ref-neutral-500: #667085;
+    --ref-neutral-600: #475467;
+    --ref-neutral-700: #344054;
+    --ref-neutral-800: #252a33;
+    --ref-neutral-900: #1b1e24;
+    --ref-neutral-950: #101318;
+    --ref-primary-50: #eef2ff;
+    --ref-primary-100: #e0e7ff;
+    --ref-primary-200: #c7d2fe;
+    --ref-primary-300: #a5b4fc;
+    --ref-primary-400: #818cf8;
+    --ref-primary-500: #6366f1;
+    --ref-primary-600: #4f46e5;
+    --ref-primary-700: #4338ca;
+    --ref-primary-800: #3730a3;
+
+    --sys-color-background-canvas: var(--ref-neutral-50);
     --sys-color-surface-default: #ffffff;
-    --sys-color-surface-subtle: #f5f0f4;
+    --sys-color-surface-subtle: var(--ref-neutral-100);
     --sys-color-surface-raised: #ffffff;
-    --sys-color-overlay-scrim: rgb(23 19 27 / 56%);
-    --sys-color-text-primary: #211c26;
-    --sys-color-text-secondary: #5f5564;
-    --sys-color-text-tertiary: #746879;
-    --sys-color-border-subtle: #ded5df;
-    --sys-color-border-control: #8b7f90;
-    --sys-color-border-control-strong: #746879;
-    --sys-color-action-primary: #5c3ccb;
-    --sys-color-action-primary-hover: #4e30b6;
-    --sys-color-action-primary-pressed: #3e268f;
+    --sys-color-overlay-scrim: rgb(16 19 24 / 58%);
+    --sys-color-text-primary: var(--ref-neutral-900);
+    --sys-color-text-secondary: #5b6472;
+    --sys-color-text-tertiary: var(--ref-neutral-500);
+    --sys-color-border-subtle: var(--ref-neutral-200);
+    --sys-color-border-control: var(--ref-neutral-300);
+    --sys-color-border-control-strong: var(--ref-neutral-400);
+    --sys-color-action-primary: var(--ref-primary-600);
+    --sys-color-action-primary-hover: var(--ref-primary-700);
+    --sys-color-action-primary-pressed: var(--ref-primary-800);
     --sys-color-action-on-primary: #ffffff;
-    --sys-color-action-primary-soft: #ece7ff;
-    --sys-color-action-primary-soft-pressed: #dcd2ff;
-    --sys-color-action-on-primary-soft: #3e268f;
-    --sys-color-focus: #6e4fe2;
-    --sys-color-danger: #b32646;
-    --sys-color-danger-hover: #961a37;
-    --sys-color-danger-pressed: #76122b;
+    --sys-color-action-primary-soft: var(--ref-primary-50);
+    --sys-color-action-primary-soft-pressed: var(--ref-primary-100);
+    --sys-color-action-on-primary-soft: var(--ref-primary-800);
+    --sys-color-focus: var(--ref-primary-500);
+    --sys-color-danger: #be123c;
+    --sys-color-danger-hover: #9f1239;
+    --sys-color-danger-pressed: #881337;
     --sys-color-on-danger: #ffffff;
-    --sys-color-danger-soft: #ffe9ee;
-    --sys-color-success: #16715b;
-    --sys-color-success-soft: #e6f5ef;
-    --sys-color-warning: #7a4b00;
-    --sys-color-warning-soft: #fff1cf;
-    --sys-color-info: #1e62b0;
-    --sys-color-info-soft: #eaf3ff;
-    --sys-color-disabled-surface: #ece7ec;
-    --sys-color-disabled-content: #5f5564;
-    --sys-color-disabled-border: #c4b8c7;
+    --sys-color-danger-soft: #fff1f2;
+    --sys-color-success: #106f54;
+    --sys-color-success-soft: #ecfdf5;
+    --sys-color-warning: #b45309;
+    --sys-color-warning-soft: #fffbeb;
+    --sys-color-info: #2563eb;
+    --sys-color-info-soft: #eff6ff;
+    --sys-color-disabled-surface: var(--ref-neutral-100);
+    --sys-color-disabled-content: var(--ref-neutral-500);
+    --sys-color-disabled-border: var(--ref-neutral-200);
+
+    --sys-space-0: 0;
+    --sys-space-0-5: 2px;
     --sys-space-1: 4px;
     --sys-space-2: 8px;
     --sys-space-3: 12px;
@@ -40,125 +64,163 @@
     --sys-space-5: 20px;
     --sys-space-6: 24px;
     --sys-space-8: 32px;
-    --sys-radius-sm: 10px;
-    --sys-radius-md: 14px;
-    --sys-radius-lg: 20px;
-    --sys-radius-xl: 28px;
-    --sys-size-control-sm: 40px;
-    --sys-size-control-md: 48px;
-    --sys-size-control-lg: 56px;
-    --sys-font-display: 'Literata Variable', Georgia, 'Noto Serif', serif;
+    --sys-space-10: 40px;
+    --sys-space-12: 48px;
+    --sys-space-16: 64px;
+    --sys-radius-xs: 4px;
+    --sys-radius-sm: 8px;
+    --sys-radius-md: 12px;
+    --sys-radius-lg: 16px;
+    --sys-radius-xl: 24px;
+    --sys-radius-full: 999px;
+    --sys-size-control-sm: 44px;
+    --sys-size-control-md: 44px;
+    --sys-size-control-lg: 52px;
+    --sys-size-touch-min: 44px;
+    --sys-width-form: 520px;
+    --sys-width-reading: 680px;
+    --sys-width-app: 1200px;
+    --sys-font-display:
+        'Manrope Variable', Inter, ui-sans-serif, system-ui, sans-serif;
     --sys-font-ui:
-        'Manrope Variable', ui-sans-serif, system-ui, 'Noto Sans', sans-serif;
+        'Manrope Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+    --sys-font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    --sys-shadow-subtle: 0 1px 2px rgb(16 19 24 / 6%);
+    --sys-shadow-raised: 0 8px 24px rgb(16 19 24 / 10%);
     --sys-motion-fast: 120ms;
-    --sys-motion-standard: 180ms;
-    --sys-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --sys-motion-standard: 200ms;
+    --sys-motion-slow: 300ms;
+    --sys-ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root[data-theme='dark'] {
     color-scheme: dark;
-    --sys-color-background-canvas: #17131b;
-    --sys-color-surface-default: #211c26;
-    --sys-color-surface-subtle: #2b2430;
-    --sys-color-surface-raised: #352c3a;
-    --sys-color-overlay-scrim: rgb(0 0 0 / 68%);
-    --sys-color-text-primary: #fbf8fc;
-    --sys-color-text-secondary: #d1c7d4;
-    --sys-color-text-tertiary: #afa2b3;
-    --sys-color-border-subtle: #453a4a;
-    --sys-color-border-control: #776a7d;
-    --sys-color-border-control-strong: #93869a;
-    --sys-color-action-primary: #bba6ff;
-    --sys-color-action-primary-hover: #cdbeff;
-    --sys-color-action-primary-pressed: #9a7ff4;
-    --sys-color-action-on-primary: #23144e;
-    --sys-color-action-primary-soft: #382c68;
-    --sys-color-action-primary-soft-pressed: #4a3a80;
-    --sys-color-action-on-primary-soft: #e9e1ff;
-    --sys-color-focus: #d9ceff;
-    --sys-color-danger: #ff93a9;
-    --sys-color-danger-hover: #ffadbd;
-    --sys-color-danger-pressed: #f47791;
-    --sys-color-on-danger: #35121e;
-    --sys-color-danger-soft: #512230;
-    --sys-color-success: #63d6b0;
-    --sys-color-success-soft: #163c33;
-    --sys-color-warning: #f5c66f;
-    --sys-color-warning-soft: #493714;
-    --sys-color-info: #8ec5ff;
-    --sys-color-info-soft: #183653;
-    --sys-color-disabled-surface: #352c3a;
-    --sys-color-disabled-content: #afa2b3;
-    --sys-color-disabled-border: #776a7d;
+    --sys-color-background-canvas: var(--ref-neutral-950);
+    --sys-color-surface-default: var(--ref-neutral-900);
+    --sys-color-surface-subtle: var(--ref-neutral-800);
+    --sys-color-surface-raised: #252a33;
+    --sys-color-overlay-scrim: rgb(0 0 0 / 72%);
+    --sys-color-text-primary: var(--ref-neutral-50);
+    --sys-color-text-secondary: #b8c0cc;
+    --sys-color-text-tertiary: var(--ref-neutral-400);
+    --sys-color-border-subtle: #343a46;
+    --sys-color-border-control: var(--ref-neutral-600);
+    --sys-color-border-control-strong: var(--ref-neutral-400);
+    --sys-color-action-primary: var(--ref-primary-400);
+    --sys-color-action-primary-hover: var(--ref-primary-300);
+    --sys-color-action-primary-pressed: var(--ref-primary-500);
+    --sys-color-action-on-primary: var(--ref-neutral-950);
+    --sys-color-action-primary-soft: #292d5f;
+    --sys-color-action-primary-soft-pressed: #363b78;
+    --sys-color-action-on-primary-soft: var(--ref-primary-100);
+    --sys-color-focus: var(--ref-primary-300);
+    --sys-color-danger: #fb7185;
+    --sys-color-danger-hover: #fda4af;
+    --sys-color-danger-pressed: #f43f5e;
+    --sys-color-on-danger: var(--ref-neutral-950);
+    --sys-color-danger-soft: #4c1d2b;
+    --sys-color-success: #6ee7b7;
+    --sys-color-success-soft: #123b32;
+    --sys-color-warning: #fbbf24;
+    --sys-color-warning-soft: #422f0d;
+    --sys-color-info: #93c5fd;
+    --sys-color-info-soft: #172f52;
+    --sys-color-disabled-surface: var(--ref-neutral-800);
+    --sys-color-disabled-content: var(--ref-neutral-400);
+    --sys-color-disabled-border: var(--ref-neutral-700);
+    --sys-shadow-subtle: 0 1px 2px rgb(0 0 0 / 28%);
+    --sys-shadow-raised: 0 12px 32px rgb(0 0 0 / 34%);
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
         color-scheme: dark;
-        --sys-color-background-canvas: #17131b;
-        --sys-color-surface-default: #211c26;
-        --sys-color-surface-subtle: #2b2430;
-        --sys-color-surface-raised: #352c3a;
-        --sys-color-overlay-scrim: rgb(0 0 0 / 68%);
-        --sys-color-text-primary: #fbf8fc;
-        --sys-color-text-secondary: #d1c7d4;
-        --sys-color-text-tertiary: #afa2b3;
-        --sys-color-border-subtle: #453a4a;
-        --sys-color-border-control: #776a7d;
-        --sys-color-border-control-strong: #93869a;
-        --sys-color-action-primary: #bba6ff;
-        --sys-color-action-primary-hover: #cdbeff;
-        --sys-color-action-primary-pressed: #9a7ff4;
-        --sys-color-action-on-primary: #23144e;
-        --sys-color-action-primary-soft: #382c68;
-        --sys-color-action-primary-soft-pressed: #4a3a80;
-        --sys-color-action-on-primary-soft: #e9e1ff;
-        --sys-color-focus: #d9ceff;
-        --sys-color-danger: #ff93a9;
-        --sys-color-danger-hover: #ffadbd;
-        --sys-color-danger-pressed: #f47791;
-        --sys-color-on-danger: #35121e;
-        --sys-color-danger-soft: #512230;
-        --sys-color-success: #63d6b0;
-        --sys-color-success-soft: #163c33;
-        --sys-color-warning: #f5c66f;
-        --sys-color-warning-soft: #493714;
-        --sys-color-info: #8ec5ff;
-        --sys-color-info-soft: #183653;
-        --sys-color-disabled-surface: #352c3a;
-        --sys-color-disabled-content: #afa2b3;
-        --sys-color-disabled-border: #776a7d;
+        --sys-color-background-canvas: var(--ref-neutral-950);
+        --sys-color-surface-default: var(--ref-neutral-900);
+        --sys-color-surface-subtle: var(--ref-neutral-800);
+        --sys-color-surface-raised: #252a33;
+        --sys-color-overlay-scrim: rgb(0 0 0 / 72%);
+        --sys-color-text-primary: var(--ref-neutral-50);
+        --sys-color-text-secondary: #b8c0cc;
+        --sys-color-text-tertiary: var(--ref-neutral-400);
+        --sys-color-border-subtle: #343a46;
+        --sys-color-border-control: var(--ref-neutral-600);
+        --sys-color-border-control-strong: var(--ref-neutral-400);
+        --sys-color-action-primary: var(--ref-primary-400);
+        --sys-color-action-primary-hover: var(--ref-primary-300);
+        --sys-color-action-primary-pressed: var(--ref-primary-500);
+        --sys-color-action-on-primary: var(--ref-neutral-950);
+        --sys-color-action-primary-soft: #292d5f;
+        --sys-color-action-primary-soft-pressed: #363b78;
+        --sys-color-action-on-primary-soft: var(--ref-primary-100);
+        --sys-color-focus: var(--ref-primary-300);
+        --sys-color-danger: #fb7185;
+        --sys-color-danger-hover: #fda4af;
+        --sys-color-danger-pressed: #f43f5e;
+        --sys-color-on-danger: var(--ref-neutral-950);
+        --sys-color-danger-soft: #4c1d2b;
+        --sys-color-success: #6ee7b7;
+        --sys-color-success-soft: #123b32;
+        --sys-color-warning: #fbbf24;
+        --sys-color-warning-soft: #422f0d;
+        --sys-color-info: #93c5fd;
+        --sys-color-info-soft: #172f52;
+        --sys-color-disabled-surface: var(--ref-neutral-800);
+        --sys-color-disabled-content: var(--ref-neutral-400);
+        --sys-color-disabled-border: var(--ref-neutral-700);
+        --sys-shadow-subtle: 0 1px 2px rgb(0 0 0 / 28%);
+        --sys-shadow-raised: 0 12px 32px rgb(0 0 0 / 34%);
     }
 }
 
 * {
     box-sizing: border-box;
 }
+
 html,
 body {
     margin: 0;
     min-height: 100%;
 }
+
 body {
     background: var(--sys-color-background-canvas);
     color: var(--sys-color-text-primary);
     font-family: var(--sys-font-ui);
     font-size: 16px;
     line-height: 1.5;
+    text-rendering: optimizeLegibility;
 }
+
 button,
 input,
 textarea,
 select {
     font: inherit;
 }
+
+button,
+a,
+input,
+textarea,
+select {
+    -webkit-tap-highlight-color: transparent;
+}
+
 a {
     color: inherit;
 }
+
 :focus-visible {
     outline: 3px solid var(--sys-color-focus);
     outline-offset: 3px;
 }
+
+::selection {
+    background: var(--sys-color-action-primary-soft-pressed);
+    color: var(--sys-color-text-primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

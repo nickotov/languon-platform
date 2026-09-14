@@ -19,7 +19,7 @@ export function CapabilityState() {
             <Button
                 onClick={() => void refreshCapabilities()}
                 type='button'
-                variant='quiet'
+                variant='ghost'
             >
                 {t('common.retry')}
             </Button>

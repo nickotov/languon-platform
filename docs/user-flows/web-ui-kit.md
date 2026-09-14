@@ -2,11 +2,12 @@
 feature: web-ui-kit
 title: Web UI Kit
 status: current
-last_verified: 2026-08-17
+last_verified: 2026-09-14
 surfaces:
     - browser
 source_paths:
     - .agent/features/web-ui-kit/**
+    - .agent/features/magic-patterns-ui-kit-auth-redesign/**
     - apps/web/.storybook/**
     - apps/web/src/app/globals.css
     - apps/web/src/app/layout.tsx
@@ -31,12 +32,12 @@ related_features:
 
 ## What this verifies
 
-This guide verifies that the public web app uses the shared UI kit, applies the
-approved semantic light and dark palettes, renders a server-safe system theme by
-default, and persists an explicit Light, Dark, or System preference without
-changing the active route. It also covers keyboard-visible native controls and
-compact reflow. Admin, mobile, and product-specific learning patterns are
-outside this journey.
+This guide verifies that the public web app uses the single Magic-derived
+Languon runtime UI kit, applies its neutral/indigo semantic light and dark
+palettes, renders a server-safe system theme by default, and persists an
+explicit Light, Dark, or System preference without changing the active route.
+It also covers keyboard-visible native controls and compact reflow. Admin,
+mobile, and product-specific learning patterns are outside this journey.
 
 ## Start the development environment
 
@@ -55,8 +56,10 @@ theme journey does not create data or require a signed-in account.
 
 1. In a fresh browser context, open
    `http://localhost:3333/login?returnTo=%2Fsecurity`. Expect the page to render
-   with `<html data-theme="system">`, the semantic canvas/surface colors, and
-   visible **Theme** and **Language** selectors without a hydration flash.
+   with `<html data-theme="system">`, the neutral canvas, indigo actions, and
+   visible **Theme** and **Language** selectors without a hydration flash. At a
+   desktop width, expect the product story and auth form in a balanced split
+   layout; on mobile, expect one focused form column.
 2. Choose **Dark**. Expect `<html data-theme="dark">`, an unchanged path and
    query, and a `languon-theme=dark` cookie scoped to `/` with `SameSite=Lax`.
 3. Reload, then navigate to `/`. Expect Dark to remain selected and server-rendered
@@ -66,8 +69,9 @@ theme journey does not create data or require a signed-in account.
    should not require another app selection.
 5. Use only the keyboard to focus the selectors, auth fields, password reveal,
    and actions. Expect a visible focus ring, native activation, and no keyboard trap.
-6. Repeat at a 320px viewport and 200% browser zoom. Expect the header controls,
-   form card, status copy, and actions to reflow without horizontal clipping.
+6. Repeat at a 320px viewport and 200% browser zoom. Expect the compact logo,
+   header controls, form content, status copy, and actions to reflow without
+   overlap or horizontal clipping. Controls retain at least a 44px touch target.
 
 ## E2E coverage
 

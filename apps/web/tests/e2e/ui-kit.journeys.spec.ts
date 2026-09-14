@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision web-ui-kit sha256:07aa1f77b967b8ea
+// @user-flow-revision web-ui-kit sha256:d1d0b3e7c729bb3a
 
 function captureBrowserErrors(page: Page) {
     const errors: string[] = [];
@@ -29,6 +29,10 @@ test.describe('web UI kit journeys', () => {
     }) => {
         const assertNoBrowserErrors = captureBrowserErrors(page);
         await page.goto('/login?returnTo=%2Fsecurity');
+
+        await expect(
+            page.getByText(/Language learning that adapts/),
+        ).toBeVisible();
 
         await expect(page.locator('html')).toHaveAttribute(
             'data-theme',
@@ -70,6 +74,60 @@ test.describe('web UI kit journeys', () => {
             'system',
         );
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
+
+        await page.setViewportSize({ height: 800, width: 320 });
+        const logo = page.getByRole('link', { name: 'Languon home' });
+        const email = page.getByLabel('Email');
+        const reveal = page.getByRole('button', { name: 'Show password' });
+        await expect(logo).toBeVisible();
+        for (const control of [logo, email, reveal]) {
+            expect(
+                (await control.boundingBox())?.height,
+            ).toBeGreaterThanOrEqual(44);
+        }
+        expect(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+        ).toBe(true);
+
+        await page.setViewportSize({ height: 900, width: 640 });
+        await page.evaluate(() => {
+            document.body.style.zoom = '200%';
+        });
+        expect(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+        ).toBe(true);
+        await page.evaluate(() => {
+            document.body.style.zoom = '';
+        });
+
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await expect(
+            page.getByRole('button', { name: 'Sign in', exact: true }),
+        ).toHaveCSS('transition-duration', '0.001s');
+
+        await page.emulateMedia({ contrast: 'more' });
+        expect(
+            await page.evaluate(() => {
+                const style = getComputedStyle(document.documentElement);
+                return (
+                    style
+                        .getPropertyValue('--sys-color-border-control')
+                        .trim() ===
+                    style.getPropertyValue('--sys-color-text-primary').trim()
+                );
+            }),
+        ).toBe(true);
+
+        await page.emulateMedia({ forcedColors: 'active' });
+        expect(
+            await page.evaluate(
+                () => matchMedia('(forced-colors: active)').matches,
+            ),
+        ).toBe(true);
         assertNoBrowserErrors();
     });
 });

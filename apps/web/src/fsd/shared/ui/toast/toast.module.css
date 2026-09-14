@@ -12,7 +12,7 @@
     background: var(--sys-color-surface-raised);
     border: 1px solid var(--sys-color-border-control);
     border-radius: var(--sys-radius-md);
-    box-shadow: 0 8px 24px rgb(23 19 27 / 10%);
+    box-shadow: var(--sys-shadow-raised);
     display: flex;
     gap: var(--sys-space-3);
     justify-content: space-between;

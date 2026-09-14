@@ -40,7 +40,7 @@ export function PasswordField({
                         action: visible ? t('common.hide') : t('common.show'),
                         label: label.toLowerCase(),
                     })}
-                    variant='quiet'
+                    variant='ghost'
                     onClick={() => setVisible((current) => !current)}
                     type='button'
                 >

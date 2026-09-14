@@ -38,6 +38,12 @@ export const ru = {
         'Возможно, адрес указан неверно или страница была перемещена.',
     'notFound.home': 'Вернуться на главную',
     'auth.brandHome': 'Главная Languon',
+    'auth.storyEyebrow': 'В центре — ваш прогресс',
+    'auth.storyTitle':
+        'Изучение языка, которое подстраивается под каждого ученика.',
+    'auth.storyBenefitLevel': 'Уроки соответствуют вашему уровню',
+    'auth.storyBenefitContext': 'Грамматика и лексика в контексте',
+    'auth.storyBenefitProgress': 'Понятный прогресс с первого взгляда',
     'auth.newToLanguon': 'Впервые в Languon?',
     'auth.alreadyAccount': 'Уже есть аккаунт?',
     'auth.createAccount': 'Создать аккаунт',

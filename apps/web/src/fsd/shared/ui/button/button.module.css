@@ -10,10 +10,12 @@
     text-decoration: none;
     transition: background var(--sys-motion-fast) var(--sys-ease-standard);
 }
+.compact,
 .small {
     min-height: var(--sys-size-control-sm);
     padding: 0 var(--sys-space-4);
 }
+.default,
 .medium {
     min-height: var(--sys-size-control-md);
     padding: 0 var(--sys-space-5);
@@ -41,6 +43,8 @@
 }
 .secondary:active:not(:disabled),
 .secondary[data-state='pressed']:not(:disabled),
+.ghost:active:not(:disabled),
+.ghost[data-state='pressed']:not(:disabled),
 .quiet:active:not(:disabled),
 .quiet[data-state='pressed']:not(:disabled) {
     background: var(--sys-color-action-primary-soft-pressed);
@@ -53,10 +57,12 @@
 .secondary:hover:not(:disabled) {
     background: var(--sys-color-action-primary-soft);
 }
+.ghost,
 .quiet {
     background: transparent;
     color: var(--sys-color-action-primary);
 }
+.ghost:hover:not(:disabled),
 .quiet:hover:not(:disabled) {
     background: var(--sys-color-action-primary-soft);
 }

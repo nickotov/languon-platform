@@ -1,7 +1,6 @@
 import type { Preview } from '@storybook/nextjs-vite';
 import { useEffect, type ReactNode } from 'react';
 
-import '@fontsource-variable/literata';
 import '@fontsource-variable/manrope';
 
 import '../src/app/globals.css';

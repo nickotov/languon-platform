@@ -36,6 +36,12 @@ export const en = {
         'The address may be incorrect, or the page may have moved.',
     'notFound.home': 'Return home',
     'auth.brandHome': 'Languon home',
+    'auth.storyEyebrow': 'Built around your progress',
+    'auth.storyTitle':
+        'Language learning that adapts to the learner in front of it.',
+    'auth.storyBenefitLevel': 'Lessons that follow your level',
+    'auth.storyBenefitContext': 'Grammar and vocabulary in context',
+    'auth.storyBenefitProgress': 'Progress you can read at a glance',
     'auth.newToLanguon': 'New to Languon?',
     'auth.alreadyAccount': 'Already have an account?',
     'auth.createAccount': 'Create an account',

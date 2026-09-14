@@ -22,6 +22,7 @@ export { IconButton } from './icon-button/icon-button';
 export { InlineAlert } from './inline-alert/inline-alert';
 export { Input } from './input/input';
 export { LoadingState } from './loading-state/loading-state';
+export { Logo } from './logo/logo';
 export { Menu } from './menu/menu';
 export { Popover } from './popover/popover';
 export { Progress } from './progress/progress';

@@ -9,8 +9,8 @@ export const Primary: Story = { args: { children: 'Continue' } };
 export const Secondary: Story = {
     args: { children: 'Practice later', variant: 'secondary' },
 };
-export const Quiet: Story = {
-    args: { children: 'Dismiss', variant: 'quiet' },
+export const Ghost: Story = {
+    args: { children: 'Dismiss', variant: 'ghost' },
 };
 export const Loading: Story = {
     args: { children: 'Saving lesson', loading: true },
@@ -29,8 +29,8 @@ export const PressedStates: Story = {
             <Button data-state='pressed' variant='secondary'>
                 Secondary pressed
             </Button>
-            <Button data-state='pressed' variant='quiet'>
-                Quiet pressed
+            <Button data-state='pressed' variant='ghost'>
+                Ghost pressed
             </Button>
             <Button data-state='pressed' variant='danger'>
                 Destructive pressed
@@ -42,8 +42,8 @@ export const ControlSizes: Story = {
     args: { children: 'Continue' },
     render: () => (
         <div style={{ alignItems: 'center', display: 'flex', gap: 12 }}>
-            <Button size='small'>Small</Button>
-            <Button size='medium'>Medium</Button>
+            <Button size='compact'>Compact</Button>
+            <Button size='default'>Default</Button>
             <Button size='large'>Large</Button>
         </div>
     ),

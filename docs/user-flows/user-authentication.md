@@ -2,12 +2,13 @@
 feature: user-authentication
 title: User Authentication
 status: current
-last_verified: 2026-08-14
+last_verified: 2026-09-14
 surfaces:
     - browser
     - api
 source_paths:
     - .agent/features/user-authentication/**
+    - .agent/features/magic-patterns-ui-kit-auth-redesign/**
     - .agents/skills/user-flow-e2e/**
     - .env.example
     - README.md
@@ -63,6 +64,12 @@ Use this guide to exercise the complete local authentication journey:
 - passkey enrollment, discoverable login, rename, and removal;
 - supported API operations and their expected response/cookie behavior;
 - important validation, throttling, session-revocation, and security outcomes.
+
+The browser routes use the responsive Languon auth composition: a product-story
+and focused-form split at desktop widths, and a single compact form column on
+mobile. Theme and language controls remain available on every route. The UI
+exposes only authentication methods reported by `/auth/capabilities`; it does
+not display unsupported OAuth, role, consent, or remembered-login controls.
 
 The guide uses local fake identities and the development verification/recovery
 code `0000`. It must never be used with staging or production data. Production

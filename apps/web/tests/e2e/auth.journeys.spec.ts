@@ -6,7 +6,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision user-authentication sha256:855d3e63671c4a38
+// @user-flow-revision user-authentication sha256:ec863b74a22ad0b0
 
 const initialPassword = 'E2e!Initial-password-2026';
 const replacementPassword = 'E2e!Replacement-password-2026';
@@ -107,6 +107,11 @@ test.describe('authentication journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page);
         const email = syntheticEmail(testInfo, 'signup');
         const response = await page.goto('/signup?returnTo=%2Fsecurity');
+
+        await expect(
+            page.getByRole('heading', { level: 1, name: 'Create an account' }),
+        ).toBeVisible();
+        await expect(page.getByText(/Google|Apple|Yandex|VK/)).toHaveCount(0);
 
         expect(response?.headers()['content-security-policy']).toContain(
             "frame-ancestors 'none'",

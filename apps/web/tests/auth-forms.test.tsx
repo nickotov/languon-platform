@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { AuthProvider, useAuth } from '@/fsd/features/auth/model/auth-provider';
+import { AuthShell } from '@/fsd/features/auth/ui/auth-shell';
 import { LoginForm } from '@/fsd/features/auth/ui/login-form';
 import { PasswordField } from '@/fsd/features/auth/ui/password-field';
 import { ResetPasswordForm } from '@/fsd/features/auth/ui/reset-password-form';
@@ -71,6 +72,25 @@ describe('authentication forms', () => {
             passkeys: { authentication: false, registration: false },
             passwordAuthentication: true,
         });
+    });
+
+    it('renders the localized auth composition without prototype-only controls', () => {
+        render(
+            <AuthShell eyebrow='Your account' title='Sign in'>
+                <p>Real authentication form</p>
+            </AuthShell>,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 1, name: 'Sign in' }),
+        ).toBeVisible();
+        expect(screen.getByText(/Language learning that adapts/)).toBeVisible();
+        expect(screen.getAllByRole('heading')).toHaveLength(1);
+        expect(
+            screen.getByText('Lessons that follow your level'),
+        ).toBeVisible();
+        expect(screen.queryByText(/Google|Apple|Yandex|VK/)).toBeNull();
+        expect(screen.queryByRole('checkbox')).toBeNull();
     });
 
     it('allows password paste, exposes autocomplete, and toggles visibility', async () => {
