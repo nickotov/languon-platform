@@ -2,15 +2,26 @@
     display: inline-flex;
 }
 .tooltip {
-    background: var(--sys-color-text-primary);
+    background: var(--neutral-900);
     border: 0;
-    border-radius: var(--sys-radius-xs, 6px);
-    color: var(--sys-color-surface-default);
+    border-radius: var(--radius-sm);
+    color: var(--neutral-50);
     inset: auto;
     margin: 0;
     max-width: min(280px, calc(100vw - 32px));
-    padding: 6px 8px;
-    pointer-events: auto;
+    padding: 4px 8px;
+    pointer-events: none;
     position: fixed;
     white-space: normal;
+    z-index: 50;
+    box-shadow: var(--elevation-md);
+}
+.arrow {
+    background: var(--neutral-900);
+    height: 8px;
+    left: 50%;
+    position: absolute;
+    top: 100%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 8px;
 }

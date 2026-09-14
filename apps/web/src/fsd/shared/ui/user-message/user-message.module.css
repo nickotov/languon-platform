@@ -1,0 +1,90 @@
+.sr {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+.root {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+.bubble {
+    background: var(--user-message-bg);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-xs);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.625;
+    max-width: 85%;
+    padding: 10px 16px;
+}
+.bubble p {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.bubble.error {
+    background: var(--danger-subtle);
+    border-color: var(--danger-200);
+}
+.bubble.sending {
+    opacity: 0.7;
+}
+.translation {
+    border-top: 1px solid var(--border-default);
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-style: italic;
+    margin-top: 6px !important;
+    padding-top: 6px;
+}
+.meta {
+    align-items: center;
+    color: var(--text-tertiary);
+    display: flex;
+    font-size: 12px;
+    gap: 6px;
+    padding-right: 4px;
+}
+.meta > svg {
+    height: 14px;
+    width: 14px;
+}
+.errorIcon {
+    color: var(--danger-default) !important;
+}
+.meta button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-xs);
+    color: var(--danger-default);
+    display: flex;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 4px;
+    padding: 2px 6px;
+}
+.meta button:hover {
+    background: var(--danger-subtle);
+}
+.meta button:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+.meta button svg {
+    height: 12px;
+    width: 12px;
+}
+@media (min-width: 640px) {
+    .bubble {
+        max-width: 70%;
+    }
+}

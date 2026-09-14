@@ -1,0 +1,81 @@
+.list,
+.item {
+    align-items: center;
+    display: flex;
+}
+.list {
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+.item {
+    gap: 6px;
+    min-width: 0;
+}
+.list a,
+.ellipsis {
+    border-radius: var(--radius-xs);
+    color: var(--text-secondary);
+    transition:
+        color var(--duration-fast) var(--easing-standard),
+        background var(--duration-fast) var(--easing-standard);
+}
+.list a {
+    max-width: 256px;
+    overflow: hidden;
+    padding: 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.list a:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+.ellipsis {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    display: flex;
+    height: 24px;
+    justify-content: center;
+    padding: 0;
+    width: 24px;
+}
+.ellipsis:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+.list :is(a, .ellipsis):focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+.separator,
+.icon,
+.ellipsis svg {
+    flex: none;
+    height: 16px;
+    width: 16px;
+}
+.separator {
+    color: var(--border-strong);
+}
+.icon {
+    color: var(--text-tertiary);
+}
+.current,
+.muted {
+    max-width: 256px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.current {
+    color: var(--text-primary);
+}
+.muted {
+    color: var(--text-secondary);
+}

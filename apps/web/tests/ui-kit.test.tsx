@@ -15,6 +15,8 @@ import {
     Logo,
     Menu,
     Popover,
+    PopoverContent,
+    PopoverTrigger,
     showToast,
     Tabs,
     Toast,
@@ -450,6 +452,65 @@ describe('shared UI accessibility contracts', () => {
             screen.getByRole('button', { name: 'After popover' }),
         ).toHaveFocus();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('composes compound popover trigger handlers, refs, classes, and props', async () => {
+        const user = userEvent.setup();
+        const childClick = vi.fn();
+        const triggerClick = vi.fn();
+        const childRef = { current: null as HTMLButtonElement | null };
+
+        render(
+            <Popover>
+                <PopoverTrigger
+                    asChild
+                    className='compound-trigger'
+                    data-contract='forwarded'
+                    onClick={triggerClick}
+                >
+                    <button onClick={childClick} ref={childRef} type='button'>
+                        Open compound popover
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent aria-label='Compound content'>
+                    Ready
+                </PopoverContent>
+            </Popover>,
+        );
+
+        const trigger = screen.getByRole('button', {
+            name: 'Open compound popover',
+        });
+        expect(trigger).toHaveClass('compound-trigger');
+        expect(trigger).toHaveAttribute('data-contract', 'forwarded');
+        expect(childRef.current).toBe(trigger);
+        await user.click(trigger);
+        expect(childClick).toHaveBeenCalledOnce();
+        expect(triggerClick).toHaveBeenCalledOnce();
+        expect(
+            screen.getByRole('dialog', { name: 'Compound content' }),
+        ).toBeVisible();
+    });
+
+    it('consumes a custom compound popover side offset without leaking it', async () => {
+        render(
+            <Popover defaultOpen>
+                <PopoverTrigger>Offset trigger</PopoverTrigger>
+                <PopoverContent
+                    aria-label='Offset content'
+                    side='bottom'
+                    sideOffset={24}
+                >
+                    Offset content
+                </PopoverContent>
+            </Popover>,
+        );
+
+        const content = await screen.findByRole('dialog', {
+            name: 'Offset content',
+        });
+        expect(content).not.toHaveAttribute('sideOffset');
+        expect(content).not.toHaveAttribute('sideoffset');
     });
 
     it('synchronizes focus and expanded state with native popover toggles', () => {

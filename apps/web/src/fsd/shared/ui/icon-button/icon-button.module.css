@@ -1,35 +1,148 @@
+.root {
+    display: inline-flex;
+    position: relative;
+}
 .button {
     align-items: center;
-    background: transparent;
     border: 0;
-    border-radius: var(--sys-radius-sm);
-    color: var(--sys-color-action-primary);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: inline-flex;
+    flex: none;
     justify-content: center;
+    transition:
+        background-color var(--duration-fast),
+        color var(--duration-fast);
 }
+.sm,
 .compact,
 .small {
-    height: var(--sys-size-control-sm);
-    width: var(--sys-size-control-sm);
+    height: 32px;
+    width: 32px;
 }
+.md,
 .default,
 .medium {
-    height: var(--sys-size-control-md);
-    width: var(--sys-size-control-md);
+    height: 40px;
+    width: 40px;
 }
+.lg,
 .large {
-    height: var(--sys-size-control-lg);
-    width: var(--sys-size-control-lg);
+    height: 48px;
+    width: 48px;
 }
-.button:hover:not(:disabled) {
-    background: var(--sys-color-action-primary-soft);
+.rounded {
+    border-radius: 999px;
 }
-.button:active:not(:disabled),
-.button[data-state='pressed']:not(:disabled) {
-    background: var(--sys-color-action-primary-soft-pressed);
+.primary {
+    background: var(--neutral-900);
+    color: var(--neutral-50);
+}
+.primary:hover:not(:disabled) {
+    background: var(--neutral-800);
+}
+.secondary {
+    background: var(--neutral-100);
+    color: var(--neutral-900);
+}
+.secondary:hover:not(:disabled) {
+    background: var(--neutral-200);
+}
+.outline {
+    background: var(--background-surface);
+    border: 1px solid var(--neutral-300);
+    color: var(--neutral-900);
+}
+.outline:hover:not(:disabled) {
+    background: var(--neutral-50);
+}
+.ghost {
+    background: transparent;
+    color: var(--neutral-600);
+}
+.ghost:hover:not(:disabled) {
+    background: var(--neutral-100);
+    color: var(--neutral-900);
+}
+.danger {
+    background: var(--danger-600);
+    color: white;
+}
+.danger:hover:not(:disabled) {
+    background: var(--danger-700);
+}
+.button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
 }
 .button:disabled {
-    color: var(--sys-color-disabled-content);
     cursor: not-allowed;
+    opacity: 0.5;
+}
+.icon {
+    align-items: center;
+    display: inline-flex;
+}
+.sm .icon svg,
+.sm .spinner {
+    height: 16px;
+    width: 16px;
+}
+.md .icon svg,
+.md .spinner {
+    height: 20px;
+    width: 20px;
+}
+.lg .icon svg,
+.lg .spinner {
+    height: 24px;
+    width: 24px;
+}
+.spinner {
+    animation: spin 0.7s linear infinite;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-right-color: transparent;
+}
+.tooltip {
+    background: var(--neutral-900);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    pointer-events: none;
+    position: absolute;
+    white-space: nowrap;
+    z-index: 50;
+}
+.tooltip-top {
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+}
+.tooltip-bottom {
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+}
+.tooltip-left {
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+.tooltip-right {
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation: none;
+    }
 }

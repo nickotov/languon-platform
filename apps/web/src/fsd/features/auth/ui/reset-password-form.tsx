@@ -1,7 +1,6 @@
 'use client';
 
 import { ResetPasswordRequestSchema } from '@languon/contracts';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 
@@ -51,24 +50,13 @@ export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
     }
 
     if (complete) {
-        return (
-            <FormMessage tone='success'>
-                {t('reset.complete')}{' '}
-                <Link href={href('/login')}>{t('reset.signInNew')}</Link>
-            </FormMessage>
-        );
+        return <FormMessage tone='success'>{t('reset.complete')}</FormMessage>;
     }
 
     return (
         <>
-            <p className={styles.intro}>{t('reset.intro')}</p>
             {!flowId ? (
-                <FormMessage>
-                    {t('reset.incomplete')}{' '}
-                    <Link href={href('/forgot-password')}>
-                        {t('reset.requestNew')}
-                    </Link>
-                </FormMessage>
+                <FormMessage>{t('reset.incomplete')}</FormMessage>
             ) : null}
             {error ? <FormMessage>{error}</FormMessage> : null}
             <form aria-busy={pending} className={styles.form} onSubmit={submit}>
@@ -76,6 +64,7 @@ export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
                     <Input
                         autoComplete='one-time-code'
                         className={styles.code}
+                        controlSize='large'
                         inputMode='numeric'
                         maxLength={4}
                         name='code'
@@ -88,7 +77,12 @@ export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
                     label={t('common.newPassword')}
                     name='newPassword'
                 />
-                <Button disabled={pending || !flowId} type='submit'>
+                <Button
+                    disabled={pending || !flowId}
+                    loading={pending}
+                    size='large'
+                    type='submit'
+                >
                     {pending ? t('reset.pending') : t('reset.submit')}
                 </Button>
             </form>

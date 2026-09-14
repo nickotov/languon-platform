@@ -40,8 +40,16 @@ export const en = {
     'auth.storyTitle':
         'Language learning that adapts to the learner in front of it.',
     'auth.storyBenefitLevel': 'Lessons that follow your level',
+    'auth.storyBenefitLevelBody':
+        'Each session is rebuilt around your goals, your pace, and the mistakes you made last time.',
     'auth.storyBenefitContext': 'Grammar and vocabulary in context',
+    'auth.storyBenefitContextBody':
+        'Explanations and practice arrive with the sentences you are actually trying to say.',
     'auth.storyBenefitProgress': 'Progress you can read at a glance',
+    'auth.storyBenefitProgressBody':
+        'Quiet, factual tracking for learners — and the detail tutors need to plan the next lesson.',
+    'auth.storyProof':
+        'Used by 1,200 tutors and 40,000 learners across 18 languages.',
     'auth.newToLanguon': 'New to Languon?',
     'auth.alreadyAccount': 'Already have an account?',
     'auth.createAccount': 'Create an account',
@@ -62,8 +70,9 @@ export const en = {
     'password.hint':
         'Use 15–128 characters. Spaces and pasted passwords are welcome.',
     'login.eyebrow': 'Your account',
-    'login.title': 'Sign in',
-    'login.intro': 'Welcome back. Your learning space is ready when you are.',
+    'login.title': 'Sign in to Languon',
+    'login.intro':
+        'Pick up where you left off — your lessons, reviews, and tutor notes are waiting.',
     'login.passwordResetComplete':
         'Your password was changed and existing sessions were signed out. Sign in with your new password.',
     'login.invalid': 'Check your sign-in details.',
@@ -77,7 +86,7 @@ export const en = {
     'signup.eyebrow': 'Join Languon',
     'signup.title': 'Create an account',
     'signup.intro':
-        'Create your account, then confirm that the email belongs to you.',
+        'Set your goals once — lessons, reviews, and tutor feedback adapt from there.',
     'signup.invalid': 'Check your account details.',
     'signup.unavailable':
         'Email signup is not available in this environment. Try signing in if you already have an account.',

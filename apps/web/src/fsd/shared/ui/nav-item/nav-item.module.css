@@ -1,0 +1,89 @@
+.root {
+    align-items: center;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 500;
+    gap: 12px;
+    min-height: 40px;
+    outline: 0;
+    padding: 8px 12px;
+    position: relative;
+    text-decoration: none;
+    transition:
+        background var(--duration-fast),
+        color var(--duration-fast);
+}
+.vertical {
+    width: 100%;
+}
+.root:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+.root:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+.root > svg {
+    color: var(--text-tertiary);
+    flex: none;
+    height: 16px;
+    width: 16px;
+}
+.active {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+.active > svg {
+    color: var(--text-primary);
+}
+.vertical.active:before {
+    background: var(--text-primary);
+    border-radius: var(--radius-full);
+    content: '';
+    inset-block: 6px;
+    left: 0;
+    position: absolute;
+    width: 2px;
+}
+.horizontal.active:after {
+    background: var(--text-primary);
+    border-radius: var(--radius-full);
+    bottom: -1px;
+    content: '';
+    height: 2px;
+    inset-inline: 12px;
+    position: absolute;
+}
+.disabled {
+    color: var(--text-disabled);
+    cursor: not-allowed;
+}
+.disabled:hover {
+    background: transparent;
+    color: var(--text-disabled);
+}
+.collapsed {
+    justify-content: center;
+    padding-inline: 8px;
+}
+.label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.badge {
+    background: var(--background-subtle);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    margin-left: auto;
+    min-width: 20px;
+    padding: 2px 6px;
+    text-align: center;
+}
+.active .badge {
+    background: var(--text-primary);
+    color: var(--background-surface);
+}

@@ -1,11 +1,109 @@
-.choice {
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.row {
+    align-items: flex-start;
+    display: flex;
+    gap: 10px;
+}
+.control {
     align-items: center;
     display: flex;
-    gap: var(--sys-space-2);
-    min-height: 44px;
+    flex: none;
+    position: relative;
 }
-.choice input {
-    accent-color: var(--sys-color-action-primary);
+.control input {
+    appearance: none;
+    background: var(--background-surface);
+    border: 1px solid var(--neutral-300);
+    cursor: pointer;
+    margin: 0;
+    transition:
+        background-color var(--duration-fast),
+        border-color var(--duration-fast);
+}
+.sm input,
+.sm .mark {
+    border-radius: 4px;
+    height: 16px;
+    width: 16px;
+}
+.md input,
+.md .mark {
+    border-radius: 6px;
     height: 20px;
     width: 20px;
+}
+.lg input,
+.lg .mark {
+    border-radius: 6px;
+    height: 24px;
+    width: 24px;
+}
+.control input:hover:not(:disabled) {
+    border-color: var(--neutral-400);
+}
+.control input:checked,
+.control input:indeterminate {
+    background: var(--primary-default);
+    border-color: var(--primary-default);
+}
+.control input:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+.control input:disabled {
+    background: var(--background-subtle);
+    border-color: var(--neutral-200);
+    cursor: not-allowed;
+}
+.mark {
+    align-items: center;
+    color: var(--text-on-primary);
+    display: flex;
+    font-size: 14px;
+    font-weight: 800;
+    inset: 0;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+}
+.control input:checked + .mark,
+.control input:indeterminate + .mark {
+    opacity: 1;
+}
+.copy {
+    display: flex;
+    flex-direction: column;
+}
+.label {
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+}
+.lg + .copy .label {
+    font-size: 16px;
+}
+.description {
+    color: var(--text-tertiary);
+    font-size: 14px;
+    line-height: 20px;
+}
+.error {
+    color: var(--danger-default);
+    font-size: 14px;
+    margin: 0;
+}
+.root:has(input:disabled) .label,
+.root:has(input:disabled) .description {
+    color: var(--text-disabled);
+    cursor: not-allowed;
+}
+.root:has(input[aria-invalid='true']) input {
+    border-color: var(--danger-default);
 }

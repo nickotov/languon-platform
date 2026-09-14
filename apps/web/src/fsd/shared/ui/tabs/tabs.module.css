@@ -1,21 +1,92 @@
+.root {
+    width: 100%;
+}
 .list {
-    border-bottom: 1px solid var(--sys-color-border-subtle);
     display: flex;
-    gap: var(--sys-space-2);
-    overflow: auto;
+    gap: 4px;
 }
-.list button {
-    background: none;
+.underline {
+    align-items: flex-end;
+    border-bottom: 1px solid var(--neutral-200);
+}
+.segmented {
+    align-items: center;
+    background: var(--neutral-100);
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    padding: 4px;
+}
+.fullWidth {
+    width: 100%;
+}
+.tab {
+    align-items: center;
+    background: transparent;
     border: 0;
-    border-bottom: 3px solid transparent;
-    color: var(--sys-color-text-secondary);
-    min-height: 44px;
-    padding: 0 var(--sys-space-3);
+    color: var(--neutral-500);
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 500;
+    gap: 8px;
+    justify-content: center;
+    white-space: nowrap;
 }
-.list button[aria-selected='true'] {
-    border-color: var(--sys-color-action-primary);
-    color: var(--sys-color-text-primary);
+.sm {
+    font-size: 14px;
+    padding: 6px 12px;
+}
+.md {
+    font-size: 16px;
+    padding: 10px 16px;
+}
+.fullWidth .tab {
+    flex: 1;
+}
+.underline .tab {
+    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    margin-bottom: -1px;
+}
+.underline .active {
+    border-color: var(--neutral-900);
+    color: var(--neutral-900);
+}
+.segmented .tab {
+    border-radius: var(--radius-sm);
+    color: var(--neutral-600);
+}
+.segmented .active {
+    background: var(--background-surface);
+    box-shadow: var(--elevation-sm);
+    color: var(--neutral-900);
+}
+.tab:hover:not(:disabled) {
+    color: var(--neutral-900);
+}
+.tab:focus-visible,
+.panel:focus-visible {
+    outline: 2px solid var(--neutral-900);
+    outline-offset: 2px;
+}
+.tab:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+.icon {
+    display: inline-flex;
+}
+.badge {
+    background: var(--neutral-200);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 20px;
+    padding: 2px 6px;
+}
+.active .badge {
+    background: var(--neutral-900);
+    color: white;
 }
 .panel {
-    padding: var(--sys-space-4) 0;
+    margin-top: 16px;
 }

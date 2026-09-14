@@ -1,0 +1,107 @@
+.root {
+    --tone: var(--text-tertiary);
+    --surface: var(--background-surface);
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    min-height: 52px;
+    padding: 12px 16px;
+    text-align: left;
+    transition:
+        background var(--duration-fast),
+        border var(--duration-fast);
+    width: 100%;
+}
+.root:hover:not(:disabled) {
+    background: var(--background-subtle);
+    border-color: var(--border-strong);
+}
+.root:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+.root:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.selected {
+    --tone: var(--primary-default);
+    --surface: var(--state-selected-bg);
+    border-color: var(--primary-default);
+    box-shadow: inset 0 0 0 1px var(--primary-default);
+}
+.correct {
+    --tone: var(--state-correct);
+    --surface: var(--success-subtle);
+    border-color: var(--state-correct);
+    box-shadow: inset 0 0 0 1px var(--state-correct);
+}
+.incorrect {
+    --tone: var(--state-incorrect);
+    --surface: var(--danger-subtle);
+    border-color: var(--state-incorrect);
+    box-shadow: inset 0 0 0 1px var(--state-incorrect);
+}
+.shortcut {
+    align-items: center;
+    background: var(--background-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xs);
+    color: var(--tone);
+    display: flex;
+    flex: none;
+    font-size: 12px;
+    font-weight: 600;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
+}
+.selected .shortcut,
+.correct .shortcut,
+.incorrect .shortcut {
+    background: var(--tone);
+    border-color: var(--tone);
+    color: var(--text-on-primary);
+}
+.copy {
+    display: block;
+    flex: 1;
+    min-width: 0;
+}
+.copy > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.copy > span:first-child {
+    font-size: 16px;
+    font-weight: 500;
+}
+.copy > span + span {
+    color: var(--text-tertiary);
+    font-size: 14px;
+    margin-top: 2px;
+}
+.status {
+    align-items: center;
+    color: var(--tone);
+    display: flex;
+    flex: none;
+    gap: 6px;
+}
+.status > span {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.status svg {
+    height: 20px;
+    width: 20px;
+}

@@ -1,0 +1,65 @@
+.root {
+    --tone: var(--review-due);
+    --tone-bg: var(--warning-subtle);
+    align-items: center;
+    background: var(--tone-bg);
+    border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+    border-radius: var(--radius-full);
+    color: var(--tone);
+    display: inline-flex;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.root > svg {
+    flex: none;
+}
+.overdue {
+    --tone: var(--danger-default);
+    --tone-bg: var(--danger-subtle);
+}
+.upcoming {
+    --tone: var(--text-secondary);
+    --tone-bg: var(--background-subtle);
+}
+.mastered {
+    --tone: var(--success-default);
+    --tone-bg: var(--success-subtle);
+}
+.sm {
+    font-size: 12px;
+    gap: 4px;
+    padding: 2px 8px;
+}
+.sm > svg {
+    height: 12px;
+    width: 12px;
+}
+.md {
+    font-size: 14px;
+    gap: 6px;
+    padding: 4px 10px;
+}
+.md > svg {
+    height: 16px;
+    width: 16px;
+}
+.count {
+    background: color-mix(in srgb, var(--tone) 18%, transparent);
+    border-radius: var(--radius-full);
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    min-width: 18px;
+    padding-inline: 5px;
+    text-align: center;
+}
+.clickable {
+    cursor: pointer;
+}
+.clickable:hover {
+    filter: brightness(0.96);
+}
+.clickable:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}

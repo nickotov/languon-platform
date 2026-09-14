@@ -1,0 +1,23 @@
+.rule {
+    border: 0;
+    border-top: 1px solid var(--border-default);
+    margin: 16px 0;
+    width: 100%;
+}
+.labelled {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+.labelled span {
+    border-top: 1px solid var(--border-default);
+    flex: 1;
+}
+.labelled small {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}

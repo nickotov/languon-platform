@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-import '@fontsource-variable/manrope';
+import '@fontsource-variable/inter';
 
 import { AuthProvider } from '@/fsd/features/auth';
 import { I18nProvider } from '@/fsd/shared/i18n';

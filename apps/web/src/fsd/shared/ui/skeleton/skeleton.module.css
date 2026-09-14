@@ -1,6 +1,85 @@
 .skeleton {
-    background: var(--sys-color-surface-subtle);
-    border-radius: var(--sys-radius-sm);
+    background: var(--neutral-200);
     display: block;
+    position: relative;
+}
+.text {
+    border-radius: 4px;
+}
+.circle {
+    border-radius: 999px;
+}
+.rect {
+    border-radius: var(--radius-sm);
+}
+.lines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.pulse {
+    animation: pulse 1.8s ease-in-out infinite;
+}
+.shimmer {
+    overflow: hidden;
+}
+.shimmer::after {
+    animation: shimmer 1.6s infinite;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgb(255 255 255 / 70%),
+        transparent
+    );
+    content: '';
+    inset: 0;
+    position: absolute;
+    transform: translateX(-100%);
+}
+.srOnly {
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+.card {
+    background: var(--background-surface);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    padding: 16px;
     width: 100%;
+}
+.cardHeader {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.cardHeading {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+}
+@keyframes pulse {
+    50% {
+        opacity: 0.5;
+    }
+}
+@keyframes shimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pulse {
+        animation: none;
+    }
+    .shimmer::after {
+        display: none;
+    }
 }

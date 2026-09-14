@@ -8,15 +8,17 @@
     z-index: 30;
 }
 .toast {
-    align-items: center;
+    align-items: flex-start;
     background: var(--sys-color-surface-raised);
     border: 1px solid var(--sys-color-border-control);
-    border-radius: var(--sys-radius-md);
-    box-shadow: var(--sys-shadow-raised);
+    border-radius: var(--radius-md);
+    box-shadow: var(--elevation-lg);
     display: flex;
     gap: var(--sys-space-3);
-    justify-content: space-between;
-    padding: var(--sys-space-3);
+    max-width: 384px;
+    overflow: hidden;
+    padding: 16px 16px 16px 20px;
+    position: relative;
 }
 .toast::before {
     align-self: stretch;
@@ -37,16 +39,94 @@
 .danger {
     --toast-accent: var(--sys-color-danger);
 }
+.loading {
+    --toast-accent: var(--neutral-400);
+}
+.icon {
+    align-items: center;
+    border: 1.5px solid var(--toast-accent);
+    border-radius: 50%;
+    color: var(--toast-accent);
+    display: flex;
+    flex: none;
+    font-size: 12px;
+    font-weight: 700;
+    height: 20px;
+    justify-content: center;
+    margin-top: 2px;
+    width: 20px;
+}
 .content {
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+.title {
+    color: var(--neutral-900);
+    font-size: 14px;
+    line-height: 20px;
+}
+.description {
+    color: var(--neutral-600);
+    font-size: 14px;
+    line-height: 20px;
+    margin-top: 4px;
 }
 .action {
     display: inline-flex;
 }
-.toast button {
+.dismiss {
     background: transparent;
     border: 0;
-    color: var(--sys-color-text-primary);
-    min-height: 44px;
-    min-width: 44px;
+    border-radius: 4px;
+    color: var(--neutral-400);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 20px;
+    margin: -4px;
+    padding: 4px;
+}
+.dismiss:hover {
+    background: var(--neutral-100);
+    color: var(--neutral-700);
+}
+.dismiss:focus-visible,
+.actionButton:focus-visible {
+    outline: 2px solid var(--neutral-900);
+    outline-offset: 2px;
+}
+.actionButton {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: var(--neutral-900);
+    cursor: pointer;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 8px;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.anchored {
+    position: fixed;
+    z-index: 50;
+}
+.top-left {
+    left: 16px;
+    top: 16px;
+}
+.top-right {
+    right: 16px;
+    top: 16px;
+}
+.bottom-left {
+    bottom: 16px;
+    left: 16px;
+}
+.bottom-right {
+    bottom: 16px;
+    right: 16px;
 }

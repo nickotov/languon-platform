@@ -1,11 +1,12 @@
 .field {
     display: grid;
     font-size: 14px;
-    gap: var(--sys-space-2);
+    gap: var(--spacing-label-to-input);
 }
 
 .label {
-    font-weight: 700;
+    color: var(--text-primary);
+    font-weight: 500;
 }
 .label[data-required]::after {
     content: ' *';

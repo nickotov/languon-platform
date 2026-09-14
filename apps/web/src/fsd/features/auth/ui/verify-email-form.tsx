@@ -1,7 +1,6 @@
 'use client';
 
 import { VerificationCodeSchema } from '@languon/contracts';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 
@@ -120,34 +119,14 @@ export function VerifyEmailForm({
     }
 
     if (capabilities && !capabilities.email.verification) {
-        return (
-            <FormMessage>
-                {t('verify.unavailable')}{' '}
-                <Link
-                    href={href(
-                        preserveCapabilityReturnFragment(
-                            `/login?${new URLSearchParams({
-                                returnTo: safeReturnPath(returnTo),
-                            }).toString()}`,
-                            safeReturnPath(returnTo),
-                        ),
-                    )}
-                >
-                    {t('auth.returnToSignIn')}
-                </Link>
-            </FormMessage>
-        );
+        return <FormMessage>{t('verify.unavailable')}</FormMessage>;
     }
 
     const waitSeconds = Math.max(0, Math.ceil((nextResendAt - now) / 1_000));
     return (
         <>
-            <p className={styles.intro}>{t('verify.intro')}</p>
             {!activeFlowId ? (
-                <FormMessage>
-                    {t('verify.incomplete')}{' '}
-                    <Link href={href('/signup')}>{t('verify.startAgain')}</Link>
-                </FormMessage>
+                <FormMessage>{t('verify.incomplete')}</FormMessage>
             ) : null}
             {error ? <FormMessage>{error}</FormMessage> : null}
             {message ? (
@@ -162,6 +141,7 @@ export function VerifyEmailForm({
                     <Input
                         autoComplete='one-time-code'
                         className={styles.code}
+                        controlSize='large'
                         inputMode='numeric'
                         maxLength={4}
                         name='code'
@@ -175,7 +155,9 @@ export function VerifyEmailForm({
                         sessionStatus === 'bootstrapping' ||
                         !activeFlowId
                     }
+                    loading={pending === 'verify'}
                     type='submit'
+                    size='large'
                 >
                     {pending === 'verify'
                         ? t('verify.checking')
@@ -189,6 +171,7 @@ export function VerifyEmailForm({
                     !activeFlowId ||
                     waitSeconds > 0
                 }
+                loading={pending === 'resend'}
                 onClick={() => void resend()}
                 type='button'
                 variant='secondary'

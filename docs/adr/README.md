@@ -30,6 +30,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0014](./0014-web-dev-panel-local-quick-access-sections.md) | Web dev panel local quick-access sections | Accepted               |
 | [ADR-0015](./0015-figma-make-design-trial.md)                   | Figma Make visual-design trial            | Superseded by ADR-0016 |
 | [ADR-0016](./0016-runtime-ui-kit-authority.md)                  | Runtime UI kit authority                  | Accepted               |
+| [ADR-0017](./0017-magic-patterns-tailwind-ui-contract.md)       | Magic Patterns Tailwind UI contract       | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

@@ -42,8 +42,16 @@ export const ru = {
     'auth.storyTitle':
         'Изучение языка, которое подстраивается под каждого ученика.',
     'auth.storyBenefitLevel': 'Уроки соответствуют вашему уровню',
+    'auth.storyBenefitLevelBody':
+        'Каждая сессия учитывает ваши цели, темп и предыдущие ошибки.',
     'auth.storyBenefitContext': 'Грамматика и лексика в контексте',
+    'auth.storyBenefitContextBody':
+        'Объяснения и практика строятся вокруг фраз, которые вы действительно хотите сказать.',
     'auth.storyBenefitProgress': 'Понятный прогресс с первого взгляда',
+    'auth.storyBenefitProgressBody':
+        'Понятная статистика для учеников и нужные детали для преподавателей.',
+    'auth.storyProof':
+        'Нам доверяют 1 200 преподавателей и 40 000 учеников, изучающих 18 языков.',
     'auth.newToLanguon': 'Впервые в Languon?',
     'auth.alreadyAccount': 'Уже есть аккаунт?',
     'auth.createAccount': 'Создать аккаунт',

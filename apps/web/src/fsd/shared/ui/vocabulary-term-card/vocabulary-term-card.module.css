@@ -1,0 +1,114 @@
+.root {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--elevation-sm);
+    padding: 16px;
+    text-align: left;
+    width: 100%;
+}
+.interactive {
+    cursor: pointer;
+}
+.interactive:hover {
+    background: var(--background-subtle);
+    border-color: var(--border-strong);
+}
+.interactive:focus-visible,
+.actions button:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+.top {
+    align-items: flex-start;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+.copy {
+    min-width: 0;
+}
+.termRow {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+.termRow h3 {
+    color: var(--text-primary);
+    font-size: 18px;
+    line-height: 1.25;
+    margin: 0;
+}
+.termRow > span {
+    color: var(--text-tertiary);
+    font-size: 14px;
+}
+.termRow .part {
+    background: var(--background-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    text-transform: uppercase;
+}
+.translation,
+.hidden {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    margin: 4px 0 0;
+}
+.hidden {
+    align-items: center;
+    color: var(--text-disabled);
+    display: flex;
+    gap: 6px;
+}
+.hidden svg {
+    height: 14px;
+    width: 14px;
+}
+.actions {
+    display: flex;
+    flex: none;
+    gap: 4px;
+}
+.actions button {
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-xs);
+    color: var(--text-tertiary);
+    padding: 6px;
+}
+.actions button:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+.actions svg {
+    height: 16px;
+    width: 16px;
+}
+.actions .saved {
+    color: var(--warning-500);
+    fill: var(--warning-400);
+}
+.example {
+    border-left: 2px solid var(--border-default);
+    margin-top: 12px;
+    padding-left: 12px;
+}
+.example p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-style: italic;
+    line-height: 1.4;
+    margin: 0;
+}
+.example p + p {
+    color: var(--text-tertiary);
+    font-style: normal;
+    margin-top: 2px;
+}

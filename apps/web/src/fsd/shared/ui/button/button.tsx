@@ -7,26 +7,44 @@ export type ControlSize = 'compact' | 'default' | 'large' | 'small' | 'medium';
 export function Button({
     children,
     className,
+    fullWidth = false,
+    leadingIcon,
     loading = false,
     size = 'default',
+    trailingIcon,
     variant = 'primary',
     ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
     children: ReactNode;
+    fullWidth?: boolean;
+    leadingIcon?: ReactNode;
     loading?: boolean;
     size?: ControlSize;
+    trailingIcon?: ReactNode;
     variant?: ButtonVariant;
 }) {
     return (
         <button
             {...props}
             aria-busy={loading || undefined}
-            className={[styles.button, styles[size], styles[variant], className]
+            className={[
+                styles.button,
+                styles[size],
+                styles[variant],
+                fullWidth ? styles.fullWidth : undefined,
+                className,
+            ]
                 .filter(Boolean)
                 .join(' ')}
             disabled={props.disabled || loading}
         >
+            {loading ? (
+                <span aria-hidden='true' className={styles.spinner} />
+            ) : (
+                leadingIcon
+            )}
             {children}
+            {!loading ? trailingIcon : null}
         </button>
     );
 }

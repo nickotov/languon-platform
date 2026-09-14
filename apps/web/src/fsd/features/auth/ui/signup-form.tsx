@@ -3,6 +3,7 @@
 import { SignUpRequestSchema } from '@languon/contracts';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
+import { Mail } from 'lucide-react';
 
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
@@ -13,7 +14,7 @@ import { Button, Field, Input } from '@/fsd/shared/ui';
 
 import { useAuth } from '../model/auth-provider';
 import { localizedAuthError } from '../lib/auth-error-message';
-import { AuthLinks, FormMessage } from './auth-shell';
+import { FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
 import { PasswordField } from './password-field';
 import styles from './auth-ui.module.css';
@@ -68,22 +69,23 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
         return (
             <>
                 <FormMessage>{t('signup.unavailable')}</FormMessage>
-                <AuthLinks mode='signup' returnTo={safeReturnPath(returnTo)} />
             </>
         );
     }
 
     return (
         <>
-            <p className={styles.intro}>{t('signup.intro')}</p>
             <CapabilityState />
             {error ? <FormMessage>{error}</FormMessage> : null}
             <form aria-busy={pending} className={styles.form} onSubmit={submit}>
                 <Field label={t('common.email')} required>
                     <Input
                         autoComplete='username'
+                        controlSize='large'
                         inputMode='email'
                         name='email'
+                        leadingIcon={<Mail />}
+                        placeholder='you@example.com'
                         required
                         type='email'
                     />
@@ -99,12 +101,13 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                         !capabilities ||
                         sessionStatus === 'bootstrapping'
                     }
+                    loading={pending}
                     type='submit'
+                    size='large'
                 >
                     {pending ? t('signup.pending') : t('signup.submit')}
                 </Button>
             </form>
-            <AuthLinks mode='signup' returnTo={safeReturnPath(returnTo)} />
         </>
     );
 }

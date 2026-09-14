@@ -1,195 +1,247 @@
 .layout {
-    background: var(--sys-color-surface-default);
-    display: grid;
+    display: flex;
     min-height: 100dvh;
+    width: 100%;
+    flex-direction: column;
+    background: var(--background-canvas);
+    color: var(--text-primary);
 }
-
 .story {
-    background: var(--sys-color-surface-subtle);
     display: none;
-    min-height: 100dvh;
-    padding: var(--sys-space-12);
+    border-right: 1px solid var(--border-default);
+    background: var(--background-subtle);
+    padding: 48px;
 }
-
 .storyContent {
-    align-self: center;
-    display: grid;
-    gap: var(--sys-space-6);
-    max-width: 560px;
+    max-width: var(--size-max-width-reading);
 }
-
-.storyEyebrow {
-    color: var(--sys-color-action-primary);
-    font-size: 13px;
-    font-weight: 750;
-    letter-spacing: 0.1em;
-    margin: 0;
-    text-transform: uppercase;
-}
-
 .storyTitle {
-    font-family: var(--sys-font-display);
-    font-size: clamp(36px, 4vw, 56px);
-    letter-spacing: -0.045em;
-    line-height: 1.08;
     margin: 0;
-    max-width: 13ch;
+    font-size: 2.25rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.12;
 }
-
 .benefits {
     display: grid;
-    gap: var(--sys-space-4);
+    gap: 28px;
     list-style: none;
-    margin: 0;
+    margin: 40px 0 0;
     padding: 0;
 }
-
 .benefits li {
-    align-items: center;
-    color: var(--sys-color-text-secondary);
     display: flex;
-    gap: var(--sys-space-3);
+    gap: 16px;
 }
-
-.benefits li::before {
-    align-items: center;
-    background: var(--sys-color-action-primary-soft);
-    border-radius: var(--sys-radius-full);
-    color: var(--sys-color-action-on-primary-soft);
-    content: '✓';
-    display: inline-flex;
-    flex: 0 0 28px;
+.benefits strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 500;
+}
+.benefits small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-secondary);
     font-size: 14px;
-    font-weight: 800;
-    height: 28px;
-    justify-content: center;
+    line-height: 1.625;
 }
-
-.formPanel {
+.benefitIcon {
     align-items: center;
+    background: var(--primary-subtle);
+    border-radius: var(--radius-md);
+    color: var(--primary-default);
     display: flex;
+    flex: 0 0 40px;
+    height: 40px;
     justify-content: center;
+    margin-top: 4px;
+}
+.benefitIcon svg {
+    height: 20px;
+    width: 20px;
+}
+.proof {
+    color: var(--text-tertiary);
+    font-size: 14px;
+    margin: 0;
+}
+.formPanel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
     min-width: 0;
-    padding: 88px var(--sys-space-4) var(--sys-space-8);
-    position: relative;
 }
-
-.mobileLogo {
-    left: var(--sys-space-4);
-    position: absolute;
-    top: var(--sys-space-5);
+.shellHeader {
+    align-items: center;
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    min-height: 69px;
+    padding: 12px 16px;
 }
-
-.card {
-    border: 0;
-    box-shadow: none;
+.mobileMonogram {
+    display: none;
+}
+.authMain {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    padding: 24px 16px 48px;
+}
+.authSection {
+    align-self: start;
     display: grid;
-    gap: var(--sys-space-5);
-    max-width: var(--sys-width-form);
-    padding: 0;
+    gap: 24px;
+    max-width: var(--size-max-width-form);
     width: 100%;
 }
-
+.card {
+    display: grid;
+    gap: 24px;
+    width: 100%;
+}
 .headingGroup {
     display: grid;
-    gap: var(--sys-space-2);
+    gap: 8px;
 }
-
 .eyebrow {
-    color: var(--sys-color-action-primary);
-    font-size: 13px;
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    margin: 0;
-    text-transform: uppercase;
+    display: none;
 }
-
 .title {
-    font-family: var(--sys-font-display);
-    font-size: clamp(28px, 7vw, 36px);
-    letter-spacing: -0.035em;
-    line-height: 1.18;
+    color: var(--text-primary);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
     margin: 0;
 }
-
+.description,
 .intro {
-    color: var(--sys-color-text-secondary);
-    line-height: 1.6;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.625;
     margin: 0;
-    max-width: 52ch;
 }
-
 .form,
 .stack {
     display: grid;
-    gap: var(--sys-space-4);
+    gap: 16px;
 }
-
 .form > button {
     width: 100%;
 }
-
 .row,
 .actions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sys-space-3);
+    gap: 12px;
 }
-
 .endRow {
     display: flex;
     font-size: 14px;
     justify-content: flex-end;
+    margin-top: -8px;
 }
-
 .endRow a,
 .switch a {
-    color: var(--sys-color-action-primary);
-    font-weight: 650;
-    text-underline-offset: 3px;
+    color: var(--primary-default);
+    font-weight: 500;
+    text-underline-offset: 4px;
 }
-
+.endRow a:hover,
+.switch a:hover {
+    color: var(--primary-hover);
+}
 .switch {
-    border-top: 1px solid var(--sys-color-border-subtle);
-    color: var(--sys-color-text-secondary);
+    color: var(--text-secondary);
+    font-size: 14px;
     margin: 0;
-    padding-top: var(--sys-space-5);
     text-align: center;
 }
-
+.authFooter {
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-align: center;
+}
+.authFooter a {
+    color: var(--primary-default);
+    font-weight: 500;
+    text-underline-offset: 4px;
+}
+.authFooter a:hover {
+    color: var(--primary-hover);
+}
 .alternative {
     align-items: center;
-    color: var(--sys-color-text-secondary);
+    color: var(--text-secondary);
     display: grid;
     font-size: 14px;
-    gap: var(--sys-space-3);
+    gap: 12px;
     text-align: center;
 }
-
 .alternative button {
     width: 100%;
 }
-
-.password {
+.fieldGroup {
     display: grid;
+    gap: 4px;
+}
+.label {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+.password {
+    display: block;
     position: relative;
 }
-
 .password input {
-    grid-area: 1 / 1;
-    padding-right: 88px;
+    padding-left: 40px;
+    padding-right: 48px;
 }
-
-.password button {
-    align-self: center;
-    grid-area: 1 / 1;
-    justify-self: end;
-    margin-right: var(--sys-space-1);
-    min-height: var(--sys-size-touch-min);
-    padding-inline: var(--sys-space-3);
+.leadingIcon {
+    color: var(--text-tertiary);
+    height: 16px;
+    left: 12px;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    z-index: 1;
 }
-
+.passwordToggle {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    height: 48px;
+    justify-content: center;
+    padding: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 44px;
+}
+.passwordToggle:hover {
+    color: var(--text-primary);
+}
+.passwordToggle:disabled {
+    color: var(--text-disabled);
+    cursor: not-allowed;
+}
+.passwordToggle svg {
+    height: 20px;
+    width: 20px;
+}
+.fieldGroup small {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    line-height: 1.5;
+}
 .code {
     font-family: var(--sys-font-mono);
     font-size: 22px;
@@ -198,107 +250,89 @@
     max-width: 192px;
     text-align: center;
 }
-
 .accountLayout {
     display: grid;
-    min-height: 100vh;
-    padding: clamp(88px, 10vw, 128px) var(--sys-space-4) var(--sys-space-8);
-    place-items: start center;
+    min-height: 100dvh;
+    padding: 88px 16px 32px;
+    place-items: center;
 }
-
 .accountCard {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elevation-sm);
     display: grid;
-    gap: var(--sys-space-6);
-    max-width: var(--sys-width-reading);
+    gap: 20px;
+    max-width: var(--size-max-width-form);
+    padding: 32px;
     width: 100%;
 }
-
-.panel {
-    display: grid;
-    gap: var(--sys-space-3);
-}
-
-.metadata {
-    display: grid;
-    gap: var(--sys-space-3);
-    margin: 0;
-}
-
-.metadata div {
-    display: grid;
-    gap: var(--sys-space-1);
-}
-
-.metadata dt {
-    color: var(--sys-color-text-secondary);
-    font-size: 14px;
-}
-
-.metadata dd {
-    margin: 0;
-}
-
-.list {
-    display: grid;
-    gap: var(--sys-space-3);
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.listItem {
-    border-top: 1px solid var(--sys-color-border-subtle);
-    padding-top: var(--sys-space-3);
-}
-
-.srOnly {
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    white-space: nowrap;
-    width: 1px;
-}
-
 @media (min-width: 640px) {
-    .formPanel {
-        padding-inline: var(--sys-space-8);
+    .shellHeader,
+    .authMain {
+        padding-left: 24px;
+        padding-right: 24px;
     }
-
     .card {
-        border: 1px solid var(--sys-color-border-subtle);
-        box-shadow: var(--sys-shadow-subtle);
-        padding: var(--sys-space-8);
+        background: var(--background-surface);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-lg);
+        padding: 32px;
+    }
+    .switch {
+        margin-top: 0;
+    }
+    .accountLayout {
+        padding-inline: 24px;
     }
 }
-
 @media (min-width: 1024px) {
     .layout {
-        grid-template-columns: minmax(0, 1fr) minmax(520px, 1fr);
+        flex-direction: row;
     }
-
     .story {
-        display: grid;
-        grid-template-rows: auto 1fr;
+        display: flex;
+        flex: 0 0 50%;
+        flex-direction: column;
+        justify-content: space-between;
     }
-
+    .storyTitle {
+        font-size: 2.25rem;
+    }
     .formPanel {
         min-height: 100dvh;
-        padding: var(--sys-space-16) var(--sys-space-12);
     }
-
-    .mobileLogo {
+    .shellHeader {
+        border-bottom: 0;
+        justify-content: flex-end;
+        min-height: 72px;
+        padding: 24px 32px;
+    }
+    .authMain {
+        align-items: center;
+        padding: 0 32px 64px;
+    }
+    .authSection {
+        align-self: center;
+    }
+    .mobileLogo,
+    .mobileMonogram {
         display: none;
     }
 }
-
 @media (max-width: 359px) {
-    .formPanel {
-        padding-inline: var(--sys-space-3);
+    .mobileLogo {
+        display: none;
     }
-
-    .title {
-        font-size: 27px;
+    .mobileMonogram {
+        display: inline-flex;
+    }
+}
+@media (min-width: 1280px) {
+    .story {
+        padding-inline: 64px;
+    }
+    .storyTitle {
+        font-size: 2.5rem;
     }
 }

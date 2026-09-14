@@ -1,19 +1,147 @@
 .group {
     border: 0;
-    display: grid;
-    gap: var(--sys-space-2);
     margin: 0;
+    min-width: 0;
     padding: 0;
 }
 .group legend {
-    font-weight: 700;
+    color: var(--neutral-900);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
 }
-.choice {
-    align-items: center;
+.groupDescription {
+    color: var(--neutral-500);
+    font-size: 14px;
+    margin: 0 0 12px;
+}
+.options {
     display: flex;
-    gap: var(--sys-space-2);
-    min-height: 44px;
+    gap: 8px;
 }
-.choice input {
-    accent-color: var(--sys-color-action-primary);
+.vertical {
+    flex-direction: column;
+}
+.horizontal {
+    align-items: stretch;
+    flex-flow: row wrap;
+}
+.radio {
+    align-items: flex-start;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    position: relative;
+    transition:
+        border-color var(--duration-fast),
+        background-color var(--duration-fast);
+}
+.default {
+    padding: 4px 0;
+}
+.card {
+    background: var(--background-surface);
+    border: 1px solid var(--neutral-200);
+    border-radius: 12px;
+    box-shadow: var(--elevation-sm);
+    padding: 16px;
+}
+.card:has(input:checked) {
+    background: var(--primary-50);
+    border-color: var(--primary-600);
+    box-shadow: 0 0 0 1px var(--primary-600);
+}
+.radio input {
+    height: 1px;
+    opacity: 0;
+    position: absolute;
+    width: 1px;
+}
+.radio:focus-within {
+    border-radius: 12px;
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+}
+.dot {
+    align-items: center;
+    background: var(--background-surface);
+    border: 2px solid var(--neutral-300);
+    border-radius: 50%;
+    display: flex;
+    flex: none;
+    justify-content: center;
+    margin-top: 2px;
+}
+.sm .dot {
+    height: 16px;
+    width: 16px;
+}
+.md .dot {
+    height: 20px;
+    width: 20px;
+}
+.dot span {
+    background: var(--primary-600);
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform var(--duration-fast);
+}
+.sm .dot span {
+    height: 6px;
+    width: 6px;
+}
+.md .dot span {
+    height: 8px;
+    width: 8px;
+}
+.radio:has(input:checked) .dot {
+    border-color: var(--primary-600);
+}
+.radio input:checked + .dot span {
+    transform: scale(1);
+}
+.copy {
+    flex: 1;
+    min-width: 0;
+}
+.label {
+    color: var(--neutral-900);
+    display: block;
+    font-weight: 500;
+}
+.sm .label {
+    font-size: 14px;
+}
+.md .label {
+    font-size: 16px;
+}
+.description {
+    color: var(--neutral-500);
+    display: block;
+    font-size: 14px;
+    margin-top: 2px;
+}
+.addon {
+    align-self: center;
+    color: var(--neutral-500);
+    flex: none;
+    font-size: 14px;
+    margin-left: auto;
+}
+.invalid .dot {
+    border-color: var(--danger-400);
+}
+.disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.disabled .dot {
+    background: var(--neutral-100);
+    border-color: var(--neutral-200);
+}
+.error {
+    color: var(--danger-600);
+    font-size: 14px;
+    font-weight: 500;
+    margin: 8px 0 0;
 }

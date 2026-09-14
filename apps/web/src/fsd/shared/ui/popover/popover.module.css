@@ -10,19 +10,75 @@
     min-height: 44px;
 }
 .content {
-    background: var(--sys-color-surface-raised);
-    border: 1px solid var(--sys-color-border-subtle);
-    border-radius: var(--sys-radius-md);
-    box-shadow: var(--sys-shadow-raised);
-    inset: auto;
-    margin: 0;
-    max-height: calc(100dvh - 32px);
-    max-width: min(400px, calc(100vw - 32px));
-    min-width: min(240px, calc(100vw - 32px));
-    overflow: auto;
-    padding: var(--sys-space-4);
-    position: fixed;
+    background: var(--background-surface);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    box-shadow: var(--elevation-lg);
+    color: var(--neutral-900);
+    max-width: min(320px, calc(100vw - 32px));
+    min-width: 160px;
+    outline: none;
+    padding: 6px;
+    z-index: 50;
 }
-.content::backdrop {
+.arrow {
+    background: var(--background-surface);
+    border: solid var(--neutral-200);
+    border-width: 1px 0 0 1px;
+    height: 8px;
+    left: 50%;
+    position: absolute;
+    top: -5px;
+    transform: rotate(45deg);
+    width: 8px;
+}
+.header {
+    color: var(--neutral-500);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 4px 10px 6px;
+    text-transform: uppercase;
+}
+.item {
+    align-items: center;
     background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--neutral-700);
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-size: 14px;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 6px 10px;
+    text-align: left;
+    transition: background-color var(--duration-fast);
+    width: 100%;
+}
+.item:hover:not(:disabled) {
+    background: var(--neutral-100);
+}
+.item:focus-visible {
+    outline: 2px solid var(--neutral-900);
+    outline-offset: 1px;
+}
+.item:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+.selected {
+    color: var(--neutral-900);
+    font-weight: 500;
+}
+.itemLabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.separator {
+    background: var(--neutral-200);
+    height: 1px;
+    margin: 4px 0;
 }

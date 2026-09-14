@@ -9,6 +9,7 @@ surfaces:
 source_paths:
     - .agent/features/user-authentication/**
     - .agent/features/magic-patterns-ui-kit-auth-redesign/**
+    - .agent/features/magic-patterns-ui-kit-auth-fidelity/**
     - .agents/skills/user-flow-e2e/**
     - .env.example
     - README.md

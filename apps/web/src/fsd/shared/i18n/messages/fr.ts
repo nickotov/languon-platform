@@ -43,8 +43,16 @@ export const fr = {
     'auth.storyTitle':
         'Un apprentissage des langues qui s’adapte à chaque personne.',
     'auth.storyBenefitLevel': 'Des leçons adaptées à votre niveau',
+    'auth.storyBenefitLevelBody':
+        'Chaque session s’adapte à vos objectifs, votre rythme et vos erreurs précédentes.',
     'auth.storyBenefitContext': 'Grammaire et vocabulaire en contexte',
+    'auth.storyBenefitContextBody':
+        'Les explications et exercices suivent les phrases que vous souhaitez réellement dire.',
     'auth.storyBenefitProgress': 'Une progression lisible en un coup d’œil',
+    'auth.storyBenefitProgressBody':
+        'Un suivi clair pour les élèves et les détails utiles aux tuteurs.',
+    'auth.storyProof':
+        'Utilisé par 1 200 tuteurs et 40 000 élèves dans 18 langues.',
     'auth.newToLanguon': 'Nouveau sur Languon ?',
     'auth.alreadyAccount': 'Vous avez déjà un compte ?',
     'auth.createAccount': 'Créer un compte',

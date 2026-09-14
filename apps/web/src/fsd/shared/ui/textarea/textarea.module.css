@@ -1,26 +1,87 @@
-.textarea {
-    background: var(--sys-color-surface-default);
-    border: 1px solid var(--sys-color-border-control);
-    border-radius: var(--sys-radius-sm);
-    color: var(--sys-color-text-primary);
-    min-height: 128px;
-    padding: var(--sys-space-3);
-    resize: vertical;
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     width: 100%;
 }
+.label {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+}
+.required {
+    color: var(--danger-default);
+    margin-left: 2px;
+}
+.textarea {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 14px;
+    min-height: 96px;
+    padding: 8px 12px;
+    transition:
+        border-color var(--duration-fast),
+        box-shadow var(--duration-fast);
+    width: 100%;
+}
+.textarea::placeholder {
+    color: var(--text-tertiary);
+}
 .textarea:hover:not(:disabled) {
-    border-color: var(--sys-color-action-primary);
+    border-color: var(--border-strong);
+}
+.textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--primary-subtle);
+    outline: none;
 }
 .textarea[aria-invalid='true'] {
-    border-color: var(--sys-color-danger);
+    border-color: var(--danger-default);
 }
 .textarea:read-only {
-    background: var(--sys-color-surface-subtle);
-    border-color: var(--sys-color-border-control-strong);
+    background: var(--background-subtle);
+    border-color: var(--border-strong);
 }
 .textarea:disabled {
-    background: var(--sys-color-disabled-surface);
-    border-color: var(--sys-color-disabled-border);
-    color: var(--sys-color-disabled-content);
+    background: var(--background-subtle);
+    border-color: var(--border-default);
+    color: var(--text-disabled);
     cursor: not-allowed;
+}
+.none {
+    resize: none;
+}
+.vertical {
+    resize: vertical;
+}
+.both {
+    resize: both;
+}
+.meta {
+    align-items: flex-start;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+.description,
+.error,
+.count {
+    font-size: 12px;
+    line-height: 16px;
+}
+.description,
+.count {
+    color: var(--text-tertiary);
+}
+.error,
+.countLimit {
+    color: var(--danger-default);
+}
+.count {
+    flex: none;
+    font-variant-numeric: tabular-nums;
 }

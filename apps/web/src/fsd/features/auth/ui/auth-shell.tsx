@@ -1,22 +1,29 @@
 'use client';
 
 import Link from 'next/link';
+import { BookOpen, LineChart, Sparkles } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 
 import { useI18n } from '@/fsd/shared/i18n';
 import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
-import { Card, InlineAlert, Logo } from '@/fsd/shared/ui';
+import { InlineAlert, Logo } from '@/fsd/shared/ui';
+
+import { useAuth } from '../model/auth-provider';
 import styles from './auth-ui.module.css';
 
 export function AuthShell({
     children,
+    description,
     eyebrow,
+    footer,
     title,
     variant = 'auth',
 }: {
     children: ReactNode;
+    description?: ReactNode;
     eyebrow: string;
+    footer?: ReactNode;
     title: string;
     variant?: 'account' | 'auth';
 }) {
@@ -24,7 +31,7 @@ export function AuthShell({
     if (variant === 'account') {
         return (
             <main className={styles.accountLayout}>
-                <Card
+                <section
                     className={styles.accountCard}
                     aria-labelledby='auth-title'
                 >
@@ -36,7 +43,7 @@ export function AuthShell({
                         </h1>
                     </div>
                     {children}
-                </Card>
+                </section>
             </main>
         );
     }
@@ -46,35 +53,83 @@ export function AuthShell({
             <aside className={styles.story}>
                 <Logo href={href('/')} label={t('auth.brandHome')} />
                 <div className={styles.storyContent}>
-                    <p className={styles.storyEyebrow}>
-                        {t('auth.storyEyebrow')}
-                    </p>
-                    <p className={styles.storyTitle}>
-                        {t('auth.storyTitle')}
-                    </p>
+                    <p className={styles.storyTitle}>{t('auth.storyTitle')}</p>
                     <ul className={styles.benefits}>
-                        <li>{t('auth.storyBenefitLevel')}</li>
-                        <li>{t('auth.storyBenefitContext')}</li>
-                        <li>{t('auth.storyBenefitProgress')}</li>
+                        <li>
+                            <span className={styles.benefitIcon}>
+                                <Sparkles aria-hidden='true' />
+                            </span>
+                            <span>
+                                <strong>{t('auth.storyBenefitLevel')}</strong>
+                                <small>{t('auth.storyBenefitLevelBody')}</small>
+                            </span>
+                        </li>
+                        <li>
+                            <span className={styles.benefitIcon}>
+                                <BookOpen aria-hidden='true' />
+                            </span>
+                            <span>
+                                <strong>{t('auth.storyBenefitContext')}</strong>
+                                <small>
+                                    {t('auth.storyBenefitContextBody')}
+                                </small>
+                            </span>
+                        </li>
+                        <li>
+                            <span className={styles.benefitIcon}>
+                                <LineChart aria-hidden='true' />
+                            </span>
+                            <span>
+                                <strong>
+                                    {t('auth.storyBenefitProgress')}
+                                </strong>
+                                <small>
+                                    {t('auth.storyBenefitProgressBody')}
+                                </small>
+                            </span>
+                        </li>
                     </ul>
                 </div>
+                <p className={styles.proof}>{t('auth.storyProof')}</p>
             </aside>
             <section className={styles.formPanel}>
-                <Logo
-                    className={styles.mobileLogo}
-                    href={href('/')}
-                    label={t('auth.brandHome')}
-                    monogram
-                />
-                <Card className={styles.card} aria-labelledby='auth-title'>
-                    <div className={styles.headingGroup}>
-                        <p className={styles.eyebrow}>{eyebrow}</p>
-                        <h1 className={styles.title} id='auth-title'>
-                            {title}
-                        </h1>
-                    </div>
-                    {children}
-                </Card>
+                <header className={styles.shellHeader}>
+                    <Logo
+                        className={styles.mobileLogo}
+                        href={href('/')}
+                        label={t('auth.brandHome')}
+                    />
+                    <Logo
+                        className={styles.mobileMonogram}
+                        href={href('/')}
+                        label={t('auth.brandHome')}
+                        monogram
+                    />
+                </header>
+                <div className={styles.authMain}>
+                    <section
+                        className={styles.authSection}
+                        aria-labelledby='auth-title'
+                    >
+                        <div className={styles.card}>
+                            <header className={styles.headingGroup}>
+                                <p className={styles.eyebrow}>{eyebrow}</p>
+                                <h1 className={styles.title} id='auth-title'>
+                                    {title}
+                                </h1>
+                                {description ? (
+                                    <p className={styles.description}>
+                                        {description}
+                                    </p>
+                                ) : null}
+                            </header>
+                            {children}
+                        </div>
+                        {footer ? (
+                            <div className={styles.authFooter}>{footer}</div>
+                        ) : null}
+                    </section>
+                </div>
             </section>
         </main>
     );
@@ -102,20 +157,19 @@ export function FormMessage({
 export function AuthLinks({
     mode,
     returnTo,
-    signupAvailable = true,
 }: {
     mode: 'login' | 'signup';
     returnTo?: string | undefined;
-    signupAvailable?: boolean;
 }) {
     const { href, t } = useI18n();
+    const { capabilities } = useAuth();
     const destination = safeReturnPath(returnTo);
     const path = mode === 'login' ? '/signup' : '/login';
     const target =
         destination === '/'
             ? path
             : `${path}?${new URLSearchParams({ returnTo: destination }).toString()}`;
-    if (mode === 'login' && !signupAvailable) return null;
+    if (mode === 'login' && capabilities?.email.signUp === false) return null;
     return (
         <p className={styles.switch}>
             {mode === 'login'

@@ -30,19 +30,31 @@ type TriggerProps = {
     onKeyDown?(event: KeyboardEvent): void;
 };
 
+export type TooltipProps = {
+    children: ReactElement<TriggerProps>;
+    className?: string;
+    content: ReactNode;
+    delay?: number;
+    disabled?: boolean;
+    open?: boolean;
+    placement?: Placement;
+    withArrow?: boolean;
+};
+
 export function Tooltip({
     children,
+    className,
     content,
+    delay = 500,
+    disabled = false,
+    open: forcedOpen,
     placement = 'top',
-}: {
-    children: ReactElement<TriggerProps>;
-    content: ReactNode;
-    placement?: Placement;
-}) {
+    withArrow = true,
+}: TooltipProps) {
     const id = useId();
     const panelRef = useRef<HTMLDivElement | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [nativePopover, setNativePopover] = useState(false);
+    const nativePopover = false;
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
     const { floatingStyles, refs } = useFloating({
@@ -56,13 +68,6 @@ export function Tooltip({
 
     useEffect(() => {
         setMounted(true);
-        setNativePopover(
-            Boolean(
-                'showPopover' in HTMLElement.prototype &&
-                typeof CSS !== 'undefined' &&
-                CSS.supports?.('selector(:popover-open)'),
-            ),
-        );
         return () => {
             if (timer.current) clearTimeout(timer.current);
         };
@@ -93,7 +98,7 @@ export function Tooltip({
 
     function showAfterDelay() {
         if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(show, 500);
+        timer.current = setTimeout(show, delay);
     }
 
     function hide() {
@@ -102,7 +107,10 @@ export function Tooltip({
         setOpen(false);
     }
 
-    const describedBy = open
+    if (disabled || !content) return children;
+
+    const visible = forcedOpen ?? open;
+    const describedBy = visible
         ? [children.props['aria-describedby'], id].filter(Boolean).join(' ')
         : children.props['aria-describedby'];
     const triggerProps: Partial<TriggerProps> = {
@@ -125,16 +133,18 @@ export function Tooltip({
     return (
         <span
             className={styles.root}
-            onMouseEnter={showAfterDelay}
-            onMouseLeave={hide}
+            onMouseEnter={forcedOpen === undefined ? showAfterDelay : undefined}
+            onMouseLeave={forcedOpen === undefined ? hide : undefined}
             ref={refs.setReference}
         >
             {trigger}
             {mounted
                 ? createPortal(
                       <div
-                          className={styles.tooltip}
-                          hidden={!nativePopover && !open}
+                          className={[styles.tooltip, className]
+                              .filter(Boolean)
+                              .join(' ')}
+                          hidden={!nativePopover && !visible}
                           id={id}
                           onMouseEnter={show}
                           popover={nativePopover ? 'manual' : undefined}
@@ -143,6 +153,12 @@ export function Tooltip({
                           style={floatingStyles}
                       >
                           {content}
+                          {withArrow ? (
+                              <span
+                                  aria-hidden='true'
+                                  className={styles.arrow}
+                              />
+                          ) : null}
                       </div>,
                       document.body,
                   )

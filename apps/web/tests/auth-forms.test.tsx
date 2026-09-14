@@ -6,13 +6,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { AuthProvider, useAuth } from '@/fsd/features/auth/model/auth-provider';
-import { AuthShell } from '@/fsd/features/auth/ui/auth-shell';
+import { AuthLinks, AuthShell } from '@/fsd/features/auth/ui/auth-shell';
 import { LoginForm } from '@/fsd/features/auth/ui/login-form';
 import { PasswordField } from '@/fsd/features/auth/ui/password-field';
 import { ResetPasswordForm } from '@/fsd/features/auth/ui/reset-password-form';
 import { SecuritySettings } from '@/fsd/features/auth/ui/security-settings';
 import { SignupForm } from '@/fsd/features/auth/ui/signup-form';
 import { VerifyEmailForm } from '@/fsd/features/auth/ui/verify-email-form';
+import { ForgotPasswordPage } from '@/fsd/pages/forgot-password/ui/forgot-password-page';
+import { ResetPasswordPage } from '@/fsd/pages/reset-password/ui/reset-password-page';
+import { VerifyEmailPage } from '@/fsd/pages/verify-email/ui/verify-email-page';
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { I18nProvider, type Locale } from '@/fsd/shared/i18n';
 import { en } from '@/fsd/shared/i18n/messages/en';
@@ -76,14 +79,30 @@ describe('authentication forms', () => {
 
     it('renders the localized auth composition without prototype-only controls', () => {
         render(
-            <AuthShell eyebrow='Your account' title='Sign in'>
-                <p>Real authentication form</p>
-            </AuthShell>,
+            <AuthProvider>
+                <AuthShell
+                    description='Continue your lessons.'
+                    eyebrow='Your account'
+                    footer={<AuthLinks mode='login' />}
+                    title='Sign in'
+                >
+                    <p>Real authentication form</p>
+                </AuthShell>
+            </AuthProvider>,
         );
 
-        expect(
-            screen.getByRole('heading', { level: 1, name: 'Sign in' }),
-        ).toBeVisible();
+        const heading = screen.getByRole('heading', {
+            level: 1,
+            name: 'Sign in',
+        });
+        const accountSwitch = screen.getByRole('link', {
+            name: 'Create an account',
+        });
+        expect(heading).toBeVisible();
+        expect(screen.getByText('Continue your lessons.')).toBeVisible();
+        expect(heading.parentElement?.parentElement).not.toContainElement(
+            accountSwitch,
+        );
         expect(screen.getByText(/Language learning that adapts/)).toBeVisible();
         expect(screen.getAllByRole('heading')).toHaveLength(1);
         expect(
@@ -91,6 +110,66 @@ describe('authentication forms', () => {
         ).toBeVisible();
         expect(screen.queryByText(/Google|Apple|Yandex|VK/)).toBeNull();
         expect(screen.queryByRole('checkbox')).toBeNull();
+    });
+
+    it('renders recovery navigation outside the bordered form card', () => {
+        render(
+            <AuthProvider>
+                <ForgotPasswordPage />
+            </AuthProvider>,
+        );
+
+        const heading = screen.getByRole('heading', {
+            level: 1,
+            name: 'Reset your password',
+        });
+        const recoveryLink = screen.getByRole('link', {
+            name: 'Back to sign in',
+        });
+        expect(recoveryLink).toHaveAttribute('href', '/login');
+        expect(heading.parentElement?.parentElement).not.toContainElement(
+            recoveryLink,
+        );
+    });
+
+    it('renders the missing-reset-flow action outside the bordered form card', () => {
+        render(
+            <AuthProvider>
+                <ResetPasswordPage />
+            </AuthProvider>,
+        );
+
+        const heading = screen.getByRole('heading', {
+            level: 1,
+            name: 'Choose a new password',
+        });
+        const requestLink = screen.getByRole('link', {
+            name: 'Request a new code.',
+        });
+        expect(requestLink).toHaveAttribute('href', '/forgot-password');
+        expect(heading.parentElement?.parentElement).not.toContainElement(
+            requestLink,
+        );
+    });
+
+    it('renders the missing-verification-flow action outside the bordered form card', () => {
+        render(
+            <AuthProvider>
+                <VerifyEmailPage />
+            </AuthProvider>,
+        );
+
+        const heading = screen.getByRole('heading', {
+            level: 1,
+            name: 'Verify your email',
+        });
+        const restartLink = screen.getByRole('link', {
+            name: 'Start signup again.',
+        });
+        expect(restartLink).toHaveAttribute('href', '/signup');
+        expect(heading.parentElement?.parentElement).not.toContainElement(
+            restartLink,
+        );
     });
 
     it('allows password paste, exposes autocomplete, and toggles visibility', async () => {
@@ -136,6 +215,38 @@ describe('authentication forms', () => {
         expect(sessionStorage).toHaveLength(0);
     });
 
+    it('keeps the sign-in action visibly busy while authentication is pending', async () => {
+        const user = userEvent.setup();
+        let resolveLogin:
+            ((value: AuthenticationSuccessResponse) => void) | undefined;
+        const login = new Promise<AuthenticationSuccessResponse>((resolve) => {
+            resolveLogin = resolve;
+        });
+        vi.spyOn(authApi, 'passwordLogin').mockReturnValue(login);
+        render(
+            <AuthProvider>
+                <LoginForm />
+            </AuthProvider>,
+        );
+
+        await screen.findByRole('link', { name: 'Forgot password?' });
+        await user.type(screen.getByLabelText('Email'), 'learner@example.com');
+        await user.type(
+            screen.getByLabelText('Password'),
+            'a very secure password',
+        );
+        await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+        const pendingButton = screen.getByRole('button', {
+            name: 'Signing in…',
+        });
+        expect(pendingButton).toBeDisabled();
+        expect(pendingButton).toHaveAttribute('aria-busy', 'true');
+
+        resolveLogin?.(response);
+        await waitFor(() => expect(replace).toHaveBeenCalledWith('/'));
+    });
+
     it('shows contract validation without calling the API', async () => {
         const user = userEvent.setup();
         const login = vi.spyOn(authApi, 'passwordLogin');
@@ -172,7 +283,13 @@ describe('authentication forms', () => {
 
         render(
             <AuthProvider>
-                <LoginForm />
+                <AuthShell
+                    eyebrow='Your account'
+                    footer={<AuthLinks mode='login' />}
+                    title='Sign in'
+                >
+                    <LoginForm />
+                </AuthShell>
             </AuthProvider>,
         );
 

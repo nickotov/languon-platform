@@ -2,7 +2,8 @@
     align-items: center;
     color: var(--sys-color-text-primary);
     display: inline-flex;
-    font-weight: 800;
+    font-family: var(--font-heading);
+    font-weight: 600;
     gap: var(--sys-space-2);
     letter-spacing: -0.02em;
     min-height: var(--sys-size-touch-min);
@@ -12,11 +13,11 @@
 
 .mark {
     align-items: center;
-    background: var(--sys-color-action-primary);
+    background: var(--neutral-900);
     border-radius: var(--sys-radius-sm);
-    color: var(--sys-color-action-on-primary);
+    color: var(--neutral-50);
     display: inline-flex;
-    font-size: 17px;
+    font-size: 14px;
     height: 32px;
     justify-content: center;
     letter-spacing: -0.06em;

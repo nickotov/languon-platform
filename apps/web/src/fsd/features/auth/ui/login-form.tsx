@@ -4,18 +4,19 @@ import { PasswordLoginRequestSchema } from '@languon/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
+import { Mail } from 'lucide-react';
 
 import { authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
 import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
 import { useSessionStore } from '@/fsd/entities/session';
-import { Button, Field, Input } from '@/fsd/shared/ui';
+import { Button, Divider, Field, Input } from '@/fsd/shared/ui';
 
 import { getPasskey, supportsPasskeys } from '../lib/webauthn';
 import { localizedAuthError } from '../lib/auth-error-message';
 import { useAuth } from '../model/auth-provider';
-import { AuthLinks, FormMessage } from './auth-shell';
+import { FormMessage } from './auth-shell';
 import { CapabilityState } from './capability-state';
 import { PasswordField } from './password-field';
 import styles from './auth-ui.module.css';
@@ -118,7 +119,6 @@ export function LoginForm({
 
     return (
         <>
-            <p className={styles.intro}>{t('login.intro')}</p>
             {passwordReset === 'complete' ? (
                 <FormMessage tone='success'>
                     {t('login.passwordResetComplete')}
@@ -126,6 +126,30 @@ export function LoginForm({
             ) : null}
             <CapabilityState />
             {error ? <FormMessage>{error}</FormMessage> : null}
+            {capabilities?.passkeys.authentication ? (
+                <div className={styles.alternative}>
+                    <Button
+                        disabled={
+                            pending !== null ||
+                            sessionStatus === 'bootstrapping' ||
+                            !passkeySupported
+                        }
+                        onClick={() => void submitPasskey()}
+                        loading={pending === 'passkey'}
+                        type='button'
+                        variant='secondary'
+                        size='large'
+                    >
+                        {pending === 'passkey'
+                            ? t('login.passkeyPending')
+                            : t('login.passkey')}
+                    </Button>
+                    {!passkeySupported ? (
+                        <small>{t('passkey.unsupported')}</small>
+                    ) : null}
+                    <Divider>{t('login.or')}</Divider>
+                </div>
+            ) : null}
             <form
                 aria-busy={pending === 'password'}
                 className={styles.form}
@@ -134,8 +158,11 @@ export function LoginForm({
                 <Field label={t('common.email')} required>
                     <Input
                         autoComplete='username'
+                        controlSize='large'
                         inputMode='email'
                         name='email'
+                        leadingIcon={<Mail />}
+                        placeholder='you@example.com'
                         required
                         type='email'
                     />
@@ -158,40 +185,15 @@ export function LoginForm({
                         sessionStatus === 'bootstrapping' ||
                         capabilities?.passwordAuthentication === false
                     }
+                    loading={pending === 'password'}
                     type='submit'
+                    size='large'
                 >
                     {pending === 'password'
                         ? t('login.pending')
                         : t('auth.signIn')}
                 </Button>
             </form>
-            {capabilities?.passkeys.authentication ? (
-                <div className={styles.alternative}>
-                    <span>{t('login.or')}</span>
-                    <Button
-                        disabled={
-                            pending !== null ||
-                            sessionStatus === 'bootstrapping' ||
-                            !passkeySupported
-                        }
-                        onClick={() => void submitPasskey()}
-                        type='button'
-                        variant='secondary'
-                    >
-                        {pending === 'passkey'
-                            ? t('login.passkeyPending')
-                            : t('login.passkey')}
-                    </Button>
-                    {!passkeySupported ? (
-                        <small>{t('passkey.unsupported')}</small>
-                    ) : null}
-                </div>
-            ) : null}
-            <AuthLinks
-                mode='login'
-                returnTo={destination}
-                signupAvailable={capabilities?.email.signUp !== false}
-            />
         </>
     );
 }

@@ -43,8 +43,16 @@ export const es = {
     'auth.storyTitle':
         'Aprendizaje de idiomas que se adapta a quien está aprendiendo.',
     'auth.storyBenefitLevel': 'Lecciones que siguen tu nivel',
+    'auth.storyBenefitLevelBody':
+        'Cada sesión se adapta a tus objetivos, tu ritmo y tus errores anteriores.',
     'auth.storyBenefitContext': 'Gramática y vocabulario en contexto',
+    'auth.storyBenefitContextBody':
+        'Las explicaciones y la práctica llegan con las frases que realmente quieres decir.',
     'auth.storyBenefitProgress': 'Tu progreso, claro de un vistazo',
+    'auth.storyBenefitProgressBody':
+        'Seguimiento claro para estudiantes y el detalle que necesitan los tutores.',
+    'auth.storyProof':
+        'Usado por 1.200 tutores y 40.000 estudiantes en 18 idiomas.',
     'auth.newToLanguon': '¿Nuevo en Languon?',
     'auth.alreadyAccount': '¿Ya tienes una cuenta?',
     'auth.createAccount': 'Crear una cuenta',

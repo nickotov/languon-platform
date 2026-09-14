@@ -1,0 +1,122 @@
+.sr {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+.value,
+.pill,
+.week,
+.day,
+.loading {
+    align-items: center;
+    display: inline-flex;
+}
+.value {
+    gap: 6px;
+}
+.value svg {
+    height: 16px;
+    width: 16px;
+}
+.value span {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+.value.sm svg {
+    height: 14px;
+    width: 14px;
+}
+.value.sm span {
+    font-size: 12px;
+}
+.hot {
+    color: var(--review-due);
+}
+.pending {
+    color: var(--text-secondary);
+}
+.empty {
+    color: var(--text-disabled);
+}
+.pill {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-full);
+    gap: 8px;
+    padding: 6px 12px;
+}
+.pill.sm {
+    padding: 4px 10px;
+}
+.week {
+    gap: 4px;
+}
+.day {
+    align-items: center;
+    flex-direction: column;
+    gap: 4px;
+}
+.dot,
+.done {
+    background: var(--border-default);
+    border-radius: 50%;
+    height: 6px;
+    width: 6px;
+}
+.done {
+    background: var(--warning-500);
+}
+.dayLabel {
+    color: var(--text-tertiary);
+    font-size: 10px;
+}
+.card {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+}
+.cardTop {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+.card h3 {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+}
+.card p {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    line-height: 1.625;
+    margin: 12px 0 0;
+}
+.loading {
+    gap: 8px;
+}
+.loading span {
+    animation: pulse 1.5s infinite;
+    background: var(--border-default);
+    border-radius: var(--radius-full);
+    height: 14px;
+    width: 64px;
+}
+.loading span:first-child {
+    width: 16px;
+}
+@keyframes pulse {
+    50% {
+        opacity: 0.45;
+    }
+}
