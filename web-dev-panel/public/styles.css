@@ -473,6 +473,7 @@ input[type='checkbox'] {
 }
 
 .command-card {
+    height: fit-content;
     min-width: 0;
     border: 1px solid var(--border);
     border-radius: 18px;
