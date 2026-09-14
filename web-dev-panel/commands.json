@@ -225,9 +225,9 @@
             "batchEligible": false,
             "category": "Database",
             "conflictsWith": [],
-            "description": "Applies pending backend PostgreSQL migrations.",
-            "disabledReason": "May generate or apply database schema changes.",
-            "enabled": false,
+            "description": "Applies pending backend PostgreSQL migrations to the configured database; run individually.",
+            "disabledReason": null,
+            "enabled": true,
             "id": "db:migrate",
             "kind": "task",
             "outputProtocol": "plain",
@@ -429,6 +429,23 @@
                 "type": "package-script"
             },
             "title": "Dev · Backend"
+        },
+        {
+            "batchEligible": true,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Starts the local asynchronous dictionary generation worker.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:dictionary-worker",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:12ada671215c57109bee7846eaf3a548b4b2cb3dc3f5097a0cfc229294b02cc1",
+                "script": "dev:dictionary-worker",
+                "type": "package-script"
+            },
+            "title": "Dev · Dictionary Worker"
         },
         {
             "batchEligible": true,

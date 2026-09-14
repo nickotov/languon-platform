@@ -96,12 +96,26 @@ describe('dictionary worker environment', () => {
         ).toThrow(/processable.*Mastra|Mastra.*processable/i);
     });
 
-    it('requires its dedicated database credential', () => {
+    it('reuses the API database URL only for local development and test', () => {
         const { DICTIONARY_WORKER_DATABASE_URL: _, ...withoutWorkerDatabase } =
             base;
+        expect(
+            loadDictionaryWorkerEnvironment({
+                ...withoutWorkerDatabase,
+                DATABASE_URL: 'postgres://local:pass@localhost:5432/languon',
+            }).databaseUrl,
+        ).toBe('postgres://local:pass@localhost:5432/languon');
         expect(() =>
             loadDictionaryWorkerEnvironment(withoutWorkerDatabase),
-        ).toThrow(/DICTIONARY_WORKER_DATABASE_URL/);
+        ).toThrow(/DICTIONARY_WORKER_DATABASE_URL.*DATABASE_URL/);
+        expect(() =>
+            loadDictionaryWorkerEnvironment({
+                ...withoutWorkerDatabase,
+                APP_ENV: 'production',
+                DATABASE_URL:
+                    'postgres://api:pass@database.internal:5432/languon?sslmode=verify-full',
+            }),
+        ).toThrow(/Deployed.*DICTIONARY_WORKER_DATABASE_URL/);
     });
 
     it('rejects duplicate, malformed, and unbounded settings', () => {

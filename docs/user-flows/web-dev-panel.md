@@ -2,7 +2,7 @@
 feature: web-dev-panel
 title: Web Dev Command Panel
 status: current
-last_verified: 2026-08-22
+last_verified: 2026-09-14
 surfaces:
     - browser
     - cli
@@ -67,6 +67,9 @@ merely for testing.
    current status. Expanding it shows the displayed source command, controls,
    latest log, and either an available action or labeled “Why unavailable”
    explanation. Snapshot updates do not close an expanded card.
+   Confirm Development includes the enabled `dev:dictionary-worker` service and
+   Database includes the enabled `db:migrate` task. The migration task is not
+   eligible for batch or quick-access section starts and must be run individually.
 2. Open Services, select multiple enabled compatible fixture commands, and
    choose Run selected. Each card enters Running independently, its terminal
    area contains only that command's output, and the checkbox selection clears.
@@ -148,6 +151,12 @@ faster unit and native HTTP integration layers.
   process-scoped session cookie.
 - Unknown, disabled, missing, changed, unreviewed, duplicate, already-running,
   conflicting, or stale selections reject the entire batch before any spawn.
+- `db:migrate` can be started individually and targets the database selected by
+  the panel process environment. It remains excluded from batch starts so a
+  general service selection cannot apply migrations implicitly.
+- If the local dictionary worker has no `DICTIONARY_WORKER_DATABASE_URL`, it
+  reuses `DATABASE_URL`. Deployed workers still require their explicit
+  least-privilege worker URL and never fall back to the API credential.
 - Malformed, oversized, unsupported, duplicated, or current-catalog-incomplete
   quick-access JSON is rejected without replacing the prior layout or starting a
   command. Browser storage failures redraw the unchanged saved layout, leave the

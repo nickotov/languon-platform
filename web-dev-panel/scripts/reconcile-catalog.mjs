@@ -26,6 +26,7 @@ const initialServices = new Set([
     'dev:admin',
     'dev:apps:docker',
     'dev:backend',
+    'dev:dictionary-worker',
     'dev:infra',
     'dev:mastra',
     'dev:mobile',
@@ -61,7 +62,8 @@ const descriptions = {
     'db:check': 'Validates the backend Drizzle migration history.',
     'db:generate':
         'Generates Drizzle SQL migration files from backend schema changes.',
-    'db:migrate': 'Applies pending backend PostgreSQL migrations.',
+    'db:migrate':
+        'Applies pending backend PostgreSQL migrations to the configured database; run individually.',
     'db:studio':
         'Starts Drizzle Studio for interactive local database inspection.',
     'deploy:local': 'Runs the disposable local deployment rehearsal journey.',
@@ -80,6 +82,8 @@ const descriptions = {
     'dev:apps:docker':
         'Builds and starts backend, web, and admin with local infrastructure in Docker.',
     'dev:backend': 'Starts only the backend development server.',
+    'dev:dictionary-worker':
+        'Starts the local asynchronous dictionary generation worker.',
     'dev:infra': 'Starts the local PostgreSQL and Redis containers.',
     'dev:mastra': 'Provisions and starts isolated local Mastra Studio.',
     'dev:mobile':

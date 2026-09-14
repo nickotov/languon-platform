@@ -17,6 +17,10 @@ const optionalValue = z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.string().min(1).optional(),
 );
+const optionalUrl = z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.url().optional(),
+);
 
 function isPrivateAddress(hostname: string): boolean {
     const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
@@ -65,8 +69,9 @@ function parseFormats(value: string, name: string): string[] {
 
 const WorkerEnvironmentSchema = z.object({
     APP_ENV: z.enum(['development', 'test', 'staging', 'production']),
+    DATABASE_URL: optionalUrl,
     DATABASE_MAX_CONNECTIONS: z.coerce.number().int().min(1).max(50).default(4),
-    DICTIONARY_WORKER_DATABASE_URL: z.url(),
+    DICTIONARY_WORKER_DATABASE_URL: optionalUrl,
     DICTIONARY_JOB_API_ENQUEUED_FORMATS: z.string().default(''),
     DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: z.string().default(''),
     DICTIONARY_WORKER_CONCURRENCY: z.coerce
@@ -164,7 +169,18 @@ export function loadDictionaryWorkerEnvironment(
     values: NodeJS.ProcessEnv = process.env,
 ): DictionaryWorkerEnvironment {
     const environment = WorkerEnvironmentSchema.parse(values);
-    const database = new URL(environment.DICTIONARY_WORKER_DATABASE_URL);
+    const deployed = ['staging', 'production'].includes(environment.APP_ENV);
+    const databaseUrl =
+        environment.DICTIONARY_WORKER_DATABASE_URL ??
+        (!deployed ? environment.DATABASE_URL : undefined);
+    if (!databaseUrl) {
+        throw new Error(
+            deployed
+                ? 'Deployed dictionary workers require an explicit DICTIONARY_WORKER_DATABASE_URL.'
+                : 'Development/test dictionary workers require DICTIONARY_WORKER_DATABASE_URL or DATABASE_URL.',
+        );
+    }
+    const database = new URL(databaseUrl);
     if (!['postgres:', 'postgresql:'].includes(database.protocol)) {
         throw new Error('DICTIONARY_WORKER_DATABASE_URL must use PostgreSQL.');
     }
@@ -201,7 +217,6 @@ export function loadDictionaryWorkerEnvironment(
         );
     }
     const providerMode = environment.DICTIONARY_GENERATION_PROVIDER_MODE;
-    const deployed = ['staging', 'production'].includes(environment.APP_ENV);
     if (supportedFormats.length > 0 && providerMode === 'unavailable')
         throw new Error(
             deployed
@@ -345,7 +360,7 @@ export function loadDictionaryWorkerEnvironment(
         appEnvironment: environment.APP_ENV,
         concurrency: environment.DICTIONARY_WORKER_CONCURRENCY,
         databaseMaxConnections: environment.DATABASE_MAX_CONNECTIONS,
-        databaseUrl: environment.DICTIONARY_WORKER_DATABASE_URL,
+        databaseUrl,
         document,
         drainTimeoutMs: environment.DICTIONARY_WORKER_DRAIN_TIMEOUT_MS,
         includeProviderReadiness: supportedFormats.length > 0,

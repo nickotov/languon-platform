@@ -37,6 +37,8 @@ export const dictionaryWorkerLocalEnvironmentFile = new URL(
     import.meta.url,
 );
 
+class DictionaryWorkerConfigurationError extends Error {}
+
 function createWorkerId(releaseSha: string): string {
     return [
         'dictionary',
@@ -58,7 +60,18 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         );
     }
 
-    const environment = loadDictionaryWorkerEnvironment();
+    let environment: ReturnType<typeof loadDictionaryWorkerEnvironment>;
+    try {
+        environment = loadDictionaryWorkerEnvironment();
+    } catch (error) {
+        throw new DictionaryWorkerConfigurationError(
+            `Dictionary worker configuration failed: ${
+                error instanceof Error
+                    ? error.message
+                    : 'unknown configuration error'
+            }`,
+        );
+    }
     const sql = createPostgresClient({
         databaseUrl: environment.databaseUrl,
         maxConnections: environment.databaseMaxConnections,
@@ -237,8 +250,12 @@ async function main(values = process.argv.slice(2)): Promise<void> {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-    main().catch(() => {
-        process.stderr.write('Dictionary worker command failed.\n');
+    main().catch((error: unknown) => {
+        process.stderr.write(
+            error instanceof DictionaryWorkerConfigurationError
+                ? `${error.message}\n`
+                : 'Dictionary worker command failed.\n',
+        );
         process.exitCode = 1;
     });
 }

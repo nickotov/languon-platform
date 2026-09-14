@@ -32,6 +32,32 @@ test('production bulk selection contains no conflicting command pair', async () 
     }
 });
 
+test('production catalog exposes the worker and keeps migrations individual-only', async () => {
+    const catalog = JSON.parse(
+        await readFile(resolve(testDirectory, '..', 'commands.json'), 'utf8'),
+    );
+    const byId = new Map(
+        catalog.commands.map((command) => [command.id, command]),
+    );
+
+    assert.deepEqual(
+        {
+            batchEligible: byId.get('dev:dictionary-worker')?.batchEligible,
+            enabled: byId.get('dev:dictionary-worker')?.enabled,
+            kind: byId.get('dev:dictionary-worker')?.kind,
+        },
+        { batchEligible: true, enabled: true, kind: 'service' },
+    );
+    assert.deepEqual(
+        {
+            batchEligible: byId.get('db:migrate')?.batchEligible,
+            enabled: byId.get('db:migrate')?.enabled,
+            kind: byId.get('db:migrate')?.kind,
+        },
+        { batchEligible: false, enabled: true, kind: 'task' },
+    );
+});
+
 test('custom-section start preserves every member and fails closed on missing IDs', () => {
     const commands = [
         {
