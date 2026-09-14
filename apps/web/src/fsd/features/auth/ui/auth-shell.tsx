@@ -7,7 +7,7 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
-import { InlineAlert, Logo } from '@/fsd/shared/ui';
+import { InlineAlert } from '@/fsd/shared/ui';
 
 import { useAuth } from '../model/auth-provider';
 import styles from './auth-ui.module.css';
@@ -27,7 +27,7 @@ export function AuthShell({
     title: string;
     variant?: 'account' | 'auth';
 }) {
-    const { href, t } = useI18n();
+    const { t } = useI18n();
     if (variant === 'account') {
         return (
             <main className={styles.accountLayout}>
@@ -35,7 +35,6 @@ export function AuthShell({
                     className={styles.accountCard}
                     aria-labelledby='auth-title'
                 >
-                    <Logo href={href('/')} label={t('auth.brandHome')} />
                     <div className={styles.headingGroup}>
                         <p className={styles.eyebrow}>{eyebrow}</p>
                         <h1 className={styles.title} id='auth-title'>
@@ -51,7 +50,6 @@ export function AuthShell({
     return (
         <main className={styles.layout}>
             <aside className={styles.story}>
-                <Logo href={href('/')} label={t('auth.brandHome')} />
                 <div className={styles.storyContent}>
                     <p className={styles.storyTitle}>{t('auth.storyTitle')}</p>
                     <ul className={styles.benefits}>
@@ -93,19 +91,6 @@ export function AuthShell({
                 <p className={styles.proof}>{t('auth.storyProof')}</p>
             </aside>
             <section className={styles.formPanel}>
-                <header className={styles.shellHeader}>
-                    <Logo
-                        className={styles.mobileLogo}
-                        href={href('/')}
-                        label={t('auth.brandHome')}
-                    />
-                    <Logo
-                        className={styles.mobileMonogram}
-                        href={href('/')}
-                        label={t('auth.brandHome')}
-                        monogram
-                    />
-                </header>
                 <div className={styles.authMain}>
                     <section
                         className={styles.authSection}

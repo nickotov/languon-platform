@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { ThemeSwitcher } from '@/fsd/features/change-theme';
+import { ThemeSwitcher, ThemeToggle } from '@/fsd/features/change-theme';
 import {
     preferredTheme,
     ThemeProvider,
@@ -39,5 +39,24 @@ describe('theme preference', () => {
 
         expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
         expect(document.cookie).toContain('languon-theme=dark');
+    });
+
+    it('toggles the effective theme with the compact header control', async () => {
+        const user = userEvent.setup();
+        render(
+            <ThemeProvider preference='light'>
+                <ThemeToggle />
+            </ThemeProvider>,
+        );
+
+        await user.click(
+            screen.getByRole('button', { name: 'Switch to dark theme' }),
+        );
+
+        expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+        expect(document.cookie).toContain('languon-theme=dark');
+        expect(
+            screen.getByRole('button', { name: 'Switch to light theme' }),
+        ).toBeInTheDocument();
     });
 });

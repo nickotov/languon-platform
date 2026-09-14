@@ -1,6 +1,85 @@
-import type { Messages } from './en';
+import { profileFeatureMessages, type Messages } from './en';
 
 export const fr = {
+    ...profileFeatureMessages,
+    'theme.switchToLight': 'Passer au thème clair',
+    'theme.switchToDark': 'Passer au thème sombre',
+    'meta.profile': 'Paramètres du compte · Languon',
+    'home.profile': 'Paramètres du compte',
+    'profile.title': 'Paramètres du compte',
+    'profile.description':
+        'Gérez votre connexion, votre abonnement et les crédits pour les leçons, révisions et votre tuteur IA.',
+    'profile.loading': 'Chargement de votre compte…',
+    'profile.signInTitle': 'Connectez-vous pour voir les paramètres',
+    'profile.signInDescription':
+        'Votre profil et vos paramètres sont disponibles après connexion.',
+    'profile.signIn': 'Se connecter',
+    'profile.account': 'Votre compte',
+    'profile.learner': 'Apprenant',
+    'profile.plan': 'Formule',
+    'profile.creditsLeft': 'Crédits restants',
+    'profile.notAvailable': 'Pas encore disponible',
+    'profile.sections': 'Sections du compte',
+    'profile.tab.account': 'Compte',
+    'profile.tab.security': 'Sécurité',
+    'profile.tab.billing': 'Facturation',
+    'profile.tab.credits': 'Crédits',
+    'profile.comingSoon': 'Bientôt disponible',
+    'profile.comingSoonToast': '{area} sera bientôt disponible.',
+    'profile.dismiss': 'Fermer la notification',
+    'profile.profileTitle': 'Profil',
+    'profile.profileDescription':
+        'Votre présentation dans les leçons, révisions et échanges avec le tuteur.',
+    'profile.profileEmpty': 'Aucune information de profil',
+    'profile.profileEmptyDescription':
+        'Votre nom, photo, langue étudiée et fuseau horaire apparaîtront ici.',
+    'profile.setUp': 'Configurer le profil',
+    'profile.dataTitle': 'Vos données',
+    'profile.dataDescription':
+        'Téléchargez vos leçons, votre vocabulaire, vos erreurs et vos progrès.',
+    'profile.exportTitle': 'Exporter les données du compte',
+    'profile.exportDescription':
+        'L’export n’est pas encore disponible. Aucune archive n’a été demandée.',
+    'profile.requestExport': 'Demander un export',
+    'profile.deleteTitle': 'Supprimer le compte',
+    'profile.deleteDescription':
+        'Supprimez définitivement votre compte et votre historique d’apprentissage.',
+    'profile.deleteAccount': 'Supprimer le compte',
+    'profile.deleteUnavailable':
+        'La suppression n’est pas encore disponible. Cette action ne modifiera pas votre compte.',
+    'profile.emailTitle': 'Adresse e-mail',
+    'profile.emailDescription': 'L’adresse principale utilisée pour se connecter.',
+    'profile.primaryEmail': 'E-mail principal',
+    'profile.manageSecurity': 'Gérer la sécurité',
+    'profile.passwordTitle': 'Mot de passe et clés d’accès',
+    'profile.passwordDescription':
+        'Gérez les méthodes de connexion déjà disponibles dans Languon.',
+    'profile.passwordPasskeys': 'Paramètres de sécurité',
+    'profile.managedSecurityDescription':
+        'Le mot de passe et les clés se gèrent sur la page dédiée à la sécurité.',
+    'profile.methodsTitle': 'Méthodes de connexion',
+    'profile.methodsDescription': 'Connectez d’autres fournisseurs d’identité.',
+    'profile.connectedMethods': 'Fournisseurs connectés',
+    'profile.noMethods': 'Aucun fournisseur supplémentaire n’est connecté.',
+    'profile.addMethod': 'Ajouter une méthode',
+    'profile.subscriptionTitle': 'Abonnement',
+    'profile.subscriptionEmpty':
+        'Aucune information d’abonnement. Les formules arrivent bientôt.',
+    'profile.comparePlans': 'Comparer les formules',
+    'profile.paymentTitle': 'Moyen de paiement',
+    'profile.paymentEmpty':
+        'Aucun moyen de paiement enregistré. La facturation arrive bientôt.',
+    'profile.addPayment': 'Ajouter un moyen de paiement',
+    'profile.extraCreditsTitle': 'Crédits supplémentaires',
+    'profile.extraCreditsEmpty': 'L’achat de crédits n’est pas encore disponible.',
+    'profile.buyCredits': 'Acheter des crédits',
+    'profile.balanceTitle': 'Solde de crédits',
+    'profile.balanceEmpty':
+        'Le solde apparaîtra ici lors du lancement des crédits.',
+    'profile.usageTitle': 'Utilisation de vos crédits',
+    'profile.usageEmpty': 'Aucune utilisation de crédits à afficher.',
+    'profile.historyTitle': 'Historique des transactions',
+    'profile.historyEmpty': 'Aucune transaction de crédits à afficher.',
     'theme.label': 'Thème',
     'theme.option.light': 'Clair',
     'theme.option.dark': 'Sombre',

@@ -1,6 +1,86 @@
-import type { Messages } from './en';
+import { profileFeatureMessages, type Messages } from './en';
 
 export const ru = {
+    ...profileFeatureMessages,
+    'theme.switchToLight': 'Переключить на светлую тему',
+    'theme.switchToDark': 'Переключить на тёмную тему',
+    'meta.profile': 'Настройки аккаунта · Languon',
+    'home.profile': 'Настройки аккаунта',
+    'profile.title': 'Настройки аккаунта',
+    'profile.description':
+        'Управляйте входом, подпиской и кредитами для уроков, повторения и ИИ-репетитора.',
+    'profile.loading': 'Загружаем аккаунт…',
+    'profile.signInTitle': 'Войдите, чтобы открыть настройки аккаунта',
+    'profile.signInDescription':
+        'Профиль и настройки аккаунта доступны после входа.',
+    'profile.signIn': 'Войти',
+    'profile.account': 'Ваш аккаунт',
+    'profile.learner': 'Ученик',
+    'profile.plan': 'Тариф',
+    'profile.creditsLeft': 'Осталось кредитов',
+    'profile.notAvailable': 'Пока недоступно',
+    'profile.sections': 'Разделы аккаунта',
+    'profile.tab.account': 'Аккаунт',
+    'profile.tab.security': 'Безопасность',
+    'profile.tab.billing': 'Оплата',
+    'profile.tab.credits': 'Кредиты',
+    'profile.comingSoon': 'Скоро',
+    'profile.comingSoonToast': 'Раздел «{area}» скоро появится.',
+    'profile.dismiss': 'Закрыть уведомление',
+    'profile.profileTitle': 'Профиль',
+    'profile.profileDescription':
+        'Как вы отображаетесь в уроках, повторении и беседах с репетитором.',
+    'profile.profileEmpty': 'Данные профиля ещё не заполнены',
+    'profile.profileEmptyDescription':
+        'Здесь появятся имя, фото, изучаемый язык и часовой пояс.',
+    'profile.setUp': 'Настроить профиль',
+    'profile.dataTitle': 'Ваши данные',
+    'profile.dataDescription':
+        'Скачайте созданные уроки, словарь, ошибки и прогресс.',
+    'profile.exportTitle': 'Экспорт данных аккаунта',
+    'profile.exportDescription':
+        'Экспорт пока недоступен. Архив не запрашивался.',
+    'profile.requestExport': 'Запросить экспорт',
+    'profile.deleteTitle': 'Удаление аккаунта',
+    'profile.deleteDescription':
+        'Безвозвратно удалить аккаунт и историю обучения.',
+    'profile.deleteAccount': 'Удалить аккаунт',
+    'profile.deleteUnavailable':
+        'Удаление аккаунта пока недоступно. Это действие не изменит аккаунт.',
+    'profile.emailTitle': 'Адрес электронной почты',
+    'profile.emailDescription': 'Основной адрес для входа.',
+    'profile.primaryEmail': 'Основная почта',
+    'profile.manageSecurity': 'Управлять безопасностью',
+    'profile.passwordTitle': 'Пароль и ключи доступа',
+    'profile.passwordDescription':
+        'Управляйте доступными в Languon способами входа.',
+    'profile.passwordPasskeys': 'Настройки безопасности',
+    'profile.managedSecurityDescription':
+        'Пароль и ключи доступа настраиваются на отдельной странице безопасности.',
+    'profile.methodsTitle': 'Способы входа',
+    'profile.methodsDescription':
+        'Подключите дополнительные сервисы входа к аккаунту.',
+    'profile.connectedMethods': 'Подключённые сервисы',
+    'profile.noMethods': 'Дополнительные сервисы не подключены.',
+    'profile.addMethod': 'Добавить способ',
+    'profile.subscriptionTitle': 'Подписка',
+    'profile.subscriptionEmpty':
+        'Данные о подписке отсутствуют. Тарифы скоро появятся.',
+    'profile.comparePlans': 'Сравнить тарифы',
+    'profile.paymentTitle': 'Способ оплаты',
+    'profile.paymentEmpty':
+        'Способ оплаты не сохранён. Оплата скоро появится.',
+    'profile.addPayment': 'Добавить способ оплаты',
+    'profile.extraCreditsTitle': 'Дополнительные кредиты',
+    'profile.extraCreditsEmpty': 'Покупка кредитов пока недоступна.',
+    'profile.buyCredits': 'Купить кредиты',
+    'profile.balanceTitle': 'Баланс кредитов',
+    'profile.balanceEmpty':
+        'Баланс появится здесь после запуска кредитов.',
+    'profile.usageTitle': 'На что потрачены кредиты',
+    'profile.usageEmpty': 'Использование кредитов пока отсутствует.',
+    'profile.historyTitle': 'История операций',
+    'profile.historyEmpty': 'Операций с кредитами пока нет.',
     'theme.label': 'Тема',
     'theme.option.light': 'Светлая',
     'theme.option.dark': 'Тёмная',

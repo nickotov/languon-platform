@@ -15,6 +15,20 @@
     min-width: 120px;
 }
 
+.compact .label {
+    position: absolute;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 1px;
+}
+
+.compact .select {
+    min-width: 104px;
+}
+
 @media (max-width: 32rem) {
     .label {
         position: absolute;

@@ -1,4 +1,88 @@
+export const profileFeatureMessages = {
+    'theme.switchToLight': 'Switch to light theme',
+    'theme.switchToDark': 'Switch to dark theme',
+    'meta.profile': 'Account settings · Languon',
+    'home.profile': 'Account settings',
+    'profile.title': 'Account settings',
+    'profile.description':
+        'Manage how you sign in, your subscription, and the credits that power lessons, reviews, and your AI tutor.',
+    'profile.loading': 'Loading your account…',
+    'profile.signInTitle': 'Sign in to view account settings',
+    'profile.signInDescription':
+        'Your profile and account settings are available after you sign in.',
+    'profile.signIn': 'Sign in',
+    'profile.account': 'Your account',
+    'profile.learner': 'Learner',
+    'profile.plan': 'Plan',
+    'profile.creditsLeft': 'Credits left',
+    'profile.notAvailable': 'Not available yet',
+    'profile.sections': 'Account sections',
+    'profile.tab.account': 'Account',
+    'profile.tab.security': 'Security',
+    'profile.tab.billing': 'Billing',
+    'profile.tab.credits': 'Credits',
+    'profile.comingSoon': 'Coming soon',
+    'profile.comingSoonToast': '{area} is coming soon.',
+    'profile.dismiss': 'Dismiss notification',
+    'profile.profileTitle': 'Profile',
+    'profile.profileDescription':
+        'How you appear across lessons, reviews, and tutor conversations.',
+    'profile.profileEmpty': 'No profile details yet',
+    'profile.profileEmptyDescription':
+        'Your name, photo, learning language, and time zone will appear here.',
+    'profile.setUp': 'Set up profile',
+    'profile.dataTitle': 'Your data',
+    'profile.dataDescription':
+        'Download everything you have created: lessons, vocabulary, mistakes, and progress.',
+    'profile.exportTitle': 'Export account data',
+    'profile.exportDescription':
+        'Exports are not available yet. No archive has been requested.',
+    'profile.requestExport': 'Request export',
+    'profile.deleteTitle': 'Delete account',
+    'profile.deleteDescription':
+        'Permanently remove your account and learning history.',
+    'profile.deleteAccount': 'Delete account',
+    'profile.deleteUnavailable':
+        'Account deletion is not available yet. This action will not change your account.',
+    'profile.emailTitle': 'Email address',
+    'profile.emailDescription': 'The primary address used to sign in.',
+    'profile.primaryEmail': 'Primary email',
+    'profile.manageSecurity': 'Manage security',
+    'profile.passwordTitle': 'Password and passkeys',
+    'profile.passwordDescription':
+        'Manage the sign-in methods that are already available in Languon.',
+    'profile.passwordPasskeys': 'Security settings',
+    'profile.managedSecurityDescription':
+        'Password and passkey controls are available on the dedicated security page.',
+    'profile.methodsTitle': 'Sign-in methods',
+    'profile.methodsDescription':
+        'Connect additional identity providers to your account.',
+    'profile.connectedMethods': 'Connected providers',
+    'profile.noMethods': 'No additional providers are connected.',
+    'profile.addMethod': 'Add method',
+    'profile.subscriptionTitle': 'Subscription',
+    'profile.subscriptionEmpty':
+        'No subscription information is available. Plans are coming soon.',
+    'profile.comparePlans': 'Compare plans',
+    'profile.paymentTitle': 'Payment method',
+    'profile.paymentEmpty':
+        'No payment method is stored. Billing is coming soon.',
+    'profile.addPayment': 'Add payment method',
+    'profile.extraCreditsTitle': 'Extra credits',
+    'profile.extraCreditsEmpty':
+        'Credit purchases are not available yet.',
+    'profile.buyCredits': 'Buy credits',
+    'profile.balanceTitle': 'Credit balance',
+    'profile.balanceEmpty':
+        'A credit balance will appear here when credits launch.',
+    'profile.usageTitle': 'Where your credits went',
+    'profile.usageEmpty': 'There is no credit usage to show yet.',
+    'profile.historyTitle': 'Transaction history',
+    'profile.historyEmpty': 'There are no credit transactions to show yet.',
+} as const;
+
 export const en = {
+    ...profileFeatureMessages,
     'theme.label': 'Theme',
     'theme.option.light': 'Light',
     'theme.option.dark': 'Dark',

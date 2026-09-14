@@ -60,6 +60,9 @@ describe('HomeSessionActions', () => {
         expect(
             screen.getByRole('link', { name: 'Dictionaries' }),
         ).toHaveAttribute('href', '/dictionaries');
+        expect(
+            screen.getByRole('link', { name: 'Account settings' }),
+        ).toHaveAttribute('href', '/profile');
         expect(screen.getByText(/learner@example.com/)).toBeInTheDocument();
     });
 });

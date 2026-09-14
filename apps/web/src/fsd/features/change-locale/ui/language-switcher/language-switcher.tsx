@@ -13,7 +13,7 @@ import { Select } from '@/fsd/shared/ui';
 
 import styles from './language-switcher.module.css';
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
     const router = useRouter();
     const { locale, t } = useI18n();
     const [pending, startTransition] = useTransition();
@@ -29,7 +29,11 @@ export function LanguageSwitcher() {
     }
 
     return (
-        <label className={styles.field}>
+        <label
+            className={[styles.field, compact ? styles.compact : undefined]
+                .filter(Boolean)
+                .join(' ')}
+        >
             <span className={styles.label}>{t('language.label')}</span>
             <Select
                 aria-label={t('language.label')}

@@ -24,6 +24,7 @@ e2e_tests:
 e2e_scenarios:
     - theme-preference-persistence
 related_features:
+    - magic-profile-page
     - user-authentication
     - web-i18n-support
 ---
@@ -35,7 +36,8 @@ related_features:
 This guide verifies that the public web app uses the single Magic-derived
 Languon runtime UI kit, applies its neutral/indigo semantic light and dark
 palettes, renders a server-safe system theme by default, and persists an
-explicit Light, Dark, or System preference without changing the active route.
+explicit Light or Dark preference from the application-header toggle without
+changing the active route.
 It also covers keyboard-visible native controls and compact reflow. Admin,
 mobile, and product-specific learning patterns are outside this journey.
 
@@ -57,17 +59,16 @@ theme journey does not create data or require a signed-in account.
 1. In a fresh browser context, open
    `http://localhost:3333/login?returnTo=%2Fsecurity`. Expect the page to render
    with `<html data-theme="system">`, the neutral canvas, indigo actions, and
-   visible **Theme** and **Language** selectors without a hydration flash. At a
+   visible theme toggle and **Language** selector without a hydration flash. At a
    desktop width, expect the product story and auth form in a balanced split
    layout; on mobile, expect one focused form column.
-2. Choose **Dark**. Expect `<html data-theme="dark">`, an unchanged path and
+2. Activate **Switch to dark theme**. Expect `<html data-theme="dark">`, an unchanged path and
    query, and a `languon-theme=dark` cookie scoped to `/` with `SameSite=Lax`.
 3. Reload, then navigate to `/`. Expect Dark to remain selected and server-rendered
    before hydration because the cookie is global to the application.
-4. Choose **System**. Expect the page to follow the browser color-scheme setting
-   while keeping `data-theme="system"`; changing the operating-system preference
-   should not require another app selection.
-5. Use only the keyboard to focus the selectors, auth fields, password reveal,
+4. Activate **Switch to light theme**. Expect the explicit Light preference to
+   replace Dark without changing the current route.
+5. Use only the keyboard to focus the locale selector, theme toggle, auth fields, password reveal,
    and actions. Expect a visible focus ring, native activation, and no keyboard trap.
 6. Repeat at a 320px viewport and 200% browser zoom. Expect the compact logo,
    header controls, form content, status copy, and actions to reflow without
@@ -75,9 +76,9 @@ theme journey does not create data or require a signed-in account.
 
 ## E2E coverage
 
-- `theme-preference-persistence` proves the SSR default, accessible theme
-  selector, route/query preservation, global cookie attributes, dark preference
-  persistence across reload, and return to System.
+- `theme-preference-persistence` proves the SSR default, accessible header theme
+  toggle, route/query preservation, global cookie attributes, and explicit dark
+  then light preference persistence across reload.
 
 Field associations, tabs keyboard behavior, indeterminate checkbox state, and
 loading button semantics stay in focused component tests. The complete visual
@@ -86,8 +87,8 @@ catalog and both theme palettes are built through Storybook.
 ## Expected failure and edge cases
 
 - Missing, unsupported, or malformed theme cookies resolve to System.
-- The System preference stores intent, not a guessed light/dark value; CSS media
-  queries resolve the active palette.
+- The untouched System default follows CSS media queries; once the user toggles
+  appearance, the control stores an explicit Light or Dark preference.
 - Theme changes do not submit surrounding forms, clear user input, refresh the
   route, or change the selected locale.
 - Reduced-motion, increased-contrast, and forced-colors preferences preserve
@@ -116,7 +117,7 @@ pnpm --filter @languon/web test:e2e
 ## Troubleshooting
 
 - If the selected theme is unexpected, inspect and clear only the
-  `languon-theme` cookie, then reload and confirm the selector shows System.
+  `languon-theme` cookie, then reload and confirm the root returns to System.
 - If System does not follow the operating-system preference, inspect the
   `prefers-color-scheme` emulation and confirm `data-theme` remains `system`.
 - If the Storybook build fails on a story, run the focused typecheck and inspect

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision web-ui-kit sha256:d1d0b3e7c729bb3a
+// @user-flow-revision web-ui-kit sha256:c43580c00fb14327
 
 function captureBrowserErrors(page: Page) {
     const errors: string[] = [];
@@ -38,10 +38,10 @@ test.describe('web UI kit journeys', () => {
             'data-theme',
             'system',
         );
-        const selector = page.getByRole('combobox', { name: 'Theme' });
-        await expect(selector).toHaveValue('system');
-
-        await selector.selectOption('dark');
+        const themeToggle = page.getByRole('button', {
+            name: 'Switch to dark theme',
+        });
+        await themeToggle.click();
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
         await expect(page.locator('html')).toHaveAttribute(
             'data-theme',
@@ -62,16 +62,16 @@ test.describe('web UI kit journeys', () => {
             'data-theme',
             'dark',
         );
-        await expect(page.getByRole('combobox', { name: 'Theme' })).toHaveValue(
-            'dark',
-        );
+        await expect(
+            page.getByRole('button', { name: 'Switch to light theme' }),
+        ).toBeVisible();
 
         await page
-            .getByRole('combobox', { name: 'Theme' })
-            .selectOption('system');
+            .getByRole('button', { name: 'Switch to light theme' })
+            .click();
         await expect(page.locator('html')).toHaveAttribute(
             'data-theme',
-            'system',
+            'light',
         );
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
 
