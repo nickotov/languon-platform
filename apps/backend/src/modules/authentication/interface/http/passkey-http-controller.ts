@@ -54,6 +54,7 @@ function successResponse(
             createdAt: success.user.createdAt.toISOString(),
             emailVerified: true as const,
             id: success.user.id,
+            handle: success.user.handle,
             primaryEmail: success.user.primaryEmail.toLowerCase(),
             status: 'active' as const,
         },

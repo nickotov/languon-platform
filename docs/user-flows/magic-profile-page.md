@@ -20,6 +20,7 @@ e2e_scenarios:
     - profile-empty-coming-soon-and-header-navigation
 related_features:
     - user-authentication
+    - profile-account-controls
     - web-i18n-support
     - web-ui-kit
 ---
@@ -31,9 +32,9 @@ related_features:
 This guide verifies the Magic Patterns application header and `/profile`
 account-settings composition. It proves that the shared logo returns home, the
 theme button persists an explicit appearance, authenticated identity is real,
-unsupported account and billing datasets remain empty, and placeholder actions
-say they are coming soon without performing writes. It does not verify future
-profile persistence, billing, credits, data exports, or account deletion.
+unsupported billing/export datasets remain empty, and their placeholder actions
+say they are coming soon without performing writes. Handle and deletion actions
+are now real and are covered by the related Profile Account Controls guide.
 
 ## Start the development environment
 
@@ -59,8 +60,8 @@ test database and Redis services.
 3. Select Account, Security, Billing, and Credits using pointer and keyboard.
    Expect the underline tabs and their panels to remain accessible and the
    content to reflow without horizontal clipping.
-4. In Security, expect the real primary email and **Manage security** links to
-   the existing `/security` page. Additional provider content remains empty.
+4. In Security, expect the real primary email and embedded password, passkey,
+   and session controls. The email-change request explicitly sends no email.
 5. In Billing, choose **Compare plans**. Expect an informational notification
    that Subscription is coming soon, with no billing request or account change.
 6. Toggle the theme from the header. Expect `data-theme` and the global
@@ -87,9 +88,10 @@ focused component tests because they do not require another system boundary.
   local return path.
 - Missing profile, subscription, payment, credit, and ledger data are rendered
   as unavailable or coming soon; zeros and fake fixtures are not substituted.
-- Placeholder buttons never call billing, export, profile, or deletion APIs.
-- Existing password and passkey functionality stays available through the
-  dedicated security page.
+- Billing/export placeholder buttons never call APIs. Handle and deletion actions
+  are live and need their own explicit confirmations.
+- Password and passkey functionality now lives in the Profile Security tab;
+  `/security` redirects there.
 
 ## Automated regression checks
 

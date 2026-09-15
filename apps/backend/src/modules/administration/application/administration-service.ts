@@ -4,6 +4,7 @@ import type {
     AdminReason,
     AdminUserStatusMutationRequest,
     AdminUsersQuery,
+    AdminUserStatus,
 } from '@languon/contracts';
 
 import type { AuthenticationService } from '../../authentication/application/authentication-service';
@@ -13,6 +14,7 @@ import type { Clock } from '../../authentication/application/ports/clock';
 import type { IdGenerator } from '../../authentication/application/ports/id-generator';
 import {
     AdminAccessDeniedError,
+    AdminDeletionCancellationUnavailableError,
     AdminLastOwnerForbiddenError,
     AdminSelfDisableForbiddenError,
     AdminUserNotFoundError,
@@ -138,6 +140,22 @@ export class AdministrationService {
         );
     }
 
+    public async cancelUserDeletion(
+        accessToken: string,
+        targetUserId: string,
+        input: AdminUserStatusMutationRequest,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken, correlationId);
+        return this.mutateUser(
+            'user_deletion_cancelled',
+            principal,
+            targetUserId,
+            input,
+            correlationId,
+        );
+    }
+
     private async authorize(
         accessToken: string,
         correlationId = this.dependencies.ids.generate(),
@@ -163,7 +181,7 @@ export class AdministrationService {
     }
 
     private async mutateUser(
-        action: 'user_disabled' | 'user_restored',
+        action: 'user_disabled' | 'user_restored' | 'user_deletion_cancelled',
         principal: AdminPrincipal,
         targetUserId: string,
         input: AdminUserStatusMutationRequest,
@@ -177,9 +195,13 @@ export class AdministrationService {
                 input,
                 correlationId,
             );
-            return action === 'user_disabled'
-                ? await this.dependencies.store.disableUser(mutation)
-                : await this.dependencies.store.restoreUser(mutation);
+            if (action === 'user_disabled') {
+                return this.dependencies.store.disableUser(mutation);
+            }
+            if (action === 'user_restored') {
+                return this.dependencies.store.restoreUser(mutation);
+            }
+            return this.dependencies.store.cancelUserDeletion(mutation);
         } catch (error) {
             if (!isAuditableMutationRejection(error)) throw error;
             const current =
@@ -240,9 +262,13 @@ export class AdministrationService {
     }
 
     private async recordRejected(input: {
-        action: 'access_denied' | 'user_disabled' | 'user_restored';
+        action:
+            | 'access_denied'
+            | 'user_disabled'
+            | 'user_restored'
+            | 'user_deletion_cancelled';
         actorUserId: string;
-        beforeStatus?: 'active' | 'disabled' | 'pending';
+        beforeStatus?: AdminUserStatus;
         beforeVersion?: number;
         correlationId: string;
         metadata?: Record<string, unknown>;
@@ -277,6 +303,7 @@ function isAuditableMutationRejection(error: unknown): error is Error {
         error instanceof AdminLastOwnerForbiddenError ||
         error instanceof AdminUserNotFoundError ||
         error instanceof AdminUserStateConflictError ||
+        error instanceof AdminDeletionCancellationUnavailableError ||
         error instanceof RecentAuthenticationRequiredError
     );
 }
@@ -288,5 +315,7 @@ function rejectionCode(error: Error): string {
     if (error instanceof AdminUserNotFoundError) return 'user_not_found';
     if (error instanceof AdminUserStateConflictError)
         return 'user_state_conflict';
+    if (error instanceof AdminDeletionCancellationUnavailableError)
+        return 'deletion_cancellation_unavailable';
     return 'recent_authentication_required';
 }

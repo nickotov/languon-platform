@@ -1,0 +1,68 @@
+.stack {
+    display: grid;
+    gap: 24px;
+}
+
+.panel {
+    background: var(--background-surface);
+}
+
+.panel > h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    padding: 20px 24px 0;
+}
+
+.panel > p:first-of-type {
+    border-bottom: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 4px 24px 20px;
+}
+
+.panel > form,
+.panel > dl,
+.panel > div {
+    margin: 0;
+    padding: 20px 24px;
+}
+
+.panel > ul {
+    margin: 0;
+    padding: 0 24px 20px;
+}
+
+.panel > small,
+.panel > p:not(:first-of-type) {
+    display: block;
+    margin: 0;
+    padding: 0 24px 16px;
+}
+
+@media (max-width: 640px) {
+    .panel > h2 {
+        padding: 16px 16px 0;
+    }
+
+    .panel > p:first-of-type {
+        padding: 4px 16px 16px;
+    }
+
+    .panel > form,
+    .panel > dl,
+    .panel > div {
+        padding: 16px;
+    }
+
+    .panel > ul {
+        padding: 0 16px 16px;
+    }
+
+    .panel > small,
+    .panel > p:not(:first-of-type) {
+        padding: 0 16px 12px;
+    }
+}

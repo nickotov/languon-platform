@@ -6,13 +6,14 @@ import type { PasswordHash } from './password-hasher';
 export type AuthenticationMethod =
     'email_verification' | 'passkey' | 'password';
 
-export type AuthenticationUserStatus = 'active' | 'disabled' | 'pending';
+export type AuthenticationUserStatus = 'active' | 'disabled' | 'pending' | 'deletion_pending' | 'purged';
 
 export interface AuthenticationAccount {
     createdAt: Date;
     email: string;
     emailId: string;
     emailVerifiedAt: Date | null;
+    handle: string | null;
     passwordCredential: StoredPasswordCredential | null;
     status: AuthenticationUserStatus;
     userId: string;

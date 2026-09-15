@@ -118,6 +118,58 @@ describe('auth API boundary', () => {
         );
     });
 
+    it('uses authenticated handle PATCH and empty deletion POST without leaking tokens in URLs', async () => {
+        const fetchMock = vi
+            .spyOn(globalThis, 'fetch')
+            .mockResolvedValueOnce(
+                new Response(JSON.stringify({ handle: 'learner_42' }), {
+                    headers: { 'content-type': 'application/json' },
+                    status: 200,
+                }),
+            )
+            .mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        status: 'deletion_scheduled',
+                        scheduledAt: '2026-09-15T10:00:00.000Z',
+                        purgeAt: '2026-10-15T10:00:00.000Z',
+                    }),
+                    {
+                        headers: { 'content-type': 'application/json' },
+                        status: 202,
+                    },
+                ),
+            );
+        await expect(
+            authApi.updateHandle({ handle: 'learner_42' }, 'aaa.bbb.ccc'),
+        ).resolves.toEqual({ handle: 'learner_42' });
+        await expect(
+            authApi.scheduleAccountDeletion('aaa.bbb.ccc'),
+        ).resolves.toMatchObject({ status: 'deletion_scheduled' });
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            'http://localhost:4000/users/me/handle',
+            expect.objectContaining({
+                body: '{"handle":"learner_42"}',
+                method: 'PATCH',
+                headers: expect.objectContaining({
+                    Authorization: 'Bearer aaa.bbb.ccc',
+                }),
+            }),
+        );
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            2,
+            'http://localhost:4000/users/me/deletion',
+            expect.objectContaining({
+                body: '{}',
+                method: 'POST',
+                headers: expect.objectContaining({
+                    Authorization: 'Bearer aaa.bbb.ccc',
+                }),
+            }),
+        );
+    });
+
     it.each([
         ['refresh', () => authApi.refresh()],
         ['logout', () => authApi.logout()],

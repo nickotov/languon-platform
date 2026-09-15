@@ -68,6 +68,7 @@ const response: AuthenticationSuccessResponse = {
     user: {
         createdAt: '2026-08-13T10:00:00.000Z',
         emailVerified: true,
+        handle: null,
         id: '10000000-0000-4000-8000-000000000001',
         primaryEmail: 'learner@example.com',
         status: 'active',

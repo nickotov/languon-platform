@@ -29,6 +29,7 @@ export const adminAuditActionEnum = pgEnum('admin_audit_action', [
     'membership_revoked',
     'user_disabled',
     'user_restored',
+    'user_deletion_cancelled',
     'access_denied',
     'audit_pruned',
 ]);

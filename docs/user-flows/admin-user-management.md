@@ -25,6 +25,7 @@ e2e_tests:
 e2e_scenarios:
     - admin-owner-password-login-and-user-inspection
     - admin-owner-disable-and-restore-user
+    - admin-owner-cancels-scheduled-deletion
     - admin-recent-authentication-required
     - admin-non-member-denied
     - admin-owner-passkey-login
@@ -44,7 +45,7 @@ password and passkey authentication, persistent membership authorization, user
 inspection, safe disable/restore transitions, session refresh, and denial of a
 verified non-member.
 
-It intentionally does not verify hard deletion, identity editing,
+It intentionally does not verify immediate hard deletion, identity editing,
 impersonation, browser-based membership management, or application-content
 management; none of those capabilities exists in this version. Last-owner
 locking, concurrent mutations, recent-authentication expiry, audit retention,
@@ -130,6 +131,10 @@ material, verification code, or secret is rendered or logged.
    and make a fresh decision.
 6. If another owner changed the user first, confirm the version conflict is
    shown and refresh the detail before deciding again.
+7. For a synthetic account with `deletion_pending` status, expect a distinct
+   **Cancel scheduled deletion** action, not ordinary Restore. Enter an audited
+   reason and confirm it only while the purge request is pending. A running or
+   completed purge cannot be cancelled; no account session is recreated.
 
 Expected result: destructive intent is explicit, reasons are 5–500 characters,
 the UI never silently retries a mutation, and restore never creates a session.
@@ -288,7 +293,10 @@ one-year audit event and never removes unexpired entries.
 - `admin-owner-password-login-and-user-inspection` proves real password login,
   dedicated refresh bootstrap after reload, list search, and safe user detail.
 - `admin-owner-disable-and-restore-user` proves both audited status transitions
-  through the browser against PostgreSQL and Redis-backed authentication.
+  for ordinary availability changes through the browser against PostgreSQL and
+  Redis-backed authentication.
+- `admin-owner-cancels-scheduled-deletion` schedules a synthetic target through
+  the public API, then verifies distinct owner-only cancellation and audit UI.
 - `admin-recent-authentication-required` expires only the current synthetic
   owner's disposable database session, proves the mutation is rejected, and
   proves the entered reason remains visible beside the explicit sign-in action.

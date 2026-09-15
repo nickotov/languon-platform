@@ -114,7 +114,7 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
     );
     const worker = apps.slice(
         apps.indexOf('    dictionary-worker:'),
-        apps.indexOf('    web:'),
+        apps.indexOf('    account-purge-worker:'),
     );
     assert.match(worker, /image: \$\{BACKEND_IMAGE/);
     assert.match(worker, /dictionary-worker-command\.js/);
@@ -142,4 +142,18 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
         assert.equal(backend.includes(mapping), true);
         assert.equal(worker.includes(mapping), true);
     }
+});
+
+test('account purge worker has isolated database and version-delete credentials', async () => {
+    const apps = await readFile('infra/deploy/compose/apps.compose.yaml', 'utf8');
+    const worker = apps.slice(apps.indexOf('    account-purge-worker:'), apps.indexOf('    web:'));
+    assert.match(worker, /account-purge-command\.js/);
+    assert.match(worker, /ACCOUNT_PURGE_DATABASE_URL/);
+    assert.match(worker, /ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID/);
+    assert.doesNotMatch(worker, /^\s+DATABASE_URL:/m);
+    assert.doesNotMatch(worker, /AUTH_|REDIS_URL|DICTIONARY_GENERATION_MODEL_API_KEY|edge:/);
+    const role = await readFile('infra/deploy/sql/account-purge-worker-role.sql', 'utf8');
+    assert.match(role, /REVOKE ALL PRIVILEGES ON ALL TABLES/);
+    assert.match(role, /GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs/);
+    assert.doesNotMatch(role, /GRANT ALL|GRANT INSERT/);
 });

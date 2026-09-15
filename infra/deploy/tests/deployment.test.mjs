@@ -32,6 +32,16 @@ const config = {
     DICTIONARY_HMAC_SECRET: 'c',
     AUTH_WEBAUTHN_RP_ID: 'stage.test',
     DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
+    ACCOUNT_PURGE_DATABASE_URL: 'postgres://purge:p@stage-postgres:5432/db',
+    ACCOUNT_DELETION_JOURNAL_BUCKET: 'test-journal',
+    ACCOUNT_DELETION_JOURNAL_PREFIX: 'deletion-v1',
+    ACCOUNT_DELETION_JOURNAL_NAMESPACE: 'stage',
+    ACCOUNT_DELETION_JOURNAL_REGION: 'test-region',
+    ACCOUNT_DELETION_JOURNAL_ENCRYPTION_KEY_BASE64: 'replace',
+    ACCOUNT_DELETION_JOURNAL_WRITER_ACCESS_KEY_ID: 'writer',
+    ACCOUNT_DELETION_JOURNAL_WRITER_SECRET_ACCESS_KEY: 'writer-secret',
+    ACCOUNT_DELETION_JOURNAL_READER_ACCESS_KEY_ID: 'reader',
+    ACCOUNT_DELETION_JOURNAL_READER_SECRET_ACCESS_KEY: 'reader-secret',
     DICTIONARY_WORKER_DATABASE_URL:
         'postgres://worker:p@stage-postgres:5432/db',
     MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',
@@ -160,13 +170,16 @@ test('orders migration before inactive start, readiness, switch, smoke and clean
     const start = rendered.findIndex((line) =>
         line.includes('up --detach --no-build'),
     );
+    const recoveryGate = rendered.findIndex((line) =>
+        line.includes('run --rm --no-deps recovery-gate'),
+    );
     const readiness = rendered.findIndex((line) =>
         line.includes('blue-backend:4000/readyz'),
     );
     const nginx = rendered.findIndex((line) =>
         line.includes('edge.compose.yaml'),
     );
-    assert.ok(migration >= 0 && migration < start);
+    assert.ok(migration >= 0 && migration < recoveryGate && recoveryGate < start);
     assert.ok(start < readiness && readiness < nginx);
     assert.equal(audit.outcome, 'succeeded');
     assert.equal(audit.newSlot, 'blue');
@@ -218,6 +231,8 @@ test('readiness failure preserves the active slot and removes only the candidate
         .slice(beforeFailure)
         .map((call) => call.join(' '));
     assert.equal(state.activeSlot, 'blue');
+    assert.equal(failureCalls.some((line) => line.includes('run --rm --no-deps recovery-gate')), false,
+        'ordinary deployment must not mutate live deletion state');
     assert.equal(
         failureCalls.some(
             (line) =>

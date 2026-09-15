@@ -1,1 +1,1 @@
-export { ProfilePage } from './ui/profile-page/profile-page';
+export { ProfilePage, ProfilePageFallback } from './ui/profile-page/profile-page';

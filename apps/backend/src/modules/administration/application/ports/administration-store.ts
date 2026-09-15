@@ -7,6 +7,7 @@ import type {
     AdminUserDetail,
     AdminUsersQuery,
     AdminUsersResponse,
+    AdminUserStatus,
 } from '@languon/contracts';
 
 export interface ActiveAdminMembership {
@@ -19,9 +20,9 @@ export interface ActiveAdminMembership {
 export interface AdminAuditWrite {
     action: AdminAuditAction;
     actorUserId: string;
-    afterStatus?: 'active' | 'disabled' | 'pending' | null;
+    afterStatus?: AdminUserStatus | null;
     afterVersion?: number | null;
-    beforeStatus?: 'active' | 'disabled' | 'pending' | null;
+    beforeStatus?: AdminUserStatus | null;
     beforeVersion?: number | null;
     correlationId: string;
     expiresAt: Date;
@@ -46,6 +47,7 @@ export interface AdminUserMutationInput {
 }
 
 export interface AdministrationStore {
+    cancelUserDeletion(input: AdminUserMutationInput): Promise<AdminUserDetail>;
     dashboard(): Promise<AdminDashboardResponse>;
     disableUser(input: AdminUserMutationInput): Promise<AdminUserDetail>;
     findActiveMembership(userId: string): Promise<ActiveAdminMembership | null>;

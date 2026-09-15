@@ -12,7 +12,7 @@ import {
 } from '@playwright/test';
 import postgres from 'postgres';
 
-// @user-flow-revision admin-user-management sha256:7cd7a676cf5edf65
+// @user-flow-revision admin-user-management sha256:43c037477d75d58d
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(
@@ -276,6 +276,33 @@ test.describe.serial('admin user management journeys', () => {
         assertNoBrowserErrors();
     });
 
+    // @user-flow admin-user-management/admin-owner-cancels-scheduled-deletion
+    test('owner cancels a scheduled removal through the audited distinct action', async ({ page, request }) => {
+        const targetLogin = await request.post(`${backendOrigin}/auth/login/password`, {
+            data: { email: targetEmail, password: ownerPassword },
+            headers: { Origin: webOrigin },
+        });
+        expect(targetLogin.status()).toBe(200);
+        const token = ((await targetLogin.json()) as { accessToken: string }).accessToken;
+        const scheduled = await request.post(`${backendOrigin}/users/me/deletion`, {
+            data: {},
+            headers: { Authorization: `Bearer ${token}`, Origin: webOrigin },
+        });
+        expect(scheduled.status()).toBe(202);
+
+        const assertNoBrowserErrors = captureBrowserErrors(page, { '/api/admin/auth/refresh': 401 });
+        await passwordLogin(page);
+        await page.goto(`/users/${targetId}`);
+        await expect(page.getByText('scheduled for deletion', { exact: true }).first()).toBeVisible();
+        await page.getByRole('button', { name: 'Cancel scheduled deletion' }).click();
+        await page.getByLabel('Reason').fill('Reviewed administrator cancellation in disposable E2E');
+        await page.getByRole('button', { name: 'Confirm cancellation' }).click();
+        await expect(page.getByText('active', { exact: true }).first()).toBeVisible();
+        await page.getByRole('menuitem', { name: 'Audit' }).click();
+        await expect(page.getByRole('row').filter({ hasText: 'Reviewed administrator cancellation in disposable E2E' })).toBeVisible();
+        assertNoBrowserErrors();
+    });
+
     // @user-flow admin-user-management/admin-recent-authentication-required
     test('an expired recent-authentication window preserves the mutation reason and requires sign-in', async ({
         page,
@@ -347,13 +374,13 @@ test.describe.serial('admin user management journeys', () => {
         });
         const client = await addVirtualAuthenticator(page);
         try {
-            await page.goto(`${webOrigin}/login?returnTo=%2Fsecurity`);
+            await page.goto(`${webOrigin}/login?returnTo=%2Fprofile%3Ftab%3Dsecurity`);
             await page.getByLabel('Email').fill(ownerEmail);
             await page.locator('input[name="password"]').fill(ownerPassword);
             await page
                 .getByRole('button', { name: 'Sign in', exact: true })
                 .click();
-            await expect(page).toHaveURL(/\/security$/);
+            await expect(page).toHaveURL(/\/profile\?tab=security$/);
             await page.getByLabel('Passkey name').fill(`Admin E2E ${runId}`);
             await page.getByRole('button', { name: 'Add passkey' }).click();
             await expect(page.getByText('Passkey added.')).toBeVisible();

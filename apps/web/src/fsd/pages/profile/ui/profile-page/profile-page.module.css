@@ -35,6 +35,8 @@
 .dangerSection .sectionHeader h2 { color: var(--danger-default); }
 .sectionHeader p { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 4px 0 0; max-width: var(--size-max-width-reading); }
 .sectionBody { padding: 20px 24px; }
+.emailChange { align-items: center; border-top: 1px solid var(--border-default); display: flex; flex-wrap: wrap; gap: 12px 20px; justify-content: space-between; margin-top: 20px; padding-top: 16px; }
+.emailChange p { flex: 1 1 260px; margin: 0; }
 
 .profilePlaceholder, .actionRow, .emptyBlock { align-items: center; display: flex; gap: 16px; }
 .profilePlaceholder > div, .rowCopy, .emptyBlock > div { flex: 1; min-width: 0; }

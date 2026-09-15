@@ -43,6 +43,15 @@ services:
             BACKEND_PORT: 4000
             DATABASE_MAX_CONNECTIONS: ${DATABASE_MAX_CONNECTIONS:-10}
             DATABASE_URL: ${DATABASE_URL:?required}
+            ACCOUNT_DELETION_JOURNAL_BUCKET: ${ACCOUNT_DELETION_JOURNAL_BUCKET:?required}
+            ACCOUNT_DELETION_JOURNAL_PREFIX: ${ACCOUNT_DELETION_JOURNAL_PREFIX:?required}
+            ACCOUNT_DELETION_JOURNAL_NAMESPACE: ${ACCOUNT_DELETION_JOURNAL_NAMESPACE:?required}
+            ACCOUNT_DELETION_JOURNAL_REGION: ${ACCOUNT_DELETION_JOURNAL_REGION:?required}
+            ACCOUNT_DELETION_JOURNAL_ENDPOINT: ${ACCOUNT_DELETION_JOURNAL_ENDPOINT:-}
+            ACCOUNT_DELETION_JOURNAL_FORCE_PATH_STYLE: ${ACCOUNT_DELETION_JOURNAL_FORCE_PATH_STYLE:-false}
+            ACCOUNT_DELETION_JOURNAL_ENCRYPTION_KEY_BASE64: ${ACCOUNT_DELETION_JOURNAL_ENCRYPTION_KEY_BASE64:?required}
+            ACCOUNT_DELETION_JOURNAL_ACCESS_KEY_ID: ${ACCOUNT_DELETION_JOURNAL_WRITER_ACCESS_KEY_ID:?required}
+            ACCOUNT_DELETION_JOURNAL_SECRET_ACCESS_KEY: ${ACCOUNT_DELETION_JOURNAL_WRITER_SECRET_ACCESS_KEY:?required}
             REDIS_URL: ${REDIS_URL:?required}
             RELEASE_SHA: ${RELEASE_SHA:?required}
             SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-295000}
@@ -131,6 +140,40 @@ services:
                     'CMD',
                     'node',
                     'dist/infrastructure/worker/dictionary-worker-command.js',
+                    'healthcheck',
+                ]
+            interval: 5s
+            timeout: 6s
+            retries: 24
+            start_period: 10s
+    account-purge-worker:
+        <<: *worker-defaults
+        image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be an immutable digest reference}
+        command:
+            [
+                'node',
+                'dist/infrastructure/worker/account-purge-command.js',
+                'run',
+            ]
+        environment:
+            APP_ENV: ${APP_ENV:?required}
+            ACCOUNT_PURGE_DATABASE_URL: ${ACCOUNT_PURGE_DATABASE_URL:?required}
+            ACCOUNT_PURGE_POLL_INTERVAL_MS: ${ACCOUNT_PURGE_POLL_INTERVAL_MS:-5000}
+            ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID: ${ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID:-}
+            ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY: ${ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY:-}
+            DATABASE_MAX_CONNECTIONS: ${ACCOUNT_PURGE_DATABASE_MAX_CONNECTIONS:-2}
+            DICTIONARY_DOCUMENT_STORAGE_MODE: ${DICTIONARY_DOCUMENT_STORAGE_MODE:-unavailable}
+            DICTIONARY_DOCUMENT_STORAGE_ENDPOINT: ${DICTIONARY_DOCUMENT_STORAGE_ENDPOINT:-}
+            DICTIONARY_DOCUMENT_STORAGE_REGION: ${DICTIONARY_DOCUMENT_STORAGE_REGION:-}
+            DICTIONARY_DOCUMENT_STORAGE_BUCKET: ${DICTIONARY_DOCUMENT_STORAGE_BUCKET:-}
+            DICTIONARY_DOCUMENT_STORAGE_FORCE_PATH_STYLE: ${DICTIONARY_DOCUMENT_STORAGE_FORCE_PATH_STYLE:-false}
+            RELEASE_SHA: ${RELEASE_SHA:?required}
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    'dist/infrastructure/worker/account-purge-command.js',
                     'healthcheck',
                 ]
             interval: 5s

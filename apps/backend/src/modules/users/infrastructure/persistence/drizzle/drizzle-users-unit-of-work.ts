@@ -1,3 +1,4 @@
+import { and, eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
@@ -5,6 +6,7 @@ import type { UsersUnitOfWork } from '../../../application/users-unit-of-work';
 import {
     type AddUserWithPrimaryEmailInput,
     UserEmailAlreadyExistsError,
+    UserHandleAlreadyExistsError,
     type UserRepository,
 } from '../../../domain/user.repository';
 import { DrizzleUserRepository } from './drizzle-user-repository';
@@ -46,6 +48,7 @@ class TransactionalUserRepository implements UserRepository {
             await this.transaction.insert(usersTable).values({
                 createdAt: input.user.createdAt,
                 id: input.user.id,
+                handle: input.user.handle,
                 status: input.user.status,
                 updatedAt: input.user.updatedAt,
                 version: input.user.version,
@@ -75,6 +78,44 @@ class TransactionalUserRepository implements UserRepository {
     public findById(id: string) {
         return this.reader.findById(id);
     }
+
+    public async saveHandle(
+        user: Parameters<UserRepository['saveHandle']>[0],
+        expectedVersion: number,
+    ): Promise<boolean> {
+        try {
+            const updated = await this.transaction
+                .update(usersTable)
+                .set({
+                    handle: user.handle,
+                    updatedAt: user.updatedAt,
+                    version: user.version,
+                })
+                .where(
+                    and(
+                        eq(usersTable.id, user.id),
+                        eq(usersTable.version, expectedVersion),
+                        eq(usersTable.status, 'active'),
+                    ),
+                )
+                .returning({ id: usersTable.id });
+            return updated.length === 1;
+        } catch (error) {
+            if (isHandleConflict(error)) {
+                throw new UserHandleAlreadyExistsError();
+            }
+            throw error;
+        }
+    }
+}
+
+function isHandleConflict(error: unknown): boolean {
+    const databaseError = error as DatabaseError;
+    return Boolean(
+        (databaseError.code === '23505' &&
+            databaseError.constraint_name === 'users_handle_unique') ||
+        (databaseError.cause && isHandleConflict(databaseError.cause)),
+    );
 }
 
 export class DrizzleUsersUnitOfWork implements UsersUnitOfWork {

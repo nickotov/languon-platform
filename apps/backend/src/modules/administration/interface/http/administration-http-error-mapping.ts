@@ -2,6 +2,8 @@ import { RecentAuthenticationRequiredError } from '../../../authentication/appli
 import { mapAuthenticationHttpError } from '../../../authentication/interface/http/auth-http-error-mapping';
 import {
     AdminAccessDeniedError,
+    AdminCancellationJournalUnavailableError,
+    AdminDeletionCancellationUnavailableError,
     AdminLastOwnerForbiddenError,
     AdminSelfDisableForbiddenError,
     AdminUserNotFoundError,
@@ -39,6 +41,20 @@ export function mapAdministrationHttpError(
             'user_state_conflict',
             'The user changed since it was loaded.',
             409,
+        );
+    }
+    if (error instanceof AdminDeletionCancellationUnavailableError) {
+        return new AdministrationHttpError(
+            'deletion_cancellation_unavailable',
+            'The purge has started or this account is not scheduled for deletion.',
+            409,
+        );
+    }
+    if (error instanceof AdminCancellationJournalUnavailableError) {
+        return new AdministrationHttpError(
+            'service_unavailable',
+            'Account deletion cancellation is temporarily unavailable. Please retry.',
+            503,
         );
     }
     if (error instanceof AdminSelfDisableForbiddenError) {

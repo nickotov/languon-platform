@@ -116,12 +116,21 @@ the active staging or production database as a drill target.
    sanitized diagnostics to the drill record.
 4. Run migration-ledger validation and application-level read-only integrity
    checks: required schemas/tables/indexes, representative counts/ranges, foreign
-   key/uniqueness invariants, and backend readiness against the restored data.
+   key/uniqueness invariants. Do not start a backend yet.
 5. If testing recovery to current code, apply pending forward migrations with
-   the built one-shot migrator, then rerun integrity and readiness checks.
-6. Record recovery point, total elapsed time, data/integrity checks, tool/image
+   the built one-shot migrator, then rerun integrity checks.
+6. With the target still isolated and all application traffic stopped, run the
+   immutable release's deletion-journal recovery gate using its independent
+   version-list/read-only credential. Verify retained object versions and
+   object-lock/IAM policy separately. Rehearse a known synthetic deletion marker
+   only in a separately provisioned disposable journal namespace/bucket and
+   synthetic database snapshot; never write fake events to the production journal.
+   Treat any indeterminate intent or
+   hidden/delete-marked event as a failed drill. Only then test backend readiness
+   and synthetic read/write behavior against the reconciled disposable target.
+7. Record recovery point, total elapsed time, data/integrity checks, tool/image
    digests, and result. A successful drill must complete inside four hours.
-7. Explicitly identify the disposable target, disconnect it, then remove its
+8. Explicitly identify the disposable target, disconnect it, then remove its
    container and volume. Do not use broad names, wildcards, or repository-root
    deletion commands.
 
@@ -166,17 +175,25 @@ unusable. Recovery mutates shared state and requires an accountable operator.
    compromised host image.
 4. Restore PostgreSQL, validate its ledger/checksum and integrity, then apply
    only reviewed forward migrations required by the application manifest.
-5. Start Redis empty unless a specific disposable-state restoration has been
+5. While all backend, admin, and worker processes remain stopped, run the
+   account-deletion recovery gate against the restored database with the
+   independent, retained deletion journal and its reader-only credential.
+   It must reconcile historical removals before any authentication or smoke
+   traffic. An indeterminate intent, missing object/version, or delete marker
+   is a fail-stop incident requiring operator reconciliation; never bypass the
+   gate or infer a purge from an uncommitted intent. Use the immutable release's
+   `recovery-gate.compose.yaml` one-shot service with the reviewed environment.
+6. Start Redis empty unless a specific disposable-state restoration has been
    justified. Expect sessions, throttles, and caches to reset.
-6. Point one isolated backend instance at the restored services and require
+7. Point one isolated backend instance at the restored services and require
    `/readyz` plus read/write smoke checks with synthetic data.
-7. Update the private data endpoint/secret, start the inactive application slot,
+8. Update the private data endpoint/secret, start the inactive application slot,
    and use the ordinary validated traffic switch. Do not expose database ports
    temporarily to make recovery easier.
-8. Monitor errors, consistency, connections, replication status if later added,
+9. Monitor errors, consistency, connections, replication status if later added,
    and business invariants. Resume writes only after the incident lead accepts
    the checks.
-9. Rotate affected credentials, preserve forensic evidence, and schedule a new
+10. Rotate affected credentials, preserve forensic evidence, and schedule a new
    backup immediately after stabilization.
 
 If the newest backup fails checksum or integrity validation, move backward one

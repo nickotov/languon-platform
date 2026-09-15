@@ -24,7 +24,7 @@ import { AdminApiError } from '@/shared/api/admin-api';
 import styles from '../shared/page.module.css';
 import { StatusTag } from './users-page';
 
-type Operation = 'disable' | 'restore';
+type Operation = 'disable' | 'restore' | 'deletion/cancel';
 
 export function UserDetailPage() {
     const translate = useTranslate();
@@ -177,35 +177,49 @@ export function UserDetailPage() {
                         title={translate('user.availability')}
                     >
                         <Typography.Paragraph type='secondary'>
-                            {translate('user.availabilityDescription')}
+                            {translate(
+                                detail?.status === 'deletion_pending'
+                                    ? 'user.deletionPendingDescription'
+                                    : 'user.availabilityDescription',
+                            )}
                         </Typography.Paragraph>
-                        <Button
-                            danger={detail?.status !== 'disabled'}
-                            disabled={!detail}
-                            icon={
-                                detail?.status === 'disabled' ? (
-                                    <CheckCircleOutlined />
-                                ) : (
-                                    <StopOutlined />
-                                )
-                            }
-                            onClick={() =>
-                                setOperation(
+                        {detail?.status === 'deletion_pending' ? (
+                            <Button
+                                icon={<CheckCircleOutlined />}
+                                onClick={() => setOperation('deletion/cancel')}
+                                type='primary'
+                            >
+                                {translate('user.cancelDeletion')}
+                            </Button>
+                        ) : detail?.status !== 'purged' ? (
+                            <Button
+                                danger={detail?.status !== 'disabled'}
+                                disabled={!detail}
+                                icon={
+                                    detail?.status === 'disabled' ? (
+                                        <CheckCircleOutlined />
+                                    ) : (
+                                        <StopOutlined />
+                                    )
+                                }
+                                onClick={() =>
+                                    setOperation(
+                                        detail?.status === 'disabled'
+                                            ? 'restore'
+                                            : 'disable',
+                                    )
+                                }
+                                type={
                                     detail?.status === 'disabled'
-                                        ? 'restore'
-                                        : 'disable',
-                                )
-                            }
-                            type={
-                                detail?.status === 'disabled'
-                                    ? 'primary'
-                                    : 'default'
-                            }
-                        >
-                            {detail?.status === 'disabled'
-                                ? translate('user.restore')
-                                : translate('user.disable')}
-                        </Button>
+                                        ? 'primary'
+                                        : 'default'
+                                }
+                            >
+                                {detail?.status === 'disabled'
+                                    ? translate('user.restore')
+                                    : translate('user.disable')}
+                            </Button>
+                        ) : null}
                     </Card>
                 </Space>
             </div>
@@ -217,11 +231,17 @@ export function UserDetailPage() {
                 title={
                     operation === 'disable'
                         ? translate('user.disableTitle')
-                        : translate('user.restoreTitle')
+                        : operation === 'restore'
+                          ? translate('user.restoreTitle')
+                          : translate('user.cancelDeletionTitle')
                 }
             >
                 <Typography.Paragraph>
-                    {translate('user.auditDescription')}
+                    {translate(
+                        operation === 'deletion/cancel'
+                            ? 'user.cancelDeletionDescription'
+                            : 'user.auditDescription',
+                    )}
                 </Typography.Paragraph>
                 {error ? (
                     <Alert
@@ -280,7 +300,9 @@ export function UserDetailPage() {
                         >
                             {operation === 'disable'
                                 ? translate('user.confirmDisable')
-                                : translate('user.confirmRestore')}
+                                : operation === 'restore'
+                                  ? translate('user.confirmRestore')
+                                  : translate('user.confirmCancelDeletion')}
                         </Button>
                     </Space>
                 </Form>

@@ -4,6 +4,10 @@ export {
     userStatusEnum,
 } from '../../modules/users/infrastructure/persistence/drizzle/schema';
 export {
+    accountDeletionRequestsTable,
+    accountDeletionStateEnum,
+} from '../../modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
+export {
     authPasskeyDeviceTypeEnum,
     authPasskeysTable,
     authSecurityEventOutcomeEnum,
@@ -63,6 +67,7 @@ import {
     userEmailsTable,
     usersTable,
 } from '../../modules/users/infrastructure/persistence/drizzle/schema';
+import { accountDeletionRequestsTable } from '../../modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
 import {
     dictionariesTable,
     dictionaryCardRevisionsTable,
@@ -78,6 +83,7 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    accountDeletionRequests: accountDeletionRequestsTable,
     adminAuditEvents: adminAuditEventsTable,
     adminMemberships: adminMembershipsTable,
     authPasskeys: authPasskeysTable,

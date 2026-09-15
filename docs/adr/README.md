@@ -31,6 +31,8 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0015](./0015-figma-make-design-trial.md)                   | Figma Make visual-design trial            | Superseded by ADR-0016 |
 | [ADR-0016](./0016-runtime-ui-kit-authority.md)                  | Runtime UI kit authority                  | Accepted               |
 | [ADR-0017](./0017-magic-patterns-tailwind-ui-contract.md)       | Magic Patterns Tailwind UI contract       | Accepted               |
+| [ADR-0018](./0018-account-deletion-and-restore-boundary.md)      | Account deletion and restore boundary     | Superseded by ADR-0019 |
+| [ADR-0019](./0019-account-deletion-journal-commit-and-replay.md) | Deletion journal commit and replay safety | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AdministrationService } from '../../../../../../src/modules/administration/application/administration-service';
-import { AdminAccessDeniedError } from '../../../../../../src/modules/administration/application/administration-errors';
+import {
+    AdminAccessDeniedError,
+    AdminCancellationJournalUnavailableError,
+} from '../../../../../../src/modules/administration/application/administration-errors';
 import { createAdministrationRoutes } from '../../../../../../src/modules/administration/interface/http/administration.routes';
 import { AuthHttpPolicy } from '../../../../../../src/modules/authentication/interface/http/auth-http-policy';
 import type { AuthenticationHttpOperations } from '../../../../../../src/modules/authentication/interface/http/authentication-http-operations';
@@ -45,6 +48,18 @@ function setup(options: { denyMembership?: boolean } = {}) {
             role: 'owner',
         }),
         dashboard: vi.fn(),
+        cancelUserDeletion: vi.fn().mockResolvedValue({
+            activeSessionCount: 0,
+            createdAt: '2026-08-19T09:00:00.000Z',
+            emailVerified: true,
+            id: userId,
+            isOwner: false,
+            passkeyCount: 0,
+            primaryEmail: 'target@example.com',
+            status: 'active',
+            updatedAt: '2026-08-20T09:00:00.000Z',
+            version: 3,
+        }),
         disableUser: vi.fn(),
         listAuditEvents: vi.fn(),
         listUsers: vi.fn().mockResolvedValue({
@@ -147,6 +162,70 @@ describe('administration routes', () => {
             'header.payload.signature',
             { page: 2, pageSize: 10 },
         );
+    });
+
+    it('validates and routes deletion cancellation as a distinct admin mutation', async () => {
+        const { administration, app } = setup();
+        const body = { expectedVersion: 2, reason: 'Support verified the request' };
+        const response = await app.request(
+            `/admin/users/${userId}/deletion/cancel`,
+            {
+                body: JSON.stringify(body),
+                headers: {
+                    Authorization: 'Bearer header.payload.signature',
+                    'Content-Type': 'application/json',
+                    Origin: origin,
+                },
+                method: 'POST',
+            },
+        );
+        expect(response.status).toBe(200);
+        expect(administration.cancelUserDeletion).toHaveBeenCalledWith(
+            'header.payload.signature', userId, body, expect.any(String),
+        );
+        expect(await response.json()).toMatchObject({
+            user: { id: userId, status: 'active', version: 3 },
+        });
+
+        const invalid = await app.request(
+            `/admin/users/${userId}/deletion/cancel`,
+            {
+                body: JSON.stringify({ expectedVersion: 2, reason: 'no' }),
+                headers: {
+                    Authorization: 'Bearer header.payload.signature',
+                    'Content-Type': 'application/json',
+                    Origin: origin,
+                },
+                method: 'POST',
+            },
+        );
+        expect(invalid.status).toBe(400);
+    });
+
+    it('returns a retryable failure when the cancellation journal is unavailable', async () => {
+        const { administration, app } = setup();
+        vi.mocked(administration.cancelUserDeletion).mockRejectedValue(
+            new AdminCancellationJournalUnavailableError(),
+        );
+        const response = await app.request(
+            `/admin/users/${userId}/deletion/cancel`,
+            {
+                body: JSON.stringify({
+                    expectedVersion: 2,
+                    reason: 'Support verified the request',
+                }),
+                headers: {
+                    Authorization: 'Bearer header.payload.signature',
+                    'Content-Type': 'application/json',
+                    Origin: origin,
+                },
+                method: 'POST',
+            },
+        );
+        expect(response.status).toBe(503);
+        expect(await response.json()).toMatchObject({
+            error: { code: 'service_unavailable' },
+        });
     });
 
     it('rejects credentialed authentication from an unlisted origin', async () => {

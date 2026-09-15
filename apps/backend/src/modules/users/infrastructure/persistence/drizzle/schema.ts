@@ -17,6 +17,8 @@ export const userStatusEnum = pgEnum('user_status', [
     'pending',
     'active',
     'disabled',
+    'deletion_pending',
+    'purged',
 ]);
 
 export const usersTable = pgTable(
@@ -26,6 +28,7 @@ export const usersTable = pgTable(
             .defaultNow()
             .notNull(),
         id: uuid('id').primaryKey(),
+        handle: text('handle'),
         status: userStatusEnum('status').default('pending').notNull(),
         updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
             .defaultNow()
@@ -34,6 +37,8 @@ export const usersTable = pgTable(
     },
     (table) => [
         check('users_version_positive', sql`${table.version} > 0`),
+        check('users_handle_format', sql`${table.handle} is null or ${table.handle} ~ '^[a-z0-9_]{3,30}$'`),
+        uniqueIndex('users_handle_unique').on(table.handle),
         index('users_status_idx').on(table.status),
     ],
 );

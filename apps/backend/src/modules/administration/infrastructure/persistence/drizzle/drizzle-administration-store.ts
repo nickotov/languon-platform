@@ -27,12 +27,16 @@ import {
     authSessionsTable,
 } from '../../../../authentication/infrastructure/persistence/drizzle/schema';
 import { User } from '../../../../users/domain/user';
+import type { AccountDeletionRecoveryJournal } from '../../../../users/application/ports/account-deletion-recovery-journal';
+import { accountDeletionRequestsTable } from '../../../../users/infrastructure/persistence/drizzle/account-deletion-schema';
 import {
     userEmailsTable,
     usersTable,
 } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import {
     AdminAccessDeniedError,
+    AdminCancellationJournalUnavailableError,
+    AdminDeletionCancellationUnavailableError,
     AdminLastOwnerForbiddenError,
     AdminUserNotFoundError,
     AdminUserStateConflictError,
@@ -55,7 +59,13 @@ const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class DrizzleAdministrationStore implements AdministrationStore {
-    public constructor(private readonly database: AdministrationDatabase) {}
+    public constructor(
+        private readonly database: AdministrationDatabase,
+        private readonly cancellationJournal: Pick<
+            AccountDeletionRecoveryJournal,
+            'recordCancellation'
+        >,
+    ) {}
 
     public async findActiveMembership(userId: string) {
         const [membership] = await this.database
@@ -192,6 +202,123 @@ export class DrizzleAdministrationStore implements AdministrationStore {
         return this.mutateUser(input, 'restore');
     }
 
+    public cancelUserDeletion(input: AdminUserMutationInput): Promise<AdminUserDetail> {
+        return this.database.transaction(async (transaction) => {
+            await transaction.execute(
+                sql`select pg_advisory_xact_lock(${activeOwnerMutationLock})`,
+            );
+            const [clock] = await transaction
+                .select({ value: sql<string>`clock_timestamp()::text` })
+                .from(usersTable)
+                .limit(1);
+            const operationTime = new Date(clock?.value ?? Number.NaN);
+            if (Number.isNaN(operationTime.getTime())) {
+                throw new AdminAccessDeniedError();
+            }
+            await this.assertActorCanMutate(transaction, input, operationTime);
+
+            // The purge worker takes these same locks in this order. Its claim
+            // and this cancellation cannot both commit for one request.
+            const [request] = await transaction
+                .select({ state: accountDeletionRequestsTable.state })
+                .from(accountDeletionRequestsTable)
+                .where(eq(accountDeletionRequestsTable.userId, input.targetUserId))
+                .limit(1)
+                .for('update');
+            if (request?.state !== 'pending') {
+                throw new AdminDeletionCancellationUnavailableError();
+            }
+            const [row] = await transaction
+                .select({
+                    createdAt: usersTable.createdAt,
+                    handle: usersTable.handle,
+                    id: usersTable.id,
+                    status: usersTable.status,
+                    updatedAt: usersTable.updatedAt,
+                    version: usersTable.version,
+                })
+                .from(usersTable)
+                .where(eq(usersTable.id, input.targetUserId))
+                .limit(1)
+                .for('update');
+            if (!row) throw new AdminUserNotFoundError();
+            if (row.version !== input.expectedVersion) {
+                throw new AdminUserStateConflictError();
+            }
+            if (row.status !== 'deletion_pending') {
+                throw new AdminDeletionCancellationUnavailableError();
+            }
+            // Fail closed if the independent recovery journal cannot record
+            // the cancellation while both rows are still locked. A journal
+            // write followed by SQL rollback is harmless: the recovery gate
+            // requires a committed active user at this exact version.
+            try {
+                await this.cancellationJournal.recordCancellation({
+                    cancelledAt: operationTime,
+                    userId: row.id,
+                    userVersion: row.version + 1,
+                });
+            } catch {
+                // The transport failure is intentionally not logged here:
+                // the writer owns diagnostics, and user data must stay out of logs.
+                throw new AdminCancellationJournalUnavailableError();
+            }
+            const changed = await transaction
+                .update(accountDeletionRequestsTable)
+                .set({
+                    leaseDeadline: null,
+                    leaseWorkerId: null,
+                    state: 'cancelled',
+                    updatedAt: operationTime,
+                })
+                .where(and(
+                    eq(accountDeletionRequestsTable.userId, input.targetUserId),
+                    eq(accountDeletionRequestsTable.state, 'pending'),
+                ))
+                .returning({ userId: accountDeletionRequestsTable.userId });
+            if (changed.length !== 1) {
+                throw new AdminDeletionCancellationUnavailableError();
+            }
+            const updated = await transaction
+                .update(usersTable)
+                .set({
+                    status: 'active',
+                    updatedAt: operationTime,
+                    version: row.version + 1,
+                })
+                .where(and(
+                    eq(usersTable.id, row.id),
+                    eq(usersTable.status, 'deletion_pending'),
+                    eq(usersTable.version, row.version),
+                ))
+                .returning({ id: usersTable.id });
+            if (updated.length !== 1) throw new AdminUserStateConflictError();
+            await transaction.insert(adminAuditEventsTable).values(
+                auditValues({
+                    action: 'user_deletion_cancelled',
+                    actorUserId: input.actorUserId,
+                    afterStatus: 'active',
+                    afterVersion: row.version + 1,
+                    beforeStatus: row.status,
+                    beforeVersion: row.version,
+                    ...input.audit,
+                    expiresAt: new Date(
+                        operationTime.getTime() +
+                            (input.audit.expiresAt.getTime() -
+                                input.audit.occurredAt.getTime()),
+                    ),
+                    occurredAt: operationTime,
+                    outcome: 'success',
+                    reason: input.reason,
+                    targetUserId: input.targetUserId,
+                }),
+            );
+            const detail = await this.readUser(transaction, row.id);
+            if (!detail) throw new AdminUserNotFoundError();
+            return detail;
+        });
+    }
+
     private async mutateUser(
         input: AdminUserMutationInput,
         operation: 'disable' | 'restore',
@@ -212,6 +339,7 @@ export class DrizzleAdministrationStore implements AdministrationStore {
             const [row] = await transaction
                 .select({
                     createdAt: usersTable.createdAt,
+                    handle: usersTable.handle,
                     id: usersTable.id,
                     status: usersTable.status,
                     updatedAt: usersTable.updatedAt,
@@ -231,6 +359,9 @@ export class DrizzleAdministrationStore implements AdministrationStore {
                 .for('update');
             if (!row) throw new AdminUserNotFoundError();
             if (row.version !== input.expectedVersion) {
+                throw new AdminUserStateConflictError();
+            }
+            if (row.status === 'deletion_pending' || row.status === 'purged') {
                 throw new AdminUserStateConflictError();
             }
 
@@ -487,7 +618,7 @@ function mapUserSummary(row: {
     email: string;
     id: string;
     isOwner: boolean;
-    status: 'active' | 'disabled' | 'pending';
+    status: 'active' | 'disabled' | 'pending' | 'deletion_pending' | 'purged';
     updatedAt: Date;
     verifiedAt: Date | null;
     version: number;
@@ -507,7 +638,7 @@ function mapUserSummary(row: {
 function auditSelection() {
     return {
         action: adminAuditEventsTable.action,
-        actorEmail: sql<string>`(select ue.email from ${userEmailsTable} ue where ue.user_id = ${adminAuditEventsTable.actorUserId} and ue.is_primary = true limit 1)`,
+        actorEmail: sql<string | null>`(select ue.email from ${userEmailsTable} ue where ue.user_id = ${adminAuditEventsTable.actorUserId} and ue.is_primary = true limit 1)`,
         actorUserId: adminAuditEventsTable.actorUserId,
         afterStatus: adminAuditEventsTable.afterStatus,
         afterVersion: adminAuditEventsTable.afterVersion,
@@ -531,7 +662,7 @@ function mapAuditEvent(
         ? never
         : {
               action: AdminAuditEvent['action'];
-              actorEmail: string;
+              actorEmail: string | null;
               actorUserId: string;
               afterStatus: AdminAuditEvent['afterStatus'];
               afterVersion: number | null;
@@ -549,7 +680,7 @@ function mapAuditEvent(
 ): AdminAuditEvent {
     return {
         ...row,
-        actorEmail: row.actorEmail.toLowerCase(),
+        actorEmail: row.actorEmail?.toLowerCase() ?? null,
         expiresAt: row.expiresAt.toISOString(),
         occurredAt: row.occurredAt.toISOString(),
         targetEmail: row.targetEmail?.toLowerCase() ?? null,

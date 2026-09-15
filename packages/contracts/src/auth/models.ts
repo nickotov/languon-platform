@@ -6,10 +6,12 @@ import {
     AuthTimestampSchema,
     EmailSchema,
 } from './primitives';
+import { HandleSchema } from './user-profile';
 
 export const AuthUserSchema = z
     .object({
         id: AuthIdSchema,
+        handle: HandleSchema.nullable(),
         primaryEmail: EmailSchema,
         status: z.literal('active'),
         emailVerified: z.literal(true),

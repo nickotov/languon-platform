@@ -77,6 +77,8 @@ export const adminMessages = {
     'status.active': 'active',
     'status.pending': 'pending',
     'status.disabled': 'disabled',
+    'status.deletion_pending': 'scheduled for deletion',
+    'status.purged': 'purged',
     'audit.eyebrow': 'Accountability',
     'audit.heading': 'Administrative audit',
     'audit.retention': 'Retained for one year',
@@ -97,6 +99,7 @@ export const adminMessages = {
     'audit.action.membership_revoked': 'membership revoked',
     'audit.action.user_disabled': 'user disabled',
     'audit.action.user_restored': 'user restored',
+    'audit.action.user_deletion_cancelled': 'account deletion cancelled',
     'audit.action.access_denied': 'access denied',
     'audit.action.audit_pruned': 'audit pruned',
     'user.back': 'Back to users',
@@ -128,6 +131,13 @@ export const adminMessages = {
     'user.reason': 'Reason',
     'user.confirmDisable': 'Confirm disable',
     'user.confirmRestore': 'Confirm restore',
+    'user.cancelDeletion': 'Cancel scheduled deletion',
+    'user.cancelDeletionTitle': 'Cancel this account deletion?',
+    'user.cancelDeletionDescription':
+        'Only a recently authenticated administrator can restore access before the purge worker starts. This action is audited and does not create a session.',
+    'user.confirmCancelDeletion': 'Confirm cancellation',
+    'user.deletionPendingDescription':
+        'This account is scheduled for deletion. Ordinary restore and disable actions are unavailable.',
 } as const;
 
 export type AdminMessageKey = keyof typeof adminMessages;

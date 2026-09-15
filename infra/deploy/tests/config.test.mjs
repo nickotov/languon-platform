@@ -18,6 +18,18 @@ const liveDictionaryBudget = {
     DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '70000',
 };
 
+const deletionJournalConfig = {
+    ACCOUNT_DELETION_JOURNAL_BUCKET: 'test-journal',
+    ACCOUNT_DELETION_JOURNAL_PREFIX: 'deletion-v1',
+    ACCOUNT_DELETION_JOURNAL_NAMESPACE: 'test',
+    ACCOUNT_DELETION_JOURNAL_REGION: 'test-region',
+    ACCOUNT_DELETION_JOURNAL_ENCRYPTION_KEY_BASE64: 'test-key',
+    ACCOUNT_DELETION_JOURNAL_WRITER_ACCESS_KEY_ID: 'writer',
+    ACCOUNT_DELETION_JOURNAL_WRITER_SECRET_ACCESS_KEY: 'writer-secret',
+    ACCOUNT_DELETION_JOURNAL_READER_ACCESS_KEY_ID: 'reader',
+    ACCOUNT_DELETION_JOURNAL_READER_SECRET_ACCESS_KEY: 'reader-secret',
+};
+
 test('parses values without evaluating shell syntax', () => {
     assert.deepEqual(
         parseEnvironmentFile('A="hello world"\nB=$(touch /tmp/nope)\n'),
@@ -34,6 +46,7 @@ test('parses values without evaluating shell syntax', () => {
 
 test('production refuses local data addresses', () => {
     const config = {
+        ...deletionJournalConfig,
         ADMIN_BASE_URL: 'https://admin.example.test',
         ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
@@ -42,6 +55,8 @@ test('production refuses local data addresses', () => {
         DICTIONARY_HMAC_SECRET: 'c',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://u:p@postgres:5432/db?sslmode=verify-full',
+        ACCOUNT_PURGE_DATABASE_URL:
+            'postgres://purge:p@10.0.0.10:5432/db?sslmode=verify-full',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@10.0.0.10:5432/db?sslmode=verify-full',
         MIGRATION_DATABASE_URL:
@@ -62,6 +77,7 @@ test('production refuses local data addresses', () => {
 
 test('deployment requires a dedicated dictionary HMAC secret', () => {
     const config = {
+        ...deletionJournalConfig,
         ADMIN_BASE_URL: 'https://admin.example.test',
         ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
@@ -69,6 +85,8 @@ test('deployment requires a dedicated dictionary HMAC secret', () => {
         AUTH_JWT_SECRET: 'b',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://app:p@data.example.test:5432/db',
+        ACCOUNT_PURGE_DATABASE_URL:
+            'postgres://purge:p@data.example.test:5432/db',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@data.example.test:5432/db',
         EDGE_SUBNET: '172.30.20.0/24',
@@ -99,8 +117,24 @@ test('sanitized deployment examples accept the full batch output envelope', asyn
     }
 });
 
+test('document storage requires a separate account purge version-delete key', async () => {
+    const config = parseEnvironmentFile(await readFile('infra/deploy/stage.env.example', 'utf8'));
+    assert.throws(() => assertDeployConfig('stage', {
+        ...config,
+        DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
+    }), /dedicated version-delete storage credentials/);
+    assert.throws(() => assertDeployConfig('stage', {
+        ...config,
+        DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
+        ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID: 'same',
+        ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY: 'separate-secret',
+        DICTIONARY_DOCUMENT_STORAGE_WORKER_ACCESS_KEY_ID: 'same',
+    }), /must not reuse/);
+});
+
 test('production requires a dedicated dictionary worker database user', () => {
     const config = {
+        ...deletionJournalConfig,
         ADMIN_BASE_URL: 'https://admin.example.test',
         ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
@@ -110,6 +144,8 @@ test('production requires a dedicated dictionary worker database user', () => {
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL:
             'postgres://app:p@data.example.test:5432/db?sslmode=verify-full',
+        ACCOUNT_PURGE_DATABASE_URL:
+            'postgres://purge:p@data.example.test:5432/db?sslmode=verify-full',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://app:p@data.example.test:5432/db?sslmode=verify-full',
         MIGRATION_DATABASE_URL:
@@ -151,6 +187,7 @@ test('deployment config must be a private regular file', async () => {
 
 test('admin binding fails closed outside loopback', () => {
     const required = {
+        ...deletionJournalConfig,
         ADMIN_BASE_URL: 'https://admin.example.test',
         ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
@@ -159,6 +196,8 @@ test('admin binding fails closed outside loopback', () => {
         DICTIONARY_HMAC_SECRET: 'c',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
+        ACCOUNT_PURGE_DATABASE_URL:
+            'postgres://purge:p@stage-postgres:5432/db',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@stage-postgres:5432/db',
         MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',
@@ -174,6 +213,7 @@ test('admin binding fails closed outside loopback', () => {
 
 test('admin origin and password file fail closed', () => {
     const required = {
+        ...deletionJournalConfig,
         ADMIN_BASE_URL: 'http://admin.example.test',
         ADMIN_HTPASSWD_PATH: 'relative.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
@@ -182,6 +222,8 @@ test('admin origin and password file fail closed', () => {
         DICTIONARY_HMAC_SECRET: 'c',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
+        ACCOUNT_PURGE_DATABASE_URL:
+            'postgres://purge:p@stage-postgres:5432/db',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@stage-postgres:5432/db',
         MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',
@@ -231,6 +273,7 @@ test('admin password file is private, regular, and contains an entry', async () 
 
 test('dictionary worker process and drain settings are bounded before deployment', () => {
     const required = {
+        ...deletionJournalConfig,
         ADMIN_BASE_URL: 'https://admin.example.test',
         ADMIN_HTPASSWD_PATH: '/safe/admin.htpasswd',
         AUTH_ALLOWED_ORIGINS: 'https://example.test',
@@ -239,6 +282,8 @@ test('dictionary worker process and drain settings are bounded before deployment
         DICTIONARY_HMAC_SECRET: 'c',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
+        ACCOUNT_PURGE_DATABASE_URL:
+            'postgres://purge:p@stage-postgres:5432/db',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@stage-postgres:5432/db',
         MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',

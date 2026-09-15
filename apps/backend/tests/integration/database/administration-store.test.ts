@@ -1,10 +1,12 @@
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { eq, sql } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { databaseSchema } from '../../../src/infrastructure/database/schema';
 import {
     AdminAccessDeniedError,
+    AdminCancellationJournalUnavailableError,
+    AdminDeletionCancellationUnavailableError,
     AdminLastOwnerForbiddenError,
     AdminMembershipConflictError,
     AdminOperatorActorRequiredError,
@@ -23,6 +25,7 @@ import {
     userEmailsTable,
     usersTable,
 } from '../../../src/modules/users/infrastructure/persistence/drizzle/schema';
+import { accountDeletionRequestsTable } from '../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
@@ -98,6 +101,85 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(detail).toMatchObject({ status: 'pending', version: 3 });
         });
 
+        it('cancels a pending account deletion atomically and audits the distinct action', async () => {
+            const { database, journal, store } = await seed();
+            await pendingDeletion(database);
+
+            const detail = await store.cancelUserDeletion(
+                mutation(targetId, 2, 'Verified administrator cancellation'),
+            );
+
+            expect(detail).toMatchObject({
+                id: targetId,
+                status: 'active',
+                version: 3,
+                activeSessionCount: 0,
+            });
+            expect(await database.select().from(accountDeletionRequestsTable))
+                .toEqual([expect.objectContaining({
+                    state: 'cancelled',
+                    leaseDeadline: null,
+                    leaseWorkerId: null,
+                })]);
+            expect(await database.select().from(adminAuditEventsTable))
+                .toEqual([expect.objectContaining({
+                    action: 'user_deletion_cancelled',
+                    actorUserId: ownerId,
+                    beforeStatus: 'deletion_pending',
+                    afterStatus: 'active',
+                    outcome: 'success',
+                    targetUserId: targetId,
+                })]);
+            expect(journal.recordCancellation).toHaveBeenCalledWith({
+                cancelledAt: expect.any(Date),
+                userId: targetId,
+                userVersion: 3,
+            });
+        });
+
+        it('rolls back cancellation when the external recovery journal fails', async () => {
+            const { database, journal, store } = await seed();
+            await pendingDeletion(database);
+            journal.recordCancellation.mockRejectedValueOnce(
+                new Error('independent journal unavailable'),
+            );
+
+            await expect(store.cancelUserDeletion(
+                mutation(targetId, 2, 'Reviewed request before journal outage'),
+            )).rejects.toBeInstanceOf(AdminCancellationJournalUnavailableError);
+            expect(await store.findUser(targetId)).toMatchObject({
+                status: 'deletion_pending',
+                version: 2,
+            });
+            expect(await database.select().from(accountDeletionRequestsTable))
+                .toEqual([expect.objectContaining({ state: 'pending' })]);
+            expect(await database.select().from(adminAuditEventsTable))
+                .toHaveLength(0);
+        });
+
+        it('blocks generic restore and cancellation after the purge claim', async () => {
+            const { database, store } = await seed();
+            await pendingDeletion(database);
+
+            await expect(store.restoreUser(
+                mutation(targetId, 2, 'Attempt ordinary restore instead'),
+            )).rejects.toBeInstanceOf(AdminUserStateConflictError);
+
+            await database.update(accountDeletionRequestsTable).set({
+                leaseDeadline: new Date(Date.now() + 60_000),
+                leaseWorkerId: 'test-worker',
+                state: 'running',
+            }).where(eq(accountDeletionRequestsTable.userId, targetId));
+            await expect(store.cancelUserDeletion(
+                mutation(targetId, 2, 'Attempt after purge worker claim'),
+            )).rejects.toBeInstanceOf(AdminDeletionCancellationUnavailableError);
+            expect(await store.findUser(targetId)).toMatchObject({
+                status: 'deletion_pending',
+                version: 2,
+            });
+            expect(await database.select().from(adminAuditEventsTable)).toHaveLength(0);
+        });
+
         it('searches by email text without casting it to a PostgreSQL UUID', async () => {
             const { store } = await seed();
 
@@ -116,6 +198,30 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ],
                 total: 1,
             });
+        });
+
+        it('keeps an opaque actor reference when a purged user has no email', async () => {
+            const { database, store } = await seed();
+            await database.insert(adminAuditEventsTable).values({
+                action: 'user_disabled',
+                actorUserId: targetId,
+                correlationId: '0198c304-4053-71aa-b3fc-d9cc8a47e5f0',
+                expiresAt: new Date('2027-08-20T09:00:00.000Z'),
+                id: '0198c304-8569-77c4-b47c-a9d574234fe3',
+                occurredAt: now,
+                outcome: 'success',
+                reason: 'Reviewed fixture audit reference',
+                targetUserId: targetId,
+            });
+            await database.delete(userEmailsTable).where(eq(userEmailsTable.userId, targetId));
+
+            const result = await store.listAuditEvents({ page: 1, pageSize: 10 });
+            expect(result.data).toEqual([expect.objectContaining({
+                actorEmail: null,
+                actorUserId: targetId,
+                targetEmail: null,
+                targetUserId: targetId,
+            })]);
         });
 
         it('rejects disabling the last active owner', async () => {
@@ -451,11 +557,35 @@ async function seed(
             userId: targetId,
         },
     ]);
+    const journal = {
+        recordCancellation: vi.fn().mockResolvedValue(undefined),
+    };
     return {
         database,
+        journal,
         operator: new DrizzleAdministrationOperator(database),
-        store: new DrizzleAdministrationStore(database),
+        store: new DrizzleAdministrationStore(database, journal),
     };
+}
+
+async function pendingDeletion(database: Awaited<ReturnType<typeof seed>>['database']) {
+    const scheduledAt = new Date();
+    const purgeAt = new Date(scheduledAt.getTime() + 30 * 24 * 60 * 60_000);
+    await database.update(usersTable).set({
+        status: 'deletion_pending',
+        version: 2,
+    }).where(eq(usersTable.id, targetId));
+    await database.update(authSessionsTable).set({
+        revokedAt: scheduledAt,
+        revocationReason: 'account_deletion',
+    }).where(eq(authSessionsTable.userId, targetId));
+    await database.insert(accountDeletionRequestsTable).values({
+        nextAttemptAt: purgeAt,
+        purgeAt,
+        scheduledAt,
+        updatedAt: scheduledAt,
+        userId: targetId,
+    });
 }
 
 function user(id: string) {

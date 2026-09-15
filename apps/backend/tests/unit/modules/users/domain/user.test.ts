@@ -15,6 +15,7 @@ describe('User', () => {
         expect(user).toMatchObject({
             createdAt,
             id: userId,
+            handle: null,
             status: 'pending',
             updatedAt: createdAt,
             version: 1,
@@ -56,10 +57,19 @@ describe('User', () => {
         );
     });
 
+    it('changes only an active account handle with a new version', () => {
+        const active = User.createPending({ id: userId, now: createdAt }).activate(createdAt);
+        const updated = active.withHandle('learner_123', new Date('2026-08-13T09:00:00.000Z'));
+        expect(updated).toMatchObject({ handle: 'learner_123', status: 'active', version: 3 });
+        expect(active.handle).toBeNull();
+        expect(() => active.withHandle('Bad Handle', createdAt)).toThrow();
+    });
+
     it('does not allow a disabled identity to become active', () => {
         const disabled = User.restore({
             createdAt,
             id: userId,
+            handle: null,
             status: 'disabled',
             updatedAt: createdAt,
             version: 2,

@@ -4,6 +4,8 @@ import {
     AuthEndpointSchemas,
     AuthErrorResponseSchema,
     AuthenticationSuccessResponseSchema,
+    HandleSchema,
+    UpdateHandleRequestSchema,
     ChangePasswordRequestSchema,
     EmailSchema,
     EmailVerificationVerifyRequestSchema,
@@ -23,6 +25,7 @@ function authenticationResponse() {
         tokenType: 'Bearer',
         user: {
             id: userId,
+            handle: null,
             primaryEmail: 'learner@example.com',
             status: 'active',
             emailVerified: true,
@@ -39,6 +42,13 @@ function authenticationResponse() {
 }
 
 describe('authentication primitives', () => {
+    it('normalizes only bounded lowercase ASCII handles', () => {
+        expect(HandleSchema.parse('  Learner_123 ')).toBe('learner_123');
+        expect(UpdateHandleRequestSchema.parse({ handle: 'LeArNeR' })).toEqual({ handle: 'learner' });
+        for (const invalid of ['ab', 'a'.repeat(31), 'has space', 'ник', 'has-hyphen']) {
+            expect(HandleSchema.safeParse(invalid).success).toBe(false);
+        }
+    });
     it('normalizes bounded ASCII email addresses', () => {
         expect(EmailSchema.parse('  Learner+Test@EXAMPLE.COM ')).toBe(
             'learner+test@example.com',

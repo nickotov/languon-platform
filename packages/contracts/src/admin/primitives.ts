@@ -10,13 +10,20 @@ export const AdminIdSchema = AuthIdSchema;
 export const AdminTimestampSchema = AuthTimestampSchema;
 export const AdminEmailSchema = EmailSchema;
 export const AdminRoleSchema = z.literal('owner');
-export const AdminUserStatusSchema = z.enum(['pending', 'active', 'disabled']);
+export const AdminUserStatusSchema = z.enum([
+    'pending',
+    'active',
+    'disabled',
+    'deletion_pending',
+    'purged',
+]);
 export const AdminAuditOutcomeSchema = z.enum(['success', 'rejected']);
 export const AdminAuditActionSchema = z.enum([
     'membership_granted',
     'membership_revoked',
     'user_disabled',
     'user_restored',
+    'user_deletion_cancelled',
     'access_denied',
     'audit_pruned',
 ]);

@@ -56,7 +56,7 @@ describe('HomeSessionActions', () => {
 
         expect(
             await screen.findByRole('link', { name: 'Security settings' }),
-        ).toHaveAttribute('href', '/security');
+        ).toHaveAttribute('href', '/profile?tab=security');
         expect(
             screen.getByRole('link', { name: 'Dictionaries' }),
         ).toHaveAttribute('href', '/dictionaries');

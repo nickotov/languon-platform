@@ -1433,7 +1433,10 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                 input.dictionaryId,
             );
             abort(input.context);
+            const [owner] = await tx.select({ status: usersTable.status })
+                .from(usersTable).where(eq(usersTable.id, input.ownerId)).limit(1);
             if (
+                owner?.status !== 'active' ||
                 current.dictionary.version !==
                     input.expectedDictionaryVersion ||
                 current.dictionary.lifecycle !== 'active'

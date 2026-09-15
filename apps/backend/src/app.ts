@@ -5,6 +5,7 @@ import type { AuthenticationHttpOperations } from './modules/authentication/inte
 import type { PasskeyHttpOperations } from './modules/authentication/interface/http/passkey-http-operations';
 import { createPasskeyAuthRoutes } from './modules/authentication/interface/http/passkey-auth.routes';
 import { createPasswordAuthRoutes } from './modules/authentication/interface/http/password-auth.routes';
+import { createUserProfileRoutes, type UserProfileRouteDependencies } from './modules/users/interface/http/user-profile.routes';
 import {
     createAdministrationRoutes,
     type AdministrationRouteDependencies,
@@ -33,6 +34,7 @@ export function createApp(options?: {
     authentication?: AppAuthenticationOptions;
     dictionaries?: OpenAPIHono;
     operational?: AppOperationalOptions;
+    userProfiles?: UserProfileRouteDependencies;
 }): OpenAPIHono {
     const app = new OpenAPIHono();
 
@@ -58,6 +60,9 @@ export function createApp(options?: {
     }
     if (options?.dictionaries) {
         app.route('/', options.dictionaries);
+    }
+    if (options?.userProfiles) {
+        app.route('/', createUserProfileRoutes(options.userProfiles));
     }
     app.doc('/openapi.json', {
         info: {

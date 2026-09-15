@@ -42,6 +42,7 @@ export interface AuthenticationSuccess {
         createdAt: Date;
         emailVerified: true;
         id: string;
+        handle: string | null;
         primaryEmail: string;
         status: 'active';
     };
@@ -151,6 +152,7 @@ export class SessionIssuer {
                 createdAt: account.createdAt,
                 emailVerified: true,
                 id: account.userId,
+                handle: account.handle,
                 primaryEmail: account.email,
                 status: 'active',
             },

@@ -4,10 +4,12 @@ import type { AuthenticationComposition } from '../../authentication/infrastruct
 import { AuthHttpPolicy } from '../../authentication/interface/http/auth-http-policy';
 import { AdministrationService } from '../application/administration-service';
 import { DrizzleAdministrationStore } from './persistence/drizzle/drizzle-administration-store';
+import type { AccountDeletionRecoveryJournal } from '../../users/application/ports/account-deletion-recovery-journal';
 
 export function createAdministrationComposition(
     environment: Environment,
     authentication: AuthenticationComposition,
+    deletionJournal: AccountDeletionRecoveryJournal,
 ): AppAdministrationOptions {
     const dependencies = authentication.administrationDependencies;
     return {
@@ -16,7 +18,7 @@ export function createAdministrationComposition(
             authentication: dependencies.authentication,
             clock: dependencies.clock,
             ids: dependencies.ids,
-            store: new DrizzleAdministrationStore(dependencies.database),
+            store: new DrizzleAdministrationStore(dependencies.database, deletionJournal),
         }),
         authentication: authentication.options.operations,
         passkeys: authentication.options.passkeys,

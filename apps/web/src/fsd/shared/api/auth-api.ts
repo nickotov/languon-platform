@@ -1,5 +1,7 @@
 import { BrowserApiError, createBrowserApiClient } from '@languon/browser-auth';
 import {
+    AccountDeletionScheduleRequestSchema,
+    AccountDeletionScheduleResponseSchema,
     AuthCapabilitiesResponseSchema,
     AuthErrorResponseSchema,
     ChangePasswordRequestSchema,
@@ -30,11 +32,14 @@ import {
     RenamePasskeyResponseSchema,
     ResetPasswordRequestSchema,
     ResetPasswordResponseSchema,
+    UpdateHandleRequestSchema,
+    UpdateHandleResponseSchema,
     RevokePasskeyResponseSchema,
     SignUpRequestSchema,
     SignUpResponseSchema,
     RefreshRequestSchema,
     type AuthCapabilitiesResponse,
+    type AccountDeletionScheduleResponse,
     type AuthError,
     type ChangePasswordRequest,
     type ChangePasswordResponse,
@@ -60,6 +65,8 @@ import {
     type RenamePasskeyResponse,
     type ResetPasswordRequest,
     type ResetPasswordResponse,
+    type UpdateHandleRequest,
+    type UpdateHandleResponse,
     type RevokePasskeyResponse,
     type SignUpRequest,
     type SignUpResponse,
@@ -197,6 +204,28 @@ export const authApi = {
             responseSchema: CurrentUserResponseSchema,
             signal,
         }) as Promise<CurrentUserResponse>,
+    updateHandle: (
+        body: UpdateHandleRequest,
+        accessToken: string,
+        signal?: AbortSignal,
+    ) =>
+        request('/users/me/handle', {
+            accessToken,
+            body,
+            bodySchema: UpdateHandleRequestSchema,
+            method: 'PATCH',
+            responseSchema: UpdateHandleResponseSchema,
+            signal,
+        }) as Promise<UpdateHandleResponse>,
+    scheduleAccountDeletion: (accessToken: string, signal?: AbortSignal) =>
+        request('/users/me/deletion', {
+            accessToken,
+            body: {},
+            bodySchema: AccountDeletionScheduleRequestSchema,
+            method: 'POST',
+            responseSchema: AccountDeletionScheduleResponseSchema,
+            signal,
+        }) as Promise<AccountDeletionScheduleResponse>,
     passkeyAuthenticationOptions: (signal?: AbortSignal) =>
         request('/auth/passkeys/authentication/options', {
             body: {},

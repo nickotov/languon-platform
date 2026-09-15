@@ -19,6 +19,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Magic Patterns Profile Page and Application Header](./magic-profile-page.md)
   — truthful account placeholders, settings tabs, theme toggle, and home
   navigation.
+- [Profile Account Controls](./profile-account-controls.md) — unique signed-in
+  handle, Profile Security, scheduled removal, owner cancellation, live purge,
+  and historical-restore gate.
 - [User Authentication](./user-authentication.md) — signup, verification,
   sessions, passwords, recovery, logout, and passkeys through the browser and
   HTTP API.

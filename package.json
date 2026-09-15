@@ -29,6 +29,7 @@
         "dev:apps:docker": "docker compose --profile apps up --build backend web admin",
         "dev:backend": "turbo run dev --filter=@languon/backend",
         "dev:dictionary-worker": "pnpm --filter @languon/backend dictionary:worker",
+        "dev:account-purge-worker": "pnpm --filter @languon/backend account:purge:worker",
         "dev:infra": "docker compose up -d postgres redis",
         "dev:mastra": "turbo run dev:mastra --filter=@languon/backend",
         "dev:mobile": "turbo run dev --filter=@languon/mobile",

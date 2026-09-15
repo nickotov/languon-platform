@@ -40,7 +40,7 @@ export const AdminAuditEventSchema = z
     .object({
         id: AdminIdSchema,
         actorUserId: AdminIdSchema,
-        actorEmail: AdminEmailSchema,
+        actorEmail: AdminEmailSchema.nullable(),
         targetUserId: AdminIdSchema.nullable(),
         targetEmail: AdminEmailSchema.nullable(),
         action: AdminAuditActionSchema,

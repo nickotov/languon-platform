@@ -163,14 +163,14 @@ characters that is not a common password, such as
 
 ### Signup, verification, reload, and current-session logout
 
-1. Open `http://localhost:3333/signup?returnTo=%2Fsecurity`.
+1. Open `http://localhost:3333/signup?returnTo=%2Fprofile%3Ftab%3Dsecurity`.
 2. Enter a fresh fake email and `Languon-dev-passphrase-2026!`.
 3. Select **Create account**.
 4. Expect navigation to `/verify-email` with a flow identifier in the URL. The
    resend button remains disabled until the displayed 60-second cooldown ends.
 5. Enter `0000` and select **Verify email**.
-6. Expect navigation to `/security`. The Account section shows the normalized
-   email and the current session expiry.
+6. Expect navigation to `/profile?tab=security`. The Profile summary shows the
+   account email; Security contains the real password, passkey, and session controls.
 7. Reload the page. Expect **Restoring your session…** briefly, followed by the
    same authenticated security view. The refresh cookie restored the in-memory
    access token.
@@ -181,8 +181,8 @@ characters that is not a common password, such as
 
 ### Password login and unverified account behavior
 
-1. On `/login?returnTo=%2Fsecurity`, enter the verified email and password.
-2. Select **Sign in**. Expect `/security` and the account email.
+1. On `/login?returnTo=%2Fprofile%3Ftab%3Dsecurity`, enter the verified email and password.
+2. Select **Sign in**. Expect `/profile?tab=security` and the account email.
 3. In another fresh browser profile, create a second unique account but stop at
    the verification page.
 4. Attempt password login for that pending account. Expect navigation back to
@@ -211,7 +211,7 @@ Do not infer account existence from the response.
 
 ### Authenticated password change and logout everywhere
 
-1. Sign in and open `/security` within five minutes of authentication.
+1. Sign in and open `/profile?tab=security` within five minutes of authentication.
 2. In **Change password**, enter the current password and another valid new
    password, then submit.
 3. Expect to remain authenticated in a replacement current session. Other
@@ -225,7 +225,7 @@ Do not infer account existence from the response.
 Use a browser/platform that supports WebAuthn. Localhost is treated as a secure
 development context.
 
-1. Sign in with a password and open `/security` within five minutes.
+1. Sign in with a password and open `/profile?tab=security` within five minutes.
 2. Enter a unique name such as `Local test passkey` and select **Add passkey**.
 3. Complete the browser/OS authenticator prompt with user verification.
 4. Expect **Passkey added.** and the new entry in the list.
@@ -240,6 +240,11 @@ development context.
 If the platform has no suitable authenticator, run the Playwright journey in
 `apps/web/tests/e2e/auth.journeys.spec.ts`, which uses Chromium's virtual
 authenticator and also asserts a deliberately bad signature is rejected.
+
+Legacy `/security` requests redirect to `/profile?tab=security`; they do not host
+a second security form. **Request email change** on the Profile Security tab is
+only a visible mock: it sends no email and changes no address. Password changes
+still use the authenticated current-password operation above.
 
 ## API verification
 

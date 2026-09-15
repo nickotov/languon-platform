@@ -106,7 +106,7 @@ export function DashboardPage() {
                                             )}
                                         </>
                                     }
-                                    description={`${event.actorEmail} · ${new Date(event.occurredAt).toLocaleString()}`}
+                                    description={`${event.actorEmail ?? event.actorUserId} · ${new Date(event.occurredAt).toLocaleString()}`}
                                 />
                             </List.Item>
                         )}

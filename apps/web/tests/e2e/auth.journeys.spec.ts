@@ -6,7 +6,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision user-authentication sha256:ec863b74a22ad0b0
+// @user-flow-revision user-authentication sha256:2cf529efd205e1f2
 
 const initialPassword = 'E2e!Initial-password-2026';
 const replacementPassword = 'E2e!Replacement-password-2026';
@@ -47,7 +47,7 @@ async function signUpAndVerify(
     email: string,
     password: string,
 ): Promise<void> {
-    await page.goto('/signup?returnTo=%2Fsecurity');
+    await page.goto('/signup?returnTo=%2Fprofile%3Ftab%3Dsecurity');
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password', { exact: true }).fill(password);
     const createAccount = page.getByRole('button', { name: 'Create account' });
@@ -57,9 +57,9 @@ async function signUpAndVerify(
     await expect(page).toHaveURL(/\/verify-email\?/);
     await page.getByLabel('Verification code').fill('0000');
     await page.getByRole('button', { name: 'Verify email' }).click();
-    await expect(page).toHaveURL(/\/security$/);
+    await expect(page).toHaveURL(/\/profile\?tab=security$/);
     await expect(
-        page.getByRole('heading', { name: 'Security settings' }),
+        page.getByRole('heading', { name: 'Change password' }),
     ).toBeVisible();
 }
 
@@ -67,7 +67,7 @@ async function passwordLogin(
     page: Page,
     email: string,
     password: string,
-    returnTo = '/security',
+    returnTo = '/profile?tab=security',
 ): Promise<void> {
     await page.goto(`/login?returnTo=${encodeURIComponent(returnTo)}`);
     await page.getByLabel('Email').fill(email);
@@ -106,7 +106,7 @@ test.describe('authentication journeys', () => {
     }, testInfo) => {
         const assertNoBrowserErrors = captureBrowserErrors(page);
         const email = syntheticEmail(testInfo, 'signup');
-        const response = await page.goto('/signup?returnTo=%2Fsecurity');
+        const response = await page.goto('/signup?returnTo=%2Fprofile%3Ftab%3Dsecurity');
 
         await expect(
             page.getByRole('heading', { level: 1, name: 'Create an account' }),
@@ -134,15 +134,15 @@ test.describe('authentication journeys', () => {
         await page.getByLabel('Verification code').fill('0000');
         await page.getByRole('button', { name: 'Verify email' }).click();
 
-        await expect(page).toHaveURL(/\/security$/);
+        await expect(page).toHaveURL(/\/profile\?tab=security$/);
         await expect(
-            page.getByRole('heading', { name: 'Account' }),
+            page.getByRole('heading', { name: 'Your account', exact: true }),
         ).toBeVisible();
         await page.reload();
         await expect(
-            page.getByRole('heading', { name: 'Account' }),
+            page.getByRole('heading', { name: 'Your account', exact: true }),
         ).toBeVisible();
-        await expect(page.locator('dd', { hasText: email })).toBeVisible();
+        await expect(page.getByText(email).first()).toBeVisible();
         expect(
             await page.evaluate(() => ({
                 local: Object.keys(localStorage),
@@ -178,7 +178,7 @@ test.describe('authentication journeys', () => {
         });
         try {
             await passwordLogin(secondPage, email, initialPassword);
-            await expect(secondPage).toHaveURL(/\/security$/);
+            await expect(secondPage).toHaveURL(/\/profile\?tab=security$/);
 
             await page.goto('/forgot-password');
             await page.getByLabel('Email').fill(email);
@@ -196,9 +196,9 @@ test.describe('authentication journeys', () => {
             await expect(page).toHaveURL(/\/login\?passwordReset=complete$/);
 
             await secondPage.reload();
-            await expect(secondPage).toHaveURL(
-                /\/login\?returnTo=%2Fsecurity$/,
-            );
+            await expect(secondPage.getByRole('heading', { name: 'Sign in to view account settings' })).toBeVisible();
+            await secondPage.getByRole('link', { name: 'Sign in' }).click();
+            await expect(secondPage).toHaveURL(/\/login\?returnTo=%2Fprofile%3Ftab%3Dsecurity$/);
             await secondPage.getByLabel('Email').fill(email);
             await secondPage
                 .getByLabel('Password', { exact: true })
@@ -215,9 +215,9 @@ test.describe('authentication journeys', () => {
             await secondPage
                 .getByRole('button', { name: 'Sign in', exact: true })
                 .click();
-            await expect(secondPage).toHaveURL(/\/security$/);
+            await expect(secondPage).toHaveURL(/\/profile\?tab=security$/);
             await expect(
-                secondPage.locator('dd', { hasText: email }),
+                secondPage.getByText(email).first(),
             ).toBeVisible();
             await secondPage
                 .getByRole('button', { name: 'Sign out here' })

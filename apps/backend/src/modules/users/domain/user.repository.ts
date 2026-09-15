@@ -27,4 +27,12 @@ export interface UserRepository {
         canonicalEmail: string,
     ): Promise<UserWithPrimaryEmail | null>;
     findById(id: string): Promise<UserWithPrimaryEmail | null>;
+    saveHandle(user: User, expectedVersion: number): Promise<boolean>;
+}
+
+export class UserHandleAlreadyExistsError extends Error {
+    public constructor() {
+        super('This handle belongs to another account.');
+        this.name = 'UserHandleAlreadyExistsError';
+    }
 }

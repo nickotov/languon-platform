@@ -106,10 +106,12 @@ export function AuditPage() {
                             title: translate('audit.column.actor'),
                             render: (_, event) => (
                                 <Space direction='vertical' size={0}>
-                                    {event.actorEmail}
-                                    <Link to={`/users/${event.actorUserId}`}>
-                                        {translate('actions.viewActor')}
-                                    </Link>
+                                    {event.actorEmail ?? event.actorUserId}
+                                    {event.actorEmail ? (
+                                        <Link to={`/users/${event.actorUserId}`}>
+                                            {translate('actions.viewActor')}
+                                        </Link>
+                                    ) : null}
                                 </Space>
                             ),
                         },
@@ -118,14 +120,11 @@ export function AuditPage() {
                             responsive: ['lg'],
                             title: translate('audit.column.target'),
                             render: (_, event) =>
-                                event.targetUserId ? (
+                                event.targetUserId && event.targetEmail ? (
                                     <Link to={`/users/${event.targetUserId}`}>
-                                        {event.targetEmail ??
-                                            event.targetUserId}
+                                        {event.targetEmail}
                                     </Link>
-                                ) : (
-                                    '—'
-                                ),
+                                ) : event.targetUserId ?? '—',
                         },
                         {
                             dataIndex: 'reason',

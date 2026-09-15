@@ -28,6 +28,7 @@ export const AdminErrorCodeSchema = z.enum([
     'passkey_verification_failed',
     'user_not_found',
     'user_state_conflict',
+    'deletion_cancellation_unavailable',
     'self_disable_forbidden',
     'last_owner_forbidden',
     'invalid_request',
@@ -127,6 +128,12 @@ export const AdminEndpointSchemas = {
         error: AdminErrorResponseSchema,
     },
     restoreUser: {
+        params: AdminUserIdParamsSchema,
+        body: AdminUserStatusMutationRequestSchema,
+        response: AdminUserStatusMutationResponseSchema,
+        error: AdminErrorResponseSchema,
+    },
+    cancelUserDeletion: {
         params: AdminUserIdParamsSchema,
         body: AdminUserStatusMutationRequestSchema,
         response: AdminUserStatusMutationResponseSchema,

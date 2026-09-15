@@ -642,6 +642,12 @@ The deployment runner owns this exact order:
 3. Run the one-shot migrator exactly once using its separate one-connection
    credential. The advisory lock and migration ledger are backstops, not reasons
    to run multiple jobs.
+   On initial startup without an active slot, run the account-deletion journal
+   recovery gate before starting application traffic. Ordinary blue/green
+   deployments with an active slot do not replay it against live admin or purge
+   traffic. After a PostgreSQL restore, stop all application/worker traffic and
+   run the gate separately before isolated smoke or traffic activation; see
+   [database recovery](database-recovery.md#disaster-recovery).
 4. Start the inactive blue/green slot without changing traffic.
 5. Probe app readiness from the Docker edge network and run smoke checks.
 6. Render the inactive upstream include, validate the complete NGINX config,

@@ -22,8 +22,9 @@ import { useAuth } from '../model/auth-provider';
 import { FormMessage } from './auth-shell';
 import { PasswordField } from './password-field';
 import styles from './auth-ui.module.css';
+import profileStyles from './security-settings.module.css';
 
-export function SecuritySettings() {
+export function SecuritySettings({ embedded = false }: { embedded?: boolean } = {}) {
     const { formatDate, href, t } = useI18n();
     const router = useRouter();
     const status = useSessionStore((state) => state.status);
@@ -51,7 +52,7 @@ export function SecuritySettings() {
 
     useEffect(() => {
         if (status === 'signed-out') {
-            router.replace(href('/login?returnTo=%2Fsecurity'));
+            router.replace(href('/login?returnTo=%2Fprofile%3Ftab%3Dsecurity'));
         }
     }, [href, router, status]);
 
@@ -214,7 +215,7 @@ export function SecuritySettings() {
         return (
             <FormMessage tone='info'>
                 {t('security.signInRequired')}{' '}
-                <Link href={href('/login?returnTo=%2Fsecurity')}>
+                <Link href={href('/login?returnTo=%2Fprofile%3Ftab%3Dsecurity')}>
                     {t('security.goToSignIn')}
                 </Link>
             </FormMessage>
@@ -222,14 +223,14 @@ export function SecuritySettings() {
     }
 
     return (
-        <div className={styles.stack}>
+        <div className={embedded ? profileStyles.stack : styles.stack}>
             {error ? (
                 <FormMessage>
                     {error}
                     {recentAuthenticationRequired ? (
                         <>
                             {' '}
-                            <Link href={href('/login?returnTo=%2Fsecurity')}>
+                            <Link href={href('/login?returnTo=%2Fprofile%3Ftab%3Dsecurity')}>
                                 {t('security.signInAgain')}
                             </Link>
                         </>
@@ -240,7 +241,7 @@ export function SecuritySettings() {
                 <FormMessage tone='success'>{message}</FormMessage>
             ) : null}
 
-            <Card className={styles.panel} aria-labelledby='account-heading'>
+            {!embedded ? <Card className={styles.panel} aria-labelledby='account-heading'>
                 <h2 id='account-heading'>{t('security.account')}</h2>
                 <dl className={styles.metadata}>
                     <div>
@@ -252,9 +253,14 @@ export function SecuritySettings() {
                         <dd>{session ? formatDate(session.expiresAt) : '—'}</dd>
                     </div>
                 </dl>
-            </Card>
+            </Card> : null}
 
-            <Card className={styles.panel} aria-labelledby='password-heading'>
+            <Card
+                aria-labelledby='password-heading'
+                className={embedded ? profileStyles.panel : styles.panel}
+                padding={embedded ? 'none' : 'md'}
+                variant={embedded ? 'outlined' : 'elevated'}
+            >
                 <h2 id='password-heading'>{t('security.changePassword')}</h2>
                 <p>{t('security.changePasswordHelp')}</p>
                 <form
@@ -291,8 +297,10 @@ export function SecuritySettings() {
 
             {capabilities?.passkeys.registration ? (
                 <Card
-                    className={styles.panel}
                     aria-labelledby='passkeys-heading'
+                    className={embedded ? profileStyles.panel : styles.panel}
+                    padding={embedded ? 'none' : 'md'}
+                    variant={embedded ? 'outlined' : 'elevated'}
                 >
                     <h2 id='passkeys-heading'>{t('security.passkeys')}</h2>
                     <p>{t('security.passkeysHelp')}</p>
@@ -349,8 +357,19 @@ export function SecuritySettings() {
                 </Card>
             ) : null}
 
-            <Card className={styles.panel} aria-labelledby='sessions-heading'>
+            <Card
+                aria-labelledby='sessions-heading'
+                className={embedded ? profileStyles.panel : styles.panel}
+                padding={embedded ? 'none' : 'md'}
+                variant={embedded ? 'outlined' : 'elevated'}
+            >
                 <h2 id='sessions-heading'>{t('security.sessions')}</h2>
+                {embedded ? <dl className={styles.metadata}>
+                    <div>
+                        <dt>{t('security.sessionExpires')}</dt>
+                        <dd>{session ? formatDate(session.expiresAt) : '—'}</dd>
+                    </div>
+                </dl> : null}
                 <div className={styles.actions}>
                     <Button
                         disabled={logoutPending}

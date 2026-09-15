@@ -14,6 +14,7 @@ interface SessionState {
     status: SessionStatus;
     user: AuthUser | null;
     authenticate(response: AuthenticationSuccessResponse): void;
+    updateUserHandle(handle: string): void;
     beginBootstrap(): void;
     signOut(): void;
 }
@@ -32,6 +33,10 @@ export const useSessionStore = create<SessionState>((set) => ({
             status: 'authenticated',
             user: response.user,
         }),
+    updateUserHandle: (handle) =>
+        set((state) => ({
+            user: state.user ? { ...state.user, handle } : null,
+        })),
     beginBootstrap: () => set({ status: 'bootstrapping' }),
     signOut: () =>
         set({

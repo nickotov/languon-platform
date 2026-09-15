@@ -11,6 +11,7 @@ export const AuthErrorCodeSchema = z.enum([
     'recent_authentication_required',
     'not_found',
     'conflict',
+    'owner_transfer_required',
     'rate_limited',
     'capability_unavailable',
     'service_unavailable',

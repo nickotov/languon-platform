@@ -91,6 +91,10 @@ export function UsersPage() {
                                     label: translate('status.disabled'),
                                     value: 'disabled',
                                 },
+                                {
+                                    label: translate('status.deletion_pending'),
+                                    value: 'deletion_pending',
+                                },
                             ]}
                             placeholder={translate('users.allStatuses')}
                             style={{ display: 'block', width: 180 }}
@@ -213,6 +217,8 @@ export function StatusTag({ status }: { status: AdminUserSummary['status'] }) {
                     ? 'green'
                     : status === 'disabled'
                       ? 'red'
+                      : status === 'deletion_pending'
+                        ? 'orange'
                       : 'gold'
             }
         >

@@ -61,6 +61,7 @@ describe('SessionIssuer', () => {
             email: 'user@example.com',
             emailId: 'email-1',
             emailVerifiedAt: initialTime,
+            handle: null,
             passwordCredential: null,
             status: 'active',
             userId: 'user-1',

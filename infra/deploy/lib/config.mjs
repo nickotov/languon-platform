@@ -121,6 +121,16 @@ export function assertDeployConfig(environment, config) {
         'AUTH_CODE_HMAC_SECRET',
         'AUTH_JWT_SECRET',
         'AUTH_WEBAUTHN_RP_ID',
+        'ACCOUNT_PURGE_DATABASE_URL',
+        'ACCOUNT_DELETION_JOURNAL_BUCKET',
+        'ACCOUNT_DELETION_JOURNAL_PREFIX',
+        'ACCOUNT_DELETION_JOURNAL_NAMESPACE',
+        'ACCOUNT_DELETION_JOURNAL_REGION',
+        'ACCOUNT_DELETION_JOURNAL_ENCRYPTION_KEY_BASE64',
+        'ACCOUNT_DELETION_JOURNAL_WRITER_ACCESS_KEY_ID',
+        'ACCOUNT_DELETION_JOURNAL_WRITER_SECRET_ACCESS_KEY',
+        'ACCOUNT_DELETION_JOURNAL_READER_ACCESS_KEY_ID',
+        'ACCOUNT_DELETION_JOURNAL_READER_SECRET_ACCESS_KEY',
         'DATABASE_URL',
         'DICTIONARY_HMAC_SECRET',
         'DICTIONARY_WORKER_DATABASE_URL',
@@ -136,6 +146,15 @@ export function assertDeployConfig(environment, config) {
         throw new Error(
             `Deployment config is missing required keys: ${missing.join(', ')}.`,
         );
+    }
+    if (config.ACCOUNT_DELETION_JOURNAL_WRITER_ACCESS_KEY_ID === config.ACCOUNT_DELETION_JOURNAL_READER_ACCESS_KEY_ID) {
+        throw new Error('Deletion journal writer and recovery reader require separate credentials.');
+    }
+    if (config.ACCOUNT_DELETION_JOURNAL_ENDPOINT) {
+        const endpoint = new URL(config.ACCOUNT_DELETION_JOURNAL_ENDPOINT);
+        if (endpoint.protocol !== 'https:' || endpoint.origin !== config.ACCOUNT_DELETION_JOURNAL_ENDPOINT || endpoint.username || endpoint.password) {
+            throw new Error('Deletion journal endpoint must be a credential-free HTTPS origin.');
+        }
     }
     if (!/^\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2}$/.test(config.EDGE_SUBNET)) {
         throw new Error('EDGE_SUBNET must be an explicit IPv4 CIDR.');
@@ -167,6 +186,8 @@ export function assertDeployConfig(environment, config) {
         throw new Error('ADMIN_BIND_ADDRESS must be a loopback address.');
     }
     for (const [key, minimum, maximum] of [
+        ['ACCOUNT_PURGE_DATABASE_MAX_CONNECTIONS', 1, 20],
+        ['ACCOUNT_PURGE_POLL_INTERVAL_MS', 100, 60_000],
         ['DICTIONARY_WORKER_DATABASE_MAX_CONNECTIONS', 1, 50],
         ['DICTIONARY_WORKER_CONCURRENCY', 1, 32],
         ['DICTIONARY_WORKER_POLL_INTERVAL_MS', 50, 60_000],
@@ -187,6 +208,17 @@ export function assertDeployConfig(environment, config) {
     }
     const dictionaryProviderMode =
         config.DICTIONARY_GENERATION_PROVIDER_MODE || 'unavailable';
+    if ((config.DICTIONARY_DOCUMENT_STORAGE_MODE || 'unavailable') === 's3') {
+        const purgeKey = config.ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID;
+        const purgeSecret = config.ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY;
+        if (!purgeKey || !purgeSecret) {
+            throw new Error('Account purge requires dedicated version-delete storage credentials when document storage is enabled.');
+        }
+        if (purgeKey === config.DICTIONARY_DOCUMENT_STORAGE_WORKER_ACCESS_KEY_ID ||
+            purgeKey === config.DICTIONARY_DOCUMENT_STORAGE_API_ACCESS_KEY_ID) {
+            throw new Error('Account purge storage key must not reuse dictionary API or worker credentials.');
+        }
+    }
     if (!['unavailable', 'mastra'].includes(dictionaryProviderMode)) {
         throw new Error(
             'DICTIONARY_GENERATION_PROVIDER_MODE must be unavailable or mastra for deployment.',
@@ -323,6 +355,7 @@ export function assertDeployConfig(environment, config) {
             throw new Error('Production deployment requires DATA_TLS_CA_PATH.');
         }
         for (const key of [
+            'ACCOUNT_PURGE_DATABASE_URL',
             'DATABASE_URL',
             'DICTIONARY_WORKER_DATABASE_URL',
             'MIGRATION_DATABASE_URL',
@@ -337,6 +370,7 @@ export function assertDeployConfig(environment, config) {
             }
         }
         const applicationDatabaseUser = new URL(config.DATABASE_URL).username;
+        const purgeDatabaseUser = new URL(config.ACCOUNT_PURGE_DATABASE_URL).username;
         const workerDatabaseUser = new URL(
             config.DICTIONARY_WORKER_DATABASE_URL,
         ).username;
@@ -351,6 +385,9 @@ export function assertDeployConfig(environment, config) {
                 'DICTIONARY_WORKER_DATABASE_URL must use a dedicated production database user.',
             );
         }
+        if (!purgeDatabaseUser || [applicationDatabaseUser, workerDatabaseUser, migrationDatabaseUser].includes(purgeDatabaseUser)) {
+            throw new Error('ACCOUNT_PURGE_DATABASE_URL must use a dedicated production database user.');
+        }
         const redis = new URL(config.REDIS_URL);
         if (redis.protocol !== 'rediss:') {
             throw new Error('REDIS_URL must use rediss:// in production.');
@@ -361,6 +398,7 @@ export function assertDeployConfig(environment, config) {
             );
         }
         for (const key of [
+            'ACCOUNT_PURGE_DATABASE_URL',
             'DATABASE_URL',
             'DICTIONARY_WORKER_DATABASE_URL',
             'REDIS_URL',

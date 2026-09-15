@@ -175,6 +175,44 @@ describe('admin API boundary', () => {
         });
     });
 
+    it('sends cancellation to the distinct deletion endpoint with version and reason', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+            user: {
+                activeSessionCount: 0,
+                createdAt: '2026-08-19T09:00:00.000Z',
+                emailVerified: true,
+                id: '0198c600-52bb-7e53-8ac3-3102668e32ab',
+                isOwner: false,
+                passkeyCount: 0,
+                primaryEmail: 'target@example.com',
+                status: 'active',
+                updatedAt: '2026-08-20T09:00:00.000Z',
+                version: 4,
+            },
+        }));
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set('admin-access-token');
+
+        await expect(adminApi.mutateUser(
+            '0198c600-52bb-7e53-8ac3-3102668e32ab',
+            'deletion/cancel',
+            {
+                expectedVersion: 3,
+                reason: 'Support confirmed account restoration',
+            },
+        )).resolves.toMatchObject({ user: { status: 'active', version: 4 } });
+        expect(fetchMock).toHaveBeenCalledWith(
+            expect.stringMatching(/\/admin\/users\/[^/]+\/deletion\/cancel$/),
+            expect.objectContaining({
+                body: JSON.stringify({
+                    expectedVersion: 3,
+                    reason: 'Support confirmed account restoration',
+                }),
+                method: 'POST',
+            }),
+        );
+    });
+
     it('keeps an active in-memory session available during a transient network failure', async () => {
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
         accessTokenStore.set('aaa.bbb.ccc');
@@ -210,6 +248,7 @@ function authenticationResponse() {
         user: {
             createdAt: '2026-08-19T09:00:00.000Z',
             emailVerified: true,
+            handle: null,
             id: '0198c500-2f03-792c-a68d-d6dc0247bba7',
             primaryEmail: 'owner@example.com',
             status: 'active',

@@ -4,7 +4,7 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { EmailAddress } from '../../../domain/email-address';
 import type { UserWithPrimaryEmail } from '../../../domain/user.repository';
-import { User } from '../../../domain/user';
+import { User, type UserStatus } from '../../../domain/user';
 import { userEmailsTable, usersTable } from './schema';
 
 type UsersDatabase = Pick<
@@ -44,6 +44,7 @@ export class DrizzleUserRepository {
                 createdAt: usersTable.createdAt,
                 email: userEmailsTable.email,
                 id: usersTable.id,
+                handle: usersTable.handle,
                 status: usersTable.status,
                 updatedAt: usersTable.updatedAt,
                 verifiedAt: userEmailsTable.verifiedAt,
@@ -66,7 +67,8 @@ interface UserWithPrimaryEmailRow {
     createdAt: Date;
     email: string;
     id: string;
-    status: 'active' | 'disabled' | 'pending';
+    handle: string | null;
+    status: UserStatus;
     updatedAt: Date;
     verifiedAt: Date | null;
     version: number;
@@ -86,6 +88,7 @@ function mapUserWithPrimaryEmail(
         user: User.restore({
             createdAt: row.createdAt,
             id: row.id,
+            handle: row.handle,
             status: row.status,
             updatedAt: row.updatedAt,
             version: row.version,

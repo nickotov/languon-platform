@@ -1,0 +1,4 @@
+.handleForm { align-items: end; display: flex; flex-wrap: wrap; gap: 16px; }
+.handleForm > div { flex: 1 1 240px; }
+.confirmForm { display: grid; gap: 24px; padding: 24px; }
+.confirmActions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }

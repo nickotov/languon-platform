@@ -1,7 +1,7 @@
 export interface DevelopmentPrincipal {
     email: string;
     id: string;
-    status: 'active' | 'disabled' | 'pending';
+    status: 'active' | 'disabled' | 'pending' | 'deletion_pending' | 'purged';
     verifiedAt: Date | null;
 }
 

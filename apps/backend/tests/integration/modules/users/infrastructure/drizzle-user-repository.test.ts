@@ -18,6 +18,8 @@ import {
 import { User } from '../../../../../src/modules/users/domain/user';
 import { DrizzleUserRepository } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-user-repository';
 import { DrizzleUsersUnitOfWork } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-users-unit-of-work';
+import { UserHandleAlreadyExistsError } from '../../../../../src/modules/users/domain/user.repository';
+import { UserProfileService } from '../../../../../src/modules/users/application/user-profile-service';
 import {
     userEmailsTable,
     usersTable,
@@ -136,6 +138,50 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
             }),
         ]);
         expect(identityCount[0]?.value).toBe(1);
+    });
+
+    it('uniquely claims lowercase handles under concurrent case-variant requests', async () => {
+        const first = createIdentity('handle-one@example.test');
+        const second = createIdentity('handle-two@example.test');
+        await unitOfWork.execute((users) =>
+            users.addWithPrimaryEmail({
+                ...first,
+                user: first.user.activate(now),
+            }),
+        );
+        await unitOfWork.execute((users) =>
+            users.addWithPrimaryEmail({
+                ...second,
+                user: second.user.activate(now),
+            }),
+        );
+        const profiles = new UserProfileService(unitOfWork);
+        const claims = await Promise.allSettled([
+            profiles.updateHandle({
+                handle: 'learner_123',
+                now,
+                userId: first.user.id,
+            }),
+            profiles.updateHandle({
+                handle: 'learner_123',
+                now,
+                userId: second.user.id,
+            }),
+        ]);
+        expect(
+            claims.filter((claim) => claim.status === 'fulfilled'),
+        ).toHaveLength(1);
+        expect(claims.filter((claim) => claim.status === 'rejected')).toEqual([
+            expect.objectContaining({
+                reason: expect.any(UserHandleAlreadyExistsError),
+            }),
+        ]);
+        const rows = await database
+            .select({ handle: usersTable.handle })
+            .from(usersTable);
+        expect(
+            rows.filter(({ handle }) => handle === 'learner_123'),
+        ).toHaveLength(1);
     });
 
     it('enforces canonical consistency, foreign keys, and one primary email', async () => {

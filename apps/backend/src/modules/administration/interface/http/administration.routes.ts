@@ -479,6 +479,37 @@ function registerResourceRoutes(
     }
     app.openapi(
         createRoute({
+            method: 'post',
+            path: '/admin/users/{userId}/deletion/cancel',
+            request: {
+                params: AdminUserIdParamsSchema,
+                body: requestBody(AdminUserStatusMutationRequestSchema),
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminUserStatusMutationResponseSchema,
+                    'Scheduled account deletion cancelled.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Administration'],
+        }),
+        async (context) =>
+            context.json(
+                {
+                    user: await dependencies.administration.cancelUserDeletion(
+                        bearer(context.req.header('Authorization')),
+                        context.req.valid('param').userId,
+                        context.req.valid('json'),
+                        correlationId(context.req.header('X-Correlation-ID')),
+                    ),
+                },
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
             method: 'get',
             path: '/admin/audit-events',
             request: { query: AdminAuditEventsQuerySchema },

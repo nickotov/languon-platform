@@ -252,8 +252,8 @@ test('expand, activate, slot overlap, and rollback preserve full dictionary job 
     assert.match(compose, /dictionary-worker-command\.js/);
     assert.equal(
         (compose.match(/image: \$\{BACKEND_IMAGE/g) ?? []).length,
-        2,
-        'backend HTTP and worker roles must reuse one immutable backend image',
+        3,
+        'backend HTTP, dictionary worker, and account-purge roles must reuse one immutable backend image',
     );
 });
 

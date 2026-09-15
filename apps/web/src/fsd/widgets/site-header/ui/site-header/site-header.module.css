@@ -23,6 +23,18 @@
     display: flex;
     gap: var(--spacing-8);
 }
+.handle {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    max-width: 160px;
+    overflow: hidden;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.handle:hover { color: var(--text-primary); }
+.handle:focus-visible { border-radius: var(--radius-sm); outline: 2px solid var(--border-focus); outline-offset: 3px; }
 
 @media (min-width: 640px) {
     .inner {
@@ -40,6 +52,7 @@
     .brand span:last-child {
         display: none;
     }
+    .handle { max-width: 80px; }
 }
 
 @media (max-width: 260px) {

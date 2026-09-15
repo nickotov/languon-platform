@@ -9,6 +9,7 @@ export default tseslint.config(
         ignores: [
             '**/.next/**',
             '**/.next-e2e/**',
+            '**/.next-*/**',
             '**/.mastra/**',
             '**/.turbo/**',
             '**/coverage/**',

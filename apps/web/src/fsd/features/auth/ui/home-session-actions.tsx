@@ -28,7 +28,7 @@ export function HomeSessionActions() {
                 <ButtonLink href={href('/profile')} variant='secondary'>
                     {t('home.profile')}
                 </ButtonLink>
-                <ButtonLink href={href('/security')}>
+                <ButtonLink href={href('/profile?tab=security')}>
                     {t('home.security')}
                 </ButtonLink>
             </div>

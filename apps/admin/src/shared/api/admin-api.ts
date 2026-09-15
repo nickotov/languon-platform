@@ -174,7 +174,7 @@ export const adminApi = {
         ),
     mutateUser: (
         userId: string,
-        operation: 'disable' | 'restore',
+        operation: 'disable' | 'restore' | 'deletion/cancel',
         body: AdminUserStatusMutationRequest,
         signal?: AbortSignal,
     ) =>

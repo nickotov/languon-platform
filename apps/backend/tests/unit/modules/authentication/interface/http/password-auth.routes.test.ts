@@ -31,6 +31,7 @@ function authenticatedResponse() {
             createdAt: now,
             emailVerified: true as const,
             id: userId,
+            handle: null,
             primaryEmail: 'learner@example.com',
             status: 'active' as const,
         },

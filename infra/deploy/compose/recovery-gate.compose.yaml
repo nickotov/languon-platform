@@ -1,0 +1,29 @@
+name: languon-recovery-gate
+
+services:
+    recovery-gate:
+        image: ${BACKEND_IMAGE:?required}
+        command: ['node', 'dist/modules/users/infrastructure/recovery/account-recovery-gate-command.js', 'run']
+        restart: 'no'
+        init: true
+        environment:
+            APP_ENV: ${APP_ENV:?required}
+            DATABASE_URL: ${DATABASE_URL:?required}
+            ACCOUNT_DELETION_JOURNAL_BUCKET: ${ACCOUNT_DELETION_JOURNAL_BUCKET:?required}
+            ACCOUNT_DELETION_JOURNAL_PREFIX: ${ACCOUNT_DELETION_JOURNAL_PREFIX:?required}
+            ACCOUNT_DELETION_JOURNAL_NAMESPACE: ${ACCOUNT_DELETION_JOURNAL_NAMESPACE:?required}
+            ACCOUNT_DELETION_JOURNAL_REGION: ${ACCOUNT_DELETION_JOURNAL_REGION:?required}
+            ACCOUNT_DELETION_JOURNAL_ENDPOINT: ${ACCOUNT_DELETION_JOURNAL_ENDPOINT:-}
+            ACCOUNT_DELETION_JOURNAL_FORCE_PATH_STYLE: ${ACCOUNT_DELETION_JOURNAL_FORCE_PATH_STYLE:-false}
+            ACCOUNT_DELETION_JOURNAL_ENCRYPTION_KEY_BASE64: ${ACCOUNT_DELETION_JOURNAL_ENCRYPTION_KEY_BASE64:?required}
+            ACCOUNT_DELETION_JOURNAL_ACCESS_KEY_ID: ${ACCOUNT_DELETION_JOURNAL_READER_ACCESS_KEY_ID:?required}
+            ACCOUNT_DELETION_JOURNAL_SECRET_ACCESS_KEY: ${ACCOUNT_DELETION_JOURNAL_READER_SECRET_ACCESS_KEY:?required}
+        networks: [data]
+        security_opt: [no-new-privileges:true]
+        read_only: true
+        tmpfs: [/tmp:size=32m,mode=1777]
+
+networks:
+    data:
+        external: true
+        name: ${DEPLOY_PROJECT_PREFIX:?required}-data

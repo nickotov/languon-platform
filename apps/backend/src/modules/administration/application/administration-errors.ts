@@ -18,6 +18,18 @@ export class AdminUserStateConflictError extends Error {
         this.name = 'AdminUserStateConflictError';
     }
 }
+export class AdminDeletionCancellationUnavailableError extends Error {
+    public constructor() {
+        super('Account deletion can no longer be cancelled.');
+        this.name = 'AdminDeletionCancellationUnavailableError';
+    }
+}
+export class AdminCancellationJournalUnavailableError extends Error {
+    public constructor() {
+        super('Account deletion cancellation is temporarily unavailable.');
+        this.name = 'AdminCancellationJournalUnavailableError';
+    }
+}
 
 export class AdminSelfDisableForbiddenError extends Error {
     public constructor() {

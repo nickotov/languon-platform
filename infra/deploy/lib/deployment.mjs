@@ -386,6 +386,12 @@ export class Deployment {
         );
     }
 
+    async runAccountRecoveryGate(slot) {
+        const files = [path.join(this.composeDirectory, 'recovery-gate.compose.yaml')];
+        if (this.environment === 'production') files.push(path.join(this.composeDirectory, 'recovery-gate.production.compose.yaml'));
+        await this.compose(files, `${this.projectPrefix}-recovery-gate`, ['run', '--rm', '--no-deps', 'recovery-gate'], slot);
+    }
+
     async verifyBackupGate() {
         if (this.environment !== 'production') return;
         await this.runner(
@@ -773,6 +779,14 @@ export class Deployment {
                     outcome: 'succeeded',
                     ledger: this.manifest.migration.ledger,
                 };
+            }
+            // Replay is a mutating restore operation. An active slot shares this
+            // database; its admin traffic and purge worker must not race replay.
+            // Restore operators run the gate against a quiesced database before
+            // any application traffic is restarted.
+            if (!state.activeSlot) {
+                phase = 'account-recovery-gate';
+                await this.runAccountRecoveryGate(nextSlot);
             }
             phase = 'worker-database-privileges';
             await this.timed('workerDatabasePrivilegesMs', () =>

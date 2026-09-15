@@ -1,6 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision magic-profile-page sha256:e39e2ad1b943cb76
+// @user-flow-revision magic-profile-page sha256:d8aa1a5249db1f9c
+// @user-flow-revision profile-account-controls sha256:59356e64ac6fc545
 
 const password = 'E2e!Profile-password-2026';
 const runId = process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
@@ -66,5 +67,40 @@ test('shows truthful account placeholders and the shared application header', as
 
     await page.getByRole('link', { name: 'Languon home' }).click();
     await expect(page).toHaveURL(/\/$/);
+    assertNoBrowserErrors();
+});
+
+// @user-flow profile-account-controls/profile-handle-security-and-removal
+test('saves a unique handle, keeps Security real and email mock honest, then schedules removal', async ({ page }, testInfo) => {
+    const assertNoBrowserErrors = captureBrowserErrors(page);
+    const email = `account-controls-${runId}-${testInfo.workerIndex}@example.test`;
+    const handle = `learner_${Date.now()}_${testInfo.workerIndex}`;
+
+    await page.goto('/signup?returnTo=%2Fprofile');
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await page.getByLabel('Verification code').fill('0000');
+    await page.getByRole('button', { name: 'Verify email' }).click();
+    await expect(page).toHaveURL(/\/profile$/);
+
+    await page.getByRole('textbox', { name: 'Unique handle' }).fill(handle.toUpperCase());
+    await page.getByRole('button', { name: 'Save handle' }).click();
+    await expect(page.getByRole('heading', { name: `@${handle}` })).toBeVisible();
+    await expect(page.getByRole('link', { name: `@${handle}` })).toHaveAttribute('href', '/profile');
+
+    await page.getByRole('tab', { name: /Security/ }).click();
+    await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Passkeys' })).toBeVisible();
+    await page.getByRole('button', { name: 'Request email change' }).click();
+    await expect(page.getByText(/no email was sent and your address was not changed/i)).toBeVisible();
+
+    await page.getByRole('tab', { name: /Account/ }).click();
+    await page.getByRole('button', { name: 'Delete account' }).click();
+    await expect(page.getByRole('button', { name: 'Schedule account removal' })).toBeDisabled();
+    await page.getByRole('textbox', { name: 'Type DELETE to confirm' }).fill('DELETE');
+    await page.getByRole('button', { name: 'Schedule account removal' }).click();
+    await expect(page.getByRole('heading', { name: 'Account removal scheduled' })).toBeVisible();
+    await expect(page.getByText(/Access has ended/)).toBeVisible();
     assertNoBrowserErrors();
 });

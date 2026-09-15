@@ -52,11 +52,13 @@ export const adminDataProvider: DataProvider = {
         if (resource !== 'users') throw unsupported(resource);
         const input = variables as {
             expectedVersion?: number;
-            operation?: 'disable' | 'restore';
+            operation?: 'disable' | 'restore' | 'deletion/cancel';
             reason?: string;
         };
         if (
-            (input.operation !== 'disable' && input.operation !== 'restore') ||
+            (input.operation !== 'disable' &&
+                input.operation !== 'restore' &&
+                input.operation !== 'deletion/cancel') ||
             typeof input.expectedVersion !== 'number' ||
             typeof input.reason !== 'string'
         ) {
@@ -93,7 +95,10 @@ function userFilters(
     const status = filterValue(filters, 'status');
     return {
         ...(typeof search === 'string' && search ? { search } : {}),
-        ...(status === 'active' || status === 'disabled' || status === 'pending'
+        ...(status === 'active' ||
+        status === 'disabled' ||
+        status === 'pending' ||
+        status === 'deletion_pending'
             ? { status }
             : {}),
     };
@@ -109,6 +114,7 @@ function auditFilters(
         action === 'membership_revoked' ||
         action === 'user_disabled' ||
         action === 'user_restored' ||
+        action === 'user_deletion_cancelled' ||
         action === 'access_denied' ||
         action === 'audit_pruned'
             ? { action }

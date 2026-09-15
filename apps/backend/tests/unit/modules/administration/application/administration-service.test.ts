@@ -19,6 +19,7 @@ const now = new Date('2026-08-20T08:00:00.000Z');
 
 function setup(options: { membership?: boolean } = {}) {
     const store = {
+        cancelUserDeletion: vi.fn().mockResolvedValue({ id: targetId }),
         dashboard: vi.fn(),
         disableUser: vi.fn().mockResolvedValue({ id: targetId }),
         findActiveMembership: vi.fn().mockResolvedValue(
@@ -74,6 +75,30 @@ function setup(options: { membership?: boolean } = {}) {
 }
 
 describe('AdministrationService', () => {
+    it('requires recent admin authentication and a distinct audited cancellation action', async () => {
+        const { authentication, service, store } = setup();
+        const input = {
+            expectedVersion: 3,
+            reason: 'Verified cancellation requested by support',
+        };
+        const correlationId = '0198c203-6b64-71cd-877b-752ff3fe056f';
+
+        await service.cancelUserDeletion(
+            'access-token', targetId, input, correlationId,
+        );
+        expect(authentication.requireRecentlyAuthenticatedSession)
+            .toHaveBeenCalledWith({ sessionId, userId: actorId });
+        expect(store.cancelUserDeletion).toHaveBeenCalledWith(
+            expect.objectContaining({
+                actorSessionId: sessionId,
+                actorUserId: actorId,
+                expectedVersion: input.expectedVersion,
+                reason: input.reason,
+                targetUserId: targetId,
+                audit: expect.objectContaining({ correlationId }),
+            }),
+        );
+    });
     it('authorizes from active persisted membership instead of token claims', async () => {
         const { service, store } = setup();
 

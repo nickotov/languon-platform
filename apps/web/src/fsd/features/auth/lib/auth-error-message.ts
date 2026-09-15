@@ -13,6 +13,7 @@ const errorKeys: Record<AuthErrorCode, MessageKey> = {
     invalid_credentials: 'error.invalid_credentials',
     invalid_request: 'error.invalid_request',
     not_found: 'error.not_found',
+    owner_transfer_required: 'profile.deleteOwnerTransfer',
     passkey_verification_failed: 'error.passkey_verification_failed',
     password_policy_failed: 'error.password_policy_failed',
     rate_limited: 'error.rate_limited',
