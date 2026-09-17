@@ -60,8 +60,13 @@ test database and Redis services.
 3. Select Account, Security, Billing, and Credits using pointer and keyboard.
    Expect the underline tabs and their panels to remain accessible and the
    content to reflow without horizontal clipping.
-4. In Security, expect the real primary email and embedded password, passkey,
-   and session controls. The email-change request explicitly sends no email.
+4. In Account, expect interface-language selection to work immediately and
+   unsupported name, learning-language, time-zone, and photo editing to be
+   clearly coming soon. In Security, expect the real primary email and embedded
+   password, passkey, and session controls. The passkey card has a centered
+   empty state with a direct Add action, and enrolled rows show only known
+   metadata with accessible rename and confirmed revoke. Google, Yandex, and Apple rows are
+   visible as coming soon with disabled Connect actions; the email-change request explicitly sends no email.
 5. In Billing, choose **Compare plans**. Expect an informational notification
    that Subscription is coming soon, with no billing request or account change.
 6. Toggle the theme from the header. Expect `data-theme` and the global
@@ -91,6 +96,7 @@ focused component tests because they do not require another system boundary.
 - Billing/export placeholder buttons never call APIs. Handle and deletion actions
   are live and need their own explicit confirmations.
 - Password and passkey functionality now lives in the Profile Security tab;
+  unavailable OAuth connection is visibly future functionality;
   `/security` redirects there.
 
 ## Automated regression checks

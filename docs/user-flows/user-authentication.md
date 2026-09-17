@@ -2,7 +2,7 @@
 feature: user-authentication
 title: User Authentication
 status: current
-last_verified: 2026-09-14
+last_verified: 2026-09-15
 surfaces:
     - browser
     - api
@@ -226,14 +226,25 @@ Use a browser/platform that supports WebAuthn. Localhost is treated as a secure
 development context.
 
 1. Sign in with a password and open `/profile?tab=security` within five minutes.
-2. Enter a unique name such as `Local test passkey` and select **Add passkey**.
-3. Complete the browser/OS authenticator prompt with user verification.
-4. Expect **Passkey added.** and the new entry in the list.
+2. In the centered empty state, select **Add your first passkey** (or select
+   **Add passkey** in the card header). The browser/OS authenticator prompt
+   starts directly; the card shows **Waiting for your device** while pending.
+3. Complete the prompt with user verification. Cancellation leaves the empty
+   state intact and shows a dismissible error in the card.
+4. Expect **Passkey added.** and a generically named new row (for example,
+   `Passkey 1`), with its real creation and last-used metadata. No device type
+   is inferred. Another Add starts the same direct flow.
 5. Select **Sign out here**, then select **Sign in with a passkey** on `/login`.
 6. Choose the discoverable credential and complete user verification. Expect an
    authenticated home page; open **Security settings**.
-7. Rename the passkey and expect the new name immediately.
-8. Select **Remove**, then **Confirm remove**. Expect the passkey to disappear.
+7. Select the row's accessible **Rename** icon, enter a unique name in the
+   dialog, and save. Expect the new name immediately. A failed rename keeps
+   the dialog and draft visible.
+8. Select **Revoke passkey** for that credential. Read the confirmation dialog,
+   select **Keep passkey** to verify it is still listed, then reopen the dialog
+   and select **Revoke passkey**. Expect the passkey to disappear and the
+   centered empty-state Add action to return. The dialog reminds you to retain
+   email/password access; it does not claim unavailable OAuth providers work.
 9. Sign out and confirm that removed credential can no longer authenticate this
    account. Password login and recovery remain available.
 

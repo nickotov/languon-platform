@@ -10,11 +10,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
+import { AtSign, Fingerprint, Globe2, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { useSessionStore } from '@/fsd/entities/session';
 import { authApi, AuthApiError } from '@/fsd/shared/api/auth-api';
 import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
-import { Button, Card, Field, Input, LoadingState } from '@/fsd/shared/ui';
+import { Badge, Button, Card, Dialog, DialogActions, Field, IconButton, InlineAlert, Input, LoadingState } from '@/fsd/shared/ui';
 
 import { localizedAuthError } from '../lib/auth-error-message';
 import { createPasskey, supportsPasskeys } from '../lib/webauthn';
@@ -34,6 +35,7 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
     const {
         acceptAuthentication,
         capabilities,
+        capabilitiesError,
         requestWithSession,
         signOutEverywhere,
         signOutHere,
@@ -46,7 +48,15 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
     const [passwordPending, setPasswordPending] = useState(false);
     const [logoutPending, setLogoutPending] = useState(false);
     const [passkeySupported, setPasskeySupported] = useState(false);
+    const [passkeyError, setPasskeyError] = useLocaleSensitiveState<string | null>(null);
+    const [passkeyRecentAuthAction, setPasskeyRecentAuthAction] = useState<'add' | 'rename' | 'revoke' | null>(null);
+    const [renameTarget, setRenameTarget] = useState<PasskeyMetadata | null>(null);
+    const [renameDraft, setRenameDraft] = useState('');
+    const [renamePending, setRenamePending] = useState(false);
+    const [renameError, setRenameError] = useLocaleSensitiveState<string | null>(null);
     const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+    const [revokePending, setRevokePending] = useState(false);
+    const [revokeError, setRevokeError] = useLocaleSensitiveState<string | null>(null);
 
     useEffect(() => setPasskeySupported(supportsPasskeys()), []);
 
@@ -113,19 +123,17 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
         }
     }
 
-    async function registerPasskey(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        setError(null);
-        setRecentAuthenticationRequired(false);
+    async function registerPasskey() {
+        if (ceremonyPending || !passkeySupported || !capabilities?.passkeys.registration || !passkeyQuery.isSuccess) return;
+        setPasskeyError(null);
+        setPasskeyRecentAuthAction(null);
         setMessage(null);
-        const form = event.currentTarget;
-        const name = PasskeyNameSchema.safeParse(
-            new FormData(form).get('name'),
-        );
-        if (!name.success) {
-            setError(t('security.passkeyNameInvalid'));
-            return;
-        }
+        // The registration contract requires a name. Never guess the device type;
+        // assign an available generic name and let the owner rename it later.
+        const existingNames = new Set(passkeys.map((passkey) => passkey.name.toLocaleLowerCase()));
+        let index = 1;
+        while (existingNames.has(t('security.defaultPasskeyName', { number: index }).toLocaleLowerCase())) index += 1;
+        const name = t('security.defaultPasskeyName', { number: index });
 
         setCeremonyPending(true);
         try {
@@ -135,50 +143,56 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
             const credential = await createPasskey(ceremony.options);
             const response = await requestWithSession((token) =>
                 authApi.verifyPasskeyRegistration(
-                    { credential, flowId: ceremony.flowId, name: name.data },
+                    { credential, flowId: ceremony.flowId, name },
                     token,
                 ),
             );
             updatePasskeys((current) => [...current, response.passkey]);
-            form.reset();
             setMessage(t('security.passkeyAdded'));
         } catch (caught) {
-            captureError(caught);
+            setPasskeyError(localizedAuthError(caught, t));
+            if (caught instanceof AuthApiError && caught.detail.code === 'recent_authentication_required') setPasskeyRecentAuthAction('add');
         } finally {
             setCeremonyPending(false);
         }
     }
 
-    async function renamePasskey(passkeyId: string, name: string) {
-        const parsed = PasskeyNameSchema.safeParse(name);
+    async function renamePasskey(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!renameTarget || renamePending) return;
+        const parsed = PasskeyNameSchema.safeParse(renameDraft);
         if (!parsed.success) {
-            setError(t('security.passkeyNameInvalid'));
+            setRenameError(t('security.passkeyNameInvalid'));
             return;
         }
-        setError(null);
-        setRecentAuthenticationRequired(false);
+        setRenameError(null);
+        setPasskeyRecentAuthAction(null);
+        setRenamePending(true);
         try {
             const response = await requestWithSession((token) =>
-                authApi.renamePasskey(passkeyId, { name: parsed.data }, token),
+                authApi.renamePasskey(renameTarget.id, { name: parsed.data }, token),
             );
             updatePasskeys((current) =>
                 current.map((passkey) =>
-                    passkey.id === passkeyId ? response.passkey : passkey,
+                    passkey.id === renameTarget.id ? response.passkey : passkey,
                 ),
             );
+            setRenameTarget(null);
             setMessage(t('security.passkeyRenamed'));
         } catch (caught) {
-            captureError(caught);
+            setRenameError(localizedAuthError(caught, t));
+            if (caught instanceof AuthApiError && caught.detail.code === 'recent_authentication_required') setPasskeyRecentAuthAction('rename');
+        } finally {
+            setRenamePending(false);
         }
     }
 
     async function revokePasskey(passkeyId: string) {
-        if (confirmRevoke !== passkeyId) {
-            setConfirmRevoke(passkeyId);
-            return;
-        }
         setError(null);
         setRecentAuthenticationRequired(false);
+        setRevokeError(null);
+        setPasskeyRecentAuthAction(null);
+        setRevokePending(true);
         try {
             await requestWithSession((token) =>
                 authApi.revokePasskey(passkeyId, token),
@@ -189,7 +203,10 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
             setConfirmRevoke(null);
             setMessage(t('security.passkeyRemoved'));
         } catch (caught) {
-            captureError(caught);
+            setRevokeError(localizedAuthError(caught, t));
+            if (caught instanceof AuthApiError && caught.detail.code === 'recent_authentication_required') setPasskeyRecentAuthAction('revoke');
+        } finally {
+            setRevokePending(false);
         }
     }
 
@@ -261,69 +278,72 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
                 padding={embedded ? 'none' : 'md'}
                 variant={embedded ? 'outlined' : 'elevated'}
             >
-                <h2 id='password-heading'>{t('security.changePassword')}</h2>
-                <p>{t('security.changePasswordHelp')}</p>
-                <form
-                    aria-busy={passwordPending}
-                    className={styles.form}
-                    onSubmit={changePassword}
-                >
-                    <Field label={t('common.email')}>
-                        <Input
-                            autoComplete='username'
-                            name='email'
-                            readOnly
-                            type='email'
-                            value={user?.primaryEmail ?? ''}
-                        />
-                    </Field>
-                    <PasswordField
-                        autoComplete='current-password'
-                        label={t('common.currentPassword')}
-                        name='currentPassword'
-                    />
-                    <PasswordField
-                        autoComplete='new-password'
-                        label={t('common.newPassword')}
-                        name='newPassword'
-                    />
-                    <Button disabled={passwordPending} type='submit'>
-                        {passwordPending
-                            ? t('reset.pending')
-                            : t('security.changePassword')}
-                    </Button>
-                </form>
+                <div className={embedded ? profileStyles.panelHeader : undefined}>
+                    <h2 id='password-heading'>{t('security.changePassword')}</h2>
+                    <p>{t('security.changePasswordHelp')}</p>
+                </div>
+                <div className={embedded ? profileStyles.panelBody : undefined}>
+                    <form aria-busy={passwordPending} className={styles.form} onSubmit={changePassword}>
+                        <Field label={t('common.email')}>
+                            <Input autoComplete='username' name='email' readOnly type='email' value={user?.primaryEmail ?? ''} />
+                        </Field>
+                        <PasswordField autoComplete='current-password' label={t('common.currentPassword')} name='currentPassword' />
+                        <PasswordField autoComplete='new-password' label={t('common.newPassword')} name='newPassword' />
+                        <Button disabled={passwordPending} type='submit'>
+                            {passwordPending ? t('reset.pending') : t('security.changePassword')}
+                        </Button>
+                    </form>
+                </div>
             </Card>
 
-            {capabilities?.passkeys.registration ? (
+            {embedded ? <Card aria-labelledby='methods-heading' className={profileStyles.panel} padding='none' variant='outlined'>
+                <div className={profileStyles.panelHeader}>
+                    <h2 id='methods-heading'>{t('profile.methodsTitle')}</h2>
+                    <p>{t('profile.methodsDescription')}</p>
+                </div>
+                <div className={profileStyles.panelBody}>
+                    <div className={profileStyles.rowList}>
+                        <div className={profileStyles.dataRow}>
+                            <span aria-hidden='true' className={profileStyles.rowIcon}><AtSign size={18} /></span>
+                            <div className={profileStyles.rowCopy}><h3>{t('profile.emailMethod')}</h3><p>{user?.primaryEmail}</p></div>
+                            <Badge size='sm' tone='success'>{t('profile.available')}</Badge>
+                        </div>
+                        {(['Google', 'Yandex', 'Apple'] as const).map((provider) => <div className={profileStyles.dataRow} key={provider}>
+                            <span aria-hidden='true' className={profileStyles.rowIcon}><Globe2 size={18} /></span>
+                            <div className={profileStyles.rowCopy}><h3>{provider} <Badge size='sm' tone='neutral'>{t('profile.comingSoon')}</Badge></h3><p>{t('profile.providerComingSoon')}</p></div>
+                            <Button disabled size='compact' type='button' variant='secondary'>{t('profile.connectProvider')}</Button>
+                        </div>)}
+                    </div>
+                </div>
+            </Card> : null}
+
                 <Card
                     aria-labelledby='passkeys-heading'
                     className={embedded ? profileStyles.panel : styles.panel}
                     padding={embedded ? 'none' : 'md'}
                     variant={embedded ? 'outlined' : 'elevated'}
                 >
-                    <h2 id='passkeys-heading'>{t('security.passkeys')}</h2>
-                    <p>{t('security.passkeysHelp')}</p>
-                    <form className={styles.row} onSubmit={registerPasskey}>
-                        <Field label={t('security.passkeyName')} required>
-                            <Input
-                                autoComplete='off'
-                                maxLength={160}
-                                name='name'
-                                placeholder={t('security.passkeyPlaceholder')}
-                                required
-                            />
-                        </Field>
-                        <Button
-                            disabled={ceremonyPending || !passkeySupported}
-                            type='submit'
-                        >
-                            {t('security.addPasskey')}
-                        </Button>
-                    </form>
+                    <div className={embedded ? profileStyles.panelHeader : undefined}>
+                        <div className={embedded ? profileStyles.headerLine : undefined}>
+                            <div><h2 id='passkeys-heading'>{t('security.passkeys')}</h2><p>{t('security.passkeysHelp')}</p></div>
+                            <Button disabled={!passkeySupported || !capabilities?.passkeys.registration || !passkeyQuery.isSuccess} leadingIcon={<Plus size={16} />}
+                                loading={ceremonyPending} onClick={() => void registerPasskey()} size='compact' type='button' variant='secondary'>
+                                {t('security.addPasskey')}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className={embedded ? profileStyles.panelBody : undefined}>
+                    {ceremonyPending ? <InlineAlert title={t('security.waitingForDevice')} tone='info'>{t('security.confirmDevicePrompt')}</InlineAlert> : null}
+                    {passkeyError ? <InlineAlert onDismiss={() => setPasskeyError(null)} title={t('security.passkeyActionFailed')} tone='error'>
+                        {passkeyError}
+                        {passkeyRecentAuthAction === 'add' ? <p><Link href={href('/login?returnTo=%2Fprofile%3Ftab%3Dsecurity')}>{t('security.signInAgain')}</Link></p> : null}
+                    </InlineAlert> : null}
                     {!passkeySupported ? (
                         <small>{t('passkey.unsupported')}</small>
                     ) : null}
+                    {capabilities === null && !capabilitiesError ? <small role='status'>{t('security.loadingCapabilities')}</small> : null}
+                    {capabilitiesError ? <InlineAlert tone='error'>{capabilitiesError}</InlineAlert> : null}
+                    {capabilities && !capabilities.passkeys.registration ? <small>{t('security.passkeyUnavailable')}</small> : null}
                     {passkeyQuery.isPending ? (
                         <p role='status'>{t('security.loadingPasskeys')}</p>
                     ) : null}
@@ -340,22 +360,62 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
                         </FormMessage>
                     ) : null}
                     {passkeyQuery.isSuccess && passkeys.length === 0 ? (
-                        <p>{t('security.noPasskeys')}</p>
+                        <div className={profileStyles.emptyState}>
+                            <span aria-hidden='true' className={profileStyles.emptyIcon}><Fingerprint size={24} /></span>
+                            <h3>{t('security.noPasskeys')}</h3><p>{t('security.passkeyEmptyHelp')}</p>
+                            <Button disabled={!passkeySupported || !capabilities?.passkeys.registration} loading={ceremonyPending}
+                                onClick={() => void registerPasskey()} size='compact' type='button'>
+                                {t('security.addFirstPasskey')}
+                            </Button>
+                        </div>
                     ) : null}
-                    <ul className={styles.list}>
+                    <ul className={embedded ? profileStyles.passkeyList : styles.list}>
                         {passkeys.map((passkey) => (
                             <PasskeyRow
-                                confirmRevoke={confirmRevoke === passkey.id}
+                                embedded={embedded}
                                 key={passkey.id}
-                                onCancelRevoke={() => setConfirmRevoke(null)}
-                                onRename={renamePasskey}
-                                onRevoke={revokePasskey}
+                                onRename={() => { setRenameTarget(passkey); setRenameDraft(passkey.name); setRenameError(null); }}
+                                onRevoke={() => { setRevokeError(null); setConfirmRevoke(passkey.id); }}
                                 passkey={passkey}
                             />
                         ))}
                     </ul>
+                    </div>
                 </Card>
-            ) : null}
+
+            <Dialog closeLabel={t('profile.dismiss')} dismissible={!renamePending}
+                footer={<DialogActions><Button disabled={renamePending} onClick={() => { setRenameTarget(null); setRenameError(null); }} type='button' variant='quiet'>
+                    {t('common.cancel')}
+                </Button><Button disabled={renamePending || !renameTarget} form='rename-passkey-form' loading={renamePending} type='submit'>
+                    {t('common.save')}
+                </Button></DialogActions>}
+                onClose={() => { if (!renamePending) { setRenameTarget(null); setRenameError(null); } }}
+                open={Boolean(renameTarget)} size='sm' title={t('security.renamePasskeyTitle')}>
+                <form id='rename-passkey-form' onSubmit={renamePasskey}>
+                    <Field label={t('security.newPasskeyName')} required>
+                        <Input autoComplete='off' autoFocus maxLength={160} onChange={(event) => setRenameDraft(event.target.value)} required value={renameDraft} />
+                    </Field>
+                    {renameError ? <InlineAlert tone='error'>{renameError}</InlineAlert> : null}
+                    {passkeyRecentAuthAction === 'rename' ? <p><Link href={href('/login?returnTo=%2Fprofile%3Ftab%3Dsecurity')}>{t('security.signInAgain')}</Link></p> : null}
+                </form>
+            </Dialog>
+
+            <Dialog closeLabel={t('profile.dismiss')} dismissible={!revokePending}
+                footer={<DialogActions><Button disabled={revokePending}
+                    onClick={() => { setConfirmRevoke(null); setRevokeError(null); }} type='button' variant='quiet'>
+                    {t('security.keepPasskey')}
+                </Button><Button disabled={revokePending || !confirmRevoke}
+                    onClick={() => { if (confirmRevoke) void revokePasskey(confirmRevoke); }} type='button' variant='danger'>
+                    {t(revokePending ? 'security.revokingPasskey' : 'security.revokePasskey')}
+                </Button></DialogActions>}
+                onClose={() => { if (!revokePending) { setConfirmRevoke(null); setRevokeError(null); } }}
+                open={Boolean(confirmRevoke)} role='alertdialog' showCloseButton={!revokePending}
+                size='sm' title={t('security.revokePasskeyTitle')}>
+                <p>{t('security.revokePasskeyDescription', { name: passkeys.find((passkey) => passkey.id === confirmRevoke)?.name ?? t('security.passkeys') })}</p>
+                <p>{t('security.revokePasskeyFallback')}</p>
+                {revokeError ? <InlineAlert tone='error'>{revokeError}</InlineAlert> : null}
+                {passkeyRecentAuthAction === 'revoke' ? <p><Link href={href('/login?returnTo=%2Fprofile%3Ftab%3Dsecurity')}>{t('security.signInAgain')}</Link></p> : null}
+            </Dialog>
 
             <Card
                 aria-labelledby='sessions-heading'
@@ -394,23 +454,21 @@ export function SecuritySettings({ embedded = false }: { embedded?: boolean } = 
 }
 
 function PasskeyRow({
-    confirmRevoke,
-    onCancelRevoke,
+    embedded,
     onRename,
     onRevoke,
     passkey,
 }: {
-    confirmRevoke: boolean;
-    onCancelRevoke(): void;
-    onRename(passkeyId: string, name: string): Promise<void>;
-    onRevoke(passkeyId: string): Promise<void>;
+    embedded: boolean;
+    onRename(): void;
+    onRevoke(): void;
     passkey: PasskeyMetadata;
 }) {
     const { formatDate, t } = useI18n();
-    const [editing, setEditing] = useState(false);
     return (
-        <li className={styles.listItem}>
-            <div>
+        <li className={embedded ? profileStyles.dataRow : styles.listItem}>
+            {embedded ? <span aria-hidden='true' className={profileStyles.rowIcon}><Fingerprint size={18} /></span> : null}
+            <div className={embedded ? profileStyles.rowCopy : undefined}>
                 <strong>{passkey.name}</strong>
                 <small>
                     {t('security.added', {
@@ -420,95 +478,22 @@ function PasskeyRow({
                         ? ` · ${t('security.lastUsed', {
                               date: formatDate(passkey.lastUsedAt),
                           })}`
-                        : ''}
+                        : ` · ${t('security.notUsedYet')}`}
                 </small>
             </div>
-            {editing ? (
-                <form
-                    className={styles.row}
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        const name = String(
-                            new FormData(event.currentTarget).get('name') ?? '',
-                        );
-                        void onRename(passkey.id, name).then(() =>
-                            setEditing(false),
-                        );
-                    }}
-                >
-                    <label
-                        className={styles.srOnly}
-                        htmlFor={`passkey-${passkey.id}`}
-                    >
-                        {t('security.newPasskeyName')}
-                    </label>
-                    <Input
-                        defaultValue={passkey.name}
-                        id={`passkey-${passkey.id}`}
-                        name='name'
-                        required
-                    />
+                <div className={[styles.actions, embedded ? profileStyles.rowActions : undefined].filter(Boolean).join(' ')}>
+                    <IconButton icon={<Pencil size={16} />} label={t('security.renameNamed', { name: passkey.name })}
+                        onClick={onRename} size='sm' type='button' variant='ghost' />
                     <Button
-                        aria-label={t('security.saveNamed', {
-                            name: passkey.name,
-                        })}
-                        type='submit'
-                        variant='quiet'
-                    >
-                        {t('common.save')}
-                    </Button>
-                    <Button
-                        aria-label={t('security.cancelRenaming', {
-                            name: passkey.name,
-                        })}
-                        onClick={() => setEditing(false)}
+                        aria-label={t('security.revokeNamed', { name: passkey.name })}
+                        leadingIcon={<Trash2 size={16} />}
+                        onClick={onRevoke}
                         type='button'
                         variant='quiet'
                     >
-                        {t('common.cancel')}
+                        {t('security.revokePasskey')}
                     </Button>
-                </form>
-            ) : (
-                <div className={styles.actions}>
-                    <Button
-                        aria-label={t('security.renameNamed', {
-                            name: passkey.name,
-                        })}
-                        onClick={() => setEditing(true)}
-                        type='button'
-                        variant='quiet'
-                    >
-                        {t('security.rename')}
-                    </Button>
-                    <Button
-                        aria-label={t(
-                            confirmRevoke
-                                ? 'security.confirmRemoveNamed'
-                                : 'security.removeNamed',
-                            { name: passkey.name },
-                        )}
-                        onClick={() => void onRevoke(passkey.id)}
-                        type='button'
-                        variant='danger'
-                    >
-                        {confirmRevoke
-                            ? t('security.confirmRemove')
-                            : t('security.remove')}
-                    </Button>
-                    {confirmRevoke ? (
-                        <Button
-                            aria-label={t('security.cancelRemoving', {
-                                name: passkey.name,
-                            })}
-                            onClick={onCancelRevoke}
-                            type='button'
-                            variant='quiet'
-                        >
-                            {t('common.cancel')}
-                        </Button>
-                    ) : null}
                 </div>
-            )}
         </li>
     );
 }

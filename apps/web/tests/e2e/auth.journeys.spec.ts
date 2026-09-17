@@ -6,7 +6,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision user-authentication sha256:2cf529efd205e1f2
+// @user-flow-revision user-authentication sha256:d4f75b246476f174
 
 const initialPassword = 'E2e!Initial-password-2026';
 const replacementPassword = 'E2e!Replacement-password-2026';
@@ -243,11 +243,14 @@ test.describe('authentication journeys', () => {
         const { authenticatorId, client } = await addVirtualAuthenticator(page);
 
         await signUpAndVerify(page, email, initialPassword);
-        await page.getByLabel('Passkey name').fill(passkeyName);
-        const addPasskey = page.getByRole('button', { name: 'Add passkey' });
+        const addPasskey = page.getByRole('button', { name: 'Add your first passkey' });
         await expect(addPasskey).toBeEnabled();
         await addPasskey.click();
         await expect(page.getByText('Passkey added.')).toBeVisible();
+        await expect(page.getByText('Passkey 1', { exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'Rename Passkey 1' }).click();
+        await page.getByLabel('New passkey name').fill(passkeyName);
+        await page.getByRole('dialog', { name: 'Rename passkey' }).getByRole('button', { name: 'Save' }).click();
         await expect(
             page.getByText(passkeyName, { exact: true }),
         ).toBeVisible();
@@ -283,19 +286,23 @@ test.describe('authentication journeys', () => {
             .getByRole('button', { name: `Rename ${passkeyName}` })
             .click();
         await page.getByLabel('New passkey name').fill(renamedPasskeyName);
-        await page.getByRole('button', { name: `Save ${passkeyName}` }).click();
+        await page.getByRole('dialog', { name: 'Rename passkey' }).getByRole('button', { name: 'Save' }).click();
         await expect(
             page.getByText(renamedPasskeyName, { exact: true }),
         ).toBeVisible();
         await page
-            .getByRole('button', { name: `Remove ${renamedPasskeyName}` })
+            .getByRole('button', { name: `Revoke ${renamedPasskeyName}` })
             .click();
+        await expect(page.getByRole('alertdialog', { name: 'Revoke this passkey?' })).toBeVisible();
+        await page.getByRole('button', { name: 'Keep passkey' }).click();
+        await expect(page.getByText(renamedPasskeyName, { exact: true })).toBeVisible();
+        await page.getByRole('button', { name: `Revoke ${renamedPasskeyName}` }).click();
         await page
-            .getByRole('button', {
-                name: `Confirm remove ${renamedPasskeyName}`,
-            })
+            .getByRole('alertdialog', { name: 'Revoke this passkey?' })
+            .getByRole('button', { name: 'Revoke passkey' })
             .click();
-        await expect(page.getByText('No passkeys yet.')).toBeVisible();
+        await expect(page.getByText('No passkeys yet')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Add your first passkey' })).toBeEnabled();
         assertNoBrowserErrors();
     });
 });

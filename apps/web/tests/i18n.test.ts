@@ -44,6 +44,23 @@ describe('i18n primitives', () => {
         expect(t('verify.resendIn')).toBe('Send a new code in {seconds}s');
     });
 
+    it('keeps labels and interpolated safety copy visible when a runtime catalog is incomplete', () => {
+        const incomplete = Object.fromEntries(
+            Object.entries(en).filter(([key]) => ![
+                'profile.fullName',
+                'profile.deleteAcknowledge',
+                'security.revokePasskeyDescription',
+            ].includes(key)),
+        ) as typeof en;
+        const t = createTranslator(incomplete);
+
+        expect(t('profile.fullName')).toBe('Full name');
+        expect(t('profile.deleteAcknowledge')).toBe('I understand access ends now and purge follows.');
+        expect(t('security.revokePasskeyDescription', { name: 'Laptop' })).toBe(
+            'Laptop will stop working immediately. You can add it again later.',
+        );
+    });
+
     it('maps transport errors through the active catalog', () => {
         const error = new AuthApiError(401, {
             code: 'invalid_credentials',

@@ -55,20 +55,26 @@ export class Argon2idPasswordHasher implements PasswordHasher {
         password: string,
         options?: PasswordHasherOperationOptions,
     ): Promise<PasswordHash> {
-        const encoded = await argon2Hash(
-            password,
-            {
-                algorithm: argon2idAlgorithm,
-                memoryCost: this.parameters.memoryCostKiB,
-                outputLen: this.parameters.outputLength,
-                parallelism: this.parameters.parallelism,
-                timeCost: this.parameters.timeCost,
-                version: argon2Version19,
-            },
-            options?.signal,
-        );
-
-        return { encoded, parametersVersion: this.parametersVersion };
+        assertNotAborted(options?.signal);
+        const relay = relayAbortSignal(options?.signal);
+        try {
+            const encoded = await argon2Hash(
+                password,
+                {
+                    algorithm: argon2idAlgorithm,
+                    memoryCost: this.parameters.memoryCostKiB,
+                    outputLen: this.parameters.outputLength,
+                    parallelism: this.parameters.parallelism,
+                    timeCost: this.parameters.timeCost,
+                    version: argon2Version19,
+                },
+                relay.signal,
+            );
+            assertNotAborted(options?.signal);
+            return { encoded, parametersVersion: this.parametersVersion };
+        } finally {
+            relay.release();
+        }
     }
 
     public async verify(
@@ -76,13 +82,16 @@ export class Argon2idPasswordHasher implements PasswordHasher {
         passwordHash: PasswordHash,
         options?: PasswordHasherOperationOptions,
     ): Promise<PasswordVerification> {
+        assertNotAborted(options?.signal);
+        const relay = relayAbortSignal(options?.signal);
         try {
             const matches = await argon2Verify(
                 passwordHash.encoded,
                 password,
                 undefined,
-                options?.signal,
+                relay.signal,
             );
+            assertNotAborted(options?.signal);
 
             return {
                 matches,
@@ -101,8 +110,31 @@ export class Argon2idPasswordHasher implements PasswordHasher {
             }
 
             return { matches: false, needsRehash: false };
+        } finally {
+            relay.release();
         }
     }
+}
+
+function assertNotAborted(signal: AbortSignal | undefined): void {
+    if (signal?.aborted) throw new DOMException('The authentication request was cancelled.', 'AbortError');
+}
+
+function relayAbortSignal(source: AbortSignal | undefined): {
+    release(): void;
+    signal: AbortSignal | undefined;
+} {
+    if (!source) return { release: () => undefined, signal: undefined };
+    // The native Argon2 operation consumes its signal; each operation needs a
+    // fresh signal even when one HTTP request performs verify followed by hash.
+    const controller = new AbortController();
+    const forwardAbort = () => controller.abort(source.reason);
+    if (source.aborted) forwardAbort();
+    else source.addEventListener('abort', forwardAbort, { once: true });
+    return {
+        release: () => source.removeEventListener('abort', forwardAbort),
+        signal: controller.signal,
+    };
 }
 
 function hasCurrentParameters(

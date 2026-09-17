@@ -682,7 +682,6 @@ export class AuthenticationService {
         if (!verification.matches) {
             throw new InvalidCredentialsError();
         }
-        const now = this.dependencies.clock.now();
         const newHash = await this.dependencies.passwordHasher.hash(
             input.newPassword,
             this.operationOptions(input.context),
@@ -695,6 +694,8 @@ export class AuthenticationService {
                 method: 'password',
                 userId: account.userId,
             });
+        // The replacement is issued after hashing; revocation cannot predate it.
+        const now = this.dependencies.clock.now();
         const result =
             await this.dependencies.store.changePasswordAndReplaceSessions({
                 expectedPasswordHash: account.passwordCredential.encoded,

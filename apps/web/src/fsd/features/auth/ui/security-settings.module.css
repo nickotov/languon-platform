@@ -7,6 +7,30 @@
     background: var(--background-surface);
 }
 
+.panelHeader { border-bottom: 1px solid var(--border-default); padding: 20px 24px; }
+.panelHeader h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.panelHeader p { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 4px 0 0; }
+.panelBody { padding: 20px 24px; }
+.panelBody > form { padding: 0; }
+.headerLine { align-items: center; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
+.headerLine > div { flex: 1 1 240px; }
+.rowList, .passkeyList { list-style: none; margin: 0; padding: 0; }
+.dataRow { align-items: center; display: flex; gap: 16px; min-width: 0; padding: 12px 0; }
+.dataRow + .dataRow { border-top: 1px solid var(--border-default); }
+.dataRow:first-child { padding-top: 0; }
+.dataRow:last-child { padding-bottom: 0; }
+.rowIcon { align-items: center; background: var(--background-subtle); border-radius: var(--radius-md); color: var(--text-tertiary); display: flex; flex: 0 0 40px; height: 40px; justify-content: center; }
+.rowCopy { flex: 1 1 auto; min-width: 0; }
+.rowCopy h3, .rowCopy strong { font-size: 14px; font-weight: 600; margin: 0; }
+.rowCopy h3 { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+.rowCopy p, .rowCopy small { color: var(--text-secondary); display: block; font-size: 13px; line-height: 1.5; margin: 4px 0 0; overflow-wrap: anywhere; }
+.rowActions { margin-left: auto; }
+.emptyState { align-items: center; background: var(--background-subtle); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 8px; padding: 32px 20px; text-align: center; }
+.emptyIcon { align-items: center; background: var(--background-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-tertiary); display: flex; height: 48px; justify-content: center; width: 48px; }
+.emptyState h3 { font-size: 14px; margin: 4px 0 0; }
+.emptyState p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 0; max-width: 340px; }
+.emptyState button { margin-top: 12px; }
+
 .panel > h2 {
     font-size: 16px;
     font-weight: 600;
@@ -43,6 +67,11 @@
 }
 
 @media (max-width: 640px) {
+    .panelHeader, .panelBody { padding: 16px; }
+    .headerLine { align-items: flex-start; }
+    .dataRow { align-items: flex-start; flex-wrap: wrap; }
+    .dataRow > button { margin-left: 56px; }
+    .rowActions { margin-left: 56px; }
     .panel > h2 {
         padding: 16px 16px 0;
     }

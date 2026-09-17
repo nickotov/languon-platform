@@ -20,6 +20,21 @@ describe('Argon2idPasswordHasher', () => {
         ).resolves.toEqual({ matches: false, needsRehash: false });
     });
 
+    it('hashes and verifies with a live HTTP request abort signal', async () => {
+        const hasher = new Argon2idPasswordHasher();
+        const signal = new Request('http://localhost').signal;
+        const passwordHash = await hasher.hash('A synthetic password 89!', { signal });
+        await expect(hasher.verify('A synthetic password 89!', passwordHash)).resolves.toMatchObject({ matches: true });
+        await expect(hasher.verify('A synthetic password 89!', passwordHash, { signal })).resolves.toMatchObject({ matches: true });
+    });
+
+    it('does not continue hashing after the source request is cancelled', async () => {
+        const hasher = new Argon2idPasswordHasher();
+        const controller = new AbortController();
+        controller.abort();
+        await expect(hasher.hash('A synthetic password 89!', { signal: controller.signal })).rejects.toThrow();
+    });
+
     it('requests opportunistic rehash when deployment parameters advance', async () => {
         const previousHasher = new Argon2idPasswordHasher({
             parametersVersion: 1,

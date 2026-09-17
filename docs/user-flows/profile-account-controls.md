@@ -36,7 +36,7 @@ related_features:
 
 ## What this verifies
 
-This guide covers the signed-in Profile handle form, real Security controls,
+This guide covers the signed-in Profile handle form, existing interface-language selector, real Security controls,
 honest email-change mock, and irreversible-from-the-user removal request. It
 also describes the admin cancellation, live purge, and historical-restore gate
 that make the deletion journey safe. Use synthetic identities and disposable
@@ -56,18 +56,31 @@ journal; it is never a staging or production restore guarantee.
 
 1. Sign up and verify a unique `example.test` identity, returning to `/profile`.
    The account summary shows the real email and an unset handle.
-2. Enter a handle of 3–30 ASCII letters, digits, or underscores. Save it and
+2. The Profile card shows a photo row, a two-column detail grid on desktop,
+   and the handle row below it. Interface language uses the existing locale
+   control and changes immediately. Full name, learning language, time zone,
+   and photo upload are explicitly coming soon rather than editable fake data.
+   Enter a handle of 3–30 ASCII letters, digits, or underscores. Save it and
    expect canonical lowercase `@handle` in the summary and shared header. A
    second account cannot save the same canonical handle; a 409 leaves the draft
    visible with a conflict message. No availability claim is made before save.
-3. Open `/profile?tab=security`. Expect current-password change, passkey
-   enrollment/revocation, and session logout to remain real. Choose **Request
+3. Open `/profile?tab=security`. Expect Email, Password, Sign-in methods,
+   Passkeys, and Sessions in that order. Google, Yandex, and Apple provider rows
+   are visibly coming soon with disabled Connect actions and do not claim connections. Current-password
+   change, passkey enrollment/revocation, and session logout remain real. **Add
+   passkey** starts the real WebAuthn prompt directly; an enrolled passkey can
+   be renamed in a dialog or **Revoke passkey** opens a confirmation dialog
+   with **Keep passkey** as the non-destructive choice. The empty state has a
+   centered **Add your first passkey** action. A
+   successful password change replaces the current session and signs out other
+   sessions instead of returning `internal_error`. Choose **Request
    email change** and expect an explicit notice that no email was sent and the
    current address is unchanged. `/security` redirects to this tab.
 4. In Account choose **Delete account**. The alert dialog explains immediate
    loss of account and shared-dictionary access, 30-day live purge, and
-   administrator-only cancellation. Submission stays disabled until `DELETE`
-   is typed exactly. Escape/cancel keeps the account.
+   administrator-only cancellation in a warning block. Submission stays
+   disabled until `DELETE` is typed exactly and the acknowledgement checkbox
+   is checked. Escape/cancel keeps the account.
 5. Submit with a recently authenticated account that has no active admin
    membership. Expect a dated receipt and signed-out Profile view, not a silent
    redirect. A recent-auth failure asks for sign-in; an owner guard asks for
@@ -117,8 +130,10 @@ version. Encrypted historical backup retention itself is unchanged.
 ## E2E coverage
 
 - `profile-handle-security-and-removal` creates a synthetic verified account,
-  saves a canonical handle, confirms the Security controls/email mock, and
-  schedules deletion with typed confirmation and dated signed-out receipt.
+  checks truthful Profile controls, saves a canonical handle, confirms the
+  Security controls/provider placeholders/email mock, changes the password,
+  and schedules deletion with typed confirmation, acknowledgement, and a dated
+  signed-out receipt.
 - The related `admin-user-management` guide maps the owner cancellation
   journey. SQL transaction, purge, and recovery replay matrices stay in
   deterministic integration tests against explicitly disposable PostgreSQL.

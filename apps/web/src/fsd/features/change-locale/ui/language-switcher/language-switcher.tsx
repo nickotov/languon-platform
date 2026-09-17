@@ -13,7 +13,7 @@ import { Select } from '@/fsd/shared/ui';
 
 import styles from './language-switcher.module.css';
 
-export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
+export function LanguageSwitcher({ compact = false, form = false }: { compact?: boolean; form?: boolean }) {
     const router = useRouter();
     const { locale, t } = useI18n();
     const [pending, startTransition] = useTransition();
@@ -27,6 +27,19 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
             router.refresh();
         });
     }
+
+    const choices = locales.map((supportedLocale) => ({
+        label: t(`language.option.${supportedLocale}`),
+        value: supportedLocale,
+    }));
+
+    if (form) return <Select
+        disabled={pending}
+        label={t('profile.interfaceLanguage')}
+        onChange={changeLanguage}
+        options={choices}
+        value={locale}
+    />;
 
     return (
         <label
@@ -42,11 +55,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                 onChange={changeLanguage}
                 value={locale}
             >
-                {locales.map((supportedLocale) => (
-                    <option key={supportedLocale} value={supportedLocale}>
-                        {t(`language.option.${supportedLocale}`)}
-                    </option>
-                ))}
+                {choices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
             </Select>
         </label>
     );

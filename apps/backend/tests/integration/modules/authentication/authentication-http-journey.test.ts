@@ -198,6 +198,27 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
         });
     });
 
+    it('changes the current password and replaces the authenticated session', async () => {
+        const email = 'password.change@example.test';
+        const signup = await post('/auth/sign-up', { email, password: initialPassword });
+        expect(signup.response.status).toBe(202);
+        const flowId = SignUpResponseSchema.parse(signup.body).verification.flowId;
+        const verification = await post('/auth/email-verification/verify', { code: '0000', flowId });
+        expect(verification.response.status).toBe(200);
+        const first = AuthenticationSuccessResponseSchema.parse(verification.body);
+        const change = await post('/auth/password/change', {
+            currentPassword: initialPassword,
+            newPassword: replacementPassword,
+        }, { accessToken: first.accessToken });
+        expect(change.response.status, JSON.stringify(change.body)).toBe(200);
+        const changed = AuthenticationSuccessResponseSchema.parse(change.body);
+        expect(changed.accessToken).not.toBe(first.accessToken);
+        const oldSession = await get('/users/me', first.accessToken);
+        expect(oldSession.response.status).toBe(401);
+        const newSession = await get('/users/me', changed.accessToken);
+        expect(newSession.response.status).toBe(200);
+    });
+
     async function post(
         path: string,
         body: Record<string, unknown>,

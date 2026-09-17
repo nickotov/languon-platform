@@ -1,5 +1,5 @@
 import type { AuthenticationSuccessResponse } from '@languon/contracts';
-import { screen } from '@testing-library/react';
+import { render as renderWithProviders, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { useSyncExternalStore } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,8 @@ import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { AuthProvider } from '@/fsd/features/auth';
 import { ProfilePage } from '@/fsd/pages/profile';
 import { AuthApiError, authApi } from '@/fsd/shared/api/auth-api';
+import { I18nProvider } from '@/fsd/shared/i18n';
+import { en, type Messages } from '@/fsd/shared/i18n/messages/en';
 import { ToastHost } from '@/fsd/shared/ui';
 
 import { render } from './render';
@@ -72,7 +74,12 @@ describe('ProfilePage', () => {
         useSessionStore.getState().signOut();
         window.history.replaceState(null, '', '/profile');
         replace.mockClear();
-        vi.spyOn(authApi, 'refresh').mockResolvedValue(response);
+        // A refresh racing a handle save must reflect the current server-side
+        // identity, not replay a stale fixture with handle: null.
+        vi.spyOn(authApi, 'refresh').mockImplementation(async () => ({
+            ...response,
+            user: useSessionStore.getState().user ?? response.user,
+        }));
         vi.spyOn(authApi, 'capabilities').mockResolvedValue({
             email: { passwordRecovery: true, signUp: true, verification: true },
             passkeys: { authentication: true, registration: true },
@@ -124,6 +131,8 @@ describe('ProfilePage', () => {
         expect(screen.getByText('profile@example.test')).toBeInTheDocument();
         expect(screen.getAllByText('Not available yet')).toHaveLength(2);
         expect(screen.queryByText(/Anna/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: 'Interface language' })).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: 'Full name' })).toBeDisabled();
 
         await user.click(screen.getByRole('tab', { name: /Billing/ }));
         expect(replace).toHaveBeenCalledWith('/profile?tab=billing', {
@@ -149,6 +158,12 @@ describe('ProfilePage', () => {
         expect(
             screen.getByRole('heading', { name: 'Passkeys' }),
         ).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Sign-in methods' })).toBeInTheDocument();
+        for (const provider of ['Google', 'Yandex', 'Apple']) {
+            expect(screen.getByRole('heading', { name: new RegExp(`^${provider}`) })).toBeInTheDocument();
+        }
+        expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(3);
+        for (const button of screen.getAllByRole('button', { name: 'Connect' })) expect(button).toBeDisabled();
         expect(
             screen.getByRole('heading', { name: 'Sessions' }),
         ).toBeInTheDocument();
@@ -185,6 +200,40 @@ describe('ProfilePage', () => {
         ).toBeInTheDocument();
     });
 
+    it('renders Account labels, removal copy, and Security when a serialized catalog is incomplete', async () => {
+        useSessionStore.getState().authenticate(response);
+        const messages = Object.fromEntries(
+            Object.entries(en).filter(([key]) => ![
+                'profile.fullName',
+                'profile.interfaceLanguage',
+                'profile.learningLanguage',
+                'profile.timeZone',
+                'profile.handleLabel',
+                'profile.deleteConfirmLabel',
+                'profile.deleteAcknowledge',
+                'security.revokePasskeyDescription',
+            ].includes(key)),
+        ) as Messages;
+        renderWithProviders(
+            <I18nProvider locale='en' messages={messages}>
+                <AuthProvider><ProfilePage /></AuthProvider>
+            </I18nProvider>,
+        );
+        const user = userEvent.setup();
+        expect(screen.getByRole('textbox', { name: 'Full name' })).toBeDisabled();
+        expect(screen.getByRole('combobox', { name: 'Interface language' })).toBeVisible();
+        expect(screen.getByRole('combobox', { name: 'Learning language & level' })).toBeDisabled();
+        expect(screen.getByRole('combobox', { name: 'Time zone' })).toBeDisabled();
+        expect(screen.getByRole('textbox', { name: 'Username' })).toBeVisible();
+
+        await user.click(screen.getByRole('button', { name: 'Delete account' }));
+        expect(screen.getByRole('textbox', { name: 'Type DELETE to confirm' })).toBeVisible();
+        expect(screen.getByRole('checkbox', { name: 'I understand access ends now and purge follows.' })).toBeVisible();
+        await user.click(screen.getByRole('button', { name: 'Keep my account' }));
+        await user.click(screen.getByRole('tab', { name: /Security/ }));
+        expect(screen.getByRole('heading', { name: 'Passkeys' })).toBeVisible();
+    });
+
     it('saves a canonical handle and updates the signed-in identity', async () => {
         useSessionStore.getState().authenticate(response);
         const update = vi
@@ -197,10 +246,10 @@ describe('ProfilePage', () => {
         );
         const user = userEvent.setup();
         await user.type(
-            screen.getByRole('textbox', { name: 'Unique handle' }),
+            screen.getByRole('textbox', { name: 'Username' }),
             'Learner_42',
         );
-        await user.click(screen.getByRole('button', { name: 'Save handle' }));
+        await user.click(screen.getByRole('button', { name: 'Save username' }));
         expect(update).toHaveBeenCalledWith(
             { handle: 'learner_42' },
             expect.any(String),
@@ -223,15 +272,15 @@ describe('ProfilePage', () => {
             </AuthProvider>,
         );
         const user = userEvent.setup();
-        const field = screen.getByRole('textbox', { name: 'Unique handle' });
+        const field = screen.getByRole('textbox', { name: 'Username' });
         await user.type(field, 'claimed');
-        await user.click(screen.getByRole('button', { name: 'Save handle' }));
-        expect(await screen.findByText(/handle is taken/i)).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: 'Save username' }));
+        expect(await screen.findByText(/username is taken/i)).toBeInTheDocument();
         expect(field).toHaveValue('claimed');
         expect(useSessionStore.getState().user?.handle).toBeNull();
         await user.clear(field);
         await user.type(field, 'x');
-        await user.click(screen.getByRole('button', { name: 'Save handle' }));
+        await user.click(screen.getByRole('button', { name: 'Save username' }));
         expect(await screen.findByText(/Use 3–30/i)).toBeInTheDocument();
         expect(update).toHaveBeenCalledOnce();
     });
@@ -261,6 +310,8 @@ describe('ProfilePage', () => {
             screen.getByRole('textbox', { name: 'Type DELETE to confirm' }),
             'DELETE',
         );
+        expect(screen.getByRole('button', { name: 'Schedule account removal' })).toBeDisabled();
+        await user.click(screen.getByRole('checkbox', { name: /access ends now/i }));
         await user.click(
             screen.getByRole('button', { name: 'Schedule account removal' }),
         );
@@ -271,5 +322,42 @@ describe('ProfilePage', () => {
             }),
         ).toBeInTheDocument();
         expect(useSessionStore.getState().status).toBe('signed-out');
+    });
+
+    it('keeps a failed passkey rename editable and revokes only after dialog confirmation', async () => {
+        window.history.replaceState(null, '', '/profile?tab=security');
+        useSessionStore.getState().authenticate(response);
+        const passkey = {
+            createdAt: '2026-09-14T09:00:00.000Z',
+            id: '10000000-0000-4000-8000-000000000003',
+            lastUsedAt: null,
+            name: 'Laptop',
+        };
+        vi.spyOn(authApi, 'listPasskeys').mockResolvedValue({ passkeys: [passkey] });
+        vi.spyOn(authApi, 'renamePasskey').mockRejectedValue(
+            new AuthApiError(503, { code: 'service_unavailable', message: 'Try later' }),
+        );
+        const revoke = vi.spyOn(authApi, 'revokePasskey').mockResolvedValue({ status: 'passkey_revoked' });
+        const user = userEvent.setup();
+        render(<AuthProvider><ProfilePage /></AuthProvider>);
+
+        await user.click(await screen.findByRole('button', { name: 'Rename Laptop' }));
+        const name = screen.getByRole('textbox', { name: 'New passkey name' });
+        await user.clear(name);
+        await user.type(name, 'Study laptop');
+        await user.click(screen.getByRole('dialog', { name: 'Rename passkey' }).querySelector('button[type="submit"]')!);
+        expect(await screen.findByRole('textbox', { name: 'New passkey name' })).toHaveValue('Study laptop');
+        expect(await screen.findByRole('alert')).toBeVisible();
+        await user.click(screen.getByRole('button', { name: 'Cancel', exact: true }));
+
+        await user.click(screen.getByRole('button', { name: 'Revoke Laptop' }));
+        expect(screen.getByRole('alertdialog', { name: 'Revoke this passkey?' })).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: 'Keep passkey' }));
+        expect(revoke).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', { name: 'Revoke Laptop' }));
+        await user.click(screen.getByRole('button', { name: 'Revoke passkey' }));
+        expect(revoke).toHaveBeenCalledWith(passkey.id, expect.any(String));
+        expect(await screen.findByText('Passkey removed.')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Revoke Laptop' })).not.toBeInTheDocument();
     });
 });

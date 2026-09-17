@@ -4,6 +4,7 @@ import {
     Coins,
     CreditCard,
     Download,
+    ImageUp,
     Mail,
     ShieldCheck,
     Trash2,
@@ -23,6 +24,7 @@ import {
     AccountDeletionAction,
     AccountHandleSettings,
 } from '@/fsd/features/account-controls';
+import { LanguageSwitcher } from '@/fsd/features/change-locale';
 import { SecuritySettings, useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
@@ -32,6 +34,8 @@ import {
     ButtonLink,
     Card,
     LoadingState,
+    Input,
+    Select,
     showToast,
     Tabs,
 } from '@/fsd/shared/ui';
@@ -163,7 +167,6 @@ function AuthenticatedProfile({
             content: (
                 <SecurityTab
                     email={user.primaryEmail}
-                    onComingSoon={comingSoon}
                 />
             ),
             icon: <ShieldCheck />,
@@ -263,27 +266,22 @@ function AccountTab({
                 description={t('profile.profileDescription')}
                 title={t('profile.profileTitle')}
             >
-                <AccountHandleSettings
-                    requestWithSession={requestWithSession}
-                />
-                <div className={styles.profilePlaceholder}>
+                <div className={styles.photoRow}>
                     <Avatar size='lg' />
                     <div>
-                        <p className={styles.emptyTitle}>
-                            {t('profile.profileEmpty')}
-                        </p>
-                        <p className={styles.muted}>
-                            {t('profile.profileEmptyDescription')}
-                        </p>
+                        <Button leadingIcon={<ImageUp size={16} />} onClick={() => onComingSoon(t('profile.photo'))}
+                            size='compact' variant='secondary'>{t('profile.changePhoto')}</Button>
+                        <p className={styles.muted}>{t('profile.photoComingSoon')}</p>
                     </div>
-                    <Button
-                        onClick={() => onComingSoon(t('profile.profileTitle'))}
-                        size='compact'
-                        variant='secondary'
-                    >
-                        {t('profile.setUp')}
-                    </Button>
                 </div>
+                <div className={styles.profileGrid}>
+                    <Input disabled label={t('profile.fullName')} placeholder={t('profile.comingSoon')} />
+                    <LanguageSwitcher form />
+                    <Select disabled label={t('profile.learningLanguage')} options={[{ label: t('profile.comingSoon'), value: '' }]} value='' />
+                    <Select disabled label={t('profile.timeZone')} options={[{ label: t('profile.comingSoon'), value: '' }]} value='' />
+                </div>
+                <AccountHandleSettings requestWithSession={requestWithSession} />
+                <p className={styles.muted}>{t('profile.otherDetailsComingSoon')}</p>
             </SettingsSection>
             <SettingsSection
                 description={t('profile.dataDescription')}
@@ -321,8 +319,7 @@ function AccountTab({
 
 function SecurityTab({
     email,
-    onComingSoon,
-}: ComingSoonProps & { email: string }) {
+}: { email: string }) {
     const { t } = useI18n();
     const requestEmailChange = () =>
         showToast({
@@ -340,6 +337,7 @@ function SecurityTab({
                     description={email}
                     icon={<Mail />}
                     label={t('profile.primaryEmail')}
+                    children={<Badge size='sm' tone='success'>{t('profile.verified')}</Badge>}
                 />
                 <div className={styles.emailChange}>
                     <p className={styles.muted}>
@@ -355,18 +353,6 @@ function SecurityTab({
                 </div>
             </SettingsSection>
             <SecuritySettings embedded />
-            <SettingsSection
-                description={t('profile.methodsDescription')}
-                title={t('profile.methodsTitle')}
-            >
-                <ActionRow
-                    description={t('profile.noMethods')}
-                    icon={<ShieldCheck />}
-                    label={t('profile.connectedMethods')}
-                    onClick={() => onComingSoon(t('profile.methodsTitle'))}
-                    button={t('profile.addMethod')}
-                />
-            </SettingsSection>
         </div>
     );
 }
