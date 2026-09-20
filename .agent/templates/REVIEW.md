@@ -1,44 +1,50 @@
-# Independent review: {{FEATURE_NAME}}
+# Review: {{FEATURE_NAME}}
 
 Reviewed: {{DATE}}
 Reviewer: Unassigned
 Verdict: Pending
 
-## Scope reviewed
+## Review boundary
 
-- `FEATURE.md`
-- `EXEC_PLAN.md`
-- Implementation diff
-- Tests and validation evidence
+- Mode: Initial / Remediation / Expanded.
+- Trigger and question:
+- Reviewed state: base + head or captured patch/file state including untracked
+  files; for remediation, identify the previously reviewed state too.
+- Scope/affected callers or invariants:
+- Inputs: specification IDs, relevant plan/source/ADRs, evidence IDs.
+- Separate tester/security review: root trigger and bounded assignment, or why
+  not required.
+- Expansion reason, if this is a new broad review:
 
 ## Findings
 
-Record findings in severity order. Use `None` when the review found no material
-issues.
+Use stable IDs. Report material defects with evidence; separate optional work.
+Use `None` when there are no material findings.
 
-### Finding template
+### R-1
 
 - Severity: Critical / High / Medium / Low
 - Location:
-- Problem:
-- Impact:
+- Problem and failure/reproduction scenario:
+- User/system impact and acceptance/risk affected:
 - Suggested fix:
-- Resolution: Open / Fixed / Accepted with rationale
+- Disposition: Open / Fixed / Accepted with rationale / Rejected with evidence
+- Resolution evidence IDs and affected follow-up review:
 
-## Acceptance-criteria audit
+## Completion audit
 
-- [ ] Every criterion is implemented and evidenced.
+- Acceptance criteria and source-design inventory reconciled with implementation
+  and valid evidence.
+- Material regression/architecture/security risks assessed.
+- Applicable guides, mappings, and required verification current.
+- No accidental scope, secrets, or temporary/generated artifacts.
+- Remaining uncertainty and boundaries of this review explicit.
 
-## Architecture and test audit
+## Remediation and final verdict
 
-- [ ] Applicable architecture boundaries are preserved.
-- [ ] Tests cover the material regression surface.
-- [ ] Required user-flow guides match current behavior, commands, and expected
-      outcomes, or `FEATURE.md` records a valid not-applicable reason.
-- [ ] Current guides map proportional critical scenarios to real E2E tests;
-      scenario/revision markers, execution evidence, and assertions agree.
-- [ ] No debugging artifacts or accidental scope changes remain.
+Record batched repairs, which evidence was invalidated/reused, and the scope of
+follow-up review. A fix does not automatically require another full review.
+Follow `.agent/DELIVERY.md` for recurring-findings diagnosis after two cycles;
+never use a cycle count to waive material defects.
 
-## Final verdict
-
-Pending independent review.
+Final verdict and remaining risks:

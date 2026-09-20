@@ -4,6 +4,11 @@ This guide describes how a developer works effectively with Codex in Languon:
 how to state work, run the project, select verification tools, review evidence,
 and continue long-running features without relying on conversation memory.
 
+For the detailed flow diagrams, agent roles, review/remediation cycle, design
+fidelity process, and scenario-specific prompts, see the
+[agentic development handbook](./agentic-workflow-handbook.md). This reference
+focuses on setup, commands, and verification recipes.
+
 Repository-scoped workflows are documented in
 [`agent-skills.md`](./agent-skills.md), including invocation, authority, locally
 adapted skills, upstream provenance, and license notices.
@@ -121,8 +126,10 @@ existing shared primitives, their stories, and comparable rendered screens.
 Use Figma Make or `design/main.pen` when the request explicitly supplies or
 requires that design context; missing design-tool access is not a blocker.
 Implement app-local primitives under
-`apps/web/src/fsd/shared/ui/<component>/` with TSX, a same-named CSS Module, and
-a colocated Storybook story. Prefer semantic native HTML, keep caller-provided
+`apps/web/src/fsd/shared/ui/<component>/` with TSX and a colocated Storybook story.
+Use ADR-0017's exact accepted Magic tokens and Tailwind v3 semantic utilities;
+CSS Modules remain supported for existing/component-specific styling and
+`--sys-*` remains a compatibility mapping. Prefer semantic native HTML, keep caller-provided
 content localizable, and use the public `shared/ui` export instead of duplicating
 control styles in a page or feature.
 
@@ -222,6 +229,12 @@ clearly authorizes in-scope repository edits and non-destructive validation.
 
 ## Choosing correction, improvement, or feature development
 
+All three flows use [shared delivery](../.agent/DELIVERY.md): scope and risk,
+implementation with focused checks, author preflight, independent review where
+required, and verified completion. See the [workflow audit](./agentic-workflow-audit.md)
+for the rationale and [evaluation protocol](./agentic-workflow-evaluation.md) for
+behavioral cases and quality/cost measurement.
+
 Codex classifies the request before creating a branch or feature workspace. The
 decision is based on conceptual behavior, risk, and reversibility—not the number
 of edited files. Tests, docs, and matching configuration can support one small
@@ -264,7 +277,9 @@ but remains within its documented safety boundaries. It creates one record under
 It does not automatically create a branch, commit, run the full repository gate,
 execute E2E, or request independent review.
 
-If investigation reaches a feature boundary, Codex records the discovery and
+If correction scope grows while improvement conditions still hold, Codex can
+continue as an improvement and link the records. If investigation reaches a
+feature boundary, Codex records the discovery and
 asks the user to explicitly authorize `$feature-development` before expanding
 implementation. The examples are not exhaustive; no lightweight flow may bypass
 public contracts, integrations, persisted data or migrations, sensitive-data or
@@ -273,6 +288,20 @@ cross-cutting architecture, deployment, material product ambiguity,
 coordination needs, or a new user journey.
 
 ## Prompting feature work
+
+Features receive an independent completion review after author preflight, not
+after each task. The reviewer assesses correctness and test coverage. Separate
+tester and security assignments follow the actual root risk triggers. Repairs
+receive focused remediation review; a materially broader risk surface justifies
+expanded review. Existing valid checks are reused under `$testing`, not repeated
+solely because another agent is involved.
+
+For a supplied Magic Patterns design, ask for fidelity explicitly and provide
+its source link/export. The agent inventories in-scope sections, controls, and
+states before coding, accounts for deviations, and compares matching rendered
+states before completion. Unsupported product capabilities require an explicit
+disposition, not silent omission or invented working behavior. See the
+[fidelity contract](../.agents/skills/ui-ux-composition/references/design-fidelity.md).
 
 For a feature, explicitly invoke `$feature-development` or say that you want to
 create a feature. Codex will
@@ -514,7 +543,10 @@ never run destructive verification against shared, staging, or production data.
 
 ## Per-service validation commands
 
-Run focused checks while iterating, then broader checks before handoff.
+Run focused checks while iterating, then affected broader checks justified by the
+regression surface. The commands below are available checks, not a requirement
+to execute every suite for every task. Reuse valid final-state evidence under
+`$testing`; rerun checks when changed code/configuration/environment invalidates it.
 
 ### Backend
 
@@ -553,11 +585,11 @@ PostgreSQL and Redis URLs from
 pnpm check
 ```
 
-For features, user-visible web/admin changes require real-browser evidence and
-database changes require disposable-infrastructure verification in addition to
-these commands. For corrections, browser/runtime evidence is proportional: use
-it when visual or runtime risk, uncertainty, changed user-flow coverage, or the
-developer's requested proof warrants it.
+Every user-visible change, including a correction, requires proportional real
+browser/device evidence under ADR-0016. A typo may need only a rendered-label
+observation, not an entire journey suite. Database changes require relevant
+disposable-infrastructure verification. Non-UI documentation changes do not
+require browser execution; record any genuinely unavailable required evidence.
 
 ## Durable state and long-running work
 
@@ -567,11 +599,12 @@ Conversation context is temporary. Repository artifacts are authoritative:
   remaining risks for one bounded correction;
 - `.agent/improvements/<slug>.md` combines scope, verification, review
   decisions, rollback notes, and remaining risks for one focused improvement;
-- `FEATURE.md` describes requested behavior and acceptance criteria;
+- `FEATURE.md` owns scope, acceptance text/IDs, and any supplied-design inventory;
 - `EXEC_PLAN.md` records milestones, decisions, discoveries, progress, and
-  validation state;
+  links to verification evidence rather than duplicate results;
 - `docs/adr/` records durable architectural decisions and why they were made;
-- `EVIDENCE.md` records commands and observed results;
+- `EVIDENCE.md` owns acceptance-to-proof mapping, exact commands, tested state,
+  results, and limitations;
 - `REVIEW.md` records independent findings and their resolution;
 - source, tests, and Git describe what actually exists.
 

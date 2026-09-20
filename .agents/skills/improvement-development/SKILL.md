@@ -1,56 +1,35 @@
 ---
 name: improvement-development
-description: Deliver a focused Languon engineering or UX improvement with one concise record and proportional verification. Use for cohesive developer-experience, tooling, local configuration, bounded internal refactor, or existing-contract UI improvements that are broader than a correction but add no product capability or executable journey; examples include a small web-dev-panel UI improvement or introducing Prettier. Do not use when the user explicitly requests a feature/full feature lifecycle, or for a new capability, journey, public contract, persistence, security policy, production dependency, deployment, migration, or ADR-worthy architecture decision.
+description: Deliver a cohesive Languon tooling, developer-experience, bounded internal refactor, or existing-contract UX enhancement with one record and proportional verification. Use when broader than a correction without adding product capability or crossing root feature boundaries. Do not use for an explicitly requested feature/full lifecycle.
 ---
 
 # Improvement development
 
-## Confirm the route
+Apply root `AGENTS.md` classification before creating artifacts. Use this flow
+for one focused enhancement that exceeds correction scope while preserving
+existing product semantics, public contracts, persistence, security policy,
+production dependencies, and deployment. A needed development-only dependency
+is permitted. Use `$correction-development` for a bounded low-risk adjustment.
 
-Read the closest `AGENTS.md` and do enough read-only discovery to confirm all of
-the following:
+## Record and execute
 
-- the user did not explicitly request a feature or `$feature-development`;
-- the outcome is one coherent enhancement, not a new product capability or
-  executable journey;
-- existing product semantics, public contracts, persistence, auth/security
-  policy, and deployment model remain unchanged;
-- a development-only dependency, local tooling standard, bounded internal
-  refactor, or existing-contract visual implementation is sufficient; and
-- focused verification can establish confidence without feature milestones.
+Create or resume `.agent/improvements/<slug>.md` from
+`.agent/templates/IMPROVEMENT.md`. Record the outcome, scope, constraints,
+affected guides, verification, and rollback/removal path when relevant.
 
-Use `$correction-development` when the work is only an established low-risk
-fix. If discovery reaches a feature safety boundary, do not begin feature work
-implicitly: mark the improvement `Escalated`, preserve the evidence, and ask the
-user to explicitly authorize feature delivery.
+Follow the [shared delivery procedure](../../../.agent/DELIVERY.md). Keep scope,
+plan, evidence, review decisions, and risks in this one record. Apply specialist
+skills according to changed surfaces; focused work does not bypass browser,
+database, security, or guide verification requirements. Independent review is
+risk-based under root policy, not automatic feature ceremony.
 
-## Create one improvement record
+If discovery crosses a root feature boundary, mark the record `Escalated`,
+preserve discoveries, and obtain feature authorization before expanded
+implementation. Reuse authorization already given for that scope.
 
-Create `.agent/improvements/<slug>.md` from
-`.agent/templates/IMPROVEMENT.md`. Record the observed problem, expected
-outcome, scope, excluded feature boundaries, affected constraints, proportional
-checks, user-flow impact, and rollback or removal path for tooling changes.
+## Close
 
-Work on the current branch by default. Do not create a feature branch, commit,
-merge, push, delete, or add a production dependency unless the user separately
-authorizes it.
-
-## Implement and verify
-
-Implement one focused patch. Prefer existing patterns and avoid a reusable
-abstraction unless it is already established. Add the smallest reliable
-regression coverage where behavior is deterministic.
-
-Run the affected formatter, lint, typecheck, build, and tests in proportion to
-the changed surface. Use `$browser-verification`, `$db-verification`,
-`$user-flow-e2e`, `$testing`, or `$code-review` when their actual risk triggers
-apply; these skills retain their normal authority and are not replaced by this
-flow. Update an existing user-flow guide only when its documented behavior or
-commands changed.
-
-## Finish
-
-Inspect the final diff for unrelated changes, generated artifacts, and secrets.
-Mark the improvement record `Complete` only after it includes exact checks and
-results, documentation decisions, review decisions, remaining risks, and any
-follow-up that would require an explicitly requested feature.
+Complete author preflight and the root Definition of Done. Mark the record
+`Complete` with valid evidence, review decisions, remaining risks, and rollback
+notes. Work on the current branch; this flow authorizes no automatic commit,
+merge, push, or deletion.

@@ -6,6 +6,12 @@ govern, and discovered when Codex starts in the project root.
 
 ## Authority and invocation
 
+The three delivery skills share [one execution procedure](../.agent/DELIVERY.md).
+Root `AGENTS.md` owns policy; specialist skills own affected-surface techniques.
+The [workflow audit](./agentic-workflow-audit.md) explains the 2026-09-17 changes;
+the [evaluation protocol](./agentic-workflow-evaluation.md) tests decision quality
+and measures repair-inclusive efficiency separately from metadata validity.
+
 Skills add focused execution guidance. They do not supersede the closest
 applicable `AGENTS.md`, active correction, improvement, or feature state, accepted ADRs,
 source and configuration, or the repository Definition of Done. When a skill

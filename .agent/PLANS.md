@@ -1,8 +1,9 @@
 # Execution Plan specification
 
-An ExecPlan is the persistent execution state for a complex feature or
-significant refactor. It must let an agent with no conversation history safely
-continue the work.
+An ExecPlan is the current execution state for an authorized feature. It must
+let an agent with no conversation history safely continue the work. Follow
+[DELIVERY.md](./DELIVERY.md) for common execution and artifact ownership; link
+specification, evidence, and review instead of reproducing their contents here.
 
 ## When an ExecPlan is required
 
@@ -27,7 +28,8 @@ Describe the observable outcome and who benefits.
 
 ### Specification
 
-Link the corresponding `FEATURE.md` and list in-scope and out-of-scope behavior.
+Link to `FEATURE.md`, which owns scope and acceptance text. Note only execution
+constraints needed to interpret the plan.
 
 ### Existing architecture
 
@@ -36,8 +38,9 @@ constraints, and accepted ADRs discovered from the repository.
 
 ### Acceptance criteria
 
-Translate the feature specification into independently verifiable outcomes.
-Assign each criterion a stable identifier such as `AC-1`.
+Reference stable IDs defined in `FEATURE.md` from each milestone. Do not copy or
+refine criteria independently here; update their authoritative specification
+text when scope changes. For fidelity work, reference its source inventory too.
 
 ### Test strategy
 
@@ -66,9 +69,11 @@ Use checkboxes and keep each milestone independently verifiable:
 - [ ] M5 — E2E verification
 ```
 
-For each milestone, record its objective, affected components, acceptance
-criteria, tests, status, and evidence. Never mark a milestone complete before
-its required verification passes.
+For each milestone, record its objective, affected components, acceptance IDs,
+required checks, status, and evidence links. Never mark a milestone complete
+before its required verification passes. Task completion does not automatically
+trigger independent review: author preflight precedes completion review. An
+early specialist review must answer a specific consequential uncertainty.
 
 ### Progress
 
@@ -88,9 +93,10 @@ Record unexpected behavior, constraints, failed assumptions, and their impact.
 
 ### Validation
 
-Track unit, integration, contract, E2E, browser/device, typecheck, lint, build,
-database migration, review, and security review status. Link detailed output to
-`EVIDENCE.md` instead of pasting large logs.
+Link the acceptance-to-evidence table and check IDs in `EVIDENCE.md` and verdict
+in `REVIEW.md`. Keep only currently missing or invalidated verification here;
+do not maintain a second results table. Apply `$testing` validity rules to
+changed code, configuration, dependencies, and environment before reusing proof.
 
 ### Remaining work
 

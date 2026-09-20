@@ -1,6 +1,6 @@
 ---
 name: browser-verification
-description: Verify Languon web or admin behavior with the project-pinned agent-browser CLI, including critical journeys, responsive layouts, loading/error states, accessibility basics, console errors, and failed network requests. Use for user-visible Next.js changes, acceptance evidence, or regression reproduction in the running application. Do not use as a substitute for automated tests, as the E2E runner, or for native-only mobile verification.
+description: Verify Languon web or admin behavior with the project-pinned agent-browser CLI, including journeys, responsive layouts, design fidelity, states, accessibility, console errors, and failed requests. Use for user-visible web/admin changes, acceptance evidence, or regression reproduction in the running application. Do not use as a substitute for automated tests, as the E2E runner, or for native-only mobile verification.
 ---
 
 # Browser verification
@@ -12,6 +12,14 @@ the smallest set of journeys, roles, data states, and viewports needed. Start th
 relevant infrastructure and application with documented commands. Use
 deterministic non-production data and never enter real credentials or personal
 data.
+
+For supplied-design fidelity, read the `$ui-ux-composition`
+[`fidelity reference`](../ui-ux-composition/references/design-fidelity.md) and
+the active source inventory. Select comparisons covering its required rows,
+including relevant hidden tabs, empty/populated content, and open dialogs.
+Match reference/local viewport, theme, locale, and data state where possible;
+record mismatches. Use source artifacts obtained through approved design tools
+or provided files; do not bypass this wrapper's local-host restrictions.
 
 Use the project-pinned `agent-browser` CLI through the repository's safe wrapper
 from the repository root. If the browser runtime is missing, run
@@ -72,6 +80,13 @@ claim an `agent-browser` journey is a passing E2E test.
 
 Capture screenshots only when they add useful review evidence.
 Do not claim a journey passed from source inspection alone.
+
+For fidelity comparisons, record the verified inventory IDs, reference and local
+artifacts, observed differences and dispositions. Verify distinct states with
+representative combinations; do not run a full viewport/theme/locale/state
+cross-product. A default-page screenshot or a passing interaction test does not
+establish the appearance of hidden/populated states. Missing source or rendering
+leaves those fidelity rows unverified.
 
 Always close the task-scoped session after capturing evidence:
 

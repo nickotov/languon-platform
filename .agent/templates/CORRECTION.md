@@ -11,8 +11,9 @@ Updated: {{DATE}}
 - Feature-flow triggers checked: every correction condition in root `AGENTS.md`
   remains true, including its behavior, contract, data, security, dependency,
   deployment, product-decision, coordination, and verification conditions.
-- Escalation rule: switch to feature development before continuing whenever any
-  root correction condition becomes false.
+- Escalation rule: continue as an improvement if its conditions hold; otherwise
+  obtain feature authorization before expanded implementation. Mark this record
+  `Escalated`, preserve discoveries, and link its successor.
 
 ## Context and scope
 
@@ -24,7 +25,15 @@ Updated: {{DATE}}
 - Relevant ADRs or constraints:
 - Related user-flow guides:
 
+## Acceptance criteria
+
+- AC-1 — One observable outcome. Keep criterion text here; map its ID to the
+  evidence below. Add other IDs only for distinct outcomes.
+
 ## Plan
+
+Follow `.agent/DELIVERY.md`. For supplied-design fidelity, add the source coverage
+inventory to this record using `$ui-ux-composition`.
 
 - [ ] Implement the bounded change.
 - [ ] Add or update the smallest reliable regression coverage when useful.
@@ -42,6 +51,10 @@ Updated: {{DATE}}
 | Documentation/user-flow  | Pending / not required |
 
 ## Outcome and evidence
+
+For material checks, record command, tested revision/patch state, environment,
+result, and limitation. Link reused evidence with a validity reason; HEAD alone
+does not identify an uncommitted patch.
 
 - Changes made:
 - Commands and results:

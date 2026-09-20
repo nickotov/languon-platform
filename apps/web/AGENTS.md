@@ -19,13 +19,18 @@ Do not deep-import another slice's internals. Put reusable business behavior in
 
 Use `$frontend-development` whenever creating or restructuring components,
 hooks, state, API clients, shared UI, or imports between FSD slices. Its
-component folders, CSS Modules, native-element, and state-communication rules
+component folders, supported styling, native-element, and state-communication rules
 are the frontend implementation standard.
 
-For visual work, start from the semantic `--sys-*` runtime tokens, shared
-primitives in `shared/ui`, their colocated Storybook stories, and comparable
-rendered screens. `design/DESIGN_SYSTEM.md` and artifacts under `design/` are
-optional guidance, not prerequisites or approval gates.
+For visual work, start from the exact accepted Magic Patterns runtime token
+names/values and Tailwind v3 semantic utilities (ADR-0017), shared primitives in
+`shared/ui`, their stories, and comparable screens. CSS Modules remain supported;
+`--sys-*` variables support legacy consumers through compatibility aliases.
+Do not approximate the accepted token contract or mass-rewrite existing styles.
+`design/DESIGN_SYSTEM.md` and artifacts under `design/` are optional for ordinary
+UI work. When implementing a supplied design, use `$ui-ux-composition` fidelity
+mode: inspect that source, inventory required sections/controls/states before
+coding, and verify the rendered result against it.
 
 ## State and rendering
 
@@ -48,7 +53,7 @@ pnpm --filter @languon/web build
 
 User-visible changes require `$browser-verification` against the running app.
 Record the viewport, journey, observations, console/network failures, and
-artifacts in the active `EVIDENCE.md`.
+artifacts in the active correction/improvement record or feature `EVIDENCE.md`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

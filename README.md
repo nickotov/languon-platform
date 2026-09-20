@@ -153,7 +153,14 @@ See [architecture](./docs/architecture.md),
 [release and deployment operations](./docs/operations/README.md),
 [user-flow testing guides](./docs/user-flows/README.md), and
 [agentic development](./docs/agentic-development.md) for details.
+For a detailed walkthrough with Mermaid diagrams, agent responsibilities,
+feature/correction/improvement and bug-fix flows, review loops, design fidelity,
+and copyable prompts, read the
+[agentic development handbook](./docs/agentic-workflow-handbook.md).
 The [repository agent skills guide](./docs/agent-skills.md) documents local skill
 invocation, authority, provenance, and upstream license notices.
+The [workflow audit and rollout](./docs/agentic-workflow-audit.md) explains
+delivery/review improvements; [workflow evaluation](./docs/agentic-workflow-evaluation.md)
+provides decision probes and repair-inclusive quality/cost measurements.
 Frontend component and state work uses the project-local
 `$frontend-development` skill.

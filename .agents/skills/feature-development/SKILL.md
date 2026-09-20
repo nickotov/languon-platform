@@ -1,100 +1,46 @@
 ---
 name: feature-development
-description: Implement a Languon feature autonomously from repository specification through exploration, ExecPlan milestones, proportional testing, real-app verification, independent review, remediation, and recorded evidence. Use only when the user explicitly asks to create a feature, use $feature-development, or use the full feature lifecycle. Do not use for corrections or focused improvements; follow the root routing rules and use correction-development or improvement-development when they apply.
+description: Deliver an explicitly requested Languon feature from specification through verified completion and independent review. Use when the user asks to create a feature, invokes $feature-development, or requests the full feature lifecycle. Do not use for corrections or focused improvements; follow root classification.
 ---
 
 # Feature development
 
-## Confirm feature classification
+## Establish the feature
 
-Confirm that the user explicitly asks to create a feature, use
-`$feature-development`, or use the full feature lifecycle, then apply the
-routing rules in root `AGENTS.md` before creating a branch or feature artifacts.
-Do not launch this workflow merely because a small change also needs tests,
-documentation, a development dependency, or several matching configuration
-edits. Use `$correction-development` or `$improvement-development` when their
-conditions hold.
+Confirm feature authorization under root `AGENTS.md`. Reuse existing authorized
+scope; do not request permission again at routine milestones. Preserve root
+feature branch, local-commit, and squash-merge policy.
 
-Never downgrade feature-sized work to a correction to avoid review. New user
-capabilities, public contracts, data/migration work, auth or security policy,
-deployment decisions, cross-cutting architecture, and multi-milestone work stay
-in this flow.
+Read the applicable instructions and locate `.agent/features/<slug>/FEATURE.md`
+and the current `EXEC_PLAN.md`. If absent, use
+`pnpm feature:new -- <slug> "<title>"` and complete the specification. Follow
+`.agent/PLANS.md` and the [shared delivery procedure](../../../.agent/DELIVERY.md)
+for artifact ownership, implementation, preflight, and completion.
 
-## Establish durable context
+## Plan and deliver slices
 
-1. Read the root and closest workspace `AGENTS.md` files.
-2. Locate `.agent/features/<feature>/FEATURE.md` and existing `EXEC_PLAN.md`.
-3. If the feature workspace is missing, run
-   `pnpm feature:new -- <slug> "<title>"` and complete `FEATURE.md`.
-4. Scan `docs/user-flows/*.md` frontmatter for the feature slug and affected
-   source paths, then read every related guide.
-5. For every related current guide, run
-   `pnpm user-flow:e2e -- inspect <guide-feature-slug>` and read its mapped
-   tests. The guide slug can differ from the active feature slug.
-6. Read relevant architecture documentation and inspect Git state.
-7. Treat repository files as authoritative over conversation memory.
+Give each acceptance criterion a stable ID in `FEATURE.md`. Link those IDs from
+milestones and evidence; do not copy their text into each artifact. Before UI
+fidelity implementation, build the source-derived inventory in the specification
+using `$ui-ux-composition`. Record material uncertainty and required verification
+in the plan. Each milestone must have observable completion evidence.
 
-## Explore and plan
+Discover affected guides through feature/source mappings, inspect their current
+E2E mappings, and keep them synchronized under root policy and `$user-flow-e2e`.
+Record a concrete not-applicable reason when no executable journey exists.
 
-Use `explorer`, `architect`, or `product-owner` subagents for bounded,
-non-overlapping investigation when useful. Require file references and verified
-facts in their returns.
+Implement coherent slices, run focused checks, and update current progress and
+next action. Use bounded exploration/delegation when useful. Do not schedule a
+reviewer after each task by default.
 
-Create or update `EXEC_PLAN.md` according to `.agent/PLANS.md`. Translate every
-acceptance criterion into milestones and explicit unit, integration, contract,
-E2E, browser/device, migration, and security checks. Record assumptions and
-critical architectural uncertainty before implementation.
+## Review and finish
 
-## Implement milestones
+After author preflight, request an independent completion reviewer using
+`$code-review`. Apply root separate-tester and security-review triggers; assign
+complementary questions rather than duplicate valid verification. Record findings
+in `REVIEW.md`, remediate in batches, and use remediation review for the affected
+surface. Review again broadly only when the risk surface expands.
 
-For each milestone:
-
-1. Implement one coherent behavior slice.
-2. Run the narrowest relevant checks.
-3. Diagnose and fix root causes of failures.
-4. Update progress, decisions, discoveries, validation, and remaining work in
-   the ExecPlan.
-5. Keep every affected user-flow guide aligned with changed commands, behavior,
-   expected results, edge cases, and source-path metadata.
-6. Use `$user-flow-e2e` whenever guide test-relevant behavior changes; update
-   scenarios, real tests, markers, and execution evidence together.
-7. Continue without waiting for routine approval.
-
-Preserve unrelated changes and applicable DDD, FSD, package-boundary, schema,
-security, and secret-handling constraints.
-
-## Validate and capture evidence
-
-Use `$testing` to select and run proportional automated checks. Use
-`$browser-verification` for user-visible web behavior and `$db-verification` for
-schema, query, transaction, or migration changes.
-
-Run all relevant workspace checks and then the appropriate broader suite. Write
-exact commands, concise results, observed journeys, artifacts, and remaining
-risks to `EVIDENCE.md`; do not paste unbounded logs.
-
-Create or update required `docs/user-flows/<feature-slug>.md` guides according
-to the root instructions. Run `pnpm docs:user-flows:check` and record which guide
-steps were verified; prose never substitutes for required automated tests.
-For every affected current guide, run
-`pnpm user-flow:e2e -- check <guide-feature-slug>` and execute its mapped E2E
-journeys.
-
-## Review and remediate
-
-Request an independent `reviewer` after implementation. Request
-`security-reviewer` for the risk triggers listed in root `AGENTS.md`. Provide the
-specification, ExecPlan, diff, and evidence without coaching reviewers toward an
-expected result.
-
-Write findings and resolutions to `REVIEW.md`. Fix valid findings, add regression
-coverage when needed, rerun affected checks, and repeat review after material
-changes.
-
-## Finish
-
-Return done only when the repository Definition of Done is satisfied, all
-required user-flow guides match current behavior, and all feature artifacts
-reflect reality. Return blocked only for a genuine external dependency or user
-decision that cannot be safely resolved from repository context; record the
-blocker and completed work in the ExecPlan.
+Finish only when root Definition of Done is met and the four artifacts reflect
+the final implementation. Evidence gaps remain explicit; a passing build or
+review-cycle threshold never overrides required proof or unresolved defects.

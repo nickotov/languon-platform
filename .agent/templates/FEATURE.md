@@ -14,7 +14,21 @@ Describe the observable behavior after completion.
 
 ## Acceptance criteria
 
-- [ ] AC-1 — Add a verifiable outcome.
+- AC-1 — Add a verifiable outcome. This file owns criterion text and stable IDs;
+  `EVIDENCE.md` maps them to implementation/proof and reports completion.
+
+## Supplied-design coverage
+
+Required only for supplied-design fidelity; otherwise remove this section. Use
+`$ui-ux-composition` fidelity mode to inventory the source independently of what
+is already implemented. Before coding, record source revision, required rows,
+local owners, planned verification, and initial dispositions. Add evidence IDs
+and observed deviations/outcomes during implementation and rendered comparison;
+never claim runtime proof at the planning stage.
+
+| ID   | Source requirement/state | Local owner | Planned verification | Disposition/deviation | Evidence ID (after execution) |
+| ---- | ------------------------ | ----------- | -------------------- | --------------------- | ----------------------------- |
+| UI-1 |                          |             |                      |                       |                               |
 
 ## Scope
 

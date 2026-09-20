@@ -25,10 +25,10 @@ can drift.
 Put all invocation conditions in a skill's frontmatter `description`; the body
 is loaded only after invocation. Use concrete tasks and boundaries, including a
 short `Do not use` clause when adjacent skills could otherwise overlap. Keep
-automatically invoked skills narrow. Set
-`policy.allow_implicit_invocation: false` in `agents/openai.yaml` for
-exploratory, destructive, expensive, or intentionally user-controlled
-workflows.
+automatically invoked skills narrow. Preserve existing invocation policies;
+use `policy.allow_implicit_invocation: false` for workflows the user explicitly
+chooses to keep invocation-only. Sensitive operations still require appropriate
+authorization even when the skill remains discoverable.
 
 For `AGENTS.md`, keep always-loaded routing concise and point to conditional
 detail. Make pointers action-oriented: name both the condition and the document
@@ -78,6 +78,13 @@ skill path, a realistic request, and raw task artifacts. Success requires the
 subagent to follow authority and scope, produce the requested output, avoid
 unsafe side effects, and identify no material ambiguity; do not include the
 expected answer or authoring rationale in its prompt.
+
+For delivery/review/fidelity changes, use the reusable cases and isolated
+evaluation protocol in [workflow evaluation](../../../docs/agentic-workflow-evaluation.md).
+Keep evaluator rubrics out of the tested agent's context. Metadata validation
+proves packaging, not decision quality; read-only decision probes prove neither
+runtime correctness nor token savings. Record which evidence was actually
+collected and leave comparative measurements pending when not run.
 
 ## Provenance
 

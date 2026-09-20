@@ -3,92 +3,61 @@
 Feature: [FEATURE.md](./FEATURE.md)
 Last updated: {{DATE}}
 
-## Goal
+Follow `.agent/PLANS.md` and `.agent/DELIVERY.md`. This file owns current
+execution state, not duplicate acceptance text or check results.
 
-State the completed observable outcome.
+## Goal and specification
 
-## Specification
-
-- In scope: See `FEATURE.md`.
-- Out of scope: See `FEATURE.md`.
+- Outcome: see `FEATURE.md`.
+- Acceptance IDs and any source-design inventory: see `FEATURE.md`.
+- Execution constraints:
 
 ## Existing architecture
 
-Record discovered components, flows, patterns, dependencies, constraints, and
-relevant accepted ADRs.
+Record relevant components, flows, analogous patterns, and accepted ADRs.
 
-## Acceptance criteria
+## Test and review strategy
 
-- [ ] AC-1 — Copy and refine criteria from `FEATURE.md`.
+Record required and deliberately omitted layers with rationale. Include unit,
+integration/contract, E2E, browser/device, database/migration, static checks, and
+guide traceability only as relevant. For E2E, resolve exact mapped test files,
+reviewed command, environment, and scenarios.
 
-## Test strategy
-
-- Unit: Required / not required — rationale.
-- Integration: Required / not required — rationale.
-- Contract: Required / not required — rationale.
-- E2E: Required / not required — rationale.
-- Browser/device: Required / not required — rationale.
-- Database migration: Required / not required — rationale.
-- User-flow guide: Required / not required — guide path or concrete rationale.
-- User-flow E2E: Required / not required — scenario IDs, exact test files,
-  command/environment, and rationale.
+- Independent completion review: required after author preflight.
+- Separate tester: required / not required — root trigger and bounded question.
+- Security review: required / not required — root risk trigger.
+- Early specialist review: only for a named consequential uncertainty.
 
 ## Milestones
 
-- [ ] M1 — Exploration and design
-    - Objective:
-    - Components:
-    - Acceptance criteria:
-    - Required tests:
-    - Evidence:
-- [ ] M2 — Implementation and targeted verification
-    - Objective:
-    - Components:
-    - Acceptance criteria:
-    - Required tests:
-    - Evidence:
-- [ ] M3 — Full validation and review
-    - Objective:
-    - Components:
-    - Acceptance criteria:
-    - Required tests:
-    - Evidence:
+- [ ] M1 — Scope and implementation
+    - Objective/components:
+    - Acceptance IDs:
+    - Required checks:
+    - Evidence links:
+- [ ] M2 — Author preflight and completion review
+    - Acceptance/source inventory accounted for:
+    - Affected verification and guide evidence links:
+    - Review/remediation record: `REVIEW.md`.
 
-## Progress
+Use more milestones only for independently verifiable behavior slices.
 
-- {{DATE}} — Plan created. Next: inspect the relevant architecture.
+## Current progress
 
-## Decisions
+- {{DATE}} — Current work:
+- Immediate next action:
 
-- None yet. For each material decision, record:
-    - Stable ID and title:
-    - Context:
-    - Choice and rationale:
-    - Alternatives rejected:
-    - ADR impact: Not ADR-worthy / Proposed ADR-NNNN / Accepted ADR-NNNN.
+## Decisions and discoveries
 
-## Discoveries
+Record material decisions with stable ID, context, choice, alternatives,
+rationale, and ADR impact. Keep only discoveries that change execution.
 
-- None yet.
+## Validation links
 
-## Validation
-
-| Check              | Status         | Evidence |
-| ------------------ | -------------- | -------- |
-| Unit               | Pending        |          |
-| Integration        | Pending        |          |
-| Contract           | Pending        |          |
-| E2E                | Pending        |          |
-| Browser/device     | Pending        |          |
-| Typecheck          | Pending        |          |
-| Lint               | Pending        |          |
-| Build              | Pending        |          |
-| Database migration | Not applicable |          |
-| User-flow guide    | Pending        |          |
-| User-flow E2E      | Pending        |          |
-| Independent review | Pending        |          |
-| Security review    | To assess      |          |
+- Acceptance-to-proof mapping and checks: [EVIDENCE.md](./EVIDENCE.md).
+- Review boundary, findings, and verdict: [REVIEW.md](./REVIEW.md).
 
 ## Remaining work
 
-- Complete exploration and refine milestones.
+List unfinished acceptance items, missing/invalidated evidence, open findings,
+and genuine external blockers. Remove obsolete detail; Git retains history.

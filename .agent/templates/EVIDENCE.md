@@ -2,65 +2,48 @@
 
 Updated: {{DATE}}
 
-Record exact commands, concise results, relevant scenarios, and remaining risks.
-Do not paste full logs when a focused excerpt or artifact reference is enough.
+This file owns check results and acceptance-to-proof mapping. Link its IDs from
+the plan and review. Keep concise evidence, not full logs.
 
-## Automated tests
+## Acceptance coverage
 
-### Unit
+| Acceptance/design ID | Implementation | Evidence IDs | Result/limitation |
+| -------------------- | -------------- | ------------ | ----------------- |
+| AC-1                 |                |              |                   |
 
-- Command:
-- Result:
-- Coverage added:
+Reconcile all required design rows and explicit deviations against the source;
+do not use successful runtime tests as proof of source completeness.
 
-### Integration and contract
+## Check records
 
-- Command:
-- Result:
-- Behavior validated:
+Use one record per material check or coherent group; omit irrelevant categories.
 
-### E2E
+### E-1 — Check name
 
-- Command:
-- Result:
-- Journeys validated:
+- Layer and behavior proved:
+- Exact command and selected tests/scenarios:
+- Tested state: commit, or base plus captured patch/content hashes including
+  relevant untracked files. HEAD alone is insufficient for uncommitted work.
+- Relevant environment/configuration (sanitized):
+- Result and artifacts:
+- Limitations:
+- Reused or rerun after changes: reason and compared patch/environment state.
 
-## Real application verification
+Include browser reference/runtime viewport, theme, data state, compared design
+rows, and remaining deviations when fidelity applies. Include database
+forward/rollback/invariant and disposable-environment evidence when applicable.
 
-- Environment:
-- Scenario:
-- Observed result:
-- Artifacts:
+## User-flow evidence
 
-## User-flow guide verification
+List affected guides, exact mapped scenarios/test files, mapping/guide check
+results, execution evidence IDs, and cleanup. Record why not applicable when
+there is no executable journey. Preserve required guide/revision synchronization.
 
-- Guides created or updated:
-- Commands and journeys checked:
-- `pnpm docs:user-flows:check` result:
-- `pnpm user-flow:e2e -- check <guide-feature-slug>` result for every affected guide:
-- Scenario IDs and exact E2E test files:
-- E2E environment/command/result and cleanup:
+## Review link
 
-## Static checks
+Findings, resolutions, and verdict: [REVIEW.md](./REVIEW.md).
 
-- Format:
-- Lint:
-- Typecheck:
-- Build:
+## Remaining gaps and risks
 
-## Database verification
-
-- Migration command:
-- Forward result:
-- Rollback result:
-- Data/invariant checks:
-
-## Review
-
-- Reviewer result:
-- Security reviewer result:
-- Findings resolved:
-
-## Remaining risks
-
-- None known, or list explicit residual risks and owners.
+List unverified behavior, invalidated results, environmental limits, and follow-up.
+Do not mark unavailable evidence as passing.

@@ -76,8 +76,9 @@ caching; shared client state belongs in Zustand; component-local state remains
 React state.
 
 Frontend slices use `api`, `hooks`, `lib`, `model`, and `ui` segments only when
-needed. Components live in one-component folders below `ui` and normally pair a
-TSX file with a CSS Module. Shared design-system primitives live in `shared/ui`
+needed. Components live in one-component folders below `ui`. Web composition
+uses Tailwind v3 semantic utilities; CSS Modules remain supported for existing
+and component-specific styling under ADR-0017. Shared primitives live in `shared/ui`
 and include colocated stories. Prefer semantic native elements, including
 `dialog` and popover primitives, before custom interaction machinery. Avoid
 prop drilling through unrelated components by selecting scoped context, shared
@@ -95,11 +96,17 @@ through `@languon/browser-auth`; it never imports public-web application source.
 ADR-0010 defines the framework, persistent owner membership, per-request
 authorization, dedicated refresh cookie, and private-edge boundary.
 
-Public-web visual behavior is owned by global semantic `--sys-*` variables, the
-SSR-resolved Light/Dark/System preference, app-local primitives in
+Public-web visual behavior uses the exact accepted Magic Patterns token names
+and values exposed through Tailwind v3 semantic utilities (ADR-0017), with
+`--sys-*` compatibility aliases for legacy consumers. The SSR-resolved
+Light/Dark/System preference, app-local primitives in
 `apps/web/src/fsd/shared/ui`, colocated Storybook stories, and verified runtime
-composition. `design/DESIGN_SYSTEM.md`, Figma Make, and `design/main.pen` may
-provide design input but do not gate implementation. Visual changes synchronize
+composition own implemented behavior. `design/DESIGN_SYSTEM.md`, Figma Make,
+and `design/main.pen` may provide design input but do not gate ordinary
+implementation. Explicit supplied-design fidelity uses a source-derived
+section/control/state inventory and matched rendered comparisons through
+`ui-ux-composition`; runtime architecture does not justify silent omissions.
+Visual changes synchronize
 runtime code, affected stories/tests, and browser evidence; design artifacts are
 updated only when explicitly in scope. ADR-0016 defines this ownership boundary.
 

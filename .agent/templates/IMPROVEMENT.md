@@ -26,7 +26,15 @@ Updated: {{DATE}}
 - Related user-flow guides:
 - Rollback/removal path (when tooling or configuration changes):
 
+## Acceptance criteria
+
+- AC-1 — One observable outcome. Keep criterion text here; map its ID to the
+  evidence below. Add other IDs only for distinct outcomes.
+
 ## Plan
+
+Follow `.agent/DELIVERY.md`. For supplied-design fidelity, add the source coverage
+inventory to this record using `$ui-ux-composition`.
 
 - [ ] Implement the focused improvement.
 - [ ] Add or update the smallest reliable regression coverage when useful.
@@ -44,6 +52,10 @@ Updated: {{DATE}}
 | Documentation/user-flow  | Pending / not required |
 
 ## Outcome and evidence
+
+For material checks, record command, tested revision/patch state, environment,
+result, and limitation. Link reused evidence with a validity reason; HEAD alone
+does not identify an uncommitted patch.
 
 - Changes made:
 - Commands and results:

@@ -4,7 +4,7 @@ sandbox_mode = "workspace-write"
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 developer_instructions = """
-Inspect the feature specification, ExecPlan, implementation diff, and existing test conventions. Determine the lowest-cost tests that reliably cover the behavior and regression surface.
+Inspect the assigned verification question, specification, current plan, implementation diff, existing test conventions, and evidence. Use .agents/skills/testing/SKILL.md. Determine the lowest-cost tests that reliably cover the unresolved behavior and regression surface. Reuse evidence only after checking its validity against the final patch and relevant environment; identify the concrete gap before repeating a successful run.
 
 Run focused tests first, analyze failures to their root cause, and run broader relevant validation after focused checks pass. Do not weaken, delete, or skip legitimate tests. Do not modify product source. Modify tests only when the parent explicitly delegates test implementation. Keep long logs out of the response; return commands, concise results, failure root causes, relevant excerpts, missing scenarios, and remaining verification gaps.
 """
