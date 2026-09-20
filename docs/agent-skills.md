@@ -28,6 +28,21 @@ than providing routine delivery steps.
 Start a new Codex session after adding or changing repository skills so their
 descriptions and UI metadata are reloaded.
 
+### Design briefs for backend-first delivery
+
+`$design-brief` is a Languon-owned, explicit-only skill for creating or updating
+a Magic Patterns prompt from implemented behavior. It outputs a self-contained
+prompt plus a source-grounded UI checklist, separates UX suggestions from product
+requirements, and preserves IDs across correction updates. It is not an automatic
+post-delivery phase and does not call Magic Patterns or implement the UI.
+No external upstream skill is incorporated into this package.
+
+Invoke it after backend work when design is needed, with the active record and
+design-system reference. Output stays in the response unless you request a saved
+brief. Follow the [prompt cookbook](./agentic-prompts.md) for generation, updates,
+design review, and frontend handoff. Use the existing integration/fidelity skills
+for the subsequent supplied-design implementation.
+
 Run `pnpm agent-skills:check` after every skill change. The validator checks all
 repository skill frontmatter, directory/name agreement, required Codex UI
 metadata, default prompts, size bounds, and explicit-only invocation policy.

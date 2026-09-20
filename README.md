@@ -157,6 +157,10 @@ For a detailed walkthrough with Mermaid diagrams, agent responsibilities,
 feature/correction/improvement and bug-fix flows, review loops, design fidelity,
 and copyable prompts, read the
 [agentic development handbook](./docs/agentic-workflow-handbook.md).
+Copy task-specific examples from the [prompt cookbook](./docs/agentic-prompts.md),
+including the backend → `$design-brief` → Magic Patterns → frontend handoff.
+The explicitly invoked skill produces a grounded design prompt and UI checklist;
+it does not generate or upload a design automatically.
 The [repository agent skills guide](./docs/agent-skills.md) documents local skill
 invocation, authority, provenance, and upstream license notices.
 The [workflow audit and rollout](./docs/agentic-workflow-audit.md) explains

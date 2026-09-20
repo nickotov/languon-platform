@@ -83,6 +83,22 @@ test('rejects unsupported interface metadata', () => {
     );
 });
 
+test('design briefs require explicit invocation', () => {
+    assert.throws(
+        () => validate('design-brief'),
+        /disable implicit invocation/,
+    );
+    assert.equal(
+        validate('design-brief', {
+            metadataContent: metadataContent(
+                'design-brief',
+                '\n\npolicy:\n    allow_implicit_invocation: false',
+            ),
+        }),
+        'design-brief',
+    );
+});
+
 test('enforces short-description boundaries', () => {
     for (const length of [24, 65]) {
         assert.throws(

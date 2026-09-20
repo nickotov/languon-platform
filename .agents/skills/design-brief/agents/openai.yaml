@@ -1,0 +1,7 @@
+interface:
+    display_name: 'Design brief'
+    short_description: 'Turn implemented features into grounded design prompts'
+    default_prompt: 'Use $design-brief to create a Magic Patterns prompt and UI checklist for this implemented feature, separating supported behavior, UX recommendations, and open decisions.'
+
+policy:
+    allow_implicit_invocation: false

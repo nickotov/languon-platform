@@ -282,6 +282,32 @@ formatter-only comments.
 
 ## 7. Preserving a Magic Patterns design
 
+### Before design: translate backend capability into a UX brief
+
+When the backend is ready and you want to design its UI, explicitly invoke
+`$design-brief` with the active record and your Magic Patterns design-system
+reference. This optional skill produces a portable design prompt with short app
+context, fuller feature/journey description, required controls and applicable
+states, UX direction, and exclusions. It also produces stable UI requirement
+IDs with source references, distinguishing supported behavior, recommendations,
+and open product decisions. Source inspection is not claimed as executed proof.
+
+It does not automatically run after every task, create a remote design, modify
+backend/frontend code, or add a mandatory agent. For a changed user-visible
+contract, request an update that preserves IDs and returns a delta prompt;
+invisible refactoring needs no design update. Return output in chat by default,
+or explicitly request a saved supporting brief linked from the active record.
+
+You paste the prompt into Magic Patterns using your existing design system.
+When the design returns, reconcile its sections and states against the UI IDs,
+then link them to the implementation's source inventory and runtime evidence.
+This catches omissions during design generation as well as during integration.
+It does not replace feature acceptance or allow an unfinished frontend to be
+marked complete. See the [prompt cookbook](./agentic-prompts.md) for the complete
+backend-first sequence, correction updates, and other common task prompts.
+
+### After design: preserve the source through implementation
+
 “Implement this design” is not merely “use similar colors.” Its in-scope content,
 controls, hierarchy, responsive behavior, and states are acceptance requirements.
 Prototype code is a design specification to adapt to the app's supported
