@@ -146,6 +146,13 @@ function createManifest(options) {
             },
         },
         images,
+        ...(options.has('pronunciation-audio')
+            ? {
+                  pronunciationAudio: JSON.parse(
+                      required(options, 'pronunciation-audio'),
+                  ),
+              }
+            : {}),
     });
 }
 

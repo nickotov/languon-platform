@@ -68,7 +68,7 @@
     .pair {
         grid-template-columns: 1fr;
     }
-    .pair span {
+    .pair > span {
         display: none;
     }
 }

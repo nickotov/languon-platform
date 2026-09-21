@@ -9,6 +9,7 @@ GRANT SELECT, UPDATE ON TABLE account_deletion_requests TO :"account_purge_role"
 GRANT SELECT (id, status, version), UPDATE (handle, status, updated_at, version)
     ON TABLE users TO :"account_purge_role";
 GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs, dictionary_document_uploads,
+    dictionary_audio_assets, dictionary_audio_bindings, dictionary_audio_blobs, dictionary_audio_jobs,
     dictionary_document_extractions, dictionary_document_object_versions,
     dictionary_generation_proposals, dictionary_card_revisions,
     dictionary_idempotency_keys, dictionaries TO :"account_purge_role";

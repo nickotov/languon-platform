@@ -1,6 +1,21 @@
 import { profileFeatureMessages, type Messages } from './en';
 
 export const fr = {
+    'dictionary.audio.playField': 'Écouter {field}',
+    'dictionary.audio.stopField': 'Arrêter {field}',
+    'dictionary.audio.play': 'Écouter',
+    'dictionary.audio.stop': 'Arrêter',
+    'dictionary.audio.loading': 'Préparation audio…',
+    'dictionary.audio.playing': 'Lecture en cours',
+    'dictionary.audio.stopped': 'Arrêté',
+    'dictionary.audio.ready': 'Prêt — appuyez sur Écouter',
+    'dictionary.audio.failed':
+        'Échec audio. Appuyez sur Écouter pour réessayer.',
+    'dictionary.audio.unavailable': 'Audio indisponible.',
+    'dictionary.audio.fixture':
+        'Son de test — ce n’est pas un enregistrement de prononciation.',
+    'dictionary.audio.speed': 'Vitesse de lecture',
+    'dictionary.audio.normal': 'Normale',
     ...profileFeatureMessages,
     'theme.switchToLight': 'Passer au thème clair',
     'theme.switchToDark': 'Passer au thème sombre',

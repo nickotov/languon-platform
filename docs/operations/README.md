@@ -28,6 +28,9 @@ Repository commands remain authoritative if prose and code diverge.
 
 ## Environment contract
 
+For pronunciation playback, see [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md)
+for local fixtures, worker-only TTS secrets, retained storage, cleanup and production gates.
+
 | Property           | Staging                                        | Production                                   |
 | ------------------ | ---------------------------------------------- | -------------------------------------------- |
 | Source             | Current commit of `stage`                      | Published strict SemVer release from `main`  |

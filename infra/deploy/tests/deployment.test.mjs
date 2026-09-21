@@ -6,6 +6,68 @@ import test from 'node:test';
 import { Deployment } from '../lib/deployment.mjs';
 
 const sha = 'b'.repeat(40);
+const speechCapabilities = {
+    phase: 'expand',
+    workerProcessable: [1],
+    apiReadable: [1],
+    webReadable: [1],
+    purgeReadable: [1],
+    apiEnqueued: [],
+    speechBudget: {
+        maxCharacters: 2000,
+        maxCostUnitsPerClip: 2000,
+        ownerDailyCostUnits: 20000,
+        globalDailyCostUnits: 200000,
+    },
+};
+
+test('pronunciation activation requires expanded rollback support and explicit operator configuration', async () => {
+    const { deployment, calls } = await fixture();
+    deployment.manifest = {
+        ...manifest,
+        pronunciationAudio: speechCapabilities,
+    };
+    await deployment.deploy();
+    deployment.manifest = {
+        ...manifest,
+        pronunciationAudio: {
+            ...speechCapabilities,
+            phase: 'activate',
+            apiEnqueued: [1],
+        },
+    };
+    const before = calls.length;
+    await assert.rejects(
+        () => deployment.deploy(),
+        /explicit playback, generation/,
+    );
+    assert.equal(
+        calls.slice(before).some((args) => args.includes('migrator')),
+        false,
+    );
+});
+
+test('absent pronunciation metadata overrides stale operator enablement and pins budgets', async () => {
+    const { deployment } = await fixture();
+    deployment.config = {
+        ...deployment.config,
+        DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
+        DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
+        DICTIONARY_AUDIO_OWNER_BUDGET_UNITS: '9999999',
+    };
+    const dormant = deployment.commandEnvironment('blue');
+    assert.equal(dormant.DICTIONARY_AUDIO_GENERATION_ENABLED, 'false');
+    assert.equal(dormant.DICTIONARY_AUDIO_PLAYBACK_ENABLED, 'false');
+    deployment.manifest = {
+        ...manifest,
+        pronunciationAudio: speechCapabilities,
+    };
+    assert.equal(
+        deployment.commandEnvironment('blue')
+            .DICTIONARY_AUDIO_OWNER_BUDGET_UNITS,
+        '20000',
+    );
+});
 const digest = 'a'.repeat(64);
 const manifest = {
     schemaVersion: 1,
@@ -179,7 +241,9 @@ test('orders migration before inactive start, readiness, switch, smoke and clean
     const nginx = rendered.findIndex((line) =>
         line.includes('edge.compose.yaml'),
     );
-    assert.ok(migration >= 0 && migration < recoveryGate && recoveryGate < start);
+    assert.ok(
+        migration >= 0 && migration < recoveryGate && recoveryGate < start,
+    );
     assert.ok(start < readiness && readiness < nginx);
     assert.equal(audit.outcome, 'succeeded');
     assert.equal(audit.newSlot, 'blue');
@@ -231,8 +295,13 @@ test('readiness failure preserves the active slot and removes only the candidate
         .slice(beforeFailure)
         .map((call) => call.join(' '));
     assert.equal(state.activeSlot, 'blue');
-    assert.equal(failureCalls.some((line) => line.includes('run --rm --no-deps recovery-gate')), false,
-        'ordinary deployment must not mutate live deletion state');
+    assert.equal(
+        failureCalls.some((line) =>
+            line.includes('run --rm --no-deps recovery-gate'),
+        ),
+        false,
+        'ordinary deployment must not mutate live deletion state',
+    );
     assert.equal(
         failureCalls.some(
             (line) =>

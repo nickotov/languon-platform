@@ -25,6 +25,9 @@ export function createAuditRecord({
         workflowRun: manifest.workflowRun,
         images: manifest.images,
         dictionaryJobs: manifest.dictionaryJobs,
+        ...(manifest.pronunciationAudio
+            ? { pronunciationAudio: manifest.pronunciationAudio }
+            : {}),
         migration: {
             compatibility: manifest.migration.compatibility,
             ledger: migration?.ledger ?? manifest.migration.ledger,

@@ -19,29 +19,73 @@ export class AccountPurgeService {
         if (!claim) return false;
         try {
             const owner = await this.store.inspectOwner(claim);
-            if (owner.activeJobs > 0 || owner.objects.some((object) => object.cleanupState !== 'complete')) {
-                await this.store.retry({ ...claim, now: input.now, workerId: input.workerId });
+            if (
+                owner.activeJobs > 0 ||
+                owner.objects.some(
+                    (object) => object.cleanupState !== 'complete',
+                )
+            ) {
+                await this.store.retry({
+                    ...claim,
+                    now: input.now,
+                    workerId: input.workerId,
+                });
                 return true;
             }
             for (const object of owner.objects) {
                 input.signal.throwIfAborted();
-                if (!(await this.store.renew({ ...claim, now: new Date(), workerId: input.workerId }))) {
+                if (
+                    !(await this.store.renew({
+                        ...claim,
+                        now: new Date(),
+                        workerId: input.workerId,
+                    }))
+                ) {
                     throw new Error('Account purge lease was lost.');
                 }
-                await this.storage.removeAllVersions(object.objectKey, input.signal);
+                if (object.kind === 'pronunciation-audio') {
+                    if (!this.storage.removeAudioVersions)
+                        throw new Error(
+                            'Pronunciation storage is unavailable; purge cannot verify physical audio.',
+                        );
+                    await this.storage.removeAudioVersions(
+                        object.reference,
+                        input.signal,
+                    );
+                } else {
+                    await this.storage.removeAllVersions(
+                        object.objectKey,
+                        input.signal,
+                    );
+                }
             }
             input.signal.throwIfAborted();
-            if (!(await this.store.finish({ ...claim, now: new Date(), workerId: input.workerId }))) {
-                throw new Error('Account purge lease was lost before finalization.');
+            if (
+                !(await this.store.finish({
+                    ...claim,
+                    now: new Date(),
+                    workerId: input.workerId,
+                }))
+            ) {
+                throw new Error(
+                    'Account purge lease was lost before finalization.',
+                );
             }
             return true;
         } catch (error) {
-            await this.store.retry({ ...claim, now: new Date(), workerId: input.workerId });
+            await this.store.retry({
+                ...claim,
+                now: new Date(),
+                workerId: input.workerId,
+            });
             throw error;
         }
     }
 
-    public releaseWorkerLeases(input: { now: Date; workerId: string }): Promise<void> {
+    public releaseWorkerLeases(input: {
+        now: Date;
+        workerId: string;
+    }): Promise<void> {
         return this.store.releaseWorkerLeases(input);
     }
 }

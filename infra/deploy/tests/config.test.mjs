@@ -118,18 +118,28 @@ test('sanitized deployment examples accept the full batch output envelope', asyn
 });
 
 test('document storage requires a separate account purge version-delete key', async () => {
-    const config = parseEnvironmentFile(await readFile('infra/deploy/stage.env.example', 'utf8'));
-    assert.throws(() => assertDeployConfig('stage', {
-        ...config,
-        DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
-    }), /dedicated version-delete storage credentials/);
-    assert.throws(() => assertDeployConfig('stage', {
-        ...config,
-        DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
-        ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID: 'same',
-        ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY: 'separate-secret',
-        DICTIONARY_DOCUMENT_STORAGE_WORKER_ACCESS_KEY_ID: 'same',
-    }), /must not reuse/);
+    const config = parseEnvironmentFile(
+        await readFile('infra/deploy/stage.env.example', 'utf8'),
+    );
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...config,
+                DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
+            }),
+        /dedicated version-delete storage credentials/,
+    );
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...config,
+                DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
+                ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID: 'same',
+                ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY: 'separate-secret',
+                DICTIONARY_DOCUMENT_STORAGE_WORKER_ACCESS_KEY_ID: 'same',
+            }),
+        /must not reuse/,
+    );
 });
 
 test('production requires a dedicated dictionary worker database user', () => {
@@ -173,6 +183,39 @@ test('production requires a dedicated dictionary worker database user', () => {
     );
 });
 
+test('audio storage requires independent purge, worker and API keys', async () => {
+    const config = parseEnvironmentFile(
+        await readFile('infra/deploy/stage.env.example', 'utf8'),
+    );
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...config,
+                DICTIONARY_AUDIO_STORAGE: 's3',
+            }),
+        /distinct API, worker, and purge/,
+    );
+    const ready = {
+        ...config,
+        DICTIONARY_AUDIO_STORAGE: 's3',
+        DICTIONARY_AUDIO_S3_API_ACCESS_KEY_ID: 'api',
+        DICTIONARY_AUDIO_S3_API_SECRET_ACCESS_KEY: 'test',
+        DICTIONARY_AUDIO_S3_WORKER_ACCESS_KEY_ID: 'worker',
+        DICTIONARY_AUDIO_S3_WORKER_SECRET_ACCESS_KEY: 'test',
+        ACCOUNT_PURGE_AUDIO_STORAGE_ACCESS_KEY_ID: 'purge',
+        ACCOUNT_PURGE_AUDIO_STORAGE_SECRET_ACCESS_KEY: 'test',
+    };
+    assert.doesNotThrow(() => assertDeployConfig('stage', ready));
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...ready,
+                ACCOUNT_PURGE_AUDIO_STORAGE_ACCESS_KEY_ID: 'worker',
+            }),
+        /distinct API, worker, and purge/,
+    );
+});
+
 test('deployment config must be a private regular file', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'deploy-config-'));
     const configPath = path.join(directory, 'deploy.env');
@@ -196,8 +239,7 @@ test('admin binding fails closed outside loopback', () => {
         DICTIONARY_HMAC_SECRET: 'c',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
-        ACCOUNT_PURGE_DATABASE_URL:
-            'postgres://purge:p@stage-postgres:5432/db',
+        ACCOUNT_PURGE_DATABASE_URL: 'postgres://purge:p@stage-postgres:5432/db',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@stage-postgres:5432/db',
         MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',
@@ -222,8 +264,7 @@ test('admin origin and password file fail closed', () => {
         DICTIONARY_HMAC_SECRET: 'c',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
-        ACCOUNT_PURGE_DATABASE_URL:
-            'postgres://purge:p@stage-postgres:5432/db',
+        ACCOUNT_PURGE_DATABASE_URL: 'postgres://purge:p@stage-postgres:5432/db',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@stage-postgres:5432/db',
         MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',
@@ -282,8 +323,7 @@ test('dictionary worker process and drain settings are bounded before deployment
         DICTIONARY_HMAC_SECRET: 'c',
         AUTH_WEBAUTHN_RP_ID: 'example.test',
         DATABASE_URL: 'postgres://u:p@stage-postgres:5432/db',
-        ACCOUNT_PURGE_DATABASE_URL:
-            'postgres://purge:p@stage-postgres:5432/db',
+        ACCOUNT_PURGE_DATABASE_URL: 'postgres://purge:p@stage-postgres:5432/db',
         DICTIONARY_WORKER_DATABASE_URL:
             'postgres://worker:p@stage-postgres:5432/db',
         MIGRATION_DATABASE_URL: 'postgres://m:p@stage-postgres:5432/db',

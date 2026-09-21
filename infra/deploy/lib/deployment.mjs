@@ -88,7 +88,14 @@ async function writeJsonAtomic(filePath, value, mode = 0o600) {
     await rename(temporary, filePath);
 }
 
-export function assertDictionaryWorkerDatabasePrivileges(privileges) {
+export function assertDictionaryWorkerDatabasePrivileges(
+    privileges,
+    { audio = false } = {},
+) {
+    if (audio && privileges.audio !== true)
+        throw new Error(
+            'Pronunciation worker lacks its required least-privilege audio capabilities.',
+        );
     if (
         privileges.jobs !== true ||
         privileges.proposals !== true ||
@@ -146,6 +153,22 @@ const forbiddenTablePrivileges = [
     'TRIGGER',
 ];
 
+export const DICTIONARY_AUDIO_WORKER_DATABASE_PRIVILEGE_QUERY = `select (
+    ${['dictionary_audio_assets', 'dictionary_audio_jobs', 'dictionary_audio_bindings', 'dictionary_audio_blobs'].map((table) => tablePrivilegeExpression(table, ['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'and')).join(' and ')}
+    and has_column_privilege(current_user, 'public.users', 'id', 'SELECT')
+    and has_column_privilege(current_user, 'public.users', 'status', 'SELECT')
+    and ${['id', 'owner_id', 'lifecycle', 'source_language_tag', 'target_language_tag'].map((column) => `has_column_privilege(current_user, 'public.dictionaries', '${column}', 'SELECT')`).join(' and ')}
+    and ${['translation', 'example', 'example_translation', 'lifecycle', 'version', 'example_enabled_override', 'example_translation_enabled_override', 'example_language_role_override'].map((column) => `has_column_privilege(current_user, 'public.dictionary_cards', '${column}', 'SELECT')`).join(' and ')}
+    and not exists (select 1 from information_schema.columns where table_schema='public' and table_name in ('users','dictionaries') and (
+        has_column_privilege(current_user, 'public.' || table_name, column_name, 'UPDATE') or
+        has_column_privilege(current_user, 'public.' || table_name, column_name, 'INSERT') or
+        has_column_privilege(current_user, 'public.' || table_name, column_name, 'REFERENCES')
+        or (has_column_privilege(current_user, 'public.' || table_name, column_name, 'SELECT') and
+            ((table_name='users' and column_name not in ('id','status')) or
+             (table_name='dictionaries' and column_name not in ('id','owner_id','lifecycle','source_language_tag','target_language_tag'))))
+    ))
+) as audio`;
+
 export const DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY = `select
     ${tablePrivilegeExpression('dictionary_generation_jobs', ['SELECT', 'UPDATE'], 'and')} as "jobs",
     ${tablePrivilegeExpression('dictionary_generation_proposals', ['SELECT', 'INSERT', 'UPDATE'], 'and')} as "proposals",
@@ -173,7 +196,7 @@ export const DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY = `select
         where table_schema = 'public'
           and table_name = 'dictionary_cards'
           and (
-              (column_name not in ('id', 'dictionary_id', 'source', 'sort_key')
+        (column_name not in ('id', 'dictionary_id', 'source', 'sort_key', 'translation', 'example', 'example_translation', 'lifecycle', 'version', 'example_enabled_override', 'example_translation_enabled_override', 'example_language_role_override')
                   and has_column_privilege(current_user, 'public.dictionary_cards', column_name, 'SELECT'))
               or has_column_privilege(current_user, 'public.dictionary_cards', column_name, 'INSERT')
               or has_column_privilege(current_user, 'public.dictionary_cards', column_name, 'UPDATE')
@@ -278,6 +301,40 @@ export class Deployment {
                 dictionaryJobs.apiEnqueued.join(','),
             DICTIONARY_JOB_WEB_READABLE_FORMATS:
                 dictionaryJobs.webReadable.join(','),
+            // Release metadata gates operator configuration; historical releases
+            // cannot activate speech through a leftover server environment value.
+            DICTIONARY_AUDIO_PLAYBACK_ENABLED:
+                this.manifest.pronunciationAudio?.apiReadable.includes(1) &&
+                this.config.DICTIONARY_AUDIO_PLAYBACK_ENABLED === 'true'
+                    ? 'true'
+                    : 'false',
+            DICTIONARY_AUDIO_GENERATION_ENABLED:
+                this.manifest.pronunciationAudio?.apiEnqueued.includes(1) &&
+                this.config.DICTIONARY_AUDIO_GENERATION_ENABLED === 'true'
+                    ? 'true'
+                    : 'false',
+            DICTIONARY_AUDIO_API_ENQUEUED_VERSIONS: (
+                this.manifest.pronunciationAudio?.apiEnqueued ?? []
+            ).join(','),
+            DICTIONARY_AUDIO_WORKER_PROCESSABLE_VERSIONS: (
+                this.manifest.pronunciationAudio?.workerProcessable ?? []
+            ).join(','),
+            DICTIONARY_AUDIO_MAX_CHARACTERS: String(
+                this.manifest.pronunciationAudio?.speechBudget.maxCharacters ??
+                    2000,
+            ),
+            DICTIONARY_AUDIO_MAX_COST_UNITS_PER_CLIP: String(
+                this.manifest.pronunciationAudio?.speechBudget
+                    .maxCostUnitsPerClip ?? 10000,
+            ),
+            DICTIONARY_AUDIO_OWNER_BUDGET_UNITS: String(
+                this.manifest.pronunciationAudio?.speechBudget
+                    .ownerDailyCostUnits ?? 10000,
+            ),
+            DICTIONARY_AUDIO_GLOBAL_BUDGET_UNITS: String(
+                this.manifest.pronunciationAudio?.speechBudget
+                    .globalDailyCostUnits ?? 100000,
+            ),
             ...dictionaryBudgetEnvironment,
         };
     }
@@ -387,9 +444,22 @@ export class Deployment {
     }
 
     async runAccountRecoveryGate(slot) {
-        const files = [path.join(this.composeDirectory, 'recovery-gate.compose.yaml')];
-        if (this.environment === 'production') files.push(path.join(this.composeDirectory, 'recovery-gate.production.compose.yaml'));
-        await this.compose(files, `${this.projectPrefix}-recovery-gate`, ['run', '--rm', '--no-deps', 'recovery-gate'], slot);
+        const files = [
+            path.join(this.composeDirectory, 'recovery-gate.compose.yaml'),
+        ];
+        if (this.environment === 'production')
+            files.push(
+                path.join(
+                    this.composeDirectory,
+                    'recovery-gate.production.compose.yaml',
+                ),
+            );
+        await this.compose(
+            files,
+            `${this.projectPrefix}-recovery-gate`,
+            ['run', '--rm', '--no-deps', 'recovery-gate'],
+            slot,
+        );
     }
 
     async verifyBackupGate() {
@@ -503,11 +573,19 @@ export class Deployment {
             path.join(this.composeDirectory, 'apps.compose.yaml'),
             path.join(this.composeDirectory, 'apps.production.compose.yaml'),
         ];
+        const audio = Boolean(
+            this.manifest.pronunciationAudio?.workerProcessable.length,
+        );
         const source = [
             "import postgres from 'postgres';",
             'const sql = postgres(process.env.DICTIONARY_WORKER_DATABASE_URL, { connect_timeout: 5, idle_timeout: 1, max: 1, onnotice: () => undefined });',
             'try {',
             `  const [privileges] = await sql.unsafe(${JSON.stringify(DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY)});`,
+            ...(audio
+                ? [
+                      `  Object.assign(privileges, (await sql.unsafe(${JSON.stringify(DICTIONARY_AUDIO_WORKER_DATABASE_PRIVILEGE_QUERY)}))[0]);`,
+                  ]
+                : []),
             '  process.stdout.write(JSON.stringify(privileges));',
             '} finally { await sql.end({ timeout: 1 }); }',
         ].join('\n');
@@ -535,7 +613,7 @@ export class Deployment {
                 'Dictionary worker database privilege preflight returned an invalid result.',
             );
         }
-        assertDictionaryWorkerDatabasePrivileges(privileges);
+        assertDictionaryWorkerDatabasePrivileges(privileges, { audio });
     }
 
     async startSlot(slot) {
@@ -749,6 +827,17 @@ export class Deployment {
                 state.current,
                 { direction },
             );
+            if (
+                this.manifest.pronunciationAudio?.apiEnqueued.length &&
+                (this.config.DICTIONARY_AUDIO_GENERATION_ENABLED !== 'true' ||
+                    this.config.DICTIONARY_AUDIO_PLAYBACK_ENABLED !== 'true' ||
+                    this.config.DICTIONARY_AUDIO_PROVIDER !== 'kie' ||
+                    this.config.DICTIONARY_AUDIO_STORAGE !== 's3')
+            ) {
+                throw new Error(
+                    'Pronunciation activation requires explicit playback, generation, live provider and private S3 configuration.',
+                );
+            }
             if (
                 (
                     this.manifest.dictionaryJobs ??

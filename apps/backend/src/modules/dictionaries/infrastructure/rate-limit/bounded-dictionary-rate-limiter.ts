@@ -9,6 +9,26 @@ import type {
 } from '../../application/ports/dictionary-rate-limiter';
 
 const policies = {
+    'audio-request': {
+        limit: 60,
+        scope: 'dictionary.audio.request',
+        windowMs: 60_000,
+    },
+    'audio-status': {
+        limit: 120,
+        scope: 'dictionary.audio.status',
+        windowMs: 60_000,
+    },
+    'audio-content': {
+        limit: 60,
+        scope: 'dictionary.audio.content',
+        windowMs: 60_000,
+    },
+    'audio-content-global': {
+        limit: 300,
+        scope: 'dictionary.audio.content.global',
+        windowMs: 60_000,
+    },
     'card-write': {
         limit: 60,
         scope: 'dictionary.card-write',
@@ -54,6 +74,10 @@ export class BoundedDictionaryRateLimiter implements DictionaryRateLimiter {
     public async consume(input: {
         key: string;
         scope:
+            | 'audio-request'
+            | 'audio-status'
+            | 'audio-content'
+            | 'audio-content-global'
             | 'card-write'
             | 'fork-global'
             | 'fork-owner'

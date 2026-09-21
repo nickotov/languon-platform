@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:e88d848310a72c33
+// @user-flow-revision dictionary-platform sha256:73ead61d40129f94
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(

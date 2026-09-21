@@ -1,4 +1,9 @@
 import type { PostgresJsDatabase } from '@languon/database';
+import {
+    DictionaryAudioService,
+    type DictionaryAudioDependencies,
+} from '../application/dictionary-audio-service';
+import { createDictionaryAudioRoutes } from '../interface/http/dictionary-audio.routes';
 import type { OpenAPIHono } from '@hono/zod-openapi';
 
 import type { databaseSchema } from '../../../infrastructure/database/schema';
@@ -32,6 +37,10 @@ import { BoundedDictionaryRateLimiter } from './rate-limit/bounded-dictionary-ra
 import { dictionaryImportPairsGenerationFormat } from '../domain/generation';
 
 export interface DictionaryCompositionDependencies {
+    audio?: Omit<
+        DictionaryAudioDependencies,
+        'authentication' | 'dictionaries' | 'clock' | 'rateLimiter'
+    >;
     accessTokens: AccessTokenSigner;
     authentication: Pick<AuthenticationService, 'requireActiveSession'>;
     clock: DictionaryClock;
@@ -48,6 +57,7 @@ export interface DictionaryCompositionDependencies {
 }
 
 export interface DictionaryComposition {
+    audioService: DictionaryAudioService | undefined;
     routes: OpenAPIHono;
     generationService: DictionaryGenerationService;
     documentService: DictionaryDocumentService | undefined;
@@ -79,6 +89,19 @@ export function createDictionaryComposition(
         dependencies.ids,
         dependencies.generationProviderBudget,
     );
+    const dictionaryStore = new DrizzleDictionaryStore(
+        dependencies.database,
+        dependencies.ids,
+    );
+    const audioService = dependencies.audio
+        ? new DictionaryAudioService({
+              ...dependencies.audio,
+              rateLimiter: dictionaryRateLimiter,
+              authentication,
+              dictionaries: dictionaryStore,
+              clock: dependencies.clock,
+          })
+        : undefined;
     const service = new DictionaryService({
         authentication,
         clock: dependencies.clock,
@@ -89,12 +112,17 @@ export function createDictionaryComposition(
             ? { generationStore }
             : {}),
         rateLimiter: dictionaryRateLimiter,
-        store: new DrizzleDictionaryStore(
-            dependencies.database,
-            dependencies.ids,
-        ),
+        store: dictionaryStore,
     });
     const generationService = new DictionaryGenerationService({
+        ...(dependencies.audio
+            ? {
+                  pronunciationAudio: {
+                      playbackAvailable: dependencies.audio.playbackEnabled,
+                      generationAvailable: dependencies.audio.generationEnabled,
+                  },
+              }
+            : {}),
         authentication,
         capabilities: dependencies.generation ?? {
             acceptableFormats: [],
@@ -138,6 +166,14 @@ export function createDictionaryComposition(
             service: generationService,
         }),
     );
+    if (audioService)
+        routes.route(
+            '/',
+            createDictionaryAudioRoutes({
+                service: audioService,
+                policy: dependencies.policy,
+            }),
+        );
     if (documentService)
         routes.route(
             '/',
@@ -147,6 +183,7 @@ export function createDictionaryComposition(
             }),
         );
     return {
+        audioService,
         documentService,
         generationService,
         routes,

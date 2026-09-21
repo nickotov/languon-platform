@@ -145,15 +145,77 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
 });
 
 test('account purge worker has isolated database and version-delete credentials', async () => {
-    const apps = await readFile('infra/deploy/compose/apps.compose.yaml', 'utf8');
-    const worker = apps.slice(apps.indexOf('    account-purge-worker:'), apps.indexOf('    web:'));
+    const apps = await readFile(
+        'infra/deploy/compose/apps.compose.yaml',
+        'utf8',
+    );
+    const worker = apps.slice(
+        apps.indexOf('    account-purge-worker:'),
+        apps.indexOf('    web:'),
+    );
     assert.match(worker, /account-purge-command\.js/);
     assert.match(worker, /ACCOUNT_PURGE_DATABASE_URL/);
     assert.match(worker, /ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID/);
     assert.doesNotMatch(worker, /^\s+DATABASE_URL:/m);
-    assert.doesNotMatch(worker, /AUTH_|REDIS_URL|DICTIONARY_GENERATION_MODEL_API_KEY|edge:/);
-    const role = await readFile('infra/deploy/sql/account-purge-worker-role.sql', 'utf8');
+    assert.doesNotMatch(
+        worker,
+        /AUTH_|REDIS_URL|DICTIONARY_GENERATION_MODEL_API_KEY|edge:/,
+    );
+    const role = await readFile(
+        'infra/deploy/sql/account-purge-worker-role.sql',
+        'utf8',
+    );
     assert.match(role, /REVOKE ALL PRIVILEGES ON ALL TABLES/);
-    assert.match(role, /GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs/);
+    assert.match(
+        role,
+        /GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs/,
+    );
     assert.doesNotMatch(role, /GRANT ALL|GRANT INSERT/);
+});
+
+test('paid speech authority belongs only to the dictionary worker and retained storage uses per-role credentials', async () => {
+    const apps = await readFile(
+        'infra/deploy/compose/apps.compose.yaml',
+        'utf8',
+    );
+    const shared = apps.slice(
+        apps.indexOf('x-audio-environment:'),
+        apps.indexOf('x-app-defaults:'),
+    );
+    const api = apps.slice(
+        apps.indexOf('    backend:'),
+        apps.indexOf('    dictionary-worker:'),
+    );
+    const worker = apps.slice(
+        apps.indexOf('    dictionary-worker:'),
+        apps.indexOf('    account-purge-worker:'),
+    );
+    const purge = apps.slice(
+        apps.indexOf('    account-purge-worker:'),
+        apps.indexOf('    web:'),
+    );
+    for (const restricted of [shared, api, purge]) {
+        assert.doesNotMatch(
+            restricted,
+            /DICTIONARY_AUDIO_KIE_API_KEY|DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS|DICTIONARY_AUDIO_DOWNLOAD_HOSTS/,
+        );
+    }
+    for (const name of [
+        'DICTIONARY_AUDIO_KIE_API_KEY',
+        'DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS',
+        'DICTIONARY_AUDIO_DOWNLOAD_HOSTS',
+    ]) {
+        assert.match(worker, new RegExp(`${name}:`));
+    }
+    assert.match(api, /DICTIONARY_AUDIO_RETAINED_S3_API_CONFIGURATIONS/);
+    assert.doesNotMatch(
+        api,
+        /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS|ACCOUNT_PURGE_AUDIO_RETAINED_S3_CONFIGURATIONS/,
+    );
+    assert.match(worker, /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS/);
+    assert.match(purge, /ACCOUNT_PURGE_AUDIO_RETAINED_S3_CONFIGURATIONS/);
+    assert.doesNotMatch(
+        purge,
+        /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS|DICTIONARY_AUDIO_RETAINED_S3_API_CONFIGURATIONS/,
+    );
 });

@@ -13,7 +13,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "frame-ancestors 'none'",
+                        value: "frame-ancestors 'none'; media-src 'self' blob:",
                     },
                     { key: 'X-Frame-Options', value: 'DENY' },
                 ],

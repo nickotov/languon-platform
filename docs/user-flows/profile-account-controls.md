@@ -93,7 +93,7 @@ journal; it is never a staging or production restore guarantee.
 ## API verification
 
 - `PATCH /users/me/handle` accepts an active bearer session and `{ "handle":
-  "Learner_1" }`, returning `{ "handle": "learner_1" }`. Duplicate canonical
+"Learner_1" }`, returning `{ "handle": "learner_1" }`. Duplicate canonical
   handles and concurrent state changes return bounded 409 responses. Existing
   users can have a null handle.
 - `POST /users/me/deletion` accepts `{}` with an active, recently authenticated
@@ -108,6 +108,14 @@ journal; it is never a staging or production restore guarantee.
   session. Ordinary Restore cannot cancel a scheduled deletion.
 
 ## System verification
+
+When pronunciation audio is enabled, deletion also cancels audio work, waits for
+bounded local writer leases, and removes inventoried bytea/S3 audio (including
+physical versions) before dropping its SQL inventory. The audio and document
+namespaces are dispatched separately. Provider-side retention is separate from
+application erasure; a provider outage does not authorize new downloads or
+indefinitely block removal of already inventoried local objects. Disposable
+audio-purge integration tests cover this alongside the browser account journey.
 
 The account purge worker is required in staging and production, not just
 development. Its dedicated database and storage credentials are distinct from

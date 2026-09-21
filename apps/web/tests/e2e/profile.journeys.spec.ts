@@ -1,11 +1,12 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 // @user-flow-revision magic-profile-page sha256:f7704d5de8f100d7
-// @user-flow-revision profile-account-controls sha256:ef6ecfea3957024d
+// @user-flow-revision profile-account-controls sha256:09a09af20e4db889
 
 const password = 'E2e!Profile-password-2026';
 const changedPassword = 'E2e!Profile-new-password-2026';
-const runId = process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
+const runId =
+    process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
 
 function syntheticEmail(testInfo: TestInfo): string {
     return `profile-e2e-${runId}-${testInfo.workerIndex}@example.test`;
@@ -14,7 +15,11 @@ function syntheticEmail(testInfo: TestInfo): string {
 function captureBrowserErrors(page: Page) {
     const errors: string[] = [];
     page.on('console', (message) => {
-        if (message.type() === 'error' && !message.text().startsWith('Failed to load resource:')) errors.push(message.text());
+        if (
+            message.type() === 'error' &&
+            !message.text().startsWith('Failed to load resource:')
+        )
+            errors.push(message.text());
     });
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
@@ -27,7 +32,9 @@ function captureBrowserErrors(page: Page) {
 }
 
 // @user-flow magic-profile-page/profile-empty-coming-soon-and-header-navigation
-test('shows truthful account placeholders and the shared application header', async ({ page }, testInfo) => {
+test('shows truthful account placeholders and the shared application header', async ({
+    page,
+}, testInfo) => {
     const assertNoBrowserErrors = captureBrowserErrors(page);
     const email = syntheticEmail(testInfo);
 
@@ -39,14 +46,26 @@ test('shows truthful account placeholders and the shared application header', as
     await page.getByRole('button', { name: 'Verify email' }).click();
 
     await expect(page).toHaveURL(/\/profile$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Account settings' })).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Interface language' })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Full name' })).toBeDisabled();
+    await expect(
+        page.getByRole('heading', { level: 1, name: 'Account settings' }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('combobox', { name: 'Interface language' }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('textbox', { name: 'Full name' }),
+    ).toBeDisabled();
     await expect(page.getByText(email)).toBeVisible();
-    await expect(page.locator('dl').getByText('Not available yet')).toHaveCount(2);
+    await expect(page.locator('dl').getByText('Not available yet')).toHaveCount(
+        2,
+    );
 
     await page.getByRole('tab', { name: /Billing/ }).click();
-    await expect(page.getByText('No payment method is stored. Billing is coming soon.').first()).toBeVisible();
+    await expect(
+        page
+            .getByText('No payment method is stored. Billing is coming soon.')
+            .first(),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Compare plans' }).click();
     await expect(page.getByText('Subscription is coming soon.')).toBeVisible();
 
@@ -54,16 +73,28 @@ test('shows truthful account placeholders and the shared application header', as
     const themeToggle = page.getByTestId('theme-toggle');
     await themeToggle.click();
     await expect(html).toHaveAttribute('data-theme', /^(light|dark)$/);
-    expect((await page.context().cookies()).some((cookie) => cookie.name === 'languon-theme')).toBe(true);
+    expect(
+        (await page.context().cookies()).some(
+            (cookie) => cookie.name === 'languon-theme',
+        ),
+    ).toBe(true);
 
     await page.setViewportSize({ height: 800, width: 320 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+    ).toBe(true);
 
     await page.setViewportSize({ height: 900, width: 640 });
     await page.evaluate(() => {
         document.body.style.zoom = '200%';
     });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+    ).toBe(true);
     await page.evaluate(() => {
         document.body.style.zoom = '';
     });
@@ -74,7 +105,9 @@ test('shows truthful account placeholders and the shared application header', as
 });
 
 // @user-flow profile-account-controls/profile-handle-security-and-removal
-test('saves a unique handle, keeps Security real and email mock honest, then schedules removal', async ({ page }, testInfo) => {
+test('saves a unique handle, keeps Security real and email mock honest, then schedules removal', async ({
+    page,
+}, testInfo) => {
     const assertNoBrowserErrors = captureBrowserErrors(page);
     const email = `account-controls-${runId}-${testInfo.workerIndex}@example.test`;
     const handle = `learner_${Date.now()}_${testInfo.workerIndex}`;
@@ -87,36 +120,71 @@ test('saves a unique handle, keeps Security real and email mock honest, then sch
     await page.getByRole('button', { name: 'Verify email' }).click();
     await expect(page).toHaveURL(/\/profile$/);
 
-    await page.getByRole('textbox', { name: 'Username' }).fill(handle.toUpperCase());
+    await page
+        .getByRole('textbox', { name: 'Username' })
+        .fill(handle.toUpperCase());
     await page.getByRole('button', { name: 'Save username' }).click();
-    await expect(page.getByRole('heading', { name: `@${handle}` })).toBeVisible();
-    await expect(page.getByRole('link', { name: `@${handle}` })).toHaveAttribute('href', '/profile');
+    await expect(
+        page.getByRole('heading', { name: `@${handle}` }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('link', { name: `@${handle}` }),
+    ).toHaveAttribute('href', '/profile');
 
     await page.getByRole('tab', { name: /Security/ }).click();
-    await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Passkeys', exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Sign-in methods' })).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Change password' }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Passkeys', exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Sign-in methods' }),
+    ).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Google/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Yandex/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Apple/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Connect' })).toHaveCount(3);
-    for (const connect of await page.getByRole('button', { name: 'Connect' }).all()) await expect(connect).toBeDisabled();
-    await expect(page.getByRole('button', { name: 'Add passkey' })).toBeVisible();
+    for (const connect of await page
+        .getByRole('button', { name: 'Connect' })
+        .all())
+        await expect(connect).toBeDisabled();
+    await expect(
+        page.getByRole('button', { name: 'Add passkey' }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Request email change' }).click();
-    await expect(page.getByText(/no email was sent and your address was not changed/i)).toBeVisible();
+    await expect(
+        page.getByText(/no email was sent and your address was not changed/i),
+    ).toBeVisible();
     await page.getByLabel('Current password', { exact: true }).fill(password);
-    await page.getByLabel('New password', { exact: true }).fill(changedPassword);
+    await page
+        .getByLabel('New password', { exact: true })
+        .fill(changedPassword);
     await page.getByRole('button', { name: 'Change password' }).click();
-    await expect(page.getByText(/Password changed. Your other sessions were signed out./)).toBeVisible();
+    await expect(
+        page.getByText(
+            /Password changed. Your other sessions were signed out./,
+        ),
+    ).toBeVisible();
 
     await page.getByRole('tab', { name: /Account/ }).click();
     await page.getByRole('button', { name: 'Delete account' }).click();
-    await expect(page.getByRole('button', { name: 'Schedule account removal' })).toBeDisabled();
-    await page.getByRole('textbox', { name: 'Type DELETE to confirm' }).fill('DELETE');
-    await expect(page.getByRole('button', { name: 'Schedule account removal' })).toBeDisabled();
+    await expect(
+        page.getByRole('button', { name: 'Schedule account removal' }),
+    ).toBeDisabled();
+    await page
+        .getByRole('textbox', { name: 'Type DELETE to confirm' })
+        .fill('DELETE');
+    await expect(
+        page.getByRole('button', { name: 'Schedule account removal' }),
+    ).toBeDisabled();
     await page.getByRole('checkbox', { name: /access ends now/i }).check();
-    await page.getByRole('button', { name: 'Schedule account removal' }).click();
-    await expect(page.getByRole('heading', { name: 'Account removal scheduled' })).toBeVisible();
+    await page
+        .getByRole('button', { name: 'Schedule account removal' })
+        .click();
+    await expect(
+        page.getByRole('heading', { name: 'Account removal scheduled' }),
+    ).toBeVisible();
     await expect(page.getByText(/Access has ended/)).toBeVisible();
     assertNoBrowserErrors();
 });

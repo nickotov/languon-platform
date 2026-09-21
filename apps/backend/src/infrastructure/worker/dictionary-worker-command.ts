@@ -5,6 +5,13 @@ import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
+import { DictionaryAudioWorker } from '../../modules/dictionaries/application/dictionary-audio-worker';
+import { DictionaryWorkerCoordinator } from '../../modules/dictionaries/application/dictionary-worker-coordinator';
+import { createDictionaryAudioAdapters } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
+import { dictionaryAudioBudget } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-budget';
+import { loadDictionaryAudioEnvironment } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
+import { DrizzleDictionaryAudioStore } from '../../modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-store';
+import { DrizzleDictionaryAudioMeasurements } from '../../modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-measurements';
 
 import { databaseSchema } from '../database/schema';
 import { createCardProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-proposal-generators';
@@ -77,6 +84,29 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         maxConnections: environment.databaseMaxConnections,
     });
     const database = createDrizzleDatabase(sql, databaseSchema);
+    const audioDeployed = ['staging', 'production'].includes(
+        process.env.APP_ENV ?? 'development',
+    );
+    const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
+        deployed: audioDeployed,
+        role: 'worker',
+    });
+    const audioAdapters = createDictionaryAudioAdapters({
+        role: 'worker',
+        environment: audioEnvironment,
+        database,
+    });
+    const audioWorker = new DictionaryAudioWorker({
+        store: new DrizzleDictionaryAudioStore(
+            database,
+            audioEnvironment.fingerprintSecret,
+        ),
+        storage: audioAdapters.storage,
+        providers: audioAdapters.providers,
+        clock: { now: () => new Date() },
+        budget: dictionaryAudioBudget(audioEnvironment),
+        generationEnabled: audioEnvironment.generationEnabled,
+    });
     const provider = createCardProposalGenerator(
         environment.provider.mode === 'mastra'
             ? {
@@ -206,13 +236,35 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         providerBudget: environment.providerBudget,
         supportedFormats: environment.supportedFormats,
     });
+    const audioSupported =
+        !audioDeployed ||
+        process.env.DICTIONARY_AUDIO_WORKER_PROCESSABLE_VERSIONS?.split(
+            ',',
+        ).includes('1');
+    const coordinator = new DictionaryWorkerCoordinator(service, audioWorker);
+    const audioMeasurements = new DrizzleDictionaryAudioMeasurements(database);
+    const coordinatedService = {
+        processNext: (input: Parameters<typeof service.processNext>[0]) =>
+            audioSupported
+                ? coordinator.processNext(input)
+                : service.processNext(input),
+        readiness: service.readiness.bind(service),
+        releaseWorkerLeases: service.releaseWorkerLeases.bind(service),
+        observeOperationalState: service.observeOperationalState.bind(service),
+        ...(audioSupported
+            ? {
+                  observeAudioState: ({ signal }: { signal: AbortSignal }) =>
+                      audioMeasurements.observe({ signal, now: new Date() }),
+              }
+            : {}),
+    };
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
         drainTimeoutMs: environment.drainTimeoutMs,
         includeProviderReadiness: environment.includeProviderReadiness,
         pollIntervalMs: environment.pollIntervalMs,
         readinessTimeoutMs: environment.readinessTimeoutMs,
-        service,
+        service: coordinatedService,
         supportedFormats: environment.supportedFormats,
         workerId: createWorkerId(environment.releaseSha),
     });
@@ -222,6 +274,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             await runtime.readiness();
         } finally {
             documentS3Client?.destroy();
+            audioAdapters.close();
             await sql.end({ timeout: 1 });
         }
         return;
@@ -245,6 +298,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         process.removeListener('SIGINT', shutdown);
         process.removeListener('SIGTERM', shutdown);
         documentS3Client?.destroy();
+        audioAdapters.close();
         await sql.end({ timeout: 5 });
     }
 }

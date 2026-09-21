@@ -153,6 +153,14 @@ LANGUON_DEPLOY_E2E=true node --test infra/deploy/tests/local-rehearsal.journeys.
 
 ## System verification
 
+Pronunciation audio has separate optional release metadata and speech budgets;
+absent metadata disables its API/worker activation. Use the release manifest CLI's
+`--pronunciation-audio` JSON input when deliberately enabling it. First expand
+with dormant audio-capable API, worker and purge versions; activate only when the
+rollback floor also understands audio jobs and physical-object cleanup. Audio is
+hosted in the existing worker process and does not add an image identity. Never
+reuse proposal token budgets or document-quarantine storage credentials for audio.
+
 While a local deployment is active:
 
 1. Request `http://127.0.0.1:18080/healthz`. Expect an HTTP `308` redirect to

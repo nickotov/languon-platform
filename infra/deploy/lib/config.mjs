@@ -147,13 +147,25 @@ export function assertDeployConfig(environment, config) {
             `Deployment config is missing required keys: ${missing.join(', ')}.`,
         );
     }
-    if (config.ACCOUNT_DELETION_JOURNAL_WRITER_ACCESS_KEY_ID === config.ACCOUNT_DELETION_JOURNAL_READER_ACCESS_KEY_ID) {
-        throw new Error('Deletion journal writer and recovery reader require separate credentials.');
+    if (
+        config.ACCOUNT_DELETION_JOURNAL_WRITER_ACCESS_KEY_ID ===
+        config.ACCOUNT_DELETION_JOURNAL_READER_ACCESS_KEY_ID
+    ) {
+        throw new Error(
+            'Deletion journal writer and recovery reader require separate credentials.',
+        );
     }
     if (config.ACCOUNT_DELETION_JOURNAL_ENDPOINT) {
         const endpoint = new URL(config.ACCOUNT_DELETION_JOURNAL_ENDPOINT);
-        if (endpoint.protocol !== 'https:' || endpoint.origin !== config.ACCOUNT_DELETION_JOURNAL_ENDPOINT || endpoint.username || endpoint.password) {
-            throw new Error('Deletion journal endpoint must be a credential-free HTTPS origin.');
+        if (
+            endpoint.protocol !== 'https:' ||
+            endpoint.origin !== config.ACCOUNT_DELETION_JOURNAL_ENDPOINT ||
+            endpoint.username ||
+            endpoint.password
+        ) {
+            throw new Error(
+                'Deletion journal endpoint must be a credential-free HTTPS origin.',
+            );
         }
     }
     if (!/^\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2}$/.test(config.EDGE_SUBNET)) {
@@ -208,15 +220,43 @@ export function assertDeployConfig(environment, config) {
     }
     const dictionaryProviderMode =
         config.DICTIONARY_GENERATION_PROVIDER_MODE || 'unavailable';
+    if (config.DICTIONARY_AUDIO_STORAGE === 's3') {
+        const audioKeys = [
+            config.DICTIONARY_AUDIO_S3_API_ACCESS_KEY_ID,
+            config.DICTIONARY_AUDIO_S3_WORKER_ACCESS_KEY_ID,
+            config.ACCOUNT_PURGE_AUDIO_STORAGE_ACCESS_KEY_ID,
+        ];
+        const audioSecrets = [
+            config.DICTIONARY_AUDIO_S3_API_SECRET_ACCESS_KEY,
+            config.DICTIONARY_AUDIO_S3_WORKER_SECRET_ACCESS_KEY,
+            config.ACCOUNT_PURGE_AUDIO_STORAGE_SECRET_ACCESS_KEY,
+        ];
+        if (
+            audioKeys.some((value) => !value) ||
+            audioSecrets.some((value) => !value) ||
+            new Set(audioKeys).size !== audioKeys.length
+        ) {
+            throw new Error(
+                'Pronunciation storage requires distinct API, worker, and purge storage credentials.',
+            );
+        }
+    }
     if ((config.DICTIONARY_DOCUMENT_STORAGE_MODE || 'unavailable') === 's3') {
         const purgeKey = config.ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID;
         const purgeSecret = config.ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY;
         if (!purgeKey || !purgeSecret) {
-            throw new Error('Account purge requires dedicated version-delete storage credentials when document storage is enabled.');
+            throw new Error(
+                'Account purge requires dedicated version-delete storage credentials when document storage is enabled.',
+            );
         }
-        if (purgeKey === config.DICTIONARY_DOCUMENT_STORAGE_WORKER_ACCESS_KEY_ID ||
-            purgeKey === config.DICTIONARY_DOCUMENT_STORAGE_API_ACCESS_KEY_ID) {
-            throw new Error('Account purge storage key must not reuse dictionary API or worker credentials.');
+        if (
+            purgeKey ===
+                config.DICTIONARY_DOCUMENT_STORAGE_WORKER_ACCESS_KEY_ID ||
+            purgeKey === config.DICTIONARY_DOCUMENT_STORAGE_API_ACCESS_KEY_ID
+        ) {
+            throw new Error(
+                'Account purge storage key must not reuse dictionary API or worker credentials.',
+            );
         }
     }
     if (!['unavailable', 'mastra'].includes(dictionaryProviderMode)) {
@@ -370,7 +410,8 @@ export function assertDeployConfig(environment, config) {
             }
         }
         const applicationDatabaseUser = new URL(config.DATABASE_URL).username;
-        const purgeDatabaseUser = new URL(config.ACCOUNT_PURGE_DATABASE_URL).username;
+        const purgeDatabaseUser = new URL(config.ACCOUNT_PURGE_DATABASE_URL)
+            .username;
         const workerDatabaseUser = new URL(
             config.DICTIONARY_WORKER_DATABASE_URL,
         ).username;
@@ -385,8 +426,17 @@ export function assertDeployConfig(environment, config) {
                 'DICTIONARY_WORKER_DATABASE_URL must use a dedicated production database user.',
             );
         }
-        if (!purgeDatabaseUser || [applicationDatabaseUser, workerDatabaseUser, migrationDatabaseUser].includes(purgeDatabaseUser)) {
-            throw new Error('ACCOUNT_PURGE_DATABASE_URL must use a dedicated production database user.');
+        if (
+            !purgeDatabaseUser ||
+            [
+                applicationDatabaseUser,
+                workerDatabaseUser,
+                migrationDatabaseUser,
+            ].includes(purgeDatabaseUser)
+        ) {
+            throw new Error(
+                'ACCOUNT_PURGE_DATABASE_URL must use a dedicated production database user.',
+            );
         }
         const redis = new URL(config.REDIS_URL);
         if (redis.protocol !== 'rediss:') {

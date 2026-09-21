@@ -82,7 +82,24 @@ import {
     dictionarySettingsTable,
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
+export {
+    dictionaryAudioAssetsTable,
+    dictionaryAudioJobsTable,
+    dictionaryAudioBindingsTable,
+    dictionaryAudioBlobsTable,
+} from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
+import {
+    dictionaryAudioAssetsTable,
+    dictionaryAudioJobsTable,
+    dictionaryAudioBindingsTable,
+    dictionaryAudioBlobsTable,
+} from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
+
 export const databaseSchema = {
+    dictionaryAudioAssets: dictionaryAudioAssetsTable,
+    dictionaryAudioJobs: dictionaryAudioJobsTable,
+    dictionaryAudioBindings: dictionaryAudioBindingsTable,
+    dictionaryAudioBlobs: dictionaryAudioBlobsTable,
     accountDeletionRequests: accountDeletionRequestsTable,
     adminAuditEvents: adminAuditEventsTable,
     adminMemberships: adminMembershipsTable,

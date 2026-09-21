@@ -1,0 +1,14 @@
+.control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sys-space-2);
+    margin-block: var(--sys-space-1);
+    font-weight: 400;
+    white-space: normal;
+}
+.status {
+    color: var(--sys-color-text-secondary);
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+}

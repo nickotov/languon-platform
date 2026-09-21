@@ -35,6 +35,7 @@ e2e_scenarios:
     - document-generation-cleans-original-and-commits-final-review
     - quizlet-import-and-export-round-trip
 related_features:
+    - dictionary-pronunciation-audio
     - inline-ai-card-authoring
     - user-authentication
     - web-i18n-support
@@ -44,6 +45,11 @@ related_features:
 # Dictionary Platform
 
 ## What this verifies
+
+Optional owner playback of saved source, translation and example fields is covered
+by [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md). Its
+independent capability gate does not alter card authorship or revisions; shared
+reader playback is not included.
 
 This current guide covers the complete Dictionary Platform feature: an
 authenticated owner creates and manages a private dictionary, configures

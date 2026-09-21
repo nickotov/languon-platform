@@ -1,4 +1,8 @@
 import { readFile } from 'node:fs/promises';
+import {
+    assertPronunciationAudioCompatibility,
+    normalizePronunciationAudio,
+} from './pronunciation-audio.mjs';
 
 export const IMAGE_NAMES = ['backend', 'web', 'admin', 'migrator'];
 export const SHA_PATTERN = /^[a-f0-9]{40}$/;
@@ -245,6 +249,9 @@ export function assertDictionaryJobRollbackCompatibility(
     rollbackFloor,
     { direction = 'forward' } = {},
 ) {
+    assertPronunciationAudioCompatibility(candidate, rollbackFloor, {
+        direction,
+    });
     if (!['forward', 'rollback'].includes(direction)) {
         throw new Error('Dictionary job compatibility direction is invalid.');
     }
@@ -424,6 +431,13 @@ export function validateReleaseManifest(input, expectations = {}) {
         createdAt: input.createdAt,
         migration: { compatibility, ledger: input.migration.ledger },
         dictionaryJobs,
+        ...(input.pronunciationAudio === undefined
+            ? {}
+            : {
+                  pronunciationAudio: normalizePronunciationAudio(
+                      input.pronunciationAudio,
+                  ),
+              }),
         images: Object.fromEntries(
             IMAGE_NAMES.map((service) => [service, input.images[service]]),
         ),

@@ -10,6 +10,10 @@ import { createGracefulShutdown } from './infrastructure/server/graceful-shutdow
 import { createAdministrationComposition } from './modules/administration/infrastructure/administration-composition';
 import { createAuthenticationComposition } from './modules/authentication/infrastructure/authentication-composition';
 import { createDictionaryComposition } from './modules/dictionaries/infrastructure/dictionary-composition';
+import { createDictionaryAudioAdapters } from './modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
+import { dictionaryAudioBudget } from './modules/dictionaries/infrastructure/audio/dictionary-audio-budget';
+import { loadDictionaryAudioEnvironment } from './modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
+import { DrizzleDictionaryAudioStore } from './modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-store';
 import { createDictionaryDocumentS3Client } from './modules/dictionaries/infrastructure/document/s3-document-client';
 import { S3DictionaryDocumentUploadStorage } from './modules/dictionaries/infrastructure/document/s3-dictionary-document-storage';
 import { UserProfileService } from './modules/users/application/user-profile-service';
@@ -28,19 +32,33 @@ if (existsSync(localEnvironmentFile)) {
 }
 
 const environment = loadEnvironment();
-const deployed = environment.APP_ENV === 'staging' || environment.APP_ENV === 'production';
-const journalEnvironment = deployed ? loadAccountDeletionJournalEnvironment(process.env, true) : undefined;
-const deletionJournalClient = journalEnvironment ? new S3Client({
-    credentials: { accessKeyId: journalEnvironment.accessKeyId, secretAccessKey: journalEnvironment.secretAccessKey },
-    ...(journalEnvironment.endpoint ? { endpoint: journalEnvironment.endpoint } : {}),
-    forcePathStyle: journalEnvironment.forcePathStyle,
-    maxAttempts: 2,
-    region: journalEnvironment.region,
-    requestHandler: { requestTimeout: 5_000, connectionTimeout: 3_000 },
-}) : undefined;
-const deletionJournal = journalEnvironment && deletionJournalClient
-    ? new S3AccountDeletionRecoveryJournal({ ...journalEnvironment, client: deletionJournalClient })
-    : new InMemoryAccountDeletionRecoveryJournal();
+const deployed =
+    environment.APP_ENV === 'staging' || environment.APP_ENV === 'production';
+const journalEnvironment = deployed
+    ? loadAccountDeletionJournalEnvironment(process.env, true)
+    : undefined;
+const deletionJournalClient = journalEnvironment
+    ? new S3Client({
+          credentials: {
+              accessKeyId: journalEnvironment.accessKeyId,
+              secretAccessKey: journalEnvironment.secretAccessKey,
+          },
+          ...(journalEnvironment.endpoint
+              ? { endpoint: journalEnvironment.endpoint }
+              : {}),
+          forcePathStyle: journalEnvironment.forcePathStyle,
+          maxAttempts: 2,
+          region: journalEnvironment.region,
+          requestHandler: { requestTimeout: 5_000, connectionTimeout: 3_000 },
+      })
+    : undefined;
+const deletionJournal =
+    journalEnvironment && deletionJournalClient
+        ? new S3AccountDeletionRecoveryJournal({
+              ...journalEnvironment,
+              client: deletionJournalClient,
+          })
+        : new InMemoryAccountDeletionRecoveryJournal();
 const authentication = await createAuthenticationComposition(environment);
 const administration = createAdministrationComposition(
     environment,
@@ -54,8 +72,39 @@ const dictionaryDocumentS3Client =
               environment.DICTIONARY_DOCUMENT_STORAGE,
           )
         : undefined;
+const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
+    deployed,
+    role: 'api',
+});
+if (
+    deployed &&
+    audioEnvironment.generationEnabled &&
+    !process.env.DICTIONARY_AUDIO_API_ENQUEUED_VERSIONS?.split(',').includes(
+        '1',
+    )
+) {
+    throw new Error(
+        'Pronunciation generation requires release-compatible API enqueue metadata.',
+    );
+}
+const audioAdapters = createDictionaryAudioAdapters({
+    role: 'api',
+    environment: audioEnvironment,
+    database: authentication.productDependencies.database,
+});
 const dictionaries = createDictionaryComposition({
     ...authentication.productDependencies,
+    audio: {
+        fingerprintSecret: audioEnvironment.fingerprintSecret,
+        store: new DrizzleDictionaryAudioStore(
+            authentication.productDependencies.database,
+        ),
+        storage: audioAdapters.storage,
+        provider: audioAdapters.provider,
+        budget: dictionaryAudioBudget(audioEnvironment),
+        playbackEnabled: audioEnvironment.playbackEnabled,
+        generationEnabled: audioEnvironment.generationEnabled,
+    },
     generation: {
         acceptableFormats: environment.DICTIONARY_JOB_API_ACCEPTABLE_FORMATS,
         cancellableFormats: environment.DICTIONARY_JOB_API_CANCELLABLE_FORMATS,
@@ -88,13 +137,21 @@ const app = createApp({
         accessTokens: authentication.productDependencies.accessTokens,
         authentication: authentication.productDependencies.authentication,
         policy: authentication.options.policy,
-        profiles: new UserProfileService(new DrizzleUsersUnitOfWork(authentication.productDependencies.database)),
+        profiles: new UserProfileService(
+            new DrizzleUsersUnitOfWork(
+                authentication.productDependencies.database,
+            ),
+        ),
         deletions: new AccountDeletionService({
             authentication: authentication.productDependencies.authentication,
             clock: authentication.productDependencies.clock,
             journal: deletionJournal,
-            preparation: new DrizzleOwnerDeletionPreparation(authentication.productDependencies.database),
-            store: new DrizzleAccountDeletionStore(authentication.productDependencies.database),
+            preparation: new DrizzleOwnerDeletionPreparation(
+                authentication.productDependencies.database,
+            ),
+            store: new DrizzleAccountDeletionStore(
+                authentication.productDependencies.database,
+            ),
         }),
     },
     dictionaries: dictionaries.routes,
@@ -119,6 +176,7 @@ const server = serve(
 
 const performShutdown = createGracefulShutdown({
     closeResources: async () => {
+        audioAdapters.close();
         dictionaryDocumentS3Client?.destroy();
         deletionJournalClient?.destroy();
         await authentication.close();

@@ -400,6 +400,13 @@ export const ForkSharedDictionaryResponseSchema = z
 
 export const ReadDictionaryGenerationCapabilitiesResponseSchema = z
     .object({
+        pronunciationAudio: z
+            .object({
+                playbackAvailable: z.boolean(),
+                generationAvailable: z.boolean(),
+            })
+            .strict()
+            .optional(),
         singleCardGeneration: z.object({ available: z.boolean() }).strict(),
         cardAuthoringGeneration: z.object({ available: z.boolean() }).strict(),
         pastedTermsGeneration: z.object({ available: z.boolean() }).strict(),

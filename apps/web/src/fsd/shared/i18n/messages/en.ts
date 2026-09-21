@@ -127,6 +127,20 @@ export const profileFeatureMessages = {
 } as const;
 
 export const en = {
+    'dictionary.audio.playField': 'Play {field}',
+    'dictionary.audio.stopField': 'Stop {field}',
+    'dictionary.audio.play': 'Play',
+    'dictionary.audio.stop': 'Stop',
+    'dictionary.audio.loading': 'Preparing audio…',
+    'dictionary.audio.playing': 'Playing',
+    'dictionary.audio.stopped': 'Stopped',
+    'dictionary.audio.ready': 'Ready — press Play',
+    'dictionary.audio.failed': 'Audio failed. Press Play to retry.',
+    'dictionary.audio.unavailable': 'Audio is unavailable.',
+    'dictionary.audio.fixture':
+        'Development sound — not a pronunciation recording.',
+    'dictionary.audio.speed': 'Playback speed',
+    'dictionary.audio.normal': 'Normal',
     ...profileFeatureMessages,
     'theme.label': 'Theme',
     'theme.option.light': 'Light',

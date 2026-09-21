@@ -1,4 +1,9 @@
 import {
+    DictionaryAudioFieldSchema,
+    DictionaryAudioRequestSchema,
+    DictionaryAudioResponseSchema,
+    type DictionaryAudioField,
+    type DictionaryAudioRequest,
     AcceptDictionaryGenerationJobRequestSchema,
     AcceptDictionaryGenerationJobResponseSchema,
     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
@@ -921,3 +926,106 @@ function generationJobAction<TBody, TResponse>(
 }
 
 export type DictionaryApi = typeof dictionaryApi;
+
+export const dictionaryAudioApi = {
+    request: (
+        token: string,
+        dictionaryId: string,
+        cardId: string,
+        body: DictionaryAudioRequest,
+        signal: AbortSignal,
+    ) =>
+        ownerRequest(
+            token,
+            `/dictionaries/${dictionaryId}/cards/${cardId}/audio`,
+            {
+                body,
+                bodySchema: DictionaryAudioRequestSchema,
+                method: 'POST',
+                responseSchema: DictionaryAudioResponseSchema,
+                signal,
+            },
+        ),
+    status: (
+        token: string,
+        dictionaryId: string,
+        cardId: string,
+        field: DictionaryAudioField,
+        signal: AbortSignal,
+    ) =>
+        ownerRequest(
+            token,
+            `/dictionaries/${dictionaryId}/cards/${cardId}/audio/${DictionaryAudioFieldSchema.parse(field)}`,
+            {
+                responseSchema: DictionaryAudioResponseSchema,
+                signal,
+            },
+        ),
+    bytes: async (
+        token: string,
+        dictionaryId: string,
+        cardId: string,
+        field: DictionaryAudioField,
+        assetId: string,
+        signal: AbortSignal,
+    ): Promise<Blob> => {
+        const response = await fetch(
+            `${apiUrl}/dictionaries/${dictionaryId}/cards/${cardId}/audio/${DictionaryAudioFieldSchema.parse(field)}/content?${new URLSearchParams({ assetId })}`,
+            {
+                cache: 'no-store',
+                credentials: 'include',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'audio/mpeg, audio/wav',
+                },
+                signal,
+            },
+        );
+        if (!response.ok) {
+            const parsed = DictionaryErrorResponseSchema.safeParse(
+                await readJson(response),
+            );
+            throw new DictionaryApiError(
+                response.status,
+                parsed.success
+                    ? parsed.data.error
+                    : {
+                          code: 'service_unavailable',
+                          correlationId: 'audio-response',
+                          message: 'Audio unavailable.',
+                      },
+            );
+        }
+        const maximumBytes = 5 * 1024 * 1024;
+        const type = response.headers
+            .get('content-type')
+            ?.split(';')[0]
+            ?.trim();
+        if (
+            !['audio/mpeg', 'audio/wav', 'audio/x-wav'].includes(type ?? '') ||
+            Number(response.headers.get('content-length')) > maximumBytes ||
+            !response.body
+        ) {
+            await response.body?.cancel();
+            throw new Error('Invalid audio response');
+        }
+        const reader = response.body.getReader();
+        const chunks: ArrayBuffer[] = [];
+        let bytes = 0;
+        try {
+            while (true) {
+                const chunk = await reader.read();
+                if (chunk.done) break;
+                bytes += chunk.value.byteLength;
+                if (bytes > maximumBytes)
+                    throw new Error('Audio response too large');
+                chunks.push(Uint8Array.from(chunk.value).buffer);
+            }
+            if (bytes === 0) throw new Error('Empty audio response');
+            return new Blob(chunks, { type: type! });
+        } finally {
+            await reader.cancel().catch(() => undefined);
+            reader.releaseLock();
+        }
+    },
+};

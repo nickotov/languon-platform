@@ -3,6 +3,7 @@ import type {
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
+import type { ReactNode } from 'react';
 
 import {
     authorshipMessageKey,
@@ -34,6 +35,7 @@ export function DictionaryCardList({
     onLifecycle,
     onMove,
     pending,
+    renderAudio,
 }: {
     cards: readonly DictionaryCard[];
     dictionary: OwnedDictionary;
@@ -46,6 +48,10 @@ export function DictionaryCardList({
     onLifecycle(card: DictionaryCard): void;
     onMove(card: DictionaryCard, direction: -1 | 1): void;
     pending: boolean;
+    renderAudio?(
+        card: DictionaryCard,
+        field: 'source' | 'translation' | 'example' | 'exampleTranslation',
+    ): ReactNode;
 }) {
     const { t } = useI18n();
     if (cards.length === 0) {
@@ -72,7 +78,8 @@ export function DictionaryCardList({
                                     )}
                                     lang={dictionary.sourceLanguage}
                                 >
-                                    {card.values.source}
+                                    <span>{card.values.source}</span>
+                                    {renderAudio?.(card, 'source')}
                                 </strong>
                                 <span aria-hidden='true'>→</span>
                                 <strong
@@ -82,13 +89,15 @@ export function DictionaryCardList({
                                     )}
                                     lang={dictionary.targetLanguage}
                                 >
-                                    {card.values.translation}
+                                    <span>{card.values.translation}</span>
+                                    {renderAudio?.(card, 'translation')}
                                 </strong>
                             </div>
                             <OptionalFields
                                 card={card}
                                 dictionary={dictionary}
                                 languages={languages}
+                                renderAudio={renderAudio}
                             />
                             <Badge>
                                 {t(authorshipMessageKey(card.authorship))}
@@ -178,10 +187,17 @@ function OptionalFields({
     card,
     dictionary,
     languages,
+    renderAudio,
 }: {
     card: DictionaryCard;
     dictionary: OwnedDictionary;
     languages: readonly LanguageCatalogEntry[];
+    renderAudio?:
+        | ((
+              card: DictionaryCard,
+              field: 'example' | 'exampleTranslation',
+          ) => ReactNode)
+        | undefined;
 }) {
     const { locale, t } = useI18n();
     const fields = [
@@ -244,7 +260,11 @@ function OptionalFields({
                         dir={languageDirection(languages, field.lang)}
                         lang={field.lang}
                     >
-                        {field.value}
+                        <span>{field.value}</span>
+                        {field.key === 'example' ||
+                        field.key === 'exampleTranslation'
+                            ? renderAudio?.(card, field.key)
+                            : null}
                     </dd>
                 </div>
             ))}

@@ -1,0 +1,1 @@
+ALTER TABLE "dictionary_audio_assets" ADD COLUMN "last_accessed_at" timestamp with time zone NOT NULL;

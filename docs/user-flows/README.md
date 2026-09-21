@@ -25,6 +25,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [User Authentication](./user-authentication.md) — signup, verification,
   sessions, passwords, recovery, logout, and passkeys through the browser and
   HTTP API.
+- [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md) — private
+  owner playback, on-demand generation and cached audio.
 - [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
   card authoring, lifecycle recovery, unlisted reading, and private forks.
 - [Admin User Management](./admin-user-management.md) — owner authentication,

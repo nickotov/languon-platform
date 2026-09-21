@@ -136,6 +136,12 @@ export default defineConfig({
                 AUTH_WEBAUTHN_RP_ID: webUrl.hostname,
                 BACKEND_PORT: backendPort,
                 DATABASE_URL: databaseUrl,
+                DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
+                DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
+                DICTIONARY_AUDIO_PROVIDER: 'fixture',
+                DICTIONARY_AUDIO_STORAGE: 'postgres',
+                DICTIONARY_AUDIO_FINGERPRINT_SECRET:
+                    'audio-e2e-only-fingerprint-secret-32bytes',
                 DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_CANCELLABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_DISCARDABLE_FORMATS: dictionaryJobFormats,
@@ -191,6 +197,12 @@ export default defineConfig({
                 DICTIONARY_DOCUMENT_STORAGE_WORKER_SECRET_ACCESS_KEY:
                     documentWorkerSecretKey,
                 DICTIONARY_WORKER_DATABASE_URL: databaseUrl,
+                DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
+                DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
+                DICTIONARY_AUDIO_PROVIDER: 'fixture',
+                DICTIONARY_AUDIO_STORAGE: 'postgres',
+                DICTIONARY_AUDIO_FINGERPRINT_SECRET:
+                    'audio-e2e-only-fingerprint-secret-32bytes',
                 DICTIONARY_WORKER_CONCURRENCY: '1',
                 DICTIONARY_WORKER_DRAIN_TIMEOUT_MS: '5000',
                 DICTIONARY_WORKER_POLL_INTERVAL_MS: '50',

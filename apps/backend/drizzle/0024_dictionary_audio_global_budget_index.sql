@@ -1,0 +1,1 @@
+CREATE INDEX "dictionary_audio_jobs_created_at_idx" ON "dictionary_audio_jobs" USING btree ("created_at");

@@ -148,6 +148,34 @@
       "when": 1789454568906,
       "tag": "0020_windy_pretty_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790015486231,
+      "tag": "0021_dictionary_pronunciation_audio",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790015656853,
+      "tag": "0022_dictionary_audio_retention",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790016035179,
+      "tag": "0023_dictionary_audio_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790017210091,
+      "tag": "0024_dictionary_audio_global_budget_index",
+      "breakpoints": true
     }
   ]
 }

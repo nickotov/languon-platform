@@ -202,10 +202,15 @@ export class DrizzleAdministrationStore implements AdministrationStore {
         return this.mutateUser(input, 'restore');
     }
 
-    public cancelUserDeletion(input: AdminUserMutationInput): Promise<AdminUserDetail> {
+    public cancelUserDeletion(
+        input: AdminUserMutationInput,
+    ): Promise<AdminUserDetail> {
         return this.database.transaction(async (transaction) => {
             await transaction.execute(
                 sql`select pg_advisory_xact_lock(${activeOwnerMutationLock})`,
+            );
+            await transaction.execute(
+                sql`select pg_advisory_xact_lock(hashtextextended(${input.targetUserId}, 76021941))`,
             );
             const [clock] = await transaction
                 .select({ value: sql<string>`clock_timestamp()::text` })
@@ -222,7 +227,9 @@ export class DrizzleAdministrationStore implements AdministrationStore {
             const [request] = await transaction
                 .select({ state: accountDeletionRequestsTable.state })
                 .from(accountDeletionRequestsTable)
-                .where(eq(accountDeletionRequestsTable.userId, input.targetUserId))
+                .where(
+                    eq(accountDeletionRequestsTable.userId, input.targetUserId),
+                )
                 .limit(1)
                 .for('update');
             if (request?.state !== 'pending') {
@@ -271,10 +278,15 @@ export class DrizzleAdministrationStore implements AdministrationStore {
                     state: 'cancelled',
                     updatedAt: operationTime,
                 })
-                .where(and(
-                    eq(accountDeletionRequestsTable.userId, input.targetUserId),
-                    eq(accountDeletionRequestsTable.state, 'pending'),
-                ))
+                .where(
+                    and(
+                        eq(
+                            accountDeletionRequestsTable.userId,
+                            input.targetUserId,
+                        ),
+                        eq(accountDeletionRequestsTable.state, 'pending'),
+                    ),
+                )
                 .returning({ userId: accountDeletionRequestsTable.userId });
             if (changed.length !== 1) {
                 throw new AdminDeletionCancellationUnavailableError();
@@ -286,11 +298,13 @@ export class DrizzleAdministrationStore implements AdministrationStore {
                     updatedAt: operationTime,
                     version: row.version + 1,
                 })
-                .where(and(
-                    eq(usersTable.id, row.id),
-                    eq(usersTable.status, 'deletion_pending'),
-                    eq(usersTable.version, row.version),
-                ))
+                .where(
+                    and(
+                        eq(usersTable.id, row.id),
+                        eq(usersTable.status, 'deletion_pending'),
+                        eq(usersTable.version, row.version),
+                    ),
+                )
                 .returning({ id: usersTable.id });
             if (updated.length !== 1) throw new AdminUserStateConflictError();
             await transaction.insert(adminAuditEventsTable).values(
@@ -326,6 +340,9 @@ export class DrizzleAdministrationStore implements AdministrationStore {
         return this.database.transaction(async (transaction) => {
             await transaction.execute(
                 sql`select pg_advisory_xact_lock(${activeOwnerMutationLock})`,
+            );
+            await transaction.execute(
+                sql`select pg_advisory_xact_lock(hashtextextended(${input.targetUserId}, 76021941))`,
             );
             const [clock] = await transaction
                 .select({ value: sql<string>`clock_timestamp()::text` })
@@ -638,7 +655,9 @@ function mapUserSummary(row: {
 function auditSelection() {
     return {
         action: adminAuditEventsTable.action,
-        actorEmail: sql<string | null>`(select ue.email from ${userEmailsTable} ue where ue.user_id = ${adminAuditEventsTable.actorUserId} and ue.is_primary = true limit 1)`,
+        actorEmail: sql<
+            string | null
+        >`(select ue.email from ${userEmailsTable} ue where ue.user_id = ${adminAuditEventsTable.actorUserId} and ue.is_primary = true limit 1)`,
         actorUserId: adminAuditEventsTable.actorUserId,
         afterStatus: adminAuditEventsTable.afterStatus,
         afterVersion: adminAuditEventsTable.afterVersion,

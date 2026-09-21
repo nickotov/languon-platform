@@ -7,6 +7,10 @@ export interface DictionaryRateLimiter {
     consume(input: {
         key: string;
         scope:
+            | 'audio-request'
+            | 'audio-status'
+            | 'audio-content'
+            | 'audio-content-global'
             | 'card-write'
             | 'fork-global'
             | 'fork-owner'

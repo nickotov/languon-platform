@@ -43,6 +43,10 @@ import {
 } from '@/fsd/features/dictionary-batch-generation';
 import { DictionaryCardList } from '@/fsd/features/dictionary-card-list';
 import {
+    DictionaryAudioControl,
+    useDictionaryAudio,
+} from '@/fsd/features/dictionary-audio';
+import {
     type IdempotencyAttempt,
     retainIdempotencyAttempt,
 } from '@/fsd/features/dictionary-library';
@@ -273,6 +277,28 @@ export function DictionaryEditor({
             ),
         staleTime: 30_000,
     });
+    const audio = useDictionaryAudio(
+        dictionaryId,
+        requestWithSession,
+        JSON.stringify([
+            dictionary.data?.dictionary.version,
+            dictionary.data?.dictionary.settingsVersion,
+            dictionary.data?.dictionary.lifecycle,
+            cardLifecycle,
+            search,
+            editing === 'new' ? 'new' : editing?.id,
+            generationTarget?.cardId,
+            generationCapabilities.data?.pronunciationAudio?.playbackAvailable,
+            cards.data?.pages.flatMap((page) =>
+                page.data.map((card) => [
+                    card.id,
+                    card.version,
+                    card.settingsVersion,
+                    card.lifecycle,
+                ]),
+            ),
+        ]),
+    );
     const authoringJob = useQuery({
         queryKey: ['dictionary-card-authoring-job', authoringJobId],
         queryFn: async ({ signal }) => {
@@ -2317,6 +2343,20 @@ export function DictionaryEditor({
                             </InlineAlert>
                         ) : null}
                         <DictionaryCardList
+                            renderAudio={(card, field) =>
+                                generationCapabilities.data?.pronunciationAudio
+                                    ?.playbackAvailable &&
+                                current.lifecycle === 'active' &&
+                                card.lifecycle === 'active' &&
+                                cardLifecycle === 'active' &&
+                                card.values[field]?.trim() ? (
+                                    <DictionaryAudioControl
+                                        card={card}
+                                        field={field}
+                                        playback={audio}
+                                    />
+                                ) : null
+                            }
                             cards={cardList}
                             dictionary={current}
                             languages={catalog}

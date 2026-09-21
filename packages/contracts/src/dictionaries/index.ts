@@ -1,4 +1,5 @@
 export * from './contracts';
+export * from './audio';
 export * from './card-authoring';
 export * from './errors';
 export * from './generation';

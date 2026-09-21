@@ -5,7 +5,10 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { RecentAuthenticationRequiredError } from '../../../../authentication/application/authentication-errors';
-import { authSecurityEventsTable, authSessionsTable } from '../../../../authentication/infrastructure/persistence/drizzle/schema';
+import {
+    authSecurityEventsTable,
+    authSessionsTable,
+} from '../../../../authentication/infrastructure/persistence/drizzle/schema';
 import { adminMembershipsTable } from '../../../../administration/infrastructure/persistence/drizzle/schema';
 import { dictionariesTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
 import { activeOwnerMutationLock } from '../../../../administration/infrastructure/persistence/drizzle/owner-lock';
@@ -33,7 +36,14 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
             // Membership mutations and cancellation acquire this lock before
             // touching the deletion request, preventing an owner-transfer race.
             await transaction.execute(
-                sql.raw('select pg_advisory_xact_lock(' + activeOwnerMutationLock + ')'),
+                sql.raw(
+                    'select pg_advisory_xact_lock(' +
+                        activeOwnerMutationLock +
+                        ')',
+                ),
+            );
+            await transaction.execute(
+                sql`select pg_advisory_xact_lock(hashtextextended(${input.userId}, 76021941))`,
             );
             const [request] = await transaction
                 .select({ state: accountDeletionRequestsTable.state })
@@ -47,9 +57,13 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
 
             // Match authentication's session-before-user row lock order.
             const [session] = await transaction
-                .select({ id: authSessionsTable.id, authenticatedAt: authSessionsTable.authenticatedAt,
+                .select({
+                    id: authSessionsTable.id,
+                    authenticatedAt: authSessionsTable.authenticatedAt,
                     absoluteExpiresAt: authSessionsTable.absoluteExpiresAt,
-                    revokedAt: authSessionsTable.revokedAt, rotatedAt: authSessionsTable.rotatedAt })
+                    revokedAt: authSessionsTable.revokedAt,
+                    rotatedAt: authSessionsTable.rotatedAt,
+                })
                 .from(authSessionsTable)
                 .where(
                     and(
@@ -62,15 +76,15 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
             if (!session) throw new RecentAuthenticationRequiredError();
 
             const [user] = await transaction
-                .select({ status: usersTable.status, version: usersTable.version })
+                .select({
+                    status: usersTable.status,
+                    version: usersTable.version,
+                })
                 .from(usersTable)
                 .where(eq(usersTable.id, input.userId))
                 .limit(1)
                 .for('update');
-            if (
-                !user ||
-                user.status !== 'active'
-            ) {
+            if (!user || user.status !== 'active') {
                 throw new AccountDeletionConflictError();
             }
             const [membership] = await transaction
@@ -83,17 +97,28 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                     ),
                 )
                 .limit(1);
-            if (membership) throw new AccountDeletionOwnerTransferRequiredError();
+            if (membership)
+                throw new AccountDeletionOwnerTransferRequiredError();
 
-            const [clock] = await transaction.select({ value: sql<string>`clock_timestamp()::text` })
-                .from(usersTable).where(eq(usersTable.id, input.userId)).limit(1);
+            const [clock] = await transaction
+                .select({ value: sql<string>`clock_timestamp()::text` })
+                .from(usersTable)
+                .where(eq(usersTable.id, input.userId))
+                .limit(1);
             const operationTime = new Date(clock?.value ?? Number.NaN);
-            if (Number.isNaN(operationTime.getTime()) || session.revokedAt || session.rotatedAt ||
+            if (
+                Number.isNaN(operationTime.getTime()) ||
+                session.revokedAt ||
+                session.rotatedAt ||
                 session.absoluteExpiresAt <= operationTime ||
-                session.authenticatedAt < new Date(operationTime.getTime() - 5 * 60_000)) {
+                session.authenticatedAt <
+                    new Date(operationTime.getTime() - 5 * 60_000)
+            ) {
                 throw new RecentAuthenticationRequiredError();
             }
-            const purgeAt = new Date(operationTime.getTime() + 30 * 24 * 60 * 60_000);
+            const purgeAt = new Date(
+                operationTime.getTime() + 30 * 24 * 60 * 60_000,
+            );
 
             await input.beforeCommit(user.version + 1, operationTime);
 
@@ -129,7 +154,9 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 await transaction
                     .update(accountDeletionRequestsTable)
                     .set(scheduleValues)
-                    .where(eq(accountDeletionRequestsTable.userId, input.userId));
+                    .where(
+                        eq(accountDeletionRequestsTable.userId, input.userId),
+                    );
             } else {
                 await transaction.insert(accountDeletionRequestsTable).values({
                     ...scheduleValues,
@@ -151,19 +178,24 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 );
             // Unlisted links have no bearer session. Revoke their locators in the
             // same commit so shared readers lose access immediately too.
-            await transaction.update(dictionariesTable).set({
-                shareKeyDigest: null,
-                shareKeyRotatedAt: null,
-                shareKeyVersion: null,
-                shareLocator: null,
-                updatedAt: operationTime,
-                visibility: 'private',
-                version: sql`${dictionariesTable.version} + 1`,
-            }).where(eq(dictionariesTable.ownerId, input.userId));
+            await transaction
+                .update(dictionariesTable)
+                .set({
+                    shareKeyDigest: null,
+                    shareKeyRotatedAt: null,
+                    shareKeyVersion: null,
+                    shareLocator: null,
+                    updatedAt: operationTime,
+                    visibility: 'private',
+                    version: sql`${dictionariesTable.version} + 1`,
+                })
+                .where(eq(dictionariesTable.ownerId, input.userId));
             await transaction.insert(authSecurityEventsTable).values({
                 correlationId: randomUUID(),
                 eventType: 'auth.account_deletion_scheduled',
-                expiresAt: new Date(operationTime.getTime() + 180 * 24 * 60 * 60_000),
+                expiresAt: new Date(
+                    operationTime.getTime() + 180 * 24 * 60 * 60_000,
+                ),
                 id: randomUUID(),
                 metadata: { purgeAt: purgeAt.toISOString() },
                 occurredAt: operationTime,

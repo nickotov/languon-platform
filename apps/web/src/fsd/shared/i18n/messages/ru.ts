@@ -1,6 +1,20 @@
 import { profileFeatureMessages, type Messages } from './en';
 
 export const ru = {
+    'dictionary.audio.playField': 'Прослушать: {field}',
+    'dictionary.audio.stopField': 'Остановить: {field}',
+    'dictionary.audio.play': 'Слушать',
+    'dictionary.audio.stop': 'Стоп',
+    'dictionary.audio.loading': 'Подготовка аудио…',
+    'dictionary.audio.playing': 'Воспроизведение',
+    'dictionary.audio.stopped': 'Остановлено',
+    'dictionary.audio.ready': 'Готово — нажмите «Слушать»',
+    'dictionary.audio.failed':
+        'Не удалось воспроизвести. Нажмите «Слушать» ещё раз.',
+    'dictionary.audio.unavailable': 'Аудио недоступно.',
+    'dictionary.audio.fixture': 'Тестовый звук — не запись произношения.',
+    'dictionary.audio.speed': 'Скорость воспроизведения',
+    'dictionary.audio.normal': 'Обычная',
     ...profileFeatureMessages,
     'theme.switchToLight': 'Переключить на светлую тему',
     'theme.switchToDark': 'Переключить на тёмную тему',
