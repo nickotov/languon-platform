@@ -22,13 +22,25 @@ recovery. Translate technical constraints into user consequences. Distinguish
 source inspection from executed verification; do not call behavior tested unless
 valid evidence supports it. Resolve specification/code conflicts explicitly.
 
-Return the brief in the response by default. If the user requests a saved brief,
-use their path or a linked `DESIGN_BRIEF.md` beside the active work record
-(for a single-file correction/improvement, use `<slug>.design-brief.md`). Do not
-create a feature or change its status merely to store a brief. Existing
-acceptance criteria remain authoritative; link their IDs rather than rewriting
-them. Do not modify application code, invoke external design tools/MCP, upload
-source, commit, or expand product scope as part of brief generation.
+Save the prompt and companion checklist by default in
+`docs/design-prompt/<descriptive-feature-slug>.md`. Reuse the existing document
+for that scope instead of creating duplicate briefs. Respect an explicit output
+path or response-only/read-only request; the default never overrides it. Add or
+update its entry in `docs/design-prompt/README.md` when saving in that directory.
+
+Outside the copyable prompt, include creation/update date, source revision and
+relevant working-tree changes, scope/status, verification limits, and relative
+Markdown links to the dedicated feature `FEATURE.md` and `EXEC_PLAN.md` (or
+correction/improvement record), relevant accepted ADRs, user-flow guide, and
+implementation/contracts/tests used as evidence. Link historical `EVIDENCE.md`
+when cited, without claiming those checks were rerun. If a source category does
+not exist or apply, say so; never invent a feature or ADR just to fill the list.
+Link the saved document from active work when applicable without reopening or
+changing the status of a completed feature merely to store a design brief.
+Existing acceptance criteria remain authoritative; reference their IDs.
+
+Do not modify application code, invoke external design tools/MCP, upload source,
+commit, or expand product scope as part of brief generation.
 
 Exit: identify source revision/working-tree state, evidence limitations, output
 location, and any behavior-affecting unknowns. If scope is unclear, ask a focused
@@ -85,16 +97,22 @@ checklist outside the copyable block. Use synthetic example data only. Exclude
 credentials, personal data, internal hostnames, raw source dumps, and security
 implementation details that the design does not need.
 
-Exit: return a copyable prompt, the source-grounded checklist, and a short list
-of decisions/access needed before treating it as design-ready. Do not block
-independent supported design work because one region remains unresolved.
+Exit: save the copyable prompt, source-grounded checklist, and decisions/access
+needed before treating it as design-ready, unless the requested output mode
+prohibits writes. Validate saved relative links and return the document link
+with a brief summary rather than repeating its full content in chat. For
+response-only requests, return the content directly. Do not block independent
+supported design work because one region remains unresolved.
 
 ## 4. Update and hand off without losing coverage
 
 For a correction, inspect the prior brief and changed behavior first. Preserve
 unchanged IDs; mark removed/superseded requirements with reasons rather than
-reusing their IDs. Return the changed rows and a short delta prompt by default;
-produce a complete replacement when requested. An invisible refactor needs no
+reusing their IDs. Update the saved canonical prompt/checklist and source metadata
+to current behavior, and include changed rows and a short delta prompt for an
+existing design. Do not leave obsolete instructions as the current full prompt.
+Respect response-only requests by returning the proposed update without writes.
+An invisible refactor needs no
 design update: explain that conclusion with source evidence, without filler.
 
 When the design returns, reconcile its coverage against these IDs before coding.
@@ -105,4 +123,6 @@ that inventory, product authorization, or browser/device verification.
 
 Finish when supported scope and relevant states are covered, suggestions and
 unknowns are clearly separated, the prompt is portable and sanitized, and any
-saved brief is linked from active work without claiming frontend completion.
+saved brief has valid source links and an index entry (when in the standard
+directory), and is linked from active work when applicable without claiming
+frontend completion.

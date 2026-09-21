@@ -161,6 +161,9 @@ Copy task-specific examples from the [prompt cookbook](./docs/agentic-prompts.md
 including the backend → `$design-brief` → Magic Patterns → frontend handoff.
 The explicitly invoked skill produces a grounded design prompt and UI checklist;
 it does not generate or upload a design automatically.
+Saved briefs live in [design prompts](./docs/design-prompt/README.md), including
+the [dictionary and AI-card UI prompt](./docs/design-prompt/dictionary-ai-cards.md),
+with links to their feature implementations and relevant ADRs.
 The [repository agent skills guide](./docs/agent-skills.md) documents local skill
 invocation, authority, provenance, and upstream license notices.
 The [workflow audit and rollout](./docs/agentic-workflow-audit.md) explains

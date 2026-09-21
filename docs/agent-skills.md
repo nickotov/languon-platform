@@ -38,8 +38,11 @@ post-delivery phase and does not call Magic Patterns or implement the UI.
 No external upstream skill is incorporated into this package.
 
 Invoke it after backend work when design is needed, with the active record and
-design-system reference. Output stays in the response unless you request a saved
-brief. Follow the [prompt cookbook](./agentic-prompts.md) for generation, updates,
+design-system reference. By default it saves a prompt/checklist under
+[docs/design-prompt](./design-prompt/README.md), with links to feature or other
+work records, implementation evidence, and relevant ADRs. Explicit response-only
+requests or alternate paths override that default. Follow the
+[prompt cookbook](./agentic-prompts.md) for generation, updates,
 design review, and frontend handoff. Use the existing integration/fidelity skills
 for the subsequent supplied-design implementation.
 

@@ -1,0 +1,273 @@
+# Dictionary and AI-assisted card UI
+
+Created: 2026-09-21
+Updated: 2026-09-21
+Status: Draft — supply the existing Magic Patterns design-system reference.
+Source revision: `9061e65` (clean working tree during the source analysis).
+
+This saves the previously generated brief for the owner dictionary/card journey.
+It is based on specifications, contracts, backend behavior, frontend components,
+and focused test source; the app and tests were **not rerun** for this brief.
+The current document-only patch does not change those implementation sources.
+Historical evidence below is provenance, not a claim of current verification.
+
+Scope: dictionary library/settings, manual card creation/editing, inline new-card
+AI suggestions, and separate existing-card AI review. Batch generation, document
+generation, import/export, and sharing retain secondary entry points; their full
+redesign is intentionally not covered here. No remote design has been created.
+
+## Dedicated feature and implementation references
+
+- Dictionary platform: [specification and acceptance criteria](../../.agent/features/dictionary-platform/FEATURE.md),
+  [implementation plan](../../.agent/features/dictionary-platform/EXEC_PLAN.md),
+  [historical verification](../../.agent/features/dictionary-platform/EVIDENCE.md),
+  [review](../../.agent/features/dictionary-platform/REVIEW.md).
+- Inline AI card authoring: [specification and acceptance criteria](../../.agent/features/inline-ai-card-authoring/FEATURE.md),
+  [implementation plan](../../.agent/features/inline-ai-card-authoring/EXEC_PLAN.md),
+  [historical verification](../../.agent/features/inline-ai-card-authoring/EVIDENCE.md),
+  [review](../../.agent/features/inline-ai-card-authoring/REVIEW.md).
+- Existing visual foundation: [Magic Patterns UI-kit feature](../../.agent/features/magic-patterns-ui-kit-auth-fidelity/FEATURE.md)
+  and [implementation plan](../../.agent/features/magic-patterns-ui-kit-auth-fidelity/EXEC_PLAN.md).
+- User journeys and failure behavior: [dictionary platform guide](../user-flows/dictionary-platform.md).
+
+### Relevant accepted ADRs
+
+- [ADR-0011: Dictionary persistence and composition](../adr/0011-dictionary-persistence-and-composition.md)
+  — ownership, card model, language-relative settings, authorship, archive/fork semantics.
+- [ADR-0012: Dictionary worker and document ingestion](../adr/0012-dictionary-worker-and-document-ingestion.md)
+  — durable jobs/proposals, explicit acceptance, cancellation, stale-state safeguards.
+- [ADR-0016: Runtime UI-kit authority](../adr/0016-runtime-ui-kit-authority.md)
+  — runtime components and real browser/device evidence.
+- [ADR-0017: Magic Patterns Tailwind UI contract](../adr/0017-magic-patterns-tailwind-ui-contract.md)
+  — preserve the accepted design-system contract rather than approximating it.
+
+## Copyable Magic Patterns prompt
+
+Copy only the following block into the existing Languon Magic Patterns project,
+or replace its design-system reference placeholder first. Repository links and
+technical provenance remain outside the portable prompt.
+
+```text
+Design the dictionary-management and AI-assisted vocabulary-card experience for Languon.
+
+APP CONTEXT
+Languon helps language learners build personal bilingual dictionaries. Users create a dictionary for a language pair, add vocabulary cards, and optionally use AI to improve card content while retaining control over what is saved.
+
+DESIGN SYSTEM
+Use the existing Languon design system:
+[USE THE DESIGN SYSTEM IN THIS PROJECT, OR INSERT ITS REFERENCE]
+
+Reuse its components, typography, spacing, colors, icons, radii, interaction states, and light/dark themes. Do not invent a separate visual language. If the system is unavailable, identify that gap rather than claiming fidelity.
+
+FEATURE GOAL
+Make this journey effortless:
+My dictionaries → Create dictionary → Open dictionary → Add card → Enter a word or phrase → Generate suggestions → Choose/edit useful content → Save card.
+
+Manual authoring must remain a first-class option. AI is an assistant, not an automatic publisher.
+
+Focus this design on the owner's dictionary library, dictionary workspace, settings, card creation/editing, and AI review. Existing bulk/import/sharing capabilities are secondary entry points, not the main visual focus.
+
+REQUIRED SCREENS AND BEHAVIOR
+
+UI-01 — Dictionary library and creation
+- Show personal dictionaries with name, language pair, description where present, active-card count, and private/unlisted status.
+- Support searching, opening, and switching between active and archived dictionaries.
+- Make “New dictionary” the clear primary action.
+- Include first-use empty, populated, no-search-results, loading, and recoverable error states.
+- Creation requires a name and two different supported languages. Description is optional.
+- Name: up to 120 characters. Description: up to 2,000.
+- Use the app's supported language catalog, not unrestricted language input.
+- New dictionaries are private.
+- Include creation pending, validation, failure, and successful entry into the new dictionary.
+- Archive and restore are supported. Do not substitute permanent deletion.
+- Restoring an archived dictionary makes it private; previous sharing is not automatically restored.
+
+UI-02 — Dictionary workspace
+- Keep dictionary name, source → target languages, card count, and visibility easy to understand.
+- Make “Add card” prominent.
+- Support searching cards, active/archived views, and paginated or progressively loaded results.
+- Present source and translation with a clear reading hierarchy; reveal enabled optional content without making every card visually dense.
+- Include labelled card actions: edit, archive/restore, reorder, and existing-card AI review.
+- Provide accessible move controls; do not make reordering drag-only.
+- Include empty-dictionary guidance that leads directly to adding the first card.
+- Show system-owned authorship labels: Human, AI-generated, or Human + AI. Users cannot select or remove these labels.
+- Do not add audio, favorites, mastery scores, study progress, or part-of-speech fields merely because a design-system card supports those visuals.
+
+UI-03 — Dictionary settings and inherited card fields
+- Allow editing name and description.
+- Source/target languages can change only before any card has existed. Afterward, show the language pair locked with an explanation—even if every card is archived.
+- Dictionary settings control:
+  • Transcription: enabled/disabled; IPA, romanization, or custom notation.
+  • Definition: enabled/disabled; written in source or target language.
+  • Context example: enabled/disabled; written in source or target language.
+  • Example translation: enabled/disabled; always in the opposite language from the example.
+- Custom transcription notation requires a label.
+- Current defaults: transcription off; definition off; example on in the source language; example translation on.
+- Example translation cannot be newly enabled while examples are disabled.
+- Disabling a field hides its content; it does not delete the stored value.
+- Preserve the example-translation preference when examples are turned off.
+- Each card can inherit dictionary settings or override them. Make “Inherited” versus “Overridden” understandable.
+- Settings use explicit Save, with pending, success, validation, and conflict states.
+
+UI-04 — Manual card creation and editing
+- Use a focused desktop dialog and mobile bottom sheet consistent with the existing design system.
+- Required fields: Source word/phrase and Translation, each up to 200 characters.
+- Optional enabled fields: Transcription, Definition, Context example, Example translation.
+- Transcription supports up to 200 characters; other optional values support up to 2,000.
+- Enabled optional fields may remain empty.
+- Label language-sensitive fields with their actual language, not just abstract “source/target” terminology.
+- Keep per-card field overrides available through progressive disclosure.
+- A duplicate source phrase is allowed: show a non-blocking warning explaining that another meaning or context may be intentional.
+- “Save card” is the explicit commit action. No autosave, placeholder cards, or partially created cards.
+- Closing/cancelling an unsaved Add Card draft abandons it; do not promise automatic draft recovery after navigation.
+- Distinguish “Cancel generation” from “Close/discard draft.”
+
+UI-05 — Inline AI assistance for a NEW card
+- After the user enters a valid non-empty Source, expose “Generate with AI.”
+- Translation does not need to be filled before generation.
+- Generate Translation plus the currently enabled optional fields.
+- AI never changes Source, language pair, dictionary settings, or card overrides in this flow.
+- Keep manual fields editable during generation.
+- Show honest queued/generating/validating feedback and cancellation for active work. Do not invent percentages or completion estimates.
+- Generation must not overwrite any field automatically.
+
+UI-06 — Field-level suggestions and retained choices
+- Place suggestions directly beneath their corresponding field.
+- Give each suggestion clear Accept, Discard, and field-regeneration controls.
+- Accept fills only that field and leaves the suggestion available.
+- Discard removes that suggestion from the choices without clearing the input.
+- Regenerate field requests only that field and appends a new distinct choice.
+- Regenerate all fields appends new choices for eligible fields; it does not replace accepted or manually entered values.
+- Preserve earlier choices within the open draft.
+- Support up to six visible suggestions per field. At the limit, explain that a choice must be discarded before generating another.
+- Visually distinguish suggestions from actual input values and indicate the currently accepted choice.
+- While a successor generation runs, preserve existing suggestions and manual editing, prevent conflicting generation requests, and explain why Save is temporarily unavailable.
+- Use compact progressive disclosure for multiple alternatives, but never silently drop a choice.
+
+UI-07 — Source changes, failure recovery, and saving
+- If Source changes after generation, retain existing suggestions visibly but mark them stale.
+- Stale suggestions cannot be accepted or used for regeneration; generate again for the new Source.
+- Preserve current manual field values when starting this new generation.
+- AI unavailable, rate/capacity limits, generation failures, and network/polling failures must not erase the open draft or already loaded suggestions.
+- Provide safe recovery actions appropriate to the actual state; do not expose raw provider errors.
+- AI being unavailable must not prevent manual creation.
+- Show proposal expiry and dictionary/settings conflict states where applicable. Do not silently retry a stale save or overwrite newer data.
+- Final Save creates exactly one card.
+- An accepted AI contribution produces Human + AI authorship. Manual-only creation remains Human.
+- Unaccepted suggestions never become saved card content.
+
+UI-08 — AI regeneration for an EXISTING card
+This is separate from inline new-card authoring:
+- Entry point: the saved card's “Regenerate with AI” action.
+- Allow an optional instruction up to 1,000 characters.
+- The saved card remains unchanged while generation runs.
+- Show original content beside an editable proposed replacement; stack these clearly on mobile.
+- Include relevant field warnings, reasons, and up to three alternatives per field.
+- Unlike new-card authoring, this proposal can include a revised Source.
+- Offer explicit acceptance, discard, cancellation while running, and regeneration.
+- Retained review jobs survive navigation/reload; do not confuse this with persistence of an unsaved Add Card draft.
+- If the card/settings changed, show a persistent conflict with “Reload and compare.” Never auto-apply a stale proposal.
+- Retained reviews may remain available when starting new AI work is disabled.
+- Do not assume new-card AI and existing-card regeneration always have identical availability.
+
+UI-09 — Responsive, multilingual, and accessible behavior
+- Design desktop and narrow mobile compositions, including 320px width and enlarged text.
+- Support long words, wrapped suggestions/actions, and mixed left-to-right/right-to-left content.
+- UI localization includes English, Spanish, French, and Russian; card languages are independent of interface language.
+- Maintain keyboard operation, visible focus, labelled icon actions, dialog focus management, and announced loading/error/success states.
+- Do not rely on color alone to communicate accepted, stale, warning, or error states.
+- Avoid horizontal overflow and nested scrolling that makes Save or suggestion controls unreachable.
+
+UI-10 — Secondary capability entry points
+Preserve discoverability without crowding the main authoring journey:
+- Generate cards from pasted terms.
+- Generate cards from a document.
+- Import source/translation pairs.
+- Export.
+- Sharing.
+
+For this design pass, place these coherently but do not invent their detailed workflows or simulate successful operations. They are separately implemented capabilities and need their own detailed brief before redesigning their full flows.
+Their availability must respect actual capability/state restrictions.
+
+UX RECOMMENDATIONS — DESIGN FREEDOM WITHIN THESE RULES
+- Use a calm vocabulary-workspace layout, not an AI chat interface.
+- Put source and translation first, optional enrichment second, advanced overrides last.
+- Keep the next action obvious at each stage.
+- Use a short explanation near Generate: suggestions are reviewed before saving.
+- Make the distinction between “suggested” and “saved” unmistakable.
+- Prefer progressive disclosure to a wall of settings or six expanded alternatives everywhere.
+- Keep AI styling supportive rather than visually dominating the user's vocabulary.
+- Use a visible save area that remains reachable without obscuring fields.
+These are UX recommendations, not new backend capabilities.
+
+EXAMPLE CONTENT
+Use synthetic Spanish → English examples:
+- Source: “aprovechar”
+- Translation: “to make the most of”
+- Source-language example: “Quiero aprovechar el fin de semana.”
+- Example translation: “I want to make the most of the weekend.”
+Include a separate mixed-direction example to demonstrate layout resilience.
+
+EXCLUSIONS
+Do not add study sessions, spaced repetition, flashcard quizzes, audio playback,
+image generation, favorites, collaboration, public discovery, billing, AI-credit
+purchasing, permanent deletion, revision-history browsing, or multiple saved
+translations/examples per card.
+Several AI suggestions are alternatives, not multiple saved field values.
+Do not turn prototype animations into claims of actual AI completion or saving.
+
+DELIVERABLES
+Produce a coherent screen set and interactive state variants for UI-01 through
+UI-10—not just a polished populated desktop screen.
+
+Include:
+1. Empty/populated library and dictionary creation.
+2. Empty/populated dictionary workspace.
+3. Dictionary settings and per-card overrides.
+4. Manual Add Card and source-only AI entry.
+5. Generation in progress.
+6. Inline suggestions with accepted, discarded, multiple-choice, and limit states.
+7. Stale Source, AI unavailable, generation error, validation, and save conflict.
+8. Successful card creation with correct authorship.
+9. Existing-card original/proposal review and stale conflict recovery.
+10. Mobile variants and representative dark-theme states.
+
+Return a coverage map from each UI ID to its screens/states. Explicitly list
+anything missing, deferred, or requiring clarification. Do not silently omit
+requirements to simplify the design.
+```
+
+## Source-grounded UI checklist
+
+These are proposed design/runtime checks, not checks executed for this document.
+Acceptance references point to the feature specifications linked above.
+
+| IDs                     | Classification and acceptance                                                   | Implementation evidence                                                                                                                                                                                                                                                             | Relevant states and proposed verification                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI-01–02                | Supported; dictionary AC-1–3, AC-7                                              | [Library](../../apps/web/src/fsd/features/dictionary-library/ui/dictionary-library/dictionary-library.tsx), [card list](../../apps/web/src/fsd/features/dictionary-card-list/ui/dictionary-card-list/dictionary-card-list.tsx)                                                      | Creation, search, empty/loading/error, archive/restore, ordering, authorship; compare design then observe real journeys                      |
+| UI-03                   | Supported; dictionary AC-1–3                                                    | [Settings contracts](../../packages/contracts/src/dictionaries/models.ts), [settings rules](../../apps/backend/src/modules/dictionaries/domain/settings.ts), [language-pair rules](../../apps/backend/src/modules/dictionaries/domain/language-pair.ts)                             | Inheritance, overrides, defaults, locked pair, inactive values, conflicts; contract checks plus settings interaction                         |
+| UI-04                   | Supported; dictionary AC-3                                                      | [Field contracts](../../packages/contracts/src/dictionaries/primitives.ts), [backend limits](../../apps/backend/src/modules/dictionaries/domain/limits.ts), [card form](../../apps/web/src/fsd/features/dictionary-card-authoring/ui/dictionary-card-form/dictionary-card-form.tsx) | Required/optional fields, effective limits, duplicate warning, explicit save; validation and rendered form checks                            |
+| UI-05–07                | Supported; inline authoring AC-1–9, AC-11                                       | [Authoring contracts](../../packages/contracts/src/dictionaries/card-authoring.ts), [authoring domain](../../apps/backend/src/modules/dictionaries/domain/card-authoring.ts), [focused UI tests](../../apps/web/tests/dictionary-card-authoring.test.tsx)                           | Preserved edits/choices, six-choice limit, stale Source, cancellation, manual fallback, save; test and observe these states                  |
+| UI-08                   | Supported; dictionary AC-8–9                                                    | [Generation service](../../apps/backend/src/modules/dictionaries/application/dictionary-generation-service.ts), [review UI tests](../../apps/web/tests/dictionary-generation.test.tsx)                                                                                              | Original/proposal, persisted recovery, unavailable enqueue, conflict, explicit acceptance; real review journey and focused regression checks |
+| UI-09                   | Supported; inline authoring AC-10, dictionary AC-15                             | [User-flow guide](../user-flows/dictionary-platform.md), [mapped journey tests](../../apps/web/tests/e2e/dictionary-platform.journeys.spec.ts)                                                                                                                                      | Mobile, keyboard, 200% text, language direction, status; matched browser evidence, not screenshots alone                                     |
+| UI-10                   | Supported entry points; detailed redesign deferred; dictionary AC-5–6, AC-10–13 | [Dictionary editor](../../apps/web/src/fsd/widgets/dictionary-editor/ui/dictionary-editor/dictionary-editor.tsx)                                                                                                                                                                    | Entry-point discoverability and capability restrictions; detailed journeys need separate briefs                                              |
+| UX direction            | Recommendation, not new product rules                                           | Proposed composition grounded in the above journeys                                                                                                                                                                                                                                 | Review hierarchy/usability without changing supported behavior                                                                               |
+| Design-system reference | Missing input                                                                   | [Accepted visual contract](../adr/0017-magic-patterns-tailwind-ui-contract.md), [runtime tokens](../../apps/web/src/app/globals.css)                                                                                                                                                | Supply the actual Magic Patterns project/reference before claiming visual fidelity                                                           |
+
+## Open inputs and evidence limitations
+
+- Supply the existing Magic Patterns design-system project/reference. Its current
+  hosted contents were not retrieved for this brief. No external design call was made.
+- Source discrepancy: the shared optional-value schema permits 2,000 characters
+  for transcription, but backend validation restricts transcription to 200. The
+  prompt uses the effective backend limit. This document does not fix that mismatch.
+- Character limits are Unicode code-point limits in the backend; implementation
+  should not substitute byte length or UTF-16 length when validating them.
+- Implemented AI support does not establish that a deployment has enabled it.
+  Live provider/capability readiness remains unverified; manual fallback is required.
+- Existing feature evidence records earlier tests and browser journeys. It is
+  linked for provenance, not asserted as a new verification run or evidence that
+  a future Magic Patterns design has been faithfully implemented.
+- Compare the returned design against UI-01–UI-10 before implementation. Keep
+  those IDs linked to the source-state inventory and eventual runtime evidence.
+  A design document alone does not complete frontend acceptance criteria.

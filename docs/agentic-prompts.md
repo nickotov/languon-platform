@@ -34,7 +34,9 @@ Acceptance: [observable backend success and failure cases].
 Frontend implementation is excluded from this feature's acceptance scope.
 Verify backend behavior and complete its required review and local Git workflow.
 Afterward, use $design-brief to prepare a Magic Patterns prompt for the future UI.
-Save it beside the feature record and link it from the current plan.
+Save it in docs/design-prompt/[feature-slug].md with links to the feature
+specification, implementation plan, relevant ADRs, and source evidence.
+Link it from the current plan.
 Do not call Magic Patterns, implement the frontend, or claim the UI is complete.
 ```
 
@@ -53,12 +55,15 @@ Return a self-contained copyable prompt with very short app context, fuller
 feature explanation, supported user journeys, required controls and states,
 and practical UX recommendations. Include a source-grounded UI checklist with
 stable IDs. Separate supported requirements, recommendations, and open decisions.
-Do not call Magic Patterns or modify application code. Return it here only.
+Do not call Magic Patterns or modify application code. Save the brief in
+docs/design-prompt/[feature-slug].md and return its link.
 ```
 
-To save it, replace the final sentence with “Save and link the brief beside the
-active work record.” This adds a supporting design artifact, not another required
-feature lifecycle file. Give a specific path if you prefer a different location.
+Briefs are saved by default in [docs/design-prompt](./design-prompt/README.md),
+with links to their dedicated feature/implementation records, applicable ADRs,
+and source evidence outside the copyable prompt. This is a supporting design
+artifact, not another required feature lifecycle file. Say “response only; do
+not edit files” to opt out, or give a specific path to override the location.
 If the system reference is unavailable, the agent should identify that missing
 input rather than invent colors, typography, or claims of design-system fidelity.
 
@@ -72,7 +77,8 @@ should eventually be checked in both the design and running application.
 ```text
 Use $design-brief to update [existing brief path] after [correction record/diff].
 Inspect the changed behavior; keep unaffected UI IDs and requirements stable.
-Return changed checklist rows and a short delta prompt for Magic Patterns.
+Update the saved full prompt/checklist, retaining current source links, and
+include changed checklist rows and a short delta prompt for Magic Patterns.
 Identify any designs or states now invalidated. Do not redesign unrelated areas
 or call Magic Patterns. If no user-visible behavior changed, explain why no
 design update is needed.

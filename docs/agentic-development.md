@@ -14,8 +14,10 @@ features, corrections, diagnosis, review, continuation, and commits. For backend
 first delivery, explicitly request `$design-brief` after implementation to create
 a Magic Patterns prompt and stable UI checklist grounded in supported behavior.
 It separates UX recommendations and unresolved decisions, supports correction
-deltas, and makes no external design calls. Save/link it only when requested;
-then reconcile the returned design against its requirements before integration.
+deltas, and makes no external design calls. It saves briefs by default under
+[docs/design-prompt](./design-prompt/README.md) with links to feature records,
+implementation evidence, and relevant ADRs; explicit response-only requests are
+respected. Reconcile the returned design against its requirements before integration.
 
 Repository-scoped workflows are documented in
 [`agent-skills.md`](./agent-skills.md), including invocation, authority, locally

@@ -295,8 +295,10 @@ and open product decisions. Source inspection is not claimed as executed proof.
 It does not automatically run after every task, create a remote design, modify
 backend/frontend code, or add a mandatory agent. For a changed user-visible
 contract, request an update that preserves IDs and returns a delta prompt;
-invisible refactoring needs no design update. Return output in chat by default,
-or explicitly request a saved supporting brief linked from the active record.
+invisible refactoring needs no design update. Briefs are saved by default under
+[docs/design-prompt](./design-prompt/README.md), with links to their feature or
+other work records, implementation sources, and relevant ADRs. Explicit
+response-only requests or alternate output paths override the default.
 
 You paste the prompt into Magic Patterns using your existing design system.
 When the design returns, reconcile its sections and states against the UI IDs,
