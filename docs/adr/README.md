@@ -33,6 +33,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0017](./0017-magic-patterns-tailwind-ui-contract.md)       | Magic Patterns Tailwind UI contract       | Accepted               |
 | [ADR-0018](./0018-account-deletion-and-restore-boundary.md)      | Account deletion and restore boundary     | Superseded by ADR-0019 |
 | [ADR-0019](./0019-account-deletion-journal-commit-and-replay.md) | Deletion journal commit and replay safety | Accepted               |
+| [ADR-0020](./0020-dictionary-pronunciation-audio.md) | Dictionary pronunciation audio | Proposed |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.
