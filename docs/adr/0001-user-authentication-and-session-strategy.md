@@ -118,8 +118,8 @@ differs. Explicit linking avoids account takeover and ambiguous identity merges.
 ## Related
 
 - [Architecture](../architecture.md)
-- [User Authentication feature](../../.agent/features/user-authentication/FEATURE.md)
-- [User Authentication ExecPlan](../../.agent/features/user-authentication/EXEC_PLAN.md)
+- [User Authentication feature](../../.agent/features/001-user-authentication/FEATURE.md)
+- [User Authentication ExecPlan](../../.agent/features/001-user-authentication/EXEC_PLAN.md)
 - [JWT Best Current Practices](https://www.rfc-editor.org/rfc/rfc8725.html)
 - [OAuth 2.0 Security Best Current Practice](https://www.rfc-editor.org/rfc/rfc9700.html)
 - [Web Authentication Level 3](https://www.w3.org/TR/webauthn-3/)

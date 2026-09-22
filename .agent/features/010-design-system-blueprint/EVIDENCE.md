@@ -95,10 +95,10 @@ Updated: 2026-08-16
 
 - Format:
     - `pnpm exec prettier --check design/DESIGN_SYSTEM.md README.md
-.agent/features/design-system-blueprint/FEATURE.md
-.agent/features/design-system-blueprint/EXEC_PLAN.md
-.agent/features/design-system-blueprint/EVIDENCE.md
-.agent/features/design-system-blueprint/REVIEW.md` — PASS after applying the
+.agent/features/010-design-system-blueprint/FEATURE.md
+.agent/features/010-design-system-blueprint/EXEC_PLAN.md
+.agent/features/010-design-system-blueprint/EVIDENCE.md
+.agent/features/010-design-system-blueprint/REVIEW.md` — PASS after applying the
       repository formatter to the two new files it identified.
     - `pnpm format:check` — PASS.
 - Lint: `pnpm lint` — PASS.

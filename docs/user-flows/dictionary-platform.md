@@ -7,7 +7,7 @@ surfaces:
     - browser
     - api
 source_paths:
-    - .agent/features/dictionary-platform/**
+    - .agent/features/021-dictionary-platform/**
     - apps/backend/drizzle/**
     - apps/backend/src/app.ts
     - apps/backend/src/index.ts

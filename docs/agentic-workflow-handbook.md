@@ -72,11 +72,11 @@ flowchart TD
     Small -->|Neither applies| Ask
 ```
 
-| Flow        | Typical outcome                                                                           | Durable record                             | Default Git behavior                                                    |
-| ----------- | ----------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------- |
-| Correction  | Fix established validation, correct copy, adjust one bounded screen detail                | One `.agent/corrections/<slug>.md`         | Current branch; no automatic commit or merge                            |
-| Improvement | Cohesive tooling enhancement, bounded internal refactor, existing-contract UX enhancement | One `.agent/improvements/<slug>.md`        | Current branch; no automatic commit or merge                            |
-| Feature     | Explicitly requested new capability, journey, integration, or full lifecycle              | Four files under `.agent/features/<slug>/` | `feature/<slug>` from `main`; verified local squash merge on completion |
+| Flow        | Typical outcome                                                                           | Durable record                                   | Default Git behavior                                                    |
+| ----------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| Correction  | Fix established validation, correct copy, adjust one bounded screen detail                | One `.agent/corrections/<slug>.md`               | Current branch; no automatic commit or merge                            |
+| Improvement | Cohesive tooling enhancement, bounded internal refactor, existing-contract UX enhancement | One `.agent/improvements/<slug>.md`              | Current branch; no automatic commit or merge                            |
+| Feature     | Explicitly requested new capability, journey, integration, or full lifecycle              | Four files under `.agent/features/<NNN>-<slug>/` | `feature/<slug>` from `main`; verified local squash merge on completion |
 
 The table is a guide, not a replacement for root classification. File count is
 not the deciding factor: a one-line authorization-policy change can cross a

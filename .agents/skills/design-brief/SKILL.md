@@ -106,6 +106,12 @@ supported design work because one region remains unresolved.
 
 ## 4. Update and hand off without losing coverage
 
+For every saved brief, apply [versioned handoff rules](../../../.agent/DESIGN_HANDOFF.md):
+create/update the owning DESIGN.md from its template, freeze the prompt revision,
+provide a generated-design URL slot, and link handoff/prompt/index in both directions.
+For changed prompts or designs, append a version; retain approval and implementation
+history. Response-only/read-only requests return proposed content without writes.
+
 For a correction, inspect the prior brief and changed behavior first. Preserve
 unchanged IDs; mark removed/superseded requirements with reasons rather than
 reusing their IDs. Update the saved canonical prompt/checklist and source metadata

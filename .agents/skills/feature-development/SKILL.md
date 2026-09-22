@@ -11,9 +11,11 @@ Confirm feature authorization under root `AGENTS.md`. Reuse existing authorized
 scope; do not request permission again at routine milestones. Preserve root
 feature branch, local-commit, and squash-merge policy.
 
-Read the applicable instructions and locate `.agent/features/<slug>/FEATURE.md`
+Read the applicable instructions and locate `.agent/features/<NNN>-<slug>/FEATURE.md`
 and the current `EXEC_PLAN.md`. If absent, use
-`pnpm feature:new -- <slug> "<title>"` and complete the specification. Follow
+`pnpm feature:new -- <slug> "<title>"` and complete the specification. The command
+assigns the numeric folder prefix; keep branch and guide slugs unnumbered. See
+[workspace numbering](../../../.agent/features/README.md) for lookup and collisions. Follow
 `.agent/PLANS.md` and the [shared delivery procedure](../../../.agent/DELIVERY.md)
 for artifact ownership, implementation, preflight, and completion.
 

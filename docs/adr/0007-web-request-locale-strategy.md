@@ -85,5 +85,5 @@ a future ADR can introduce ICU/plural tooling or a translation platform.
 - [`docs/architecture.md`](../architecture.md)
 - [`ADR-0005`](./0005-frontend-component-and-fsd-standards.md)
 - [`ADR-0006`](./0006-web-internationalization-strategy.md)
-- [Feature specification](../../.agent/features/web-i18n-support/FEATURE.md)
-- [Execution plan](../../.agent/features/web-i18n-support/EXEC_PLAN.md)
+- [Feature specification](../../.agent/features/008-web-i18n-support/FEATURE.md)
+- [Execution plan](../../.agent/features/008-web-i18n-support/EXEC_PLAN.md)

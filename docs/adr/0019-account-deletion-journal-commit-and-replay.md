@@ -48,5 +48,5 @@ It races live admin cancellation and purge claims, and can reset a leased reques
 ## Related
 
 - [ADR-0018](./0018-account-deletion-and-restore-boundary.md).
-- [Profile Account Controls](../../.agent/features/profile-account-controls/FEATURE.md).
+- [Profile Account Controls](../../.agent/features/026-profile-account-controls/FEATURE.md).
 - [Database recovery](../operations/database-recovery.md#disaster-recovery).

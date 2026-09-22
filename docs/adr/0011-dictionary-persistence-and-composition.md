@@ -169,5 +169,5 @@ operational reads and lineage explicit.
 - [Architecture](../architecture.md)
 - [ADR-0001: User authentication and session strategy](./0001-user-authentication-and-session-strategy.md)
 - [ADR-0002: Drizzle schema and migration strategy](./0002-drizzle-schema-and-migration-strategy.md)
-- [Dictionary Platform feature](../../.agent/features/dictionary-platform/FEATURE.md)
-- [Dictionary Platform ExecPlan](../../.agent/features/dictionary-platform/EXEC_PLAN.md)
+- [Dictionary Platform feature](../../.agent/features/021-dictionary-platform/FEATURE.md)
+- [Dictionary Platform ExecPlan](../../.agent/features/021-dictionary-platform/EXEC_PLAN.md)

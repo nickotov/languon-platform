@@ -45,5 +45,5 @@ Rejected because its mock authentication, router, and simulation layer conflict 
 
 - [ADR-0005](./0005-frontend-component-and-fsd-standards.md)
 - [ADR-0016](./0016-runtime-ui-kit-authority.md)
-- [Feature specification](../../.agent/features/magic-patterns-ui-kit-auth-fidelity/FEATURE.md)
-- [Execution plan](../../.agent/features/magic-patterns-ui-kit-auth-fidelity/EXEC_PLAN.md)
+- [Feature specification](../../.agent/features/024-magic-patterns-ui-kit-auth-fidelity/FEATURE.md)
+- [Execution plan](../../.agent/features/024-magic-patterns-ui-kit-auth-fidelity/EXEC_PLAN.md)

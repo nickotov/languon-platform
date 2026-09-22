@@ -53,4 +53,4 @@ Would join unrelated trust boundaries and grant the application unnecessary read
 ## Related
 
 - [ADR-0001](./0001-user-authentication-and-session-strategy.md), [ADR-0002](./0002-drizzle-schema-and-migration-strategy.md), [ADR-0009](./0009-release-and-deployment-platform.md), [ADR-0010](./0010-admin-application-and-authorization.md), [ADR-0012](./0012-dictionary-worker-and-document-ingestion.md).
-- [Profile Account Controls](../../.agent/features/profile-account-controls/FEATURE.md).
+- [Profile Account Controls](../../.agent/features/026-profile-account-controls/FEATURE.md).

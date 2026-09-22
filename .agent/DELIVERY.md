@@ -18,6 +18,9 @@ use its one record. Identify supported behavior, explicit exclusions, affected
 invariants, and what evidence will establish completion. Resolve only material
 product/safety ambiguity with the user; continue independent authorized work.
 
+For saved design prompts and returned designs, apply [versioned handoff
+rules](DESIGN_HANDOFF.md); DESIGN.md owns provenance and revision pointers only.
+
 When implementing a supplied design, use `$ui-ux-composition` fidelity mode and
 its source-derived coverage inventory before coding. Missing backend support is
 not permission to silently remove designed UI or invent working capabilities.

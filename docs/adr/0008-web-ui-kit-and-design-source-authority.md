@@ -43,4 +43,4 @@ Rejected because it cannot replace the design contract and editable board.
 
 - [ADR-0005](./0005-frontend-component-and-fsd-standards.md)
 - `design/DESIGN_SYSTEM.md`
-- `.agent/features/web-ui-kit/EXEC_PLAN.md`
+- `.agent/features/013-web-ui-kit/EXEC_PLAN.md`

@@ -86,5 +86,5 @@ independent consumers or genuinely shared lifetimes.
 - [`apps/web/AGENTS.md`](../../apps/web/AGENTS.md)
 - [`apps/admin/AGENTS.md`](../../apps/admin/AGENTS.md)
 - [Frontend Development skill](../../.agents/skills/frontend-development/SKILL.md)
-- [Feature specification](../../.agent/features/frontend-development-standards/FEATURE.md)
-- [Execution plan](../../.agent/features/frontend-development-standards/EXEC_PLAN.md)
+- [Feature specification](../../.agent/features/007-frontend-development-standards/FEATURE.md)
+- [Execution plan](../../.agent/features/007-frontend-development-standards/EXEC_PLAN.md)

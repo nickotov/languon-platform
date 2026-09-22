@@ -82,7 +82,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections      |
 | `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability          |
 | `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability         |
-| `pnpm feature:new -- <slug> "<title>"` | Create a feature evidence workspace                 |
+| `pnpm feature:new -- <slug> "<title>"` | Create the next numbered feature evidence workspace                 |
 
 Quick one-command style remote flow (Timeweb-ready):
 

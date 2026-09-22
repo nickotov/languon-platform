@@ -6,7 +6,7 @@ last_verified: 2026-08-14
 surfaces:
     - browser
 source_paths:
-    - .agent/features/web-i18n-support/**
+    - .agent/features/008-web-i18n-support/**
     - apps/web/src/app/**
     - apps/web/next.config.mjs
     - apps/web/playwright.config.ts

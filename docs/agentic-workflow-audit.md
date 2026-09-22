@@ -14,7 +14,7 @@ remediation review, and one authoritative home for each instruction or fact.
 
 | Finding                                       | Evidence before this improvement                                                                                                                                                                                                                                        | Response                                                                                          |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Design scope can disappear before review      | [Magic fidelity plan](../.agent/features/magic-patterns-ui-kit-auth-fidelity/EXEC_PLAN.md) records the auth-only subset and two remediation rounds; [review](../.agent/features/magic-patterns-ui-kit-auth-fidelity/REVIEW.md) found missing catalog/exports            | Source-derived inventory before implementation and reference/runtime comparison before completion |
+| Design scope can disappear before review      | [Magic fidelity plan](../.agent/features/024-magic-patterns-ui-kit-auth-fidelity/EXEC_PLAN.md) records the auth-only subset and two remediation rounds; [review](../.agent/features/024-magic-patterns-ui-kit-auth-fidelity/REVIEW.md) found missing catalog/exports    | Source-derived inventory before implementation and reference/runtime comparison before completion |
 | Functional proof does not prove visual parity | [Profile fidelity](../.agent/improvements/profile-magic-fidelity.md) and [passkey follow-up](../.agent/improvements/profile-passkey-design.md) needed layout/state corrections; populated passkey functionality was tested without equivalent populated visual evidence | Distinct empty/populated/dialog coverage and named comparison evidence                            |
 | Visual authority drift                        | ADR-0017 requires exact Magic tokens; web/architecture guidance still led with legacy aliases and generic adaptation advice                                                                                                                                             | Reconcile guidance with the accepted ADR; distinguish fidelity from redesign                      |
 | Review loops lack boundaries                  | Feature guidance required repeat review after material changes; reviewer guidance requested the complete diff without a remediation mode                                                                                                                                | Initial/remediation/expanded review modes and batched findings                                    |
@@ -29,7 +29,7 @@ pixel comparison. Historical token savings cannot be reconstructed from prose.
 
 ## Preserve useful scrutiny
 
-The [authentication review](../.agent/features/user-authentication/REVIEW.md)
+The [authentication review](../.agent/features/001-user-authentication/REVIEW.md)
 found consequential enumeration, refresh/session, validation, and concurrency
 defects. Retain independent security review and real integration/database proof
 where those risks apply. A low-risk new screen and a small authentication fix

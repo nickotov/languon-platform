@@ -86,5 +86,5 @@ rich messages, extraction tooling, or a translation service justify it.
 
 - [`docs/architecture.md`](../architecture.md)
 - [`ADR-0005`](./0005-frontend-component-and-fsd-standards.md)
-- [Feature specification](../../.agent/features/web-i18n-support/FEATURE.md)
-- [Execution plan](../../.agent/features/web-i18n-support/EXEC_PLAN.md)
+- [Feature specification](../../.agent/features/008-web-i18n-support/FEATURE.md)
+- [Execution plan](../../.agent/features/008-web-i18n-support/EXEC_PLAN.md)

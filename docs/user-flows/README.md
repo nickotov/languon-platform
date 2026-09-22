@@ -39,7 +39,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 ## Naming and frontmatter
 
 Use one canonical guide named `docs/user-flows/<feature-slug>.md`. The slug must
-match the primary `.agent/features/<feature-slug>/` workspace when one exists.
+match the logical slug of the primary `.agent/features/<NNN>-<feature-slug>/`
+workspace when one exists; omit its numeric prefix from `feature` and
+`related_features`, but retain the full folder name in `source_paths`.
 Related features may update more than one guide when their behavior overlaps.
 
 Every guide starts with this YAML frontmatter:
@@ -127,7 +129,7 @@ rg -n "^(feature|related_features|source_paths):|^  - " docs/user-flows/*.md
 Read all matches and use semantic judgment for shared contracts or cross-cutting
 configuration. During feature completion, create the canonical guide if needed,
 update every affected guide and its metadata, run the documented journeys, and
-record evidence in the active `.agent/features/<feature>/EVIDENCE.md`.
+record evidence in the active `.agent/features/<NNN>-<feature>/EVIDENCE.md`.
 
 Use the repository `user-flow-e2e` skill whenever a guide is created or its
 test-relevant behavior changes. The agent owns semantic test authoring; prose is

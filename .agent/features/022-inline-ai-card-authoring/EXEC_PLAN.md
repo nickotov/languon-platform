@@ -12,7 +12,7 @@ overwriting manual content or deleting earlier alternatives.
 ## Specification
 
 - In scope and out of scope: see `FEATURE.md`.
-- Related completed platform: `../dictionary-platform/`.
+- Related completed platform: `../021-dictionary-platform/`.
 - Governing ADRs: ADR-0011 typed dictionary persistence, ADR-0012 durable worker/
   proposal execution, ADR-0016 runtime UI-kit authority, plus ADR-0005 web FSD,
   ADR-0007 locale requests, and ADR-0009 rollout compatibility.

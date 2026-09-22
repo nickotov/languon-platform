@@ -6,8 +6,8 @@ last_verified: 2026-09-14
 surfaces:
     - browser
 source_paths:
-    - .agent/features/web-ui-kit/**
-    - .agent/features/magic-patterns-ui-kit-auth-redesign/**
+    - .agent/features/013-web-ui-kit/**
+    - .agent/features/023-magic-patterns-ui-kit-auth-redesign/**
     - apps/web/.storybook/**
     - apps/web/src/app/globals.css
     - apps/web/src/app/layout.tsx

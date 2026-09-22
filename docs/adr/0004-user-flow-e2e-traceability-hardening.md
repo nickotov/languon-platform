@@ -95,5 +95,5 @@ harness locations later.
 
 - [ADR-0003](./0003-user-flow-e2e-traceability.md)
 - [User-flow testing guides](../user-flows/README.md)
-- [User Flow E2E Automation feature](../../.agent/features/user-flow-e2e-automation/FEATURE.md)
-- [User Flow E2E Automation ExecPlan](../../.agent/features/user-flow-e2e-automation/EXEC_PLAN.md)
+- [User Flow E2E Automation feature](../../.agent/features/003-user-flow-e2e-automation/FEATURE.md)
+- [User Flow E2E Automation ExecPlan](../../.agent/features/003-user-flow-e2e-automation/EXEC_PLAN.md)

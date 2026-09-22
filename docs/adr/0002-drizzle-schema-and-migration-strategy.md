@@ -118,6 +118,6 @@ requested Drizzle approach stays close to SQL and the existing driver.
 
 - [Architecture](../architecture.md)
 - [Development](../development.md)
-- [User Authentication feature](../../.agent/features/user-authentication/FEATURE.md)
-- [User Authentication ExecPlan](../../.agent/features/user-authentication/EXEC_PLAN.md)
+- [User Authentication feature](../../.agent/features/001-user-authentication/FEATURE.md)
+- [User Authentication ExecPlan](../../.agent/features/001-user-authentication/EXEC_PLAN.md)
 - [Drizzle migration fundamentals](https://orm.drizzle.team/docs/migrations)

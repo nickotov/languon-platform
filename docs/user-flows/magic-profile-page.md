@@ -6,7 +6,7 @@ last_verified: 2026-09-14
 surfaces:
     - browser
 source_paths:
-    - .agent/features/magic-profile-page/**
+    - .agent/features/025-magic-profile-page/**
     - apps/web/src/app/profile/**
     - apps/web/src/fsd/pages/profile/**
     - apps/web/src/fsd/widgets/site-header/**

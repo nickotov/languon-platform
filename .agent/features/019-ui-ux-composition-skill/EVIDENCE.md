@@ -7,7 +7,7 @@ Updated: 2026-08-23
 - `pnpm agent-skills:check` — passed: 9/9 validator tests and 16 skill packages
   accepted, including implicit invocation metadata and the checklist pointer.
 - `pnpm exec prettier --check .agents/skills/ui-ux-composition
-.agent/features/ui-ux-composition-skill` — passed.
+.agent/features/019-ui-ux-composition-skill` — passed.
 - `pnpm format:check` — passed in the independent tester run.
 - `git diff --check` — passed.
 - Package inspection — passed: exactly `SKILL.md`, `agents/openai.yaml`, and

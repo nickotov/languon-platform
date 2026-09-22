@@ -51,7 +51,7 @@
         "lint": "eslint .",
         "resources:dashboard": "node scripts/resources/dashboard.mjs",
         "resources:profile": "node scripts/resources/profile.mjs",
-        "test": "pnpm test:agent-browser && pnpm test:document-services && pnpm test:frontend-architecture && pnpm test:mastra-harness && pnpm test:release-deployment && turbo run test",
+        "test": "node --test scripts/create-feature.test.mjs && pnpm test:agent-browser && pnpm test:document-services && pnpm test:frontend-architecture && pnpm test:mastra-harness && pnpm test:release-deployment && turbo run test",
         "test:agent-browser": "node --test scripts/agent-browser.test.mjs",
         "test:document-services": "node --test infra/test/document-services.test.mjs",
         "test:e2e:admin-user-management": "node scripts/run-admin-user-management-e2e.mjs",

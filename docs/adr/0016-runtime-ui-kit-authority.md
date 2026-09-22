@@ -74,4 +74,4 @@ work and historical product exploration.
 - [ADR-0015](./0015-figma-make-design-trial.md)
 - [`docs/architecture.md`](../architecture.md)
 - [`design/DESIGN_SYSTEM.md`](../../design/DESIGN_SYSTEM.md)
-- [Dictionary Platform ExecPlan](../../.agent/features/dictionary-platform/EXEC_PLAN.md)
+- [Dictionary Platform ExecPlan](../../.agent/features/021-dictionary-platform/EXEC_PLAN.md)

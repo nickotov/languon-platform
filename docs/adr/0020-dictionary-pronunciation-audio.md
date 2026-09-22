@@ -123,8 +123,8 @@ provider call and remains possible during provider outages.
 
 ## Related
 
-- [Feature](../../.agent/features/dictionary-pronunciation-audio/FEATURE.md).
-- [ExecPlan](../../.agent/features/dictionary-pronunciation-audio/EXEC_PLAN.md).
+- [Feature](../../.agent/features/027-dictionary-pronunciation-audio/FEATURE.md).
+- [ExecPlan](../../.agent/features/027-dictionary-pronunciation-audio/EXEC_PLAN.md).
 - [ADR-0011](./0011-dictionary-persistence-and-composition.md).
 - [ADR-0012](./0012-dictionary-worker-and-document-ingestion.md).
 - [ADR-0019](./0019-account-deletion-journal-commit-and-replay.md).

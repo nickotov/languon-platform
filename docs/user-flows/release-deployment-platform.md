@@ -7,7 +7,7 @@ surfaces:
     - cli
     - system
 source_paths:
-    - .agent/features/release-deployment-platform/**
+    - .agent/features/015-release-deployment-platform/**
     - .github/workflows/**
     - .env.example
     - README.md

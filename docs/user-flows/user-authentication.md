@@ -7,9 +7,9 @@ surfaces:
     - browser
     - api
 source_paths:
-    - .agent/features/user-authentication/**
-    - .agent/features/magic-patterns-ui-kit-auth-redesign/**
-    - .agent/features/magic-patterns-ui-kit-auth-fidelity/**
+    - .agent/features/001-user-authentication/**
+    - .agent/features/023-magic-patterns-ui-kit-auth-redesign/**
+    - .agent/features/024-magic-patterns-ui-kit-auth-fidelity/**
     - .agents/skills/user-flow-e2e/**
     - .env.example
     - README.md
@@ -571,7 +571,7 @@ Authentication database/Redis integration tests have stricter disposable-target
 confirmations under `apps/backend/tests/integration/support/`. Use the exact
 documented environment gates; never point destructive tests at development,
 staging, or production data. Historical commands and results are in
-`.agent/features/user-authentication/EVIDENCE.md`.
+`.agent/features/001-user-authentication/EVIDENCE.md`.
 
 ## Troubleshooting
 

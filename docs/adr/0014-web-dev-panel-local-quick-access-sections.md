@@ -123,6 +123,6 @@ set before any state transition.
 ## Related
 
 - [ADR-0013](./0013-local-web-dev-command-panel.md)
-- [Feature specification](../../.agent/features/web-dev-panel-custom-sections/FEATURE.md)
-- [ExecPlan](../../.agent/features/web-dev-panel-custom-sections/EXEC_PLAN.md)
+- [Feature specification](../../.agent/features/018-web-dev-panel-custom-sections/FEATURE.md)
+- [ExecPlan](../../.agent/features/018-web-dev-panel-custom-sections/EXEC_PLAN.md)
 - [Web dev panel user flow](../user-flows/web-dev-panel.md)

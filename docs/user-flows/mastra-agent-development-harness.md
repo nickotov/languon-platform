@@ -9,8 +9,8 @@ surfaces:
     - cli
     - system
 source_paths:
-    - .agent/features/mastra-agent-development-harness/**
-    - .agent/features/mastra-deepseek-model/**
+    - .agent/features/011-mastra-agent-development-harness/**
+    - .agent/features/012-mastra-deepseek-model/**
     - .env.example
     - README.md
     - docs/development.md

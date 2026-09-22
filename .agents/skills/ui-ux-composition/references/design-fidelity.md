@@ -8,6 +8,12 @@ product behavior.
 
 ## Establish coverage before coding
 
+For a design with a prompt/handoff, first read its DESIGN.md and the
+[versioned handoff rules](../../../../.agent/DESIGN_HANDOFF.md). Select the
+user-authorized revision and identify its design content before building the
+inventory. Link the inventory/evidence back to that revision; a newer candidate
+never silently replaces an implementation target or inherits verification.
+
 1. Record the source link/path and revision, export, or capture identity in the
    active work record. Inspect the complete in-scope source, including nested
    components, tab contents, overlays, and conditional branches. A screenshot

@@ -149,5 +149,5 @@ a smaller bootstrap surface and can later back a separately reviewed UI.
 - [ADR-0005](./0005-frontend-component-and-fsd-standards.md)
 - [ADR-0009](./0009-release-and-deployment-platform.md)
 - [Architecture](../architecture.md)
-- [Feature specification](../../.agent/features/admin-user-management/FEATURE.md)
-- [Execution plan](../../.agent/features/admin-user-management/EXEC_PLAN.md)
+- [Feature specification](../../.agent/features/016-admin-user-management/FEATURE.md)
+- [Execution plan](../../.agent/features/016-admin-user-management/EXEC_PLAN.md)

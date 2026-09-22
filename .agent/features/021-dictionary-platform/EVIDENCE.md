@@ -47,7 +47,7 @@ authority change; the completed M2.5 boards remain optional historical input.
   mapping synchronized.
 - `pnpm user-flow:e2e -- inspect release-deployment-platform` — passed; mapping
   synchronized.
-- `pnpm exec prettier --check '.agent/features/dictionary-platform/*.md'` —
+- `pnpm exec prettier --check '.agent/features/021-dictionary-platform/*.md'` —
   passed after formatting the generated planning artifacts.
 - `pnpm docs:user-flows:check` — passed; 16 validator tests and all six current
   guide/E2E mappings remain valid.
@@ -101,7 +101,7 @@ jq -e '([.. | objects | .id? // empty] | group_by(.) | map(select(length > 1)) |
   feature, ADR, architecture, operations, and design documents exists:
 
 ```sh
-node --input-type=module -e 'import { access, readFile } from "node:fs/promises"; import { dirname, resolve } from "node:path"; const files = process.argv.slice(1); const missing = []; for (const file of files) { const text = await readFile(file, "utf8"); for (const match of text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) { const href = match[1].trim().replace(/^<|>$/g, "").split("#", 1)[0]; if (!href || /^(?:[a-z]+:|#)/i.test(href)) continue; const target = resolve(dirname(file), decodeURIComponent(href)); try { await access(target); } catch { missing.push(`${file}: ${href}`); } } } if (missing.length) { console.error(missing.join("\n")); process.exit(1); } console.log(`Checked ${files.length} Markdown files`);' .agent/features/dictionary-platform/FEATURE.md .agent/features/dictionary-platform/EXEC_PLAN.md .agent/features/dictionary-platform/EVIDENCE.md .agent/features/dictionary-platform/REVIEW.md docs/adr/README.md docs/adr/0011-dictionary-persistence-and-composition.md docs/adr/0012-dictionary-worker-and-document-ingestion.md docs/architecture.md docs/operations/README.md docs/operations/dictionary-jobs-and-documents.md design/DESIGN_SYSTEM.md
+node --input-type=module -e 'import { access, readFile } from "node:fs/promises"; import { dirname, resolve } from "node:path"; const files = process.argv.slice(1); const missing = []; for (const file of files) { const text = await readFile(file, "utf8"); for (const match of text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) { const href = match[1].trim().replace(/^<|>$/g, "").split("#", 1)[0]; if (!href || /^(?:[a-z]+:|#)/i.test(href)) continue; const target = resolve(dirname(file), decodeURIComponent(href)); try { await access(target); } catch { missing.push(`${file}: ${href}`); } } } if (missing.length) { console.error(missing.join("\n")); process.exit(1); } console.log(`Checked ${files.length} Markdown files`);' .agent/features/021-dictionary-platform/FEATURE.md .agent/features/021-dictionary-platform/EXEC_PLAN.md .agent/features/021-dictionary-platform/EVIDENCE.md .agent/features/021-dictionary-platform/REVIEW.md docs/adr/README.md docs/adr/0011-dictionary-persistence-and-composition.md docs/adr/0012-dictionary-worker-and-document-ingestion.md docs/architecture.md docs/operations/README.md docs/operations/dictionary-jobs-and-documents.md design/DESIGN_SYSTEM.md
 ```
 
 ## Automated tests

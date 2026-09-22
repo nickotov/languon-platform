@@ -8,7 +8,7 @@ surfaces:
     - api
     - system
 source_paths:
-    - .agent/features/profile-account-controls/**
+    - .agent/features/026-profile-account-controls/**
     - apps/web/src/fsd/features/account-controls/**
     - apps/web/src/fsd/pages/profile/**
     - apps/web/src/fsd/widgets/site-header/**

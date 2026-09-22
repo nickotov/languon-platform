@@ -17,7 +17,12 @@ It separates UX recommendations and unresolved decisions, supports correction
 deltas, and makes no external design calls. It saves briefs by default under
 [docs/design-prompt](./design-prompt/README.md) with links to feature records,
 implementation evidence, and relevant ADRs; explicit response-only requests are
-respected. Reconcile the returned design against its requirements before integration.
+respected. Each saved brief also creates a versioned `DESIGN.md` handoff linking
+requirements, its frozen prompt and a generated-design URL slot. Paste the URL,
+then request review or implementation of that version. Updated prompts/designs
+append revisions, including edits at the same URL; prior approvals and implemented
+versions remain recorded. See [handoff rules](../.agent/DESIGN_HANDOFF.md).
+Reconcile the returned design against its requirements before integration.
 
 Repository-scoped workflows are documented in
 [`agent-skills.md`](./agent-skills.md), including invocation, authority, locally
@@ -315,7 +320,7 @@ disposition, not silent omission or invented working behavior. See the
 
 For a feature, explicitly invoke `$feature-development` or say that you want to
 create a feature. Codex will
-create or update `.agent/features/<slug>/`, maintain the ExecPlan, run
+create or update `.agent/features/<NNN>-<slug>/`, maintain the ExecPlan, run
 proportional verification, request review, remediate findings, and record
 evidence. Bounded low-risk fixes should use `$correction-development`; focused
 engineering or UX enhancements should use `$improvement-development` instead.

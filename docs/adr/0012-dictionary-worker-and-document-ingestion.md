@@ -238,5 +238,5 @@ outside the requested feature. Only reviewed card proposals persist.
 - [Dictionary jobs and document operations](../operations/dictionary-jobs-and-documents.md)
 - [ADR-0002: Drizzle schema and migration strategy](./0002-drizzle-schema-and-migration-strategy.md)
 - [ADR-0009: Release and deployment platform](./0009-release-and-deployment-platform.md)
-- [Dictionary Platform feature](../../.agent/features/dictionary-platform/FEATURE.md)
-- [Dictionary Platform ExecPlan](../../.agent/features/dictionary-platform/EXEC_PLAN.md)
+- [Dictionary Platform feature](../../.agent/features/021-dictionary-platform/FEATURE.md)
+- [Dictionary Platform ExecPlan](../../.agent/features/021-dictionary-platform/EXEC_PLAN.md)

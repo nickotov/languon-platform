@@ -133,5 +133,5 @@ needed for the approved latest-run developer workflow.
 
 - [ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)
 - [Web dev panel README](../../web-dev-panel/README.md)
-- [Web dev command panel feature](../../.agent/features/web-dev-panel/FEATURE.md)
-- [Web dev command panel ExecPlan](../../.agent/features/web-dev-panel/EXEC_PLAN.md)
+- [Web dev command panel feature](../../.agent/features/017-web-dev-panel/FEATURE.md)
+- [Web dev command panel ExecPlan](../../.agent/features/017-web-dev-panel/EXEC_PLAN.md)

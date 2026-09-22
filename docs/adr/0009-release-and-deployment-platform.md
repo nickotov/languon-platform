@@ -233,8 +233,8 @@ GitHub-hosted job preserves a smaller trust boundary.
 
 ## Related
 
-- [Release and deployment feature](../../.agent/features/release-deployment-platform/FEATURE.md)
-- [Release and deployment ExecPlan](../../.agent/features/release-deployment-platform/EXEC_PLAN.md)
+- [Release and deployment feature](../../.agent/features/015-release-deployment-platform/FEATURE.md)
+- [Release and deployment ExecPlan](../../.agent/features/015-release-deployment-platform/EXEC_PLAN.md)
 - [ADR-0002: Drizzle schema and migration strategy](./0002-drizzle-schema-and-migration-strategy.md)
 - [Architecture](../architecture.md)
 - [NGINX signal control](https://nginx.org/en/docs/control.html)

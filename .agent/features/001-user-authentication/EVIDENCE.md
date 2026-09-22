@@ -12,7 +12,7 @@ Status: Complete
       the planning audits were incorporated.
     - Limitation: this is only a pre-auth baseline; most workspaces currently pass
       with no tests and it provides no evidence for future authentication behavior.
-- `pnpm exec prettier --write .agent/features/user-authentication/FEATURE.md .agent/features/user-authentication/EXEC_PLAN.md docs/adr/README.md docs/adr/0001-user-authentication-and-session-strategy.md docs/adr/0002-drizzle-schema-and-migration-strategy.md`
+- `pnpm exec prettier --write .agent/features/001-user-authentication/FEATURE.md .agent/features/001-user-authentication/EXEC_PLAN.md docs/adr/README.md docs/adr/0001-user-authentication-and-session-strategy.md docs/adr/0002-drizzle-schema-and-migration-strategy.md`
     - Result: completed; planning files formatted.
 - `pnpm exec prettier --check <seven planning and ADR Markdown files>`
     - Result: passed; every targeted file matches repository Prettier style.
