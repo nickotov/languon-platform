@@ -28,6 +28,7 @@ export const AdminErrorCodeSchema = z.enum([
     'passkey_verification_failed',
     'user_not_found',
     'user_state_conflict',
+    'ai_settings_conflict',
     'deletion_cancellation_unavailable',
     'self_disable_forbidden',
     'last_owner_forbidden',
@@ -105,6 +106,83 @@ export const AdminAuditEventsResponseSchema = z
     })
     .strict();
 
+export const AdminAiHealthSchema = z
+    .object({
+        status: z.enum(['available', 'unavailable', 'unverified']),
+        checkedAt: z.string().datetime().nullable(),
+        message: z.string().trim().min(1).max(300).nullable(),
+    })
+    .strict();
+
+export const AdminAiModelSchema = z
+    .object({
+        id: z.string().trim().min(1).max(160),
+        label: z.string().trim().min(1).max(160),
+        supportedFormats: z.array(z.string().trim().min(1).max(160)).min(1),
+        available: z.boolean(),
+        unavailableReason: z.string().trim().min(1).max(300).nullable(),
+    })
+    .strict();
+
+export const AdminAiProviderSchema = z
+    .object({
+        id: z.enum(['deepseek', 'kie']),
+        label: z.string().trim().min(1).max(80),
+        credentialStatus: z.enum(['configured', 'missing']),
+        health: AdminAiHealthSchema,
+        models: z.array(AdminAiModelSchema).min(1),
+    })
+    .strict();
+
+export const AdminAiSettingsSchema = z
+    .object({
+        version: z.number().int().nonnegative(),
+        activeProvider: z.enum(['deepseek', 'kie']).nullable(),
+        defaultModel: z.string().trim().min(1).max(160).nullable(),
+        enabledModels: z.array(z.string().trim().min(1).max(160)),
+        updatedAt: z.string().datetime().nullable(),
+    })
+    .strict();
+
+export const AdminAiSettingsResponseSchema = z
+    .object({
+        settings: AdminAiSettingsSchema,
+        providers: z.array(AdminAiProviderSchema),
+    })
+    .strict();
+
+export const AdminAiSettingsMutationRequestSchema = z
+    .object({
+        expectedVersion: z.number().int().nonnegative(),
+        activeProvider: z.enum(['deepseek', 'kie']),
+        defaultModel: z.string().trim().min(1).max(160),
+        enabledModels: z
+            .array(z.string().trim().min(1).max(160))
+            .min(1)
+            .max(32),
+        reason: AdminReasonSchema,
+    })
+    .strict()
+    .superRefine((value, context) => {
+        if (new Set(value.enabledModels).size !== value.enabledModels.length) {
+            context.addIssue({
+                code: 'custom',
+                message: 'Enabled models must be unique.',
+                path: ['enabledModels'],
+            });
+        }
+        if (!value.enabledModels.includes(value.defaultModel)) {
+            context.addIssue({
+                code: 'custom',
+                message: 'The default model must be enabled.',
+                path: ['defaultModel'],
+            });
+        }
+    });
+
+export const AdminAiSettingsMutationResponseSchema =
+    AdminAiSettingsResponseSchema;
+
 export const AdminEndpointSchemas = {
     me: { response: AdminMeResponseSchema, error: AdminErrorResponseSchema },
     dashboard: {
@@ -144,6 +222,15 @@ export const AdminEndpointSchemas = {
         response: AdminAuditEventsResponseSchema,
         error: AdminErrorResponseSchema,
     },
+    aiSettings: {
+        response: AdminAiSettingsResponseSchema,
+        error: AdminErrorResponseSchema,
+    },
+    updateAiSettings: {
+        body: AdminAiSettingsMutationRequestSchema,
+        response: AdminAiSettingsMutationResponseSchema,
+        error: AdminErrorResponseSchema,
+    },
 } as const;
 
 export type AdminErrorCode = z.infer<typeof AdminErrorCodeSchema>;
@@ -160,4 +247,13 @@ export type AdminUserStatusMutationResponse = z.infer<
 export type AdminAuditEventsQuery = z.infer<typeof AdminAuditEventsQuerySchema>;
 export type AdminAuditEventsResponse = z.infer<
     typeof AdminAuditEventsResponseSchema
+>;
+export type AdminAiSettingsResponse = z.infer<
+    typeof AdminAiSettingsResponseSchema
+>;
+export type AdminAiSettingsMutationRequest = z.infer<
+    typeof AdminAiSettingsMutationRequestSchema
+>;
+export type AdminAiSettingsMutationResponse = z.infer<
+    typeof AdminAiSettingsMutationResponseSchema
 >;

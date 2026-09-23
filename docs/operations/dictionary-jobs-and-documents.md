@@ -43,6 +43,13 @@ worker-local parser child <------ bounded IPC ------------------------+
   OS-enforced network-denied namespace and communicates only through bounded
   worker IPC. ClamAV signature updates use a separate allowlisted updater path
   rather than general scanner egress.
+  The worker may read `dictionary_ai_configuration` and immutable configuration
+  revisions to resolve a job's pinned provider; it cannot insert, update, or
+  delete those records. It may insert/update only its own sanitized, expiring
+  rows in `dictionary_ai_worker_observations`; those rows contain provider/model,
+  adapter revision, worker/release identity, state, timestamps, and bounded
+  generic messages, never credentials or provider payloads. Admin/API
+  infrastructure owns configuration writes.
 - Raw object keys, presigned URLs, share keys or their dedicated request header,
   prompts, terms, document text, card content, and provider payloads are excluded
   from logs, traces, metrics, deployment evidence, and job failure messages.
@@ -57,6 +64,22 @@ worker-local parser child <------ bounded IPC ------------------------+
 
 - Keep the four-image ADR-0009 manifest. Start a dictionary worker service from
   the exact backend digest in each blue/green slot after the singleton migration.
+- Managed provider routing is a two-step expand/activate change. Expand first so
+  every active and rollback-floor worker understands `execution_revision_id` and
+  can resolve pinned revisions. Keep `DICTIONARY_AI_MANAGED_ROUTING_ENABLED=false`
+  during that phase. Set it to `true` only after compatibility is established;
+  the admin mutation endpoint refuses activation while the gate is false. Revert
+  a default by saving a new revision, and drain referenced jobs before removing
+  an adapter or credential reference.
+- A database trigger rejects the queued-to-running transition for pinned jobs
+  unless the claim transaction sets managed-routing revision `1`. Current workers
+  set it transaction-locally; pre-feature workers cannot bypass the guard. During
+  overlap an old worker may poll a pinned row, but it cannot lease or execute it.
+- Running workers refresh provider observations every minute with a two-minute
+  validity window. Any fresh unavailable observation for the selected model
+  prevents activation. DeepSeek's authenticated model-list probe can report
+  available. Kie's non-generating route probe reports unverified even when
+  reachable because HTTP 405 does not validate its key or structured output.
 - The image command is
   `node dist/infrastructure/worker/dictionary-worker-command.js run`; its private
   Compose healthcheck invokes the same command with `healthcheck`. The healthcheck

@@ -2,6 +2,8 @@ import { RecentAuthenticationRequiredError } from '../../../authentication/appli
 import { mapAuthenticationHttpError } from '../../../authentication/interface/http/auth-http-error-mapping';
 import {
     AdminAccessDeniedError,
+    AdminAiSettingsConflictError,
+    AdminAiSettingsUnavailableError,
     AdminCancellationJournalUnavailableError,
     AdminDeletionCancellationUnavailableError,
     AdminLastOwnerForbiddenError,
@@ -41,6 +43,20 @@ export function mapAdministrationHttpError(
             'user_state_conflict',
             'The user changed since it was loaded.',
             409,
+        );
+    }
+    if (error instanceof AdminAiSettingsConflictError) {
+        return new AdministrationHttpError(
+            'ai_settings_conflict',
+            'AI settings changed since they were loaded.',
+            409,
+        );
+    }
+    if (error instanceof AdminAiSettingsUnavailableError) {
+        return new AdministrationHttpError(
+            'capability_unavailable',
+            error.message,
+            503,
         );
     }
     if (error instanceof AdminDeletionCancellationUnavailableError) {

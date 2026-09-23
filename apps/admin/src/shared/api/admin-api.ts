@@ -1,6 +1,9 @@
 import { BrowserApiError, createBrowserApiClient } from '@languon/browser-auth';
 import {
     AdminAuditEventsResponseSchema,
+    AdminAiSettingsMutationRequestSchema,
+    AdminAiSettingsMutationResponseSchema,
+    AdminAiSettingsResponseSchema,
     AdminDashboardResponseSchema,
     AdminErrorResponseSchema,
     AdminMeResponseSchema,
@@ -18,6 +21,7 @@ import {
     PasswordLoginResponseSchema,
     RefreshRequestSchema,
     type AdminAuditEventsQuery,
+    type AdminAiSettingsMutationRequest,
     type AdminErrorResponse,
     type AdminUserStatusMutationRequest,
     type AdminUsersQuery,
@@ -189,6 +193,20 @@ export const adminApi = {
             AdminAuditEventsResponseSchema,
             signal,
         ),
+    aiSettings: (signal?: AbortSignal) =>
+        authorized('/admin/ai-settings', AdminAiSettingsResponseSchema, signal),
+    mutateAiSettings: (
+        body: AdminAiSettingsMutationRequest,
+        signal?: AbortSignal,
+    ) =>
+        authorizedRequest(
+            '/admin/ai-settings',
+            body,
+            AdminAiSettingsMutationRequestSchema,
+            AdminAiSettingsMutationResponseSchema,
+            'PATCH',
+            signal,
+        ),
     apiUrl,
 };
 
@@ -206,6 +224,37 @@ async function authorizedMutation(
             bodySchema: AdminUserStatusMutationRequestSchema,
             method: 'POST',
             responseSchema: AdminUserStatusMutationResponseSchema,
+            signal,
+        });
+    try {
+        return await request();
+    } catch (error) {
+        if (!(error instanceof AdminApiError) || error.status !== 401) {
+            throw error;
+        }
+        accessTokenStore.clear();
+        accessToken = await refreshAccessToken(signal);
+        return request();
+    }
+}
+
+async function authorizedRequest<TBody, TResponse>(
+    path: string,
+    body: TBody,
+    bodySchema: { parse(value: unknown): TBody },
+    responseSchema: { parse(value: unknown): TResponse },
+    method: 'PATCH' | 'POST',
+    signal?: AbortSignal,
+) {
+    let accessToken =
+        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+    const request = () =>
+        client.request(path, {
+            accessToken,
+            body,
+            bodySchema,
+            method,
+            responseSchema,
             signal,
         });
     try {

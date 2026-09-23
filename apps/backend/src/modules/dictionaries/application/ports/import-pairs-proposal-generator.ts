@@ -1,6 +1,7 @@
 import type { DictionaryImportPairsGenerationProposalPayload } from '../../domain/batch-generation';
 import type { DictionaryImportPairsGenerationInputPayload } from '../../domain/generation';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
+import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
 
 export const dictionaryImportPairsGenerationMinimumInputTokensPerAttempt = 262_144;
 export const dictionaryImportPairsGenerationMinimumOutputTokensPerAttempt = 40_960;
@@ -9,6 +10,7 @@ export interface ImportPairsProposalGeneratorRequest {
     idempotencyKey: string;
     input: DictionaryImportPairsGenerationInputPayload;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
+    providerExecution?: DictionaryAiExecutionSnapshot | null;
     signal: AbortSignal;
 }
 

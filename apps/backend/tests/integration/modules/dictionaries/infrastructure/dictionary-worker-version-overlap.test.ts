@@ -765,6 +765,30 @@ run('dictionary worker version overlap', () => {
         });
     });
 
+    it('claims a first attempt whose budget was already reserved before a more expensive provider job', async () => {
+        const seeded = await seedCard();
+        const first = await enqueue(seeded, undefined, fingerprint('R'), 2);
+        const second = await enqueue(seeded, undefined, fingerprint('S'), 3);
+        await database
+            .update(dictionaryGenerationJobsTable)
+            .set({
+                providerMaxCostMicrosPerAttempt: 1_000_000,
+                providerReservedCostMicros: 1_000_000,
+            })
+            .where(eq(dictionaryGenerationJobsTable.id, second.id));
+
+        await expect(
+            generationStore.claim({
+                context: context(4),
+                globalConcurrency: 2,
+                leaseDurationMs: 1_000,
+                ownerConcurrency: 1,
+                supportedFormats: [dictionaryGenerationFormat],
+                workerId: 'mixed-provider-worker',
+            }),
+        ).resolves.toMatchObject({ id: first.id });
+    });
+
     it('does not double-reserve retries and settles available provider usage exactly once', async () => {
         const seeded = await seedCard();
         const job = await enqueue(seeded);

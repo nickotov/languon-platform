@@ -1,6 +1,7 @@
 import type { DictionaryBatchGenerationProposalPayload } from '../../domain/batch-generation';
 import type { DictionaryGenerationInputPayload } from '../../domain/generation';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
+import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
 
 export type DictionaryGenerationExecutionStage =
     | 'scanning'
@@ -24,6 +25,7 @@ export interface DictionaryGenerationFormatExecutor<TFormat extends string> {
         leaseDeadline: Date;
         input: Extract<DictionaryGenerationInputPayload, { format: TFormat }>;
         providerBudget: DictionaryGenerationProviderBudgetPolicy;
+        providerExecution?: DictionaryAiExecutionSnapshot | null;
         reportStage?: (
             stage: DictionaryGenerationExecutionStage,
             percent: number,

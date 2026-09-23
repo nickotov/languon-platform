@@ -124,6 +124,8 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
     assert.match(worker, /DICTIONARY_JOB_API_ENQUEUED_FORMATS/);
     assert.match(worker, /DICTIONARY_GENERATION_PROVIDER_MODE/);
     assert.match(worker, /DICTIONARY_GENERATION_MODEL_API_KEY/);
+    assert.match(worker, /DEEPSEEK_API_KEY/);
+    assert.match(worker, /KIE_API_KEY/);
     const backend = apps.slice(
         apps.indexOf('    backend:'),
         apps.indexOf('    dictionary-worker:'),
@@ -131,6 +133,16 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
     assert.match(backend, /DICTIONARY_HMAC_SECRET/);
     assert.doesNotMatch(worker, /DICTIONARY_HMAC_SECRET/);
     assert.doesNotMatch(backend, /DICTIONARY_GENERATION_MODEL_API_KEY/);
+    assert.doesNotMatch(backend, /^\s+DEEPSEEK_API_KEY:/m);
+    assert.doesNotMatch(backend, /^\s+KIE_API_KEY:/m);
+    for (const safeSetting of [
+        'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED',
+        'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED',
+        'DICTIONARY_AI_MANAGED_ROUTING_ENABLED',
+    ]) {
+        assert.match(backend, new RegExp(`^\\s+${safeSetting}:`, 'm'));
+        assert.doesNotMatch(worker, new RegExp(`^\\s+${safeSetting}:`, 'm'));
+    }
     for (const policy of [
         'DICTIONARY_GENERATION_MAX_INPUT_TOKENS',
         'DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS',

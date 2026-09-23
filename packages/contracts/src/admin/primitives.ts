@@ -26,7 +26,11 @@ export const AdminAuditActionSchema = z.enum([
     'user_deletion_cancelled',
     'access_denied',
     'audit_pruned',
+    'ai_settings_updated',
 ]);
+
+export const AdminAiProviderIdSchema = z.enum(['deepseek', 'kie']);
+export const AdminAiModelIdSchema = z.string().trim().min(1).max(160);
 
 export const AdminReasonSchema = z
     .string()

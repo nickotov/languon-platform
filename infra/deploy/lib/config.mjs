@@ -339,46 +339,65 @@ export function assertDeployConfig(environment, config) {
         }
     }
     if (dictionaryProviderMode === 'mastra') {
-        const missingModelKeys = dictionaryModelKeys.filter(
-            (key) => !config[key],
-        );
+        const modelId = config.DICTIONARY_GENERATION_MODEL_ID;
+        const curatedCredentialKey =
+            modelId === 'deepseek/deepseek-chat'
+                ? 'DEEPSEEK_API_KEY'
+                : modelId === 'kie/gemini-2.5-pro'
+                  ? 'KIE_API_KEY'
+                  : null;
+        const missingModelKeys = curatedCredentialKey
+            ? [
+                  !modelId && 'DICTIONARY_GENERATION_MODEL_ID',
+                  !config[curatedCredentialKey] && curatedCredentialKey,
+              ].filter(Boolean)
+            : dictionaryModelKeys.filter((key) => !config[key]);
         if (missingModelKeys.length) {
             throw new Error(
                 `Mastra dictionary generation is missing required keys: ${missingModelKeys.join(', ')}.`,
             );
         }
-        if (
-            !/^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*$/i.test(
-                config.DICTIONARY_GENERATION_MODEL_ID,
-            )
-        ) {
+        if (!/^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*$/i.test(modelId)) {
             throw new Error(
                 'DICTIONARY_GENERATION_MODEL_ID must use provider/model format.',
             );
         }
-        let modelBaseUrl;
-        try {
-            modelBaseUrl = new URL(config.DICTIONARY_GENERATION_MODEL_BASE_URL);
-        } catch {
-            throw new Error(
-                'DICTIONARY_GENERATION_MODEL_BASE_URL must be a valid provider base URL.',
-            );
-        }
         if (
-            modelBaseUrl.protocol !== 'https:' ||
-            modelBaseUrl.username !== '' ||
-            modelBaseUrl.password !== '' ||
-            modelBaseUrl.search !== '' ||
-            modelBaseUrl.hash !== '' ||
-            modelBaseUrl.pathname.length > 200 ||
-            !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/.test(
-                modelBaseUrl.pathname,
-            ) ||
-            isPrivateAddress(modelBaseUrl.hostname)
+            curatedCredentialKey &&
+            (config.DICTIONARY_GENERATION_MODEL_BASE_URL ||
+                config.DICTIONARY_GENERATION_MODEL_API_KEY)
         ) {
             throw new Error(
-                'DICTIONARY_GENERATION_MODEL_BASE_URL must be a bounded credential-free HTTPS provider URL outside private addresses.',
+                'Curated dictionary models must use their fixed endpoint and provider credential.',
             );
+        }
+        if (!curatedCredentialKey) {
+            let modelBaseUrl;
+            try {
+                modelBaseUrl = new URL(
+                    config.DICTIONARY_GENERATION_MODEL_BASE_URL,
+                );
+            } catch {
+                throw new Error(
+                    'DICTIONARY_GENERATION_MODEL_BASE_URL must be a valid provider base URL.',
+                );
+            }
+            if (
+                modelBaseUrl.protocol !== 'https:' ||
+                modelBaseUrl.username !== '' ||
+                modelBaseUrl.password !== '' ||
+                modelBaseUrl.search !== '' ||
+                modelBaseUrl.hash !== '' ||
+                modelBaseUrl.pathname.length > 200 ||
+                !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/.test(
+                    modelBaseUrl.pathname,
+                ) ||
+                isPrivateAddress(modelBaseUrl.hostname)
+            ) {
+                throw new Error(
+                    'DICTIONARY_GENERATION_MODEL_BASE_URL must be a bounded credential-free HTTPS provider URL outside private addresses.',
+                );
+            }
         }
     } else if (dictionaryModelKeys.some((key) => config[key])) {
         throw new Error(

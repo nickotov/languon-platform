@@ -176,31 +176,35 @@ describe('admin API boundary', () => {
     });
 
     it('sends cancellation to the distinct deletion endpoint with version and reason', async () => {
-        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
-            user: {
-                activeSessionCount: 0,
-                createdAt: '2026-08-19T09:00:00.000Z',
-                emailVerified: true,
-                id: '0198c600-52bb-7e53-8ac3-3102668e32ab',
-                isOwner: false,
-                passkeyCount: 0,
-                primaryEmail: 'target@example.com',
-                status: 'active',
-                updatedAt: '2026-08-20T09:00:00.000Z',
-                version: 4,
-            },
-        }));
+        const fetchMock = vi.fn().mockResolvedValue(
+            jsonResponse({
+                user: {
+                    activeSessionCount: 0,
+                    createdAt: '2026-08-19T09:00:00.000Z',
+                    emailVerified: true,
+                    id: '0198c600-52bb-7e53-8ac3-3102668e32ab',
+                    isOwner: false,
+                    passkeyCount: 0,
+                    primaryEmail: 'target@example.com',
+                    status: 'active',
+                    updatedAt: '2026-08-20T09:00:00.000Z',
+                    version: 4,
+                },
+            }),
+        );
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('admin-access-token');
 
-        await expect(adminApi.mutateUser(
-            '0198c600-52bb-7e53-8ac3-3102668e32ab',
-            'deletion/cancel',
-            {
-                expectedVersion: 3,
-                reason: 'Support confirmed account restoration',
-            },
-        )).resolves.toMatchObject({ user: { status: 'active', version: 4 } });
+        await expect(
+            adminApi.mutateUser(
+                '0198c600-52bb-7e53-8ac3-3102668e32ab',
+                'deletion/cancel',
+                {
+                    expectedVersion: 3,
+                    reason: 'Support confirmed account restoration',
+                },
+            ),
+        ).resolves.toMatchObject({ user: { status: 'active', version: 4 } });
         expect(fetchMock).toHaveBeenCalledWith(
             expect.stringMatching(/\/admin\/users\/[^/]+\/deletion\/cancel$/),
             expect.objectContaining({
@@ -211,6 +215,71 @@ describe('admin API boundary', () => {
                 method: 'POST',
             }),
         );
+    });
+
+    it('loads and updates AI settings through the protected admin boundary', async () => {
+        const settings = {
+            providers: [
+                {
+                    credentialStatus: 'configured',
+                    health: {
+                        checkedAt: null,
+                        message: null,
+                        status: 'unverified',
+                    },
+                    id: 'deepseek',
+                    label: 'DeepSeek',
+                    models: [
+                        {
+                            id: 'deepseek-chat',
+                            label: 'DeepSeek Chat',
+                            available: true,
+                            supportedFormats: ['card:v1'],
+                            unavailableReason: null,
+                        },
+                    ],
+                },
+            ],
+            settings: {
+                activeProvider: 'deepseek',
+                defaultModel: 'deepseek-chat',
+                enabledModels: ['deepseek-chat'],
+                updatedAt: null,
+                version: 1,
+            },
+        };
+        const fetchMock = vi
+            .fn()
+            .mockImplementation(async () => jsonResponse(settings));
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set('admin-access-token');
+
+        await expect(adminApi.aiSettings()).resolves.toEqual(settings);
+        await expect(
+            adminApi.mutateAiSettings({
+                activeProvider: 'deepseek',
+                defaultModel: 'deepseek-chat',
+                enabledModels: ['deepseek-chat'],
+                expectedVersion: 1,
+                reason: 'Enable verified dictionary generation',
+            }),
+        ).resolves.toEqual(settings);
+
+        expect(fetchMock).toHaveBeenLastCalledWith(
+            expect.stringMatching(/\/admin\/ai-settings$/),
+            expect.objectContaining({
+                body: expect.any(String),
+                method: 'PATCH',
+            }),
+        );
+        const request = fetchMock.mock.lastCall?.[1] as RequestInit;
+        expect(JSON.parse(String(request.body))).toEqual({
+            activeProvider: 'deepseek',
+            defaultModel: 'deepseek-chat',
+            enabledModels: ['deepseek-chat'],
+            expectedVersion: 1,
+            reason: 'Enable verified dictionary generation',
+        });
     });
 
     it('keeps an active in-memory session available during a transient network failure', async () => {

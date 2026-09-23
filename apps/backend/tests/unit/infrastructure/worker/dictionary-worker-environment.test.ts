@@ -198,6 +198,67 @@ describe('dictionary worker environment', () => {
         }
     });
 
+    it('binds curated DeepSeek and Kie models to trusted provider settings', () => {
+        const deepseek = loadDictionaryWorkerEnvironment({
+            ...base,
+            DEEPSEEK_API_KEY: 'deepseek-test-key',
+            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+            DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+            ...liveProviderBudget,
+        });
+        expect(deepseek.provider).toMatchObject({
+            apiKey: 'deepseek-test-key',
+            baseUrl: 'https://api.deepseek.com',
+            credentialReference: 'env:DEEPSEEK_API_KEY',
+            modelId: 'deepseek/deepseek-chat',
+            providerModelId: 'deepseek-chat',
+        });
+        expect(deepseek.providerCredentials).toEqual({
+            DEEPSEEK_API_KEY: 'deepseek-test-key',
+        });
+
+        const kie = loadDictionaryWorkerEnvironment({
+            ...base,
+            DICTIONARY_GENERATION_MODEL_ID: 'kie/gemini-2.5-pro',
+            DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+            KIE_API_KEY: 'kie-test-key',
+            ...liveProviderBudget,
+        });
+        expect(kie.provider).toMatchObject({
+            apiKey: 'kie-test-key',
+            baseUrl: 'https://api.kie.ai/gemini-2.5-pro/v1',
+            credentialReference: 'env:KIE_API_KEY',
+            modelId: 'kie/gemini-2.5-pro',
+            providerModelId: 'gemini-2.5-pro',
+        });
+        expect(kie.providerCredentials).toEqual({
+            KIE_API_KEY: 'kie-test-key',
+        });
+    });
+
+    it('fails closed for missing curated credentials and ambiguous legacy overrides', () => {
+        expect(() =>
+            loadDictionaryWorkerEnvironment({
+                ...base,
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+                ...liveProviderBudget,
+            }),
+        ).toThrow(/DEEPSEEK_API_KEY/);
+        expect(() =>
+            loadDictionaryWorkerEnvironment({
+                ...base,
+                DEEPSEEK_API_KEY: 'deepseek-test-key',
+                DICTIONARY_GENERATION_MODEL_API_KEY: 'legacy-test-key',
+                DICTIONARY_GENERATION_MODEL_BASE_URL:
+                    'https://models.example.test/v1',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+                ...liveProviderBudget,
+            }),
+        ).toThrow(/remove legacy/i);
+    });
+
     it('requires and validates an explicit conservative live provider budget', () => {
         const live = loadDictionaryWorkerEnvironment({
             ...base,
@@ -367,5 +428,21 @@ describe('dictionary worker environment', () => {
                     'postgres://user:pass@database.internal:5432/languon',
             }),
         ).toThrow(/sslmode=verify-full/);
+    });
+
+    it('allows deterministic managed-provider transport only in tests', () => {
+        expect(
+            loadDictionaryWorkerEnvironment({
+                ...base,
+                DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
+            }).providerFixtureMode,
+        ).toBe('deterministic');
+        expect(() =>
+            loadDictionaryWorkerEnvironment({
+                ...base,
+                APP_ENV: 'development',
+                DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
+            }),
+        ).toThrow(/only in tests/);
     });
 });

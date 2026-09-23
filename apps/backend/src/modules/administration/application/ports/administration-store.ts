@@ -2,6 +2,8 @@ import type {
     AdminAuditAction,
     AdminAuditEvent,
     AdminAuditEventsQuery,
+    AdminAiSettingsMutationRequest,
+    AdminAiSettingsResponse,
     AdminDashboardResponse,
     AdminRole,
     AdminUserDetail,
@@ -46,7 +48,18 @@ export interface AdminUserMutationInput {
     targetUserId: string;
 }
 
+export interface AdminAiSettingsMutationInput extends AdminAiSettingsMutationRequest {
+    actorSessionId: string;
+    actorUserId: string;
+    audit: Pick<
+        AdminAuditWrite,
+        'correlationId' | 'expiresAt' | 'id' | 'occurredAt'
+    >;
+    revisionId: string;
+}
+
 export interface AdministrationStore {
+    aiSettings(): Promise<AdminAiSettingsResponse>;
     cancelUserDeletion(input: AdminUserMutationInput): Promise<AdminUserDetail>;
     dashboard(): Promise<AdminDashboardResponse>;
     disableUser(input: AdminUserMutationInput): Promise<AdminUserDetail>;
@@ -61,4 +74,7 @@ export interface AdministrationStore {
     listUsers(input: AdminUsersQuery): Promise<AdminUsersResponse>;
     recordAudit(input: AdminAuditWrite): Promise<void>;
     restoreUser(input: AdminUserMutationInput): Promise<AdminUserDetail>;
+    updateAiSettings(
+        input: AdminAiSettingsMutationInput,
+    ): Promise<AdminAiSettingsResponse>;
 }

@@ -19,6 +19,16 @@ const now = new Date('2026-08-20T08:00:00.000Z');
 
 function setup(options: { membership?: boolean } = {}) {
     const store = {
+        aiSettings: vi.fn().mockResolvedValue({
+            providers: [],
+            settings: {
+                activeProvider: null,
+                defaultModel: null,
+                enabledModels: [],
+                updatedAt: null,
+                version: 0,
+            },
+        }),
         cancelUserDeletion: vi.fn().mockResolvedValue({ id: targetId }),
         dashboard: vi.fn(),
         disableUser: vi.fn().mockResolvedValue({ id: targetId }),
@@ -37,6 +47,16 @@ function setup(options: { membership?: boolean } = {}) {
         listUsers: vi.fn(),
         recordAudit: vi.fn().mockResolvedValue(undefined),
         restoreUser: vi.fn().mockResolvedValue({ id: targetId }),
+        updateAiSettings: vi.fn().mockResolvedValue({
+            providers: [],
+            settings: {
+                activeProvider: 'deepseek',
+                defaultModel: 'deepseek-chat',
+                enabledModels: ['deepseek-chat'],
+                updatedAt: now.toISOString(),
+                version: 1,
+            },
+        }),
     } as unknown as AdministrationStore;
     const authentication = {
         requireActiveSession: vi.fn().mockResolvedValue({
@@ -75,6 +95,37 @@ function setup(options: { membership?: boolean } = {}) {
 }
 
 describe('AdministrationService', () => {
+    it('requires recent authentication and supplies immutable AI revision identity', async () => {
+        const { authentication, service, store } = setup();
+        const input = {
+            activeProvider: 'deepseek' as const,
+            defaultModel: 'deepseek-chat',
+            enabledModels: ['deepseek-chat'],
+            expectedVersion: 0,
+            reason: 'Enable verified dictionary generation',
+        };
+
+        await service.updateAiSettings(
+            'access-token',
+            input,
+            '0198c203-6b64-71cd-877b-752ff3fe056f',
+        );
+
+        expect(
+            authentication.requireRecentlyAuthenticatedSession,
+        ).toHaveBeenCalledWith({
+            sessionId,
+            userId: actorId,
+        });
+        expect(store.updateAiSettings).toHaveBeenCalledWith(
+            expect.objectContaining({
+                ...input,
+                actorSessionId: sessionId,
+                actorUserId: actorId,
+                revisionId: expect.any(String),
+            }),
+        );
+    });
     it('requires recent admin authentication and a distinct audited cancellation action', async () => {
         const { authentication, service, store } = setup();
         const input = {
@@ -84,10 +135,14 @@ describe('AdministrationService', () => {
         const correlationId = '0198c203-6b64-71cd-877b-752ff3fe056f';
 
         await service.cancelUserDeletion(
-            'access-token', targetId, input, correlationId,
+            'access-token',
+            targetId,
+            input,
+            correlationId,
         );
-        expect(authentication.requireRecentlyAuthenticatedSession)
-            .toHaveBeenCalledWith({ sessionId, userId: actorId });
+        expect(
+            authentication.requireRecentlyAuthenticatedSession,
+        ).toHaveBeenCalledWith({ sessionId, userId: actorId });
         expect(store.cancelUserDeletion).toHaveBeenCalledWith(
             expect.objectContaining({
                 actorSessionId: sessionId,

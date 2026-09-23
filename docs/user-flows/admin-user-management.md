@@ -31,6 +31,7 @@ e2e_scenarios:
     - admin-owner-passkey-login
     - admin-private-edge-authentication
 related_features:
+    - ai-provider-management
     - user-authentication
     - release-deployment-platform
 ---

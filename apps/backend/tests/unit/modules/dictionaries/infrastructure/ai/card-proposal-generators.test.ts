@@ -180,6 +180,28 @@ describe('dictionary card proposal generators', () => {
         });
     });
 
+    it('enforces a model request cap independently of the aggregate attempt budget', async () => {
+        const generate = vi.fn().mockResolvedValue({
+            error: undefined,
+            object: proposal,
+            tripwire: undefined,
+            usage: { inputTokens: 120, outputTokens: 48 },
+        });
+        const generator = createMastraCardProposalGenerator({
+            agent: { generate },
+            modelRequestLimits: {
+                maxInputTokens: 64_000,
+                maxOutputTokens: 8_192,
+            },
+        });
+
+        await generator.generate(request());
+
+        expect(generate.mock.calls[0]?.[1]).toMatchObject({
+            maxOutputTokens: 8_192,
+        });
+    });
+
     it('rejects an input outside the conservative serialized-token envelope before dispatch', async () => {
         const generate = vi.fn();
         const generator = createMastraCardProposalGenerator({

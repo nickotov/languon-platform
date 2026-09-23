@@ -104,6 +104,9 @@ export function assertDictionaryWorkerDatabasePrivileges(
         privileges.documentObjectVersions !== true ||
         privileges.documentExtractions !== true ||
         privileges.settings !== true ||
+        privileges.aiConfiguration !== true ||
+        privileges.aiConfigurationRevisions !== true ||
+        privileges.aiWorkerObservations !== true ||
         privileges.dictionaryCardDuplicateColumns !== true ||
         privileges.jobsUnexpected !== false ||
         privileges.proposalsUnexpected !== false ||
@@ -112,6 +115,9 @@ export function assertDictionaryWorkerDatabasePrivileges(
         privileges.documentObjectVersionsUnexpected !== false ||
         privileges.documentExtractionsUnexpected !== false ||
         privileges.settingsUnexpected !== false ||
+        privileges.aiConfigurationUnexpected !== false ||
+        privileges.aiConfigurationRevisionsUnexpected !== false ||
+        privileges.aiWorkerObservationsUnexpected !== false ||
         privileges.dictionaries !== false ||
         privileges.dictionaryCards !== false ||
         privileges.dictionaryCardsUnexpectedColumns !== false ||
@@ -177,6 +183,9 @@ export const DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY = `select
     ${tablePrivilegeExpression('dictionary_document_object_versions', ['SELECT', 'INSERT', 'UPDATE'], 'and')} as "documentObjectVersions",
     ${tablePrivilegeExpression('dictionary_document_extractions', ['SELECT', 'INSERT', 'UPDATE'], 'and')} as "documentExtractions",
     has_table_privilege(current_user, 'public.dictionary_settings', 'SELECT') as "settings",
+    has_table_privilege(current_user, 'public.dictionary_ai_configuration', 'SELECT') as "aiConfiguration",
+    has_table_privilege(current_user, 'public.dictionary_ai_configuration_revisions', 'SELECT') as "aiConfigurationRevisions",
+    ${tablePrivilegeExpression('dictionary_ai_worker_observations', ['SELECT', 'INSERT', 'UPDATE'], 'and')} as "aiWorkerObservations",
     (has_column_privilege(current_user, 'public.dictionary_cards', 'id', 'SELECT')
         and has_column_privilege(current_user, 'public.dictionary_cards', 'dictionary_id', 'SELECT')
         and has_column_privilege(current_user, 'public.dictionary_cards', 'source', 'SELECT')
@@ -188,6 +197,9 @@ export const DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY = `select
     ${tablePrivilegeExpression('dictionary_document_object_versions', ['DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "documentObjectVersionsUnexpected",
     ${tablePrivilegeExpression('dictionary_document_extractions', ['DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "documentExtractionsUnexpected",
     ${tablePrivilegeExpression('dictionary_settings', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "settingsUnexpected",
+    ${tablePrivilegeExpression('dictionary_ai_configuration', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "aiConfigurationUnexpected",
+    ${tablePrivilegeExpression('dictionary_ai_configuration_revisions', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "aiConfigurationRevisionsUnexpected",
+    ${tablePrivilegeExpression('dictionary_ai_worker_observations', ['DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "aiWorkerObservationsUnexpected",
     ${tablePrivilegeExpression('dictionaries', forbiddenTablePrivileges, 'or')} as "dictionaries",
     ${tablePrivilegeExpression('dictionary_cards', forbiddenTablePrivileges, 'or')} as "dictionaryCards",
     exists (

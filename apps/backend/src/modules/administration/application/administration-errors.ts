@@ -18,6 +18,18 @@ export class AdminUserStateConflictError extends Error {
         this.name = 'AdminUserStateConflictError';
     }
 }
+export class AdminAiSettingsConflictError extends Error {
+    public constructor() {
+        super('AI settings changed since they were loaded.');
+        this.name = 'AdminAiSettingsConflictError';
+    }
+}
+export class AdminAiSettingsUnavailableError extends Error {
+    public constructor(message = 'The selected AI provider is unavailable.') {
+        super(message);
+        this.name = 'AdminAiSettingsUnavailableError';
+    }
+}
 export class AdminDeletionCancellationUnavailableError extends Error {
     public constructor() {
         super('Account deletion can no longer be cancelled.');

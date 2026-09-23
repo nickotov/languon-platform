@@ -3,11 +3,13 @@ import type {
     DictionaryCardAuthoringProviderInput,
 } from '../../domain/card-authoring';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
+import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
 
 export interface CardAuthoringProposalGeneratorRequest {
     idempotencyKey: string;
     input: DictionaryCardAuthoringProviderInput;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
+    providerExecution?: DictionaryAiExecutionSnapshot | null;
     signal: AbortSignal;
 }
 

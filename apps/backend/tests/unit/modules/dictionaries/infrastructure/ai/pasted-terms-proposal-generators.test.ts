@@ -221,6 +221,31 @@ describe('pasted-terms proposal generators', () => {
         });
     });
 
+    it('uses the per-call model output cap while preserving the aggregate batch envelope', async () => {
+        const generate = vi.fn().mockResolvedValue({
+            error: undefined,
+            object: {
+                candidates: [candidate('bank', 0), candidate('shore', 1)],
+                failures: [],
+            },
+            tripwire: undefined,
+            usage: { inputTokens: 400, outputTokens: 300 },
+        });
+        const generator = createMastraPastedTermsProposalGenerator({
+            agent: { generate },
+            modelRequestLimits: {
+                maxInputTokens: 64_000,
+                maxOutputTokens: 8_192,
+            },
+        });
+
+        await generator.generate(request());
+
+        expect(generate.mock.calls[0]?.[1]).toMatchObject({
+            maxOutputTokens: 8_192,
+        });
+    });
+
     it('fits a maximum multibyte twenty-row chunk inside one fifth of the aggregate input envelope', async () => {
         const rows = Array.from({ length: 20 }, (_, rowIndex) => ({
             input: '漢'.repeat(200),

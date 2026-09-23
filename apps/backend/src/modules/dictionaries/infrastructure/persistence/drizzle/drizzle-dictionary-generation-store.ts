@@ -41,6 +41,7 @@ import {
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
+import type { DictionaryAiExecutionSnapshot } from '../../../application/dictionary-ai-provider-catalog';
 import {
     DictionaryCardNotFoundError,
     DictionaryGenerationCandidateConflictError,
@@ -109,6 +110,8 @@ import {
     dictionaryCardRevisionsTable,
     dictionaryCardsTable,
     dictionaryGenerationJobsTable,
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
     dictionaryGenerationProposalsTable,
     dictionaryGenerationProviderCircuitTable,
     dictionaryIdempotencyKeysTable,
@@ -119,6 +122,11 @@ import {
 type Database = PostgresJsDatabase<typeof databaseSchema>;
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 type JobRow = typeof dictionaryGenerationJobsTable.$inferSelect;
+type ProviderExecution = {
+    budget: DictionaryGenerationProviderBudgetPolicy;
+    revisionId: string | null;
+    snapshot: DictionaryAiExecutionSnapshot | null;
+};
 type ProposalRow = typeof dictionaryGenerationProposalsTable.$inferSelect;
 type CardRow = typeof dictionaryCardsTable.$inferSelect;
 type SettingsRow = typeof dictionarySettingsTable.$inferSelect;
@@ -796,16 +804,18 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             generationLimits.maxRunnableQueueAgeMs)
             )
                 throw new DictionaryGenerationNotAvailableError();
+            const providerExecution = await this.activeProviderExecution(tx);
             const providerAdmission = await this.providerBudgetUsage(
                 tx,
                 input.ownerId,
                 input.context.now,
+                providerExecution.budget,
             );
             if (
                 !dictionaryGenerationProviderBudgetAllows(
                     providerAdmission,
                     true,
-                    this.providerBudget,
+                    providerExecution.budget,
                 )
             )
                 throw new DictionaryGenerationNotAvailableError();
@@ -852,6 +862,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     cardId: input.cardId,
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
+                    executionRevisionId: providerExecution.revisionId,
                     expectedCardVersion: input.expectedCardVersion,
                     expectedDictionaryVersion: input.expectedDictionaryVersion,
                     expectedSettingsVersion: input.expectedSettingsVersion,
@@ -864,22 +875,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ownerId: input.ownerId,
                     providerReservationState: 'active',
                     providerInputCostMicrosPerMillionTokens:
-                        this.providerBudget.inputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .inputCostMicrosPerMillionTokens,
                     providerMaxCostMicrosPerAttempt:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerMaxInputTokensPerAttempt:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerMaxOutputTokensPerAttempt:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     providerOutputCostMicrosPerMillionTokens:
-                        this.providerBudget.outputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .outputCostMicrosPerMillionTokens,
                     providerReservedAttempts: 1,
                     providerReservedCostMicros:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerReservedInputTokens:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     requestFingerprint: input.fingerprint,
                     sourceLanguageTag: current.dictionary.sourceLanguageTag,
                     targetLanguageTag: current.dictionary.targetLanguageTag,
@@ -1091,7 +1104,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         excludedValues.push({ field, values });
                 }
             }
-            await this.assertGenerationAdmission(
+            const providerExecution = await this.assertGenerationAdmission(
                 tx,
                 input.ownerId,
                 dictionaryCardAuthoringGenerationFormat,
@@ -1124,6 +1137,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
+                    executionRevisionId: providerExecution.revisionId,
                     expectedCardVersion: null,
                     expectedDictionaryVersion: input.expectedDictionaryVersion,
                     expectedSettingsVersion: input.expectedSettingsVersion,
@@ -1136,22 +1150,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ownerId: input.ownerId,
                     providerReservationState: 'active',
                     providerInputCostMicrosPerMillionTokens:
-                        this.providerBudget.inputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .inputCostMicrosPerMillionTokens,
                     providerMaxCostMicrosPerAttempt:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerMaxInputTokensPerAttempt:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerMaxOutputTokensPerAttempt:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     providerOutputCostMicrosPerMillionTokens:
-                        this.providerBudget.outputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .outputCostMicrosPerMillionTokens,
                     providerReservedAttempts: 1,
                     providerReservedCostMicros:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerReservedInputTokens:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     requestFingerprint: input.fingerprint,
                     sourceLanguageTag: current.dictionary.sourceLanguageTag,
                     targetLanguageTag: current.dictionary.targetLanguageTag,
@@ -1301,7 +1317,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 current.settings.version !== input.expectedSettingsVersion
             )
                 throw new DictionaryVersionConflictError();
-            await this.assertGenerationAdmission(
+            const providerExecution = await this.assertGenerationAdmission(
                 tx,
                 input.ownerId,
                 dictionaryPastedTermsGenerationFormat,
@@ -1329,6 +1345,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
+                    executionRevisionId: providerExecution.revisionId,
                     expectedCardVersion: null,
                     expectedDictionaryVersion: input.expectedDictionaryVersion,
                     expectedSettingsVersion: input.expectedSettingsVersion,
@@ -1341,22 +1358,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ownerId: input.ownerId,
                     providerReservationState: 'active',
                     providerInputCostMicrosPerMillionTokens:
-                        this.providerBudget.inputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .inputCostMicrosPerMillionTokens,
                     providerMaxCostMicrosPerAttempt:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerMaxInputTokensPerAttempt:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerMaxOutputTokensPerAttempt:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     providerOutputCostMicrosPerMillionTokens:
-                        this.providerBudget.outputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .outputCostMicrosPerMillionTokens,
                     providerReservedAttempts: 1,
                     providerReservedCostMicros:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerReservedInputTokens:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     requestFingerprint: input.fingerprint,
                     sourceLanguageTag: current.dictionary.sourceLanguageTag,
                     targetLanguageTag: current.dictionary.targetLanguageTag,
@@ -1633,7 +1652,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             )
                 throw new DictionaryGenerationNotAvailableError();
 
-            await this.assertGenerationAdmission(
+            const providerExecution = await this.assertGenerationAdmission(
                 tx,
                 input.ownerId,
                 dictionaryImportPairsGenerationFormat,
@@ -1666,6 +1685,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: current.dictionary.id,
+                    executionRevisionId: providerExecution.revisionId,
                     expectedCardVersion: null,
                     expectedDictionaryVersion: current.dictionary.version,
                     expectedSettingsVersion: current.settings.version,
@@ -1678,22 +1698,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ownerId: input.ownerId,
                     providerReservationState: 'active',
                     providerInputCostMicrosPerMillionTokens:
-                        this.providerBudget.inputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .inputCostMicrosPerMillionTokens,
                     providerMaxCostMicrosPerAttempt:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerMaxInputTokensPerAttempt:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerMaxOutputTokensPerAttempt:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     providerOutputCostMicrosPerMillionTokens:
-                        this.providerBudget.outputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .outputCostMicrosPerMillionTokens,
                     providerReservedAttempts: 1,
                     providerReservedCostMicros:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerReservedInputTokens:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     requestFingerprint: input.fingerprint,
                     sourceLanguageTag: current.dictionary.sourceLanguageTag,
                     targetLanguageTag: current.dictionary.targetLanguageTag,
@@ -1878,7 +1900,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     predecessor.targetLanguageTag
             )
                 throw new DictionaryVersionConflictError();
-            await this.assertGenerationAdmission(
+            const providerExecution = await this.assertGenerationAdmission(
                 tx,
                 input.ownerId,
                 dictionaryImportPairsGenerationFormat,
@@ -1908,6 +1930,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: current.dictionary.id,
+                    executionRevisionId: providerExecution.revisionId,
                     expectedCardVersion: null,
                     expectedDictionaryVersion: current.dictionary.version,
                     expectedSettingsVersion: current.settings.version,
@@ -1920,22 +1943,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ownerId: input.ownerId,
                     providerReservationState: 'active',
                     providerInputCostMicrosPerMillionTokens:
-                        this.providerBudget.inputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .inputCostMicrosPerMillionTokens,
                     providerMaxCostMicrosPerAttempt:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerMaxInputTokensPerAttempt:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerMaxOutputTokensPerAttempt:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     providerOutputCostMicrosPerMillionTokens:
-                        this.providerBudget.outputCostMicrosPerMillionTokens,
+                        providerExecution.budget
+                            .outputCostMicrosPerMillionTokens,
                     providerReservedAttempts: 1,
                     providerReservedCostMicros:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerExecution.budget.maxCostMicrosPerAttempt,
                     providerReservedInputTokens:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerExecution.budget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerExecution.budget.maxOutputTokensPerAttempt,
                     requestFingerprint: input.fingerprint,
                     sourceLanguageTag: current.dictionary.sourceLanguageTag,
                     targetLanguageTag: current.dictionary.targetLanguageTag,
@@ -3054,6 +3079,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ): Promise<ClaimedDictionaryGenerationJob | null> {
         return this.database.transaction(async (tx) => {
             abort(input.context);
+            if (input.managedRoutingRevision === 1) {
+                await tx.execute(
+                    sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
+                );
+            }
             await tx.execute(
                 sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
             );
@@ -3262,11 +3292,18 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         isNull(
                             dictionaryGenerationJobsTable.cancellationRequestedAt,
                         ),
-                        sql`${dictionaryGenerationJobsTable.providerInputCostMicrosPerMillionTokens} >= ${this.providerBudget.inputCostMicrosPerMillionTokens}`,
-                        sql`${dictionaryGenerationJobsTable.providerOutputCostMicrosPerMillionTokens} >= ${this.providerBudget.outputCostMicrosPerMillionTokens}`,
-                        sql`${dictionaryGenerationJobsTable.providerMaxCostMicrosPerAttempt} >= ${this.providerBudget.maxCostMicrosPerAttempt}`,
-                        sql`${dictionaryGenerationJobsTable.providerMaxInputTokensPerAttempt} <= ${this.providerBudget.maxInputTokensPerAttempt}`,
-                        sql`${dictionaryGenerationJobsTable.providerMaxOutputTokensPerAttempt} <= ${this.providerBudget.maxOutputTokensPerAttempt}`,
+                        or(
+                            isNotNull(
+                                dictionaryGenerationJobsTable.executionRevisionId,
+                            ),
+                            and(
+                                sql`${dictionaryGenerationJobsTable.providerInputCostMicrosPerMillionTokens} >= ${this.providerBudget.inputCostMicrosPerMillionTokens}`,
+                                sql`${dictionaryGenerationJobsTable.providerOutputCostMicrosPerMillionTokens} >= ${this.providerBudget.outputCostMicrosPerMillionTokens}`,
+                                sql`${dictionaryGenerationJobsTable.providerMaxCostMicrosPerAttempt} >= ${this.providerBudget.maxCostMicrosPerAttempt}`,
+                                sql`${dictionaryGenerationJobsTable.providerMaxInputTokensPerAttempt} <= ${this.providerBudget.maxInputTokensPerAttempt}`,
+                                sql`${dictionaryGenerationJobsTable.providerMaxOutputTokensPerAttempt} <= ${this.providerBudget.maxOutputTokensPerAttempt}`,
+                            ),
+                        ),
                         sql`${runningForOwner} < ${input.ownerConcurrency}`,
                     ),
                 )
@@ -3310,6 +3347,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 tx,
                 candidate.ownerId,
                 input.context.now,
+                candidateProviderBudget,
             );
             if (
                 !dictionaryGenerationProviderBudgetAllows(
@@ -3374,6 +3412,22 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 )
                 .returning();
             if (!claimed) return null;
+            const [revision] = claimed.executionRevisionId
+                ? await tx
+                      .select({
+                          snapshot:
+                              dictionaryAiConfigurationRevisionsTable.catalogSnapshot,
+                      })
+                      .from(dictionaryAiConfigurationRevisionsTable)
+                      .where(
+                          eq(
+                              dictionaryAiConfigurationRevisionsTable.id,
+                              claimed.executionRevisionId,
+                          ),
+                      )
+                      .limit(1)
+                : [];
+            if (claimed.executionRevisionId && !revision) return null;
             return {
                 attempt: claimed.attemptCount,
                 fencingToken,
@@ -3381,6 +3435,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 input: parsed,
                 leaseDeadline,
                 providerBudget: candidateProviderBudget,
+                providerExecution: revision?.snapshot ?? null,
                 workerId: input.workerId,
             };
         });
@@ -4433,7 +4488,8 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         ownerId: string,
         format: string,
         now: Date,
-    ): Promise<void> {
+    ): Promise<ProviderExecution> {
+        const providerExecution = await this.activeProviderExecution(tx);
         const [providerCircuit] = await tx
             .select({
                 openUntil: dictionaryGenerationProviderCircuitTable.openUntil,
@@ -4472,21 +4528,57 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             tx,
             ownerId,
             now,
+            providerExecution.budget,
         );
         if (
             !dictionaryGenerationProviderBudgetAllows(
                 providerAdmission,
                 true,
-                this.providerBudget,
+                providerExecution.budget,
             )
         )
             throw new DictionaryGenerationNotAvailableError();
+        return providerExecution;
+    }
+
+    private async activeProviderExecution(
+        tx: Transaction,
+    ): Promise<ProviderExecution> {
+        const [configured] = await tx
+            .select({
+                id: dictionaryAiConfigurationRevisionsTable.id,
+                snapshot:
+                    dictionaryAiConfigurationRevisionsTable.catalogSnapshot,
+            })
+            .from(dictionaryAiConfigurationTable)
+            .innerJoin(
+                dictionaryAiConfigurationRevisionsTable,
+                eq(
+                    dictionaryAiConfigurationRevisionsTable.id,
+                    dictionaryAiConfigurationTable.activeRevisionId,
+                ),
+            )
+            .where(eq(dictionaryAiConfigurationTable.id, 'global'))
+            .limit(1);
+        if (!configured) {
+            return {
+                budget: this.providerBudget,
+                revisionId: null,
+                snapshot: null,
+            };
+        }
+        return {
+            budget: configured.snapshot.aggregateBudget,
+            revisionId: configured.id,
+            snapshot: configured.snapshot,
+        };
     }
 
     private async providerBudgetUsage(
         tx: Transaction,
         ownerId: string,
         now: Date,
+        policy: DictionaryGenerationProviderBudgetPolicy,
     ): Promise<DictionaryGenerationProviderBudgetUsage> {
         const windowStart = new Date(now.getTime() - 86_400_000).toISOString();
         const [usage] = await tx
@@ -4504,7 +4596,31 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 ownerSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
                 ownerSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
             })
-            .from(dictionaryGenerationJobsTable);
+            .from(dictionaryGenerationJobsTable)
+            .where(
+                and(
+                    eq(
+                        dictionaryGenerationJobsTable.providerInputCostMicrosPerMillionTokens,
+                        policy.inputCostMicrosPerMillionTokens,
+                    ),
+                    eq(
+                        dictionaryGenerationJobsTable.providerOutputCostMicrosPerMillionTokens,
+                        policy.outputCostMicrosPerMillionTokens,
+                    ),
+                    eq(
+                        dictionaryGenerationJobsTable.providerMaxCostMicrosPerAttempt,
+                        policy.maxCostMicrosPerAttempt,
+                    ),
+                    eq(
+                        dictionaryGenerationJobsTable.providerMaxInputTokensPerAttempt,
+                        policy.maxInputTokensPerAttempt,
+                    ),
+                    eq(
+                        dictionaryGenerationJobsTable.providerMaxOutputTokensPerAttempt,
+                        policy.maxOutputTokensPerAttempt,
+                    ),
+                ),
+            );
         return {
             globalActiveCostMicros: Number(usage?.globalActiveCostMicros ?? 0),
             globalActiveInputTokens: Number(

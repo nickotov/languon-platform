@@ -41,6 +41,7 @@ const backendPort = new URL(backendOrigin).port || '4000';
 const adminPort = new URL(adminOrigin).port || '3001';
 const webPort = new URL(webOrigin).port || '3333';
 const reuseExistingServer = process.env.ADMIN_E2E_REUSE_SERVERS === 'true';
+const generationFormats = 'single-card:v1';
 
 export default defineConfig({
     expect: { timeout: 10_000 },
@@ -74,6 +75,15 @@ export default defineConfig({
                 AUTH_WEBAUTHN_RP_ID: new URL(adminOrigin).hostname,
                 BACKEND_PORT: backendPort,
                 DATABASE_URL: databaseUrl,
+                DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
+                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
+                DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED: 'true',
+                DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: generationFormats,
+                DICTIONARY_JOB_API_CANCELLABLE_FORMATS: generationFormats,
+                DICTIONARY_JOB_API_DISCARDABLE_FORMATS: generationFormats,
+                DICTIONARY_JOB_API_ENQUEUED_FORMATS: generationFormats,
+                DICTIONARY_JOB_API_READABLE_FORMATS: generationFormats,
+                DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: generationFormats,
                 REDIS_URL: redisUrl,
             },
             reuseExistingServer,

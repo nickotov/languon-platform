@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
 import {
+    AdminAiSettingsMutationRequestSchema,
+    AdminAiSettingsMutationResponseSchema,
+    AdminAiSettingsResponseSchema,
     AdminAuditEventsQuerySchema,
     AdminAuditEventsResponseSchema,
     AdminDashboardResponseSchema,
@@ -137,7 +140,7 @@ export function createAdministrationRoutes(
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID, X-Languon-Admin-Authorization',
         );
-        context.header('Access-Control-Allow-Methods', 'GET, POST');
+        context.header('Access-Control-Allow-Methods', 'GET, POST, PATCH');
         context.header('Vary', 'Origin');
         return context.body(null, 204);
     });
@@ -387,6 +390,55 @@ function registerResourceRoutes(
             context.json(
                 await dependencies.administration.dashboard(
                     bearer(context.req.header('Authorization')),
+                ),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/admin/ai-settings',
+            responses: {
+                200: jsonResponse(
+                    AdminAiSettingsResponseSchema,
+                    'Dictionary AI provider and model settings.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Administration'],
+        }),
+        async (context) =>
+            context.json(
+                await dependencies.administration.aiSettings(
+                    bearer(context.req.header('Authorization')),
+                ),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'patch',
+            path: '/admin/ai-settings',
+            request: {
+                body: requestBody(AdminAiSettingsMutationRequestSchema),
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminAiSettingsMutationResponseSchema,
+                    'Dictionary AI settings updated.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Administration'],
+        }),
+        async (context) =>
+            context.json(
+                await dependencies.administration.updateAiSettings(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('json'),
+                    correlationId(context.req.header('X-Correlation-ID')),
                 ),
                 200,
             ),

@@ -5,6 +5,7 @@ export const adminMessages = {
     'access.user': 'User',
     'resources.users.name': 'Users',
     'resources.audit-events.name': 'Audit',
+    'resources.ai-settings.name': 'AI settings',
     'actions.list': 'List',
     'actions.show': 'Show',
     'actions.edit': 'Edit',
@@ -38,6 +39,7 @@ export const adminMessages = {
     'shell.overview': 'Overview',
     'shell.users': 'Users',
     'shell.audit': 'Audit',
+    'shell.aiSettings': 'AI settings',
     'shell.navigation': 'Navigation',
     'shell.openNavigation': 'Open navigation',
     'shell.release': 'Release {sha}',
@@ -102,6 +104,7 @@ export const adminMessages = {
     'audit.action.user_deletion_cancelled': 'account deletion cancelled',
     'audit.action.access_denied': 'access denied',
     'audit.action.audit_pruned': 'audit pruned',
+    'audit.action.ai_settings_updated': 'AI settings updated',
     'user.back': 'Back to users',
     'user.eyebrow': 'User detail',
     'user.loading': 'Loading user…',
@@ -138,6 +141,71 @@ export const adminMessages = {
     'user.confirmCancelDeletion': 'Confirm cancellation',
     'user.deletionPendingDescription':
         'This account is scheduled for deletion. Ordinary restore and disable actions are unavailable.',
+    'aiSettings.eyebrow': 'Dictionary generation',
+    'aiSettings.heading': 'AI providers',
+    'aiSettings.summary':
+        'Choose which approved text models can author dictionary cards.',
+    'aiSettings.savedConfiguration': 'Saved configuration',
+    'aiSettings.savedDescription':
+        'Changes apply to newly created jobs. Queued and retried jobs keep their saved provider and model.',
+    'aiSettings.version': 'Configuration version {version}',
+    'aiSettings.updated': 'Last changed {time}',
+    'aiSettings.neverUpdated': 'No saved configuration yet',
+    'aiSettings.provider': 'Active provider',
+    'aiSettings.providerHelp':
+        'The active provider supplies the default model for new dictionary jobs.',
+    'aiSettings.defaultModel': 'Default model',
+    'aiSettings.defaultModelHelp':
+        'Only enabled models from the active provider can be selected.',
+    'aiSettings.enabledModels': 'Enabled models',
+    'aiSettings.enabledModelsHelp':
+        'Enabled models are approved for dictionary text generation. Provider credentials remain server-side.',
+    'aiSettings.reason': 'Reason for change',
+    'aiSettings.reasonHelp':
+        'This reason is stored in the administrative audit trail.',
+    'aiSettings.reasonPlaceholder':
+        'Describe why this configuration is changing',
+    'aiSettings.save': 'Save configuration',
+    'aiSettings.saved': 'AI settings saved.',
+    'aiSettings.error': 'AI settings could not be loaded.',
+    'aiSettings.empty': 'No AI providers are available in the trusted catalog.',
+    'aiSettings.retry': 'Reload settings',
+    'aiSettings.providerCredential': 'Credential',
+    'aiSettings.providerHealth': 'Worker readiness',
+    'aiSettings.credential.configured': 'Configured',
+    'aiSettings.credential.missing': 'Missing',
+    'aiSettings.health.available': 'Available',
+    'aiSettings.health.unavailable': 'Unavailable',
+    'aiSettings.health.unverified': 'Unverified',
+    'aiSettings.healthObserved': 'Observed {time}',
+    'aiSettings.healthNotObserved': 'No worker observation yet',
+    'aiSettings.missingCredential':
+        'Add this provider credential to the dictionary worker before activating it.',
+    'aiSettings.unverified':
+        'The worker has not verified this provider yet. Saving does not call the provider or generate billable content.',
+    'aiSettings.unavailable':
+        'The worker reported that this provider is unavailable.',
+    'aiSettings.modelUnavailable': 'This model cannot currently be activated.',
+    'aiSettings.noModels': 'This provider has no compatible models.',
+    'aiSettings.noDefaultModels':
+        'Enable an available model for the active provider to choose a default.',
+    'aiSettings.conflictTitle': 'Settings changed in another session',
+    'aiSettings.conflictDescription':
+        'Reload the latest configuration, review it, and save your change again.',
+    'aiSettings.reloadConflict': 'Reload latest settings',
+    'aiSettings.unauthorizedTitle': 'Owner access is required',
+    'aiSettings.unauthorizedDescription':
+        'Your session or owner membership changed. Sign in again to continue.',
+    'aiSettings.signInAgain': 'Sign in again',
+    'aiSettings.recentAuthenticationTitle': 'Recent sign-in required',
+    'aiSettings.recentAuthenticationDescription':
+        'Sign in again before changing AI provider settings.',
+    'aiSettings.validation.provider': 'Select an active provider.',
+    'aiSettings.validation.enabled': 'Enable at least one model.',
+    'aiSettings.validation.default':
+        'Select an enabled default model from the active provider.',
+    'aiSettings.validation.reason':
+        'Enter a reason between 5 and 500 characters.',
 } as const;
 
 export type AdminMessageKey = keyof typeof adminMessages;

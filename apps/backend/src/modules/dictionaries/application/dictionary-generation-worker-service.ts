@@ -165,6 +165,7 @@ async function generatePastedTermsProposal(input: {
                     remainingOutputTokens / remainingChunks,
                 ),
             },
+            providerExecution: input.claim.providerExecution ?? null,
             signal: input.signal,
         });
         inputTokens += response.usage.inputTokens;
@@ -263,6 +264,7 @@ async function generateImportPairsProposal(input: {
                         remainingChunks,
                 ),
             },
+            providerExecution: input.claim.providerExecution ?? null,
             signal: input.signal,
         });
         inputTokens += response.usage.inputTokens;
@@ -432,6 +434,7 @@ export class DictionaryGenerationWorkerService {
             context: { now, signal: input.signal },
             globalConcurrency: this.settings.globalConcurrency,
             leaseDurationMs: this.settings.leaseDurationMs,
+            managedRoutingRevision: 1,
             ownerConcurrency: this.settings.ownerConcurrency,
             supportedFormats: input.supportedFormats,
             workerId: input.workerId,
@@ -539,6 +542,8 @@ export class DictionaryGenerationWorkerService {
                                       idempotencyKey: `${claim.id}/generate`,
                                       input: providerInput,
                                       providerBudget: claim.providerBudget,
+                                      providerExecution:
+                                          claim.providerExecution ?? null,
                                       signal: providerAbort.signal,
                                   })
                                   .then((response) =>
@@ -590,6 +595,8 @@ export class DictionaryGenerationWorkerService {
                                     idempotencyKey: `${claim.id}/generate`,
                                     input: claim.input,
                                     providerBudget: claim.providerBudget,
+                                    providerExecution:
+                                        claim.providerExecution ?? null,
                                     signal: providerAbort.signal,
                                 })
                                 .then((response) =>
@@ -608,6 +615,8 @@ export class DictionaryGenerationWorkerService {
                                   jobId: claim.id,
                                   leaseDeadline: claim.leaseDeadline,
                                   providerBudget: claim.providerBudget,
+                                  providerExecution:
+                                      claim.providerExecution ?? null,
                                   reportStage: (stage, percent) => {
                                       currentProgress = { percent, stage };
                                       return Promise.resolve();

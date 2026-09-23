@@ -1,0 +1,39 @@
+.configuration {
+    display: grid;
+    gap: 20px;
+}
+
+.providerGrid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.formGrid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.formGrid > * {
+    min-width: 0;
+}
+
+.actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.reason {
+    max-width: 760px;
+}
+
+@media (max-width: 900px) {
+    .providerGrid,
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+}

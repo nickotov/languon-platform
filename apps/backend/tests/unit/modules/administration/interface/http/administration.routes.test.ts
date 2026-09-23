@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AdministrationService } from '../../../../../../src/modules/administration/application/administration-service';
 import {
     AdminAccessDeniedError,
+    AdminAiSettingsConflictError,
     AdminCancellationJournalUnavailableError,
 } from '../../../../../../src/modules/administration/application/administration-errors';
 import { createAdministrationRoutes } from '../../../../../../src/modules/administration/interface/http/administration.routes';
@@ -46,6 +47,26 @@ function setup(options: { denyMembership?: boolean } = {}) {
             id: userId,
             primaryEmail: 'owner@example.com',
             role: 'owner',
+        }),
+        aiSettings: vi.fn().mockResolvedValue({
+            providers: [],
+            settings: {
+                activeProvider: null,
+                defaultModel: null,
+                enabledModels: [],
+                updatedAt: null,
+                version: 0,
+            },
+        }),
+        updateAiSettings: vi.fn().mockResolvedValue({
+            providers: [],
+            settings: {
+                activeProvider: 'deepseek',
+                defaultModel: 'deepseek-chat',
+                enabledModels: ['deepseek-chat'],
+                updatedAt: '2026-08-20T09:00:00.000Z',
+                version: 1,
+            },
         }),
         dashboard: vi.fn(),
         cancelUserDeletion: vi.fn().mockResolvedValue({
@@ -164,9 +185,80 @@ describe('administration routes', () => {
         );
     });
 
+    it('validates, routes, and maps conflicts for AI settings mutations', async () => {
+        const { administration, app } = setup();
+        const body = {
+            activeProvider: 'deepseek',
+            defaultModel: 'deepseek-chat',
+            enabledModels: ['deepseek-chat'],
+            expectedVersion: 0,
+            reason: 'Enable reviewed dictionary generation',
+        };
+        const response = await app.request('/admin/ai-settings', {
+            body: JSON.stringify(body),
+            headers: {
+                Authorization: 'Bearer header.payload.signature',
+                'Content-Type': 'application/json',
+                Origin: origin,
+            },
+            method: 'PATCH',
+        });
+        expect(response.status).toBe(200);
+        expect(administration.updateAiSettings).toHaveBeenCalledWith(
+            'header.payload.signature',
+            body,
+            expect.any(String),
+        );
+
+        const invalid = await app.request('/admin/ai-settings', {
+            body: JSON.stringify({ ...body, endpoint: 'http://attacker.test' }),
+            headers: {
+                Authorization: 'Bearer header.payload.signature',
+                'Content-Type': 'application/json',
+                Origin: origin,
+            },
+            method: 'PATCH',
+        });
+        expect(invalid.status).toBe(400);
+
+        vi.mocked(administration.updateAiSettings).mockRejectedValue(
+            new AdminAiSettingsConflictError(),
+        );
+        const conflict = await app.request('/admin/ai-settings', {
+            body: JSON.stringify(body),
+            headers: {
+                Authorization: 'Bearer header.payload.signature',
+                'Content-Type': 'application/json',
+                Origin: origin,
+            },
+            method: 'PATCH',
+        });
+        expect(conflict.status).toBe(409);
+        expect(await conflict.json()).toMatchObject({
+            error: { code: 'ai_settings_conflict' },
+        });
+    });
+
+    it('denies AI settings through the service authorization boundary', async () => {
+        const { administration, app } = setup();
+        vi.mocked(administration.aiSettings).mockRejectedValue(
+            new AdminAccessDeniedError(),
+        );
+        const response = await app.request('/admin/ai-settings', {
+            headers: { Authorization: 'Bearer header.payload.signature' },
+        });
+        expect(response.status).toBe(403);
+        expect(await response.json()).toMatchObject({
+            error: { code: 'admin_access_denied' },
+        });
+    });
+
     it('validates and routes deletion cancellation as a distinct admin mutation', async () => {
         const { administration, app } = setup();
-        const body = { expectedVersion: 2, reason: 'Support verified the request' };
+        const body = {
+            expectedVersion: 2,
+            reason: 'Support verified the request',
+        };
         const response = await app.request(
             `/admin/users/${userId}/deletion/cancel`,
             {
@@ -181,7 +273,10 @@ describe('administration routes', () => {
         );
         expect(response.status).toBe(200);
         expect(administration.cancelUserDeletion).toHaveBeenCalledWith(
-            'header.payload.signature', userId, body, expect.any(String),
+            'header.payload.signature',
+            userId,
+            body,
+            expect.any(String),
         );
         expect(await response.json()).toMatchObject({
             user: { id: userId, status: 'active', version: 3 },

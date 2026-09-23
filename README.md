@@ -54,9 +54,10 @@ To use a real model, configure the worker in the ignored `.env.local` file:
 
 ```dotenv
 DICTIONARY_GENERATION_PROVIDER_MODE=mastra
-DICTIONARY_GENERATION_MODEL_ID=provider/model-name
-DICTIONARY_GENERATION_MODEL_BASE_URL=https://provider.example/v1
-DICTIONARY_GENERATION_MODEL_API_KEY=replace-with-a-private-worker-key
+DICTIONARY_GENERATION_MODEL_ID=deepseek/deepseek-chat
+DEEPSEEK_API_KEY=replace-with-a-private-worker-key
+DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED=true
+DICTIONARY_AI_MANAGED_ROUTING_ENABLED=true
 
 DICTIONARY_JOB_API_READABLE_FORMATS=card-authoring:v1
 DICTIONARY_JOB_API_CANCELLABLE_FORMATS=card-authoring:v1
@@ -66,19 +67,40 @@ DICTIONARY_JOB_API_ENQUEUED_FORMATS=card-authoring:v1
 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS=card-authoring:v1
 ```
 
+Use `DICTIONARY_GENERATION_MODEL_ID=kie/gemini-2.5-pro` with `KIE_API_KEY` and
+`DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED=true` to use Kie's text endpoint.
+`DICTIONARY_AUDIO_KIE_API_KEY` remains a separate TTS credential. The safe
+`*_CREDENTIAL_CONFIGURED` flags tell the API which worker credentials are
+deployed without exposing those credentials to the API process. Curated
+providers use fixed reviewed URLs, model IDs, request caps, structured-output
+handling, and non-billable readiness probes. DeepSeek's authenticated
+`GET /models` can report available; Kie's route-only `HEAD` probe remains
+unverified because it does not prove the credential or structured output. The admin AI settings page can
+enable catalog models and choose the global default; it never reads or writes
+credentials.
+
+`DICTIONARY_AI_MANAGED_ROUTING_ENABLED` is the expand/activate safety gate. For a
+deployed environment, enable it only after every active and rollback-floor worker
+supports pinned provider revisions. Locally, one restarted API/worker release can
+enable it immediately. Settings changes then apply to newly admitted jobs without
+another restart; queued jobs retain their pinned provider/model and budget.
+The database claim guard also rejects a pinned job unless the worker transaction
+declares the managed-routing revision, so an old process cannot execute it with a
+legacy default even if both releases temporarily overlap.
+
 The six format settings above enable the complete local card-authoring lifecycle.
 If a setting already contains other formats, preserve them as comma-separated
 entries when adding `card-authoring:v1`. The endpoint must provide an
-OpenAI-compatible API, including the readiness request at `GET /models`, and the
-model must support the structured output used by dictionary generation. Restart
+OpenAI-compatible API and the model must support the structured output used by
+dictionary generation. Generic legacy endpoints require `GET /models`; curated
+providers use the provider-specific readiness behavior above. Restart
 `pnpm dev:all` or `pnpm dev:dictionary-worker` after changing these values;
 running `pnpm dev:mastra` does not change the dictionary worker provider.
 
 Provider-specific TTS settings such as `DICTIONARY_AUDIO_KIE_API_KEY` only power
-pronunciation audio. They do not configure dictionary text generation. A vendor
-can serve both roles only when its text model also exposes the compatible API
-above; use its text-model base URL, model identifier, and key in the generation
-settings.
+pronunciation audio. Kie's text models use `KIE_API_KEY`. Additional text providers
+require a reviewed catalog entry and compatibility tests; admins cannot enter
+arbitrary URLs, headers, keys, or model identifiers.
 
 Use `pnpm dev:apps:docker` to build and start backend, web, admin, and their
 infrastructure in Docker. The app profile is intended for environment parity

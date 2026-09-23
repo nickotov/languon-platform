@@ -32,6 +32,7 @@ export const adminAuditActionEnum = pgEnum('admin_audit_action', [
     'user_deletion_cancelled',
     'access_denied',
     'audit_pruned',
+    'ai_settings_updated',
 ]);
 
 export const adminMembershipsTable = pgTable(

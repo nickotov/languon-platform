@@ -8,6 +8,10 @@ import {
     loadDictionaryGenerationProviderBudgetPolicy,
 } from '../../modules/dictionaries/infrastructure/dictionary-generation-provider-policy';
 import {
+    findDictionaryTextModel,
+    type DictionaryTextModelCatalogEntry,
+} from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
+import {
     loadDictionaryDocumentS3Environment,
     type DictionaryDocumentS3Environment,
 } from '../../modules/dictionaries/infrastructure/document/dictionary-document-environment';
@@ -95,9 +99,14 @@ const WorkerEnvironmentSchema = z.object({
     DICTIONARY_GENERATION_MODEL_API_KEY: optionalValue,
     DICTIONARY_GENERATION_MODEL_BASE_URL: optionalValue,
     DICTIONARY_GENERATION_MODEL_ID: optionalValue,
+    DEEPSEEK_API_KEY: optionalValue,
+    KIE_API_KEY: optionalValue,
     DICTIONARY_GENERATION_PROVIDER_MODE: z
         .enum(['unavailable', 'deterministic', 'mastra'])
         .default('unavailable'),
+    DICTIONARY_AI_PROVIDER_FIXTURE_MODE: z
+        .enum(['off', 'deterministic'])
+        .default('off'),
     DICTIONARY_WORKER_READINESS_TIMEOUT_MS: z.coerce
         .number()
         .int()
@@ -132,6 +141,10 @@ export interface DictionaryWorkerEnvironment {
     drainTimeoutMs: number;
     includeProviderReadiness: boolean;
     pollIntervalMs: number;
+    providerFixtureMode: 'off' | 'deterministic';
+    providerCredentials: Partial<
+        Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>
+    >;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
     document:
         | { mode: 'unavailable' }
@@ -157,8 +170,11 @@ export interface DictionaryWorkerEnvironment {
         | {
               apiKey: string;
               baseUrl: string;
+              catalogModel?: DictionaryTextModelCatalogEntry;
+              credentialReference?: string;
               mode: 'mastra';
               modelId: `${string}/${string}`;
+              providerModelId?: string;
           };
     readinessTimeoutMs: number;
     releaseSha: string;
@@ -169,6 +185,14 @@ export function loadDictionaryWorkerEnvironment(
     values: NodeJS.ProcessEnv = process.env,
 ): DictionaryWorkerEnvironment {
     const environment = WorkerEnvironmentSchema.parse(values);
+    if (
+        environment.DICTIONARY_AI_PROVIDER_FIXTURE_MODE === 'deterministic' &&
+        environment.APP_ENV !== 'test'
+    ) {
+        throw new Error(
+            'Dictionary AI provider fixtures are available only in tests.',
+        );
+    }
     const deployed = ['staging', 'production'].includes(environment.APP_ENV);
     const databaseUrl =
         environment.DICTIONARY_WORKER_DATABASE_URL ??
@@ -230,27 +254,50 @@ export function loadDictionaryWorkerEnvironment(
     if (deployed && providerMode === 'deterministic') {
         throw new Error('Deterministic dictionary generation is local-only.');
     }
-    const modelValues = [
+    const legacyModelValues = [
         environment.DICTIONARY_GENERATION_MODEL_API_KEY,
         environment.DICTIONARY_GENERATION_MODEL_BASE_URL,
+    ];
+    const configuredModelValues = [
+        ...legacyModelValues,
         environment.DICTIONARY_GENERATION_MODEL_ID,
     ];
-    if (providerMode !== 'mastra' && modelValues.some(Boolean)) {
+    if (providerMode !== 'mastra' && configuredModelValues.some(Boolean)) {
         throw new Error(
             'Dictionary generation model settings require provider mode mastra.',
         );
     }
     let provider: DictionaryWorkerEnvironment['provider'];
     if (providerMode === 'mastra') {
-        const [apiKey, baseUrlValue, modelId] = modelValues;
-        if (!apiKey || !baseUrlValue || !modelId) {
+        const modelId = environment.DICTIONARY_GENERATION_MODEL_ID;
+        if (!modelId) {
             throw new Error(
-                'Mastra dictionary generation requires model ID, base URL, and API key.',
+                'Mastra dictionary generation requires a model ID.',
             );
         }
         if (!/^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*$/i.test(modelId)) {
             throw new Error(
                 'DICTIONARY_GENERATION_MODEL_ID must use provider/model format.',
+            );
+        }
+        const catalogModel = findDictionaryTextModel(modelId);
+        const usesLegacyModelConfiguration = legacyModelValues.some(Boolean);
+        if (catalogModel && usesLegacyModelConfiguration) {
+            throw new Error(
+                'Curated dictionary text models use their trusted catalog URL and provider credential; remove legacy DICTIONARY_GENERATION_MODEL_API_KEY and DICTIONARY_GENERATION_MODEL_BASE_URL.',
+            );
+        }
+        const apiKey = catalogModel
+            ? environment[catalogModel.credentialEnvironmentVariable]
+            : environment.DICTIONARY_GENERATION_MODEL_API_KEY;
+        const baseUrlValue = catalogModel
+            ? catalogModel.apiBaseUrl
+            : environment.DICTIONARY_GENERATION_MODEL_BASE_URL;
+        if (!apiKey || !baseUrlValue) {
+            throw new Error(
+                catalogModel
+                    ? `Mastra dictionary generation with ${modelId} requires ${catalogModel.credentialEnvironmentVariable}.`
+                    : 'Legacy Mastra dictionary generation requires model ID, base URL, and API key.',
             );
         }
         let baseUrl: URL;
@@ -279,6 +326,13 @@ export function loadDictionaryWorkerEnvironment(
         provider = {
             apiKey,
             baseUrl: baseUrlValue,
+            ...(catalogModel
+                ? {
+                      catalogModel,
+                      credentialReference: catalogModel.credentialReference,
+                      providerModelId: catalogModel.modelId,
+                  }
+                : {}),
             mode: 'mastra',
             modelId: modelId as `${string}/${string}`,
         };
@@ -293,6 +347,17 @@ export function loadDictionaryWorkerEnvironment(
         providerBudget,
         supportedFormats,
     );
+    if (provider.mode === 'mastra' && provider.catalogModel) {
+        const unsupportedFormats = supportedFormats.filter(
+            (format) =>
+                !provider.catalogModel!.supportedFormats.includes(format),
+        );
+        if (unsupportedFormats.length > 0) {
+            throw new Error(
+                `Dictionary text model ${provider.modelId} does not support worker formats: ${unsupportedFormats.join(', ')}.`,
+            );
+        }
+    }
     const documentEnabled = supportedFormats.includes('document-terms:v1');
     const documentStorage = loadDictionaryDocumentS3Environment(values, {
         deployed: ['staging', 'production'].includes(environment.APP_ENV),
@@ -365,6 +430,15 @@ export function loadDictionaryWorkerEnvironment(
         drainTimeoutMs: environment.DICTIONARY_WORKER_DRAIN_TIMEOUT_MS,
         includeProviderReadiness: supportedFormats.length > 0,
         pollIntervalMs: environment.DICTIONARY_WORKER_POLL_INTERVAL_MS,
+        providerFixtureMode: environment.DICTIONARY_AI_PROVIDER_FIXTURE_MODE,
+        providerCredentials: {
+            ...(environment.DEEPSEEK_API_KEY
+                ? { DEEPSEEK_API_KEY: environment.DEEPSEEK_API_KEY }
+                : {}),
+            ...(environment.KIE_API_KEY
+                ? { KIE_API_KEY: environment.KIE_API_KEY }
+                : {}),
+        },
         provider,
         providerBudget,
         readinessTimeoutMs: environment.DICTIONARY_WORKER_READINESS_TIMEOUT_MS,

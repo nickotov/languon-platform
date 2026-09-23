@@ -26,6 +26,7 @@ import type {
 } from '../../domain/generation';
 import type { DictionaryOperationContext } from './dictionary-store';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
+import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
 
 export type DictionaryGenerationPublicState =
     | 'accepted'
@@ -49,6 +50,7 @@ export interface ClaimedDictionaryGenerationJob {
     input: DictionaryGenerationInputPayload;
     leaseDeadline: Date;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
+    providerExecution?: DictionaryAiExecutionSnapshot | null;
     workerId: string;
 }
 
@@ -208,6 +210,7 @@ export interface DictionaryGenerationStore {
         context: DictionaryOperationContext;
         leaseDurationMs: number;
         globalConcurrency: number;
+        managedRoutingRevision?: 1;
         ownerConcurrency: number;
         supportedFormats: readonly string[];
         workerId: string;

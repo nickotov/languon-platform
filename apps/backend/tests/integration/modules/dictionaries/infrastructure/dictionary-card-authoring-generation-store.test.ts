@@ -5,8 +5,16 @@ import {
     type PostgresClient,
     type PostgresJsDatabase,
 } from '@languon/database';
-import { eq } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { eq, sql } from 'drizzle-orm';
+import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
 import { dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
@@ -23,7 +31,14 @@ import {
     dictionaryGenerationJobsTable,
     dictionaryGenerationProposalsTable,
     dictionaryGenerationProviderCircuitTable,
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
 } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
+import { dictionaryAiModelCatalog } from '../../../../../src/modules/dictionaries/application/dictionary-ai-provider-catalog';
+import {
+    DictionaryTextProviderRouter,
+    type DictionaryTextProviderSet,
+} from '../../../../../src/modules/dictionaries/infrastructure/ai/dictionary-text-provider-router';
 import { usersTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import {
     createTestPostgresClient,
@@ -77,6 +92,8 @@ run('card-authoring generation persistence', () => {
         await database.delete(dictionaryCardRevisionsTable);
         await database.delete(dictionaryGenerationJobsTable);
         await database.delete(dictionaryGenerationProviderCircuitTable);
+        await database.delete(dictionaryAiConfigurationTable);
+        await database.delete(dictionaryAiConfigurationRevisionsTable);
         await database.delete(usersTable);
         ownerId = randomUUID();
         await database.insert(usersTable).values({
@@ -88,6 +105,246 @@ run('card-authoring generation persistence', () => {
     });
 
     afterAll(async () => client.end());
+
+    it('pins the active AI revision at admission and replays the original job after a default switch', async () => {
+        const dictionary = await dictionaryStore.createDictionary({
+            context: context(),
+            fingerprint: fingerprint('P'),
+            idempotencyKey: `dictionary-create-${randomUUID()}`,
+            ownerId,
+            request: {
+                description: null,
+                name: 'Pinned routing',
+                sourceLanguage: 'en',
+                targetLanguage: 'fr',
+            },
+        });
+        const card = await dictionaryStore.createCard({
+            context: context(1),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'hello',
+                    transcription: null,
+                    translation: 'bonjour',
+                },
+            },
+        });
+        const deepSeek = dictionaryAiModelCatalog[0]!;
+        const kie = dictionaryAiModelCatalog[1]!;
+        const revisionOne = randomUUID();
+        const revisionTwo = randomUUID();
+        const snapshot = (
+            model: (typeof dictionaryAiModelCatalog)[number],
+        ) => ({
+            adapterRevision: model.adapterRevision,
+            aggregateBudget: model.aggregateBudget,
+            credentialReference: model.credentialReference,
+            enabledModelIds: [model.id],
+            modelId: model.id,
+            perCallMaxInputTokens: model.perCallMaxInputTokens,
+            perCallMaxOutputTokens: model.perCallMaxOutputTokens,
+            providerId: model.providerId,
+            supportedFormats: [...model.supportedFormats],
+        });
+        await database.insert(dictionaryAiConfigurationRevisionsTable).values({
+            catalogSnapshot: snapshot(deepSeek),
+            createdAt: instant(2),
+            createdByUserId: ownerId,
+            id: revisionOne,
+            version: 1,
+        });
+        await database.insert(dictionaryAiConfigurationTable).values({
+            activeRevisionId: revisionOne,
+            id: 'global',
+            updatedAt: instant(2),
+            version: 1,
+        });
+        const request = {
+            cardId: card.card.id,
+            context: context(3),
+            dictionaryId: dictionary.id,
+            expectedCardVersion: card.card.version,
+            expectedDictionaryVersion: card.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('Q'),
+            idempotencyKey: `pinned-${randomUUID()}`,
+            instruction: null,
+            ownerId,
+        };
+        const first = await generationStore.enqueue(request);
+
+        await database.insert(dictionaryAiConfigurationRevisionsTable).values({
+            catalogSnapshot: snapshot(kie),
+            createdAt: instant(4),
+            createdByUserId: ownerId,
+            id: revisionTwo,
+            version: 2,
+        });
+        await database
+            .update(dictionaryAiConfigurationTable)
+            .set({
+                activeRevisionId: revisionTwo,
+                updatedAt: instant(4),
+                version: 2,
+            })
+            .where(eq(dictionaryAiConfigurationTable.id, 'global'));
+
+        const replay = await generationStore.enqueue({
+            ...request,
+            context: context(5),
+        });
+        const second = await generationStore.enqueue({
+            ...request,
+            context: context(6),
+            fingerprint: fingerprint('R'),
+            idempotencyKey: `pinned-${randomUUID()}`,
+        });
+        expect(replay.id).toBe(first.id);
+        const rows = await database
+            .select({
+                id: dictionaryGenerationJobsTable.id,
+                revisionId: dictionaryGenerationJobsTable.executionRevisionId,
+            })
+            .from(dictionaryGenerationJobsTable);
+        expect(rows).toEqual(
+            expect.arrayContaining([
+                { id: first.id, revisionId: revisionOne },
+                { id: second.id, revisionId: revisionTwo },
+            ]),
+        );
+
+        const oldWorkerUpdate = await database
+            .update(dictionaryGenerationJobsTable)
+            .set({
+                executionState: 'running',
+                heartbeatAt: instant(7),
+                leaseDeadline: instant(1_007),
+                workerId: 'old-worker-without-managed-routing',
+            })
+            .where(eq(dictionaryGenerationJobsTable.id, first.id))
+            .returning({ id: dictionaryGenerationJobsTable.id });
+        expect(oldWorkerUpdate).toEqual([]);
+
+        const compatibleUpdate = await database.transaction(async (tx) => {
+            await tx.execute(
+                sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
+            );
+            return tx
+                .update(dictionaryGenerationJobsTable)
+                .set({
+                    executionState: 'running',
+                    heartbeatAt: instant(8),
+                    leaseDeadline: instant(1_008),
+                    workerId: 'managed-routing-worker',
+                })
+                .where(eq(dictionaryGenerationJobsTable.id, first.id))
+                .returning({ id: dictionaryGenerationJobsTable.id });
+        });
+        expect(compatibleUpdate).toEqual([{ id: first.id }]);
+
+        await database
+            .update(dictionaryGenerationJobsTable)
+            .set({
+                executionState: 'queued',
+                heartbeatAt: null,
+                leaseDeadline: null,
+                workerId: null,
+            })
+            .where(eq(dictionaryGenerationJobsTable.id, first.id));
+        await database
+            .delete(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, second.id));
+
+        const claim = await generationStore.claim({
+            context: context(9),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            managedRoutingRevision: 1,
+            ownerConcurrency: 2,
+            supportedFormats: ['single-card:v1'],
+            workerId: 'managed-routing-worker',
+        });
+        expect(claim).toMatchObject({
+            id: first.id,
+            providerExecution: { modelId: deepSeek.id },
+        });
+        if (
+            !claim?.providerExecution ||
+            claim.input.format !== 'single-card:v1'
+        )
+            throw new Error('Expected a pinned single-card claim.');
+
+        const generated = {
+            proposal: {
+                candidate: {
+                    overrides: claim.input.original.overrides,
+                    values: {
+                        ...claim.input.original.values,
+                        translation: 'salut',
+                    },
+                },
+                fieldFeedback: [],
+                warnings: [],
+            },
+            usage: { inputTokens: 20, outputTokens: 10 },
+        };
+        const cardGenerate = vi.fn(async () => generated);
+        const unusedGenerate = vi.fn(async () => {
+            throw new Error('Unexpected generation format.');
+        });
+        const providers: DictionaryTextProviderSet = {
+            card: { generate: cardGenerate },
+            cardAuthoring: { generate: unusedGenerate },
+            importPairs: { generate: unusedGenerate },
+            pastedTerms: { generate: unusedGenerate },
+        };
+        const router = new DictionaryTextProviderRouter({
+            credentials: { DEEPSEEK_API_KEY: 'integration-secret' },
+            factory: () => providers,
+        });
+        const routed = router.resolve(
+            claim.providerExecution,
+            claim.providerBudget,
+        );
+        const result = await routed.card.generate({
+            idempotencyKey: claim.id,
+            input: claim.input,
+            providerBudget: claim.providerBudget,
+            signal: new AbortController().signal,
+        });
+        expect(cardGenerate).toHaveBeenCalledOnce();
+        const completed =
+            'proposal' in result
+                ? result
+                : { proposal: result, usage: undefined };
+        await expect(
+            generationStore.complete({
+                context: context(10),
+                fencingToken: claim.fencingToken,
+                jobId: claim.id,
+                leaseDeadline: claim.leaseDeadline,
+                proposal: completed.proposal,
+                ...(completed.usage ? { providerUsage: completed.usage } : {}),
+                reviewExpiresAt: instant(60_000),
+                workerId: claim.workerId,
+            }),
+        ).resolves.toBe(true);
+        await expect(
+            generationStore.read({
+                context: context(11),
+                jobId: claim.id,
+                ownerId,
+            }),
+        ).resolves.toMatchObject({ state: 'review' });
+    });
 
     it('preserves predecessor review, merges a successor, and atomically replays mixed card creation with redaction', async () => {
         const createdDictionary = await dictionaryStore.createDictionary({

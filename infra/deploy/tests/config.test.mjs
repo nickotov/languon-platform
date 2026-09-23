@@ -384,6 +384,26 @@ test('dictionary worker process and drain settings are bounded before deployment
     assert.equal(
         assertDeployConfig('stage', {
             ...required,
+            ...liveDictionaryBudget,
+            DEEPSEEK_API_KEY: 'curated-secret',
+            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+            DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+        }).DICTIONARY_GENERATION_MODEL_ID,
+        'deepseek/deepseek-chat',
+    );
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...required,
+                ...liveDictionaryBudget,
+                DICTIONARY_GENERATION_MODEL_ID: 'kie/gemini-2.5-pro',
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+            }),
+        /KIE_API_KEY/,
+    );
+    assert.equal(
+        assertDeployConfig('stage', {
+            ...required,
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             DICTIONARY_GENERATION_MODEL_API_KEY: 'secret',
             DICTIONARY_GENERATION_MODEL_BASE_URL:

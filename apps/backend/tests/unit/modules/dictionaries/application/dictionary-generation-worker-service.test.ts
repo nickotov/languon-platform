@@ -216,6 +216,7 @@ describe('DictionaryGenerationWorkerService', () => {
                 targetLanguage: 'fr',
             },
             providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
+            providerExecution: null,
             signal: expect.any(AbortSignal),
         });
         expect(generationStore.complete).toHaveBeenCalledWith(

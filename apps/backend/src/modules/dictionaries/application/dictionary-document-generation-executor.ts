@@ -65,6 +65,7 @@ export class DictionaryDocumentGenerationExecutor implements DictionaryGeneratio
             input: request.input,
             object,
             providerBudget: request.providerBudget,
+            providerExecution: request.providerExecution ?? null,
             ...(request.reportStage
                 ? { reportStage: request.reportStage }
                 : {}),

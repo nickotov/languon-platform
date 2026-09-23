@@ -1,10 +1,19 @@
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { eq, sql } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 
 import { databaseSchema } from '../../../src/infrastructure/database/schema';
 import {
     AdminAccessDeniedError,
+    AdminAiSettingsConflictError,
     AdminCancellationJournalUnavailableError,
     AdminDeletionCancellationUnavailableError,
     AdminLastOwnerForbiddenError,
@@ -26,6 +35,12 @@ import {
     usersTable,
 } from '../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
+import {
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
+    dictionaryAiWorkerObservationsTable,
+} from '../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
+import { publishDictionaryAiWorkerObservations } from '../../../src/modules/dictionaries/infrastructure/ai/dictionary-ai-worker-observations';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
@@ -87,6 +102,203 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(events[0]?.occurredAt).toEqual(sessions[0]?.revokedAt);
         });
 
+        it('atomically versions dictionary AI settings and rejects stale writes', async () => {
+            vi.stubEnv('DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', 'true');
+            vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
+            try {
+                const { database, store } = await seed();
+                const response = await store.updateAiSettings({
+                    activeProvider: 'deepseek',
+                    actorSessionId: '0198c302-93c8-7536-a0e5-055605f614db',
+                    actorUserId: ownerId,
+                    audit: {
+                        correlationId: '0198c304-06db-7ed2-a917-ac60af3c5ea0',
+                        expiresAt: new Date('2027-09-23T09:00:00.000Z'),
+                        id: '0198c304-3f0d-7279-bfc6-1de92e25a20c',
+                        occurredAt: now,
+                    },
+                    defaultModel: 'deepseek-chat',
+                    enabledModels: ['deepseek-chat'],
+                    expectedVersion: 0,
+                    reason: 'Enable verified dictionary AI provider',
+                    revisionId: '0198c304-7b38-74a3-b07d-7307aa917df2',
+                });
+
+                expect(response.settings).toMatchObject({
+                    activeProvider: 'deepseek',
+                    defaultModel: 'deepseek-chat',
+                    enabledModels: ['deepseek-chat'],
+                    version: 1,
+                });
+                expect(
+                    await database
+                        .select()
+                        .from(dictionaryAiConfigurationTable),
+                ).toHaveLength(1);
+                expect(
+                    await database
+                        .select()
+                        .from(dictionaryAiConfigurationRevisionsTable),
+                ).toEqual([
+                    expect.objectContaining({
+                        createdByUserId: ownerId,
+                        version: 1,
+                    }),
+                ]);
+                expect(
+                    await database
+                        .select()
+                        .from(adminAuditEventsTable)
+                        .where(
+                            eq(
+                                adminAuditEventsTable.action,
+                                'ai_settings_updated',
+                            ),
+                        ),
+                ).toEqual([
+                    expect.objectContaining({
+                        actorUserId: ownerId,
+                        afterVersion: 1,
+                        outcome: 'success',
+                        targetUserId: null,
+                    }),
+                ]);
+
+                await expect(
+                    store.updateAiSettings({
+                        activeProvider: 'deepseek',
+                        actorSessionId: '0198c302-93c8-7536-a0e5-055605f614db',
+                        actorUserId: ownerId,
+                        audit: {
+                            correlationId:
+                                '0198c305-06db-7ed2-a917-ac60af3c5ea0',
+                            expiresAt: new Date('2027-09-23T09:00:00.000Z'),
+                            id: '0198c305-3f0d-7279-bfc6-1de92e25a20c',
+                            occurredAt: now,
+                        },
+                        defaultModel: 'deepseek-chat',
+                        enabledModels: ['deepseek-chat'],
+                        expectedVersion: 0,
+                        reason: 'Attempt stale dictionary AI update',
+                        revisionId: '0198c305-7b38-74a3-b07d-7307aa917df2',
+                    }),
+                ).rejects.toBeInstanceOf(AdminAiSettingsConflictError);
+                expect(
+                    await database
+                        .select()
+                        .from(dictionaryAiConfigurationRevisionsTable),
+                ).toHaveLength(1);
+            } finally {
+                vi.unstubAllEnvs();
+            }
+        });
+
+        it('reads fresh worker observations without exposing provider credentials', async () => {
+            vi.stubEnv('DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', 'true');
+            vi.stubEnv('DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED', 'true');
+            vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
+            try {
+                const { database, store } = await seed();
+                const fetchProvider = vi
+                    .fn()
+                    .mockResolvedValueOnce({ status: 200 } as Response)
+                    .mockResolvedValueOnce({ status: 405 } as Response);
+                await publishDictionaryAiWorkerObservations({
+                    credentials: {
+                        DEEPSEEK_API_KEY: 'deepseek-secret-never-returned',
+                        KIE_API_KEY: 'kie-secret-never-returned',
+                    },
+                    database,
+                    fetchProvider,
+                    now: new Date(),
+                    readinessTimeoutMs: 1_000,
+                    workerId: 'integration-worker',
+                });
+
+                const response = await store.aiSettings();
+                expect(response.providers).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            health: expect.objectContaining({
+                                status: 'available',
+                            }),
+                            id: 'deepseek',
+                        }),
+                        expect.objectContaining({
+                            health: expect.objectContaining({
+                                status: 'unverified',
+                            }),
+                            id: 'kie',
+                        }),
+                    ]),
+                );
+                expect(JSON.stringify(response)).not.toContain(
+                    'secret-never-returned',
+                );
+                expect(
+                    await database
+                        .select()
+                        .from(dictionaryAiWorkerObservationsTable),
+                ).toHaveLength(2);
+            } finally {
+                vi.unstubAllEnvs();
+            }
+        });
+
+        it('allows exactly one concurrent dictionary AI settings writer', async () => {
+            vi.stubEnv('DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', 'true');
+            vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
+            try {
+                const { database, store } = await seed();
+                const mutation = (suffix: 'a' | 'b') => ({
+                    activeProvider: 'deepseek' as const,
+                    actorSessionId: '0198c302-93c8-7536-a0e5-055605f614db',
+                    actorUserId: ownerId,
+                    audit: {
+                        correlationId:
+                            suffix === 'a'
+                                ? '0198c306-06db-7ed2-a917-ac60af3c5ea0'
+                                : '0198c307-06db-7ed2-a917-ac60af3c5ea0',
+                        expiresAt: new Date('2027-09-23T09:00:00.000Z'),
+                        id:
+                            suffix === 'a'
+                                ? '0198c306-3f0d-7279-bfc6-1de92e25a20c'
+                                : '0198c307-3f0d-7279-bfc6-1de92e25a20c',
+                        occurredAt: now,
+                    },
+                    defaultModel: 'deepseek-chat',
+                    enabledModels: ['deepseek-chat'],
+                    expectedVersion: 0,
+                    reason: `Concurrent reviewed AI update ${suffix}`,
+                    revisionId:
+                        suffix === 'a'
+                            ? '0198c306-7b38-74a3-b07d-7307aa917df2'
+                            : '0198c307-7b38-74a3-b07d-7307aa917df2',
+                });
+                const results = await Promise.allSettled([
+                    store.updateAiSettings(mutation('a')),
+                    store.updateAiSettings(mutation('b')),
+                ]);
+                expect(
+                    results.filter((result) => result.status === 'fulfilled'),
+                ).toHaveLength(1);
+                const rejected = results.find(
+                    (result) => result.status === 'rejected',
+                );
+                expect(rejected).toMatchObject({
+                    reason: expect.any(AdminAiSettingsConflictError),
+                    status: 'rejected',
+                });
+                expect(
+                    await database
+                        .select()
+                        .from(dictionaryAiConfigurationRevisionsTable),
+                ).toHaveLength(1);
+            } finally {
+                vi.unstubAllEnvs();
+            }
+        });
+
         it('restores verified and unverified users to the correct availability', async () => {
             const { database, store } = await seed({ targetVerified: false });
             await database
@@ -115,21 +327,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 version: 3,
                 activeSessionCount: 0,
             });
-            expect(await database.select().from(accountDeletionRequestsTable))
-                .toEqual([expect.objectContaining({
+            expect(
+                await database.select().from(accountDeletionRequestsTable),
+            ).toEqual([
+                expect.objectContaining({
                     state: 'cancelled',
                     leaseDeadline: null,
                     leaseWorkerId: null,
-                })]);
-            expect(await database.select().from(adminAuditEventsTable))
-                .toEqual([expect.objectContaining({
-                    action: 'user_deletion_cancelled',
-                    actorUserId: ownerId,
-                    beforeStatus: 'deletion_pending',
-                    afterStatus: 'active',
-                    outcome: 'success',
-                    targetUserId: targetId,
-                })]);
+                }),
+            ]);
+            expect(await database.select().from(adminAuditEventsTable)).toEqual(
+                [
+                    expect.objectContaining({
+                        action: 'user_deletion_cancelled',
+                        actorUserId: ownerId,
+                        beforeStatus: 'deletion_pending',
+                        afterStatus: 'active',
+                        outcome: 'success',
+                        targetUserId: targetId,
+                    }),
+                ],
+            );
             expect(journal.recordCancellation).toHaveBeenCalledWith({
                 cancelledAt: expect.any(Date),
                 userId: targetId,
@@ -144,40 +362,57 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 new Error('independent journal unavailable'),
             );
 
-            await expect(store.cancelUserDeletion(
-                mutation(targetId, 2, 'Reviewed request before journal outage'),
-            )).rejects.toBeInstanceOf(AdminCancellationJournalUnavailableError);
+            await expect(
+                store.cancelUserDeletion(
+                    mutation(
+                        targetId,
+                        2,
+                        'Reviewed request before journal outage',
+                    ),
+                ),
+            ).rejects.toBeInstanceOf(AdminCancellationJournalUnavailableError);
             expect(await store.findUser(targetId)).toMatchObject({
                 status: 'deletion_pending',
                 version: 2,
             });
-            expect(await database.select().from(accountDeletionRequestsTable))
-                .toEqual([expect.objectContaining({ state: 'pending' })]);
-            expect(await database.select().from(adminAuditEventsTable))
-                .toHaveLength(0);
+            expect(
+                await database.select().from(accountDeletionRequestsTable),
+            ).toEqual([expect.objectContaining({ state: 'pending' })]);
+            expect(
+                await database.select().from(adminAuditEventsTable),
+            ).toHaveLength(0);
         });
 
         it('blocks generic restore and cancellation after the purge claim', async () => {
             const { database, store } = await seed();
             await pendingDeletion(database);
 
-            await expect(store.restoreUser(
-                mutation(targetId, 2, 'Attempt ordinary restore instead'),
-            )).rejects.toBeInstanceOf(AdminUserStateConflictError);
+            await expect(
+                store.restoreUser(
+                    mutation(targetId, 2, 'Attempt ordinary restore instead'),
+                ),
+            ).rejects.toBeInstanceOf(AdminUserStateConflictError);
 
-            await database.update(accountDeletionRequestsTable).set({
-                leaseDeadline: new Date(Date.now() + 60_000),
-                leaseWorkerId: 'test-worker',
-                state: 'running',
-            }).where(eq(accountDeletionRequestsTable.userId, targetId));
-            await expect(store.cancelUserDeletion(
-                mutation(targetId, 2, 'Attempt after purge worker claim'),
-            )).rejects.toBeInstanceOf(AdminDeletionCancellationUnavailableError);
+            await database
+                .update(accountDeletionRequestsTable)
+                .set({
+                    leaseDeadline: new Date(Date.now() + 60_000),
+                    leaseWorkerId: 'test-worker',
+                    state: 'running',
+                })
+                .where(eq(accountDeletionRequestsTable.userId, targetId));
+            await expect(
+                store.cancelUserDeletion(
+                    mutation(targetId, 2, 'Attempt after purge worker claim'),
+                ),
+            ).rejects.toBeInstanceOf(AdminDeletionCancellationUnavailableError);
             expect(await store.findUser(targetId)).toMatchObject({
                 status: 'deletion_pending',
                 version: 2,
             });
-            expect(await database.select().from(adminAuditEventsTable)).toHaveLength(0);
+            expect(
+                await database.select().from(adminAuditEventsTable),
+            ).toHaveLength(0);
         });
 
         it('searches by email text without casting it to a PostgreSQL UUID', async () => {
@@ -213,15 +448,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reason: 'Reviewed fixture audit reference',
                 targetUserId: targetId,
             });
-            await database.delete(userEmailsTable).where(eq(userEmailsTable.userId, targetId));
+            await database
+                .delete(userEmailsTable)
+                .where(eq(userEmailsTable.userId, targetId));
 
-            const result = await store.listAuditEvents({ page: 1, pageSize: 10 });
-            expect(result.data).toEqual([expect.objectContaining({
-                actorEmail: null,
-                actorUserId: targetId,
-                targetEmail: null,
-                targetUserId: targetId,
-            })]);
+            const result = await store.listAuditEvents({
+                page: 1,
+                pageSize: 10,
+            });
+            expect(result.data).toEqual([
+                expect.objectContaining({
+                    actorEmail: null,
+                    actorUserId: targetId,
+                    targetEmail: null,
+                    targetUserId: targetId,
+                }),
+            ]);
         });
 
         it('rejects disabling the last active owner', async () => {
@@ -568,17 +810,25 @@ async function seed(
     };
 }
 
-async function pendingDeletion(database: Awaited<ReturnType<typeof seed>>['database']) {
+async function pendingDeletion(
+    database: Awaited<ReturnType<typeof seed>>['database'],
+) {
     const scheduledAt = new Date();
     const purgeAt = new Date(scheduledAt.getTime() + 30 * 24 * 60 * 60_000);
-    await database.update(usersTable).set({
-        status: 'deletion_pending',
-        version: 2,
-    }).where(eq(usersTable.id, targetId));
-    await database.update(authSessionsTable).set({
-        revokedAt: scheduledAt,
-        revocationReason: 'account_deletion',
-    }).where(eq(authSessionsTable.userId, targetId));
+    await database
+        .update(usersTable)
+        .set({
+            status: 'deletion_pending',
+            version: 2,
+        })
+        .where(eq(usersTable.id, targetId));
+    await database
+        .update(authSessionsTable)
+        .set({
+            revokedAt: scheduledAt,
+            revocationReason: 'account_deletion',
+        })
+        .where(eq(authSessionsTable.userId, targetId));
     await database.insert(accountDeletionRequestsTable).values({
         nextAttemptAt: purgeAt,
         purgeAt,

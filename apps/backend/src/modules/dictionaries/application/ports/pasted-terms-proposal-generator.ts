@@ -1,6 +1,7 @@
 import type { DictionaryBatchGenerationProposalPayload } from '../../domain/batch-generation';
 import type { DictionaryPastedTermsGenerationInputPayload } from '../../domain/generation';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
+import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
 
 // Five 20-row structured calls share one persisted attempt envelope. The input
 // ceiling leaves each call at least 52,428 conservative tokens; output leaves
@@ -12,6 +13,7 @@ export interface PastedTermsProposalGeneratorRequest {
     idempotencyKey: string;
     input: DictionaryPastedTermsGenerationInputPayload;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
+    providerExecution?: DictionaryAiExecutionSnapshot | null;
     signal: AbortSignal;
 }
 

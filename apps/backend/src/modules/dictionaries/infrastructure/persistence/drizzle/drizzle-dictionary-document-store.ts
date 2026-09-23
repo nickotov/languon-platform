@@ -54,6 +54,8 @@ import {
     dictionaryDocumentObjectVersionsTable,
     dictionaryDocumentUploadsTable,
     dictionaryGenerationJobsTable,
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
     dictionaryGenerationProposalsTable,
     dictionarySettingsTable,
 } from './schema';
@@ -147,6 +149,31 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         private readonly generationStore: DictionaryGenerationStore,
         private readonly providerBudget: DictionaryGenerationProviderBudgetPolicy = defaultDictionaryGenerationProviderBudgetPolicy,
     ) {}
+
+    private async activeProviderExecution(tx: Transaction) {
+        const [configured] = await tx
+            .select({
+                id: dictionaryAiConfigurationRevisionsTable.id,
+                snapshot:
+                    dictionaryAiConfigurationRevisionsTable.catalogSnapshot,
+            })
+            .from(dictionaryAiConfigurationTable)
+            .innerJoin(
+                dictionaryAiConfigurationRevisionsTable,
+                eq(
+                    dictionaryAiConfigurationRevisionsTable.id,
+                    dictionaryAiConfigurationTable.activeRevisionId,
+                ),
+            )
+            .where(eq(dictionaryAiConfigurationTable.id, 'global'))
+            .limit(1);
+        return configured
+            ? {
+                  budget: configured.snapshot.aggregateBudget,
+                  revisionId: configured.id,
+              }
+            : { budget: this.providerBudget, revisionId: null };
+    }
 
     public async expireUploadAuthorizations(
         input: Parameters<
@@ -358,12 +385,14 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 throw new DictionaryDocumentUploadCapacityError();
 
             const jobId = this.ids.generate();
+            const providerExecution = await this.activeProviderExecution(tx);
             const uploadId = this.ids.generate();
             const objectKey = `dictionary-documents/${input.ownerId}/${uploadId}`;
             await tx.insert(dictionaryGenerationJobsTable).values({
                 awaitingUploadAt: input.context.now,
                 createdAt: input.context.now,
                 dictionaryId: input.dictionaryId,
+                executionRevisionId: providerExecution.revisionId,
                 expectedCardVersion: null,
                 expectedDictionaryVersion: input.expectedDictionaryVersion,
                 expectedSettingsVersion: input.expectedSettingsVersion,
@@ -387,6 +416,16 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 kind: 'document-terms',
                 nextAttemptAt: input.context.now,
                 ownerId: input.ownerId,
+                providerInputCostMicrosPerMillionTokens:
+                    providerExecution.budget.inputCostMicrosPerMillionTokens,
+                providerMaxCostMicrosPerAttempt:
+                    providerExecution.budget.maxCostMicrosPerAttempt,
+                providerMaxInputTokensPerAttempt:
+                    providerExecution.budget.maxInputTokensPerAttempt,
+                providerMaxOutputTokensPerAttempt:
+                    providerExecution.budget.maxOutputTokensPerAttempt,
+                providerOutputCostMicrosPerMillionTokens:
+                    providerExecution.budget.outputCostMicrosPerMillionTokens,
                 progressPercent: 0,
                 progressStage: 'awaiting_upload',
                 requestFingerprint: input.fingerprint,
@@ -465,6 +504,16 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 .where(eq(dictionaryGenerationJobsTable.id, upload.jobId))
                 .for('update');
             if (!job) throw new DictionaryDocumentUploadNotFoundError();
+            const providerBudget = {
+                inputCostMicrosPerMillionTokens:
+                    job.providerInputCostMicrosPerMillionTokens,
+                maxCostMicrosPerAttempt: job.providerMaxCostMicrosPerAttempt,
+                maxInputTokensPerAttempt: job.providerMaxInputTokensPerAttempt,
+                maxOutputTokensPerAttempt:
+                    job.providerMaxOutputTokensPerAttempt,
+                outputCostMicrosPerMillionTokens:
+                    job.providerOutputCostMicrosPerMillionTokens,
+            };
             if (upload.uploadCompletedAt) {
                 const replayDataVersions = input.versions.filter(
                     (version) => version.kind === 'data',
@@ -573,7 +622,31 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                     ownerSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
                     ownerSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
                 })
-                .from(dictionaryGenerationJobsTable);
+                .from(dictionaryGenerationJobsTable)
+                .where(
+                    and(
+                        eq(
+                            dictionaryGenerationJobsTable.providerInputCostMicrosPerMillionTokens,
+                            providerBudget.inputCostMicrosPerMillionTokens,
+                        ),
+                        eq(
+                            dictionaryGenerationJobsTable.providerOutputCostMicrosPerMillionTokens,
+                            providerBudget.outputCostMicrosPerMillionTokens,
+                        ),
+                        eq(
+                            dictionaryGenerationJobsTable.providerMaxCostMicrosPerAttempt,
+                            providerBudget.maxCostMicrosPerAttempt,
+                        ),
+                        eq(
+                            dictionaryGenerationJobsTable.providerMaxInputTokensPerAttempt,
+                            providerBudget.maxInputTokensPerAttempt,
+                        ),
+                        eq(
+                            dictionaryGenerationJobsTable.providerMaxOutputTokensPerAttempt,
+                            providerBudget.maxOutputTokensPerAttempt,
+                        ),
+                    ),
+                );
             if (
                 !dictionaryGenerationProviderBudgetAllows(
                     Object.fromEntries(
@@ -598,7 +671,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                         ]),
                     ) as unknown as DictionaryGenerationProviderBudgetUsage,
                     true,
-                    this.providerBudget,
+                    providerBudget,
                 )
             )
                 throw new DictionaryGenerationNotAvailableError();
@@ -633,23 +706,23 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                     progressPercent: 0,
                     progressStage: 'queued',
                     providerInputCostMicrosPerMillionTokens:
-                        this.providerBudget.inputCostMicrosPerMillionTokens,
+                        providerBudget.inputCostMicrosPerMillionTokens,
                     providerMaxCostMicrosPerAttempt:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerBudget.maxCostMicrosPerAttempt,
                     providerMaxInputTokensPerAttempt:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerBudget.maxInputTokensPerAttempt,
                     providerMaxOutputTokensPerAttempt:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerBudget.maxOutputTokensPerAttempt,
                     providerOutputCostMicrosPerMillionTokens:
-                        this.providerBudget.outputCostMicrosPerMillionTokens,
+                        providerBudget.outputCostMicrosPerMillionTokens,
                     providerReservationState: 'active',
                     providerReservedAttempts: 1,
                     providerReservedCostMicros:
-                        this.providerBudget.maxCostMicrosPerAttempt,
+                        providerBudget.maxCostMicrosPerAttempt,
                     providerReservedInputTokens:
-                        this.providerBudget.maxInputTokensPerAttempt,
+                        providerBudget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
-                        this.providerBudget.maxOutputTokensPerAttempt,
+                        providerBudget.maxOutputTokensPerAttempt,
                     updatedAt: input.context.now,
                 })
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));

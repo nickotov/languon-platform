@@ -31,6 +31,10 @@ import {
     createDictionaryPastedTermsGenerationAgent,
     type DictionaryPastedTermsGenerationAgent,
 } from './dictionary-pasted-terms-generation-agent';
+import {
+    dictionaryTextRequestLimits,
+    type DictionaryTextModelRequestLimits,
+} from './dictionary-text-provider-catalog';
 
 const boundedFailureText = z
     .string()
@@ -231,18 +235,29 @@ function validatedUsage(
 
 export function createMastraPastedTermsProposalGenerator(options: {
     agent: DictionaryPastedTermsGenerationStructuredAgent;
+    modelRequestLimits?: DictionaryTextModelRequestLimits;
+    providerReadiness?: (signal: AbortSignal) => Promise<void>;
 }): PastedTermsProposalGenerator {
     return {
         async generate(request) {
             request.signal.throwIfAborted();
             const input = validatedChunkInput(request);
             const message = JSON.stringify(input);
+            const requestLimits = dictionaryTextRequestLimits({
+                aggregate: request.providerBudget,
+                model: options.modelRequestLimits ?? {
+                    maxInputTokens:
+                        request.providerBudget.maxInputTokensPerAttempt,
+                    maxOutputTokens:
+                        request.providerBudget.maxOutputTokensPerAttempt,
+                },
+            });
             if (
-                request.providerBudget.maxOutputTokensPerAttempt <
+                requestLimits.maxOutputTokens <
                     dictionaryPastedTermsGenerationMinimumOutputTokensPerChunk ||
                 Buffer.byteLength(message, 'utf8') +
                     dictionaryPastedTermsGenerationFixedInputBytes >
-                    request.providerBudget.maxInputTokensPerAttempt
+                    requestLimits.maxInputTokens
             ) {
                 throw new PastedTermsProposalGeneratorExecutionError(
                     'invalid_input',
@@ -252,8 +267,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens:
-                        request.providerBudget.maxOutputTokensPerAttempt,
+                    maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         schema: DictionaryPastedTermsChunkModelOutputSchema,
@@ -269,7 +283,12 @@ export function createMastraPastedTermsProposalGenerator(options: {
                 }
                 return {
                     proposal: validatedChunkOutput(result.object, request),
-                    usage: validatedUsage(result.usage, request.providerBudget),
+                    usage: validatedUsage(result.usage, {
+                        ...request.providerBudget,
+                        maxInputTokensPerAttempt: requestLimits.maxInputTokens,
+                        maxOutputTokensPerAttempt:
+                            requestLimits.maxOutputTokens,
+                    }),
                 };
             } catch (error) {
                 if (request.signal.aborted) {
@@ -295,7 +314,14 @@ export function createMastraPastedTermsProposalGenerator(options: {
         },
         readiness(signal) {
             signal.throwIfAborted();
-            return Promise.resolve();
+            if (!options.providerReadiness)
+                return Promise.reject(
+                    new PastedTermsProposalGeneratorUnavailableError(),
+                );
+            return options.providerReadiness(signal).catch(() => {
+                signal.throwIfAborted();
+                throw new PastedTermsProposalGeneratorUnavailableError();
+            });
         },
     };
 }
@@ -431,7 +457,9 @@ export type PastedTermsProposalGeneratorFactoryOptions =
     | {
           mode: 'mastra';
           model: ModelRouterModelId | OpenAICompatibleConfig;
+          modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
+          providerReadiness?: (signal: AbortSignal) => Promise<void>;
       };
 
 export function createPastedTermsProposalGenerator(
@@ -459,5 +487,11 @@ export function createPastedTermsProposalGenerator(
     });
     return createMastraPastedTermsProposalGenerator({
         agent: runtime.listAgents().dictionaryPastedTermsGenerationAgent,
+        ...(options.modelRequestLimits
+            ? { modelRequestLimits: options.modelRequestLimits }
+            : {}),
+        ...(options.providerReadiness
+            ? { providerReadiness: options.providerReadiness }
+            : {}),
     });
 }

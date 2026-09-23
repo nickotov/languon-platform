@@ -1,5 +1,6 @@
 import type {
     AdminActor,
+    AdminAiSettingsMutationRequest,
     AdminAuditEventsQuery,
     AdminReason,
     AdminUserStatusMutationRequest,
@@ -14,6 +15,8 @@ import type { Clock } from '../../authentication/application/ports/clock';
 import type { IdGenerator } from '../../authentication/application/ports/id-generator';
 import {
     AdminAccessDeniedError,
+    AdminAiSettingsConflictError,
+    AdminAiSettingsUnavailableError,
     AdminDeletionCancellationUnavailableError,
     AdminLastOwnerForbiddenError,
     AdminSelfDisableForbiddenError,
@@ -22,6 +25,7 @@ import {
 } from './administration-errors';
 import type {
     AdministrationStore,
+    AdminAiSettingsMutationInput,
     AdminUserMutationInput,
 } from './ports/administration-store';
 
@@ -83,6 +87,72 @@ export class AdministrationService {
     ) {
         await this.authorize(accessToken);
         return this.dependencies.store.listAuditEvents(query);
+    }
+
+    public async aiSettings(accessToken: string) {
+        await this.authorize(accessToken);
+        return this.dependencies.store.aiSettings();
+    }
+
+    public async updateAiSettings(
+        accessToken: string,
+        input: AdminAiSettingsMutationRequest,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken, correlationId);
+        try {
+            await this.requireRecent(principal);
+            const occurredAt = this.dependencies.clock.now();
+            const mutation: AdminAiSettingsMutationInput = {
+                ...input,
+                actorSessionId: principal.sessionId,
+                actorUserId: principal.actor.id,
+                audit: {
+                    correlationId,
+                    expiresAt: new Date(
+                        occurredAt.getTime() + auditRetentionMilliseconds,
+                    ),
+                    id: this.dependencies.ids.generate(),
+                    occurredAt,
+                },
+                revisionId: this.dependencies.ids.generate(),
+            };
+            return await this.dependencies.store.updateAiSettings(mutation);
+        } catch (error) {
+            if (!(
+                error instanceof AdminAiSettingsConflictError ||
+                error instanceof AdminAiSettingsUnavailableError ||
+                error instanceof RecentAuthenticationRequiredError ||
+                error instanceof AdminAccessDeniedError
+            )) {
+                throw error;
+            }
+            const current = await this.dependencies.store.aiSettings();
+            await this.recordRejected({
+                action: 'ai_settings_updated',
+                actorUserId: principal.actor.id,
+                ...(current.settings.version > 0
+                    ? { beforeVersion: current.settings.version }
+                    : {}),
+                correlationId,
+                metadata: {
+                    expectedVersion: input.expectedVersion,
+                    rejection:
+                        error instanceof AdminAiSettingsConflictError
+                            ? 'ai_settings_conflict'
+                            : error instanceof AdminAiSettingsUnavailableError
+                              ? 'capability_unavailable'
+                              : error instanceof
+                                  RecentAuthenticationRequiredError
+                                ? 'recent_authentication_required'
+                                : 'admin_access_denied',
+                    targetKind: 'dictionary_ai_configuration',
+                    targetId: 'global',
+                },
+                reason: input.reason,
+            });
+            throw error;
+        }
     }
 
     public async disableUser(
@@ -264,6 +334,7 @@ export class AdministrationService {
     private async recordRejected(input: {
         action:
             | 'access_denied'
+            | 'ai_settings_updated'
             | 'user_disabled'
             | 'user_restored'
             | 'user_deletion_cancelled';

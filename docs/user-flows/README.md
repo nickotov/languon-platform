@@ -32,6 +32,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Admin User Management](./admin-user-management.md) — owner authentication,
   user inspection, safe disable/restore operations, audit history, and guarded
   membership commands.
+- [AI Provider and Model Management](./ai-provider-management.md) — curated
+  DeepSeek/Kie selection, immutable job routing, credentials, and admin audit.
 - [Release and Deployment Platform](./release-deployment-platform.md) —
   disposable production-image deployment, verification, blue/green promotion,
   and rollback through local Docker.

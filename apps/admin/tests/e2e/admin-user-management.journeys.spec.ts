@@ -1,6 +1,7 @@
-import { execFile } from 'node:child_process';
+import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -13,6 +14,7 @@ import {
 import postgres from 'postgres';
 
 // @user-flow-revision admin-user-management sha256:43c037477d75d58d
+// @user-flow-revision ai-provider-management sha256:ebace910d71591e6
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(
@@ -56,6 +58,15 @@ function captureBrowserErrors(
 ) {
     const errors: string[] = [];
     page.on('console', (message) => {
+        // Ant Design's development-only context comparator can encounter React
+        // internals while a controlled Select closes. It emits this rc-util
+        // warning without an application exception or state loss.
+        if (
+            message.text() ===
+            'Warning: Warning: There may be circular references'
+        ) {
+            return;
+        }
         if (
             message.type() === 'error' &&
             !message.text().startsWith('Failed to load resource:')
@@ -161,6 +172,114 @@ async function listOwnerEmails() {
 async function grantOwner() {
     const owners = await listOwnerEmails();
     await runMembershipGrant(ownerEmail, owners[0]);
+}
+
+async function startDictionaryWorker() {
+    const output: string[] = [];
+    const database = postgres(databaseUrl, { max: 1 });
+    await database`delete from dictionary_ai_worker_observations`;
+    const worker = spawn(
+        'pnpm',
+        [
+            '--filter',
+            '@languon/backend',
+            'exec',
+            'tsx',
+            'src/infrastructure/worker/dictionary-worker-command.ts',
+            'run',
+        ],
+        {
+            cwd: repositoryRoot,
+            env: {
+                ...membershipEnvironment(),
+                APP_ENV: 'test',
+                DEEPSEEK_API_KEY: 'admin-e2e-deepseek-worker-key',
+                DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
+                DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v1',
+                DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'single-card:v1',
+                DICTIONARY_WORKER_CONCURRENCY: '1',
+                DICTIONARY_WORKER_DATABASE_URL: databaseUrl,
+                DICTIONARY_WORKER_POLL_INTERVAL_MS: '50',
+                DICTIONARY_WORKER_READINESS_TIMEOUT_MS: '1000',
+                KIE_API_KEY: 'admin-e2e-kie-worker-key',
+                RELEASE_SHA: 'development',
+            },
+            stdio: ['ignore', 'pipe', 'pipe'],
+        },
+    );
+    worker.stdout?.on('data', (chunk) => output.push(String(chunk)));
+    worker.stderr?.on('data', (chunk) => output.push(String(chunk)));
+
+    try {
+        for (let attempt = 0; attempt < 100; attempt += 1) {
+            if (worker.exitCode !== null) {
+                throw new Error(
+                    `Dictionary worker exited before readiness: ${output.join('').slice(-2_000)}`,
+                );
+            }
+            const [observation] = await database<[{ count: number }]>`
+                select count(*)::int as count
+                from dictionary_ai_worker_observations
+            `;
+            if ((observation?.count ?? 0) >= 2) return worker;
+            await delay(100);
+        }
+        throw new Error('Dictionary worker did not publish readiness in time.');
+    } finally {
+        await database.end({ timeout: 1 });
+    }
+}
+
+async function stopDictionaryWorker(worker: ChildProcess | undefined) {
+    if (!worker || worker.exitCode !== null) return;
+    worker.kill('SIGTERM');
+    await Promise.race([
+        new Promise<void>((resolveExit) =>
+            worker.once('exit', () => resolveExit()),
+        ),
+        delay(5_000).then(() => {
+            if (worker.exitCode === null) worker.kill('SIGKILL');
+        }),
+    ]);
+}
+
+async function waitForGenerationReview(
+    request: APIRequestContext,
+    accessToken: string,
+    jobId: string,
+) {
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+        const response = await request.get(
+            `${backendOrigin}/dictionary-generation-jobs/${jobId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    Origin: webOrigin,
+                },
+            },
+        );
+        expect(response.status()).toBe(200);
+        const payload = (await response.json()) as {
+            job: {
+                failure: unknown;
+                proposal: {
+                    candidate: Record<string, unknown>;
+                } | null;
+                state: string;
+            };
+        };
+        if (payload.job.state === 'review' && payload.job.proposal) {
+            return payload.job;
+        }
+        if (['cancelled', 'expired', 'failed'].includes(payload.job.state)) {
+            throw new Error(
+                `Generation ${jobId} reached ${payload.job.state}: ${JSON.stringify(payload.job.failure)}`,
+            );
+        }
+        await delay(100);
+    }
+    throw new Error(`Generation ${jobId} did not reach review.`);
 }
 
 async function passwordLogin(
@@ -276,30 +395,265 @@ test.describe.serial('admin user management journeys', () => {
         assertNoBrowserErrors();
     });
 
-    // @user-flow admin-user-management/admin-owner-cancels-scheduled-deletion
-    test('owner cancels a scheduled removal through the audited distinct action', async ({ page, request }) => {
-        const targetLogin = await request.post(`${backendOrigin}/auth/login/password`, {
-            data: { email: targetEmail, password: ownerPassword },
-            headers: { Origin: webOrigin },
+    // @user-flow ai-provider-management/admin-configures-dictionary-ai-default
+    test('owner configures providers and queued jobs retain their selected revisions', async ({
+        page,
+        request,
+    }) => {
+        test.setTimeout(120_000);
+        const assertNoBrowserErrors = captureBrowserErrors(page, {
+            '/api/admin/auth/refresh': 401,
         });
+        await passwordLogin(page);
+        await page.getByRole('menuitem', { name: 'AI settings' }).click();
+        await expect(
+            page.getByRole('heading', { name: 'AI providers' }),
+        ).toBeVisible();
+        await page
+            .locator('label.ant-radio-button-wrapper')
+            .filter({ hasText: 'DeepSeek' })
+            .click();
+        await page
+            .getByRole('checkbox', { name: /DeepSeek Chat/ })
+            .evaluate((element: HTMLInputElement) => element.click());
+        await page.getByLabel('Default model').press('ArrowDown');
+        await page.getByLabel('Default model').press('Enter');
+        await page
+            .getByLabel('Reason for change')
+            .fill('Enable curated DeepSeek dictionary generation');
+        await page.getByRole('button', { name: 'Save configuration' }).click();
+        await expect(page.getByText('Version 1')).toBeVisible();
+
+        const targetLogin = await request.post(
+            `${backendOrigin}/auth/login/password`,
+            {
+                data: { email: targetEmail, password: ownerPassword },
+                headers: { Origin: webOrigin },
+            },
+        );
         expect(targetLogin.status()).toBe(200);
-        const token = ((await targetLogin.json()) as { accessToken: string }).accessToken;
-        const scheduled = await request.post(`${backendOrigin}/users/me/deletion`, {
-            data: {},
-            headers: { Authorization: `Bearer ${token}`, Origin: webOrigin },
-        });
+        const accessToken = (
+            (await targetLogin.json()) as { accessToken: string }
+        ).accessToken;
+        const apiHeaders = {
+            Authorization: `Bearer ${accessToken}`,
+            Origin: webOrigin,
+        };
+        const dictionaryResponse = await request.post(
+            `${backendOrigin}/dictionaries`,
+            {
+                data: {
+                    name: `AI provider routing ${runId}`,
+                    sourceLanguage: 'en',
+                    targetLanguage: 'fr',
+                },
+                headers: {
+                    ...apiHeaders,
+                    'Idempotency-Key': `dictionary-${runId}`,
+                },
+            },
+        );
+        expect(dictionaryResponse.status()).toBe(201);
+        const createdDictionary = (await dictionaryResponse.json()) as {
+            dictionary: {
+                id: string;
+                settingsVersion: number;
+                version: number;
+            };
+        };
+        const dictionaryId = createdDictionary.dictionary.id;
+        const settingsVersion = createdDictionary.dictionary.settingsVersion;
+        let dictionaryVersion = createdDictionary.dictionary.version;
+
+        const createCard = async (source: string, translation: string) => {
+            const response = await request.post(
+                `${backendOrigin}/dictionaries/${dictionaryId}/cards`,
+                {
+                    data: {
+                        expectedDictionaryVersion: dictionaryVersion,
+                        expectedSettingsVersion: settingsVersion,
+                        values: { source, translation },
+                    },
+                    headers: {
+                        ...apiHeaders,
+                        'Idempotency-Key': `card-${source}-${runId}`,
+                    },
+                },
+            );
+            expect(response.status()).toBe(201);
+            const payload = (await response.json()) as {
+                card: { id: string; version: number };
+                dictionaryVersion: number;
+            };
+            dictionaryVersion = payload.dictionaryVersion;
+            return payload.card;
+        };
+        const deepSeekCard = await createCard('canvas', 'toile');
+        const kieCard = await createCard('studio', 'atelier');
+
+        const enqueue = async (card: { id: string; version: number }) => {
+            const response = await request.post(
+                `${backendOrigin}/dictionaries/${dictionaryId}/cards/${card.id}/generations`,
+                {
+                    data: {
+                        expectedCardVersion: card.version,
+                        expectedDictionaryVersion: dictionaryVersion,
+                        expectedSettingsVersion: settingsVersion,
+                        instruction: 'Keep the translation concise.',
+                    },
+                    headers: {
+                        ...apiHeaders,
+                        'Idempotency-Key': `generation-${card.id}-${runId}`,
+                    },
+                },
+            );
+            expect(response.status()).toBe(202);
+            return ((await response.json()) as { job: { id: string } }).job.id;
+        };
+        const deepSeekJobId = await enqueue(deepSeekCard);
+
+        await page
+            .locator('label.ant-radio-button-wrapper')
+            .filter({ hasText: 'Kie' })
+            .click();
+        await page
+            .getByRole('checkbox', { name: /Gemini 2\.5 Pro via Kie/ })
+            .evaluate((element: HTMLInputElement) => element.click());
+        await page.getByLabel('Default model').press('ArrowDown');
+        await page.getByLabel('Default model').press('Enter');
+        await page
+            .getByLabel('Reason for change')
+            .fill('Switch new dictionary jobs to the curated Kie model');
+        await page.getByRole('button', { name: 'Save configuration' }).click();
+        await expect(page.getByText('Version 2')).toBeVisible();
+        const kieJobId = await enqueue(kieCard);
+
+        const database = postgres(databaseUrl, { max: 1 });
+        try {
+            const pinned = await database<
+                Array<{
+                    jobId: string;
+                    modelId: string;
+                    providerId: string;
+                    revisionId: string;
+                }>
+            >`
+                select
+                    jobs.id as "jobId",
+                    jobs.execution_revision_id as "revisionId",
+                    revisions.catalog_snapshot ->> 'modelId' as "modelId",
+                    revisions.catalog_snapshot ->> 'providerId' as "providerId"
+                from dictionary_generation_jobs jobs
+                join dictionary_ai_configuration_revisions revisions
+                  on revisions.id = jobs.execution_revision_id
+                where jobs.id in (${deepSeekJobId}, ${kieJobId})
+                order by jobs.id
+            `;
+            expect(pinned).toHaveLength(2);
+            expect(new Set(pinned.map((row) => row.revisionId)).size).toBe(2);
+            expect(
+                pinned.map(({ modelId, providerId }) => ({
+                    modelId,
+                    providerId,
+                })),
+            ).toEqual(
+                expect.arrayContaining([
+                    { modelId: 'deepseek-chat', providerId: 'deepseek' },
+                    { modelId: 'gemini-2.5-pro', providerId: 'kie' },
+                ]),
+            );
+        } finally {
+            await database.end();
+        }
+
+        let worker: ChildProcess | undefined;
+        try {
+            worker = await startDictionaryWorker();
+            const deepSeekJob = await waitForGenerationReview(
+                request,
+                accessToken,
+                deepSeekJobId,
+            );
+            await waitForGenerationReview(request, accessToken, kieJobId);
+            const accepted = await request.post(
+                `${backendOrigin}/dictionary-generation-jobs/${deepSeekJobId}/accept`,
+                {
+                    data: { candidate: deepSeekJob.proposal!.candidate },
+                    headers: apiHeaders,
+                },
+            );
+            expect(accepted.status()).toBe(200);
+            expect(
+                ((await accepted.json()) as { job: { state: string } }).job
+                    .state,
+            ).toBe('accepted');
+        } finally {
+            await stopDictionaryWorker(worker);
+        }
+
+        await page.reload();
+        await expect(page.getByRole('radio', { name: 'Kie' })).toBeChecked();
+        await expect(
+            page.getByRole('checkbox', { name: /Gemini 2\.5 Pro via Kie/ }),
+        ).toBeChecked();
+        await expect(page.getByText('Version 2')).toBeVisible();
+        assertNoBrowserErrors();
+    });
+
+    // @user-flow admin-user-management/admin-owner-cancels-scheduled-deletion
+    test('owner cancels a scheduled removal through the audited distinct action', async ({
+        page,
+        request,
+    }) => {
+        const targetLogin = await request.post(
+            `${backendOrigin}/auth/login/password`,
+            {
+                data: { email: targetEmail, password: ownerPassword },
+                headers: { Origin: webOrigin },
+            },
+        );
+        expect(targetLogin.status()).toBe(200);
+        const token = ((await targetLogin.json()) as { accessToken: string })
+            .accessToken;
+        const scheduled = await request.post(
+            `${backendOrigin}/users/me/deletion`,
+            {
+                data: {},
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Origin: webOrigin,
+                },
+            },
+        );
         expect(scheduled.status()).toBe(202);
 
-        const assertNoBrowserErrors = captureBrowserErrors(page, { '/api/admin/auth/refresh': 401 });
+        const assertNoBrowserErrors = captureBrowserErrors(page, {
+            '/api/admin/auth/refresh': 401,
+        });
         await passwordLogin(page);
         await page.goto(`/users/${targetId}`);
-        await expect(page.getByText('scheduled for deletion', { exact: true }).first()).toBeVisible();
-        await page.getByRole('button', { name: 'Cancel scheduled deletion' }).click();
-        await page.getByLabel('Reason').fill('Reviewed administrator cancellation in disposable E2E');
-        await page.getByRole('button', { name: 'Confirm cancellation' }).click();
-        await expect(page.getByText('active', { exact: true }).first()).toBeVisible();
+        await expect(
+            page.getByText('scheduled for deletion', { exact: true }).first(),
+        ).toBeVisible();
+        await page
+            .getByRole('button', { name: 'Cancel scheduled deletion' })
+            .click();
+        await page
+            .getByLabel('Reason')
+            .fill('Reviewed administrator cancellation in disposable E2E');
+        await page
+            .getByRole('button', { name: 'Confirm cancellation' })
+            .click();
+        await expect(
+            page.getByText('active', { exact: true }).first(),
+        ).toBeVisible();
         await page.getByRole('menuitem', { name: 'Audit' }).click();
-        await expect(page.getByRole('row').filter({ hasText: 'Reviewed administrator cancellation in disposable E2E' })).toBeVisible();
+        await expect(
+            page.getByRole('row').filter({
+                hasText:
+                    'Reviewed administrator cancellation in disposable E2E',
+            }),
+        ).toBeVisible();
         assertNoBrowserErrors();
     });
 
@@ -374,7 +728,9 @@ test.describe.serial('admin user management journeys', () => {
         });
         const client = await addVirtualAuthenticator(page);
         try {
-            await page.goto(`${webOrigin}/login?returnTo=%2Fprofile%3Ftab%3Dsecurity`);
+            await page.goto(
+                `${webOrigin}/login?returnTo=%2Fprofile%3Ftab%3Dsecurity`,
+            );
             await page.getByLabel('Email').fill(ownerEmail);
             await page.locator('input[name="password"]').fill(ownerPassword);
             await page

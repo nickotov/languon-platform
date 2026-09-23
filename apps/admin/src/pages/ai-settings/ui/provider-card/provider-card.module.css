@@ -1,0 +1,33 @@
+.card {
+    height: 100%;
+}
+
+.content {
+    width: 100%;
+}
+
+.models {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+}
+
+.models label {
+    align-items: flex-start;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    margin: 0;
+    min-width: 0;
+    padding: 12px;
+}
+
+.modelId {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+    .models {
+        grid-template-columns: 1fr;
+    }
+}

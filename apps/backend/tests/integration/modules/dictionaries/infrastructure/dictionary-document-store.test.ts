@@ -425,6 +425,60 @@ run('dictionary document persistence', () => {
         expect(Number(active?.value)).toBe(3);
     });
 
+    it('isolates upload completion from reservations under a different provider policy', async () => {
+        const expensive = await authorize('L');
+        const target = await authorize('M');
+        await documentStore.completeUpload({
+            context: operationContext(2),
+            detectedFormat: 'txt',
+            ownerId,
+            requestedVersionId: 'expensive-version',
+            uploadId: expensive.authorization.uploadId,
+            versions: [
+                {
+                    checksumSha256: 'a'.repeat(64),
+                    contentType: 'text/plain',
+                    isCurrent: true,
+                    kind: 'data',
+                    sizeBytes: 12,
+                    versionId: 'expensive-version',
+                },
+            ],
+        });
+        await database
+            .update(dictionaryGenerationJobsTable)
+            .set({
+                providerMaxCostMicrosPerAttempt: 1_000_000,
+                providerReservedCostMicros: 1_000_000,
+            })
+            .where(
+                eq(
+                    dictionaryGenerationJobsTable.id,
+                    expensive.authorization.job.id,
+                ),
+            );
+
+        await expect(
+            documentStore.completeUpload({
+                context: operationContext(3),
+                detectedFormat: 'txt',
+                ownerId,
+                requestedVersionId: 'target-version',
+                uploadId: target.authorization.uploadId,
+                versions: [
+                    {
+                        checksumSha256: 'a'.repeat(64),
+                        contentType: 'text/plain',
+                        isCurrent: true,
+                        kind: 'data',
+                        sizeBytes: 12,
+                        versionId: 'target-version',
+                    },
+                ],
+            }),
+        ).resolves.toMatchObject({ state: 'queued' });
+    });
+
     it('enqueues selected retryable document failures as a redacted pasted successor with lineage', async () => {
         const { authorization, input } = await authorize(
             'J',

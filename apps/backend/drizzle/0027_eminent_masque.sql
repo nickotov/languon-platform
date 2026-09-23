@@ -1,0 +1,2 @@
+ALTER TABLE "dictionary_ai_worker_observations" DROP CONSTRAINT "dictionary_ai_worker_observations_status_valid";--> statement-breakpoint
+ALTER TABLE "dictionary_ai_worker_observations" ADD CONSTRAINT "dictionary_ai_worker_observations_status_valid" CHECK ("dictionary_ai_worker_observations"."status" in ('available', 'unavailable', 'unverified'));

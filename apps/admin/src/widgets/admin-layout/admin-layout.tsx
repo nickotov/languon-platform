@@ -1,5 +1,6 @@
 import {
     AuditOutlined,
+    CloudServerOutlined,
     DashboardOutlined,
     LogoutOutlined,
     MenuOutlined,
@@ -39,7 +40,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 ? '/users'
                 : location.pathname.startsWith('/audit')
                   ? '/audit'
-                  : '/',
+                  : location.pathname.startsWith('/ai-settings')
+                    ? '/ai-settings'
+                    : '/',
         [location.pathname],
     );
     const navigationItems = [
@@ -57,6 +60,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             icon: <AuditOutlined />,
             key: '/audit',
             label: translate('shell.audit'),
+        },
+        {
+            icon: <CloudServerOutlined />,
+            key: '/ai-settings',
+            label: translate('shell.aiSettings'),
         },
     ];
     const navigation = (closeAfterNavigate = false) => (

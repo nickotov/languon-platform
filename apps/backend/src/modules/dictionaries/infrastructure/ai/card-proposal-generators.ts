@@ -24,6 +24,10 @@ import {
     createDictionaryCardGenerationAgent,
     type DictionaryCardGenerationAgent,
 } from './dictionary-card-generation-agent';
+import {
+    dictionaryTextRequestLimits,
+    type DictionaryTextModelRequestLimits,
+} from './dictionary-text-provider-catalog';
 
 export const DictionaryCardGenerationModelInputSchema =
     DictionarySingleCardGenerationInputPayloadSchema;
@@ -94,6 +98,7 @@ export interface DictionaryCardGenerationStructuredAgent {
 
 export function createMastraCardProposalGenerator(options: {
     agent: DictionaryCardGenerationStructuredAgent;
+    modelRequestLimits?: DictionaryTextModelRequestLimits;
     providerReadiness?: (signal: AbortSignal) => Promise<void>;
 }): CardProposalGenerator {
     return {
@@ -101,10 +106,19 @@ export function createMastraCardProposalGenerator(options: {
             request.signal.throwIfAborted();
             const input = validatedInput(request.input);
             const message = JSON.stringify(input);
+            const requestLimits = dictionaryTextRequestLimits({
+                aggregate: request.providerBudget,
+                model: options.modelRequestLimits ?? {
+                    maxInputTokens:
+                        request.providerBudget.maxInputTokensPerAttempt,
+                    maxOutputTokens:
+                        request.providerBudget.maxOutputTokensPerAttempt,
+                },
+            });
             if (
                 Buffer.byteLength(message, 'utf8') +
                     dictionaryCardGenerationFixedInputBytes >
-                request.providerBudget.maxInputTokensPerAttempt
+                requestLimits.maxInputTokens
             ) {
                 throw new CardProposalGeneratorExecutionError('invalid_input');
             }
@@ -112,8 +126,7 @@ export function createMastraCardProposalGenerator(options: {
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens:
-                        request.providerBudget.maxOutputTokensPerAttempt,
+                    maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         schema: DictionaryCardGenerationModelOutputSchema,
@@ -139,10 +152,8 @@ export function createMastraCardProposalGenerator(options: {
                     !Number.isSafeInteger(result.usage.outputTokens) ||
                     result.usage.inputTokens! < 0 ||
                     result.usage.outputTokens! < 0 ||
-                    result.usage.inputTokens! >
-                        request.providerBudget.maxInputTokensPerAttempt ||
-                    result.usage.outputTokens! >
-                        request.providerBudget.maxOutputTokensPerAttempt
+                    result.usage.inputTokens! > requestLimits.maxInputTokens ||
+                    result.usage.outputTokens! > requestLimits.maxOutputTokens
                 ) {
                     throw new CardProposalGeneratorExecutionError(
                         'invalid_output',
@@ -247,8 +258,10 @@ export type CardProposalGeneratorFactoryOptions =
     | {
           mode: 'mastra';
           model: ModelRouterModelId | OpenAICompatibleConfig;
+          modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerProbeFetch?: typeof fetch;
+          providerReadiness?: (signal: AbortSignal) => Promise<void>;
       };
 
 export function createCardProposalGenerator(
@@ -267,12 +280,17 @@ export function createCardProposalGenerator(
         agents: { dictionaryCardGenerationAgent: agent },
         logger: false,
     });
-    const providerReadiness = openAICompatibleProviderReadiness(
-        options.model,
-        options.providerProbeFetch ?? globalThis.fetch,
-    );
+    const providerReadiness =
+        options.providerReadiness ??
+        openAICompatibleProviderReadiness(
+            options.model,
+            options.providerProbeFetch ?? globalThis.fetch,
+        );
     return createMastraCardProposalGenerator({
         agent: runtime.listAgents().dictionaryCardGenerationAgent,
+        ...(options.modelRequestLimits
+            ? { modelRequestLimits: options.modelRequestLimits }
+            : {}),
         ...(providerReadiness ? { providerReadiness } : {}),
     });
 }

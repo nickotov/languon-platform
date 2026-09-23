@@ -31,7 +31,13 @@ GRANT SELECT, UPDATE ON TABLE
 TO :"dictionary_worker_role";
 
 GRANT SELECT ON TABLE
-    dictionary_settings
+    dictionary_settings,
+    dictionary_ai_configuration,
+    dictionary_ai_configuration_revisions
+TO :"dictionary_worker_role";
+
+GRANT SELECT, INSERT, UPDATE ON TABLE
+    dictionary_ai_worker_observations
 TO :"dictionary_worker_role";
 
 GRANT SELECT (id, dictionary_id, source, sort_key, translation, example, example_translation, lifecycle, version, example_enabled_override, example_translation_enabled_override, example_language_role_override) ON TABLE

@@ -18,7 +18,10 @@ export function createAdministrationComposition(
             authentication: dependencies.authentication,
             clock: dependencies.clock,
             ids: dependencies.ids,
-            store: new DrizzleAdministrationStore(dependencies.database, deletionJournal),
+            store: new DrizzleAdministrationStore(
+                dependencies.database,
+                deletionJournal,
+            ),
         }),
         authentication: authentication.options.operations,
         passkeys: authentication.options.passkeys,

@@ -25,6 +25,10 @@ import {
     createDictionaryCardAuthoringAgent,
     type DictionaryCardAuthoringAgent,
 } from './dictionary-card-authoring-agent';
+import {
+    dictionaryTextRequestLimits,
+    type DictionaryTextModelRequestLimits,
+} from './dictionary-text-provider-catalog';
 
 export const DictionaryCardAuthoringModelInputSchema =
     DictionaryCardAuthoringProviderInputSchema;
@@ -92,6 +96,7 @@ export interface DictionaryCardAuthoringStructuredAgent {
 
 export function createMastraCardAuthoringProposalGenerator(options: {
     agent: DictionaryCardAuthoringStructuredAgent;
+    modelRequestLimits?: DictionaryTextModelRequestLimits;
     providerReadiness?: (signal: AbortSignal) => Promise<void>;
 }): CardAuthoringProposalGenerator {
     return {
@@ -99,9 +104,18 @@ export function createMastraCardAuthoringProposalGenerator(options: {
             request.signal.throwIfAborted();
             const input = validatedInput(request.input);
             const message = JSON.stringify(input);
+            const requestLimits = dictionaryTextRequestLimits({
+                aggregate: request.providerBudget,
+                model: options.modelRequestLimits ?? {
+                    maxInputTokens:
+                        request.providerBudget.maxInputTokensPerAttempt,
+                    maxOutputTokens:
+                        request.providerBudget.maxOutputTokensPerAttempt,
+                },
+            });
             if (
                 Buffer.byteLength(message, 'utf8') + fixedInputBytes >
-                request.providerBudget.maxInputTokensPerAttempt
+                requestLimits.maxInputTokens
             )
                 throw new CardAuthoringProposalGeneratorExecutionError(
                     'invalid_input',
@@ -109,8 +123,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens:
-                        request.providerBudget.maxOutputTokensPerAttempt,
+                    maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         schema: DictionaryCardAuthoringModelOutputSchema,
@@ -130,10 +143,8 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                     !Number.isSafeInteger(result.usage.outputTokens) ||
                     result.usage.inputTokens! < 0 ||
                     result.usage.outputTokens! < 0 ||
-                    result.usage.inputTokens! >
-                        request.providerBudget.maxInputTokensPerAttempt ||
-                    result.usage.outputTokens! >
-                        request.providerBudget.maxOutputTokensPerAttempt
+                    result.usage.inputTokens! > requestLimits.maxInputTokens ||
+                    result.usage.outputTokens! > requestLimits.maxOutputTokens
                 )
                     throw new CardAuthoringProposalGeneratorExecutionError(
                         'invalid_output',
@@ -241,8 +252,10 @@ export type CardAuthoringProposalGeneratorFactoryOptions =
     | {
           mode: 'mastra';
           model: ModelRouterModelId | OpenAICompatibleConfig;
+          modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerProbeFetch?: typeof fetch;
+          providerReadiness?: (signal: AbortSignal) => Promise<void>;
       };
 
 export function createCardAuthoringProposalGenerator(
@@ -260,12 +273,17 @@ export function createCardAuthoringProposalGenerator(
         agents: { dictionaryCardAuthoringAgent: agent },
         logger: false,
     });
-    const providerReadiness = openAICompatibleProviderReadiness(
-        options.model,
-        options.providerProbeFetch ?? globalThis.fetch,
-    );
+    const providerReadiness =
+        options.providerReadiness ??
+        openAICompatibleProviderReadiness(
+            options.model,
+            options.providerProbeFetch ?? globalThis.fetch,
+        );
     return createMastraCardAuthoringProposalGenerator({
         agent: runtime.listAgents().dictionaryCardAuthoringAgent,
+        ...(options.modelRequestLimits
+            ? { modelRequestLimits: options.modelRequestLimits }
+            : {}),
         ...(providerReadiness ? { providerReadiness } : {}),
     });
 }

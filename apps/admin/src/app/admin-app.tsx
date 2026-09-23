@@ -17,6 +17,11 @@ const AuditPage = lazy(() =>
         default: module.AuditPage,
     })),
 );
+const AiSettingsPage = lazy(() =>
+    import('@/pages/ai-settings/ai-settings-page').then((module) => ({
+        default: module.AiSettingsPage,
+    })),
+);
 const DashboardPage = lazy(() =>
     import('@/pages/dashboard/dashboard-page').then((module) => ({
         default: module.DashboardPage,
@@ -63,6 +68,7 @@ function RefineApplication() {
                 { name: 'dashboard', list: '/' },
                 { name: 'users', list: '/users', show: '/users/:id' },
                 { name: 'audit-events', list: '/audit' },
+                { name: 'ai-settings', list: '/ai-settings' },
             ]}
             routerProvider={routerProvider}
             options={{
@@ -89,6 +95,10 @@ function RefineApplication() {
                         <Route path='users' element={<UsersPage />} />
                         <Route path='users/:id' element={<UserDetailPage />} />
                         <Route path='audit' element={<AuditPage />} />
+                        <Route
+                            path='ai-settings'
+                            element={<AiSettingsPage />}
+                        />
                     </Route>
                     <Route path='/login' element={<LoginPage />} />
                     <Route path='*' element={<Navigate replace to='/' />} />

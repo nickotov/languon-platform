@@ -12,6 +12,7 @@ import {
 import type { DictionaryDocumentTermsGenerationInputPayload } from '../domain/generation';
 import { dictionaryGenerationProviderUsageCostMicros } from './ports/dictionary-generation-provider-policy';
 import type { DictionaryGenerationProviderBudgetPolicy } from './ports/dictionary-generation-provider-policy';
+import type { DictionaryAiExecutionSnapshot } from './dictionary-ai-provider-catalog';
 import type { DocumentMalwareScanner } from './ports/document-malware-scanner';
 import {
     DocumentOcrUnavailableError,
@@ -62,6 +63,7 @@ export interface DictionaryDocumentGenerationProcessorRequest {
     input: DictionaryDocumentTermsGenerationInputPayload;
     object: DictionaryDocumentObjectReference;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
+    providerExecution?: DictionaryAiExecutionSnapshot | null;
     reportStage?: (
         stage: DictionaryGenerationExecutionStage,
         percent: number,
@@ -459,6 +461,7 @@ export class DictionaryDocumentGenerationProcessor {
                                 remainingChunks,
                         ),
                     },
+                    providerExecution: request.providerExecution ?? null,
                     signal: request.signal,
                 },
             );

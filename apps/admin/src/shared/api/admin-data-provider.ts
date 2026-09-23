@@ -75,10 +75,24 @@ export const adminDataProvider: DataProvider = {
         return { data: response.user as never };
     },
     custom: async ({
+        method,
+        payload,
         url,
     }: Parameters<NonNullable<DataProvider['custom']>>[0]) => {
-        if (url !== 'dashboard') throw unsupported(url);
-        return { data: (await adminApi.dashboard()) as never };
+        if (url === 'dashboard' && method === 'get') {
+            return { data: (await adminApi.dashboard()) as never };
+        }
+        if (url === 'ai-settings' && method === 'get') {
+            return { data: (await adminApi.aiSettings()) as never };
+        }
+        if (url === 'ai-settings' && method === 'patch') {
+            return {
+                data: (await adminApi.mutateAiSettings(
+                    payload as never,
+                )) as never,
+            };
+        }
+        throw unsupported(url);
     },
     create: async ({ resource }) => {
         throw unsupported(resource);

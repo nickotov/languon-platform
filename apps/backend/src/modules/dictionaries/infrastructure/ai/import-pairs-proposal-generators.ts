@@ -26,6 +26,10 @@ import {
     createDictionaryImportPairsGenerationAgent,
     type DictionaryImportPairsGenerationAgent,
 } from './dictionary-import-pairs-generation-agent';
+import {
+    dictionaryTextRequestLimits,
+    type DictionaryTextModelRequestLimits,
+} from './dictionary-text-provider-catalog';
 
 export class ImportPairsProposalGeneratorExecutionError extends CardProposalGeneratorError {}
 
@@ -120,6 +124,8 @@ function proposalMatchesTrustedInput(
 
 export function createMastraImportPairsProposalGenerator(options: {
     agent: DictionaryImportPairsGenerationStructuredAgent;
+    modelRequestLimits?: DictionaryTextModelRequestLimits;
+    providerReadiness?: (signal: AbortSignal) => Promise<void>;
 }): ImportPairsProposalGenerator {
     return {
         async generate(request) {
@@ -143,10 +149,19 @@ export function createMastraImportPairsProposalGenerator(options: {
                 sourceLanguage: input.context.sourceLanguage,
                 targetLanguage: input.context.targetLanguage,
             });
+            const requestLimits = dictionaryTextRequestLimits({
+                aggregate: request.providerBudget,
+                model: options.modelRequestLimits ?? {
+                    maxInputTokens:
+                        request.providerBudget.maxInputTokensPerAttempt,
+                    maxOutputTokens:
+                        request.providerBudget.maxOutputTokensPerAttempt,
+                },
+            });
             if (
-                request.providerBudget.maxOutputTokensPerAttempt < 8_192 ||
+                requestLimits.maxOutputTokens < 8_192 ||
                 Buffer.byteLength(message, 'utf8') + 16_384 >
-                    request.providerBudget.maxInputTokensPerAttempt
+                    requestLimits.maxInputTokens
             )
                 throw new ImportPairsProposalGeneratorExecutionError(
                     'invalid_model_output',
@@ -154,8 +169,7 @@ export function createMastraImportPairsProposalGenerator(options: {
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens:
-                        request.providerBudget.maxOutputTokensPerAttempt,
+                    maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         schema: DictionaryImportPairsGenerationProposalPayloadSchema,
@@ -180,10 +194,8 @@ export function createMastraImportPairsProposalGenerator(options: {
                     !Number.isSafeInteger(usage?.outputTokens) ||
                     usage!.inputTokens! < 0 ||
                     usage!.outputTokens! < 0 ||
-                    usage!.inputTokens! >
-                        request.providerBudget.maxInputTokensPerAttempt ||
-                    usage!.outputTokens! >
-                        request.providerBudget.maxOutputTokensPerAttempt
+                    usage!.inputTokens! > requestLimits.maxInputTokens ||
+                    usage!.outputTokens! > requestLimits.maxOutputTokens
                 )
                     throw new ImportPairsProposalGeneratorExecutionError(
                         'invalid_model_output',
@@ -210,7 +222,14 @@ export function createMastraImportPairsProposalGenerator(options: {
         },
         readiness(signal) {
             signal.throwIfAborted();
-            return Promise.resolve();
+            if (!options.providerReadiness)
+                return Promise.reject(
+                    new Error('Import-pairs generation is unavailable.'),
+                );
+            return options.providerReadiness(signal).catch(() => {
+                signal.throwIfAborted();
+                throw new Error('Import-pairs generation is unavailable.');
+            });
         },
     };
 }
@@ -314,7 +333,9 @@ export type ImportPairsProposalGeneratorFactoryOptions =
     | {
           mode: 'mastra';
           model: ModelRouterModelId | OpenAICompatibleConfig;
+          modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
+          providerReadiness?: (signal: AbortSignal) => Promise<void>;
       };
 
 export function createImportPairsProposalGenerator(
@@ -341,5 +362,11 @@ export function createImportPairsProposalGenerator(
     });
     return createMastraImportPairsProposalGenerator({
         agent: runtime.listAgents().dictionaryImportPairsGenerationAgent,
+        ...(options.modelRequestLimits
+            ? { modelRequestLimits: options.modelRequestLimits }
+            : {}),
+        ...(options.providerReadiness
+            ? { providerReadiness: options.providerReadiness }
+            : {}),
     });
 }

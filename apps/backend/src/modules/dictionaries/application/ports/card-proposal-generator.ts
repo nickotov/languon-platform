@@ -3,11 +3,13 @@ import type {
     DictionaryGenerationProposalPayload,
 } from '../../domain/generation';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
+import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
 
 export interface CardProposalGeneratorRequest {
     idempotencyKey: string;
     input: DictionarySingleCardGenerationInputPayload;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
+    providerExecution?: DictionaryAiExecutionSnapshot | null;
     signal: AbortSignal;
 }
 

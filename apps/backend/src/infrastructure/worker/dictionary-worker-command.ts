@@ -18,6 +18,15 @@ import { createCardProposalGenerator } from '../../modules/dictionaries/infrastr
 import { createCardAuthoringProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators';
 import { createPastedTermsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators';
 import { createImportPairsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators';
+import {
+    createDictionaryTextMastraModel,
+    createDictionaryTextProviderReadiness,
+} from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
+import {
+    createDictionaryTextProviderRoutingAdapters,
+    DictionaryTextProviderRouter,
+} from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-router';
+import { publishDictionaryAiWorkerObservations } from '../../modules/dictionaries/infrastructure/ai/dictionary-ai-worker-observations';
 import { createDictionaryWorkerComposition } from '../../modules/dictionaries/infrastructure/dictionary-worker-composition';
 import {
     dictionaryImportPairsGenerationFormat,
@@ -107,26 +116,26 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         budget: dictionaryAudioBudget(audioEnvironment),
         generationEnabled: audioEnvironment.generationEnabled,
     });
-    const provider = createCardProposalGenerator(
+    const legacyMastraOptions =
         environment.provider.mode === 'mastra'
-            ? {
-                  mode: 'mastra',
-                  model: {
-                      apiKey: environment.provider.apiKey,
-                      id: environment.provider.modelId,
-                      url: environment.provider.baseUrl,
-                  },
-                  providerBudget: environment.providerBudget,
-              }
-            : { mode: environment.provider.mode },
-    );
-    const cardAuthoringProvider = createCardAuthoringProposalGenerator(
-        environment.supportedFormats.includes(
-            dictionaryCardAuthoringGenerationFormat,
-        )
-            ? environment.provider.mode === 'mastra'
+            ? environment.provider.catalogModel
                 ? {
-                      mode: 'mastra',
+                      mode: 'mastra' as const,
+                      model: createDictionaryTextMastraModel({
+                          apiKey: environment.provider.apiKey,
+                          model: environment.provider.catalogModel,
+                      }),
+                      modelRequestLimits:
+                          environment.provider.catalogModel.requestLimits,
+                      providerBudget: environment.providerBudget,
+                      providerReadiness: createDictionaryTextProviderReadiness({
+                          apiKey: environment.provider.apiKey,
+                          readiness:
+                              environment.provider.catalogModel.readiness,
+                      }),
+                  }
+                : {
+                      mode: 'mastra' as const,
                       model: {
                           apiKey: environment.provider.apiKey,
                           id: environment.provider.modelId,
@@ -134,6 +143,18 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                       },
                       providerBudget: environment.providerBudget,
                   }
+            : undefined;
+    const provider = createCardProposalGenerator(
+        environment.provider.mode === 'mastra'
+            ? legacyMastraOptions!
+            : { mode: environment.provider.mode },
+    );
+    const cardAuthoringProvider = createCardAuthoringProposalGenerator(
+        environment.supportedFormats.includes(
+            dictionaryCardAuthoringGenerationFormat,
+        )
+            ? environment.provider.mode === 'mastra'
+                ? legacyMastraOptions!
                 : { mode: environment.provider.mode }
             : { mode: 'unavailable' },
     );
@@ -142,15 +163,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             dictionaryPastedTermsGenerationFormat,
         )
             ? environment.provider.mode === 'mastra'
-                ? {
-                      mode: 'mastra',
-                      model: {
-                          apiKey: environment.provider.apiKey,
-                          id: environment.provider.modelId,
-                          url: environment.provider.baseUrl,
-                      },
-                      providerBudget: environment.providerBudget,
-                  }
+                ? legacyMastraOptions!
                 : { mode: environment.provider.mode }
             : { mode: 'unavailable' },
     );
@@ -159,18 +172,39 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             dictionaryImportPairsGenerationFormat,
         )
             ? environment.provider.mode === 'mastra'
-                ? {
-                      mode: 'mastra',
-                      model: {
-                          apiKey: environment.provider.apiKey,
-                          id: environment.provider.modelId,
-                          url: environment.provider.baseUrl,
-                      },
-                      providerBudget: environment.providerBudget,
-                  }
+                ? legacyMastraOptions!
                 : { mode: environment.provider.mode }
             : { mode: 'unavailable' },
     );
+    const routedProviders = createDictionaryTextProviderRoutingAdapters({
+        legacy: {
+            card: provider,
+            cardAuthoring: cardAuthoringProvider,
+            importPairs: importPairsProvider,
+            pastedTerms: pastedTermsProvider,
+        },
+        router: new DictionaryTextProviderRouter({
+            credentials: environment.providerCredentials,
+            ...(environment.providerFixtureMode === 'deterministic'
+                ? {
+                      factory: () => ({
+                          card: createCardProposalGenerator({
+                              mode: 'deterministic',
+                          }),
+                          cardAuthoring: createCardAuthoringProposalGenerator({
+                              mode: 'deterministic',
+                          }),
+                          importPairs: createImportPairsProposalGenerator({
+                              mode: 'deterministic',
+                          }),
+                          pastedTerms: createPastedTermsProposalGenerator({
+                              mode: 'deterministic',
+                          }),
+                      }),
+                  }
+                : {}),
+        }),
+    });
     const documentEnabled = environment.supportedFormats.includes(
         dictionaryDocumentGenerationFormat,
     );
@@ -225,14 +259,14 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                 }
               : undefined;
     const { service } = createDictionaryWorkerComposition({
-        cardAuthoringProvider,
+        cardAuthoringProvider: routedProviders.cardAuthoring,
         clock: { now: () => new Date() },
         database,
         ...(document ? { document } : {}),
         ids: { generate: randomUUID },
-        importPairsProvider,
-        pastedTermsProvider,
-        provider,
+        importPairsProvider: routedProviders.importPairs,
+        pastedTermsProvider: routedProviders.pastedTerms,
+        provider: routedProviders.card,
         providerBudget: environment.providerBudget,
         supportedFormats: environment.supportedFormats,
     });
@@ -258,6 +292,8 @@ async function main(values = process.argv.slice(2)): Promise<void> {
               }
             : {}),
     };
+    const workerId = createWorkerId(environment.releaseSha);
+    const observationWorkerId = `${environment.releaseSha}:${hostname().slice(0, 64)}`;
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
         drainTimeoutMs: environment.drainTimeoutMs,
@@ -266,7 +302,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
         supportedFormats: environment.supportedFormats,
-        workerId: createWorkerId(environment.releaseSha),
+        workerId,
     });
 
     if (command === 'healthcheck') {
@@ -292,9 +328,41 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     };
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
+    await publishDictionaryAiWorkerObservations({
+        credentials: environment.providerCredentials,
+        database,
+        ...(environment.providerFixtureMode === 'deterministic'
+            ? {
+                  fetchProvider: async () =>
+                      new Response(null, { status: 200 }),
+              }
+            : {}),
+        readinessTimeoutMs: environment.readinessTimeoutMs,
+        workerId: observationWorkerId,
+    });
+    const observationTimer = setInterval(() => {
+        void publishDictionaryAiWorkerObservations({
+            credentials: environment.providerCredentials,
+            database,
+            ...(environment.providerFixtureMode === 'deterministic'
+                ? {
+                      fetchProvider: async () =>
+                          new Response(null, { status: 200 }),
+                  }
+                : {}),
+            readinessTimeoutMs: environment.readinessTimeoutMs,
+            workerId: observationWorkerId,
+        }).catch(() => {
+            process.stderr.write(
+                'Dictionary AI readiness observation failed.\n',
+            );
+        });
+    }, 60_000);
+    observationTimer.unref();
     try {
         await runtime.run();
     } finally {
+        clearInterval(observationTimer);
         process.removeListener('SIGINT', shutdown);
         process.removeListener('SIGTERM', shutdown);
         documentS3Client?.destroy();
