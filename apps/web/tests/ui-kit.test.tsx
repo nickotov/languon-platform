@@ -18,6 +18,7 @@ import {
     PopoverContent,
     PopoverTrigger,
     showToast,
+    Switch,
     Tabs,
     Toast,
     ToastHost,
@@ -252,6 +253,43 @@ describe('shared UI accessibility contracts', () => {
         } finally {
             vi.useRealTimers();
         }
+    });
+
+    it('uses the viewport-aware tooltip for icon buttons', () => {
+        render(
+            <IconButton label='Change theme' tooltipPlacement='bottom'>
+                ◐
+            </IconButton>,
+        );
+
+        const trigger = screen.getByRole('button', { name: 'Change theme' });
+        fireEvent.focus(trigger);
+
+        const tooltip = screen.getByRole('tooltip');
+        expect(trigger).toHaveAccessibleDescription('Change theme');
+        expect(tooltip).toHaveAttribute('data-placement', 'bottom');
+        expect(tooltip).toHaveStyle({ position: 'fixed' });
+
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('reports switch changes through its checked state callback', async () => {
+        const user = userEvent.setup();
+        const onCheckedChange = vi.fn();
+        render(
+            <Switch onCheckedChange={onCheckedChange}>
+                Practice reminders
+            </Switch>,
+        );
+
+        const control = screen.getByRole('switch', {
+            name: 'Practice reminders',
+        });
+        await user.click(control);
+
+        expect(control).toBeChecked();
+        expect(onCheckedChange).toHaveBeenCalledWith(true);
     });
 
     it('limits visible toasts to three and advances the queue on dismissal', async () => {
@@ -616,6 +654,29 @@ describe('shared UI accessibility contracts', () => {
         } finally {
             HTMLDialogElement.prototype.showModal = showModal;
             HTMLDialogElement.prototype.close = close;
+        }
+    });
+
+    it('keeps a controlled dialog open when its owner declines Escape dismissal', () => {
+        const showModal = HTMLDialogElement.prototype.showModal;
+        HTMLDialogElement.prototype.showModal = function showModalForTest() {
+            this.setAttribute('open', '');
+        };
+        const onClose = vi.fn();
+        try {
+            render(
+                <Dialog onClose={onClose} open title='Unsaved draft'>
+                    Draft content
+                </Dialog>,
+            );
+            const dialog = screen.getByRole('dialog');
+            expect(
+                dialog.dispatchEvent(new Event('cancel', { cancelable: true })),
+            ).toBe(false);
+            expect(onClose).toHaveBeenCalledTimes(1);
+            expect(dialog).toHaveAttribute('open');
+        } finally {
+            HTMLDialogElement.prototype.showModal = showModal;
         }
     });
 

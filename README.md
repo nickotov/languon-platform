@@ -19,10 +19,14 @@ if [ ! -e .env.local ] && [ ! -L .env.local ]; then
   cp .env.example .env.local
 fi
 pnpm install
-pnpm dev:infra
-pnpm db:migrate
-pnpm dev
+pnpm dev:all
 ```
+
+Alternatively, start `pnpm dev:panel`, open its printed URL, and choose
+**Development → Start whole app → Start**. Docker must already be running.
+This waits for PostgreSQL/Redis, builds shared dependencies, applies migrations
+and starts backend, web, admin and dictionary worker. Stop/Ctrl+C
+ends app processes and leaves infrastructure/data intact.
 
 The default local endpoints are:
 
@@ -39,6 +43,43 @@ Backend, Next.js, PostgreSQL, and Redis development endpoints are loopback-only
 by default. This keeps the public local secrets and verification code `0000`
 off the LAN.
 
+### Use live dictionary AI locally
+
+Dictionary generation uses the dictionary worker, independently from the Mastra
+Studio playground. `DICTIONARY_GENERATION_PROVIDER_MODE=deterministic` selects a
+local test fixture; its proposals are deliberately predictable and can mirror
+the submitted source text. Use that mode for tests and offline UI work.
+
+To use a real model, configure the worker in the ignored `.env.local` file:
+
+```dotenv
+DICTIONARY_GENERATION_PROVIDER_MODE=mastra
+DICTIONARY_GENERATION_MODEL_ID=provider/model-name
+DICTIONARY_GENERATION_MODEL_BASE_URL=https://provider.example/v1
+DICTIONARY_GENERATION_MODEL_API_KEY=replace-with-a-private-worker-key
+
+DICTIONARY_JOB_API_READABLE_FORMATS=card-authoring:v1
+DICTIONARY_JOB_API_CANCELLABLE_FORMATS=card-authoring:v1
+DICTIONARY_JOB_API_DISCARDABLE_FORMATS=card-authoring:v1
+DICTIONARY_JOB_API_ACCEPTABLE_FORMATS=card-authoring:v1
+DICTIONARY_JOB_API_ENQUEUED_FORMATS=card-authoring:v1
+DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS=card-authoring:v1
+```
+
+The six format settings above enable the complete local card-authoring lifecycle.
+If a setting already contains other formats, preserve them as comma-separated
+entries when adding `card-authoring:v1`. The endpoint must provide an
+OpenAI-compatible API, including the readiness request at `GET /models`, and the
+model must support the structured output used by dictionary generation. Restart
+`pnpm dev:all` or `pnpm dev:dictionary-worker` after changing these values;
+running `pnpm dev:mastra` does not change the dictionary worker provider.
+
+Provider-specific TTS settings such as `DICTIONARY_AUDIO_KIE_API_KEY` only power
+pronunciation audio. They do not configure dictionary text generation. A vendor
+can serve both roles only when its text model also exposes the compatible API
+above; use its text-model base URL, model identifier, and key in the generation
+settings.
+
 Use `pnpm dev:apps:docker` to build and start backend, web, admin, and their
 infrastructure in Docker. The app profile is intended for environment parity
 checks; the host-based `pnpm dev` loop is faster for normal development. Mobile
@@ -49,6 +90,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 
 | Command                                | Purpose                                             |
 | -------------------------------------- | --------------------------------------------------- |
+| `pnpm dev:all`                         | Prepare infra/migrations and run apps plus workers  |
 | `pnpm dev`                             | Run backend, web, and admin development servers     |
 | `pnpm dev:infra`                       | Start PostgreSQL and Redis                          |
 | `pnpm dev:mastra`                      | Provision and run isolated Mastra Studio            |
@@ -82,7 +124,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm docs:user-flows:check`           | Validate user-flow guide metadata and sections      |
 | `pnpm user-flow:e2e -- inspect <slug>` | Inspect guide-to-E2E scenario traceability          |
 | `pnpm user-flow:e2e -- check [slug]`   | Validate guide-to-E2E scenario traceability         |
-| `pnpm feature:new -- <slug> "<title>"` | Create the next numbered feature evidence workspace                 |
+| `pnpm feature:new -- <slug> "<title>"` | Create the next numbered feature evidence workspace |
 
 Quick one-command style remote flow (Timeweb-ready):
 

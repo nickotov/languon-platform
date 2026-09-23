@@ -1,0 +1,192 @@
+import React, { forwardRef, useId } from 'react'
+import { ChevronDownIcon, AlertCircleIcon, Loader2Icon } from 'lucide-react'
+import { twMerge } from 'tailwind-merge'
+
+export type SelectSize = 'sm' | 'md' | 'lg'
+
+export interface SelectOption {
+  label: string
+  value: string
+  disabled?: boolean
+}
+
+export interface SelectOptionGroup {
+  label: string
+  options: SelectOption[]
+}
+
+export interface SelectProps
+  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
+  /** Flat list of options, or grouped options via `groups`. */
+  options?: SelectOption[]
+  /** Grouped options rendered as <optgroup>. Rendered after `options`. */
+  groups?: SelectOptionGroup[]
+  /** Visible label above the control. */
+  label?: string
+  /** Placeholder shown as a disabled first option. */
+  placeholder?: string
+  /** Helper text below the control. */
+  hint?: string
+  /** Error message. Sets the invalid styling and takes priority over `hint`. */
+  error?: string
+  /** Control height / typography scale. */
+  size?: SelectSize
+  /** Stretch to the full width of the parent. */
+  fullWidth?: boolean
+  /** Shows a spinner and disables the control. */
+  loading?: boolean
+  /** Wrapper class name. */
+  containerClassName?: string
+}
+
+const sizeStyles: Record<SelectSize, string> = {
+  sm: 'h-8 pl-2.5 pr-8 text-sm',
+  md: 'h-10 pl-3 pr-9 text-sm',
+  lg: 'h-12 pl-3.5 pr-10 text-base',
+}
+
+const iconSize: Record<SelectSize, string> = {
+  sm: 'h-3.5 w-3.5 right-2.5',
+  md: 'h-4 w-4 right-3',
+  lg: 'h-5 w-5 right-3.5',
+}
+
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  function Select(
+    {
+      options = [],
+      groups = [],
+      label,
+      placeholder,
+      hint,
+      error,
+      size = 'md',
+      fullWidth = false,
+      loading = false,
+      disabled = false,
+      required,
+      className,
+      containerClassName,
+      id,
+      defaultValue,
+      value,
+      ...props
+    },
+    ref,
+  ) {
+    const generatedId = useId()
+    const selectId = id ?? `select-${generatedId}`
+    const messageId = `${selectId}-message`
+    const isDisabled = disabled || loading
+    const hasPlaceholder = Boolean(placeholder)
+
+    const renderOption = (option: SelectOption) => (
+      <option key={option.value} value={option.value} disabled={option.disabled}>
+        {option.label}
+      </option>
+    )
+
+    return (
+      <div
+        className={twMerge(
+          'flex flex-col gap-1.5',
+          fullWidth ? 'w-full' : 'w-auto',
+          containerClassName,
+        )}
+      >
+        {label && (
+          <label
+            htmlFor={selectId}
+            className={twMerge(
+              'text-sm font-medium text-neutral-900',
+              isDisabled && 'text-neutral-400',
+            )}
+          >
+            {label}
+            {required && (
+              <span className="ml-0.5 text-red-600" aria-hidden="true">
+                *
+              </span>
+            )}
+          </label>
+        )}
+
+        <div className={twMerge('relative', fullWidth ? 'w-full' : 'w-auto')}>
+          <select
+            {...props}
+            ref={ref}
+            id={selectId}
+            disabled={isDisabled}
+            required={required}
+            value={value}
+            defaultValue={
+              value === undefined && defaultValue === undefined && hasPlaceholder
+                ? ''
+                : defaultValue
+            }
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || hint ? messageId : undefined}
+            className={twMerge(
+              'w-full appearance-none rounded-lg border bg-white font-medium text-neutral-900',
+              'transition-colors outline-none',
+              'focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white',
+              'disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400',
+              sizeStyles[size],
+              error
+                ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/40'
+                : 'border-neutral-300 hover:border-neutral-400 focus-visible:border-neutral-900 focus-visible:ring-neutral-900/20',
+              className,
+            )}
+          >
+            {hasPlaceholder && (
+              <option value="" disabled>
+                {placeholder}
+              </option>
+            )}
+            {options.map(renderOption)}
+            {groups.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.options.map(renderOption)}
+              </optgroup>
+            ))}
+          </select>
+
+          <span
+            className={twMerge(
+              'pointer-events-none absolute top-1/2 -translate-y-1/2 text-neutral-500',
+              isDisabled && 'text-neutral-300',
+              error && !isDisabled && 'text-red-500',
+              iconSize[size],
+            )}
+            aria-hidden="true"
+          >
+            {loading ? (
+              <Loader2Icon className="h-full w-full animate-spin" />
+            ) : (
+              <ChevronDownIcon className="h-full w-full" />
+            )}
+          </span>
+        </div>
+
+        {(error || hint) && (
+          <p
+            id={messageId}
+            className={twMerge(
+              'flex items-start gap-1 text-xs',
+              error ? 'text-red-600' : 'text-neutral-500',
+            )}
+          >
+            {error && (
+              <AlertCircleIcon
+                className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                aria-hidden="true"
+              />
+            )}
+            <span>{error || hint}</span>
+          </p>
+        )}
+      </div>
+    )
+  },
+)
+

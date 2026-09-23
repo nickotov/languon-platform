@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
-// @user-flow-revision dictionary-pronunciation-audio sha256:b7cbea446db20a9c
+// @user-flow-revision dictionary-pronunciation-audio sha256:a41d88bcb8a500f2
 const runId = process.env.AUTH_E2E_RUN_ID ?? String(Date.now());
 let context: BrowserContext;
 let page: Page;
@@ -15,15 +15,15 @@ async function createCard(name: string) {
         .getByRole('button', { name: 'Create dictionary', exact: true })
         .click();
     await expect(
-        page.getByRole('heading', { name: 'Cards (0)' }),
+        page.getByRole('heading', { name: 'No cards yet' }),
     ).toBeVisible();
     await page.getByRole('button', { name: 'Add card', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Add card' });
-    await editor.getByLabel(/^Source phrase ·/u).fill('casa');
-    await editor.getByLabel(/^Translation ·/u).fill('house');
-    await editor.getByLabel(/^Context example ·/u).fill('La casa es grande.');
+    await editor.getByLabel(/^Source word or phrase \(/u).fill('casa');
+    await editor.getByLabel(/^Translation \(/u).fill('house');
+    await editor.getByLabel(/^Context example \(/u).fill('La casa es grande.');
     await editor
-        .getByLabel(/^Example translation ·/u)
+        .getByLabel(/^Example translation \(/u)
         .fill('The house is large.');
     await editor.getByRole('button', { name: 'Save card' }).click();
     await expect(page.getByText('casa', { exact: true })).toBeVisible();
@@ -119,9 +119,16 @@ test.describe.serial('dictionary pronunciation audio', () => {
             'Example translation',
         ])
             await play(field);
+        await expect(
+            page.getByRole('combobox', { name: 'Playback speed' }),
+        ).toHaveCount(0);
         await page
-            .getByRole('combobox', { name: 'Playback speed' })
-            .selectOption('0.8');
+            .getByRole('button', { name: 'Card actions, card 1' })
+            .click();
+        await expect(
+            page.getByRole('menuitem', { name: /Move earlier|Move later/ }),
+        ).toHaveCount(0);
+        await page.keyboard.press('Escape');
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(
             page.getByRole('button', { name: 'Play Source phrase' }),
@@ -149,7 +156,7 @@ test.describe.serial('dictionary pronunciation audio', () => {
             .click();
         await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
         const editor = page.getByRole('dialog', { name: 'Edit card' });
-        await editor.getByLabel(/^Source phrase ·/u).fill('hogar');
+        await editor.getByLabel(/^Source word or phrase \(/u).fill('hogar');
         await editor.getByRole('button', { name: 'Save card' }).click();
         await expect(page.getByText('hogar', { exact: true })).toBeVisible();
         const edited = await play('Source phrase');
@@ -173,7 +180,10 @@ test.describe.serial('dictionary pronunciation audio', () => {
             { times: 1 },
         );
         await page
-            .getByRole('button', { name: 'Play Source phrase', exact: true })
+            .getByRole('button', {
+                name: 'Play Source phrase',
+                exact: true,
+            })
             .click();
         await expect(
             page.getByText('Audio failed. Press Play to retry.', {
@@ -197,7 +207,10 @@ test.describe.serial('dictionary pronunciation audio', () => {
         );
         const before = await playedCount();
         await page
-            .getByRole('button', { name: 'Play Source phrase', exact: true })
+            .getByRole('button', {
+                name: 'Play Source phrase',
+                exact: true,
+            })
             .click();
         await expect(
             page.getByRole('button', {
@@ -206,7 +219,10 @@ test.describe.serial('dictionary pronunciation audio', () => {
             }),
         ).toBeVisible();
         await page
-            .getByRole('button', { name: 'Stop Source phrase', exact: true })
+            .getByRole('button', {
+                name: 'Stop Source phrase',
+                exact: true,
+            })
             .click();
         release();
         await expect(page.getByText('Stopped', { exact: false })).toBeVisible();

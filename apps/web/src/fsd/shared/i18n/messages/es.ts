@@ -1,6 +1,7 @@
 import { profileFeatureMessages, type Messages } from './en';
 
 export const es = {
+
     'dictionary.audio.playField': 'Escuchar {field}',
     'dictionary.audio.stopField': 'Detener {field}',
     'dictionary.audio.play': 'Escuchar',
@@ -17,6 +18,49 @@ export const es = {
     'dictionary.audio.speed': 'Velocidad de reproducción',
     'dictionary.audio.normal': 'Normal',
     ...profileFeatureMessages,
+
+    'dictionary.error.rateLimited':
+        'Demasiadas solicitudes. Espera un momento antes de volver a intentarlo.',
+    'dictionary.error.network':
+        'La conexión ha fallado. Comprueba la red e inténtalo de nuevo.',
+
+    'dictionary.authoring.rateLimited':
+        'El servicio está ocupado. Espera y vuelve a intentarlo. Se conserva el borrador.',
+    'dictionary.authoring.providerUnavailable':
+        'Las sugerencias no están disponibles. Inténtalo más tarde o guarda el borrador manualmente.',
+    'dictionary.authoring.timeout':
+        'La generación agotó el tiempo de espera. Se conserva el borrador; inténtalo de nuevo o guárdalo manualmente.',
+
+    'dictionary.card.discardTitle': '¿Descartar este borrador?',
+    'dictionary.card.discardDescription':
+        'Al cerrar se perderán los cambios sin guardar.',
+    'dictionary.card.keepWriting': 'Seguir escribiendo',
+    'dictionary.card.discardDraft': 'Descartar borrador',
+    'dictionary.card.discardHelp':
+        'Las sugerencias no aceptadas se descartan con el borrador. Cancelar la generación es una acción distinta que mantiene el borrador abierto.',
+    'dictionary.authoring.expired':
+        'Estas sugerencias han caducado. Se conservan el borrador y las opciones cargadas. Genera nuevas sugerencias o guarda el borrador manualmente.',
+
+    'dictionary.skipToContent': 'Ir al contenido principal',
+
+    'dictionary.cards.defaults': 'Ajustes del diccionario',
+    'dictionary.cards.overrides': 'Ajustes de la tarjeta',
+    'dictionary.library.subtitle':
+        'Organiza el vocabulario por par de idiomas.',
+    'dictionary.library.actions': 'Acciones para {name}',
+    'dictionary.library.clearSearch': 'Borrar búsqueda',
+    'dictionary.create.privateNotice': 'Los nuevos diccionarios son privados.',
+    'dictionary.authoring.choice': 'Opción {number}',
+    'dictionary.authoring.showMore': 'Mostrar {count} opciones más',
+    'dictionary.authoring.showFewer': 'Mostrar menos opciones',
+    'dictionary.authoring.optionalContent':
+        'Contenido opcional habilitado para este diccionario',
+    'dictionary.authoring.notSaved': 'Sugerido · sin guardar',
+    'dictionary.authoring.savingPaused':
+        'No se puede guardar mientras se generan sugerencias. Cancela la generación para guardar el borrador.',
+    'dictionary.generation.savedNow': 'Guardado actualmente',
+    'dictionary.editor.actions': 'Más acciones del diccionario',
+    'dictionary.editor.sharing': 'Compartir',
     'theme.switchToLight': 'Cambiar al tema claro',
     'theme.switchToDark': 'Cambiar al tema oscuro',
     'meta.profile': 'Configuración de la cuenta · Languon',

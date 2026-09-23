@@ -189,3 +189,33 @@ test('fails command execution closed on Windows without Job Object supervision',
     assert.match(loaded.commands[0].runtimeReason, /unavailable on Windows/u);
     assert.deepEqual(loaded.issues, []);
 });
+
+test('whole-app startup is individual-only and conflicts with component lifecycle commands', async () => {
+    const catalog = JSON.parse(
+        await readFile(new URL('../commands.json', import.meta.url), 'utf8'),
+    );
+    const wholeApp = catalog.commands.find(({ id }) => id === 'dev:all');
+    assert.equal(wholeApp.title, 'Start whole app');
+    assert.equal(wholeApp.enabled, true);
+    assert.equal(wholeApp.kind, 'service');
+    assert.equal(wholeApp.batchEligible, false);
+    for (const id of [
+        'dev',
+        'dev:backend',
+        'dev:web',
+        'dev:admin',
+        'dev:dictionary-worker',
+        'dev:infra',
+        'infra:down',
+        'db:migrate',
+        'dev:apps:docker',
+    ]) {
+        assert.ok(wholeApp.conflictsWith.includes(id), id);
+        assert.ok(
+            catalog.commands
+                .find((command) => command.id === id)
+                .conflictsWith.includes('dev:all'),
+            id,
+        );
+    }
+});

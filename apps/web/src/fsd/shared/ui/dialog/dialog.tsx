@@ -92,7 +92,8 @@ export function Dialog({
                     .filter(Boolean)
                     .join(' ')}
                 onCancel={(event) => {
-                    if (!canDismissWithEscape) event.preventDefault();
+                    event.preventDefault();
+                    if (canDismissWithEscape) onClose();
                 }}
                 onClick={(event) => {
                     if (

@@ -24,13 +24,21 @@ export function resolveCardAuthoringCleanupRead(
 export function planCardAuthoringCleanup(
     currentJob: DictionaryCardAuthoringGenerationJob | null | undefined,
     latestReviewJob: DictionaryCardAuthoringGenerationJob | null | undefined,
+    currentJobId?: string | null,
 ): CardAuthoringCleanupPlan {
     const cancelJobIds =
         currentJob?.state === 'queued' || currentJob?.state === 'running'
             ? [currentJob.id]
-            : [];
-    const discardJobIds =
-        latestReviewJob?.state === 'review' ? [latestReviewJob.id] : [];
+            : !currentJob && currentJobId
+              ? [currentJobId]
+              : [];
+    const discardJobIds = [
+        ...new Set(
+            [currentJob, latestReviewJob]
+                .filter((job) => job?.state === 'review')
+                .map((job) => job!.id),
+        ),
+    ];
     return { cancelJobIds, discardJobIds };
 }
 

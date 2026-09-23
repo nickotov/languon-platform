@@ -1,0 +1,276 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { CardFieldKey, DictionarySettings } from '../types/dictionary'
+import type {
+  AiAvailability,
+  FieldSuggestion,
+  GenerationError,
+  GenerationState,
+} from '../types/ai'
+import { enabledOptionalFields } from '../utils/settings'
+import { suggestionFor } from '../utils/mockAi'
+
+export const MAX_SUGGESTIONS_PER_FIELD = 6
+
+export type DraftValues = Record<CardFieldKey, string>
+
+export const emptyValues: DraftValues = {
+  source: '',
+  translation: '',
+  transcription: '',
+  definition: '',
+  example: '',
+  exampleTranslation: '',
+}
+
+const errors: Record<string, GenerationError> = {
+  unavailable: {
+    kind: 'unavailable',
+    title: 'AI suggestions are unavailable right now',
+    detail:
+      'Your draft is untouched. You can keep writing this card by hand and save it normally.',
+  },
+  'rate-limit': {
+    kind: 'rate-limit',
+    title: 'AI is at capacity for now',
+    detail:
+      'Too many requests are queued. Existing suggestions and your draft are kept — try generating again in a moment.',
+  },
+  failure: {
+    kind: 'failure',
+    title: 'Generation did not finish',
+    detail:
+      'Nothing was added to your draft. Your fields and earlier suggestions are unchanged.',
+  },
+  network: {
+    kind: 'network',
+    title: 'Connection lost while waiting for suggestions',
+    detail:
+      'We stopped waiting for a response. Your draft and earlier suggestions are still here.',
+  },
+  'limit-reached': {
+    kind: 'limit-reached',
+    title: 'Suggestion limit reached',
+    detail:
+      'This field already shows six choices. Discard one before generating another.',
+  },
+}
+
+interface UseCardDraftOptions {
+  settings: DictionarySettings
+  availability: AiAvailability
+  initialValues?: Partial<DraftValues>
+}
+
+let suggestionCounter = 0
+
+export function useCardDraft({
+  settings,
+  availability,
+  initialValues,
+}: UseCardDraftOptions) {
+  const [values, setValues] = useState<DraftValues>({ ...emptyValues, ...initialValues })
+  const [suggestions, setSuggestions] = useState<FieldSuggestion[]>([])
+  const [generation, setGeneration] = useState<GenerationState>({
+    phase: 'idle',
+    fields: [],
+    error: null,
+  })
+  const [generatedForSource, setGeneratedForSource] = useState<string | null>(null)
+  const attempts = useRef<Record<string, number>>({})
+  const timers = useRef<number[]>([])
+  const runToken = useRef(0)
+
+  const clearTimers = useCallback(() => {
+    timers.current.forEach((timer) => window.clearTimeout(timer))
+    timers.current = []
+  }, [])
+
+  useEffect(() => clearTimers, [clearTimers])
+
+  const isStale =
+    generatedForSource !== null && values.source.trim() !== generatedForSource
+
+  const isBusy =
+    generation.phase === 'queued' ||
+    generation.phase === 'generating' ||
+    generation.phase === 'validating'
+
+  const generatableFields = useMemo<CardFieldKey[]>(
+    () => ['translation', ...enabledOptionalFields(settings)],
+    [settings],
+  )
+
+  const visibleFor = useCallback(
+    (field: CardFieldKey) =>
+      suggestions.filter(
+        (suggestion) => suggestion.field === field && suggestion.status !== 'discarded',
+      ),
+    [suggestions],
+  )
+
+  const acceptedFor = useCallback(
+    (field: CardFieldKey) =>
+      suggestions.find(
+        (suggestion) => suggestion.field === field && suggestion.status === 'accepted',
+      ) ?? null,
+    [suggestions],
+  )
+
+  const hasAcceptedContribution = suggestions.some(
+    (suggestion) =>
+      suggestion.status === 'accepted' && values[suggestion.field] === suggestion.value,
+  )
+
+  const setField = useCallback((field: CardFieldKey, value: string) => {
+    setValues((prev) => ({ ...prev, [field]: value }))
+  }, [])
+
+  const cancel = useCallback(() => {
+    runToken.current += 1
+    clearTimers()
+    setGeneration({ phase: 'idle', fields: [], error: null })
+  }, [clearTimers])
+
+  const clearError = useCallback(() => {
+    setGeneration((prev) => ({ ...prev, phase: 'idle', error: null }))
+  }, [])
+
+  const generate = useCallback(
+    (requested: CardFieldKey[], options?: { forceError?: GenerationError['kind'] }) => {
+      const source = values.source.trim()
+      if (!source || isBusy) return
+
+      if (options?.forceError) {
+        setGeneration({
+          phase: 'error',
+          fields: requested,
+          error: errors[options.forceError],
+        })
+        return
+      }
+      if (availability === 'unavailable') {
+        setGeneration({ phase: 'error', fields: requested, error: errors.unavailable })
+        return
+      }
+      if (availability === 'rate-limited') {
+        setGeneration({ phase: 'error', fields: requested, error: errors['rate-limit'] })
+        return
+      }
+
+      const eligible = requested.filter(
+        (field) => visibleFor(field).length < MAX_SUGGESTIONS_PER_FIELD,
+      )
+      if (eligible.length === 0) {
+        setGeneration({
+          phase: 'error',
+          fields: requested,
+          error: errors['limit-reached'],
+        })
+        return
+      }
+
+      runToken.current += 1
+      const current = runToken.current
+      clearTimers()
+      setGeneration({ phase: 'queued', fields: eligible, error: null })
+
+      timers.current.push(
+        window.setTimeout(() => {
+          if (runToken.current !== current) return
+          setGeneration({ phase: 'generating', fields: eligible, error: null })
+        }, 700),
+      )
+      timers.current.push(
+        window.setTimeout(() => {
+          if (runToken.current !== current) return
+          setGeneration({ phase: 'validating', fields: eligible, error: null })
+        }, 2100),
+      )
+      timers.current.push(
+        window.setTimeout(() => {
+          if (runToken.current !== current) return
+          setSuggestions((prev) => {
+            const additions: FieldSuggestion[] = eligible.map((field) => {
+              const attempt = attempts.current[field] ?? 0
+              attempts.current[field] = attempt + 1
+              const existing = prev.filter((item) => item.field === field).length
+              return {
+                id: `sug-${++suggestionCounter}`,
+                field,
+                value: suggestionFor(field, source, attempt),
+                status: 'available',
+                stale: false,
+                index: existing + 1,
+              }
+            })
+            // Earlier choices for other sources are kept but marked stale.
+            const refreshed = prev.map((item) =>
+              item.stale ? item : { ...item, stale: false },
+            )
+            return [...refreshed, ...additions]
+          })
+          setGeneratedForSource(source)
+          setGeneration({ phase: 'idle', fields: [], error: null })
+        }, 2900),
+      )
+    },
+    [availability, clearTimers, isBusy, values.source, visibleFor],
+  )
+
+  const accept = useCallback(
+    (id: string) => {
+      const suggestion = suggestions.find((item) => item.id === id)
+      if (!suggestion || suggestion.stale || isStale) return
+      setValues((prev) => ({ ...prev, [suggestion.field]: suggestion.value }))
+      setSuggestions((prev) =>
+        prev.map((item) => {
+          if (item.field !== suggestion.field) return item
+          if (item.id === id) return { ...item, status: 'accepted' }
+          return item.status === 'accepted' ? { ...item, status: 'available' } : item
+        }),
+      )
+    },
+    [isStale, suggestions],
+  )
+
+  const discard = useCallback((id: string) => {
+    setSuggestions((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, status: 'discarded' } : item)),
+    )
+  }, [])
+
+  const reset = useCallback(() => {
+    runToken.current += 1
+    clearTimers()
+    attempts.current = {}
+    setValues({ ...emptyValues })
+    setSuggestions([])
+    setGeneratedForSource(null)
+    setGeneration({ phase: 'idle', fields: [], error: null })
+  }, [clearTimers])
+
+  const canSave =
+    values.source.trim().length > 0 && values.translation.trim().length > 0 && !isBusy
+
+  return {
+    values,
+    setField,
+    suggestions,
+    visibleFor,
+    acceptedFor,
+    generation,
+    generate,
+    cancel,
+    clearError,
+    accept,
+    discard,
+    reset,
+    isBusy,
+    isStale,
+    generatedForSource,
+    canSave,
+    hasAcceptedContribution,
+    generatableFields,
+  }
+}
+

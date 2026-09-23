@@ -159,12 +159,13 @@ export class DeterministicDocumentMalwareScanner implements DocumentMalwareScann
             return {
                 attestation: {
                     engineVersion: 'deterministic-1',
-                    signatureUpdatedAt: new Date('2026-08-26T00:00:00.000Z'),
+                    signatureUpdatedAt: this.now(),
                     signatureVersion: 'deterministic-signatures-1',
                 },
                 kind: 'clean' as const,
             };
         },
+        private readonly now: () => Date = () => new Date(),
     ) {}
 
     public scan(input: Parameters<DocumentMalwareScanner['scan']>[0]) {

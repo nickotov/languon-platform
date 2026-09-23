@@ -1,0 +1,133 @@
+import React from 'react'
+import { Switch } from '../Switch'
+import { Radio, RadioGroup } from '../Radio'
+import { Badge } from '../Badge'
+import type { CardOverrides, Dictionary, DictionarySettings } from '../../types/dictionary'
+import { languageName } from '../../data/languages'
+
+interface OverridesSectionProps {
+  dictionary: Dictionary
+  effective: DictionarySettings
+  overrides: CardOverrides | null
+  onChange: (overrides: CardOverrides | null) => void
+}
+
+/** Advanced, progressively disclosed: inherit dictionary settings or override them per card. */
+export function OverridesSection({
+  dictionary,
+  effective,
+  overrides,
+  onChange,
+}: OverridesSectionProps) {
+  const overriding = overrides !== null
+  const sourceName = languageName(dictionary.sourceLanguage)
+  const targetName = languageName(dictionary.targetLanguage)
+
+  const patch = (next: Partial<CardOverrides>) => onChange({ ...(overrides ?? {}), ...next })
+
+  return (
+    <div className="rounded-xl border border-border-default bg-background-subtle p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-text-primary">Field settings for this card</p>
+          <p className="mt-0.5 text-xs text-text-secondary">
+            Inherited settings follow the dictionary and update with it.
+          </p>
+        </div>
+        <Badge size="sm" tone={overriding ? 'warning' : 'neutral'}>
+          {overriding ? 'Overridden' : 'Inherited'}
+        </Badge>
+      </div>
+
+      <div className="mt-3">
+        <Switch
+          size="sm"
+          label="Override dictionary settings for this card"
+          description="Turn off to follow the dictionary again. Stored values are never deleted."
+          checked={overriding}
+          onCheckedChange={(checked) =>
+            onChange(
+              checked
+                ? {
+                    transcriptionEnabled: dictionary.settings.transcriptionEnabled,
+                    definitionEnabled: dictionary.settings.definitionEnabled,
+                    definitionLanguage: dictionary.settings.definitionLanguage,
+                    exampleEnabled: dictionary.settings.exampleEnabled,
+                    exampleLanguage: dictionary.settings.exampleLanguage,
+                    exampleTranslationEnabled:
+                      dictionary.settings.exampleTranslationEnabled,
+                  }
+                : null,
+            )
+          }
+        />
+      </div>
+
+      {overriding ? (
+        <div className="mt-3 space-y-3 border-t border-border-default pt-3">
+          <Switch
+            size="sm"
+            label="Transcription"
+            checked={Boolean(effective.transcriptionEnabled)}
+            onCheckedChange={(checked) => patch({ transcriptionEnabled: checked })}
+          />
+          <Switch
+            size="sm"
+            label="Definition"
+            checked={Boolean(effective.definitionEnabled)}
+            onCheckedChange={(checked) => patch({ definitionEnabled: checked })}
+          />
+          {effective.definitionEnabled ? (
+            <RadioGroup
+              size="sm"
+              orientation="horizontal"
+              label="Definition written in"
+              value={effective.definitionLanguage}
+              onChange={(value) =>
+                patch({ definitionLanguage: value as 'source' | 'target' })
+              }
+            >
+              <Radio value="source">{sourceName}</Radio>
+              <Radio value="target">{targetName}</Radio>
+            </RadioGroup>
+          ) : null}
+          <Switch
+            size="sm"
+            label="Context example"
+            checked={Boolean(effective.exampleEnabled)}
+            onCheckedChange={(checked) => patch({ exampleEnabled: checked })}
+          />
+          {effective.exampleEnabled ? (
+            <>
+              <RadioGroup
+                size="sm"
+                orientation="horizontal"
+                label="Example written in"
+                value={effective.exampleLanguage}
+                onChange={(value) => patch({ exampleLanguage: value as 'source' | 'target' })}
+              >
+                <Radio value="source">{sourceName}</Radio>
+                <Radio value="target">{targetName}</Radio>
+              </RadioGroup>
+              <Switch
+                size="sm"
+                label="Example translation"
+                description={`Always written in ${
+                  effective.exampleLanguage === 'source' ? targetName : sourceName
+                } — the opposite language from the example.`}
+                checked={Boolean(effective.exampleTranslationEnabled)}
+                onCheckedChange={(checked) => patch({ exampleTranslationEnabled: checked })}
+              />
+            </>
+          ) : (
+            <p className="text-xs text-text-secondary">
+              Example translation cannot be enabled while examples are off. Your preference is
+              preserved.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+

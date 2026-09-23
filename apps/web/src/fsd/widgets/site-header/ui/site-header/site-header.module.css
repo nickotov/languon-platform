@@ -33,8 +33,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.handle:hover { color: var(--text-primary); }
-.handle:focus-visible { border-radius: var(--radius-sm); outline: 2px solid var(--border-focus); outline-offset: 3px; }
+.handle:hover {
+    color: var(--text-primary);
+}
+.handle:focus-visible {
+    border-radius: var(--radius-sm);
+    outline: 2px solid var(--border-focus);
+    outline-offset: 3px;
+}
 
 @media (min-width: 640px) {
     .inner {
@@ -52,7 +58,9 @@
     .brand span:last-child {
         display: none;
     }
-    .handle { max-width: 80px; }
+    .handle {
+        max-width: 80px;
+    }
 }
 
 @media (max-width: 260px) {
@@ -68,4 +76,145 @@
         justify-content: space-between;
         width: 100%;
     }
+}
+
+.dictionaryShell {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-top: 1px solid var(--border-default);
+    background: var(--background-surface);
+}
+
+.dictionaryBrand {
+    display: none;
+}
+
+.dictionaryBrandLink {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.dictionaryBrandLink svg {
+    color: var(--primary-default);
+}
+
+.dictionaryNavigation {
+    flex: 1;
+    min-width: 0;
+}
+.dictionaryTools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dictionaryPreferences {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dictionaryPreferences > :first-child {
+    width: 112px;
+}
+.languageLabel {
+    display: none;
+}
+
+.dictionaryProfile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-decoration: none;
+}
+.dictionaryProfile span {
+    display: none;
+}
+
+.skipLink {
+    position: fixed;
+    inset-block-start: 8px;
+    inset-inline-start: 8px;
+    z-index: 1000;
+    padding: 10px 16px;
+    color: var(--text-primary);
+    background: var(--background-surface);
+    border: 2px solid var(--primary-default);
+    border-radius: var(--radius-md);
+    transform: translateY(-160%);
+}
+.skipLink:focus {
+    transform: translateY(0);
+}
+
+@media (min-width: 1024px) {
+    .dictionaryShell {
+        inset: 0 auto 0 0;
+        width: 240px;
+        height: 100dvh;
+        padding: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        border-top: 0;
+        border-inline-end: 1px solid var(--border-default);
+    }
+    .dictionaryBrand {
+        display: flex;
+        align-items: center;
+        height: 64px;
+        flex-shrink: 0;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .dictionaryNavigation {
+        padding: 12px;
+    }
+    .dictionaryTools {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--border-default);
+    }
+    .dictionaryProfile {
+        padding: 8px 4px;
+    }
+    .dictionaryProfile span {
+        display: inline;
+    }
+    .languageLabel {
+        display: block;
+        margin: 0;
+        padding-inline: 4px;
+        color: var(--text-tertiary);
+        font-size: 12px;
+        line-height: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .dictionaryPreferences > :first-child {
+        width: auto;
+        flex: 1;
+    }
+}
+
+.dictionaryBrandIcon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--primary-subtle);
+    color: var(--primary-default);
 }

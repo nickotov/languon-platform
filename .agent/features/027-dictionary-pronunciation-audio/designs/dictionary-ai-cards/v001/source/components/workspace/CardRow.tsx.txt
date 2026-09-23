@@ -1,0 +1,235 @@
+import React from 'react'
+import {
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  SparklesIcon,
+} from 'lucide-react'
+import { Card } from '../Card'
+import { Badge } from '../Badge'
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../DropdownMenu'
+import { AuthorshipBadge, InheritanceBadge } from '../common/Chips'
+import { FieldAudioControl } from '../audio/FieldAudioControl'
+import type { CardFieldKey, Dictionary, VocabCard } from '../../types/dictionary'
+import type { AudioAvailability, AudioFieldKey, AudioSelection } from '../../types/audio'
+import type { PlaybackBehaviour } from '../../hooks/useAudioPlayback'
+import {
+  effectiveSettings,
+  fieldDir,
+  fieldLanguage,
+  isFieldEnabled,
+  isOverridden,
+  transcriptionLabel,
+} from '../../utils/settings'
+import { getLanguage } from '../../data/languages'
+
+export interface CardRowAudio {
+  availability: AudioAvailability
+  developmentAudio: boolean
+  selection: AudioSelection | null
+  behaviour?: PlaybackBehaviour
+  cachedFields?: AudioFieldKey[]
+  play: (
+    cardId: string,
+    field: AudioFieldKey,
+    options: { cached: boolean; developmentTone: boolean; behaviour: PlaybackBehaviour },
+  ) => void
+  stop: () => void
+  setSpeed?: (speed: 1 | 0.8) => void
+}
+
+interface CardRowProps {
+  card: VocabCard
+  dictionary: Dictionary
+  audio?: CardRowAudio
+  hasRetainedReview?: boolean
+  onEdit?: (card: VocabCard) => void
+  onReview?: (card: VocabCard) => void
+  onToggleArchive?: (card: VocabCard) => void
+  aiReviewDisabledReason?: string
+}
+
+export function CardRow({
+  card,
+  dictionary,
+  audio,
+  hasRetainedReview = false,
+  onEdit,
+  onReview,
+  onToggleArchive,
+  aiReviewDisabledReason,
+}: CardRowProps) {
+  const settings = effectiveSettings(dictionary, card.overrides)
+  const dictionaryArchived = dictionary.status === 'archived'
+  const cardArchived = card.status === 'archived'
+  const playbackAllowed = !dictionaryArchived && !cardArchived && Boolean(audio)
+
+  // Every filled, enabled optional field is shown by default.
+  const optionalFields: CardFieldKey[] = (
+    ['transcription', 'definition', 'example', 'exampleTranslation'] as CardFieldKey[]
+  ).filter((field) => isFieldEnabled(settings, field) && card[field].trim().length > 0)
+
+  const renderAudio = (field: AudioFieldKey, label: string) => {
+    if (!playbackAllowed || !audio) return null
+    if (!card[field].trim()) return null
+    return (
+      <FieldAudioControl
+        cardId={card.id}
+        field={field}
+        fieldLabel={label}
+        language={fieldLanguage(dictionary, settings, field)}
+        availability={audio.availability}
+        cached={audio.cachedFields?.includes(field) ?? false}
+        developmentAudio={audio.developmentAudio}
+        behaviour={audio.behaviour ?? 'normal'}
+        selection={audio.selection}
+        onPlay={audio.play}
+        onStop={audio.stop}
+      />
+    )
+  }
+
+  const fieldLabelFor = (field: CardFieldKey) => {
+    if (field === 'transcription') return transcriptionLabel(settings)
+    const language = getLanguage(fieldLanguage(dictionary, settings, field)).name
+    if (field === 'definition') return `Definition · ${language}`
+    if (field === 'example') return `Context example · ${language}`
+    if (field === 'exampleTranslation') return `Example translation · ${language}`
+    return field
+  }
+
+  return (
+    <Card
+      as="li"
+      variant="outlined"
+      padding="none"
+      className="border-border-default bg-background-surface p-3 text-text-primary sm:p-4"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <p
+              dir={fieldDir(dictionary, settings, 'source')}
+              lang={fieldLanguage(dictionary, settings, 'source')}
+              className="min-w-0 break-words text-lg font-semibold leading-snug text-text-primary"
+            >
+              {card.source}
+            </p>
+            {renderAudio('source', 'source word')}
+          </div>
+
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <p
+              dir={fieldDir(dictionary, settings, 'translation')}
+              lang={fieldLanguage(dictionary, settings, 'translation')}
+              className="min-w-0 break-words text-base text-text-secondary"
+            >
+              {card.translation}
+            </p>
+            {renderAudio('translation', 'translation')}
+          </div>
+        </div>
+
+        <DropdownMenu
+          align="end"
+          className="shrink-0"
+          menuClassName="bg-background-elevated text-text-primary border-border-default"
+          trigger={
+            <DropdownMenuTrigger
+              hideChevron
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-strong bg-background-surface text-text-primary transition-colors hover:bg-background-subtle"
+              aria-label={`Actions for “${card.source}”`}
+            >
+              <MoreHorizontalIcon aria-hidden className="h-4 w-4" />
+            </DropdownMenuTrigger>
+          }
+        >
+          <DropdownMenuItem
+            icon={<PencilIcon aria-hidden className="h-4 w-4" />}
+            disabled={dictionaryArchived || !onEdit}
+            onSelect={() => onEdit?.(card)}
+          >
+            Edit card
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            icon={<SparklesIcon aria-hidden className="h-4 w-4" />}
+            disabled={Boolean(aiReviewDisabledReason) || dictionaryArchived || cardArchived}
+            onSelect={() => onReview?.(card)}
+          >
+            {hasRetainedReview ? 'Open AI review' : 'Regenerate with AI'}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            icon={
+              cardArchived ? (
+                <ArchiveRestoreIcon aria-hidden className="h-4 w-4" />
+              ) : (
+                <ArchiveIcon aria-hidden className="h-4 w-4" />
+              )
+            }
+            disabled={dictionaryArchived}
+            onSelect={() => onToggleArchive?.(card)}
+          >
+            {cardArchived ? 'Restore card' : 'Archive card'}
+          </DropdownMenuItem>
+        </DropdownMenu>
+      </div>
+
+      {optionalFields.length > 0 ? (
+        <dl className="mt-3 w-full divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-background-subtle">
+          {optionalFields.map((field) => (
+            <div key={field} className="px-3 py-2">
+              <dt className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">
+                {fieldLabelFor(field)}
+              </dt>
+              <dd className="mt-0.5 flex items-center justify-between gap-2">
+                <span
+                  dir={fieldDir(dictionary, settings, field)}
+                  lang={fieldLanguage(dictionary, settings, field)}
+                  className={`min-w-0 break-words text-sm ${
+                    field === 'transcription'
+                      ? 'font-mono text-text-secondary'
+                      : 'text-text-primary'
+                  }`}
+                >
+                  {card[field]}
+                </span>
+                {field === 'example'
+                  ? renderAudio('example', 'context example')
+                  : field === 'exampleTranslation'
+                    ? renderAudio('exampleTranslation', 'example translation')
+                    : null}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <AuthorshipBadge authorship={card.authorship} />
+        <InheritanceBadge overridden={isOverridden(card.overrides)} />
+        {cardArchived ? (
+          <Badge size="sm" tone="neutral">
+            Archived card
+          </Badge>
+        ) : null}
+        {hasRetainedReview ? (
+          <Badge size="sm" tone="info" icon={<SparklesIcon aria-hidden className="h-3.5 w-3.5" />}>
+            AI review waiting
+          </Badge>
+        ) : null}
+      </div>
+
+      {aiReviewDisabledReason && !dictionaryArchived && !cardArchived ? (
+        <p className="mt-2 text-xs text-text-tertiary">{aiReviewDisabledReason}</p>
+      ) : null}
+    </Card>
+  )
+}
+

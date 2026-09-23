@@ -1,0 +1,179 @@
+import React from 'react'
+import { InlineAlert } from '../InlineAlert'
+import { Button } from '../Button'
+
+/**
+ * Recovery messaging for AI states. Each alert keeps the open draft and any
+ * loaded suggestions intact, and never exposes a raw provider error.
+ */
+
+export function DuplicateWarning({ source, count }: { source: string; count: number }) {
+  return (
+    <InlineAlert tone="warning" title={`“${source}” is already in this dictionary`}>
+      {count === 1 ? 'One other card' : `${count} other cards`} use this source phrase.
+      That can be intentional — another meaning or context is allowed. Saving will create a
+      separate card.
+    </InlineAlert>
+  )
+}
+
+export function StaleSuggestionsAlert({
+  previousSource,
+  onRegenerate,
+  disabled,
+}: {
+  previousSource: string
+  onRegenerate: () => void
+  disabled?: boolean
+}) {
+  return (
+    <InlineAlert
+      tone="warning"
+      title="Source changed — existing suggestions are stale"
+      actions={
+        <Button size="compact" variant="secondary" onClick={onRegenerate} disabled={disabled}>
+          Generate for the new source
+        </Button>
+      }
+    >
+      These choices were produced for “{previousSource}”. They stay visible for reference but
+      cannot be accepted or regenerated. Your typed values are untouched.
+    </InlineAlert>
+  )
+}
+
+export function AiUnavailableAlert({ onDismiss }: { onDismiss?: () => void }) {
+  return (
+    <InlineAlert
+      tone="error"
+      title="AI suggestions are unavailable right now"
+      onDismiss={onDismiss}
+    >
+      Your draft and any loaded suggestions are kept. You can finish this card by hand and save
+      it — manual authoring does not depend on AI.
+    </InlineAlert>
+  )
+}
+
+export function RateLimitAlert({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <InlineAlert
+      tone="warning"
+      title="AI is at capacity for now"
+      actions={
+        onRetry ? (
+          <Button size="compact" variant="secondary" onClick={onRetry}>
+            Try generating again
+          </Button>
+        ) : undefined
+      }
+    >
+      No suggestions were added and nothing in your draft changed. You can keep editing or save
+      what you have.
+    </InlineAlert>
+  )
+}
+
+export function GenerationFailureAlert({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <InlineAlert
+      tone="error"
+      title="Generation did not finish"
+      actions={
+        onRetry ? (
+          <Button size="compact" variant="secondary" onClick={onRetry}>
+            Try again
+          </Button>
+        ) : undefined
+      }
+    >
+      Nothing was added to your draft. Your fields and earlier choices are unchanged.
+    </InlineAlert>
+  )
+}
+
+export function NetworkAlert({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <InlineAlert
+      tone="error"
+      title="Connection lost while waiting for suggestions"
+      actions={
+        onRetry ? (
+          <Button size="compact" variant="secondary" onClick={onRetry}>
+            Check again
+          </Button>
+        ) : undefined
+      }
+    >
+      We stopped waiting for a response. Your draft and earlier suggestions are still here. We
+      will not retry silently.
+    </InlineAlert>
+  )
+}
+
+export function SuggestionLimitAlert({ field }: { field: string }) {
+  return (
+    <InlineAlert tone="info" title="Six choices already shown">
+      {field} has the maximum of six visible suggestions. Discard one before generating another
+      — nothing is removed automatically.
+    </InlineAlert>
+  )
+}
+
+export function ProposalExpiredAlert({ onRegenerate }: { onRegenerate?: () => void }) {
+  return (
+    <InlineAlert
+      tone="warning"
+      title="These suggestions have expired"
+      actions={
+        onRegenerate ? (
+          <Button size="compact" variant="secondary" onClick={onRegenerate}>
+            Generate again
+          </Button>
+        ) : undefined
+      }
+    >
+      They were produced too long ago to be applied safely. Your typed values are unaffected and
+      can still be saved.
+    </InlineAlert>
+  )
+}
+
+export function SaveConflictAlert({ onReload }: { onReload?: () => void }) {
+  return (
+    <InlineAlert
+      tone="error"
+      title="This dictionary changed while you were writing"
+      actions={
+        onReload ? (
+          <Button size="compact" variant="secondary" onClick={onReload}>
+            Reload and compare
+          </Button>
+        ) : undefined
+      }
+    >
+      Its field settings were updated elsewhere, so saving now could overwrite newer data. We
+      did not retry the save. Reload to see the current settings, then save again.
+    </InlineAlert>
+  )
+}
+
+export function ReviewConflictAlert({ onReload }: { onReload?: () => void }) {
+  return (
+    <InlineAlert
+      tone="error"
+      title="The saved card changed since this proposal was made"
+      actions={
+        onReload ? (
+          <Button size="compact" variant="secondary" onClick={onReload}>
+            Reload and compare
+          </Button>
+        ) : undefined
+      }
+    >
+      The proposal below is out of date and will not be applied automatically. Reload to compare
+      it against the current card before accepting anything.
+    </InlineAlert>
+  )
+}
+

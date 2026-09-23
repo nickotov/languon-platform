@@ -1,0 +1,100 @@
+import React, { cloneElement, isValidElement, useId } from 'react'
+
+export type FormFieldProps = {
+  /** Visible label text for the field. */
+  label?: string
+  /** Helper text shown below the control when there is no error. */
+  helperText?: string
+  /** Error message. When set, the field renders in its error state. */
+  error?: string
+  /** Marks the field as required and shows a required indicator. */
+  required?: boolean
+  /** Visually dims the field and forwards `disabled` to the control. */
+  disabled?: boolean
+  /** Explicit id for the control. Generated when omitted. */
+  htmlFor?: string
+  /** Hide the label visually while keeping it available to screen readers. */
+  hideLabel?: boolean
+  /** Additional classes for the field wrapper. */
+  className?: string
+  /** The form control (input, select, textarea, or custom component). */
+  children: React.ReactNode
+}
+
+type ControlAriaProps = {
+  id?: string
+  'aria-describedby'?: string
+  'aria-invalid'?: boolean
+  'aria-required'?: boolean
+  disabled?: boolean
+}
+
+export function FormField({
+  label,
+  helperText,
+  error,
+  required = false,
+  disabled = false,
+  htmlFor,
+  hideLabel = false,
+  className = '',
+  children,
+}: FormFieldProps) {
+  const generatedId = useId()
+  const controlId = htmlFor ?? `field-${generatedId}`
+  const helperId = `${controlId}-helper`
+  const errorId = `${controlId}-error`
+
+  const hasError = Boolean(error)
+  const describedBy = [hasError ? errorId : null, helperText ? helperId : null]
+    .filter(Boolean)
+    .join(' ')
+
+  const control = isValidElement(children)
+    ? cloneElement(children as React.ReactElement<ControlAriaProps>, {
+        id: (children as React.ReactElement<ControlAriaProps>).props.id ?? controlId,
+        'aria-describedby': describedBy || undefined,
+        'aria-invalid': hasError || undefined,
+        'aria-required': required || undefined,
+        disabled:
+          (children as React.ReactElement<ControlAriaProps>).props.disabled ?? (disabled || undefined),
+      })
+    : children
+
+  return (
+    <div
+      className={`flex w-full flex-col gap-1.5 ${disabled ? 'opacity-60' : ''} ${className}`.trim()}
+    >
+      {label ? (
+        <label
+          htmlFor={controlId}
+          className={
+            hideLabel
+              ? 'sr-only'
+              : `text-sm font-medium leading-none ${hasError ? 'text-red-700' : 'text-gray-900'}`
+          }
+        >
+          {label}
+          {required ? (
+            <span aria-hidden="true" className="ml-0.5 text-red-600">
+              *
+            </span>
+          ) : null}
+        </label>
+      ) : null}
+
+      {control}
+
+      {hasError ? (
+        <p id={errorId} role="alert" className="text-xs leading-5 text-red-600">
+          {error}
+        </p>
+      ) : helperText ? (
+        <p id={helperId} className="text-xs leading-5 text-gray-500">
+          {helperText}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+

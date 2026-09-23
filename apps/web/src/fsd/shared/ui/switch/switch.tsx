@@ -1,4 +1,5 @@
 import {
+    type ChangeEvent,
     forwardRef,
     type InputHTMLAttributes,
     type ReactNode,
@@ -38,32 +39,36 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     const switchId = id ?? `switch-${generatedId}`;
     const descriptionId = description ? `${switchId}-description` : undefined;
     const visibleLabel = label ?? children;
+    const hasVisibleLabel = Boolean(visibleLabel);
+    const hasDescription = Boolean(description);
+    const hasCopy = hasVisibleLabel || hasDescription;
+    const describedBy = [props['aria-describedby'], descriptionId]
+        .filter(Boolean)
+        .join(' ');
+    const accessibleDescription = describedBy || undefined;
+    const rootClassName = [
+        styles.root,
+        styles[size],
+        disabled ? styles.disabled : undefined,
+        className,
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    function handleChange(event: ChangeEvent<HTMLInputElement>) {
+        onChange?.(event);
+        onCheckedChange?.(event.currentTarget.checked);
+    }
+
     return (
-        <label
-            className={[
-                styles.root,
-                styles[size],
-                disabled ? styles.disabled : undefined,
-                className,
-            ]
-                .filter(Boolean)
-                .join(' ')}
-            htmlFor={switchId}
-        >
+        <label className={rootClassName} htmlFor={switchId}>
             <span className={styles.control}>
                 <input
                     {...props}
-                    aria-describedby={
-                        [props['aria-describedby'], descriptionId]
-                            .filter(Boolean)
-                            .join(' ') || undefined
-                    }
+                    aria-describedby={accessibleDescription}
                     disabled={disabled}
                     id={switchId}
-                    onChange={(event) => {
-                        onChange?.(event);
-                        onCheckedChange?.(event.currentTarget.checked);
-                    }}
+                    onChange={handleChange}
                     ref={ref}
                     role='switch'
                     type='checkbox'
@@ -72,18 +77,18 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
                     <span className={styles.thumb} />
                 </span>
             </span>
-            {visibleLabel || description ? (
+            {hasCopy && (
                 <span className={styles.copy}>
-                    {visibleLabel ? (
+                    {hasVisibleLabel && (
                         <span className={styles.label}>{visibleLabel}</span>
-                    ) : null}
-                    {description ? (
+                    )}
+                    {hasDescription && (
                         <span className={styles.description} id={descriptionId}>
                             {description}
                         </span>
-                    ) : null}
+                    )}
                 </span>
-            ) : null}
+            )}
         </label>
     );
 });

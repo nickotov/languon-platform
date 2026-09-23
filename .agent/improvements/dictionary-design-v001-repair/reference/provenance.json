@@ -1,0 +1,37 @@
+{
+    "screenArtifact": "b7f13de7-72b5-4c6f-bd22-a08c83e1ceb4",
+    "baselineDesignSystem": "ds-079806f1-e593-4a64-8818-e922e2f7314d",
+    "baselineArtifact": "ecb75ac2-c06e-44ed-8e1b-28ec4bff5287",
+    "filledEmptyReferences": [
+        "components/Badge.tsx",
+        "components/InlineAlert.tsx",
+        "components/Switch.tsx",
+        "components/Select.tsx",
+        "components/Input.tsx",
+        "components/IconButton.tsx",
+        "components/Button.tsx",
+        "components/Label.tsx",
+        "components/Tabs.tsx",
+        "components/DropdownMenu.tsx",
+        "components/NavItem.tsx",
+        "components/Card.tsx",
+        "components/FormField.tsx",
+        "components/Textarea.tsx",
+        "components/Radio.tsx",
+        "components/Skeleton.tsx",
+        "components/Divider.tsx",
+        "components/Dialog.tsx",
+        "components/Breadcrumb.tsx",
+        "components/Toast.tsx"
+    ],
+    "adaptations": [
+        "React19 and router7 instead of source React18/router6, installeddependencies",
+        "Animation-only framer-motion settled-state adapter",
+        "Local Intervariable latin font instead of remote Googlefont, adds localfontface",
+        "Tailwind importsyntax converted to equivalent directives for localCLI"
+    ],
+    "baselineLinkage": "Inferred from the users active named Languon design system and matching exported primitive names. Magic Patterns artifact API exposes empty primitive bodies but does not expose the design-system reference ID. This reconstruction is not a captured hosted preview.",
+    "themeSource": "Selected artifact index.css and tailwind.config.js, including existing --color-* aliases. Design-system global CSS was read for audit only, not prepended or substituted.",
+    "opacityHandling": "The temporary Tailwind config maps CSS-variable opacity modifiers with color-mix; this restores explicit bg-neutral-950/50 and prevents an incorrectly transparent reference backdrop.",
+    "comparisonLimit": "Reconstruction of supplied screen source plus matching current Languon design-system primitives. Linkage inferred from missing primitive names; not a capture of the original hosted preview. React19/router7, local Inter, settled animation adapter are environment adaptations."
+}

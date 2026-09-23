@@ -1,0 +1,102 @@
+export type LanguageCode =
+  | 'es'
+  | 'en'
+  | 'fr'
+  | 'ru'
+  | 'de'
+  | 'it'
+  | 'pt'
+  | 'ja'
+  | 'ar'
+  | 'he'
+
+export type TextDirection = 'ltr' | 'rtl'
+
+export interface Language {
+  code: LanguageCode
+  /** Name shown in the interface language. */
+  name: string
+  nativeName: string
+  dir: TextDirection
+  /** Whether pronunciation audio can be generated for this language. */
+  speechSupported: boolean
+}
+
+export type TranscriptionNotation = 'ipa' | 'romanization' | 'custom'
+
+/** Whether a language-sensitive field is written in the source or target language. */
+export type FieldLanguageChoice = 'source' | 'target'
+
+export interface DictionarySettings {
+  transcriptionEnabled: boolean
+  transcriptionNotation: TranscriptionNotation
+  /** Required when notation is 'custom'. */
+  transcriptionCustomLabel: string
+  definitionEnabled: boolean
+  definitionLanguage: FieldLanguageChoice
+  exampleEnabled: boolean
+  exampleLanguage: FieldLanguageChoice
+  /** Always written in the opposite language from the example. */
+  exampleTranslationEnabled: boolean
+}
+
+export type DictionaryStatus = 'active' | 'archived'
+export type DictionaryVisibility = 'private' | 'unlisted'
+
+export interface Dictionary {
+  id: string
+  name: string
+  description: string
+  sourceLanguage: LanguageCode
+  targetLanguage: LanguageCode
+  status: DictionaryStatus
+  visibility: DictionaryVisibility
+  settings: DictionarySettings
+  /** True once any card has existed — locks the language pair permanently. */
+  hasEverHadCards: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** System-owned authorship label. Users cannot set or remove it. */
+export type Authorship = 'human' | 'ai' | 'human-ai'
+
+export type CardStatus = 'active' | 'archived'
+
+export type CardFieldKey =
+  | 'source'
+  | 'translation'
+  | 'transcription'
+  | 'definition'
+  | 'example'
+  | 'exampleTranslation'
+
+/** Optional-field settings a single card may override. */
+export interface CardOverrides {
+  transcriptionEnabled?: boolean
+  transcriptionNotation?: TranscriptionNotation
+  transcriptionCustomLabel?: string
+  definitionEnabled?: boolean
+  definitionLanguage?: FieldLanguageChoice
+  exampleEnabled?: boolean
+  exampleLanguage?: FieldLanguageChoice
+  exampleTranslationEnabled?: boolean
+}
+
+export interface VocabCard {
+  id: string
+  dictionaryId: string
+  source: string
+  translation: string
+  transcription: string
+  definition: string
+  example: string
+  exampleTranslation: string
+  authorship: Authorship
+  status: CardStatus
+  /** null means "inherits dictionary settings". */
+  overrides: CardOverrides | null
+  order: number
+  updatedAt: string
+}
+

@@ -1,0 +1,432 @@
+/* --- MANAGED FONT IMPORTS START (do not edit manually) --- */
+/* INTERNAL USE NAME: Heading */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+/* --- MANAGED FONT IMPORTS END --- */
+
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
+
+:root {
+  --neutral-50: #F8F9FB;
+  --neutral-100: #F1F3F6;
+  --neutral-200: #E4E7EC;
+  --neutral-300: #D0D5DD;
+  --neutral-400: #A6AEBB;
+  --neutral-500: #7C8797;
+  --neutral-600: #5B6472;
+  --neutral-700: #434A56;
+  --neutral-800: #2B2F38;
+  --neutral-900: #1B1E24;
+  --neutral-950: #121417;
+  --primary-50: #EEF2FF;
+  --primary-100: #E0E7FF;
+  --primary-200: #C7D2FE;
+  --primary-300: #A5B4FC;
+  --primary-400: #818CF8;
+  --primary-500: #6366F1;
+  --primary-600: #4F46E5;
+  --primary-700: #4338CA;
+  --primary-800: #3730A3;
+  --primary-900: #312E81;
+  --primary-950: #1E1B4B;
+  --success-50: #EDFBF6;
+  --success-100: #D3F5E7;
+  --success-200: #A6EBD0;
+  --success-300: #71D9B4;
+  --success-400: #43C297;
+  --success-500: #22A67E;
+  --success-600: #178A68;
+  --success-700: #106F54;
+  --success-800: #0D5945;
+  --success-900: #0A4839;
+  --success-950: #052A21;
+  --warning-50: #FFF8EB;
+  --warning-100: #FFEFC7;
+  --warning-200: #FFE08A;
+  --warning-300: #FFCB4D;
+  --warning-400: #FDB022;
+  --warning-500: #F59E0B;
+  --warning-600: #D97706;
+  --warning-700: #B45309;
+  --warning-800: #92400E;
+  --warning-900: #78350F;
+  --warning-950: #451A03;
+  --danger-50: #FFF1F2;
+  --danger-100: #FFE1E3;
+  --danger-200: #FECDD3;
+  --danger-300: #FDA4AF;
+  --danger-400: #FB7185;
+  --danger-500: #F43F5E;
+  --danger-600: #E11D48;
+  --danger-700: #BE123C;
+  --danger-800: #9F1239;
+  --danger-900: #881337;
+  --danger-950: #4C0519;
+  --info-50: #EFF6FF;
+  --info-100: #DBEAFE;
+  --info-200: #BFDBFE;
+  --info-300: #93C5FD;
+  --info-400: #60A5FA;
+  --info-500: #3B82F6;
+  --info-600: #2563EB;
+  --info-700: #1D4ED8;
+  --info-800: #1E40AF;
+  --info-900: #1E3A8A;
+  --info-950: #172554;
+  --background-canvas: #F8F9FB;
+  --background-surface: #FFFFFF;
+  --background-subtle: #F1F3F6;
+  --background-elevated: #FFFFFF;
+  --text-primary: #1B1E24;
+  --text-secondary: #5B6472;
+  --text-tertiary: #7C8797;
+  --text-disabled: #A6AEBB;
+  --border-default: #E4E7EC;
+  --border-strong: #D0D5DD;
+  --border-focus: #4F46E5;
+  --primary-default: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-pressed: #3730A3;
+  --primary-subtle: #EEF2FF;
+  --success-default: #106F54;
+  --success-subtle: #EDFBF6;
+  --warning-default: #B45309;
+  --warning-subtle: #FFF8EB;
+  --danger-default: #BE123C;
+  --danger-subtle: #FFF1F2;
+  --info-default: #2563EB;
+  --selection: #E0E7FF;
+  --overlay: rgba(27, 30, 36, 0.5);
+  --background-canvas-dark: #121417;
+  --background-surface-dark: #1B1E24;
+  --background-subtle-dark: #171A20;
+  --background-elevated-dark: #23262D;
+  --text-primary-dark: #F8F9FB;
+  --text-secondary-dark: #D0D5DD;
+  --text-tertiary-dark: #A6AEBB;
+  --text-disabled-dark: #5B6472;
+  --border-default-dark: #434A56;
+  --border-strong-dark: #5B6472;
+  --border-focus-dark: #818CF8;
+  --primary-default-dark: #818CF8;
+  --primary-hover-dark: #A5B4FC;
+  --primary-pressed-dark: #C7D2FE;
+  --primary-subtle-dark: #1E1B4B;
+  --success-default-dark: #43C297;
+  --success-subtle-dark: #052A21;
+  --warning-default-dark: #FDB022;
+  --warning-subtle-dark: #451A03;
+  --danger-default-dark: #FB7185;
+  --danger-subtle-dark: #4C0519;
+  --info-default-dark: #60A5FA;
+  --selection-dark: #312E81;
+  --overlay-dark: rgba(6, 7, 9, 0.6);
+  --state-selected-bg: #EEF2FF;
+  --state-correct: #106F54;
+  --state-incorrect: #BE123C;
+  --state-hint-bg: #FFF8EB;
+  --vocabulary-term: #4F46E5;
+  --grammar-concept: #2563EB;
+  --ai-message-bg: #F1F3F6;
+  --user-message-bg: #EEF2FF;
+  --progress-fill: #4F46E5;
+  --progress-track: #E4E7EC;
+  --completed: #106F54;
+  --review-due: #B45309;
+  --locked: #A6AEBB;
+  --ai-message-bg-dark: #171A20;
+  --user-message-bg-dark: #1E1B4B;
+  --spacing-0: 0px;
+  --spacing-2: 2px;
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+  --spacing-icon-to-text: 8px;
+  --spacing-label-to-input: 4px;
+  --spacing-inset-component: 8px;
+  --spacing-sibling-controls: 12px;
+  --spacing-related-content: 16px;
+  --spacing-card-padding: 16px;
+  --spacing-section: 48px;
+  --spacing-page-gutter: 24px;
+  --size-control-compact: 36px;
+  --size-control-default: 44px;
+  --size-control-large: 52px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+  --size-icon-xl: 32px;
+  --size-avatar-sm: 24px;
+  --size-avatar-md: 36px;
+  --size-avatar-lg: 52px;
+  --size-touch-target-min: 44px;
+  --size-page-padding-mobile: 16px;
+  --size-page-padding-tablet: 24px;
+  --size-page-padding-desktop: 48px;
+  --size-max-width-reading: 680px;
+  --size-max-width-form: 520px;
+  --size-max-width-app: 1200px;
+  --size-input-height: 44px;
+  --size-chat-bubble-max-width: 480px;
+  --size-nav-sidebar-width: 240px;
+  --size-topbar-height: 64px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  --border-width-sm: 1px;
+  --border-width-md: 2px;
+  --border-width-lg: 4px;
+  --elevation-none: none;
+  --elevation-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --elevation-md: 0 4px 12px rgba(15, 23, 42, 0.10);
+  --elevation-lg: 0 12px 32px rgba(15, 23, 42, 0.14);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --motion-feedback: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-enter-exit: 300ms cubic-bezier(0, 0, 0.2, 1);
+  --motion-reduced: 0ms;
+}
+/* Dark theme resolves the same semantic token names to their dark values,
+   so every component consumes one token name in both themes. */
+[data-theme='dark'] {
+  --background-canvas: var(--background-canvas-dark);
+  --background-surface: var(--background-surface-dark);
+  --background-subtle: var(--background-subtle-dark);
+  --background-elevated: var(--background-elevated-dark);
+  --text-primary: var(--text-primary-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --text-tertiary: var(--text-tertiary-dark);
+  --text-disabled: var(--text-disabled-dark);
+  --border-default: var(--border-default-dark);
+  --border-strong: var(--border-strong-dark);
+  --border-focus: var(--border-focus-dark);
+  --primary-default: var(--primary-default-dark);
+  --primary-hover: var(--primary-hover-dark);
+  --primary-pressed: var(--primary-pressed-dark);
+  --primary-subtle: var(--primary-subtle-dark);
+  --success-default: var(--success-default-dark);
+  --success-subtle: var(--success-subtle-dark);
+  --warning-default: var(--warning-default-dark);
+  --warning-subtle: var(--warning-subtle-dark);
+  --danger-default: var(--danger-default-dark);
+  --danger-subtle: var(--danger-subtle-dark);
+  --info-default: var(--info-default-dark);
+  --selection: var(--selection-dark);
+  --overlay: var(--overlay-dark);
+  --state-selected-bg: var(--primary-subtle-dark);
+  --state-correct: var(--success-default-dark);
+  --state-incorrect: var(--danger-default-dark);
+  --state-hint-bg: var(--warning-subtle-dark);
+  --vocabulary-term: var(--primary-default-dark);
+  --grammar-concept: var(--info-default-dark);
+  --ai-message-bg: var(--ai-message-bg-dark);
+  --user-message-bg: var(--user-message-bg-dark);
+  --progress-fill: var(--primary-default-dark);
+  --progress-track: var(--border-default-dark);
+  --completed: var(--success-default-dark);
+  --review-due: var(--warning-default-dark);
+  --locked: var(--text-disabled-dark);
+}
+/* Aliases consumed by design-system components, mapped onto Languon tokens
+   so a theme switch propagates to system components too. */
+:root,
+[data-theme='dark'] {
+  --color-background: var(--background-canvas);
+  --color-surface: var(--background-surface);
+  --color-surface-hover: var(--background-subtle);
+  --color-surface-active: var(--background-subtle);
+  --color-elevated: var(--background-elevated);
+  --color-foreground: var(--text-primary);
+  --color-foreground-muted: var(--text-secondary);
+  --color-muted: var(--text-tertiary);
+  --color-border: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-ring: var(--border-focus);
+  --color-primary: var(--primary-default);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-pressed);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-foreground: #ffffff;
+  --color-success: var(--success-default);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning-default);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-danger: var(--danger-default);
+  --color-danger-hover: var(--danger-default);
+  --color-danger-active: var(--danger-default);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-foreground: #ffffff;
+  --color-info: var(--info-default);
+  --color-info-subtle: var(--info-50);
+  --radius-control: var(--radius-md);
+}
+/* Dark-theme bridge: design-system components that ship fixed light surfaces or
+   fixed neutral text are remapped onto the semantic tokens so light and dark
+   never diverge. Token values only — no raw colors. */
+[data-theme='dark'] .bg-white,
+[data-theme='dark'] .bg-neutral-50,
+[data-theme='dark'] .bg-gray-50,
+[data-theme='dark'] .bg-slate-50,
+[data-theme='dark'] .bg-zinc-50,
+[data-theme='dark'] .bg-stone-50 {
+  background-color: var(--background-surface);
+}
+[data-theme='dark'] .bg-neutral-100,
+[data-theme='dark'] .bg-neutral-200,
+[data-theme='dark'] .bg-gray-100,
+[data-theme='dark'] .bg-gray-200,
+[data-theme='dark'] .bg-slate-100,
+[data-theme='dark'] .bg-slate-200,
+[data-theme='dark'] .bg-zinc-100,
+[data-theme='dark'] .bg-zinc-200,
+[data-theme='dark'] .bg-stone-100 {
+  background-color: var(--background-subtle);
+}
+[data-theme='dark'] .text-black,
+[data-theme='dark'] .text-neutral-900,
+[data-theme='dark'] .text-neutral-800,
+[data-theme='dark'] .text-gray-900,
+[data-theme='dark'] .text-gray-800,
+[data-theme='dark'] .text-slate-900,
+[data-theme='dark'] .text-slate-800,
+[data-theme='dark'] .text-zinc-900,
+[data-theme='dark'] .text-zinc-800,
+[data-theme='dark'] .text-stone-900 {
+  color: var(--text-primary);
+}
+[data-theme='dark'] .text-neutral-700,
+[data-theme='dark'] .text-neutral-600,
+[data-theme='dark'] .text-gray-700,
+[data-theme='dark'] .text-gray-600,
+[data-theme='dark'] .text-slate-700,
+[data-theme='dark'] .text-slate-600,
+[data-theme='dark'] .text-zinc-700,
+[data-theme='dark'] .text-zinc-600 {
+  color: var(--text-secondary);
+}
+[data-theme='dark'] .text-neutral-500,
+[data-theme='dark'] .text-neutral-400,
+[data-theme='dark'] .text-gray-500,
+[data-theme='dark'] .text-gray-400,
+[data-theme='dark'] .text-slate-500,
+[data-theme='dark'] .text-slate-400,
+[data-theme='dark'] .text-zinc-500,
+[data-theme='dark'] .text-zinc-400 {
+  color: var(--text-tertiary);
+}
+[data-theme='dark'] .border-neutral-100,
+[data-theme='dark'] .border-neutral-200,
+[data-theme='dark'] .border-neutral-300,
+[data-theme='dark'] .border-gray-100,
+[data-theme='dark'] .border-gray-200,
+[data-theme='dark'] .border-gray-300,
+[data-theme='dark'] .border-slate-200,
+[data-theme='dark'] .border-slate-300,
+[data-theme='dark'] .border-zinc-200,
+[data-theme='dark'] .border-zinc-300,
+[data-theme='dark'] .border-white {
+  border-color: var(--border-default);
+}
+[data-theme='dark'] .divide-neutral-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border-default);
+}
+[data-theme='dark'] .hover\:text-neutral-900:hover,
+[data-theme='dark'] .hover\:text-neutral-800:hover,
+[data-theme='dark'] .hover\:text-gray-900:hover,
+[data-theme='dark'] .hover\:text-gray-800:hover,
+[data-theme='dark'] .hover\:text-slate-900:hover,
+[data-theme='dark'] .hover\:text-black:hover {
+  color: var(--text-primary);
+}
+[data-theme='dark'] .hover\:bg-neutral-50:hover,
+[data-theme='dark'] .hover\:bg-neutral-100:hover,
+[data-theme='dark'] .hover\:bg-gray-50:hover,
+[data-theme='dark'] .hover\:bg-gray-100:hover,
+[data-theme='dark'] .hover\:bg-slate-50:hover,
+[data-theme='dark'] .hover\:bg-slate-100:hover,
+[data-theme='dark'] .hover\:bg-zinc-100:hover {
+  background-color: var(--background-subtle);
+}
+[data-theme='dark'] .ring-offset-white {
+  --tw-ring-offset-color: var(--background-surface);
+}
+/* Switch thumbs must stay light-on-dark; scoped so icon buttons are unaffected. */
+[data-theme='dark'] [role='switch'] .bg-white,
+[data-theme='dark'] [role='switch'] .bg-neutral-50 {
+  background-color: var(--text-primary);
+}
+[data-theme='dark'] input,
+[data-theme='dark'] textarea,
+[data-theme='dark'] select {
+  background-color: var(--background-surface);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+[data-theme='dark'] input::placeholder,
+[data-theme='dark'] textarea::placeholder {
+  color: var(--text-tertiary);
+}
+[data-theme='dark'] option {
+  background-color: var(--background-surface);
+  color: var(--text-primary);
+}
+/* --- MANAGED TYPOGRAPHY VARS START (do not edit manually) --- */
+html {
+  --font-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+/* --- MANAGED TYPOGRAPHY VARS END --- */
+
+/* --- BASE TYPOGRAPHY START (do not edit manually) --- */
+@layer base {
+  body {
+    font-family: var(--font-body, inherit);
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading, var(--font-body, inherit));
+  }
+}
+/* --- BASE TYPOGRAPHY END --- */
+
+/* --- REDUCED MOTION START --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* --- REDUCED MOTION END --- */
+

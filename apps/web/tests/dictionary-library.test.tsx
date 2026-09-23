@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import { DictionaryLibrary } from '@/fsd/features/dictionary-library';
-import { DictionaryImportPanel } from '@/fsd/features/dictionary-interchange';
 
 import { render } from './render';
 
@@ -88,7 +87,6 @@ describe('dictionary library', () => {
         render(
             <QueryClientProvider client={client}>
                 <DictionaryLibrary
-                    importPanel={DictionaryImportPanel}
                     requestWithSession={(operation) => operation('token')}
                 />
             </QueryClientProvider>,
@@ -105,6 +103,85 @@ describe('dictionary library', () => {
                 cursor: 'next-page',
                 limit: 25,
             }),
+        );
+    });
+
+    it('filters archived dictionaries and restores from the row menu with its current version', async () => {
+        const dictionary = {
+            ...summary(
+                '10000000-0000-4000-8000-000000000003',
+                'Archived vocabulary',
+            ),
+            lifecycle: 'archived' as const,
+            version: 7,
+        };
+        const list = vi
+            .spyOn(dictionaryApi, 'listDictionaries')
+            .mockImplementation(async (_token, query) => ({
+                data: query.lifecycle === 'archived' ? [dictionary] : [],
+                nextCursor: null,
+            }));
+        const restore = vi
+            .spyOn(dictionaryApi, 'setDictionaryLifecycle')
+            .mockResolvedValue({
+                dictionary: {
+                    ...dictionary,
+                    lifecycle: 'active',
+                    sourceDictionaryId: null,
+                    settings: {
+                        version: 1,
+                        updatedAt: dictionary.updatedAt,
+                        values: {
+                            definitionEnabled: false,
+                            definitionLanguage: 'source',
+                            exampleEnabled: false,
+                            exampleLanguage: 'source',
+                            exampleTranslationEnabled: false,
+                            transcriptionCustomLabel: null,
+                            transcriptionEnabled: false,
+                            transcriptionNotation: 'ipa',
+                        },
+                    },
+                },
+            });
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        });
+        const user = userEvent.setup();
+        render(
+            <QueryClientProvider client={client}>
+                <DictionaryLibrary
+                    requestWithSession={(operation) => operation('token')}
+                />
+            </QueryClientProvider>,
+        );
+        await user.click(
+            screen.getByRole('button', { name: 'Archived', exact: true }),
+        );
+        expect(
+            await screen.findByText('Archived vocabulary'),
+        ).toBeInTheDocument();
+        expect(list).toHaveBeenCalledWith(
+            'token',
+            expect.objectContaining({ lifecycle: 'archived' }),
+            expect.anything(),
+        );
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Actions for Archived vocabulary',
+            }),
+        );
+        expect(
+            screen.getByRole('menuitem', { name: 'Dictionary settings' }),
+        ).toBeDisabled();
+        await user.click(screen.getByRole('menuitem', { name: 'Restore' }));
+        await waitFor(() =>
+            expect(restore).toHaveBeenCalledWith(
+                'token',
+                dictionary.id,
+                'active',
+                { expectedDictionaryVersion: 7 },
+            ),
         );
     });
 
@@ -130,7 +207,6 @@ describe('dictionary library', () => {
             render(
                 <QueryClientProvider client={client}>
                     <DictionaryLibrary
-                        importPanel={DictionaryImportPanel}
                         requestWithSession={(operation) => operation('token')}
                     />
                 </QueryClientProvider>,

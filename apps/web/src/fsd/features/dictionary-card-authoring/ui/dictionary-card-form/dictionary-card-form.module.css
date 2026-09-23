@@ -1,5 +1,5 @@
 .card {
-    padding: var(--sys-space-5);
+    padding: 20px;
 }
 .embedded {
     background: transparent;
@@ -7,129 +7,230 @@
     border-radius: 0;
     box-shadow: none;
     padding: 0;
-}
-.embedded .form {
-    margin-top: var(--sys-space-3);
-}
-.header,
-.actions {
-    align-items: center;
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--sys-space-3);
-    justify-content: space-between;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 .header h2 {
-    font-family: var(--sys-font-display);
+    font-family: var(--font-heading);
     margin: 0;
 }
 .form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-top: 20px;
+}
+.body {
     display: grid;
-    gap: var(--sys-space-4);
-    margin-top: var(--sys-space-5);
+    gap: 16px;
+    min-height: 0;
+    overflow-y: auto;
 }
-.aiControls,
-.aiProgress,
-.suggestions,
-.suggestionList {
-    display: grid;
-    gap: var(--sys-space-3);
+.embedded .form {
+    margin-top: 0;
+    flex: 1;
+    overflow: hidden;
 }
-.aiControls {
-    border-inline-start: 3px solid var(--sys-color-action-primary);
-    padding-inline-start: var(--sys-space-3);
+.embedded .body {
+    padding: 20px 24px;
 }
-.aiActionRow,
+.fieldCount {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin: 4px 0 0;
+    text-align: right;
+}
 .suggestionHeading,
-.suggestionActions {
+.suggestionActions,
+.actions,
+.overrideHeading {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sys-space-2);
-}
-.aiActionRow small,
-.suggestions > small {
-    color: var(--sys-color-text-secondary);
-}
-.aiProgress progress {
-    width: 100%;
-}
-.suggestions {
-    background: var(--sys-color-action-primary-soft);
-    border-radius: var(--sys-radius-md);
-    margin-top: calc(var(--sys-space-2) * -1);
-    padding: var(--sys-space-3);
-}
-.suggestionHeading {
+    gap: 8px;
     justify-content: space-between;
 }
+.optionalFields {
+    border-top: 1px solid var(--border-default);
+    display: grid;
+    gap: 16px;
+    padding-top: 16px;
+}
+.optionalHeading {
+    align-items: center;
+    color: var(--text-tertiary);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 8px;
+    letter-spacing: 0.025em;
+    margin: 0;
+    text-transform: uppercase;
+}
+.optionalHeading > span {
+    border-radius: 6px;
+    letter-spacing: normal;
+}
+.suggestions {
+    background: var(--background-subtle);
+    border: 1px dashed var(--border-strong);
+    border-radius: 12px;
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 12px;
+}
+.suggestionHeading strong {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+}
+.choiceCount {
+    color: var(--text-tertiary);
+    font-weight: 400;
+    white-space: nowrap;
+}
+.suggestions > small {
+    color: var(--text-secondary);
+}
 .suggestionList {
+    display: grid;
+    gap: 8px;
     list-style: none;
     margin: 0;
     padding: 0;
 }
 .suggestion {
-    background: var(--sys-color-surface-default);
-    border: 1px solid var(--sys-color-border-subtle);
-    border-radius: var(--sys-radius-sm);
-    display: grid;
-    gap: var(--sys-space-2);
+    align-items: flex-start;
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
     min-width: 0;
-    padding: var(--sys-space-3);
+    padding: 10px;
 }
 .suggestion[data-selected] {
-    border-color: var(--sys-color-success);
+    border-color: var(--success-default);
 }
-.suggestion p {
-    margin: 0;
+.suggestionContent {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+.suggestionContent small {
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+.suggestionContent p {
+    font-size: 14px;
+    font-style: italic;
+    margin: 2px 0 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
-.actions {
-    background: var(--sys-color-surface-default);
-    bottom: calc(var(--sys-space-4) * -1);
-    margin-inline: calc(var(--sys-space-2) * -1);
-    padding: var(--sys-space-2);
-    position: sticky;
-    z-index: 1;
+.suggestionActions {
+    align-items: start;
+    gap: 4px;
 }
-.advanced {
-    border: 1px solid var(--sys-color-border-subtle);
-    border-radius: var(--sys-radius-md);
-    padding: var(--sys-space-4);
+.suggestions > button {
+    justify-self: start;
 }
-.advanced summary {
-    cursor: pointer;
-    font-weight: 700;
+.overrideDivider {
+    border-top: 1px solid var(--border-default);
+    padding-top: 16px;
 }
-.advanced[open] {
+.overridePanel {
+    background: var(--background-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
     display: grid;
-    gap: var(--sys-space-4);
+    gap: 12px;
+    padding: 12px;
 }
-.inactive {
-    background: var(--sys-color-surface-subtle);
-    border-radius: var(--sys-radius-md);
-    padding: var(--sys-space-4);
+.overrideHeading p {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
 }
-.inactive p {
-    white-space: pre-wrap;
+.overrideHeading small {
+    color: var(--text-secondary);
+    display: block;
+    font-size: 12px;
+    margin-top: 2px;
 }
-.inactive small {
-    color: var(--sys-color-text-secondary);
+.overrideFields {
+    border-top: 1px solid var(--border-default);
+    display: grid;
+    gap: 12px;
+    padding-top: 12px;
 }
-@media (max-width: 420px) {
-    .card:not(.embedded) {
-        padding: var(--sys-space-4);
+.footer {
+    background: var(--background-surface);
+    border-top: 1px solid var(--border-default);
+    display: grid;
+    flex-shrink: 0;
+    gap: 8px;
+    padding: 16px 0;
+}
+.embedded .footer {
+    padding: 16px 24px;
+}
+.form .primaryAction:disabled {
+    background: var(--primary-default);
+    border-color: transparent;
+    color: var(--text-on-primary);
+    opacity: 0.5;
+}
+@media (max-width: 767px) {
+    .embedded .body {
+        padding: 16px;
     }
-    .actions > * {
-        flex: 1 1 100%;
+    .embedded .footer {
+        padding: 12px 16px;
     }
-    .aiActionRow > * {
-        flex: 1 1 100%;
-        white-space: normal;
-    }
-    .suggestionActions > * {
-        flex: 1 1 7rem;
-        white-space: normal;
-    }
+}
+.saveHint {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin: 0;
+}
+
+.choiceBadges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+.suggestionHeading strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+.choiceCount {
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Keep the supplied dialog's row-based textarea geometry local to this feature. */
+.form textarea {
+    border-radius: 6px;
+    line-height: 20px;
+    min-height: 0;
+}
+.form label:has(+ textarea),
+.form label:has(+ span textarea) {
+    line-height: 14px;
+}
+
+.fieldCount,
+.overrideDescription {
+    line-height: 16px;
 }

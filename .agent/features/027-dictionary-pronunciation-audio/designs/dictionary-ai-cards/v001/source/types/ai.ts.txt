@@ -1,0 +1,76 @@
+import type { CardFieldKey } from './dictionary'
+
+export type SuggestionStatus = 'available' | 'accepted' | 'discarded'
+
+export interface FieldSuggestion {
+  id: string
+  field: CardFieldKey
+  value: string
+  status: SuggestionStatus
+  /** True when the Source changed after this suggestion was produced. */
+  stale: boolean
+  /** Sequence number shown to the user, e.g. "Choice 2". */
+  index: number
+}
+
+export type GenerationPhase =
+  | 'idle'
+  | 'queued'
+  | 'generating'
+  | 'validating'
+  | 'error'
+
+export type GenerationErrorKind =
+  | 'unavailable'
+  | 'rate-limit'
+  | 'failure'
+  | 'network'
+  | 'limit-reached'
+  | 'expired'
+
+export interface GenerationError {
+  kind: GenerationErrorKind
+  title: string
+  detail: string
+}
+
+export interface GenerationState {
+  phase: GenerationPhase
+  /** Fields the running (or failed) request covers. */
+  fields: CardFieldKey[]
+  error: GenerationError | null
+}
+
+/** Availability is tracked separately for new-card authoring and existing-card review. */
+export type AiAvailability = 'available' | 'rate-limited' | 'unavailable'
+
+export interface ReviewFieldProposal {
+  field: CardFieldKey
+  original: string
+  /** Editable proposed replacement. */
+  proposed: string
+  /** Up to three alternatives per field. */
+  alternatives: string[]
+  warning?: string
+  reason?: string
+}
+
+export type ReviewJobPhase =
+  | 'idle'
+  | 'queued'
+  | 'generating'
+  | 'ready'
+  | 'conflict'
+  | 'error'
+
+export interface ReviewJob {
+  id: string
+  cardId: string
+  instruction: string
+  phase: ReviewJobPhase
+  proposals: ReviewFieldProposal[]
+  error: GenerationError | null
+  /** Retained job survives navigation and reload. */
+  retained: boolean
+}
+

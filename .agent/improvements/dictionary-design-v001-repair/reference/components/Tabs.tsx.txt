@@ -1,0 +1,206 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
+
+export type TabsVariant = 'underline' | 'segmented'
+export type TabsSize = 'sm' | 'md'
+
+export interface TabItem {
+  /** Unique value identifying the tab. */
+  value: string
+  /** Visible tab label. */
+  label: ReactNode
+  /** Optional leading icon or glyph. */
+  icon?: ReactNode
+  /** Optional trailing count / badge. */
+  badge?: ReactNode
+  /** Disables selection of the tab. */
+  disabled?: boolean
+}
+
+export interface TabsProps {
+  /** Tabs to render. */
+  items: TabItem[]
+  /** Selected value for controlled usage. */
+  value?: string
+  /** Initial selected value for uncontrolled usage. */
+  defaultValue?: string
+  /** Called with the newly selected value. */
+  onValueChange?: (value: string) => void
+  /** Visual style of the tab strip. */
+  variant?: TabsVariant
+  /** Control density. */
+  size?: TabsSize
+  /** Stretch tabs to fill the available width. */
+  fullWidth?: boolean
+  /** Accessible label for the tab list. */
+  'aria-label'?: string
+  /** Panel content, keyed by tab value. */
+  children?: (activeValue: string) => ReactNode
+  className?: string
+}
+
+interface TabsContextValue {
+  baseId: string
+  activeValue: string
+}
+
+const TabsContext = createContext<TabsContextValue | null>(null)
+
+export function useTabsContext(): TabsContextValue {
+  const context = useContext(TabsContext)
+  if (!context) {
+    throw new Error('useTabsContext must be used within <Tabs>')
+  }
+  return context
+}
+
+export function Tabs({
+  items,
+  value,
+  defaultValue,
+  onValueChange,
+  variant = 'underline',
+  size = 'md',
+  fullWidth = false,
+  'aria-label': ariaLabel = 'Tabs',
+  children,
+  className = '',
+}: TabsProps) {
+  const baseId = useId()
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const firstEnabled = items.find((item) => !item.disabled)?.value ?? items[0]?.value ?? ''
+  const [uncontrolled, setUncontrolled] = useState(defaultValue ?? firstEnabled)
+
+  const activeValue = value ?? uncontrolled
+
+  const select = useCallback(
+    (next: string) => {
+      if (value === undefined) setUncontrolled(next)
+      onValueChange?.(next)
+    },
+    [onValueChange, value],
+  )
+
+  const enabledValues = useMemo(
+    () => items.filter((item) => !item.disabled).map((item) => item.value),
+    [items],
+  )
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End']
+    if (!keys.includes(event.key) || enabledValues.length === 0) return
+    event.preventDefault()
+
+    const currentIndex = enabledValues.indexOf(activeValue)
+    let nextIndex = currentIndex
+
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % enabledValues.length
+    if (event.key === 'ArrowLeft')
+      nextIndex = (currentIndex - 1 + enabledValues.length) % enabledValues.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = enabledValues.length - 1
+
+    const nextValue = enabledValues[nextIndex]
+    select(nextValue)
+    buttonRefs.current[nextValue]?.focus()
+  }
+
+  const sizeClasses =
+    size === 'sm' ? 'text-sm gap-1.5 px-3 py-1.5' : 'text-base gap-2 px-4 py-2.5'
+
+  const listClasses =
+    variant === 'segmented'
+      ? 'inline-flex items-center gap-1 rounded-lg bg-slate-100 p-1'
+      : 'flex items-end gap-1 border-b border-slate-200'
+
+  return (
+    <TabsContext.Provider value={{ baseId, activeValue }}>
+      <div className={`w-full ${className}`}>
+        <div
+          role="tablist"
+          aria-label={ariaLabel}
+          onKeyDown={handleKeyDown}
+          className={`${listClasses} ${fullWidth ? 'flex w-full' : ''}`}
+        >
+          {items.map((item) => {
+            const isActive = item.value === activeValue
+            const stateClasses =
+              variant === 'segmented'
+                ? isActive
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+                : isActive
+                  ? 'text-slate-900 border-slate-900'
+                  : 'text-slate-500 border-transparent hover:text-slate-900 hover:border-slate-300'
+
+            const shapeClasses =
+              variant === 'segmented' ? 'rounded-md' : '-mb-px border-b-2 rounded-t-md'
+
+            return (
+              <button
+                key={item.value}
+                ref={(node) => {
+                  buttonRefs.current[item.value] = node
+                }}
+                type="button"
+                role="tab"
+                id={`${baseId}-tab-${item.value}`}
+                aria-selected={isActive}
+                aria-controls={`${baseId}-panel-${item.value}`}
+                tabIndex={isActive ? 0 : -1}
+                disabled={item.disabled}
+                onClick={() => select(item.value)}
+                className={[
+                  'inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
+                  'disabled:cursor-not-allowed disabled:opacity-40',
+                  fullWidth ? 'flex-1' : '',
+                  sizeClasses,
+                  shapeClasses,
+                  stateClasses,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {item.icon ? <span aria-hidden="true">{item.icon}</span> : null}
+                <span>{item.label}</span>
+                {item.badge !== undefined ? (
+                  <span
+                    className={[
+                      'ml-1 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold',
+                      isActive ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700',
+                    ].join(' ')}
+                  >
+                    {item.badge}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+
+        {children ? (
+          <div
+            role="tabpanel"
+            id={`${baseId}-panel-${activeValue}`}
+            aria-labelledby={`${baseId}-tab-${activeValue}`}
+            tabIndex={0}
+            className="mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+          >
+            {children(activeValue)}
+          </div>
+        ) : null}
+      </div>
+    </TabsContext.Provider>
+  )
+}
+

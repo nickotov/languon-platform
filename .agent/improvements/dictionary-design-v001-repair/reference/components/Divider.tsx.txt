@@ -1,0 +1,100 @@
+import type { ReactNode } from 'react'
+
+export type DividerOrientation = 'horizontal' | 'vertical'
+export type DividerVariant = 'solid' | 'dashed'
+export type DividerSpacing = 'none' | 'sm' | 'md' | 'lg'
+export type DividerLabelAlign = 'start' | 'center' | 'end'
+
+export interface DividerProps {
+  /** Direction of the rule. Vertical dividers stretch to the height of their parent. */
+  orientation?: DividerOrientation
+  /** Line style of the rule. */
+  variant?: DividerVariant
+  /** Margin applied along the divider's axis. */
+  spacing?: DividerSpacing
+  /** Optional label rendered inline within a horizontal divider. */
+  children?: ReactNode
+  /** Horizontal placement of the label. Only used when `children` is provided. */
+  labelAlign?: DividerLabelAlign
+  className?: string
+}
+
+const horizontalSpacing: Record<DividerSpacing, string> = {
+  none: '',
+  sm: 'my-2',
+  md: 'my-4',
+  lg: 'my-6',
+}
+
+const verticalSpacing: Record<DividerSpacing, string> = {
+  none: '',
+  sm: 'mx-2',
+  md: 'mx-4',
+  lg: 'mx-6',
+}
+
+const lineStyle: Record<DividerVariant, string> = {
+  solid: 'border-solid',
+  dashed: 'border-dashed',
+}
+
+const labelAlignment: Record<DividerLabelAlign, string> = {
+  start: 'justify-start',
+  center: 'justify-center',
+  end: 'justify-end',
+}
+
+export function Divider({
+  orientation = 'horizontal',
+  variant = 'solid',
+  spacing = 'md',
+  children,
+  labelAlign = 'center',
+  className = '',
+}: DividerProps) {
+  if (orientation === 'vertical') {
+    return (
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        className={`self-stretch min-h-[1rem] w-0 border-l border-gray-200 ${lineStyle[variant]} ${verticalSpacing[spacing]} ${className}`}
+      />
+    )
+  }
+
+  if (children) {
+    const showLeading = labelAlign !== 'start'
+    const showTrailing = labelAlign !== 'end'
+
+    return (
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        className={`flex w-full items-center gap-3 ${labelAlignment[labelAlign]} ${horizontalSpacing[spacing]} ${className}`}
+      >
+        {showLeading ? (
+          <span
+            aria-hidden="true"
+            className={`h-0 flex-1 border-t border-gray-200 ${lineStyle[variant]}`}
+          />
+        ) : null}
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+          {children}
+        </span>
+        {showTrailing ? (
+          <span
+            aria-hidden="true"
+            className={`h-0 flex-1 border-t border-gray-200 ${lineStyle[variant]}`}
+          />
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <hr
+      className={`w-full border-0 border-t border-gray-200 ${lineStyle[variant]} ${horizontalSpacing[spacing]} ${className}`}
+    />
+  )
+}
+

@@ -1,0 +1,209 @@
+export interface CoverageEntry {
+  id: string
+  title: string
+  screens: string[]
+  states: string[]
+}
+
+export const coverage: CoverageEntry[] = [
+  {
+    id: 'UI-01',
+    title: 'Dictionary library and creation',
+    screens: ['My dictionaries (/)', 'New dictionary dialog'],
+    states: [
+      'Populated list with name, pair, active-card count, description, private/unlisted',
+      'Active / archived switching and search',
+      'First-use empty library',
+      'Loading skeletons',
+      'Recoverable load error with retry',
+      'No search results',
+      'Creation validation (name required, 120 chars; two different catalog languages; description 2,000)',
+      'Creation pending, failure with retry, success entering the new dictionary',
+      'Archive and restore (restore returns to private; sharing not restored)',
+    ],
+  },
+  {
+    id: 'UI-02',
+    title: 'Dictionary workspace',
+    screens: ['Dictionary workspace (/d/:id)'],
+    states: [
+      'Header with name, source → target, active-card count, visibility, archived notice',
+      'Prominent Add card; search; active/archived views; Load more pagination',
+      'Source-first hierarchy with optional content behind “Show details”',
+      'Labelled edit, archive/restore, and AI review in one card actions menu',
+      'Authorship labels Human / AI-generated / Human + AI (system-owned, read-only)',
+      'Inherited vs Overridden indication per card',
+      'Empty-dictionary guidance leading to the first card',
+      'Mixed-direction (RTL) card rendering',
+    ],
+  },
+  {
+    id: 'UI-03',
+    title: 'Dictionary settings and inherited fields',
+    screens: ['Dictionary settings dialog (desktop) / bottom sheet (mobile)'],
+    states: [
+      'Editable name and description',
+      'Language pair editable before any card has existed; locked afterwards with explanation',
+      'Transcription on/off with IPA, romanization, or custom notation (label required)',
+      'Definition on/off with source or target language',
+      'Context example on/off with language; example translation always the opposite language',
+      'Example translation cannot be newly enabled while examples are off; preference preserved',
+      'Explicit Save with pending, success, validation, and conflict states',
+      'Per-card Inherited vs Overridden control in the card editor',
+    ],
+  },
+  {
+    id: 'UI-04',
+    title: 'Manual card creation and editing',
+    screens: ['Add card (desktop dialog / mobile bottom sheet)', 'Edit card'],
+    states: [
+      'Required Source and Translation (200 chars); optional fields with their real language labels',
+      'Transcription 200 chars; definition, example, example translation 2,000 chars',
+      'Enabled optional fields may stay empty',
+      'Progressive disclosure of per-card field overrides',
+      'Non-blocking duplicate-source warning',
+      'Explicit Save card; no autosave or partial cards',
+      'Discard-draft confirmation, distinct from Cancel generation',
+    ],
+  },
+  {
+    id: 'UI-05',
+    title: 'Inline AI assistance for a new card',
+    screens: ['Add card · AI assistance panel'],
+    states: [
+      'Generate with AI enabled only once Source has content; Translation not required first',
+      'Generates Translation plus currently enabled optional fields',
+      'Queued / generating / validating with cancellation and no invented progress',
+      'Manual fields editable during generation; no field ever overwritten automatically',
+    ],
+  },
+  {
+    id: 'UI-06',
+    title: 'Field-level suggestions and retained choices',
+    screens: ['Suggestion list beneath each generated field'],
+    states: [
+      'Accept fills only that field and keeps the choice available',
+      'Discard removes a choice without clearing the input',
+      'Regenerate field appends a distinct new choice; regenerate all appends per eligible field',
+      'Up to six visible choices, with the discard-first explanation at the limit',
+      'Suggested vs saved styling, accepted marker, progressive disclosure of extra choices',
+      'Successor generation running: existing choices preserved, conflicting requests blocked, Save temporarily unavailable with reason',
+    ],
+  },
+  {
+    id: 'UI-07',
+    title: 'Source changes, failure recovery, and saving',
+    screens: ['Add card · alerts and save area'],
+    states: [
+      'Stale suggestions retained visibly and blocked from accept/regenerate',
+      'AI unavailable, capacity limit, generation failure, network/polling failure',
+      'Proposal expiry and save conflict with Reload and compare',
+      'Manual creation always possible; final Save creates exactly one card',
+      'Human + AI authorship on an accepted contribution; Human for manual-only',
+    ],
+  },
+  {
+    id: 'UI-08',
+    title: 'AI regeneration for an existing card',
+    screens: ['Regenerate card with AI (review dialog / sheet)'],
+    states: [
+      'Optional instruction up to 1,000 characters',
+      'Saved card unchanged while generation runs; cancellation available',
+      'Original beside editable proposal, stacked on mobile',
+      'Field warnings, reasons, and up to three alternatives per field',
+      'Revised Source allowed in this flow only',
+      'Accept, discard, regenerate; retained job surviving navigation',
+      'Persistent conflict with Reload and compare; retained review usable while new AI work is paused',
+    ],
+  },
+  {
+    id: 'UI-09',
+    title: 'Responsive, multilingual, and accessible behaviour',
+    screens: ['All screens', 'States & variants gallery'],
+    states: [
+      'Desktop, narrow mobile, and 320px compositions',
+      'Mixed LTR/RTL content with per-field dir and lang',
+      'Interface language switch (English, Spanish, French, Russian) independent of card languages',
+      'Keyboard operation, visible focus, labelled icon actions, dialog focus management',
+      'Announced loading, error, and success states; never colour alone',
+      'Wrapped suggestion actions and no horizontal overflow',
+    ],
+  },
+  {
+    id: 'UI-10',
+    title: 'Secondary capability entry points',
+    screens: ["Dictionary workspace · more-actions menu"],
+    states: [
+      'Pasted terms, document, import, export, sharing placed coherently',
+      'Explained as separately implemented; no workflow invented or simulated',
+      'Availability respects AI pause, empty dictionary, and archived state',
+    ],
+  },
+  {
+    id: 'UI-11',
+    title: 'Pronunciation audio for saved cards',
+    screens: ['Dictionary workspace card rows', 'States & variants gallery'],
+    states: [
+      'Play beside Source, Translation, Context example, Example translation',
+      'Idle, preparing, playing, stopped, ready — press Play, failure retry, unavailable',
+      'Per-field language from the dictionary pair and effective example language',
+      'Playback runs at normal speed only — the speed picker was removed at the owner’s request (deviation from the original UI-11 wording)',
+      'One clip at a time; selecting another field stops the previous one',
+      'Cached recordings reused; cached-only availability; playback disabled hides controls',
+      'Hidden, empty, archived card/dictionary, drafts, suggestions, transcription, definition: no Play',
+      'Development sound labelled as a test tone',
+    ],
+  },
+]
+
+export interface GapEntry {
+  title: string
+  detail: string
+  kind: 'deferred' | 'clarify' | 'partial'
+}
+
+export const gaps: GapEntry[] = [
+  {
+    kind: 'partial',
+    title: 'Interface localisation is partial',
+    detail:
+      'English, Spanish, French, and Russian are wired through the shell, library, and workspace chrome to prove card languages stay independent. Dialog, settings, suggestion, and audio strings are still English-only and need a full string pass.',
+  },
+  {
+    kind: 'deferred',
+    title: 'Secondary capability workflows (UI-10)',
+    detail:
+      'Pasted terms, document generation, import, export, and sharing are entry points only. Their flows need their own brief before being designed.',
+  },
+  {
+    kind: 'deferred',
+    title: 'Card reordering removed',
+    detail:
+      'UI-02 asked for accessible move controls, but the owner asked for reordering to be dropped for now. No reorder affordance exists (drag or keyboard); cards are ordered by creation. This is a deliberate deviation to revisit when reordering is needed.',
+  },
+  {
+    kind: 'clarify',
+    title: 'Proposal expiry window',
+    detail:
+      'The expiry state is designed, but the actual lifetime of a suggestion set is unspecified. The copy avoids promising a duration until that is defined.',
+  },
+  {
+    kind: 'clarify',
+    title: 'Per-field accept in existing-card review',
+    detail:
+      'The brief requires explicit acceptance but does not say whether a user may accept a subset of proposed fields. This pass accepts the reviewed proposal as a whole, with each field editable beforehand.',
+  },
+  {
+    kind: 'clarify',
+    title: 'Unlisted visibility source of truth',
+    detail:
+      'Unlisted status is displayed in the library and workspace, but the sharing flow that produces it is out of scope, so no control here can change visibility except restore, which forces private.',
+  },
+  {
+    kind: 'partial',
+    title: 'Prototype behaviour simulation',
+    detail:
+      'AI availability, audio availability, and the development-tone label are exposed as design controls rather than in-product switches. Timed transitions illustrate honest state sequences; no generation, saving, or audio is real.',
+  },
+]
+

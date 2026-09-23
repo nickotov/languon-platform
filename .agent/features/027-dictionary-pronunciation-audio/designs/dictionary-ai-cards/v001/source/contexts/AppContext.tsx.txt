@@ -1,0 +1,376 @@
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import type {
+  CardOverrides,
+  Dictionary,
+  DictionarySettings,
+  LanguageCode,
+  VocabCard,
+} from '../types/dictionary'
+import type { AiAvailability, ReviewJob } from '../types/ai'
+import type { AudioAvailability } from '../types/audio'
+import type { UiLocale } from '../data/i18n'
+import { dictionaries as seedDictionaries, DEFAULT_SETTINGS } from '../data/dictionaries'
+import { cards as seedCards } from '../data/cards'
+
+export type Theme = 'light' | 'dark'
+export type LibraryLoadState = 'ready' | 'loading' | 'error'
+
+export interface CreateDictionaryInput {
+  name: string
+  description: string
+  sourceLanguage: LanguageCode
+  targetLanguage: LanguageCode
+}
+
+export interface SaveCardInput {
+  dictionaryId: string
+  source: string
+  translation: string
+  transcription: string
+  definition: string
+  example: string
+  exampleTranslation: string
+  usedAiSuggestion: boolean
+  overrides: CardOverrides | null
+}
+
+interface AppContextValue {
+  theme: Theme
+  setTheme: (theme: Theme) => void
+  locale: UiLocale
+  setLocale: (locale: UiLocale) => void
+  aiNewCard: AiAvailability
+  setAiNewCard: (value: AiAvailability) => void
+  aiReview: AiAvailability
+  setAiReview: (value: AiAvailability) => void
+  audioAvailability: AudioAvailability
+  setAudioAvailability: (value: AudioAvailability) => void
+  developmentAudio: boolean
+  setDevelopmentAudio: (value: boolean) => void
+  libraryLoadState: LibraryLoadState
+  setLibraryLoadState: (value: LibraryLoadState) => void
+
+  dictionaries: Dictionary[]
+  cards: VocabCard[]
+  reviewJobs: Record<string, ReviewJob>
+  setReviewJob: (cardId: string, job: ReviewJob | null) => void
+
+  getDictionary: (id: string) => Dictionary | undefined
+  cardsFor: (dictionaryId: string) => VocabCard[]
+  activeCardCount: (dictionaryId: string) => number
+
+  createDictionary: (
+    input: CreateDictionaryInput,
+  ) => Promise<{ ok: true; id: string } | { ok: false; message: string }>
+  updateDictionary: (id: string, patch: Partial<Dictionary>) => void
+  updateSettings: (id: string, settings: DictionarySettings) => void
+  archiveDictionary: (id: string) => void
+  restoreDictionary: (id: string) => void
+
+  saveCard: (input: SaveCardInput) => VocabCard
+  updateCard: (id: string, patch: Partial<VocabCard>, aiAssisted?: boolean) => void
+  setCardStatus: (id: string, status: VocabCard['status']) => void
+  moveCard: (id: string, direction: 'up' | 'down') => void
+
+  toast: { title: string; description?: string; variant: 'success' | 'info' | 'error' } | null
+  pushToast: (
+    toast: { title: string; description?: string; variant?: 'success' | 'info' | 'error' } | null,
+  ) => void
+}
+
+const AppContext = createContext<AppContextValue | null>(null)
+
+export interface AppProviderProps {
+  children: React.ReactNode
+  initialTheme?: Theme
+  initialLocale?: UiLocale
+  initialAi?: AiAvailability
+  initialAudio?: AudioAvailability
+  initialDevelopmentAudio?: boolean
+}
+
+let idCounter = 0
+const nextId = (prefix: string) => `${prefix}-${++idCounter}-${Date.now().toString(36)}`
+
+export function AppProvider({
+  children,
+  initialTheme = 'light',
+  initialLocale = 'en',
+  initialAi = 'available',
+  initialAudio = 'enabled',
+  initialDevelopmentAudio = false,
+}: AppProviderProps) {
+  const [theme, setTheme] = useState<Theme>(initialTheme)
+  const [locale, setLocale] = useState<UiLocale>(initialLocale)
+  const [aiNewCard, setAiNewCard] = useState<AiAvailability>(initialAi)
+  const [aiReview, setAiReview] = useState<AiAvailability>(initialAi)
+  const [audioAvailability, setAudioAvailability] = useState<AudioAvailability>(initialAudio)
+  const [developmentAudio, setDevelopmentAudio] = useState(initialDevelopmentAudio)
+  const [libraryLoadState, setLibraryLoadState] = useState<LibraryLoadState>('ready')
+
+  const [dictionaries, setDictionaries] = useState<Dictionary[]>(seedDictionaries)
+  const [cards, setCards] = useState<VocabCard[]>(seedCards)
+  const [reviewJobs, setReviewJobs] = useState<Record<string, ReviewJob>>({})
+  const [toast, setToast] = useState<AppContextValue['toast']>(null)
+
+  // Keep the design controls in sync when their values change.
+  useEffect(() => setTheme(initialTheme), [initialTheme])
+  useEffect(() => setLocale(initialLocale), [initialLocale])
+  useEffect(() => {
+    setAiNewCard(initialAi)
+    setAiReview(initialAi)
+  }, [initialAi])
+  useEffect(() => setAudioAvailability(initialAudio), [initialAudio])
+  useEffect(() => setDevelopmentAudio(initialDevelopmentAudio), [initialDevelopmentAudio])
+
+  const pushToast = useCallback<AppContextValue['pushToast']>((next) => {
+    setToast(next ? { variant: 'success', ...next } : null)
+  }, [])
+
+  const getDictionary = useCallback(
+    (id: string) => dictionaries.find((dictionary) => dictionary.id === id),
+    [dictionaries],
+  )
+
+  const cardsFor = useCallback(
+    (dictionaryId: string) =>
+      cards
+        .filter((card) => card.dictionaryId === dictionaryId)
+        .sort((a, b) => a.order - b.order),
+    [cards],
+  )
+
+  const activeCardCount = useCallback(
+    (dictionaryId: string) =>
+      cards.filter((card) => card.dictionaryId === dictionaryId && card.status === 'active')
+        .length,
+    [cards],
+  )
+
+  const createDictionary = useCallback<AppContextValue['createDictionary']>(
+    async (input) =>
+      new Promise((resolve) => {
+        window.setTimeout(() => {
+          if (input.name.trim().toLowerCase().includes('fail')) {
+            resolve({
+              ok: false,
+              message: 'We could not create this dictionary. Nothing was saved — try again.',
+            })
+            return
+          }
+          const id = nextId('dict')
+          const dictionary: Dictionary = {
+            id,
+            name: input.name.trim(),
+            description: input.description.trim(),
+            sourceLanguage: input.sourceLanguage,
+            targetLanguage: input.targetLanguage,
+            status: 'active',
+            visibility: 'private',
+            settings: { ...DEFAULT_SETTINGS },
+            hasEverHadCards: false,
+            createdAt: new Date().toISOString().slice(0, 10),
+            updatedAt: new Date().toISOString().slice(0, 10),
+          }
+          setDictionaries((prev) => [dictionary, ...prev])
+          resolve({ ok: true, id })
+        }, 1200)
+      }),
+    [],
+  )
+
+  const updateDictionary = useCallback((id: string, patch: Partial<Dictionary>) => {
+    setDictionaries((prev) =>
+      prev.map((dictionary) =>
+        dictionary.id === id ? { ...dictionary, ...patch } : dictionary,
+      ),
+    )
+  }, [])
+
+  const updateSettings = useCallback((id: string, settings: DictionarySettings) => {
+    setDictionaries((prev) =>
+      prev.map((dictionary) =>
+        dictionary.id === id ? { ...dictionary, settings } : dictionary,
+      ),
+    )
+  }, [])
+
+  const archiveDictionary = useCallback((id: string) => {
+    setDictionaries((prev) =>
+      prev.map((dictionary) =>
+        dictionary.id === id ? { ...dictionary, status: 'archived' } : dictionary,
+      ),
+    )
+  }, [])
+
+  /** Restoring always returns the dictionary to private; sharing is not restored. */
+  const restoreDictionary = useCallback((id: string) => {
+    setDictionaries((prev) =>
+      prev.map((dictionary) =>
+        dictionary.id === id
+          ? { ...dictionary, status: 'active', visibility: 'private' }
+          : dictionary,
+      ),
+    )
+  }, [])
+
+  const saveCard = useCallback<AppContextValue['saveCard']>((input) => {
+    const card: VocabCard = {
+      id: nextId('card'),
+      dictionaryId: input.dictionaryId,
+      source: input.source.trim(),
+      translation: input.translation.trim(),
+      transcription: input.transcription.trim(),
+      definition: input.definition.trim(),
+      example: input.example.trim(),
+      exampleTranslation: input.exampleTranslation.trim(),
+      authorship: input.usedAiSuggestion ? 'human-ai' : 'human',
+      status: 'active',
+      overrides: input.overrides,
+      order: Date.now(),
+      updatedAt: new Date().toISOString().slice(0, 10),
+    }
+    setCards((prev) => [...prev, card])
+    setDictionaries((prev) =>
+      prev.map((dictionary) =>
+        dictionary.id === input.dictionaryId
+          ? { ...dictionary, hasEverHadCards: true }
+          : dictionary,
+      ),
+    )
+    return card
+  }, [])
+
+  const updateCard = useCallback(
+    (id: string, patch: Partial<VocabCard>, aiAssisted = false) => {
+      setCards((prev) =>
+        prev.map((card) => {
+          if (card.id !== id) return card
+          const authorship = aiAssisted
+            ? card.authorship === 'ai'
+              ? 'ai'
+              : 'human-ai'
+            : card.authorship
+          return {
+            ...card,
+            ...patch,
+            authorship,
+            updatedAt: new Date().toISOString().slice(0, 10),
+          }
+        }),
+      )
+    },
+    [],
+  )
+
+  const setCardStatus = useCallback((id: string, status: VocabCard['status']) => {
+    setCards((prev) => prev.map((card) => (card.id === id ? { ...card, status } : card)))
+  }, [])
+
+  const moveCard = useCallback((id: string, direction: 'up' | 'down') => {
+    setCards((prev) => {
+      const card = prev.find((item) => item.id === id)
+      if (!card) return prev
+      const siblings = prev
+        .filter((item) => item.dictionaryId === card.dictionaryId && item.status === card.status)
+        .sort((a, b) => a.order - b.order)
+      const index = siblings.findIndex((item) => item.id === id)
+      const swapWith = direction === 'up' ? siblings[index - 1] : siblings[index + 1]
+      if (!swapWith) return prev
+      return prev.map((item) => {
+        if (item.id === card.id) return { ...item, order: swapWith.order }
+        if (item.id === swapWith.id) return { ...item, order: card.order }
+        return item
+      })
+    })
+  }, [])
+
+  const setReviewJob = useCallback((cardId: string, job: ReviewJob | null) => {
+    setReviewJobs((prev) => {
+      const next = { ...prev }
+      if (job) next[cardId] = job
+      else delete next[cardId]
+      return next
+    })
+  }, [])
+
+  const value = useMemo<AppContextValue>(
+    () => ({
+      theme,
+      setTheme,
+      locale,
+      setLocale,
+      aiNewCard,
+      setAiNewCard,
+      aiReview,
+      setAiReview,
+      audioAvailability,
+      setAudioAvailability,
+      developmentAudio,
+      setDevelopmentAudio,
+      libraryLoadState,
+      setLibraryLoadState,
+      dictionaries,
+      cards,
+      reviewJobs,
+      setReviewJob,
+      getDictionary,
+      cardsFor,
+      activeCardCount,
+      createDictionary,
+      updateDictionary,
+      updateSettings,
+      archiveDictionary,
+      restoreDictionary,
+      saveCard,
+      updateCard,
+      setCardStatus,
+      moveCard,
+      toast,
+      pushToast,
+    }),
+    [
+      theme,
+      locale,
+      aiNewCard,
+      aiReview,
+      audioAvailability,
+      developmentAudio,
+      libraryLoadState,
+      dictionaries,
+      cards,
+      reviewJobs,
+      setReviewJob,
+      getDictionary,
+      cardsFor,
+      activeCardCount,
+      createDictionary,
+      updateDictionary,
+      updateSettings,
+      archiveDictionary,
+      restoreDictionary,
+      saveCard,
+      updateCard,
+      setCardStatus,
+      moveCard,
+      toast,
+      pushToast,
+    ],
+  )
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
+}
+
+export function useApp(): AppContextValue {
+  const context = useContext(AppContext)
+  if (!context) throw new Error('useApp must be used inside AppProvider')
+  return context
+}
+

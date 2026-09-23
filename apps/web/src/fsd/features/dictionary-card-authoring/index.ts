@@ -19,3 +19,4 @@ export {
     resolveCardAuthoringCleanupRead,
     type CardAuthoringCleanupPlan,
 } from './lib/authoring-job-cleanup';
+export { cardAuthoringFailureMessageKey } from './lib/failure-message-key';

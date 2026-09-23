@@ -1,0 +1,124 @@
+import React from 'react'
+import { ChevronRightIcon, MoreHorizontalIcon, HomeIcon } from 'lucide-react'
+
+export type BreadcrumbItem = {
+  /** Visible label, e.g. "Spanish A1" or "Unit 3" */
+  label: string
+  /** Optional link target. Omit for the current page. */
+  href?: string
+  /** Optional click handler, useful for client-side routing */
+  onClick?: (event: React.MouseEvent<HTMLAnchorElement>) => void
+}
+
+export type BreadcrumbProps = {
+  /** Ordered trail from root (course) to current page (lesson) */
+  items: BreadcrumbItem[]
+  /** Show a home icon before the first item */
+  showHomeIcon?: boolean
+  /**
+   * Collapse the middle of the trail behind an expandable "…" when the trail
+   * is longer than this. Set to 0 to never collapse.
+   */
+  maxVisibleItems?: number
+  /** Accessible label for the nav landmark */
+  ariaLabel?: string
+  className?: string
+}
+
+const SEPARATOR_CLASSES = 'h-4 w-4 shrink-0 text-slate-300'
+const LINK_CLASSES =
+  'rounded-sm px-0.5 py-0.5 text-slate-500 transition-colors hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2'
+
+export function Breadcrumb({
+  items,
+  showHomeIcon = false,
+  maxVisibleItems = 4,
+  ariaLabel = 'Breadcrumb',
+  className = '',
+}: BreadcrumbProps) {
+  const [expanded, setExpanded] = React.useState(false)
+
+  if (items.length === 0) return null
+
+  const shouldCollapse =
+    !expanded && maxVisibleItems > 0 && items.length > maxVisibleItems
+
+  type Entry = { kind: 'item'; item: BreadcrumbItem; index: number } | { kind: 'ellipsis' }
+
+  const entries: Entry[] = shouldCollapse
+    ? [
+        { kind: 'item', item: items[0], index: 0 },
+        { kind: 'ellipsis' },
+        ...items.slice(items.length - (maxVisibleItems - 2)).map((item, i) => ({
+          kind: 'item' as const,
+          item,
+          index: items.length - (maxVisibleItems - 2) + i,
+        })),
+      ]
+    : items.map((item, index) => ({ kind: 'item' as const, item, index }))
+
+  const lastIndex = items.length - 1
+
+  return (
+    <nav aria-label={ariaLabel} className={className}>
+      <ol className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+        {entries.map((entry, position) => {
+          const isLastEntry = position === entries.length - 1
+
+          if (entry.kind === 'ellipsis') {
+            return (
+              <li key="ellipsis" className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setExpanded(true)}
+                  aria-label="Show all breadcrumb levels"
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                >
+                  <MoreHorizontalIcon className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <ChevronRightIcon className={SEPARATOR_CLASSES} aria-hidden="true" />
+              </li>
+            )
+          }
+
+          const { item, index } = entry
+          const isCurrent = index === lastIndex
+
+          return (
+            <li key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-1.5">
+              {showHomeIcon && index === 0 && (
+                <HomeIcon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+              )}
+
+              {isCurrent || (!item.href && !item.onClick) ? (
+                <span
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className={
+                    isCurrent
+                      ? 'max-w-[16rem] truncate text-slate-900'
+                      : 'max-w-[16rem] truncate text-slate-500'
+                  }
+                >
+                  {item.label}
+                </span>
+              ) : (
+                <a
+                  href={item.href ?? '#'}
+                  onClick={item.onClick}
+                  className={`max-w-[16rem] truncate ${LINK_CLASSES}`}
+                >
+                  {item.label}
+                </a>
+              )}
+
+              {!isLastEntry && (
+                <ChevronRightIcon className={SEPARATOR_CLASSES} aria-hidden="true" />
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+

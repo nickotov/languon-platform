@@ -1,14 +1,9 @@
 'use client';
 
-import {
-    forwardRef,
-    type ButtonHTMLAttributes,
-    type ReactNode,
-    useId,
-    useState,
-} from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 import type { ControlSize } from '../button/button';
+import { Tooltip } from '../tooltip/tooltip';
 import styles from './icon-button.module.css';
 
 export type IconButtonVariant =
@@ -60,69 +55,51 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         },
         ref,
     ) {
-        const [tooltipOpen, setTooltipOpen] = useState(false);
-        const tooltipId = useId();
         const isDisabled = disabled || loading;
-        const tooltipVisible = showTooltip && tooltipOpen && !isDisabled;
         const normalizedSize = normalizeSize(size);
+        const ariaBusy = loading || undefined;
+        const displayedIcon = icon ?? children;
+        const buttonClassName = [
+            styles.button,
+            styles[normalizedSize],
+            styles[String(size)],
+            styles[variant],
+            rounded ? styles.rounded : undefined,
+            className,
+        ]
+            .filter(Boolean)
+            .join(' ');
+        const tooltipDisabled = !showTooltip || isDisabled;
+
         return (
-            <span className={styles.root}>
+            <Tooltip
+                content={label}
+                disabled={tooltipDisabled}
+                placement={tooltipPlacement}
+            >
                 <button
                     {...props}
-                    aria-busy={loading || undefined}
-                    aria-describedby={tooltipVisible ? tooltipId : undefined}
+                    aria-busy={ariaBusy}
                     aria-label={label}
-                    className={[
-                        styles.button,
-                        styles[normalizedSize],
-                        styles[String(size)],
-                        styles[variant],
-                        rounded ? styles.rounded : undefined,
-                        className,
-                    ]
-                        .filter(Boolean)
-                        .join(' ')}
+                    className={buttonClassName}
                     disabled={isDisabled}
-                    onBlur={(event) => {
-                        setTooltipOpen(false);
-                        onBlur?.(event);
-                    }}
-                    onFocus={(event) => {
-                        setTooltipOpen(true);
-                        onFocus?.(event);
-                    }}
-                    onMouseEnter={(event) => {
-                        setTooltipOpen(true);
-                        onMouseEnter?.(event);
-                    }}
-                    onMouseLeave={(event) => {
-                        setTooltipOpen(false);
-                        onMouseLeave?.(event);
-                    }}
+                    onBlur={onBlur}
+                    onFocus={onFocus}
+                    onMouseEnter={onMouseEnter}
+                    onMouseLeave={onMouseLeave}
                     ref={ref}
                     type={type}
                 >
-                    {loading ? (
+                    {loading && (
                         <span aria-hidden='true' className={styles.spinner} />
-                    ) : (
+                    )}
+                    {!loading && (
                         <span aria-hidden='true' className={styles.icon}>
-                            {icon ?? children}
+                            {displayedIcon}
                         </span>
                     )}
                 </button>
-                {tooltipVisible ? (
-                    <span
-                        className={[
-                            styles.tooltip,
-                            styles[`tooltip-${tooltipPlacement}`],
-                        ].join(' ')}
-                        id={tooltipId}
-                        role='tooltip'
-                    >
-                        {label}
-                    </span>
-                ) : null}
-            </span>
+            </Tooltip>
         );
     },
 );

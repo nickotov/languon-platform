@@ -54,7 +54,7 @@
     width: 24px;
 }
 .control input:checked + .track {
-    background: var(--neutral-900);
+    background: var(--success-500);
 }
 .sm input:checked + .track .thumb {
     transform: translateX(16px);

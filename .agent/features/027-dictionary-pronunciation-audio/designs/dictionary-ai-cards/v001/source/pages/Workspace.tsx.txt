@@ -1,0 +1,341 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { PlusIcon, SearchIcon, SettingsIcon, SparklesIcon } from 'lucide-react'
+import { Button } from '../components/Button'
+import { IconAction } from '../components/common/IconAction'
+import { Input } from '../components/Input'
+import { Card } from '../components/Card'
+import { SegmentedTabs } from '../components/common/SegmentedTabs'
+import { Breadcrumb } from '../components/Breadcrumb'
+import { InlineAlert } from '../components/InlineAlert'
+import { CardRow } from '../components/workspace/CardRow'
+import { SecondaryActionsMenu } from '../components/workspace/SecondaryActionsMenu'
+import { CardEditorSheet } from '../components/card/CardEditorSheet'
+import { DictionarySettingsSheet } from '../components/settings/DictionarySettingsSheet'
+import { ReviewDialog } from '../components/review/ReviewDialog'
+import { ArchivedBadge, LanguagePair, VisibilityBadge } from '../components/common/Chips'
+import { useApp } from '../contexts/AppContext'
+import { useAudioPlayback } from '../hooks/useAudioPlayback'
+import type { VocabCard } from '../types/dictionary'
+import type { AudioFieldKey } from '../types/audio'
+import { t } from '../data/i18n'
+
+const PAGE_SIZE = 4
+
+export function Workspace() {
+  const { dictionaryId = '' } = useParams()
+  const navigate = useNavigate()
+  const {
+    getDictionary,
+    cardsFor,
+    activeCardCount,
+    setCardStatus,
+    aiNewCard,
+    aiReview,
+    audioAvailability,
+    developmentAudio,
+    locale,
+    pushToast,
+    reviewJobs,
+  } = useApp()
+
+  const dictionary = getDictionary(dictionaryId)
+  const [tab, setTab] = useState<'active' | 'archived'>('active')
+  const [query, setQuery] = useState('')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [editor, setEditor] = useState<{ mode: 'create' | 'edit'; card?: VocabCard } | null>(
+    null,
+  )
+  const [reviewCard, setReviewCard] = useState<VocabCard | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [cachedFields, setCachedFields] = useState<string[]>([])
+  const audio = useAudioPlayback()
+
+  const allCards = useMemo(
+    () => (dictionary ? cardsFor(dictionary.id) : []),
+    [cardsFor, dictionary],
+  )
+
+  // Playback stops when the workspace or the saved content changes.
+  useEffect(() => {
+    audio.reset()
+    setCachedFields([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dictionaryId, allCards.map((card) => card.updatedAt).join('|')])
+
+  useEffect(() => {
+    if (audio.selection?.phase === 'playing') {
+      const key = `${audio.selection.cardId}:${audio.selection.field}`
+      setCachedFields((prev) => (prev.includes(key) ? prev : [...prev, key]))
+    }
+  }, [audio.selection])
+
+  if (!dictionary) {
+    return (
+      <InlineAlert tone="error" title="Dictionary not found">
+        It may have been removed from this prototype session.
+      </InlineAlert>
+    )
+  }
+
+  const filtered = allCards
+    .filter((card) => card.status === tab)
+    .filter((card) =>
+      query.trim().length === 0
+        ? true
+        : `${card.source} ${card.translation} ${card.example}`
+            .toLowerCase()
+            .includes(query.trim().toLowerCase()),
+    )
+  const shown = filtered.slice(0, visibleCount)
+  const archived = dictionary.status === 'archived'
+  const activeCards = activeCardCount(dictionary.id)
+
+  return (
+    <div className="space-y-6 pb-24">
+      <Breadcrumb
+        className="[&_a:hover]:text-text-primary [&_a]:text-text-secondary"
+        items={[
+          {
+            label: t('navLibrary', locale),
+            href: '/',
+            onClick: (event) => {
+              event.preventDefault()
+              navigate('/')
+            },
+          },
+          { label: dictionary.name },
+        ]}
+      />
+
+      <Card
+        variant="outlined"
+        padding="none"
+        className="border-border-default bg-background-surface p-3 text-text-primary sm:p-4"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <h1 className="break-words text-2xl font-semibold text-text-primary">
+              {dictionary.name}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <LanguagePair dictionary={dictionary} />
+              <span className="text-sm text-text-secondary">
+                {activeCards} active {activeCards === 1 ? 'card' : 'cards'}
+              </span>
+              <VisibilityBadge visibility={dictionary.visibility} />
+              {archived ? <ArchivedBadge /> : null}
+            </div>
+            {dictionary.description ? (
+              <p className="mt-2 max-w-[46rem] text-sm text-text-secondary">
+                {dictionary.description}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <IconAction
+              size="md"
+              icon={<SettingsIcon aria-hidden />}
+              label={`${t('settings', locale)} — ${dictionary.name}`}
+              onClick={() => setSettingsOpen(true)}
+              disabled={archived}
+            />
+            <SecondaryActionsMenu
+              dictionary={dictionary}
+              activeCards={activeCards}
+              aiEnabled={aiNewCard === 'available'}
+            />
+          </div>
+        </div>
+
+        {archived ? (
+          <InlineAlert className="mt-4" tone="info" title="This dictionary is archived">
+            Cards are read-only and pronunciation playback is turned off. Restore it from the
+            library to continue editing; it will return as private.
+          </InlineAlert>
+        ) : null}
+      </Card>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SegmentedTabs
+          label="Card status"
+          value={tab}
+          onValueChange={(value) => {
+            setTab(value as 'active' | 'archived')
+            setVisibleCount(PAGE_SIZE)
+          }}
+          items={[
+            {
+              value: 'active',
+              label: t('active', locale),
+              count: allCards.filter((card) => card.status === 'active').length,
+            },
+            {
+              value: 'archived',
+              label: t('archived', locale),
+              count: allCards.filter((card) => card.status === 'archived').length,
+            },
+          ]}
+        />
+        <Input
+          type="search"
+          size="sm"
+          aria-label={t('searchCards', locale)}
+          placeholder={t('searchCards', locale)}
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value)
+            setVisibleCount(PAGE_SIZE)
+          }}
+          leadingIcon={<SearchIcon aria-hidden className="h-4 w-4" />}
+          wrapperClassName="sm:max-w-xs"
+        />
+      </div>
+
+      {allCards.length === 0 ? (
+        <Card
+          variant="outlined"
+          padding="lg"
+          className="border-border-default bg-background-surface text-center text-text-primary"
+        >
+          <div className="mx-auto flex max-w-md flex-col items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-subtle text-primary-default">
+              <SparklesIcon aria-hidden className="h-6 w-6" />
+            </span>
+            <h2 className="text-lg font-semibold text-text-primary">No cards yet</h2>
+            <p className="text-sm text-text-secondary">
+              Add a word or phrase in {dictionary.name}. Write it yourself, or enter the source
+              and let AI suggest content you review before saving.
+            </p>
+            <Button
+              leadingIcon={<PlusIcon aria-hidden className="h-4 w-4" />}
+              onClick={() => setEditor({ mode: 'create' })}
+              disabled={archived}
+            >
+              Add your first card
+            </Button>
+          </div>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card
+          variant="outlined"
+          padding="lg"
+          className="border-border-default bg-background-surface text-text-primary"
+        >
+          <h2 className="text-base font-semibold text-text-primary">
+            No {tab} cards match “{query}”
+          </h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Search covers the source, translation, and example text.
+          </p>
+          <Button
+            className="mt-3"
+            size="compact"
+            variant="secondary"
+            onClick={() => setQuery('')}
+          >
+            Clear search
+          </Button>
+        </Card>
+      ) : (
+        <>
+          <ul className="space-y-3">
+            {shown.map((card) => (
+              <CardRow
+                key={card.id}
+                card={card}
+                dictionary={dictionary}
+                hasRetainedReview={Boolean(reviewJobs[card.id])}
+                aiReviewDisabledReason={
+                  aiReview === 'unavailable' && !reviewJobs[card.id]
+                    ? 'AI review is unavailable right now. Editing, saving, and playback are unaffected.'
+                    : undefined
+                }
+                audio={{
+                  availability: audioAvailability,
+                  developmentAudio,
+                  selection: audio.selection,
+                  cachedFields: (
+                    ['source', 'translation', 'example', 'exampleTranslation'] as AudioFieldKey[]
+                  ).filter((field) => cachedFields.includes(`${card.id}:${field}`)),
+                  play: audio.play,
+                  stop: audio.stop,
+                  setSpeed: audio.setSpeed,
+                }}
+                onEdit={(item) => setEditor({ mode: 'edit', card: item })}
+                onReview={(item) => setReviewCard(item)}
+                onToggleArchive={(item) => {
+                  setCardStatus(item.id, item.status === 'active' ? 'archived' : 'active')
+                  pushToast({
+                    title: item.status === 'active' ? 'Card archived' : 'Card restored',
+                    description: `“${item.source}” is now ${
+                      item.status === 'active' ? 'archived' : 'active'
+                    }.`,
+                    variant: 'info',
+                  })
+                }}
+              />
+            ))}
+          </ul>
+
+          {filtered.length > shown.length ? (
+            <div className="flex justify-center">
+              <Button
+                variant="secondary"
+                onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+              >
+                Load more cards ({filtered.length - shown.length} remaining)
+              </Button>
+            </div>
+          ) : (
+            <p className="text-center text-xs text-text-tertiary">
+              Showing all {filtered.length} {tab} {filtered.length === 1 ? 'card' : 'cards'}.
+            </p>
+          )}
+        </>
+      )}
+
+      {!archived ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-24 lg:pb-8 lg:ps-60">
+          <Button
+            size="large"
+            className="pointer-events-auto shadow-lg"
+            leadingIcon={<PlusIcon aria-hidden className="h-5 w-5" />}
+            onClick={() => setEditor({ mode: 'create' })}
+          >
+            {t('addCard', locale)}
+          </Button>
+        </div>
+      ) : null}
+
+      {editor ? (
+        <CardEditorSheet
+          open
+          mode={editor.mode}
+          card={editor.card}
+          dictionary={dictionary}
+          onClose={() => setEditor(null)}
+        />
+      ) : null}
+
+      {settingsOpen ? (
+        <DictionarySettingsSheet
+          open
+          dictionary={dictionary}
+          onClose={() => setSettingsOpen(false)}
+        />
+      ) : null}
+
+      {reviewCard ? (
+        <ReviewDialog
+          open
+          dictionary={dictionary}
+          card={reviewCard}
+          onClose={() => setReviewCard(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+

@@ -1,0 +1,76 @@
+import type { Dictionary, DictionarySettings } from '../types/dictionary'
+
+/** Product defaults: transcription off, definition off, example on in source, example translation on. */
+export const DEFAULT_SETTINGS: DictionarySettings = {
+  transcriptionEnabled: false,
+  transcriptionNotation: 'ipa',
+  transcriptionCustomLabel: '',
+  definitionEnabled: false,
+  definitionLanguage: 'target',
+  exampleEnabled: true,
+  exampleLanguage: 'source',
+  exampleTranslationEnabled: true,
+}
+
+export const dictionaries: Dictionary[] = [
+  {
+    id: 'dict-es-en',
+    name: 'Spanish essentials',
+    description:
+      'Everyday verbs and expressions I keep meeting in podcasts and conversation exchanges.',
+    sourceLanguage: 'es',
+    targetLanguage: 'en',
+    status: 'active',
+    visibility: 'private',
+    settings: {
+      ...DEFAULT_SETTINGS,
+      transcriptionEnabled: true,
+      transcriptionNotation: 'ipa',
+      definitionEnabled: true,
+      definitionLanguage: 'target',
+    },
+    hasEverHadCards: true,
+    createdAt: '2026-02-11',
+    updatedAt: '2026-09-18',
+  },
+  {
+    id: 'dict-ar-en',
+    name: 'Arabic · travel phrases',
+    description: 'Right-to-left source text paired with English, for trip preparation.',
+    sourceLanguage: 'ar',
+    targetLanguage: 'en',
+    status: 'active',
+    visibility: 'unlisted',
+    settings: { ...DEFAULT_SETTINGS },
+    hasEverHadCards: true,
+    createdAt: '2026-05-02',
+    updatedAt: '2026-09-12',
+  },
+  {
+    id: 'dict-ru-en',
+    name: 'Russian · everyday',
+    description: '',
+    sourceLanguage: 'ru',
+    targetLanguage: 'en',
+    status: 'active',
+    visibility: 'private',
+    settings: { ...DEFAULT_SETTINGS, exampleEnabled: false },
+    hasEverHadCards: false,
+    createdAt: '2026-09-20',
+    updatedAt: '2026-09-20',
+  },
+  {
+    id: 'dict-fr-en',
+    name: 'French B1 verbs',
+    description: 'Paused while I focus on Spanish. Kept for later.',
+    sourceLanguage: 'fr',
+    targetLanguage: 'en',
+    status: 'archived',
+    visibility: 'private',
+    settings: { ...DEFAULT_SETTINGS },
+    hasEverHadCards: true,
+    createdAt: '2025-11-03',
+    updatedAt: '2026-04-27',
+  },
+]
+

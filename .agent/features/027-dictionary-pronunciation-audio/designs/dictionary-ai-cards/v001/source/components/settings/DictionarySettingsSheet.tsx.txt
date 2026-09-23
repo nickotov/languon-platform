@@ -1,0 +1,347 @@
+import React, { useMemo, useRef, useState } from 'react'
+import { LockIcon } from 'lucide-react'
+import { Button } from '../Button'
+import { Input } from '../Input'
+import { Textarea } from '../Textarea'
+import { Select } from '../Select'
+import { Switch } from '../Switch'
+import { Radio, RadioGroup } from '../Radio'
+import { Badge } from '../Badge'
+import { InlineAlert } from '../InlineAlert'
+import { ResponsiveSheet } from '../card/ResponsiveSheet'
+import { useApp } from '../../contexts/AppContext'
+import { LANGUAGE_OPTIONS, languageName } from '../../data/languages'
+import type {
+  Dictionary,
+  DictionarySettings as SettingsShape,
+  LanguageCode,
+} from '../../types/dictionary'
+
+interface DictionarySettingsSheetProps {
+  open: boolean
+  dictionary: Dictionary
+  onClose: () => void
+}
+
+export function DictionarySettingsSheet({
+  open,
+  dictionary,
+  onClose,
+}: DictionarySettingsSheetProps) {
+  const { updateDictionary, updateSettings, pushToast } = useApp()
+  const [name, setName] = useState(dictionary.name)
+  const [description, setDescription] = useState(dictionary.description)
+  const [source, setSource] = useState<LanguageCode>(dictionary.sourceLanguage)
+  const [target, setTarget] = useState<LanguageCode>(dictionary.targetLanguage)
+  const [settings, setSettings] = useState<SettingsShape>(dictionary.settings)
+  const [tried, setTried] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [conflict, setConflict] = useState(false)
+  const snapshot = useRef(dictionary.updatedAt)
+
+  const locked = dictionary.hasEverHadCards
+
+  const errors = useMemo(() => {
+    const next: Record<string, string> = {}
+    if (!name.trim()) next.name = 'A dictionary needs a name.'
+    if (name.length > 120) next.name = 'Names are limited to 120 characters.'
+    if (!locked && source === target) next.languages = 'Choose two different languages.'
+    if (
+      settings.transcriptionEnabled &&
+      settings.transcriptionNotation === 'custom' &&
+      !settings.transcriptionCustomLabel.trim()
+    ) {
+      next.notation = 'Custom notation needs a label so learners know what they are reading.'
+    }
+    return next
+  }, [locked, name, settings, source, target])
+
+  const patch = (next: Partial<SettingsShape>) => {
+    setSaved(false)
+    setSettings((prev) => ({ ...prev, ...next }))
+  }
+
+  const save = () => {
+    setTried(true)
+    setSaved(false)
+    if (Object.keys(errors).length > 0) return
+    if (snapshot.current !== dictionary.updatedAt) {
+      setConflict(true)
+      return
+    }
+    setSaving(true)
+    window.setTimeout(() => {
+      updateDictionary(dictionary.id, {
+        name: name.trim(),
+        description: description.trim(),
+        ...(locked ? {} : { sourceLanguage: source, targetLanguage: target }),
+      })
+      updateSettings(dictionary.id, settings)
+      setSaving(false)
+      setSaved(true)
+      pushToast({
+        title: 'Settings saved',
+        description: 'Cards that inherit these settings are updated. Stored values are kept.',
+        variant: 'success',
+      })
+    }, 900)
+  }
+
+  const oppositeOfExample =
+    settings.exampleLanguage === 'source'
+      ? languageName(dictionary.targetLanguage)
+      : languageName(dictionary.sourceLanguage)
+
+  const footer = (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs text-text-secondary">
+        Changes apply only when you save. Hidden fields keep their stored values.
+      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>
+        <Button
+          onClick={save}
+          loading={saving}
+          disabled={tried && Object.keys(errors).length > 0}
+        >
+          {saving ? 'Saving…' : 'Save settings'}
+        </Button>
+      </div>
+    </div>
+  )
+
+  return (
+    <ResponsiveSheet
+      open={open}
+      onClose={saving ? () => undefined : onClose}
+      title="Dictionary settings"
+      description={`${dictionary.name} · ${languageName(dictionary.sourceLanguage)} → ${languageName(
+        dictionary.targetLanguage,
+      )}`}
+      footer={footer}
+    >
+      <div className="space-y-5">
+        {conflict ? (
+          <InlineAlert
+            tone="error"
+            title="These settings changed somewhere else"
+            actions={
+              <Button size="compact" variant="secondary" onClick={() => window.location.reload()}>
+                Reload and compare
+              </Button>
+            }
+          >
+            We did not save, to avoid overwriting newer data. Reload to see the current values,
+            then apply your changes again.
+          </InlineAlert>
+        ) : null}
+
+        {saved ? (
+          <InlineAlert tone="success" title="Settings saved" onDismiss={() => setSaved(false)}>
+            Cards marked “Inherited” follow these settings. Cards with overrides keep their own.
+          </InlineAlert>
+        ) : null}
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-text-primary">Basics</h3>
+          <Input
+            label="Name"
+            required
+            value={name}
+            maxLength={120}
+            hint={`${name.length} / 120`}
+            error={tried ? errors.name : undefined}
+            onChange={(event) => {
+              setName(event.target.value)
+              setSaved(false)
+            }}
+          />
+          <Textarea
+            label="Description"
+            description="Optional."
+            maxLength={2000}
+            showCount
+            rows={3}
+            value={description}
+            onChange={(event) => {
+              setDescription(event.target.value)
+              setSaved(false)
+            }}
+          />
+        </section>
+
+        <section className="space-y-3 border-t border-border-default pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-text-primary">Language pair</h3>
+            {locked ? (
+              <Badge
+                size="sm"
+                tone="neutral"
+                icon={<LockIcon aria-hidden className="h-3.5 w-3.5" />}
+              >
+                Locked
+              </Badge>
+            ) : null}
+          </div>
+
+          {locked ? (
+            <>
+              <p className="text-sm text-text-primary">
+                {languageName(dictionary.sourceLanguage)} →{' '}
+                {languageName(dictionary.targetLanguage)}
+              </p>
+              <p className="text-sm text-text-secondary">
+                The pair locks as soon as a card has existed in this dictionary, so saved content
+                keeps matching its languages. It stays locked even when every card is archived.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select
+                  fullWidth
+                  label="Source language"
+                  value={source}
+                  options={LANGUAGE_OPTIONS}
+                  error={tried ? errors.languages : undefined}
+                  onChange={(event) => {
+                    setSource(event.target.value as LanguageCode)
+                    setSaved(false)
+                  }}
+                />
+                <Select
+                  fullWidth
+                  label="Target language"
+                  value={target}
+                  options={LANGUAGE_OPTIONS}
+                  onChange={(event) => {
+                    setTarget(event.target.value as LanguageCode)
+                    setSaved(false)
+                  }}
+                />
+              </div>
+              <p className="text-sm text-text-secondary">
+                You can still change the pair because no card has existed here yet.
+              </p>
+            </>
+          )}
+        </section>
+
+        <section className="space-y-4 border-t border-border-default pt-4">
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary">Card fields</h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              Cards inherit these unless a card overrides them. Turning a field off hides its
+              content — nothing stored is deleted.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Switch
+              label="Transcription"
+              description="Show a pronunciation notation next to the source."
+              checked={settings.transcriptionEnabled}
+              onCheckedChange={(checked) => patch({ transcriptionEnabled: checked })}
+            />
+            {settings.transcriptionEnabled ? (
+              <div className="ms-1 space-y-3 border-s border-border-default ps-4">
+                <RadioGroup
+                  size="sm"
+                  label="Notation"
+                  value={settings.transcriptionNotation}
+                  onChange={(value) =>
+                    patch({
+                      transcriptionNotation: value as SettingsShape['transcriptionNotation'],
+                    })
+                  }
+                >
+                  <Radio value="ipa">IPA</Radio>
+                  <Radio value="romanization">Romanization</Radio>
+                  <Radio value="custom">Custom notation</Radio>
+                </RadioGroup>
+                {settings.transcriptionNotation === 'custom' ? (
+                  <Input
+                    label="Custom notation label"
+                    required
+                    value={settings.transcriptionCustomLabel}
+                    maxLength={60}
+                    error={tried ? errors.notation : undefined}
+                    hint="Shown as the field label, e.g. “Pinyin”."
+                    onChange={(event) => patch({ transcriptionCustomLabel: event.target.value })}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="space-y-3 border-t border-border-default pt-4">
+            <Switch
+              label="Definition"
+              checked={settings.definitionEnabled}
+              onCheckedChange={(checked) => patch({ definitionEnabled: checked })}
+            />
+            {settings.definitionEnabled ? (
+              <div className="ms-1 border-s border-border-default ps-4">
+                <RadioGroup
+                  size="sm"
+                  orientation="horizontal"
+                  label="Written in"
+                  value={settings.definitionLanguage}
+                  onChange={(value) => patch({ definitionLanguage: value as 'source' | 'target' })}
+                >
+                  <Radio value="source">{languageName(dictionary.sourceLanguage)}</Radio>
+                  <Radio value="target">{languageName(dictionary.targetLanguage)}</Radio>
+                </RadioGroup>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="space-y-3 border-t border-border-default pt-4">
+            <Switch
+              label="Context example"
+              checked={settings.exampleEnabled}
+              onCheckedChange={(checked) => patch({ exampleEnabled: checked })}
+            />
+            {settings.exampleEnabled ? (
+              <div className="ms-1 border-s border-border-default ps-4">
+                <RadioGroup
+                  size="sm"
+                  orientation="horizontal"
+                  label="Written in"
+                  value={settings.exampleLanguage}
+                  onChange={(value) => patch({ exampleLanguage: value as 'source' | 'target' })}
+                >
+                  <Radio value="source">{languageName(dictionary.sourceLanguage)}</Radio>
+                  <Radio value="target">{languageName(dictionary.targetLanguage)}</Radio>
+                </RadioGroup>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="space-y-2 border-t border-border-default pt-4">
+            <Switch
+              label="Example translation"
+              description={
+                settings.exampleEnabled
+                  ? `Always written in ${oppositeOfExample} — the opposite language from the example.`
+                  : 'Your preference is kept and will apply again when examples are turned back on.'
+              }
+              disabled={!settings.exampleEnabled}
+              checked={settings.exampleTranslationEnabled && settings.exampleEnabled}
+              onCheckedChange={(checked) => patch({ exampleTranslationEnabled: checked })}
+            />
+            {!settings.exampleEnabled ? (
+              <p className="text-xs text-text-secondary">
+                Example translation cannot be enabled while context examples are off.
+              </p>
+            ) : null}
+          </div>
+        </section>
+      </div>
+    </ResponsiveSheet>
+  )
+}
+

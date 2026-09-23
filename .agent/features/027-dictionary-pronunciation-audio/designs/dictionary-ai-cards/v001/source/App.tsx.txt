@@ -1,0 +1,53 @@
+import React from 'react'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { AppProvider } from './contexts/AppContext'
+import { AppShell } from './components/app/AppShell'
+import { Library } from './pages/Library'
+import { Workspace } from './pages/Workspace'
+import { StatesGallery } from './pages/StatesGallery'
+import { Coverage } from './pages/Coverage'
+
+interface AppProps {
+  /** Starting theme. Users can also switch it in the header. */
+  theme?: 'light' | 'dark'
+  /** Interface language. Card languages are independent of this. */
+  interfaceLanguage?: 'en' | 'es' | 'fr' | 'ru'
+  /** Availability of AI generation and review. */
+  aiAvailability?: 'available' | 'rate-limited' | 'unavailable'
+  /** Pronunciation playback availability. */
+  audioAvailability?: 'enabled' | 'cached-only' | 'disabled'
+  /** Label recordings as a development test tone rather than pronunciation. */
+  developmentAudio?: boolean
+}
+
+export function App({
+  theme = 'light',
+  interfaceLanguage = 'en',
+  aiAvailability = 'available',
+  audioAvailability = 'enabled',
+  developmentAudio = false,
+}: AppProps) {
+  return (
+    <AppProvider
+      initialTheme={theme}
+      initialLocale={interfaceLanguage}
+      initialAi={aiAvailability}
+      initialAudio={audioAvailability}
+      initialDevelopmentAudio={developmentAudio}
+    >
+      <BrowserRouter>
+        <AppShell>
+          <Routes>
+            <Route path="/" element={<Library />} />
+            <Route path="/d/:dictionaryId" element={<Workspace />} />
+            <Route path="/d/:dictionaryId/settings" element={<Workspace />} />
+            <Route path="/states" element={<StatesGallery />} />
+            <Route path="/coverage" element={<Coverage />} />
+            <Route path="*" element={<Library />} />
+          </Routes>
+        </AppShell>
+      </BrowserRouter>
+    </AppProvider>
+  )
+}
+

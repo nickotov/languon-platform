@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-// @user-flow-revision web-dev-panel sha256:ffb5d24730bce94c
+// @user-flow-revision web-dev-panel sha256:d8e919c7d552f950
 // @user-flow web-dev-panel/parallel-command-control-and-isolated-logs
 test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     await page.goto('/?launch=web-dev-panel-fixture-launch');
     const navigation = page.getByRole('navigation', {
         name: 'Command sections',
     });
-    await expect(navigation.getByRole('link')).toHaveCount(3);
+    await expect(navigation.getByRole('link')).toHaveCount(4);
     await expect(page.locator('.command-group[open]')).toHaveCount(0);
     await navigation.getByRole('link', { name: /Services/u }).click();
     await expect(page.locator('#command-section-services')).toHaveAttribute(
@@ -343,4 +343,25 @@ test('portable-custom-command-sections', async ({ browser }) => {
     );
     await storageFailure.close();
     await context.close();
+});
+
+// @user-flow web-dev-panel/whole-app-command-control
+test('whole-app-command-control', async ({ page }) => {
+    await page.goto('/?launch=web-dev-panel-fixture-launch');
+    await page.locator('#command-section-development > summary').click();
+    const command = page.locator('[data-command-id="dev:all"]');
+    await command.locator(':scope > summary').click();
+    await expect(command).toContainText('Start whole app');
+    await expect(
+        command.getByRole('checkbox', { name: 'Select', exact: true }),
+    ).toBeDisabled();
+    await command.getByRole('button', { name: 'Start', exact: true }).click();
+    await expect(command.locator('.status')).toHaveText('Running');
+    await expect(command.locator('pre')).toContainText('whole-app: started');
+    await page.reload();
+    await page.locator('#command-section-development > summary').click();
+    await expect(command.locator('.status')).toHaveText('Running');
+    await command.locator(':scope > summary').click();
+    await command.getByRole('button', { name: 'Stop', exact: true }).click();
+    await expect(command.locator('.status')).toHaveText('Cancelled');
 });

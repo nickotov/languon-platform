@@ -1,0 +1,141 @@
+import React, { useId, useState } from 'react'
+
+export type SwitchSize = 'sm' | 'md' | 'lg'
+
+export interface SwitchProps {
+  /** Controlled checked state */
+  checked?: boolean
+  /** Initial state when uncontrolled */
+  defaultChecked?: boolean
+  /** Fired with the next checked state */
+  onCheckedChange?: (checked: boolean) => void
+  /** Visible label rendered next to the switch */
+  label?: string
+  /** Supporting copy rendered under the label */
+  description?: string
+  /** Accessible name when no visible label is provided */
+  'aria-label'?: string
+  size?: SwitchSize
+  disabled?: boolean
+  name?: string
+  id?: string
+  className?: string
+}
+
+const trackSizes: Record<SwitchSize, string> = {
+  sm: 'h-5 w-9',
+  md: 'h-6 w-11',
+  lg: 'h-7 w-[3.25rem]',
+}
+
+const thumbSizes: Record<SwitchSize, string> = {
+  sm: 'h-4 w-4',
+  md: 'h-5 w-5',
+  lg: 'h-6 w-6',
+}
+
+const thumbTranslate: Record<SwitchSize, string> = {
+  sm: 'translate-x-4',
+  md: 'translate-x-5',
+  lg: 'translate-x-6',
+}
+
+const labelText: Record<SwitchSize, string> = {
+  sm: 'text-sm',
+  md: 'text-sm',
+  lg: 'text-base',
+}
+
+export function Switch({
+  checked,
+  defaultChecked = false,
+  onCheckedChange,
+  label,
+  description,
+  'aria-label': ariaLabel,
+  size = 'md',
+  disabled = false,
+  name,
+  id,
+  className = '',
+}: SwitchProps) {
+  const generatedId = useId()
+  const switchId = id ?? `switch-${generatedId}`
+  const descriptionId = description ? `${switchId}-description` : undefined
+
+  const [internalChecked, setInternalChecked] = useState(defaultChecked)
+  const isControlled = checked !== undefined
+  const isChecked = isControlled ? checked : internalChecked
+
+  const toggle = () => {
+    if (disabled) return
+    const next = !isChecked
+    if (!isControlled) setInternalChecked(next)
+    onCheckedChange?.(next)
+  }
+
+  const control = (
+    <button
+      type="button"
+      role="switch"
+      id={switchId}
+      name={name}
+      aria-checked={isChecked}
+      aria-label={label ? undefined : ariaLabel}
+      aria-describedby={descriptionId}
+      disabled={disabled}
+      onClick={toggle}
+      className={[
+        'relative inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent',
+        'transition-colors duration-200 ease-out',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        trackSizes[size],
+        isChecked ? 'bg-gray-900' : 'bg-gray-200',
+      ].join(' ')}
+    >
+      <span
+        aria-hidden="true"
+        className={[
+          'pointer-events-none inline-block transform rounded-full bg-white shadow ring-0',
+          'transition duration-200 ease-out',
+          thumbSizes[size],
+          isChecked ? thumbTranslate[size] : 'translate-x-0',
+        ].join(' ')}
+      />
+    </button>
+  )
+
+  if (!label && !description) {
+    return <span className={className}>{control}</span>
+  }
+
+  return (
+    <div className={`flex items-start gap-3 ${className}`}>
+      {control}
+      <div className="min-w-0">
+        {label && (
+          <label
+            htmlFor={switchId}
+            className={[
+              'block font-medium leading-6',
+              labelText[size],
+              disabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer text-gray-900',
+            ].join(' ')}
+          >
+            {label}
+          </label>
+        )}
+        {description && (
+          <p
+            id={descriptionId}
+            className={`text-sm leading-5 ${disabled ? 'text-gray-400' : 'text-gray-500'}`}
+          >
+            {description}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+

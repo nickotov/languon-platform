@@ -1,0 +1,152 @@
+import React, { useState } from 'react'
+import { LockIcon } from 'lucide-react'
+import { Dialog, DialogActions } from '../Dialog'
+import { Button } from '../Button'
+import { Input } from '../Input'
+import { Textarea } from '../Textarea'
+import { Select } from '../Select'
+import { InlineAlert } from '../InlineAlert'
+import { LANGUAGE_OPTIONS } from '../../data/languages'
+import { useApp } from '../../contexts/AppContext'
+import type { LanguageCode } from '../../types/dictionary'
+
+interface CreateDictionaryDialogProps {
+  open: boolean
+  onClose: () => void
+  onCreated: (id: string) => void
+}
+
+export function CreateDictionaryDialog({
+  open,
+  onClose,
+  onCreated,
+}: CreateDictionaryDialogProps) {
+  const { createDictionary } = useApp()
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [source, setSource] = useState<LanguageCode>('es')
+  const [target, setTarget] = useState<LanguageCode>('en')
+  const [tried, setTried] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [failure, setFailure] = useState<string | null>(null)
+
+  const nameError =
+    tried && name.trim().length === 0 ? 'Give this dictionary a name.' : undefined
+  const languageError =
+    tried && source === target ? 'Choose two different languages.' : undefined
+
+  const submit = async () => {
+    setTried(true)
+    setFailure(null)
+    if (!name.trim() || source === target) return
+    setPending(true)
+    const result = await createDictionary({
+      name,
+      description,
+      sourceLanguage: source,
+      targetLanguage: target,
+    })
+    setPending(false)
+    if (!result.ok) {
+      setFailure(result.message)
+      return
+    }
+    onCreated(result.id)
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={pending ? () => undefined : onClose}
+      title="New dictionary"
+      description="Name it and choose the language pair. You can add cards straight away."
+      size="md"
+      className="bg-background-surface text-text-primary"
+      dismissOnOverlayClick={!pending}
+      dismissOnEscape={!pending}
+      footer={
+        <DialogActions align="between">
+          <p className="inline-flex items-center gap-1.5 text-xs text-text-secondary">
+            <LockIcon aria-hidden className="h-3.5 w-3.5" />
+            New dictionaries are private.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={onClose} disabled={pending}>
+              Cancel
+            </Button>
+            <Button onClick={submit} loading={pending}>
+              {pending ? 'Creating…' : 'Create dictionary'}
+            </Button>
+          </div>
+        </DialogActions>
+      }
+    >
+      <div className="space-y-4">
+        {failure ? (
+          <InlineAlert
+            tone="error"
+            title="Dictionary not created"
+            actions={
+              <Button size="compact" variant="secondary" onClick={submit}>
+                Try again
+              </Button>
+            }
+          >
+            {failure}
+          </InlineAlert>
+        ) : null}
+
+        <Input
+          label="Name"
+          required
+          value={name}
+          maxLength={120}
+          onChange={(event) => setName(event.target.value)}
+          error={nameError}
+          hint={`${name.length} / 120`}
+          placeholder="Spanish essentials"
+          disabled={pending}
+        />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Select
+            fullWidth
+            label="Source language"
+            value={source}
+            onChange={(event) => setSource(event.target.value as LanguageCode)}
+            options={LANGUAGE_OPTIONS}
+            error={languageError}
+            disabled={pending}
+          />
+          <Select
+            fullWidth
+            label="Target language"
+            value={target}
+            onChange={(event) => setTarget(event.target.value as LanguageCode)}
+            options={LANGUAGE_OPTIONS}
+            hint="Pick from the supported language catalog."
+            disabled={pending}
+          />
+        </div>
+
+        <Textarea
+          label="Description"
+          description="Optional."
+          maxLength={2000}
+          showCount
+          rows={3}
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          disabled={pending}
+        />
+
+        {pending ? (
+          <p role="status" aria-live="polite" className="text-sm text-text-secondary">
+            Creating your dictionary…
+          </p>
+        ) : null}
+      </div>
+    </Dialog>
+  )
+}
+

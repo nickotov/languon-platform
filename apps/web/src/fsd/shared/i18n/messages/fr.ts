@@ -1,6 +1,7 @@
 import { profileFeatureMessages, type Messages } from './en';
 
 export const fr = {
+
     'dictionary.audio.playField': 'Écouter {field}',
     'dictionary.audio.stopField': 'Arrêter {field}',
     'dictionary.audio.play': 'Écouter',
@@ -17,6 +18,50 @@ export const fr = {
     'dictionary.audio.speed': 'Vitesse de lecture',
     'dictionary.audio.normal': 'Normale',
     ...profileFeatureMessages,
+
+    'dictionary.error.rateLimited':
+        'Trop de demandes. Patientez avant de réessayer.',
+    'dictionary.error.network':
+        'La connexion a échoué. Vérifiez le réseau et réessayez.',
+
+    'dictionary.authoring.rateLimited':
+        'Le service est occupé. Patientez puis réessayez. Le brouillon est conservé.',
+    'dictionary.authoring.providerUnavailable':
+        'Les suggestions sont indisponibles. Réessayez plus tard ou enregistrez le brouillon manuellement.',
+    'dictionary.authoring.timeout':
+        'La génération a dépassé le délai. Le brouillon est conservé ; réessayez ou enregistrez-le manuellement.',
+
+    'dictionary.card.discardTitle': 'Abandonner ce brouillon ?',
+    'dictionary.card.discardDescription':
+        'La fermeture abandonne les modifications non enregistrées.',
+    'dictionary.card.keepWriting': 'Continuer la rédaction',
+    'dictionary.card.discardDraft': 'Abandonner le brouillon',
+    'dictionary.card.discardHelp':
+        'Les suggestions non acceptées sont abandonnées avec le brouillon. Annuler la génération est une action distincte qui garde le brouillon ouvert.',
+    'dictionary.authoring.expired':
+        'Ces suggestions ont expiré. Le brouillon et les choix chargés sont conservés. Générez de nouvelles suggestions ou enregistrez le brouillon manuellement.',
+
+    'dictionary.skipToContent': 'Aller au contenu principal',
+
+    'dictionary.cards.defaults': 'Réglages du dictionnaire',
+    'dictionary.cards.overrides': 'Réglages de la carte',
+    'dictionary.library.subtitle':
+        'Organisez le vocabulaire par paire de langues.',
+    'dictionary.library.actions': 'Actions pour {name}',
+    'dictionary.library.clearSearch': 'Effacer la recherche',
+    'dictionary.create.privateNotice':
+        'Les nouveaux dictionnaires sont privés.',
+    'dictionary.authoring.choice': 'Choix {number}',
+    'dictionary.authoring.showMore': 'Afficher {count} autres choix',
+    'dictionary.authoring.showFewer': 'Afficher moins de choix',
+    'dictionary.authoring.optionalContent':
+        'Contenu facultatif activé pour ce dictionnaire',
+    'dictionary.authoring.notSaved': 'Suggestion · non enregistrée',
+    'dictionary.authoring.savingPaused':
+        'L’enregistrement est indisponible pendant la génération. Annulez-la pour enregistrer le brouillon.',
+    'dictionary.generation.savedNow': 'Valeur enregistrée',
+    'dictionary.editor.actions': 'Autres actions du dictionnaire',
+    'dictionary.editor.sharing': 'Partage',
     'theme.switchToLight': 'Passer au thème clair',
     'theme.switchToDark': 'Passer au thème sombre',
     'meta.profile': 'Paramètres du compte · Languon',

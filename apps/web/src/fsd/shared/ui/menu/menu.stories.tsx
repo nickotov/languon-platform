@@ -1,3 +1,4 @@
+import { Archive, MoreHorizontal, Pencil } from 'lucide-react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Menu } from './menu';
 const meta = { component: Menu, title: 'UI/Menu' } satisfies Meta<typeof Menu>;
@@ -11,5 +12,22 @@ export const Default: StoryObj<typeof meta> = {
         ],
         label: 'Passkey actions',
         trigger: 'Actions',
+    },
+};
+
+export const IconActions: StoryObj<typeof meta> = {
+    args: {
+        iconOnly: true,
+        items: [
+            { icon: <Pencil size={16} />, label: 'Edit', onSelect() {} },
+            {
+                icon: <Archive size={16} />,
+                label: 'Archive',
+                onSelect() {},
+                tone: 'danger',
+            },
+        ],
+        label: 'Dictionary actions',
+        trigger: <MoreHorizontal aria-hidden='true' size={18} />,
     },
 };

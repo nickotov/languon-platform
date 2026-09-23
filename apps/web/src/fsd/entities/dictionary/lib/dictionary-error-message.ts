@@ -3,6 +3,12 @@ import type { Translate } from '@/fsd/shared/i18n';
 import { DictionaryApiError } from '../api/dictionary-api';
 
 export function dictionaryErrorMessage(error: unknown, t: Translate): string {
+    if (error instanceof TypeError) return t('dictionary.error.network');
+    if (
+        error instanceof DictionaryApiError &&
+        error.detail.code === 'rate_limited'
+    )
+        return t('dictionary.error.rateLimited');
     if (!(error instanceof DictionaryApiError))
         return t('dictionary.error.generic');
     if (error.detail.code === 'version_conflict')

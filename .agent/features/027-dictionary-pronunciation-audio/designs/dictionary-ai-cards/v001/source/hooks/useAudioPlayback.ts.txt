@@ -1,0 +1,116 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { AudioFieldKey, AudioSelection, PlaybackSpeed } from '../types/audio'
+
+/**
+ * Prototype playback behaviour to demonstrate. Real playback is not simulated
+ * with sound; only the honest state sequence is shown.
+ */
+export type PlaybackBehaviour = 'normal' | 'blocked-autoplay' | 'failure' | 'unavailable'
+
+interface PlayOptions {
+  cached?: boolean
+  developmentTone?: boolean
+  behaviour?: PlaybackBehaviour
+}
+
+export function useAudioPlayback() {
+  const [selection, setSelection] = useState<AudioSelection | null>(null)
+  const timers = useRef<number[]>([])
+  const token = useRef(0)
+
+  const clearTimers = useCallback(() => {
+    timers.current.forEach((timer) => window.clearTimeout(timer))
+    timers.current = []
+  }, [])
+
+  useEffect(() => clearTimers, [clearTimers])
+
+  const stop = useCallback(() => {
+    token.current += 1
+    clearTimers()
+    setSelection((prev) => (prev ? { ...prev, phase: 'stopped' } : prev))
+  }, [clearTimers])
+
+  const reset = useCallback(() => {
+    token.current += 1
+    clearTimers()
+    setSelection(null)
+  }, [clearTimers])
+
+  const play = useCallback(
+    (cardId: string, field: AudioFieldKey, options: PlayOptions = {}) => {
+      const {
+        cached = false,
+        developmentTone = false,
+        behaviour = 'normal',
+      } = options
+      token.current += 1
+      const current = token.current
+      clearTimers()
+
+      if (behaviour === 'unavailable') {
+        setSelection({
+          cardId,
+          field,
+          phase: 'unavailable',
+          speed: selection?.speed ?? 1,
+          developmentTone,
+          cached,
+        })
+        return
+      }
+
+      const speed: PlaybackSpeed =
+        selection && selection.cardId === cardId && selection.field === field
+          ? selection.speed
+          : 1
+
+      // A cached recording still requires an explicit press, but skips preparation.
+      setSelection({
+        cardId,
+        field,
+        phase: cached ? 'playing' : 'preparing',
+        speed,
+        developmentTone,
+        cached,
+      })
+
+      if (!cached) {
+        timers.current.push(
+          window.setTimeout(() => {
+            if (token.current !== current) return
+            if (behaviour === 'failure') {
+              setSelection((prev) => (prev ? { ...prev, phase: 'failed' } : prev))
+              return
+            }
+            if (behaviour === 'blocked-autoplay') {
+              setSelection((prev) => (prev ? { ...prev, phase: 'ready-press-play' } : prev))
+              return
+            }
+            setSelection((prev) => (prev ? { ...prev, phase: 'playing', cached: true } : prev))
+          }, 1400),
+        )
+      }
+
+      timers.current.push(
+        window.setTimeout(
+          () => {
+            if (token.current !== current) return
+            setSelection((prev) =>
+              prev && prev.phase === 'playing' ? { ...prev, phase: 'stopped' } : prev,
+            )
+          },
+          cached ? 2600 : 4200,
+        ),
+      )
+    },
+    [clearTimers, selection],
+  )
+
+  const setSpeed = useCallback((speed: PlaybackSpeed) => {
+    setSelection((prev) => (prev ? { ...prev, speed } : prev))
+  }, [])
+
+  return { selection, play, stop, reset, setSpeed }
+}
+

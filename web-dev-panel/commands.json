@@ -156,7 +156,7 @@
         {
             "batchEligible": true,
             "category": "Quality",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Builds all buildable workspaces.",
             "disabledReason": null,
             "enabled": true,
@@ -173,7 +173,7 @@
         {
             "batchEligible": true,
             "category": "Quality",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Runs the complete repository quality and build gate.",
             "disabledReason": null,
             "enabled": true,
@@ -207,7 +207,7 @@
         {
             "batchEligible": false,
             "category": "Database",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Generates Drizzle SQL migration files from backend schema changes.",
             "disabledReason": "May generate or apply database schema changes.",
             "enabled": false,
@@ -224,7 +224,7 @@
         {
             "batchEligible": false,
             "category": "Database",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Applies pending backend PostgreSQL migrations to the configured database; run individually.",
             "disabledReason": null,
             "enabled": true,
@@ -241,7 +241,7 @@
         {
             "batchEligible": false,
             "category": "Database",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Starts Drizzle Studio for interactive local database inspection.",
             "disabledReason": "Starts an interactive database administration interface.",
             "enabled": false,
@@ -345,6 +345,7 @@
             "category": "Development",
             "conflictsWith": [
                 "dev:admin",
+                "dev:all",
                 "dev:apps:docker",
                 "dev:backend",
                 "dev:web"
@@ -363,9 +364,26 @@
             "title": "Dev"
         },
         {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "dev:account-purge-worker",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:b49f7a2f6e30679fca2e86f16e0c9516d1952d0c64f5031c80da6a2a699604b6",
+                "script": "dev:account-purge-worker",
+                "type": "package-script"
+            },
+            "title": "Dev · Account Purge Worker"
+        },
+        {
             "batchEligible": true,
             "category": "Development",
-            "conflictsWith": ["dev", "dev:apps:docker"],
+            "conflictsWith": ["dev", "dev:all", "dev:apps:docker"],
             "description": "Starts only the administration application development server.",
             "disabledReason": null,
             "enabled": true,
@@ -382,7 +400,7 @@
         {
             "batchEligible": false,
             "category": "Development",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Builds and starts the administration application development container.",
             "disabledReason": "Exposes or rebuilds an individual application container and needs explicit review.",
             "enabled": false,
@@ -397,9 +415,48 @@
             "title": "Dev · Admin · Docker"
         },
         {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [
+                "build",
+                "check",
+                "db:generate",
+                "db:migrate",
+                "db:studio",
+                "dev",
+                "dev:admin",
+                "dev:admin:docker",
+                "dev:apps:docker",
+                "dev:backend",
+                "dev:dictionary-worker",
+                "dev:infra",
+                "dev:web",
+                "dev:web:docker",
+                "infra:down"
+            ],
+            "description": "Waits for local PostgreSQL/Redis, builds dependencies, runs migrations, then starts backend, web, admin and the dictionary worker. Requires Docker and .env.local. Stop retains infrastructure/data; run individually.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:all",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:c6a3148d387c5c626df928f304ab858f7a72bb0b616afde7e0fe98dee753f3d7",
+                "script": "dev:all",
+                "type": "package-script"
+            },
+            "title": "Start whole app"
+        },
+        {
             "batchEligible": true,
             "category": "Development",
-            "conflictsWith": ["dev", "dev:admin", "dev:backend", "dev:web"],
+            "conflictsWith": [
+                "dev",
+                "dev:admin",
+                "dev:all",
+                "dev:backend",
+                "dev:web"
+            ],
             "description": "Builds and starts backend, web, and admin with local infrastructure in Docker.",
             "disabledReason": null,
             "enabled": true,
@@ -416,7 +473,7 @@
         {
             "batchEligible": true,
             "category": "Development",
-            "conflictsWith": ["dev", "dev:apps:docker"],
+            "conflictsWith": ["dev", "dev:all", "dev:apps:docker"],
             "description": "Starts only the backend development server.",
             "disabledReason": null,
             "enabled": true,
@@ -433,7 +490,7 @@
         {
             "batchEligible": true,
             "category": "Development",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Starts the local asynchronous dictionary generation worker.",
             "disabledReason": null,
             "enabled": true,
@@ -450,7 +507,7 @@
         {
             "batchEligible": true,
             "category": "Development",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Starts the local PostgreSQL and Redis containers.",
             "disabledReason": null,
             "enabled": true,
@@ -535,7 +592,7 @@
         {
             "batchEligible": true,
             "category": "Development",
-            "conflictsWith": ["dev", "dev:apps:docker"],
+            "conflictsWith": ["dev", "dev:all", "dev:apps:docker"],
             "description": "Starts only the public Next.js development server.",
             "disabledReason": null,
             "enabled": true,
@@ -552,7 +609,7 @@
         {
             "batchEligible": false,
             "category": "Development",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Builds and starts the public web development container.",
             "disabledReason": "Exposes or rebuilds an individual application container and needs explicit review.",
             "enabled": false,
@@ -637,7 +694,7 @@
         {
             "batchEligible": false,
             "category": "Development",
-            "conflictsWith": [],
+            "conflictsWith": ["dev:all"],
             "description": "Stops local PostgreSQL and Redis containers without deleting volumes.",
             "disabledReason": "Stops local infrastructure and can interrupt other work.",
             "enabled": false,
@@ -730,7 +787,7 @@
             "kind": "task",
             "outputProtocol": "plain",
             "source": {
-                "revision": "sha256:b1b93140ffa5ef05bc148fd25124f22889026bf10e63397fd512715a13c51e11",
+                "revision": "sha256:f9f5ba2eb8333c262fb0a308c204b9e74552e97c68aa04390ea37235e6919185",
                 "script": "test",
                 "type": "package-script"
             },

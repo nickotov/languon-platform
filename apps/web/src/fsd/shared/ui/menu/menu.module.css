@@ -37,3 +37,31 @@
 .menu button[data-tone='danger']:hover {
     background: var(--sys-color-danger-soft);
 }
+
+.iconOnly {
+    align-items: center;
+    border-radius: 9999px;
+    color: var(--text-secondary);
+    display: inline-flex;
+    height: 36px;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0;
+    width: 36px;
+}
+.iconOnly:hover:not(:disabled) {
+    background: var(--background-subtle);
+}
+.iconOnly:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+.iconOnly:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.itemIcon {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-inline-end: 8px;
+}

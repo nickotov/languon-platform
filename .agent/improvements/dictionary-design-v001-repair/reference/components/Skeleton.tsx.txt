@@ -1,0 +1,146 @@
+import React from 'react'
+
+export type SkeletonVariant = 'text' | 'circle' | 'rect'
+export type SkeletonAnimation = 'pulse' | 'shimmer' | 'none'
+
+export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Shape of the placeholder block. */
+  variant?: SkeletonVariant
+  /** Animation style applied while content loads. */
+  animation?: SkeletonAnimation
+  /** CSS width (e.g. '100%', 240, '12rem'). */
+  width?: number | string
+  /** CSS height. Defaults to a text line height for the `text` variant. */
+  height?: number | string
+  /** Number of stacked lines. Only meaningful for the `text` variant. */
+  lines?: number
+  /** Width of the final line when rendering multiple text lines. */
+  lastLineWidth?: number | string
+}
+
+const variantClasses: Record<SkeletonVariant, string> = {
+  text: 'rounded',
+  circle: 'rounded-full',
+  rect: 'rounded-md',
+}
+
+const animationClasses: Record<SkeletonAnimation, string> = {
+  pulse: 'animate-pulse',
+  shimmer: 'mp-skeleton-shimmer relative overflow-hidden',
+  none: '',
+}
+
+const shimmerCss = `
+@keyframes mp-skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+.mp-skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
+  animation: mp-skeleton-shimmer 1.6s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mp-skeleton-shimmer::after { display: none; }
+}
+`
+
+function ShimmerStyles() {
+  return <style dangerouslySetInnerHTML={{ __html: shimmerCss }} />
+}
+
+export function Skeleton({
+  variant = 'text',
+  animation = 'pulse',
+  width,
+  height,
+  lines = 1,
+  lastLineWidth = '60%',
+  className = '',
+  style,
+  ...rest
+}: SkeletonProps) {
+  const base = `bg-gray-200 ${variantClasses[variant]} ${animationClasses[animation]}`
+
+  const resolvedHeight = height ?? (variant === 'text' ? '0.875rem' : undefined)
+
+  if (variant === 'text' && lines > 1) {
+    return (
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className={`flex flex-col gap-2 ${className}`}
+        style={{ width: width ?? '100%', ...style }}
+        {...rest}
+      >
+        {animation === 'shimmer' && <ShimmerStyles />}
+        {Array.from({ length: lines }).map((_, i) => (
+          <span
+            key={i}
+            className={`block ${base}`}
+            style={{
+              height: resolvedHeight,
+              width: i === lines - 1 ? lastLineWidth : '100%',
+            }}
+          />
+        ))}
+        <span className="sr-only">Loading…</span>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      className={`${base} ${className}`}
+      style={{
+        width: width ?? (variant === 'text' ? '100%' : undefined),
+        height: resolvedHeight,
+        ...style,
+      }}
+      {...rest}
+    >
+      {animation === 'shimmer' && <ShimmerStyles />}
+      <span className="sr-only">Loading…</span>
+    </div>
+  )
+}
+
+export interface SkeletonCardProps {
+  /** Number of body text lines below the header. */
+  lines?: number
+  className?: string
+}
+
+/** Common composition: avatar + title + body lines, matching a study card layout. */
+export function SkeletonCard({ lines = 3, className = '' }: SkeletonCardProps) {
+  return (
+    <div
+      className={`w-full rounded-lg border border-gray-200 bg-white p-4 ${className}`}
+    >
+      <div className="flex items-center gap-3">
+        <Skeleton
+          variant="circle"
+          animation="shimmer"
+          width={40}
+          height={40}
+        />
+        <div className="flex-1">
+          <Skeleton animation="shimmer" width="45%" height="0.75rem" />
+          <div className="mt-2">
+            <Skeleton animation="shimmer" width="30%" height="0.625rem" />
+          </div>
+        </div>
+      </div>
+      <div className="mt-4">
+        <Skeleton animation="shimmer" lines={lines} />
+      </div>
+    </div>
+  )
+}
+

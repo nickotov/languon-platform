@@ -80,6 +80,63 @@ feature-name/
   miscellaneous utility folder.
 - Put remote calls, query functions, and request/response mapping in `api/`.
 
+## Keep components readable
+
+Treat 250 lines as a review threshold for an authored component or hook file,
+not a size budget to fill. Split a component with several distinct visual or
+behavioral responsibilities before it reaches that threshold. For each touched
+file exceeding it, extract cohesive parts or record a concrete reason why a
+split would reduce clarity. Count the file as formatted; do not compress code,
+remove useful spacing, or move the same monolith into a controller hook to pass.
+
+- Give independently understandable sections named components with narrow,
+  typed inputs. Keep private parts in the owning component's folder/subfolder
+  using the slice conventions above. Avoid trivial wrappers, arbitrary line
+  chunks, giant prop bags, and new context solely to avoid a direct prop.
+- Extract cohesive state, effects, validation, and interaction workflows into
+  named hooks. Keep pure calculations in `lib/` when they have an independent
+  domain meaning. A hook should expose the state/actions its consumer needs,
+  not every internal setter or a second unrelated workflow.
+- Define named event handlers outside JSX. Bind row-specific behavior in the
+  row component or a cohesive hook; do not put arrow callbacks, `.bind`, or
+  handler-factory calls in event props. JSX collection rendering is allowed;
+  the rendered child still receives named event handlers.
+- Compute normalized values, fallback strings, nontrivial render conditions,
+  derived children, class names, and formatted labels before JSX. Pass a named
+  value or direct property to props: `value={customLabel}` and
+  `onChange={handleCustomLabelChange}`. Name compound state checks such as
+  `const isActiveJob = active && job !== null && job !== undefined` and render
+  with that boolean.
+  Do not use truthy objects as JSX conditions (`active && job`) or nest ternary
+  expressions in JSX. A short boolean conditional or one clear binary ternary
+  may stay inline when it is immediately readable; otherwise use a named value,
+  an early return, or a focused child component.
+- Build complex optional prop objects in a typed helper function with early
+  returns. Resolve mutually exclusive error or state branches with `if`
+  statements instead of nested ternaries, then return the completed object.
+  Keep the helper close to its consumer when it has no independent domain use.
+- Colocate component-specific styles in the component's own folder. A component
+  must not import private layout styles from a sibling component folder. When
+  styles are intentionally shared, move them to a deliberately named shared or
+  common CSS module at the nearest valid slice boundary and make each consumer
+  import that module explicitly.
+- Separate independent derivation groups, hook calls, handlers, and the render
+  return with blank lines. Keep tightly related declarations together; do not
+  insert a blank line mechanically between every declaration. Run the formatter
+  after organizing the code; formatting alone does not establish logical groups.
+- Keep callbacks and derived prop values outside markup. Use `useCallback` when
+  stable identity matters to a memoized consumer or a
+  subscription/effect contract. Use `useMemo` for an expensive calculation or
+  required stable derived reference. State that reason in the implementation
+  decision or make it clear from the consumer; cheap fallback expressions and
+  ordinary DOM handlers do not need blanket memoization. Keep dependencies
+  complete and avoid stale closures.
+
+Before handoff, inspect touched components/hooks for file size, responsibility
+boundaries, inline event callbacks, computed JSX props, logical spacing, and
+unnecessary memoization. Verify behavior at the appropriate existing boundary;
+do not add tests that merely assert the new component structure.
+
 ## Build shared UI
 
 Place design-system primitives such as Button, Input, Textarea, Tooltip, Dialog,

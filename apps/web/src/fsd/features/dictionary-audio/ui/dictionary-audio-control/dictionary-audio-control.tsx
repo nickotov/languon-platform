@@ -1,6 +1,7 @@
+import { LoaderCircle, Square, Volume2 } from 'lucide-react';
 import type { DictionaryAudioField, DictionaryCard } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Select } from '@/fsd/shared/ui';
+import { IconButton } from '@/fsd/shared/ui';
 import type { useDictionaryAudio } from '../../hooks/use-dictionary-audio';
 import styles from './dictionary-audio-control.module.css';
 
@@ -22,11 +23,9 @@ export function DictionaryAudioControl({
     const label = t(`dictionary.field.${field}`);
     return (
         <span className={styles.control} dir='ltr' lang={locale}>
-            <Button
+            <IconButton
                 type='button'
-                variant='quiet'
-                size='compact'
-                aria-label={t(
+                label={t(
                     busy
                         ? 'dictionary.audio.stopField'
                         : 'dictionary.audio.playField',
@@ -36,8 +35,14 @@ export function DictionaryAudioControl({
                     busy ? playback.stop() : void playback.play({ card, field })
                 }
             >
-                {t(busy ? 'dictionary.audio.stop' : 'dictionary.audio.play')}
-            </Button>
+                {phase === 'loading' ? (
+                    <LoaderCircle size={15} aria-hidden='true' />
+                ) : busy ? (
+                    <Square size={15} aria-hidden='true' />
+                ) : (
+                    <Volume2 size={15} aria-hidden='true' />
+                )}
+            </IconButton>
             {selected ? (
                 <>
                     <span role='status' className={styles.status}>
@@ -46,18 +51,6 @@ export function DictionaryAudioControl({
                             ? ` ${t('dictionary.audio.fixture')}`
                             : ''}
                     </span>
-                    <Select
-                        aria-label={t('dictionary.audio.speed')}
-                        fullWidth={false}
-                        value={String(playback.speed)}
-                        onChange={(event) =>
-                            playback.setSpeed(Number(event.target.value))
-                        }
-                        options={[
-                            { value: '1', label: t('dictionary.audio.normal') },
-                            { value: '0.8', label: '0.8×' },
-                        ]}
-                    />
                 </>
             ) : null}
         </span>

@@ -1,80 +1,242 @@
 .main {
     margin: 0 auto;
     max-width: 1120px;
-    padding: clamp(var(--sys-space-5), 5vw, 64px);
+    padding: 32px;
+    color: var(--text-primary);
 }
 .header,
-.cardHeader,
 .actions,
 .filters {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sys-space-4);
+    gap: 12px;
     justify-content: space-between;
 }
-.header h1,
-.dictionaryCard h2 {
-    font-family: var(--sys-font-display);
+.header {
+    align-items: flex-start;
+}
+.header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 32px;
     margin: 0;
 }
-.eyebrow {
-    color: var(--sys-color-action-primary);
-    font-size: 0.875rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    margin: 0 0 var(--sys-space-2);
-    text-transform: uppercase;
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 4px 0 0;
+}
+.actions {
+    justify-content: flex-end;
+    gap: 8px;
 }
 .filters {
-    align-items: end;
-    margin: var(--sys-space-6) 0;
+    margin: 24px 0;
 }
-.filters > :first-child {
-    flex: 1 1 280px;
+.search {
+    max-width: 320px;
+}
+.segments {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    background: var(--background-subtle);
+}
+.segments button {
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.segments button[aria-pressed='true'] {
+    background: var(--primary-default);
+    border-color: var(--primary-default);
+    color: var(--text-on-primary);
+    font-weight: 600;
+}
+.segments button:focus-visible,
+.openLink:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 3px;
 }
 .list {
     display: grid;
-    gap: var(--sys-space-4);
+    gap: 12px;
     list-style: none;
     margin: 0;
     padding: 0;
 }
 .dictionaryCard {
-    padding: var(--sys-space-5);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--background-surface);
+    border-color: var(--border-default);
 }
-.dictionaryCard p {
-    margin: var(--sys-space-2) 0;
+.dictionaryCard:hover {
+    border-color: var(--border-strong);
 }
-.meta {
-    color: var(--sys-color-text-secondary);
+.cardContent {
+    flex: 1;
+    min-width: 0;
 }
-.form {
-    display: grid;
-    gap: var(--sys-space-4);
-    margin-top: var(--sys-space-5);
+.dictionaryCard h2 {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    margin: 0;
+    overflow-wrap: anywhere;
 }
-.pair {
-    display: grid;
-    gap: var(--sys-space-4);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.openLink {
+    color: inherit;
+    text-decoration: none;
+}
+.openLink::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+.cardMeta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+.description {
+    max-width: 46rem;
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 8px 0 0;
+    overflow-wrap: anywhere;
+}
+.updated {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin: 8px 0 0;
+}
+.rowActions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.chevron {
+    color: var(--text-tertiary);
 }
 .srOutcome {
     margin: 0;
-    min-height: 1.5em;
 }
-@media (max-width: 520px) {
+.srOutcome:empty {
+    display: none;
+}
+@media (max-width: 640px) {
     .main {
-        padding-inline: var(--sys-space-4);
+        padding: 24px 16px;
     }
-    .header,
-    .header > button,
-    .actions,
-    .actions > * {
+    .filters {
         align-items: stretch;
-        width: 100%;
+        flex-direction: column;
     }
-    .pair {
-        grid-template-columns: 1fr;
+    .search {
+        max-width: none;
     }
+    .segments {
+        align-self: flex-start;
+    }
+    .dictionaryCard {
+        padding: 12px;
+    }
+}
+@media (max-width: 380px) {
+    .rowActions {
+        gap: 0;
+    }
+    .chevron {
+        display: none;
+    }
+}
+
+.loadingLine {
+    margin-top: 12px;
+}
+@media (min-width: 1024px) {
+    .main {
+        margin-inline-start: 240px;
+        max-width: none;
+    }
+}
+@media (max-width: 1023px) {
+    .main {
+        padding-bottom: 112px;
+    }
+}
+
+.firstDictionary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+.firstDictionary h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+.firstDictionary p {
+    max-width: 448px;
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+.emptyIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+.emptyResults h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+.emptyResults p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+.emptyActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+button.openLink {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
 }

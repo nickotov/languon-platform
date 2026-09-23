@@ -11,7 +11,7 @@
         "catalog:update": "node scripts/reconcile-catalog.mjs",
         "dev": "node src/main.mjs",
         "lint": "eslint .",
-        "test": "node --test test/*.test.mjs",
+        "test": "node --test test/*.test.mjs ../scripts/dev-all.test.mjs",
         "test:e2e": "playwright test"
     },
     "devDependencies": {

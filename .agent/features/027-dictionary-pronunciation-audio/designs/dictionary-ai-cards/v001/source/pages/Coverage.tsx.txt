@@ -1,0 +1,96 @@
+import React from 'react'
+import { CheckIcon, CircleDashedIcon, HelpCircleIcon } from 'lucide-react'
+import { Card } from '../components/Card'
+import { Badge } from '../components/Badge'
+import { coverage, gaps } from '../data/coverage'
+
+const gapTone = {
+  deferred: 'warning',
+  clarify: 'info',
+  partial: 'neutral',
+} as const
+
+const gapIcon = {
+  deferred: CircleDashedIcon,
+  clarify: HelpCircleIcon,
+  partial: CheckIcon,
+}
+
+export function Coverage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-text-primary">Coverage map</h1>
+        <p className="mt-1 max-w-[52rem] text-sm text-text-secondary">
+          Each requirement id mapped to the screens and states that carry it, followed by
+          everything deferred, partial, or needing clarification.
+        </p>
+      </div>
+
+      <ol className="space-y-3">
+        {coverage.map((entry) => (
+          <li key={entry.id}>
+            <Card variant="outlined" padding="md">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone="info">{entry.id}</Badge>
+                <h2 className="text-base font-semibold text-text-primary">{entry.title}</h2>
+              </div>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                Screens
+              </p>
+              <ul className="mt-1 flex flex-wrap gap-2">
+                {entry.screens.map((screen) => (
+                  <li key={screen}>
+                    <Badge size="sm" tone="neutral">
+                      {screen}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                States
+              </p>
+              <ul className="mt-1 space-y-1">
+                {entry.states.map((state) => (
+                  <li key={state} className="flex gap-2 text-sm text-text-secondary">
+                    <CheckIcon
+                      aria-hidden
+                      className="mt-0.5 h-4 w-4 shrink-0 text-success-default"
+                    />
+                    <span>{state}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </li>
+        ))}
+      </ol>
+
+      <section aria-labelledby="gaps-heading" className="space-y-3">
+        <h2 id="gaps-heading" className="text-lg font-semibold text-text-primary">
+          Deferred, partial, and needs clarification
+        </h2>
+        <ul className="space-y-3">
+          {gaps.map((gap) => {
+            const Icon = gapIcon[gap.kind]
+            return (
+              <li key={gap.title}>
+                <Card variant="outlined" padding="md">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Icon aria-hidden className="h-4 w-4 text-text-secondary" />
+                    <h3 className="text-sm font-semibold text-text-primary">{gap.title}</h3>
+                    <Badge size="sm" tone={gapTone[gap.kind]}>
+                      {gap.kind === 'clarify' ? 'Needs clarification' : gap.kind}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-text-secondary">{gap.detail}</p>
+                </Card>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+    </div>
+  )
+}
+

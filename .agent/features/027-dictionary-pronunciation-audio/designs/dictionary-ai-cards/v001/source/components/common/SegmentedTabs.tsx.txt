@@ -1,0 +1,60 @@
+import React from 'react'
+
+export interface SegmentedTabItem {
+  value: string
+  label: string
+  count?: number
+}
+
+interface SegmentedTabsProps {
+  items: SegmentedTabItem[]
+  value: string
+  onValueChange: (value: string) => void
+  label: string
+}
+
+/**
+ * High-contrast segmented switch. Selection is carried by fill, border, and
+ * weight — not colour alone — and reads clearly in both themes.
+ */
+export function SegmentedTabs({ items, value, onValueChange, label }: SegmentedTabsProps) {
+  return (
+    <div
+      role="tablist"
+      aria-label={label}
+      className="inline-flex items-center gap-1 rounded-xl border border-border-strong bg-background-subtle p-1"
+    >
+      {items.map((item) => {
+        const selected = item.value === value
+        return (
+          <button
+            key={item.value}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onValueChange(item.value)}
+            className={`inline-flex min-h-[36px] items-center gap-2 rounded-lg border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background-canvas ${
+              selected
+                ? 'border-primary-default bg-primary-default font-semibold text-background-surface'
+                : 'border-transparent font-medium text-text-secondary hover:bg-background-surface hover:text-text-primary'
+            }`}
+          >
+            <span>{item.label}</span>
+            {typeof item.count === 'number' ? (
+              <span
+                className={`rounded-full px-1.5 text-xs ${
+                  selected
+                    ? 'bg-background-surface text-primary-default'
+                    : 'bg-background-surface text-text-secondary'
+                }`}
+              >
+                {item.count}
+              </span>
+            ) : null}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+

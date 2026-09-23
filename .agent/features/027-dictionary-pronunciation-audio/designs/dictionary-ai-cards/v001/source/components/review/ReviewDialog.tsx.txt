@@ -1,0 +1,355 @@
+import React, { useMemo, useRef, useState } from 'react'
+import { SparklesIcon, RefreshCwIcon, AlertTriangleIcon } from 'lucide-react'
+import { Button } from '../Button'
+import { Badge } from '../Badge'
+import { Textarea } from '../Textarea'
+import { InlineAlert } from '../InlineAlert'
+import { ResponsiveSheet } from '../card/ResponsiveSheet'
+import {
+  AiUnavailableAlert,
+  GenerationFailureAlert,
+  RateLimitAlert,
+  ReviewConflictAlert,
+} from '../card/DraftAlerts'
+import { useApp } from '../../contexts/AppContext'
+import type { CardFieldKey, Dictionary, VocabCard } from '../../types/dictionary'
+import type { ReviewFieldProposal, ReviewJobPhase } from '../../types/ai'
+import {
+  effectiveSettings,
+  fieldDir,
+  fieldLanguage,
+  isFieldEnabled,
+  FIELD_TITLES,
+} from '../../utils/settings'
+import { languageName } from '../../data/languages'
+import { reviewAlternatives, suggestionFor } from '../../utils/mockAi'
+
+interface ReviewDialogProps {
+  open: boolean
+  dictionary: Dictionary
+  card: VocabCard
+  onClose: () => void
+}
+
+export function ReviewDialog({ open, dictionary, card, onClose }: ReviewDialogProps) {
+  const { aiReview, updateCard, pushToast, reviewJobs, setReviewJob } = useApp()
+  const retained = reviewJobs[card.id] ?? null
+  const [instruction, setInstruction] = useState(retained?.instruction ?? '')
+  const [phase, setPhase] = useState<ReviewJobPhase>(retained ? retained.phase : 'idle')
+  const [proposals, setProposals] = useState<ReviewFieldProposal[]>(retained?.proposals ?? [])
+  const [errorKind, setErrorKind] = useState<'unavailable' | 'rate-limit' | 'failure' | null>(
+    null,
+  )
+  const timers = useRef<number[]>([])
+  const snapshot = useRef(card.updatedAt)
+
+  const settings = effectiveSettings(dictionary, card.overrides)
+  const conflict = phase === 'ready' && snapshot.current !== card.updatedAt
+  const busy = phase === 'queued' || phase === 'generating'
+
+  const reviewFields = useMemo<CardFieldKey[]>(
+    () =>
+      (
+        [
+          'source',
+          'translation',
+          'transcription',
+          'definition',
+          'example',
+          'exampleTranslation',
+        ] as CardFieldKey[]
+      ).filter((field) => isFieldEnabled(settings, field)),
+    [settings],
+  )
+
+  const clearTimers = () => {
+    timers.current.forEach((timer) => window.clearTimeout(timer))
+    timers.current = []
+  }
+
+  const startReview = () => {
+    if (aiReview === 'unavailable') {
+      setErrorKind('unavailable')
+      setPhase('error')
+      return
+    }
+    if (aiReview === 'rate-limited') {
+      setErrorKind('rate-limit')
+      setPhase('error')
+      return
+    }
+    setErrorKind(null)
+    clearTimers()
+    setPhase('queued')
+    timers.current.push(window.setTimeout(() => setPhase('generating'), 700))
+    timers.current.push(
+      window.setTimeout(() => {
+        const next: ReviewFieldProposal[] = reviewFields.map((field) => ({
+          field,
+          original: card[field],
+          proposed:
+            field === 'source'
+              ? card.source
+              : suggestionFor(field, card.source, 0) || card[field],
+          alternatives: field === 'source' ? [] : reviewAlternatives(field, card.source, 3),
+          warning:
+            field === 'translation'
+              ? 'Register differs from the current translation — check which fits your usage.'
+              : undefined,
+          reason:
+            field === 'example'
+              ? 'Rewritten to place the phrase in an everyday, spoken context.'
+              : undefined,
+        }))
+        snapshot.current = card.updatedAt
+        setProposals(next)
+        setPhase('ready')
+        setReviewJob(card.id, {
+          id: `review-${card.id}`,
+          cardId: card.id,
+          instruction,
+          phase: 'ready',
+          proposals: next,
+          error: null,
+          retained: true,
+        })
+      }, 2400),
+    )
+  }
+
+  const cancelReview = () => {
+    clearTimers()
+    setPhase('idle')
+  }
+
+  const updateProposal = (field: CardFieldKey, value: string) => {
+    setProposals((prev) =>
+      prev.map((proposal) =>
+        proposal.field === field ? { ...proposal, proposed: value } : proposal,
+      ),
+    )
+  }
+
+  const acceptAll = () => {
+    const patch: Partial<VocabCard> = {}
+    proposals.forEach((proposal) => {
+      patch[proposal.field] = proposal.proposed as never
+    })
+    updateCard(card.id, patch, true)
+    setReviewJob(card.id, null)
+    pushToast({
+      title: 'Proposal applied',
+      description: `“${patch.source ?? card.source}” now shows Human + AI authorship.`,
+      variant: 'success',
+    })
+    onClose()
+  }
+
+  const discardProposal = () => {
+    setProposals([])
+    setPhase('idle')
+    setReviewJob(card.id, null)
+  }
+
+  const footer = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <Button variant="secondary" onClick={onClose}>
+        Close
+      </Button>
+      <div className="flex flex-wrap gap-2">
+        {phase === 'ready' ? (
+          <>
+            <Button variant="secondary" onClick={discardProposal}>
+              Discard proposal
+            </Button>
+            <Button
+              variant="secondary"
+              leadingIcon={<RefreshCwIcon aria-hidden className="h-4 w-4" />}
+              onClick={startReview}
+              disabled={aiReview !== 'available'}
+            >
+              Regenerate
+            </Button>
+            <Button onClick={acceptAll} disabled={conflict}>
+              Accept and update card
+            </Button>
+          </>
+        ) : busy ? (
+          <Button variant="secondary" onClick={cancelReview}>
+            Cancel generation
+          </Button>
+        ) : (
+          <Button
+            leadingIcon={<SparklesIcon aria-hidden className="h-4 w-4" />}
+            onClick={startReview}
+            disabled={aiReview === 'unavailable'}
+          >
+            Generate proposal
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <ResponsiveSheet
+      open={open}
+      onClose={onClose}
+      title="Regenerate card with AI"
+      description={`${card.source} · ${dictionary.name}`}
+      footer={footer}
+    >
+      <div className="space-y-4">
+        <InlineAlert tone="tip" title="The saved card stays as it is">
+          Nothing changes until you accept. This review can propose a revised Source as well as
+          the other fields.
+        </InlineAlert>
+
+        {retained && phase === 'ready' ? (
+          <InlineAlert tone="info" title="Retained review">
+            This proposal was kept from an earlier session and survives navigation and reload. It
+            is separate from unsaved Add Card drafts, which are not recovered.
+          </InlineAlert>
+        ) : null}
+
+        {aiReview !== 'available' && proposals.length > 0 ? (
+          <InlineAlert tone="warning" title="New AI work is paused">
+            You can still review and accept this retained proposal. Starting a new generation is
+            unavailable right now.
+          </InlineAlert>
+        ) : null}
+
+        {conflict ? (
+          <ReviewConflictAlert
+            onReload={() => {
+              snapshot.current = card.updatedAt
+            }}
+          />
+        ) : null}
+
+        {phase === 'error' && errorKind === 'unavailable' ? <AiUnavailableAlert /> : null}
+        {phase === 'error' && errorKind === 'rate-limit' ? (
+          <RateLimitAlert onRetry={startReview} />
+        ) : null}
+        {phase === 'error' && errorKind === 'failure' ? (
+          <GenerationFailureAlert onRetry={startReview} />
+        ) : null}
+
+        <Textarea
+          label="Instruction for this review (optional)"
+          description="For example: make the translation more formal, or shorten the example."
+          maxLength={1000}
+          showCount
+          rows={2}
+          value={instruction}
+          onChange={(event) => setInstruction(event.target.value)}
+          disabled={busy}
+        />
+
+        {busy ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-border-default bg-background-subtle p-3 text-sm text-text-primary"
+          >
+            {phase === 'queued'
+              ? 'Queued — waiting for a free slot.'
+              : 'Generating a proposed replacement…'}{' '}
+            <span className="text-text-tertiary">The saved card is unchanged.</span>
+          </div>
+        ) : null}
+
+        {phase === 'ready' ? (
+          <div className="space-y-3">
+            {proposals.map((proposal) => {
+              const language = languageName(fieldLanguage(dictionary, settings, proposal.field))
+              return (
+                <section
+                  key={proposal.field}
+                  className="rounded-xl border border-border-default p-3"
+                  aria-label={`${FIELD_TITLES[proposal.field]} proposal`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-text-primary">
+                      {FIELD_TITLES[proposal.field]}{' '}
+                      <span className="font-normal text-text-tertiary">({language})</span>
+                    </h3>
+                    {proposal.field === 'source' ? (
+                      <Badge size="sm" tone="warning">
+                        Source may change
+                      </Badge>
+                    ) : null}
+                  </div>
+
+                  {proposal.warning ? (
+                    <p className="mt-2 inline-flex items-start gap-1.5 text-xs text-warning-default">
+                      <AlertTriangleIcon aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      {proposal.warning}
+                    </p>
+                  ) : null}
+                  {proposal.reason ? (
+                    <p className="mt-1 text-xs text-text-secondary">Why: {proposal.reason}</p>
+                  ) : null}
+
+                  <div className="mt-2 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-lg border border-border-default bg-background-subtle p-2.5">
+                      <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                        Saved now
+                      </p>
+                      <p
+                        dir={fieldDir(dictionary, settings, proposal.field)}
+                        className="mt-1 break-words text-sm text-text-primary"
+                      >
+                        {proposal.original || <span className="text-text-tertiary">Empty</span>}
+                      </p>
+                    </div>
+                    <div>
+                      <Textarea
+                        label="Proposed replacement (editable)"
+                        rows={2}
+                        resize="vertical"
+                        value={proposal.proposed}
+                        dir={fieldDir(dictionary, settings, proposal.field)}
+                        onChange={(event) =>
+                          updateProposal(proposal.field, event.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {proposal.alternatives.length > 0 ? (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-text-tertiary">
+                        Alternatives ({proposal.alternatives.length} of 3)
+                      </p>
+                      <ul className="mt-1 space-y-1">
+                        {proposal.alternatives.map((alternative) => (
+                          <li
+                            key={alternative}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border-strong p-2"
+                          >
+                            <span className="min-w-0 break-words text-sm italic text-text-secondary">
+                              {alternative}
+                            </span>
+                            <Button
+                              size="compact"
+                              variant="secondary"
+                              onClick={() => updateProposal(proposal.field, alternative)}
+                            >
+                              Use this
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </section>
+              )
+            })}
+          </div>
+        ) : null}
+      </div>
+    </ResponsiveSheet>
+  )
+}
+

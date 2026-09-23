@@ -65,11 +65,11 @@ provider evaluation and dedicated Selectel verification meet the feature gates.
 1. Sign in as a verified owner and create a Spanish → English dictionary.
 2. Add source “casa”, translation “house”, example “La casa es grande.” and
    example translation “The house is large.” Save the card.
-3. Press Play beside a field. Preparing audio indicates the durable job is pending.
+3. Press the speaker icon beside a field (accessible label **Play [field]**). Preparing audio indicates the durable job is pending.
    When ready, audio plays; if the browser blocks delayed autoplay, press Play
-   again. The development fixture label appears for fixture recordings.
+   again using the same field control. The development fixture label appears for fixture recordings.
 4. Press Stop to cancel listening or select another field. Only one clip plays.
-   Use Playback speed to select normal or 0.8× speed.
+   Playback uses normal speed; the design does not expose a speed selector.
 5. Play the same field again: it uses cached audio. Edit the source to “hogar”,
    save, and play: the new text gets a new asset. Changing providers does not
    discard a ready recording for unchanged content.
@@ -110,12 +110,12 @@ against shared/production data or a paid provider.
 
 ## E2E coverage
 
-| Scenario                                         | Observable proof                                                                                                                       |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `owner-plays-four-card-fields`                   | Four saved fields return private decodable bytes through the actual worker and play in the browser; speed/narrow-layout control works  |
-| `repeat-play-reuses-audio-and-edits-refresh`     | Repeated playback reuses asset identity; changed saved source selects new audio                                                        |
-| `audio-failure-retry-and-selection-cancellation` | Failed byte delivery can retry cached audio; stopped delayed selection does not play unexpectedly                                      |
-| `archived-or-removed-owner-cannot-play-audio`    | Archived card loses controls and previously ready byte URL is denied; removed-owner purge is additionally tested at the database layer |
+| Scenario                                         | Observable proof                                                                                                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `owner-plays-four-card-fields`                   | Four saved fields return private decodable bytes through the actual worker and play in the browser; speed/reorder controls are absent and narrow layout works |
+| `repeat-play-reuses-audio-and-edits-refresh`     | Repeated playback reuses asset identity; changed saved source selects new audio                                                                               |
+| `audio-failure-retry-and-selection-cancellation` | Failed byte delivery can retry cached audio; stopped delayed selection does not play unexpectedly                                                             |
+| `archived-or-removed-owner-cannot-play-audio`    | Archived card loses controls and previously ready byte URL is denied; removed-owner purge is additionally tested at the database layer                        |
 
 ## System verification
 

@@ -1,0 +1,170 @@
+import React from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { BookMarkedIcon, LayersIcon, ListChecksIcon, MoonIcon, SunIcon } from 'lucide-react'
+import { NavItem } from '../NavItem'
+import { IconAction } from '../common/IconAction'
+import { Select } from '../Select'
+import { Toast } from '../Toast'
+import { useApp } from '../../contexts/AppContext'
+import { t, UI_LOCALES, type UiLocale } from '../../data/i18n'
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { theme, setTheme, locale, setLocale, toast, pushToast } = useApp()
+
+  const go = (path: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    navigate(path)
+  }
+
+  const isLibrary = location.pathname === '/' || location.pathname.startsWith('/d/')
+
+  const themeToggle = (
+    <IconAction
+      size="sm"
+      icon={theme === 'light' ? <MoonIcon aria-hidden /> : <SunIcon aria-hidden />}
+      label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+    />
+  )
+
+  const localeSelect = (
+    <Select
+      size="sm"
+      fullWidth
+      aria-label={t('interfaceLanguage', locale)}
+      className="text-text-primary"
+      value={locale}
+      onChange={(event) => setLocale(event.target.value as UiLocale)}
+      options={UI_LOCALES}
+    />
+  )
+
+  return (
+    <div
+      data-theme={theme}
+      className="flex min-h-screen w-full bg-background-canvas font-body text-text-primary"
+    >
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background-surface focus:px-3 focus:py-2 focus:text-sm focus:ring-2 focus:ring-border-focus"
+      >
+        Skip to main content
+      </a>
+
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-e border-border-default bg-background-surface lg:flex">
+        <div className="flex h-16 items-center gap-2 border-b border-border-default px-4">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-subtle text-primary-default">
+            <BookMarkedIcon aria-hidden className="h-4 w-4" />
+          </span>
+          <span className="text-base font-semibold text-text-primary">{t('appName', locale)}</span>
+        </div>
+
+        <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
+          <ul className="space-y-1">
+            <li>
+              <NavItem
+                className="text-text-primary"
+                label={t('navLibrary', locale)}
+                icon={BookMarkedIcon}
+                href="/"
+                active={isLibrary}
+                onClick={go('/')}
+              />
+            </li>
+          </ul>
+          <p className="mt-6 px-3 text-xs font-medium uppercase tracking-wide text-text-tertiary">
+            Design deliverables
+          </p>
+          <ul className="mt-2 space-y-1">
+            <li>
+              <NavItem
+                className="text-text-primary"
+                label={t('navStates', locale)}
+                icon={LayersIcon}
+                href="/states"
+                active={location.pathname === '/states'}
+                onClick={go('/states')}
+              />
+            </li>
+            <li>
+              <NavItem
+                className="text-text-primary"
+                label={t('navCoverage', locale)}
+                icon={ListChecksIcon}
+                href="/coverage"
+                active={location.pathname === '/coverage'}
+                onClick={go('/coverage')}
+              />
+            </li>
+          </ul>
+        </nav>
+
+        <div className="space-y-2 border-t border-border-default p-3">
+          <p className="px-1 text-xs font-medium uppercase tracking-wide text-text-tertiary">
+            {t('interfaceLanguage', locale)}
+          </p>
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">{localeSelect}</div>
+            {themeToggle}
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main id="main" className="min-w-0 flex-1 px-4 pb-28 pt-6 lg:px-6 lg:pb-10 lg:pt-8">
+          <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+        </main>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-default bg-background-surface lg:hidden">
+        <div className="flex items-center gap-2 px-2 py-1">
+          <nav aria-label="Main" className="flex flex-1 justify-around">
+            <NavItem
+              className="text-text-primary"
+              label={t('navLibrary', locale)}
+              icon={BookMarkedIcon}
+              href="/"
+              orientation="horizontal"
+              active={isLibrary}
+              onClick={go('/')}
+            />
+            <NavItem
+              className="text-text-primary"
+              label={t('navStates', locale)}
+              icon={LayersIcon}
+              href="/states"
+              orientation="horizontal"
+              active={location.pathname === '/states'}
+              onClick={go('/states')}
+            />
+            <NavItem
+              className="text-text-primary"
+              label={t('navCoverage', locale)}
+              icon={ListChecksIcon}
+              href="/coverage"
+              orientation="horizontal"
+              active={location.pathname === '/coverage'}
+              onClick={go('/coverage')}
+            />
+          </nav>
+          <div className="w-28 shrink-0">{localeSelect}</div>
+          {themeToggle}
+        </div>
+      </div>
+
+      {toast ? (
+        <Toast
+          anchored
+          position="bottom-right"
+          variant={toast.variant}
+          title={toast.title}
+          description={toast.description}
+          onDismiss={() => pushToast(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+

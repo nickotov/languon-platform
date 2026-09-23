@@ -25,6 +25,32 @@ quick-access membership. Successful starts clear the current checkbox
 selection. If a batch is rejected, the complete conflict or validation
 explanation appears in an in-viewport alert.
 
+## Start the whole app
+
+With Docker running on a local daemon/context, dependencies installed and root `.env.local` configured
+from `.env.example`, open **Development → Start whole app** and click **Start**.
+The reviewed `dev:all` command waits for PostgreSQL and Redis health, builds shared
+dependencies, applies migrations, then starts backend, web, admin and the
+dictionary worker. Watch that command's log for setup progress
+and each application's ready message. Default URLs are backend
+`http://localhost:4000/health`, web `http://localhost:3333`, and admin
+`http://localhost:3001`.
+
+The command accepts only local development database/cache targets; it does not
+install dependencies, start Docker itself, seed accounts or configure external
+providers. The account-deletion worker remains a separate manual operation.
+It runs individually, outside batches, because startup applies
+migrations. Stop overlapping panel commands first; processes started outside
+the panel must also be stopped separately. You can add it to a quick-access
+section and use its individual Start button there.
+
+**Stop** cancels setup or stops the owned app/worker processes. Database and
+Redis containers and volumes stay intact. A startup/service failure stops the
+other owned processes; fix the reported issue before restarting. Pending
+migrations already committed before a cancellation remain applied. Use the
+separate `infra:down` command after the app stops to stop infrastructure without
+deleting its volumes.
+
 ## Quick-access sections
 
 Create named command sets with **Manage quick access**, then expand any command

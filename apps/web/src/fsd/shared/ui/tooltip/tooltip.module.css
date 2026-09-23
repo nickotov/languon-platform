@@ -2,10 +2,10 @@
     display: inline-flex;
 }
 .tooltip {
-    background: var(--neutral-900);
+    background: var(--background-surface-dark);
     border: 0;
     border-radius: var(--radius-sm);
-    color: var(--neutral-50);
+    color: var(--text-primary-dark);
     inset: auto;
     margin: 0;
     max-width: min(280px, calc(100vw - 32px));
@@ -17,11 +17,9 @@
     box-shadow: var(--elevation-md);
 }
 .arrow {
-    background: var(--neutral-900);
+    background: var(--background-surface-dark);
     height: 8px;
-    left: 50%;
     position: absolute;
-    top: 100%;
-    transform: translate(-50%, -50%) rotate(45deg);
+    transform: rotate(45deg);
     width: 8px;
 }

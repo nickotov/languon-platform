@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:73ead61d40129f94
+// @user-flow-revision dictionary-platform sha256:1e8e047e7a475a69
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -117,31 +117,77 @@ async function createDictionary(page: Page, name: string): Promise<void> {
     await page.getByLabel('Translate to').selectOption('es');
     await page.getByRole('button', { name: 'Create dictionary' }).click();
     await expect(page.getByRole('heading', { name })).toBeVisible();
-    await expect(page.getByText('This dictionary is private.')).toBeVisible();
+    await expect(page.getByText('Private', { exact: true })).toBeVisible();
 }
 
 async function addPopulatedCard(page: Page): Promise<void> {
-    await page.getByLabel('Definition').check();
-    await page.getByLabel('Context example').check();
-    await page.getByLabel('Example translation').check();
-    await page.getByRole('button', { name: 'Save settings' }).click();
+    const settings = await openDictionarySettings(page);
+    await settings.getByLabel('Definition').check();
+    await settings.getByLabel('Context example').check();
+    await settings.getByLabel('Example translation').check();
+    await settings.getByRole('button', { name: 'Save settings' }).click();
     await expect(page.getByText('Dictionary settings saved.')).toBeVisible();
+    await settings
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .first()
+        .click();
 
     await page.getByRole('button', { name: 'Add card' }).click();
-    await page.getByLabel(/^Source phrase ·/).fill('work of art');
-    await page.getByLabel(/^Translation ·/).fill('obra de arte');
+    await page.getByLabel(/^Source word or phrase \(/).fill('work of art');
+    await page.getByLabel(/^Translation \(/).fill('obra de arte');
     await page
-        .getByLabel(/^Definition ·/)
+        .getByLabel(/^Definition \(/)
         .fill('An object made for artistic expression.');
     await page
-        .getByLabel(/^Context example ·/)
+        .getByLabel(/^Context example \(/)
         .fill('The gallery acquired the work of art.');
     await page
-        .getByLabel(/^Example translation ·/)
+        .getByLabel(/^Example translation \(/)
         .fill('La galería adquirió la obra de arte.');
     await page.getByRole('button', { name: 'Save card' }).click();
     await expect(page.getByText('work of art', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('Translate from')).toBeDisabled();
+    const lockedSettings = await openDictionarySettings(page);
+    await expect(
+        lockedSettings.getByText('Locked', { exact: true }),
+    ).toBeVisible();
+    await expect(lockedSettings.getByLabel('Translate from')).toHaveCount(0);
+    await lockedSettings
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .first()
+        .click();
+}
+
+async function openDictionarySettings(page: Page) {
+    await page.getByRole('button', { name: /^Dictionary settings —/ }).click();
+    const settings = page.getByRole('dialog', {
+        name: 'Dictionary settings',
+    });
+    await expect(settings).toBeVisible();
+    return settings;
+}
+
+async function chooseDictionarySecondaryAction(page: Page, action: string) {
+    await page.getByRole('button', { name: 'More dictionary actions' }).click();
+    await page
+        .getByRole('menuitem', {
+            name: action,
+            exact: true,
+        })
+        .click();
+}
+
+async function chooseDictionaryLibraryAction(
+    page: Page,
+    name: string,
+    action: string,
+) {
+    const dictionary = page.getByRole('listitem').filter({ hasText: name });
+    await dictionary
+        .getByRole('button', { name: `Actions for ${name}`, exact: true })
+        .click();
+    await dictionary
+        .getByRole('menuitem', { name: action, exact: true })
+        .click();
 }
 
 async function chooseCardAction(
@@ -199,10 +245,48 @@ test.describe('dictionary platform journeys', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+        const draftSource = compactEditor.getByLabel(
+            /^Source word or phrase \(/,
+        );
+        await draftSource.fill('temporary draft');
+        await page.keyboard.press('Escape');
+        const discardDraft = page.getByRole('dialog', {
+            name: 'Discard this draft?',
+        });
+        await expect(discardDraft).toBeVisible();
+        await discardDraft
+            .getByRole('button', { name: 'Keep writing' })
+            .click();
+        await expect(compactEditor).toBeVisible();
+        await expect(draftSource).toHaveValue('temporary draft');
+
         await compactEditor
             .getByRole('button', { name: 'Cancel' })
+            .first()
+            .click();
+        await expect(discardDraft).toBeVisible();
+        await discardDraft
+            .getByRole('button', { name: 'Keep writing' })
+            .click();
+        await expect(draftSource).toHaveValue('temporary draft');
+
+        await compactEditor
+            .getByRole('button', { name: 'Discard draft' })
             .last()
             .click();
+        await expect(discardDraft).toBeVisible();
+        await discardDraft
+            .getByRole('button', { name: 'Discard draft' })
+            .click();
+        await expect(compactEditor).not.toBeVisible();
+
+        await addCard.click();
+        await expect(compactEditor).toBeVisible();
+        await compactEditor
+            .getByRole('button', { name: 'Discard draft' })
+            .last()
+            .click();
+        await expect(discardDraft).not.toBeVisible();
         await expect(compactEditor).not.toBeVisible();
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
@@ -213,7 +297,7 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             page.getByRole('dialog', { name: 'Edit card' }),
         ).toBeVisible();
-        await page.getByLabel(/^Translation ·/).fill('pieza de arte');
+        await page.getByLabel(/^Translation \(/).fill('pieza de arte');
         let releaseCardSave: (() => void) | undefined;
         const cardSaveGate = new Promise<void>((resolve) => {
             releaseCardSave = resolve;
@@ -240,26 +324,28 @@ test.describe('dictionary platform journeys', () => {
 
         await chooseCardAction(page, 'work of art', 'Archive');
         await expect(page.getByText('Card archived.')).toBeVisible();
-        await page.getByLabel('Card status').selectOption('archived');
+        await page
+            .getByRole('group', { name: 'Card status' })
+            .getByRole('button', { name: 'Archived', exact: true })
+            .click();
         await chooseCardAction(page, 'work of art', 'Restore');
         await expect(page.getByText('Card restored.')).toBeVisible();
 
         await page.getByRole('link', { name: /Back to dictionaries/ }).click();
-        const dictionaryRow = page
-            .getByRole('listitem')
-            .filter({ hasText: name });
-        await dictionaryRow.getByRole('button', { name: 'Archive' }).click();
+        await chooseDictionaryLibraryAction(page, name, 'Archive');
         await expect(page.getByText(/Dictionary archived/)).toBeVisible();
-        await page.getByLabel('Dictionary status').selectOption('archived');
         await page
-            .getByRole('listitem')
-            .filter({ hasText: name })
-            .getByRole('button', { name: 'Restore' })
+            .getByRole('group', { name: 'Dictionary status' })
+            .getByRole('button', { name: 'Archived', exact: true })
             .click();
+        await chooseDictionaryLibraryAction(page, name, 'Restore');
         await expect(
             page.getByText('Dictionary restored as private.'),
         ).toBeVisible();
-        await page.getByLabel('Dictionary status').selectOption('active');
+        await page
+            .getByRole('group', { name: 'Dictionary status' })
+            .getByRole('button', { name: 'Active', exact: true })
+            .click();
         await expect(page.getByRole('heading', { name })).toBeVisible();
         assertNoBrowserErrors();
     });
@@ -283,6 +369,7 @@ test.describe('dictionary platform journeys', () => {
                 response.url().endsWith('/share-key/rotate') &&
                 response.status() === 200,
         );
+        await chooseDictionarySecondaryAction(page, 'Sharing');
         await page.getByRole('button', { name: 'Create sharing link' }).click();
         const rotated = (await (await rotateResponse).json()) as {
             capability: { shareId: string; shareKey: string };
@@ -356,9 +443,7 @@ test.describe('dictionary platform journeys', () => {
         await page.getByRole('button', { name: 'Fork privately' }).click();
         await expect(page).toHaveURL(/\/dictionaries\/[0-9a-f-]+$/);
         await expect(page.getByRole('heading', { name })).toBeVisible();
-        await expect(
-            page.getByText('This dictionary is private.'),
-        ).toBeVisible();
+        await expect(page.getByText('Private', { exact: true })).toBeVisible();
         expect(requestedUrls.every((url) => !url.includes(shareKey))).toBe(
             true,
         );
@@ -383,6 +468,7 @@ test.describe('dictionary platform journeys', () => {
                 response.url().endsWith('/share-key/rotate') &&
                 response.status() === 200,
         );
+        await chooseDictionarySecondaryAction(page, 'Sharing');
         await page.getByRole('button', { name: 'Rotate sharing link' }).click();
         const rerotated = (await (await rerotateResponse).json()) as {
             capability: { shareId: string; shareKey: string };
@@ -392,13 +478,12 @@ test.describe('dictionary platform journeys', () => {
             page.getByRole('heading', { name: 'Dictionary unavailable' }),
         ).toBeVisible();
         await page.goto(sourceEditorUrl);
-        await page
-            .locator('header')
-            .filter({ has: page.getByRole('heading', { name }) })
-            .getByRole('button', { name: 'Archive', exact: true })
-            .click();
+        await page.getByRole('link', { name: /Back to dictionaries/ }).click();
+        await chooseDictionaryLibraryAction(page, name, 'Archive');
+        await expect(page.getByText(/Dictionary archived/)).toBeVisible();
+        await page.goto(sourceEditorUrl);
         await expect(
-            page.getByText('This dictionary is archived'),
+            page.getByText('Restore it to edit settings, cards, and sharing.'),
         ).toBeVisible();
         await page.goto(
             `/shared/dictionaries/${rerotated.capability.shareId}#${rerotated.capability.shareKey}`,
@@ -434,7 +519,7 @@ test.describe('dictionary platform journeys', () => {
         await chooseCardAction(page, 'work of art', 'Edit');
         const staleEditor = page.getByRole('dialog', { name: 'Edit card' });
         await staleEditor
-            .getByLabel(/^Translation ·/)
+            .getByLabel(/^Translation \(/)
             .fill('edición local obsoleta');
         const manualConcurrentPage = await context.newPage();
         const assertNoManualConcurrentBrowserErrors =
@@ -445,7 +530,7 @@ test.describe('dictionary platform journeys', () => {
         ).toBeVisible();
         await chooseCardAction(manualConcurrentPage, 'work of art', 'Edit');
         await manualConcurrentPage
-            .getByLabel(/^Translation ·/)
+            .getByLabel(/^Translation \(/)
             .fill('obra de arte actualizada');
         await manualConcurrentPage
             .getByRole('button', { name: 'Save card' })
@@ -473,32 +558,35 @@ test.describe('dictionary platform journeys', () => {
         ).toBeVisible();
 
         await chooseCardAction(page, 'work of art', 'Regenerate with AI');
-        let review = page.getByRole('region', {
-            name: 'Review generated card',
+        let review = page.getByRole('dialog', {
+            name: 'Regenerate card with AI',
         });
         await review
-            .getByLabel('Custom instruction')
+            .getByLabel('Instruction for this review (optional)')
             .fill('Keep the vocabulary suitable for an art studio.');
-        await review
-            .getByRole('button', { name: 'Regenerate with AI' })
-            .click();
+        await review.getByRole('button', { name: 'Generate proposal' }).click();
         await expect(
-            review.getByRole('heading', { name: 'Proposed card' }),
+            review.getByRole('button', { name: 'Accept and update card' }),
         ).toBeVisible({ timeout: 20_000 });
         await expect(page).toHaveURL(/generationCard=.*generationJob=/);
 
         await page.reload();
-        review = page.getByRole('region', { name: 'Review generated card' });
+        review = page.getByRole('dialog', { name: 'Regenerate card with AI' });
         await expect(
-            review.getByRole('heading', { name: 'Proposed card' }),
+            review.getByRole('button', { name: 'Accept and update card' }),
         ).toBeVisible({ timeout: 20_000 });
-        await expect(review.getByText('Original version 2')).toBeVisible();
+        await expect(
+            review
+                .getByRole('region', { name: /^Translation \(/ })
+                .getByRole('paragraph')
+                .filter({ hasText: /^obra de arte actualizada$/ }),
+        ).toBeVisible();
         await page.setViewportSize({ width: 320, height: 900 });
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
         const acceptProposal = review.getByRole('button', {
-            name: 'Accept reviewed card',
+            name: 'Accept and update card',
         });
         await acceptProposal.focus();
         await page.keyboard.press('Tab');
@@ -527,7 +615,7 @@ test.describe('dictionary platform journeys', () => {
         ).toBeVisible();
         await chooseCardAction(concurrentPage, 'work of art', 'Edit');
         await concurrentPage
-            .getByLabel(/^Translation ·/)
+            .getByLabel(/^Translation \(/)
             .fill('obra artística concurrente');
         await concurrentPage.getByRole('button', { name: 'Save card' }).click();
         await expect(
@@ -538,10 +626,12 @@ test.describe('dictionary platform journeys', () => {
         assertNoConcurrentBrowserErrors();
         await concurrentPage.close();
 
-        const proposedTranslation = review.getByLabel(/^Translation ·/);
+        const proposedTranslation = review
+            .getByRole('region', { name: /^Translation \(/ })
+            .getByLabel('Proposed replacement');
         await proposedTranslation.fill('obra de arte revisada');
         await review
-            .getByRole('button', { name: 'Accept reviewed card' })
+            .getByRole('button', { name: 'Accept and update card' })
             .click();
         await expect(
             review.getByText('Card changed since generation'),
@@ -560,7 +650,7 @@ test.describe('dictionary platform journeys', () => {
         await expect(proposedTranslation).toHaveValue('obra de arte revisada');
 
         await review
-            .getByLabel('Custom instruction')
+            .getByLabel('Instruction for this review (optional)')
             .fill('Use the current card and keep the art context.');
         const previousGenerationUrl = page.url();
         const regenerateResponse = page.waitForResponse(
@@ -569,16 +659,19 @@ test.describe('dictionary platform journeys', () => {
                 response.status() === 202,
         );
         await review
-            .getByRole('button', { name: 'Regenerate proposal' })
+            .getByRole('button', { name: 'Regenerate', exact: true })
             .click();
         await regenerateResponse;
         await expect(page).not.toHaveURL(previousGenerationUrl);
         await expect(
-            review.getByRole('heading', { name: 'Proposed card' }),
+            review.getByRole('button', { name: 'Accept and update card' }),
         ).toBeVisible({ timeout: 20_000 });
-        await review.getByLabel(/^Translation ·/).fill('obra de arte final');
         await review
-            .getByRole('button', { name: 'Accept reviewed card' })
+            .getByRole('region', { name: /^Translation \(/ })
+            .getByLabel('Proposed replacement')
+            .fill('obra de arte final');
+        await review
+            .getByRole('button', { name: 'Accept and update card' })
             .click();
         await expect(
             review.getByText('The reviewed proposal was accepted.', {
@@ -614,11 +707,10 @@ test.describe('dictionary platform journeys', () => {
         );
         await createDictionary(page, `Batch studio ${runId}`);
 
-        await page
-            .getByRole('button', {
-                name: 'Generate cards from pasted terms',
-            })
-            .click();
+        await chooseDictionarySecondaryAction(
+            page,
+            'Generate cards from pasted terms',
+        );
         let batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
@@ -718,11 +810,10 @@ test.describe('dictionary platform journeys', () => {
         await page.getByRole('link', { name: /Back to dictionaries/ }).click();
         const conflictName = `Empty batch conflict ${runId}`;
         await createDictionary(page, conflictName);
-        await page
-            .getByRole('button', {
-                name: 'Generate cards from pasted terms',
-            })
-            .click();
+        await chooseDictionarySecondaryAction(
+            page,
+            'Generate cards from pasted terms',
+        );
         batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
@@ -741,8 +832,11 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             concurrentPage.getByRole('heading', { name: conflictName }),
         ).toBeVisible();
-        await concurrentPage.getByLabel('Translate from').selectOption('de');
-        await concurrentPage
+        const concurrentSettings = await openDictionarySettings(concurrentPage);
+        await concurrentSettings
+            .getByLabel('Translate from')
+            .selectOption('de');
+        await concurrentSettings
             .getByRole('button', { name: 'Save settings' })
             .click();
         await expect(
@@ -790,9 +884,10 @@ test.describe('dictionary platform journeys', () => {
         );
         await createDictionary(page, `Document studio ${runId}`);
 
-        await page
-            .getByRole('button', { name: 'Generate cards from a document' })
-            .click();
+        await chooseDictionarySecondaryAction(
+            page,
+            'Generate cards from a document',
+        );
         let review = page.getByRole('dialog', {
             name: 'Generate cards from a document',
         });
@@ -918,14 +1013,12 @@ test.describe('dictionary platform journeys', () => {
             syntheticEmail(testInfo, 'owner'),
         );
 
-        await page.getByRole('button', { name: 'Import cards' }).click();
+        await createDictionary(page, `Quizlet transfer ${runId}`);
+        await chooseDictionarySecondaryAction(page, 'Import cards');
         const longUnbrokenSource = 'a'.repeat(200);
         const importer = page.getByRole('dialog', {
             name: 'Preview and import cards',
         });
-        await importer
-            .getByRole('textbox', { name: /^Name/u })
-            .fill(`Quizlet transfer ${runId}`);
         await importer.getByLabel('Column separator').selectOption('comma');
         await importer
             .getByRole('checkbox', {
@@ -1012,7 +1105,7 @@ test.describe('dictionary platform journeys', () => {
         ).toBeVisible();
         await review.getByRole('button', { name: 'Cancel' }).click();
 
-        await page.getByRole('button', { name: 'Export' }).click();
+        await chooseDictionarySecondaryAction(page, 'Export');
         const exporter = page.getByRole('dialog', {
             name: 'Export active cards',
         });
@@ -1037,24 +1130,33 @@ test.describe('dictionary platform journeys', () => {
     test('creates a mixed card from retained inline AI field choices', async ({
         page,
     }, testInfo) => {
-        const assertNoBrowserErrors = captureBrowserErrors(page);
-        await signUpAndVerify(
+        const assertNoBrowserErrors = captureBrowserErrors(
+            page,
+            (path, status) => path === '/auth/sign-up' && status === 429,
+        );
+        await signUpAndVerifyOrSignInAfterRateLimit(
             page,
             syntheticEmail(testInfo, 'inline-authoring'),
             '/dictionaries',
+            syntheticEmail(testInfo, 'owner'),
         );
         await createDictionary(page, `Inline AI Spanish ${runId}`);
-        await page.getByLabel('Definition').check();
-        await page.getByRole('button', { name: 'Save settings' }).click();
+        const settings = await openDictionarySettings(page);
+        await settings.getByLabel('Definition').check();
+        await settings.getByRole('button', { name: 'Save settings' }).click();
         await expect(
             page.getByText('Dictionary settings saved.'),
         ).toBeVisible();
+        await settings
+            .getByRole('button', { name: 'Cancel', exact: true })
+            .first()
+            .click();
 
         await page.getByRole('button', { name: 'Add card' }).click();
         const editor = page.getByRole('dialog', { name: 'Add card' });
-        const source = editor.getByLabel(/^Source phrase ·/);
-        const translation = editor.getByLabel(/^Translation ·/);
-        const definition = editor.getByLabel(/^Definition ·/);
+        const source = editor.getByLabel(/^Source word or phrase \(/);
+        const translation = editor.getByLabel(/^Translation \(/);
+        const definition = editor.getByLabel(/^Definition \(/);
         await source.fill('atelier');
         await editor.getByRole('button', { name: 'Generate with AI' }).click();
 
@@ -1088,6 +1190,9 @@ test.describe('dictionary platform journeys', () => {
 
         await editor
             .getByRole('button', { name: 'Regenerate all fields' })
+            .click();
+        await translationSuggestions
+            .getByRole('button', { name: 'Show 1 more choices' })
             .click();
         await expect(
             translationSuggestions.getByText('atelier (es) · alternative 2', {

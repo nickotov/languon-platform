@@ -1,0 +1,262 @@
+{
+  "artifactId": "b7f13de7-72b5-4c6f-bd22-a08c83e1ceb4",
+  "capturedAt": "2026-09-23",
+  "files": [
+    {
+      "path": "App.tsx.txt",
+      "sha256": "29c909dd0dcce8935752ad6668834c25f522e8ca48a1468c03a3d6ee859e20ae"
+    },
+    {
+      "path": "components/Badge.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Breadcrumb.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Button.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Card.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Dialog.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Divider.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/DropdownMenu.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/FormField.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/IconButton.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/InlineAlert.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Input.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Label.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/NavItem.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Radio.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Select.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Skeleton.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Switch.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Tabs.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Textarea.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/Toast.tsx.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "components/app/AppShell.tsx.txt",
+      "sha256": "dc089e7846d9b235e64f617ea93ca14a6abad655553770800f83183036c07593"
+    },
+    {
+      "path": "components/audio/FieldAudioControl.tsx.txt",
+      "sha256": "5dc5c19c235ed027e803b3a425f2e119ea0e101560ac192d78f4aa2d1dfa695a"
+    },
+    {
+      "path": "components/card/CardEditorSheet.tsx.txt",
+      "sha256": "dda03eff61046bd1556a9b481bbe082fd1a625518a1716773427ba47bc6d144e"
+    },
+    {
+      "path": "components/card/CardFieldEditor.tsx.txt",
+      "sha256": "5af271c7bb13953b084d38de4f0cc61f3da008b092bce686434102ef70575033"
+    },
+    {
+      "path": "components/card/DraftAlerts.tsx.txt",
+      "sha256": "9bc41795beae41c266d1075c4aee22fec42c8a883fd1282d1a17c40cadafc3e8"
+    },
+    {
+      "path": "components/card/OverridesSection.tsx.txt",
+      "sha256": "4d14a935082a24b26a8ddc91d3e20358654fbf7b703cc4e3f052cd55735d274d"
+    },
+    {
+      "path": "components/card/ResponsiveSheet.tsx.txt",
+      "sha256": "084abf9f6071f18f055f00c308d7eddcddf15072970b87d1e769fec9d3058bbe"
+    },
+    {
+      "path": "components/card/SuggestionList.tsx.txt",
+      "sha256": "5c34d1ec99c5f3d05cd02e01e688b77436c937ef5023e99dc5e9a6ceddb81d06"
+    },
+    {
+      "path": "components/common/Chips.tsx.txt",
+      "sha256": "f8ce46c6fd716eeaa07fe84571b59eea7436ad9276b9eb5a7d05b56bf582299f"
+    },
+    {
+      "path": "components/common/IconAction.tsx.txt",
+      "sha256": "22416301ae83a797599b3668b88cbb9d2bfe674333319369cdcc218abf1567b2"
+    },
+    {
+      "path": "components/common/SegmentedTabs.tsx.txt",
+      "sha256": "de1eefdf1fe62ab0202291fbeadd6c4ae6ac29d6142d6752d23e06bef122b377"
+    },
+    {
+      "path": "components/library/CreateDictionaryDialog.tsx.txt",
+      "sha256": "e569ed29453d1bac7f24ce3bade287785cc9b7fa0c966e571031ce7b33f66752"
+    },
+    {
+      "path": "components/library/DictionaryListItem.tsx.txt",
+      "sha256": "c694b5ff5b5400cfa32a96e9e8ac6a96b7d45bb6d9392c241f4cdea24891427f"
+    },
+    {
+      "path": "components/review/ReviewDialog.tsx.txt",
+      "sha256": "0e7a89bc2de5d38bf8ae403a9bd90cb598c8c691cd88080f3bcc351fab68f937"
+    },
+    {
+      "path": "components/settings/DictionarySettingsSheet.tsx.txt",
+      "sha256": "f7cc92d42a139e19dffbd7580ffc1e112ee2802add3e8f5a2dd620dedc75a1fe"
+    },
+    {
+      "path": "components/states/StateFrame.tsx.txt",
+      "sha256": "22738b71cbd197e9aa3a265ebae7ce5a041429d9a39f510b313c3f7692236924"
+    },
+    {
+      "path": "components/states/StatesAiDraft.tsx.txt",
+      "sha256": "52f53e93600a5ad409f1ace9c9002c98fa9cbf4df0f6c38fa1fb76fed78625dd"
+    },
+    {
+      "path": "components/states/StatesAudioResponsive.tsx.txt",
+      "sha256": "f7cfabe8d1456ebeb280dd3308100510411ce368d3c66a3a80719f94a85fc364"
+    },
+    {
+      "path": "components/states/StatesLibraryWorkspace.tsx.txt",
+      "sha256": "2ba95500a0363b66187be3fa2fc87da924a65c0a02a1f9dada1a552bae91784d"
+    },
+    {
+      "path": "components/workspace/CardRow.tsx.txt",
+      "sha256": "4e9a697df0f4182e88dccbc21ec06db2809341e2ba742d928e709625cb315a14"
+    },
+    {
+      "path": "components/workspace/SecondaryActionsMenu.tsx.txt",
+      "sha256": "7544bf775d83babf039ffb41e15ddece4d1393acad5b1a40863b19123b1cc344"
+    },
+    {
+      "path": "contexts/AppContext.tsx.txt",
+      "sha256": "7a3c16cf143def3930c29508294e0e732f83fd7a84a8757b2d1b67b17b785e41"
+    },
+    {
+      "path": "data/cards.ts.txt",
+      "sha256": "e3e9bab146779f48635a2c9da08a43b6542f1073fb337e2296fa9f2364d6ec2a"
+    },
+    {
+      "path": "data/coverage.ts.txt",
+      "sha256": "aa0493e19c2ac129c493c76fc7cff1ddbcea33ef6736f68095f098372fa91d2e"
+    },
+    {
+      "path": "data/dictionaries.ts.txt",
+      "sha256": "3b242d0ef15b4b850b142fbef9ba5132a67bff3c72922c388723464721c64c21"
+    },
+    {
+      "path": "data/i18n.ts.txt",
+      "sha256": "29f506b16b894f439059eb9a4841d17206e772f5bda88e384f78b944ffe04e9f"
+    },
+    {
+      "path": "data/languages.ts.txt",
+      "sha256": "c0434e996cff0b59c181324b8b5cac5f5bdd98cf407ffe85d23af36ab3a27d42"
+    },
+    {
+      "path": "hooks/useAudioPlayback.ts.txt",
+      "sha256": "4140efcd3043b13d2572cd9df80bd6c25971444339f7d10e3590a5a4360d90a0"
+    },
+    {
+      "path": "hooks/useCardDraft.ts.txt",
+      "sha256": "e37ef3c12aff2556458f743875ea2b0e86f51574c510598ea04dd27fbe0c3c9b"
+    },
+    {
+      "path": "hooks/useMediaQuery.ts.txt",
+      "sha256": "06bc7bbf8f5913bae3a45c498f722b1306824f48d323ffa52ffb8be3ad0d6f93"
+    },
+    {
+      "path": "index.css.txt",
+      "sha256": "0b8cadfa47d0972423fd4ae85972c2dd6a72ae81111e48f42a13a7b548922c9b"
+    },
+    {
+      "path": "index.tsx.txt",
+      "sha256": "bde4b714c8df2d08faeffb86795e97635cea399db282a3785a98795c5eda6e04"
+    },
+    {
+      "path": "package.json.txt",
+      "sha256": "25382bc74837dad7b7f861642d794c27b53d6bc130a589a3b457e1289c321474"
+    },
+    {
+      "path": "pages/Coverage.tsx.txt",
+      "sha256": "40fafbf31eaec981b82d62f97d57d48c74cccfd974b7324697327c13f077b6ac"
+    },
+    {
+      "path": "pages/Library.tsx.txt",
+      "sha256": "28cde6b8ecd943c488bfc59d60bb53de1e0b3dafe6c61e6fed3619cde92c0d9d"
+    },
+    {
+      "path": "pages/StatesGallery.tsx.txt",
+      "sha256": "b0d593ab7bd4c695efd75c3c562844581309c6c027c34576c594f2afcb83fbab"
+    },
+    {
+      "path": "pages/Workspace.tsx.txt",
+      "sha256": "ddee9cd3926da39b95875f23b68509458ade981ec3e0802dc27a1e2e8fce858b"
+    },
+    {
+      "path": "tailwind.config.js.txt",
+      "sha256": "cc4f9f6c3b2a08da335b84c1e24cd8a9314b257088981f732da1ef9477177738"
+    },
+    {
+      "path": "types/ai.ts.txt",
+      "sha256": "d370f3e0a1663e0b1aaf748bedd72cc19061f1ec576c4ca6fe438559a87fecd1"
+    },
+    {
+      "path": "types/audio.ts.txt",
+      "sha256": "65bd48ac1e004956cb14c44adb3391797854929654793b4fd2b455be8be989b6"
+    },
+    {
+      "path": "types/dictionary.ts.txt",
+      "sha256": "198a50c97106ed8da9a41b63465c85b28b8e3ea89c99cbdbc42a2283abc28fde"
+    },
+    {
+      "path": "utils/mockAi.ts.txt",
+      "sha256": "0b24e4f40ea4601254a28816a22ecda2a52e33890bcffa9e3306f065fe0b201c"
+    },
+    {
+      "path": "utils/settings.ts.txt",
+      "sha256": "5bdd185d96096868c7a4636c4aa43220e3be681e48d90453c7e0e77f0a679896"
+    }
+  ]
+}

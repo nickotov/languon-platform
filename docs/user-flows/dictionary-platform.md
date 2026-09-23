@@ -53,7 +53,7 @@ reader playback is not included.
 
 This current guide covers the complete Dictionary Platform feature: an
 authenticated owner creates and manages a private dictionary, configures
-inherited card fields, authors and reorders
+inherited card fields, authors
 cards, archives and restores content, and deliberately creates an unlisted
 capability link. An anonymous reader can use that complete link without seeing
 owner data, then sign in and make an independent private fork. An owner can also
@@ -136,16 +136,32 @@ shared, staging, or production database.
    Verify the email with `0000`. Expect **My dictionaries**.
 2. Select **New dictionary**, name it `Studio Spanish`, choose English to
    Spanish, add a description, and create it. Expect a private dictionary editor.
-3. Enable **Definition**, **Context example**, and **Example translation**, then
-   save. Select **Add card** and expect a focused desktop dialog or mobile bottom
+3. Open **Dictionary settings** from the header. Enable **Definition**,
+   **Context example**, and **Example translation**, then save and close settings.
+   Select the floating **Add card** action and expect a centered desktop dialog or mobile bottom
    sheet. Add source, translation, definition, example, and translated example,
    then save. Expect the overlay to close and the card to inherit those settings
    and display each value with the correct language metadata.
+   Closing a non-empty or changed draft using **Discard draft**, Escape, or the close control
+   asks **Discard this draft?**. **Keep writing** preserves it; **Discard draft**
+   closes it and queues cleanup of outstanding suggestions. Empty drafts close
+   without confirmation. Expired proposals retain draft values and loaded choices
+   with explicit feedback. Rate limits, connection failures and temporary provider
+   unavailability show safe recovery instructions without raw provider details.
 4. Open the card's labelled actions menu to edit it, archive it, select archived
    cards, and restore it. Return to
    active cards and expect its values to be unchanged.
-5. Return to the library, search for the dictionary, archive it, select archived
-   dictionaries, and restore it. Restored dictionaries are private and editable.
+5. Return to the library, search for the dictionary, open its labelled actions
+   menu to archive it, select **Archived**, and use its menu to restore it. Restored dictionaries are private and editable.
+
+Settings and sharing open in focused sheets. Batch generation and import/export
+remain available under **More dictionary actions**; **Sharing** opens the existing
+sharing controls. Whole-dictionary-file import, card reordering and audio speed
+controls are hidden in this design; existing data and saved order are preserved.
+Word-pair import remains in the workspace menu. Card-specific overrides use an
+opt-in switch followed by field switches and language radio groups. Ordinary edits
+retain dormant values and existing transcription notation overrides.
+Library and card **Active** / **Archived** buttons filter the visible results.
 
 The source/target pair becomes locked after the first card, including when every
 card is archived. Disabled optional fields preserve dormant values. Version
@@ -157,12 +173,15 @@ silently overwrite or replay a stale edit.
 1. In an editable dictionary, select **Add card** and enter only a valid Source
    phrase. Select **Generate with AI**. Expect durable queued, generating, and
    validating progress with cancellation while every manual field remains
-   editable; Source is never generated or replaced.
+   editable; Source is never generated or replaced. **Save card** is unavailable
+   during generation; cancel generation to save manually. The generation action
+   stays visible but disabled until Source is valid.
 2. Expect each generated value directly below its corresponding enabled field.
    **Accept** fills only that input and keeps the suggestion visible. **Discard**
    hides only that choice without clearing manual text. **Regenerate field**
    requests only that field and appends a distinct choice without removing the
-   earlier suggestion. **Regenerate all fields** appends choices for all eligible
+   earlier suggestion. More than two choices use **Show more choices** /
+   **Show fewer choices** without deleting retained values. **Regenerate all fields** appends choices for all eligible
    fields and does not overwrite accepted or manual values.
 3. Edit any field manually, accept at least one AI choice, and select **Save
    card**. Expect one atomic card with **Human + AI** authorship. A draft saved
@@ -221,7 +240,7 @@ resolved language and writing direction.
    **Reload and compare** to see the current card without replaying the stale
    proposal or losing the local candidate edit.
 5. Regenerate from the current versions, edit the new proposal, and select
-   **Accept reviewed card**. Expect one atomic saved card, server-controlled
+   **Accept and update card**. Expect one atomic saved card, server-controlled
    **Human + AI** authorship for the edited candidate, and a redacted accepted
    job outcome. Discard and cancel likewise leave the card unchanged.
 
@@ -294,9 +313,11 @@ their own language and writing direction.
 
 ### Quizlet-compatible import and export
 
-1. From **My dictionaries**, select **Import cards**. Name the new dictionary,
-   choose its source and target languages, then paste tab- or comma-delimited
-   source/translation pairs or choose a bounded UTF-8 TXT, CSV, or TSV file.
+1. From **My dictionaries**, create a dictionary with its source and target
+   languages. In its workspace, open the secondary actions menu and select
+   **Import cards**. Paste tab- or comma-delimited source/translation pairs or
+   choose a bounded UTF-8 TXT, CSV, or TSV file. Whole-dictionary-file import is
+   hidden in the v001 library design.
 2. Explicitly choose the separator, whether the first row is a header, and the
    source/translation columns. Select **Preview import**. Expect a bounded sample,
    total/ready/error counts, duplicate warnings, and remaining-capacity guidance.
@@ -441,7 +462,7 @@ test layers where their failure conditions are deterministic.
 - Missing, malformed, rotated, revoked, private, or archived public links share
   one unavailable response and UI; none reveal owner data.
 - At 10,000 cards, creation is rejected, while indexed cursor search and loaded-
-  window keyboard/tap reorder remain available.
+  window order remains readable; reordering controls are hidden in this design.
 - Account storage is bounded at 100 retained dictionaries, 50,000 retained cards,
   and 250,000 immutable revisions. Archived content still counts; reaching a
   ceiling leaves existing content readable/exportable and rejects the new

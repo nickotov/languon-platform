@@ -13,9 +13,8 @@ export function languageLabel(
     locale: Locale,
 ): string {
     const language = languages.find((entry) => entry.tag === tag);
-    return language
-        ? `${language.displayNames[locale]} (${language.tag})`
-        : tag;
+
+    return language?.displayNames[locale] ?? tag;
 }
 
 export function languageForRole(

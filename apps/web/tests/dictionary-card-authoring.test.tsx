@@ -6,10 +6,12 @@ import type {
 } from '@languon/contracts';
 import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
     DictionaryCardForm,
+    cardAuthoringFailureMessageKey,
     discardedSuggestionIdsForPredecessor,
     hasLoadedSourceDuplicate,
     normalizeDictionarySource,
@@ -173,6 +175,39 @@ const authoringSuccessorJob = {
 } satisfies DictionaryCardAuthoringGenerationJob;
 
 describe('dictionary settings and card authoring', () => {
+    it.each([
+        ['provider_rate_limited', 'dictionary.authoring.rateLimited'],
+        ['provider_unavailable', 'dictionary.authoring.providerUnavailable'],
+        ['provider_timeout', 'dictionary.authoring.timeout'],
+        ['invalid_model_output', 'dictionary.authoring.failed'],
+        ['retry_exhausted', 'dictionary.authoring.failed'],
+        ['internal_error', 'dictionary.authoring.failed'],
+        ['generation_conflict', 'dictionary.authoring.failed'],
+        [null, 'dictionary.authoring.failed'],
+        [undefined, 'dictionary.authoring.failed'],
+    ] as const)(
+        'maps safe failure code %s to localized feedback',
+        (code, expected) => {
+            expect(cardAuthoringFailureMessageKey(code)).toBe(expected);
+        },
+    );
+
+    it('plans draft-discard cleanup before a job read or retained-review effect completes', () => {
+        expect(
+            planCardAuthoringCleanup(undefined, null, authoringSuccessorJob.id),
+        ).toEqual({
+            cancelJobIds: [authoringSuccessorJob.id],
+            discardJobIds: [],
+        });
+        expect(planCardAuthoringCleanup(authoringReviewJob, null)).toEqual({
+            cancelJobIds: [],
+            discardJobIds: [authoringReviewJob.id],
+        });
+        expect(
+            planCardAuthoringCleanup(authoringReviewJob, authoringReviewJob),
+        ).toEqual({ cancelJobIds: [], discardJobIds: [authoringReviewJob.id] });
+    });
+
     it('scopes discarded IDs to the latest predecessor and plans manual-save cleanup', () => {
         const removedId = '40000000-0000-4000-8000-000000000001';
         expect(
@@ -211,6 +246,197 @@ describe('dictionary settings and card authoring', () => {
         ).toBe('complete');
     });
 
+    it.each([false, true])(
+        'retains manual draft and predecessor choices after expiry (predecessor: %s)',
+        async (retained) => {
+            const user = userEvent.setup();
+            const onSave = vi.fn().mockResolvedValue(undefined);
+            const onAction = vi.fn().mockResolvedValue(undefined);
+            function ExpiringForm() {
+                const [expired, setExpired] = useState(false);
+                return (
+                    <>
+                        <button onClick={() => setExpired(true)}>
+                            Expire generation
+                        </button>
+                        <DictionaryCardForm
+                            ai={{
+                                available: true,
+                                job: {
+                                    ...authoringSuccessorJob,
+                                    state: expired ? 'expired' : 'running',
+                                },
+                                onAction,
+                                pending: false,
+                                proposal: retained ? authoringProposal : null,
+                                successorActive: retained && !expired,
+                            }}
+                            dictionary={dictionary}
+                            languages={languages}
+                            onCancel={vi.fn()}
+                            onSave={onSave}
+                            pending={false}
+                        />
+                    </>
+                );
+            }
+            render(<ExpiringForm />);
+            await user.type(
+                screen.getByLabelText(/Source word or phrase/),
+                'medium',
+            );
+            await user.type(
+                screen.getByLabelText(/Translation \(/),
+                'manual translation',
+            );
+            expect(screen.getByRole('status')).toHaveTextContent(/Generating/);
+            await user.click(
+                screen.getByRole('button', { name: 'Expire generation' }),
+            );
+            expect(
+                screen.getByText(/suggestions expired/i),
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByText('Generating suggestions…'),
+            ).not.toBeInTheDocument();
+            expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
+                'medium',
+            );
+            expect(screen.getByLabelText(/Translation \(/)).toHaveValue(
+                'manual translation',
+            );
+            const generate = screen.getByRole('button', {
+                name: retained ? 'Regenerate all fields' : 'Generate with AI',
+            });
+            expect(generate).toBeEnabled();
+            if (retained) {
+                expect(screen.getByText('medio')).toBeInTheDocument();
+                expect(
+                    screen.getByRole('button', {
+                        name: 'Accept Translation suggestion',
+                    }),
+                ).toBeEnabled();
+            }
+            await user.click(screen.getByRole('button', { name: 'Save card' }));
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    values: expect.objectContaining({
+                        source: 'medium',
+                        translation: 'manual translation',
+                    }),
+                }),
+                [],
+            );
+        },
+    );
+
+    it('reports new draft content and override changes, and returns to clean when reverted', async () => {
+        const user = userEvent.setup();
+        const onDirtyChange = vi.fn();
+        render(
+            <DictionaryCardForm
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onDirtyChange={onDirtyChange}
+                onSave={vi.fn()}
+                pending={false}
+            />,
+        );
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+        const source = screen.getByLabelText(/Source word or phrase/);
+        await user.type(source, '   ');
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+        await user.type(source, 'word');
+        expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+        await user.clear(source);
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+        const example = screen.getByLabelText(/Context example \(/);
+        await user.type(example, 'Only optional content');
+        expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+        await user.clear(example);
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+        const override = screen.getByRole('switch', {
+            name: 'Override dictionary settings for this card',
+        });
+        await user.click(override);
+        expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+        await user.click(override);
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it('compares an existing card with its initial values and overrides', async () => {
+        const user = userEvent.setup();
+        const onDirtyChange = vi.fn();
+        render(
+            <DictionaryCardForm
+                card={card}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onDirtyChange={onDirtyChange}
+                onSave={vi.fn()}
+                pending={false}
+            />,
+        );
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+        const source = screen.getByLabelText(/Source word or phrase/);
+        await user.type(source, ' changed');
+        expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+        fireEvent.change(source, { target: { value: card.values.source } });
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+        const override = screen.getByRole('switch', {
+            name: 'Override dictionary settings for this card',
+        });
+        await user.click(override);
+        expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+        await user.click(override);
+        expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it('expands retained choices and keeps regeneration scoped to the field', async () => {
+        const user = userEvent.setup();
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    job: authoringReviewJob,
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: false,
+                    proposal: {
+                        ...authoringProposal,
+                        suggestions: Array.from({ length: 3 }, (_, index) => ({
+                            ...authoringProposal.suggestions[0]!,
+                            id: `choice-${index}`,
+                            value: `translation choice ${index + 1}`,
+                        })),
+                    },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={vi.fn().mockResolvedValue(undefined)}
+                pending={false}
+            />,
+        );
+        expect(
+            screen.queryByText('translation choice 3'),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getAllByRole('button', { name: 'Regenerate Translation' }),
+        ).toHaveLength(1);
+        await user.click(
+            screen.getByRole('button', { name: 'Show 1 more choices' }),
+        );
+        expect(screen.getByText('translation choice 3')).toBeInTheDocument();
+        await user.click(
+            screen.getByRole('button', { name: 'Show fewer choices' }),
+        );
+        expect(
+            screen.queryByText('translation choice 3'),
+        ).not.toBeInTheDocument();
+    });
+
     it('blocks Save while a successor is active but keeps proposal review available', async () => {
         const user = userEvent.setup();
         render(
@@ -230,7 +456,10 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(screen.getByLabelText(/Source phrase/), 'medium');
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
         expect(
             screen.getByRole('button', { name: 'Save card' }),
         ).toBeDisabled();
@@ -300,9 +529,12 @@ describe('dictionary settings and card authoring', () => {
             />,
         );
         expect(
-            screen.queryByRole('button', { name: 'Generate with AI' }),
-        ).not.toBeInTheDocument();
-        await user.type(screen.getByLabelText(/Source phrase/), 'medium');
+            screen.getByRole('button', { name: 'Generate with AI' }),
+        ).toBeDisabled();
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
         await user.click(
             screen.getByRole('button', { name: 'Generate with AI' }),
         );
@@ -325,13 +557,16 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(screen.getByLabelText(/Source phrase/), 'medium');
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
         await user.click(
             screen.getAllByRole('button', {
                 name: 'Accept Translation suggestion',
             })[0]!,
         );
-        expect(screen.getByLabelText(/^Translation ·/)).toHaveValue('medio');
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
         expect(screen.getByText('medio')).toBeInTheDocument();
         await user.click(
             screen.getAllByRole('button', {
@@ -339,7 +574,7 @@ describe('dictionary settings and card authoring', () => {
             })[0]!,
         );
         expect(screen.queryByText('medio')).not.toBeInTheDocument();
-        expect(screen.getByLabelText(/^Translation ·/)).toHaveValue('medio');
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
         await user.click(
             screen.getByRole('button', { name: 'Regenerate Translation' }),
         );
@@ -369,9 +604,9 @@ describe('dictionary settings and card authoring', () => {
                 },
             ],
         );
-        await user.clear(screen.getByLabelText(/^Translation ·/));
+        await user.clear(screen.getByLabelText(/^Translation \(/));
         await user.type(
-            screen.getByLabelText(/^Translation ·/),
+            screen.getByLabelText(/^Translation \(/),
             'traducción manual',
         );
         await user.click(screen.getByRole('button', { name: 'Save card' }));
@@ -380,6 +615,100 @@ describe('dictionary settings and card authoring', () => {
                 values: expect.objectContaining({
                     translation: 'traducción manual',
                 }),
+            }),
+            [],
+        );
+    });
+
+    it.each(['source', 'translation'] as const)(
+        'accepts 200 astral code points and limits a 201st BMP character in %s',
+        async (field) => {
+            const user = userEvent.setup();
+            const onSave = vi.fn().mockResolvedValue(undefined);
+            render(
+                <DictionaryCardForm
+                    dictionary={dictionary}
+                    languages={languages}
+                    onCancel={vi.fn()}
+                    onSave={onSave}
+                    pending={false}
+                />,
+            );
+            const source = screen.getByRole('textbox', {
+                name: /Source word or phrase/,
+            });
+            const translation = screen.getByRole('textbox', {
+                name: /^Translation/,
+            });
+            fireEvent.change(source, { target: { value: 'word' } });
+            fireEvent.change(translation, { target: { value: 'translation' } });
+            const input = field === 'source' ? source : translation;
+            expect(input).toHaveAttribute('maxlength', '400');
+            fireEvent.change(input, { target: { value: '😀'.repeat(200) } });
+            expect(input).toHaveValue('😀'.repeat(200));
+            await user.click(screen.getByRole('button', { name: 'Save card' }));
+            expect(onSave).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    values: expect.objectContaining({
+                        [field]: '😀'.repeat(200),
+                    }),
+                }),
+                [],
+            );
+            fireEvent.change(input, { target: { value: 'x'.repeat(201) } });
+            expect(input).toHaveValue('x'.repeat(200));
+        },
+    );
+
+    it('keeps oversized existing text visible but blocks submit until corrected', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(
+            <DictionaryCardForm
+                card={{
+                    ...card,
+                    values: { ...card.values, translation: 'x'.repeat(201) },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+        const translation = screen.getByRole('textbox', {
+            name: /^Translation/,
+        });
+        expect(translation).toHaveValue('x'.repeat(201));
+        expect(translation).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByText('Use at most 200 characters.')).toBeVisible();
+        const save = screen.getByRole('button', { name: 'Save card' });
+        expect(save).toBeDisabled();
+        fireEvent.submit(save.closest('form')!);
+        expect(onSave).not.toHaveBeenCalled();
+        fireEvent.change(translation, { target: { value: 'corrected' } });
+        await user.click(save);
+        expect(onSave).toHaveBeenCalledOnce();
+    });
+
+    it('retains valid stored transcription beyond the prototype display limit', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const transcription = '😀'.repeat(2000);
+        render(
+            <DictionaryCardForm
+                card={{ ...card, values: { ...card.values, transcription } }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({ transcription }),
             }),
             [],
         );
@@ -400,15 +729,15 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        const source = screen.getByLabelText(/Source phrase/);
+        const source = screen.getByLabelText(/Source word or phrase/);
         fireEvent.change(source, { target: { value: '😀'.repeat(200) } });
         expect(
             screen.getByRole('button', { name: 'Generate with AI' }),
         ).toBeEnabled();
         fireEvent.change(source, { target: { value: 'unsafe\u0085' } });
         expect(
-            screen.queryByRole('button', { name: 'Generate with AI' }),
-        ).not.toBeInTheDocument();
+            screen.getByRole('button', { name: 'Generate with AI' }),
+        ).toBeDisabled();
     });
 
     it('keeps manual authoring available when AI is unavailable and cancels only active generation', async () => {
@@ -427,11 +756,14 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(screen.getByLabelText(/Source phrase/), 'manual');
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'manual',
+        );
         expect(
             screen.getByText(/AI suggestions are unavailable/i),
         ).toBeVisible();
-        await user.type(screen.getByLabelText(/^Translation ·/), 'manual');
+        await user.type(screen.getByLabelText(/^Translation \(/), 'manual');
         expect(screen.getByRole('button', { name: 'Save card' })).toBeEnabled();
         unavailable.unmount();
 
@@ -470,13 +802,18 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(screen.getByLabelText(/Source phrase/), 'active');
-        await user.type(screen.getByLabelText(/^Translation ·/), 'editable');
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'active',
+        );
+        await user.type(screen.getByLabelText(/^Translation \(/), 'editable');
         await user.click(
             screen.getByRole('button', { name: 'Cancel generation' }),
         );
         expect(onAction).toHaveBeenCalledWith({ kind: 'cancel' });
-        expect(screen.getByLabelText(/^Translation ·/)).toHaveValue('editable');
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+            'editable',
+        );
     });
 
     it('keeps previous-source suggestions visible but prevents their use', async () => {
@@ -505,7 +842,10 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(screen.getByLabelText(/Source phrase/), 'another');
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'another',
+        );
         expect(screen.getByText(/source phrase changed/i)).toBeInTheDocument();
         expect(
             screen.getByRole('button', {
@@ -542,7 +882,10 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        expect(screen.getByLabelText('Translate from')).toBeDisabled();
+        expect(
+            screen.queryByLabelText('Translate from'),
+        ).not.toBeInTheDocument();
+        expect(screen.getByText('Locked')).toBeVisible();
         await user.click(screen.getByLabelText('Context example'));
         await user.click(screen.getByRole('button', { name: 'Save settings' }));
         expect(onSave).toHaveBeenCalledWith(
@@ -609,14 +952,65 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.click(screen.getByText('Advanced settings'));
-        const transcriptionOverride = screen.getByLabelText('Transcription');
-        await user.selectOptions(transcriptionOverride, 'enabled');
-        expect(screen.getAllByLabelText('Transcription')).toHaveLength(2);
-        const exampleTranslation = screen.getByLabelText('Example translation');
+        await user.click(
+            screen.getByRole('switch', {
+                name: 'Override dictionary settings for this card',
+            }),
+        );
+        await user.click(screen.getByRole('switch', { name: 'Transcription' }));
         expect(
-            exampleTranslation.querySelector('option[value="enabled"]'),
-        ).toBeDisabled();
+            screen.getByRole('textbox', { name: /^Transcription/ }),
+        ).toBeVisible();
+        expect(
+            screen.queryByRole('switch', { name: 'Example translation' }),
+        ).not.toBeInTheDocument();
+    });
+
+    it('preserves optional values when overriding is disabled and enabled again', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(
+            <DictionaryCardForm
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'stored',
+        );
+        await user.type(screen.getByLabelText(/^Translation/), 'guardado');
+        await user.type(
+            screen.getByLabelText(/Context example/),
+            'A retained example',
+        );
+        const override = screen.getByRole('switch', {
+            name: 'Override dictionary settings for this card',
+        });
+        await user.click(override);
+        await user.click(
+            screen.getByRole('switch', { name: 'Context example' }),
+        );
+        expect(
+            screen.queryByRole('textbox', { name: /Context example/ }),
+        ).not.toBeInTheDocument();
+        await user.click(override);
+        expect(
+            screen.getByRole('textbox', { name: /Context example/ }),
+        ).toHaveValue('A retained example');
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({
+                    example: 'A retained example',
+                }),
+                overrides: expect.objectContaining({ exampleEnabled: null }),
+            }),
+            [],
+        );
     });
 
     it('allows normalized duplicates with a non-blocking different-context warning', async () => {
@@ -634,7 +1028,10 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(screen.getByLabelText(/Source phrase/), ' Medium ');
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            ' Medium ',
+        );
         expect(screen.getByRole('status')).toHaveTextContent(
             'Different senses and contexts are allowed',
         );
@@ -661,7 +1058,7 @@ describe('dictionary settings and card authoring', () => {
             />,
         );
 
-        expect(screen.getByLabelText(/Source phrase/)).toHaveAttribute(
+        expect(screen.getByLabelText(/Source word or phrase/)).toHaveAttribute(
             'dir',
             'rtl',
         );
@@ -670,10 +1067,13 @@ describe('dictionary settings and card authoring', () => {
             'ltr',
         );
 
-        expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+        expect(
+            screen.getByRole('button', { name: 'Discard draft' }),
+        ).toBeDisabled();
     });
 
-    it('renders malicious card strings as inert text in responsive semantic DOM', () => {
+    it('renders malicious card strings as inert text in responsive semantic DOM', async () => {
+        const user = userEvent.setup();
         const { container } = render(
             <DictionaryCardList
                 cards={[card]}
@@ -693,9 +1093,12 @@ describe('dictionary settings and card authoring', () => {
         expect(container.querySelector('img')).toBeNull();
         expect(container.querySelector('ol')).toBeInTheDocument();
         expect(container.querySelector('table')).toBeNull();
+        await user.click(
+            screen.getByRole('button', { name: 'Card actions, card 1' }),
+        );
         expect(
-            screen.getByRole('button', { name: 'Move earlier' }),
-        ).toBeDisabled();
+            screen.queryByRole('menuitem', { name: /Move earlier|Move later/ }),
+        ).not.toBeInTheDocument();
     });
 
     it('opens retained generation reviews when starting new work is unavailable', async () => {

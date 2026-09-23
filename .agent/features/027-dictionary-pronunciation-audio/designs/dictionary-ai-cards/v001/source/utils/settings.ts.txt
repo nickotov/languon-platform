@@ -1,0 +1,118 @@
+import type {
+  CardFieldKey,
+  Dictionary,
+  DictionarySettings,
+  LanguageCode,
+  VocabCard,
+} from '../types/dictionary'
+import { getLanguage } from '../data/languages'
+
+/** Resolve the settings actually in force for a card (inherited or overridden). */
+export function effectiveSettings(
+  dictionary: Dictionary,
+  overrides: VocabCard['overrides'],
+): DictionarySettings {
+  if (!overrides) return dictionary.settings
+  return { ...dictionary.settings, ...overrides }
+}
+
+export function isOverridden(overrides: VocabCard['overrides']): boolean {
+  return Boolean(overrides && Object.keys(overrides).length > 0)
+}
+
+/** Which optional fields are currently enabled, in reading order. */
+export function enabledOptionalFields(settings: DictionarySettings): CardFieldKey[] {
+  const fields: CardFieldKey[] = []
+  if (settings.transcriptionEnabled) fields.push('transcription')
+  if (settings.definitionEnabled) fields.push('definition')
+  if (settings.exampleEnabled) fields.push('example')
+  if (settings.exampleEnabled && settings.exampleTranslationEnabled) {
+    fields.push('exampleTranslation')
+  }
+  return fields
+}
+
+export function isFieldEnabled(
+  settings: DictionarySettings,
+  field: CardFieldKey,
+): boolean {
+  switch (field) {
+    case 'source':
+    case 'translation':
+      return true
+    case 'transcription':
+      return settings.transcriptionEnabled
+    case 'definition':
+      return settings.definitionEnabled
+    case 'example':
+      return settings.exampleEnabled
+    case 'exampleTranslation':
+      return settings.exampleEnabled && settings.exampleTranslationEnabled
+    default:
+      return false
+  }
+}
+
+/**
+ * The language a field is actually written in. Never the interface language.
+ * Example translation is always the opposite language from the example.
+ */
+export function fieldLanguage(
+  dictionary: Dictionary,
+  settings: DictionarySettings,
+  field: CardFieldKey,
+): LanguageCode {
+  const source = dictionary.sourceLanguage
+  const target = dictionary.targetLanguage
+  switch (field) {
+    case 'source':
+      return source
+    case 'translation':
+      return target
+    case 'transcription':
+      return source
+    case 'definition':
+      return settings.definitionLanguage === 'source' ? source : target
+    case 'example':
+      return settings.exampleLanguage === 'source' ? source : target
+    case 'exampleTranslation':
+      return settings.exampleLanguage === 'source' ? target : source
+    default:
+      return source
+  }
+}
+
+export function fieldDir(
+  dictionary: Dictionary,
+  settings: DictionarySettings,
+  field: CardFieldKey,
+) {
+  return getLanguage(fieldLanguage(dictionary, settings, field)).dir
+}
+
+export function transcriptionLabel(settings: DictionarySettings): string {
+  if (settings.transcriptionNotation === 'ipa') return 'Transcription (IPA)'
+  if (settings.transcriptionNotation === 'romanization') {
+    return 'Transcription (romanization)'
+  }
+  return `Transcription (${settings.transcriptionCustomLabel || 'custom notation'})`
+}
+
+export const FIELD_MAX_LENGTH: Record<CardFieldKey, number> = {
+  source: 200,
+  translation: 200,
+  transcription: 200,
+  definition: 2000,
+  example: 2000,
+  exampleTranslation: 2000,
+}
+
+export const FIELD_TITLES: Record<CardFieldKey, string> = {
+  source: 'Source word or phrase',
+  translation: 'Translation',
+  transcription: 'Transcription',
+  definition: 'Definition',
+  example: 'Context example',
+  exampleTranslation: 'Example translation',
+}
+

@@ -1075,7 +1075,10 @@ describe('DictionaryGenerationWorkerService', () => {
             },
             ocr: new DeterministicDocumentOcrProvider(),
             proposalGenerator: new DeterministicPastedTermsProposalGenerator(),
-            scanner: new DeterministicDocumentMalwareScanner(),
+            scanner: new DeterministicDocumentMalwareScanner(
+                undefined,
+                () => new Date('2026-08-26T12:00:00.000Z'),
+            ),
             storage,
         });
         const executor = new DictionaryDocumentGenerationExecutor({

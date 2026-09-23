@@ -1,6 +1,81 @@
 import { profileFeatureMessages, type Messages } from './en';
 
 export const ru = {
+    ...profileFeatureMessages,
+    'dictionary.authoring.sourceLabel': 'Исходное слово или фраза',
+    'dictionary.authoring.mayStayEmpty': 'Можно оставить пустым',
+
+    'dictionary.card.tooLong': 'Используйте не более {count} символов.',
+    'dictionary.cards.regenerate': 'Перегенерировать с ИИ',
+    'dictionary.generation.progressUnchanged':
+        'Сохранённая карточка не изменена.',
+    'dictionary.editor.noCardsTitle': 'Пока нет карточек',
+    'dictionary.editor.noCardsHelp':
+        'Добавьте слово или фразу в {name}. Напишите самостоятельно или введите исходный текст, чтобы ИИ предложил варианты для проверки перед сохранением.',
+    'dictionary.editor.addFirstCard': 'Добавить первую карточку',
+    'dictionary.editor.noCardsMatch':
+        'Нет карточек ({lifecycle}) по запросу «{query}»',
+    'dictionary.editor.searchHelp': 'Поиск по исходному тексту и переводу.',
+    'dictionary.editor.clearSearch': 'Очистить поиск',
+    'dictionary.create.namePlaceholder': 'Основы испанского',
+    'dictionary.create.catalogHint': 'Выберите язык из доступного каталога.',
+    'dictionary.generation.phase.queued':
+        'В очереди — ожидаем свободное место.',
+    'dictionary.generation.phase.running': 'Генерируем предложение для замены…',
+
+    'dictionary.editor.activeCardCount': 'Активных карточек: {count}',
+    'dictionary.editor.allCardsShown':
+        'Показаны все карточки ({lifecycle}): {count}.',
+    'dictionary.authoring.acceptedIntoField': 'Принято в поле',
+    'dictionary.authoring.staleChoice': 'Устарело — исходный текст изменён',
+    'dictionary.authoring.choiceCount': '{count} из 6',
+    'dictionary.generation.instructionHint':
+        'Например: сделайте перевод более формальным или сократите пример.',
+
+    'dictionary.settings.basics': 'Основное',
+    'dictionary.settings.languagePair': 'Языковая пара',
+    'dictionary.settings.locked': 'Зафиксирована',
+    'dictionary.settings.cardFields': 'Поля карточек',
+    'dictionary.settings.writtenIn': 'Язык текста',
+    'dictionary.settings.transcriptionHelp':
+        'Показывать запись произношения рядом с исходным текстом.',
+    'dictionary.settings.saveHelp':
+        'Изменения применятся после сохранения. Значения скрытых полей сохраняются.',
+    'dictionary.settings.pairEditable':
+        'Языковую пару можно изменить, пока в этом словаре ещё не было ни одной карточки.',
+    'dictionary.settings.exampleTranslationHelp': 'Перевод на {language}.',
+    'dictionary.settings.exampleTranslationDisabled':
+        'Сначала включите пример.',
+    'dictionary.library.restoreHelp':
+        'Нажмите для восстановления. Словарь снова станет приватным; прежний доступ по ссылке не восстановится.',
+    'dictionary.authoring.editHelp':
+        'Генерация в редакторе доступна для новых карточек. Для сохранённой карточки выберите «Перегенерировать с ИИ» в меню действий. Карточка не изменится, пока вы не примете предложение.',
+    'dictionary.authoring.sourceRequired':
+        'Генерация станет доступна после заполнения исходного текста.',
+    'dictionary.override.title': 'Настройки полей этой карточки',
+    'dictionary.override.description':
+        'Наследуемые настройки обновляются вместе с настройками словаря.',
+    'dictionary.override.toggle':
+        'Изменить настройки словаря для этой карточки',
+    'dictionary.override.help':
+        'Выключите, чтобы снова использовать настройки словаря. Сохранённые значения не удаляются.',
+    'dictionary.override.inherited': 'Наследуется',
+    'dictionary.override.overridden': 'Изменено',
+    'dictionary.generation.savedUnchangedTitle':
+        'Сохранённая карточка не изменится',
+    'dictionary.generation.savedUnchangedBody':
+        'Изменения применятся только после принятия предложения. Перед этим вы можете отредактировать предложенные значения.',
+    'dictionary.generation.retainedTitle': 'Предложение сохранено',
+    'dictionary.generation.retainedBody':
+        'Вы сможете продолжить проверку предложения, когда вернётесь.',
+    'dictionary.generation.pausedTitle': 'Проверка приостановлена',
+    'dictionary.generation.pausedBody':
+        'Сохранённая карточка и предложение не изменены. Повторите попытку, когда генерация станет доступна.',
+    'dictionary.generation.sourceMayChange': 'Исходный текст может измениться',
+    'dictionary.generation.replacement': 'Предложенное значение',
+    'dictionary.generation.useAlternative': 'Использовать',
+    'dictionary.generation.alternativesCount': 'Варианты ({count})',
+
     'dictionary.audio.playField': 'Прослушать: {field}',
     'dictionary.audio.stopField': 'Остановить: {field}',
     'dictionary.audio.play': 'Слушать',
@@ -15,7 +90,47 @@ export const ru = {
     'dictionary.audio.fixture': 'Тестовый звук — не запись произношения.',
     'dictionary.audio.speed': 'Скорость воспроизведения',
     'dictionary.audio.normal': 'Обычная',
-    ...profileFeatureMessages,
+
+    'dictionary.error.rateLimited':
+        'Слишком много запросов. Подождите немного и повторите попытку.',
+    'dictionary.error.network':
+        'Ошибка соединения. Проверьте сеть и повторите попытку.',
+
+    'dictionary.authoring.rateLimited':
+        'Сервис предложений занят. Подождите и попробуйте снова. Черновик сохранён.',
+    'dictionary.authoring.providerUnavailable':
+        'Предложения временно недоступны. Попробуйте позже или сохраните черновик вручную.',
+    'dictionary.authoring.timeout':
+        'Время ожидания предложений истекло. Черновик сохранён — повторите попытку или сохраните его вручную.',
+
+    'dictionary.card.discardTitle': 'Удалить черновик?',
+    'dictionary.card.discardDescription':
+        'Несохранённые изменения карточки будут потеряны.',
+    'dictionary.card.keepWriting': 'Продолжить редактирование',
+    'dictionary.card.discardDraft': 'Удалить черновик',
+    'dictionary.card.discardHelp':
+        'Непринятые предложения удаляются вместе с черновиком. Отмена генерации — отдельное действие, которое оставляет черновик открытым.',
+    'dictionary.authoring.expired':
+        'Срок действия предложений истёк. Черновик и ранее загруженные варианты сохранены. Создайте новые предложения или сохраните черновик вручную.',
+
+    'dictionary.skipToContent': 'Перейти к содержимому',
+
+    'dictionary.cards.defaults': 'Наследуемые настройки',
+    'dictionary.cards.overrides': 'Изменённые поля',
+    'dictionary.library.subtitle': 'Ваши личные двуязычные словари.',
+    'dictionary.library.actions': 'Действия для {name}',
+    'dictionary.library.clearSearch': 'Сбросить поиск',
+    'dictionary.create.privateNotice': 'Новые словари доступны только вам.',
+    'dictionary.authoring.choice': 'Вариант {number}',
+    'dictionary.authoring.showMore': 'Показать ещё {count} вариантов',
+    'dictionary.authoring.showFewer': 'Свернуть варианты',
+    'dictionary.authoring.optionalContent': 'Дополнительные поля этого словаря',
+    'dictionary.authoring.notSaved': 'Предложено · не сохранено',
+    'dictionary.authoring.savingPaused':
+        'Сохранение недоступно во время генерации. Отмените генерацию, чтобы сохранить черновик.',
+    'dictionary.generation.savedNow': 'Сохранённое значение',
+    'dictionary.editor.actions': 'Другие действия со словарём',
+    'dictionary.editor.sharing': 'Общий доступ',
     'theme.switchToLight': 'Переключить на светлую тему',
     'theme.switchToDark': 'Переключить на тёмную тему',
     'meta.profile': 'Настройки аккаунта · Languon',
@@ -55,15 +170,19 @@ export const ru = {
     'profile.interfaceLanguage': 'Язык интерфейса',
     'profile.learningLanguage': 'Изучаемый язык и уровень',
     'profile.timeZone': 'Часовой пояс',
-    'profile.otherDetailsComingSoon': 'Имя, изучаемый язык и часовой пояс пока нельзя изменить. Язык интерфейса меняется сразу.',
+    'profile.otherDetailsComingSoon':
+        'Имя, изучаемый язык и часовой пояс пока нельзя изменить. Язык интерфейса меняется сразу.',
     'profile.handleLabel': 'Имя пользователя',
-    'profile.handleHelp': 'От 3 до 30 латинских букв, цифр или подчёркиваний. Никнейм сохраняется строчными буквами.',
+    'profile.handleHelp':
+        'От 3 до 30 латинских букв, цифр или подчёркиваний. Никнейм сохраняется строчными буквами.',
     'profile.handlePlaceholder': 'your_handle',
     'profile.handleSave': 'Сохранить имя пользователя',
     'profile.handleSaving': 'Сохраняем…',
     'profile.handleSaved': 'Никнейм сохранён.',
-    'profile.handleInvalid': 'Используйте от 3 до 30 латинских букв, цифр или подчёркиваний.',
-    'profile.handleConflict': 'Никнейм занят или аккаунт изменился. Обновите страницу и выберите другой.',
+    'profile.handleInvalid':
+        'Используйте от 3 до 30 латинских букв, цифр или подчёркиваний.',
+    'profile.handleConflict':
+        'Никнейм занят или аккаунт изменился. Обновите страницу и выберите другой.',
     'profile.handleError': 'Не удалось сохранить никнейм. Попробуйте ещё раз.',
     'profile.handleUnset': 'Никнейм не задан',
     'profile.dataTitle': 'Ваши данные',
@@ -82,22 +201,30 @@ export const ru = {
     'profile.deleteConfirmTitle': 'Удалить аккаунт?',
     'profile.deleteLossTitle': 'Что будет потеряно',
     'profile.deleteLossAccess': 'Доступ прекратится сразу.',
-    'profile.deleteLossData': 'Данные обучения и аккаунта удаляются через 30 дней.',
-    'profile.deleteLossRecovery': 'До начала очистки отменить может только администратор.',
+    'profile.deleteLossData':
+        'Данные обучения и аккаунта удаляются через 30 дней.',
+    'profile.deleteLossRecovery':
+        'До начала очистки отменить может только администратор.',
     'profile.deleteConfirmHint': 'Введите «DELETE» точно как показано.',
-    'profile.deleteAcknowledge': 'Я понимаю, что доступ прекратится сразу, а затем данные будут удалены.',
+    'profile.deleteAcknowledge':
+        'Я понимаю, что доступ прекратится сразу, а затем данные будут удалены.',
     'profile.deleteFailedTitle': 'Удаление не запланировано',
-    'profile.deleteConfirmDescription': 'Вы выйдете из аккаунта, а его удаление будет запланировано. Перед подтверждением прочитайте, что произойдёт.',
+    'profile.deleteConfirmDescription':
+        'Вы выйдете из аккаунта, а его удаление будет запланировано. Перед подтверждением прочитайте, что произойдёт.',
     'profile.deleteConfirmLabel': 'Введите DELETE для подтверждения',
     'profile.deleteConfirmAction': 'Запланировать удаление',
     'profile.deletePending': 'Планируем…',
     'profile.deleteKeep': 'Оставить аккаунт',
     'profile.deleteRecentAuth': 'Войдите заново перед удалением аккаунта.',
-    'profile.deleteOwnerTransfer': 'Перед удалением передайте права администратора и отзовите своё членство.',
-    'profile.deleteConflict': 'Аккаунт изменился. Обновите страницу и подтвердите решение заново.',
-    'profile.deleteFailed': 'Не удалось подтвердить удаление. Если связь пропала, запрос мог выполниться; обновите страницу или обратитесь в поддержку.',
+    'profile.deleteOwnerTransfer':
+        'Перед удалением передайте права администратора и отзовите своё членство.',
+    'profile.deleteConflict':
+        'Аккаунт изменился. Обновите страницу и подтвердите решение заново.',
+    'profile.deleteFailed':
+        'Не удалось подтвердить удаление. Если связь пропала, запрос мог выполниться; обновите страницу или обратитесь в поддержку.',
     'profile.deleteScheduledTitle': 'Удаление аккаунта запланировано',
-    'profile.deleteScheduledDescription': 'Доступ прекращён. Удаление данных в рабочих системах запланировано на {date}. До начала очистки восстановить аккаунт сможет только администратор.',
+    'profile.deleteScheduledDescription':
+        'Доступ прекращён. Удаление данных в рабочих системах запланировано на {date}. До начала очистки восстановить аккаунт сможет только администратор.',
     'profile.emailTitle': 'Адрес электронной почты',
     'profile.verified': 'Подтверждено',
     'profile.emailMethod': 'Электронная почта',
@@ -107,8 +234,10 @@ export const ru = {
     'profile.emailDescription': 'Основной адрес для входа.',
     'profile.primaryEmail': 'Основная почта',
     'profile.requestEmailChange': 'Запросить смену почты',
-    'profile.emailChangeComingSoon': 'Смена почты по ссылке скоро появится. Сейчас письмо не отправляется.',
-    'profile.emailChangeNotSent': 'Скоро — письмо не отправлено, адрес не изменён.',
+    'profile.emailChangeComingSoon':
+        'Смена почты по ссылке скоро появится. Сейчас письмо не отправляется.',
+    'profile.emailChangeNotSent':
+        'Скоро — письмо не отправлено, адрес не изменён.',
     'profile.manageSecurity': 'Управлять безопасностью',
     'profile.passwordTitle': 'Пароль и ключи доступа',
     'profile.passwordDescription':
@@ -127,15 +256,13 @@ export const ru = {
         'Данные о подписке отсутствуют. Тарифы скоро появятся.',
     'profile.comparePlans': 'Сравнить тарифы',
     'profile.paymentTitle': 'Способ оплаты',
-    'profile.paymentEmpty':
-        'Способ оплаты не сохранён. Оплата скоро появится.',
+    'profile.paymentEmpty': 'Способ оплаты не сохранён. Оплата скоро появится.',
     'profile.addPayment': 'Добавить способ оплаты',
     'profile.extraCreditsTitle': 'Дополнительные кредиты',
     'profile.extraCreditsEmpty': 'Покупка кредитов пока недоступна.',
     'profile.buyCredits': 'Купить кредиты',
     'profile.balanceTitle': 'Баланс кредитов',
-    'profile.balanceEmpty':
-        'Баланс появится здесь после запуска кредитов.',
+    'profile.balanceEmpty': 'Баланс появится здесь после запуска кредитов.',
     'profile.usageTitle': 'На что потрачены кредиты',
     'profile.usageEmpty': 'Использование кредитов пока отсутствует.',
     'profile.historyTitle': 'История операций',
@@ -293,7 +420,8 @@ export const ru = {
     'security.addFirstPasskey': 'Добавить первый ключ доступа',
     'security.defaultPasskeyName': 'Ключ доступа {number}',
     'security.waitingForDevice': 'Ожидание устройства',
-    'security.confirmDevicePrompt': 'Подтвердите запрос на устройстве, чтобы завершить добавление ключа.',
+    'security.confirmDevicePrompt':
+        'Подтвердите запрос на устройстве, чтобы завершить добавление ключа.',
     'security.passkeyActionFailed': 'Не удалось выполнить действие с ключом',
     'security.passkeyAdded': 'Ключ доступа добавлен.',
     'security.passkeyRenamed': 'Ключ доступа переименован.',
@@ -301,12 +429,16 @@ export const ru = {
     'security.loadingPasskeys': 'Загружаем ключи…',
     'security.retryPasskeys': 'Повторить загрузку ключей',
     'security.noPasskeys': 'Ключей доступа пока нет',
-    'security.passkeyEmptyHelp': 'Ключи доступа помогают быстро вернуться в аккаунт без ввода пароля.',
-    'security.passkeyUnavailable': 'Добавление ключей доступа для этого аккаунта пока недоступно.',
+    'security.passkeyEmptyHelp':
+        'Ключи доступа помогают быстро вернуться в аккаунт без ввода пароля.',
+    'security.passkeyUnavailable':
+        'Добавление ключей доступа для этого аккаунта пока недоступно.',
     'security.loadingCapabilities': 'Проверяем доступность ключей доступа…',
     'security.revokePasskeyTitle': 'Отозвать этот ключ доступа?',
-    'security.revokePasskeyDescription': 'Ключ «{name}» сразу перестанет работать. Позже его можно добавить снова.',
-    'security.revokePasskeyFallback': 'Прежде чем отозвать ключ, убедитесь, что можете войти с помощью почты и пароля.',
+    'security.revokePasskeyDescription':
+        'Ключ «{name}» сразу перестанет работать. Позже его можно добавить снова.',
+    'security.revokePasskeyFallback':
+        'Прежде чем отозвать ключ, убедитесь, что можете войти с помощью почты и пароля.',
     'security.renamePasskeyTitle': 'Переименовать ключ доступа',
     'security.keepPasskey': 'Оставить ключ',
     'security.revokePasskey': 'Отозвать ключ',
@@ -484,10 +616,10 @@ export const ru = {
     'dictionary.conflict.help':
         'Другое изменение было сохранено раньше. Обновите словарь, проверьте его и повторите попытку.',
     'dictionary.conflict.reload': 'Загрузить текущую версию',
-    'dictionary.authoring.aiSection': 'Предложения ИИ',
+    'dictionary.authoring.aiSection': 'Помощь ИИ',
     'dictionary.authoring.generate': 'Создать с ИИ',
     'dictionary.authoring.generateHelp':
-        'ИИ предложит значения под каждым полем. Они применяются только после подтверждения.',
+        'Сначала введите исходный текст. Варианты появятся под каждым полем для проверки — ничего не заполнится и не сохранится, пока вы не примете вариант и не нажмёте «Сохранить карточку». Перевод заранее заполнять не нужно.',
     'dictionary.authoring.regenerateAll': 'Пересоздать все поля',
     'dictionary.authoring.progress': 'Прогресс создания предложений',
     'dictionary.authoring.stage.queued': 'Ожидание создания предложений…',
@@ -605,7 +737,7 @@ export const ru = {
     'dictionary.generation.alternatives': 'Варианты',
     'dictionary.generation.warnings': 'Проверьте предупреждения',
     'dictionary.generation.discard': 'Отклонить предложение',
-    'dictionary.generation.regenerate': 'Пересоздать предложение',
+    'dictionary.generation.regenerate': 'Перегенерировать',
     'dictionary.generation.accept': 'Принять проверенную карточку',
     'dictionary.generation.retry': 'Повторить создание',
     'dictionary.generation.conflictTitle': 'Карточка изменилась после запуска',

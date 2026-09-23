@@ -104,6 +104,23 @@
                 "type": "documented-command"
             },
             "title": "Disabled fixture"
+        },
+        {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Synthetic whole-app command for panel lifecycle verification. Does not start real services.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "dev:all",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "type": "package-script",
+                "script": "dev:all",
+                "revision": "sha256:7efb487cc00d93b38764a5902e6df0e951789b7e428ac105165e7145c747d062"
+            },
+            "title": "Start whole app"
         }
     ],
     "version": 1

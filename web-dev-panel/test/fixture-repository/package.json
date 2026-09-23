@@ -1,4 +1,6 @@
 {
     "private": true,
-    "scripts": {}
+    "scripts": {
+        "dev:all": "node scripts/command.mjs whole-app 30000"
+    }
 }

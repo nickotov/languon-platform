@@ -1,6 +1,7 @@
 'use client';
 
 import {
+    arrow as floatingArrow,
     autoUpdate,
     flip,
     offset,
@@ -10,6 +11,7 @@ import {
 } from '@floating-ui/react';
 import {
     cloneElement,
+    type CSSProperties,
     type FocusEvent,
     type KeyboardEvent,
     type ReactElement,
@@ -41,6 +43,29 @@ export type TooltipProps = {
     withArrow?: boolean;
 };
 
+const ARROW_OFFSET = -4;
+
+const oppositeSide = {
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+    top: 'bottom',
+} as const;
+
+function arrowStyle(
+    placement: Placement,
+    x: number | undefined,
+    y: number | undefined,
+): CSSProperties {
+    const side = placement.split('-')[0] as keyof typeof oppositeSide;
+
+    return {
+        left: x,
+        top: y,
+        [oppositeSide[side]]: ARROW_OFFSET,
+    };
+}
+
 export function Tooltip({
     children,
     className,
@@ -52,19 +77,38 @@ export function Tooltip({
     withArrow = true,
 }: TooltipProps) {
     const id = useId();
-    const panelRef = useRef<HTMLDivElement | null>(null);
+    const arrowRef = useRef<HTMLSpanElement | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const nativePopover = false;
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
-    const { floatingStyles, refs } = useFloating({
-        middleware: [offset(8), flip({ padding: 16 }), shift({ padding: 16 })],
+    const visible = forcedOpen ?? open;
+    const {
+        floatingStyles,
+        middlewareData,
+        placement: resolvedPlacement,
+        refs,
+    } = useFloating({
+        middleware: [
+            offset(8),
+            flip({ padding: 16 }),
+            shift({ padding: 16 }),
+            floatingArrow({ element: arrowRef }),
+        ],
         onOpenChange: setOpen,
-        open,
+        open: visible,
         placement,
         strategy: 'fixed',
-        whileElementsMounted: open ? autoUpdate : undefined,
+        whileElementsMounted: visible ? autoUpdate : undefined,
     });
+    const isPointerControlled = forcedOpen !== undefined;
+    const tooltipClassName = [styles.tooltip, className]
+        .filter(Boolean)
+        .join(' ');
+    const tooltipArrowStyle = arrowStyle(
+        resolvedPlacement,
+        middlewareData.arrow?.x,
+        middlewareData.arrow?.y,
+    );
 
     useEffect(() => {
         setMounted(true);
@@ -74,25 +118,24 @@ export function Tooltip({
     }, []);
 
     useEffect(() => {
-        if (!open) return;
+        if (!visible) return;
+
         function dismissWithEscape(event: globalThis.KeyboardEvent) {
             if (event.key !== 'Escape') return;
             if (timer.current) clearTimeout(timer.current);
-            if (nativePopover) panelRef.current?.hidePopover();
             setOpen(false);
         }
+
         document.addEventListener('keydown', dismissWithEscape);
         return () => document.removeEventListener('keydown', dismissWithEscape);
-    }, [nativePopover, open]);
+    }, [visible]);
 
     function setPanel(node: HTMLDivElement | null) {
-        panelRef.current = node;
         refs.setFloating(node);
     }
 
     function show() {
         if (timer.current) clearTimeout(timer.current);
-        if (nativePopover) panelRef.current?.showPopover();
         setOpen(true);
     }
 
@@ -103,13 +146,11 @@ export function Tooltip({
 
     function hide() {
         if (timer.current) clearTimeout(timer.current);
-        if (nativePopover) panelRef.current?.hidePopover();
         setOpen(false);
     }
 
     if (disabled || !content) return children;
 
-    const visible = forcedOpen ?? open;
     const describedBy = visible
         ? [children.props['aria-describedby'], id].filter(Boolean).join(' ')
         : children.props['aria-describedby'];
@@ -129,40 +170,42 @@ export function Tooltip({
     };
     if (describedBy) triggerProps['aria-describedby'] = describedBy;
     const trigger = cloneElement(children, triggerProps);
+    const pointerEnterHandler = isPointerControlled
+        ? undefined
+        : showAfterDelay;
+    const pointerLeaveHandler = isPointerControlled ? undefined : hide;
 
     return (
         <span
             className={styles.root}
-            onMouseEnter={forcedOpen === undefined ? showAfterDelay : undefined}
-            onMouseLeave={forcedOpen === undefined ? hide : undefined}
+            onMouseEnter={pointerEnterHandler}
+            onMouseLeave={pointerLeaveHandler}
             ref={refs.setReference}
         >
             {trigger}
-            {mounted
-                ? createPortal(
-                      <div
-                          className={[styles.tooltip, className]
-                              .filter(Boolean)
-                              .join(' ')}
-                          hidden={!nativePopover && !visible}
-                          id={id}
-                          onMouseEnter={show}
-                          popover={nativePopover ? 'manual' : undefined}
-                          ref={setPanel}
-                          role='tooltip'
-                          style={floatingStyles}
-                      >
-                          {content}
-                          {withArrow ? (
-                              <span
-                                  aria-hidden='true'
-                                  className={styles.arrow}
-                              />
-                          ) : null}
-                      </div>,
-                      document.body,
-                  )
-                : null}
+            {mounted &&
+                createPortal(
+                    <div
+                        className={tooltipClassName}
+                        data-placement={resolvedPlacement}
+                        hidden={!visible}
+                        id={id}
+                        ref={setPanel}
+                        role='tooltip'
+                        style={floatingStyles}
+                    >
+                        {content}
+                        {withArrow && (
+                            <span
+                                aria-hidden='true'
+                                className={styles.arrow}
+                                ref={arrowRef}
+                                style={tooltipArrowStyle}
+                            />
+                        )}
+                    </div>,
+                    document.body,
+                )}
         </span>
     );
 }

@@ -1,0 +1,75 @@
+import React from 'react'
+
+export type LabelSize = 'sm' | 'md'
+
+export interface LabelProps
+  extends React.LabelHTMLAttributes<HTMLLabelElement> {
+  /** Text or nodes rendered inside the label. */
+  children: React.ReactNode
+  /** id of the form control this label describes. */
+  htmlFor?: string
+  /** Shows a required indicator after the label text. */
+  required?: boolean
+  /** Optional trailing hint, e.g. "Optional". */
+  hint?: React.ReactNode
+  /** Dims the label to match a disabled control. */
+  disabled?: boolean
+  /** Typography scale of the label. */
+  size?: LabelSize
+}
+
+const sizeClasses: Record<LabelSize, string> = {
+  sm: 'text-xs',
+  md: 'text-sm',
+}
+
+export function Label({
+  children,
+  htmlFor,
+  required = false,
+  hint,
+  disabled = false,
+  size = 'md',
+  className = '',
+  ...props
+}: LabelProps) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className={[
+        'inline-flex w-full items-baseline gap-2 font-medium leading-5',
+        sizeClasses[size],
+        disabled ? 'text-gray-400' : 'text-gray-900',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
+      <span className="inline-flex items-baseline gap-1">
+        {children}
+        {required && (
+          <span
+            aria-hidden="true"
+            className={disabled ? 'text-gray-400' : 'text-red-600'}
+          >
+            *
+          </span>
+        )}
+        {required && <span className="sr-only">(required)</span>}
+      </span>
+      {hint && (
+        <span
+          className={[
+            'ml-auto font-normal',
+            size === 'sm' ? 'text-xs' : 'text-xs',
+            disabled ? 'text-gray-400' : 'text-gray-500',
+          ].join(' ')}
+        >
+          {hint}
+        </span>
+      )}
+    </label>
+  )
+}
+

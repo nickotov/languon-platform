@@ -1,0 +1,62 @@
+.form {
+    display: grid;
+    gap: 16px;
+}
+
+.languageFields {
+    align-items: start;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form textarea {
+    border-radius: 6px;
+    line-height: 20px;
+    min-height: 0;
+}
+
+.form label:has(+ textarea),
+.form label:has(+ span textarea) {
+    line-height: 14px;
+}
+
+.createFooter {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.privateNotice {
+    align-items: center;
+    color: var(--text-secondary);
+    display: flex;
+    font-size: 12px;
+    gap: 6px;
+    margin: 0;
+}
+
+.actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+    .languageFields {
+        grid-template-columns: 1fr;
+    }
+
+    .createFooter {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .actions {
+        align-self: flex-end;
+    }
+}

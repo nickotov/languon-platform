@@ -22,8 +22,11 @@ never silently replaces an implementation target or inherits verification.
    Give each independently verifiable section, control group, and distinct state
    an ID. Include meaningful labels/help, icons, actions, responsive changes,
    empty and populated lists, dialogs and their cancel/confirm behavior, and
-   loading/error/disabled states where provided. Preserve required app states
-   even if the prototype omits them.
+   loading/error/disabled states where provided. Capture layout geometry and
+   surface details: container/dialog widths, spacing and density, alignment,
+   typography and wrapping, icons and sizes, colors, borders, radii, elevation,
+   and responsive transitions. Preserve required app states even if the
+   prototype omits them; identify those additions separately from source UI.
 3. Map every row to a local component or intended owner, verification scenario,
    and disposition. Use the active correction/improvement record, or feature
    specification for requirements with evidence links in `EVIDENCE.md`; do not
@@ -36,7 +39,8 @@ never silently replaces an implementation target or inherits verification.
 | UI-03 | Populated rows and row actions                 | Security section | Safe populated fixture           | Required    |
 | UI-04 | Revoke dialog, item name, copy, cancel/confirm | Revoke dialog    | Open dialog and exercise actions | Required    |
 
-Scale the inventory to the task; do not enumerate individual CSS declarations.
+Scale the inventory to the task; group visual measurements by section instead
+of enumerating individual CSS declarations.
 Group equivalent repeated controls while retaining distinct states and actions.
 Unsupported source capabilities need an explicit product disposition: implement
 only already-authorized behavior, record an established unavailable presentation
@@ -58,6 +62,17 @@ material deviations with their reason, affected IDs, and evidence. Resolve
 material product changes with the user; ordinary accessibility and platform
 adaptations can follow established contracts within scope.
 
+Match the supplied presentation, including its dimensions, spacing, typography,
+icons, control placement, and visibility. Do not add a panel, caption, badge,
+toolbar, control, or alternate layout simply because it seems helpful or exists
+in the previous screen. Existing behavior that the source omits needs a recorded
+disposition; an already-authorized choice to hide it remains authoritative.
+Reuse primitives by adapting their presentation at the narrowest safe boundary,
+not by accepting whichever variant happens to look closest. Preserving API
+contracts or improving accessibility is not general permission for visual drift.
+Keep necessary runtime-only validation/loading/error UI consistent with the
+source's visual language and record where the source provides no reference.
+
 For public web, ADR-0017 makes the accepted Magic Patterns token names and values
 the runtime contract, exposed through Tailwind v3 semantic utilities. Generic
 plugin advice to approximate values or use the nearest legacy token does not
@@ -77,11 +92,22 @@ tabs, and open dialogs. Match reference and local viewport, theme, locale and
 data state where the source permits; disclose mismatches rather than asserting
 equivalence. Use fake local fixtures through established test/data boundaries.
 
-Capture or inspect reference and local rendering together. Record for each
+Capture or inspect actual reference and local rendering together. Exported JSX,
+class names, or a source inventory alone cannot establish how the reference
+renders. If reference rendering is unavailable, inspect its source and continue
+safe work, but report visual comparison as missing and fidelity as unverified.
+Record for each
 inventory row its verified scenario, artifact/evidence link, observed difference,
 and outcome. One default-page screenshot does not verify hidden or populated
 states. Passing interaction tests does not establish visual fidelity. Conversely,
 a screenshot does not prove that actions use the real application contract.
+
+Compare geometry, spacing, typography, wrapping, iconography, surfaces, and
+visible controls as well as section presence. Fix unexplained differences and
+repeat affected captures. Do not grade a redesign as faithful merely because
+the same data and actions are reachable. When the source offers only one
+viewport/state, limit the fidelity claim to it and verify adapted layouts
+separately.
 
 Use `$browser-verification` for local web/admin rendering without bypassing its
 host restrictions to open an external design tool. Obtain reference artifacts

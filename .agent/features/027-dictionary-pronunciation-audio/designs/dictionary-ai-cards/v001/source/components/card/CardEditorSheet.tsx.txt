@@ -1,0 +1,431 @@
+import React, { useMemo, useRef, useState } from 'react'
+import { SparklesIcon, RefreshCwIcon, InfoIcon } from 'lucide-react'
+import { Button } from '../Button'
+import { Badge } from '../Badge'
+import { Dialog, DialogActions } from '../Dialog'
+import { InlineAlert } from '../InlineAlert'
+import { ResponsiveSheet } from './ResponsiveSheet'
+import { CardFieldEditor } from './CardFieldEditor'
+import { SuggestionList } from './SuggestionList'
+import { OverridesSection } from './OverridesSection'
+import {
+  AiUnavailableAlert,
+  DuplicateWarning,
+  GenerationFailureAlert,
+  NetworkAlert,
+  RateLimitAlert,
+  SaveConflictAlert,
+  StaleSuggestionsAlert,
+  SuggestionLimitAlert,
+} from './DraftAlerts'
+import { useApp } from '../../contexts/AppContext'
+import { useCardDraft } from '../../hooks/useCardDraft'
+import type { CardFieldKey, CardOverrides, Dictionary, VocabCard } from '../../types/dictionary'
+import {
+  effectiveSettings,
+  enabledOptionalFields,
+  FIELD_MAX_LENGTH,
+  fieldDir,
+  fieldLanguage,
+  transcriptionLabel,
+} from '../../utils/settings'
+import { getLanguage, languageName } from '../../data/languages'
+
+interface CardEditorSheetProps {
+  open: boolean
+  mode: 'create' | 'edit'
+  dictionary: Dictionary
+  card?: VocabCard | null
+  onClose: () => void
+}
+
+const phaseCopy: Record<string, string> = {
+  queued: 'Queued — waiting for a free slot.',
+  generating: 'Generating suggestions…',
+  validating: 'Checking the suggested content…',
+}
+
+export function CardEditorSheet({
+  open,
+  mode,
+  dictionary,
+  card,
+  onClose,
+}: CardEditorSheetProps) {
+  const { aiNewCard, cardsFor, saveCard, updateCard, pushToast } = useApp()
+  const [overrides, setOverrides] = useState<CardOverrides | null>(card?.overrides ?? null)
+  const [triedSave, setTriedSave] = useState(false)
+  const [conflict, setConflict] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const settingsSnapshot = useRef(JSON.stringify(dictionary.settings))
+
+  const settings = effectiveSettings(dictionary, overrides)
+  const draft = useCardDraft({
+    settings,
+    availability: aiNewCard,
+    initialValues: card
+      ? {
+          source: card.source,
+          translation: card.translation,
+          transcription: card.transcription,
+          definition: card.definition,
+          example: card.example,
+          exampleTranslation: card.exampleTranslation,
+        }
+      : undefined,
+  })
+
+  const { values, setField, generation, isBusy, isStale } = draft
+  const isCreate = mode === 'create'
+
+  const duplicates = useMemo(
+    () =>
+      cardsFor(dictionary.id).filter(
+        (existing) =>
+          existing.id !== card?.id &&
+          existing.status === 'active' &&
+          existing.source.trim().toLowerCase() === values.source.trim().toLowerCase() &&
+          values.source.trim().length > 0,
+      ),
+    [card?.id, cardsFor, dictionary.id, values.source],
+  )
+
+  const optionalFields = enabledOptionalFields(settings)
+  const sourceError =
+    triedSave && !values.source.trim() ? 'Enter the word or phrase to save this card.' : undefined
+  const translationError =
+    triedSave && !values.translation.trim() ? 'A translation is required.' : undefined
+
+  const labelFor = (field: CardFieldKey) => {
+    const language = languageName(fieldLanguage(dictionary, settings, field))
+    switch (field) {
+      case 'source':
+        return `Source word or phrase (${language})`
+      case 'translation':
+        return `Translation (${language})`
+      case 'transcription':
+        return transcriptionLabel(settings)
+      case 'definition':
+        return `Definition (${language})`
+      case 'example':
+        return `Context example (${language})`
+      case 'exampleTranslation':
+        return `Example translation (${language})`
+      default:
+        return field
+    }
+  }
+
+  const hasContent = Object.values(values).some((value) => value.trim().length > 0)
+
+  const handleClose = () => {
+    if (isCreate && hasContent) {
+      setConfirmDiscard(true)
+      return
+    }
+    onClose()
+  }
+
+  const handleSave = () => {
+    setTriedSave(true)
+    if (!values.source.trim() || !values.translation.trim()) return
+    if (JSON.stringify(dictionary.settings) !== settingsSnapshot.current) {
+      setConflict(true)
+      return
+    }
+    if (isCreate) {
+      const saved = saveCard({
+        dictionaryId: dictionary.id,
+        source: values.source,
+        translation: values.translation,
+        transcription: values.transcription,
+        definition: values.definition,
+        example: values.example,
+        exampleTranslation: values.exampleTranslation,
+        usedAiSuggestion: draft.hasAcceptedContribution,
+        overrides,
+      })
+      pushToast({
+        title: 'Card saved',
+        description: `“${saved.source}” was added. Authorship: ${
+          saved.authorship === 'human-ai' ? 'Human + AI' : 'Human'
+        }.`,
+        variant: 'success',
+      })
+    } else if (card) {
+      updateCard(card.id, {
+        source: values.source,
+        translation: values.translation,
+        transcription: values.transcription,
+        definition: values.definition,
+        example: values.example,
+        exampleTranslation: values.exampleTranslation,
+        overrides,
+      })
+      pushToast({
+        title: 'Card updated',
+        description: `Saved changes to “${values.source.trim()}”.`,
+        variant: 'success',
+      })
+    }
+    onClose()
+  }
+
+  const renderSuggestions = (field: CardFieldKey) => {
+    const list = draft.visibleFor(field)
+    if (list.length === 0) return null
+    return (
+      <SuggestionList
+        fieldLabel={
+          field === 'exampleTranslation'
+            ? 'Example translation'
+            : field.charAt(0).toUpperCase() + field.slice(1)
+        }
+        suggestions={list}
+        language={fieldLanguage(dictionary, settings, field)}
+        dir={fieldDir(dictionary, settings, field)}
+        stale={isStale}
+        busy={isBusy}
+        onAccept={draft.accept}
+        onDiscard={draft.discard}
+        onRegenerate={() => draft.generate([field])}
+        regenerateDisabledReason={
+          isBusy ? 'Another generation is running — wait for it to finish.' : undefined
+        }
+      />
+    )
+  }
+
+  const footer = (
+    <div className="flex flex-col gap-2">
+      {isBusy ? (
+        <p className="text-xs text-text-secondary">
+          Save is unavailable while suggestions are generating. Cancel the generation to save
+          what you have now.
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button variant="secondary" onClick={handleClose}>
+          {isCreate ? 'Discard draft' : 'Cancel'}
+        </Button>
+        <Button onClick={handleSave} disabled={!draft.canSave || conflict}>
+          Save card
+        </Button>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      <ResponsiveSheet
+        open={open}
+        onClose={handleClose}
+        title={isCreate ? 'Add card' : 'Edit card'}
+        description={`${dictionary.name} · ${languageName(dictionary.sourceLanguage)} → ${languageName(
+          dictionary.targetLanguage,
+        )}`}
+        footer={footer}
+      >
+        <div className="space-y-4">
+          {conflict ? <SaveConflictAlert onReload={() => window.location.reload()} /> : null}
+
+          <CardFieldEditor
+            label={labelFor('source')}
+            required
+            value={values.source}
+            onChange={(value) => setField('source', value)}
+            maxLength={FIELD_MAX_LENGTH.source}
+            language={fieldLanguage(dictionary, settings, 'source')}
+            dir={fieldDir(dictionary, settings, 'source')}
+            error={sourceError}
+            placeholder="aprovechar"
+          />
+
+          {duplicates.length > 0 ? (
+            <DuplicateWarning source={values.source.trim()} count={duplicates.length} />
+          ) : null}
+
+          {isCreate ? (
+            <div className="rounded-xl border border-border-default bg-background-subtle p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1.5 text-sm font-medium text-text-primary">
+                  <SparklesIcon aria-hidden className="h-4 w-4" />
+                  AI assistance
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {draft.suggestions.length > 0 ? (
+                    <Button
+                      size="compact"
+                      variant="secondary"
+                      leadingIcon={<RefreshCwIcon aria-hidden className="h-4 w-4" />}
+                      onClick={() => draft.generate(draft.generatableFields)}
+                      disabled={!values.source.trim() || isBusy || isStale}
+                    >
+                      Regenerate all fields
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="compact"
+                    leadingIcon={<SparklesIcon aria-hidden className="h-4 w-4" />}
+                    onClick={() => draft.generate(draft.generatableFields)}
+                    disabled={!values.source.trim() || isBusy}
+                  >
+                    Generate with AI
+                  </Button>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-text-secondary">
+                Enter a Source first. Suggestions appear under each field for you to review —
+                nothing is filled in or saved until you accept a choice and press Save card.
+                Translation does not need to be filled in first.
+              </p>
+              {!values.source.trim() ? (
+                <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-text-tertiary">
+                  <InfoIcon aria-hidden className="h-3.5 w-3.5" />
+                  Generation becomes available once Source has content.
+                </p>
+              ) : null}
+
+              {isBusy ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-default bg-background-surface p-2.5"
+                >
+                  <span className="text-sm text-text-primary">
+                    {phaseCopy[generation.phase]}{' '}
+                    <span className="text-text-tertiary">
+                      ({generation.fields.length}{' '}
+                      {generation.fields.length === 1 ? 'field' : 'fields'})
+                    </span>
+                  </span>
+                  <Button size="compact" variant="secondary" onClick={draft.cancel}>
+                    Cancel generation
+                  </Button>
+                </div>
+              ) : null}
+
+              {generation.error ? (
+                <div className="mt-3">
+                  {generation.error.kind === 'unavailable' ? (
+                    <AiUnavailableAlert onDismiss={draft.clearError} />
+                  ) : generation.error.kind === 'rate-limit' ? (
+                    <RateLimitAlert onRetry={() => draft.generate(draft.generatableFields)} />
+                  ) : generation.error.kind === 'network' ? (
+                    <NetworkAlert onRetry={() => draft.generate(draft.generatableFields)} />
+                  ) : generation.error.kind === 'limit-reached' ? (
+                    <SuggestionLimitAlert field="This field" />
+                  ) : (
+                    <GenerationFailureAlert
+                      onRetry={() => draft.generate(draft.generatableFields)}
+                    />
+                  )}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <InlineAlert tone="tip" title="Editing a saved card">
+              Inline generation is for new cards. To propose AI changes to this saved card, use
+              “Regenerate with AI” from the card's actions — the saved card stays unchanged until
+              you accept.
+            </InlineAlert>
+          )}
+
+          {isStale && draft.suggestions.length > 0 ? (
+            <StaleSuggestionsAlert
+              previousSource={draft.generatedForSource ?? values.source}
+              onRegenerate={() => draft.generate(draft.generatableFields)}
+              disabled={isBusy}
+            />
+          ) : null}
+
+          <CardFieldEditor
+            label={labelFor('translation')}
+            required
+            value={values.translation}
+            onChange={(value) => setField('translation', value)}
+            maxLength={FIELD_MAX_LENGTH.translation}
+            language={fieldLanguage(dictionary, settings, 'translation')}
+            dir={fieldDir(dictionary, settings, 'translation')}
+            error={translationError}
+            placeholder="to make the most of"
+          >
+            {renderSuggestions('translation')}
+          </CardFieldEditor>
+
+          {optionalFields.length > 0 ? (
+            <div className="space-y-4 border-t border-border-default pt-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                Optional content enabled for this dictionary
+                <Badge size="sm" tone="neutral" className="ml-2">
+                  may stay empty
+                </Badge>
+              </p>
+              {optionalFields.map((field) => (
+                <CardFieldEditor
+                  key={field}
+                  label={labelFor(field)}
+                  value={values[field]}
+                  onChange={(value) => setField(field, value)}
+                  maxLength={FIELD_MAX_LENGTH[field]}
+                  language={fieldLanguage(dictionary, settings, field)}
+                  dir={fieldDir(dictionary, settings, field)}
+                  multiline={field !== 'transcription'}
+                  hint={
+                    field === 'exampleTranslation'
+                      ? `Always in ${getLanguage(
+                          fieldLanguage(dictionary, settings, 'exampleTranslation'),
+                        ).name} — the opposite language from the example.`
+                      : undefined
+                  }
+                >
+                  {renderSuggestions(field)}
+                </CardFieldEditor>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="border-t border-border-default pt-4">
+            <OverridesSection
+              dictionary={dictionary}
+              effective={settings}
+              overrides={overrides}
+              onChange={setOverrides}
+            />
+          </div>
+        </div>
+      </ResponsiveSheet>
+
+      <Dialog
+        open={confirmDiscard}
+        onClose={() => setConfirmDiscard(false)}
+        size="sm"
+        className="bg-background-surface text-text-primary"
+        title="Discard this draft?"
+        description="Closing abandons the card you are writing. Drafts are not recovered after you navigate away."
+        footer={
+          <DialogActions>
+            <Button variant="secondary" onClick={() => setConfirmDiscard(false)}>
+              Keep writing
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                setConfirmDiscard(false)
+                onClose()
+              }}
+            >
+              Discard draft
+            </Button>
+          </DialogActions>
+        }
+      >
+        <p className="text-sm text-text-secondary">
+          Any suggestions you have not accepted are discarded with the draft. Cancelling an active
+          generation is a separate action and keeps the draft open.
+        </p>
+      </Dialog>
+    </>
+  )
+}
+

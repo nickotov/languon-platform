@@ -4,9 +4,9 @@ import type {
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
+import { afterAll, beforeAll, vi } from 'vitest';
 
 import {
     DictionaryGenerationPanel,
@@ -172,6 +172,23 @@ function panel(
 }
 
 describe('dictionary generation review', () => {
+    const originalShowModal = HTMLDialogElement.prototype.showModal;
+    const originalClose = HTMLDialogElement.prototype.close;
+
+    beforeAll(() => {
+        HTMLDialogElement.prototype.showModal = function showModalForTest() {
+            this.setAttribute('open', '');
+        };
+        HTMLDialogElement.prototype.close = function closeForTest() {
+            this.removeAttribute('open');
+        };
+    });
+
+    afterAll(() => {
+        HTMLDialogElement.prototype.showModal = originalShowModal;
+        HTMLDialogElement.prototype.close = originalClose;
+    });
+
     it('keeps a reloaded review stale until it is regenerated from authoritative versions', () => {
         expect(
             isGenerationJobStale(reviewJob, {
@@ -193,12 +210,14 @@ describe('dictionary generation review', () => {
             screen.getByText('<script>alert(1)</script>'),
         ).toBeInTheDocument();
         expect(
-            screen.getByText('<svg onload=alert(1)>Fixed expression'),
+            screen.getByText(/<svg onload=alert\(1\)>Fixed expression/),
         ).toBeInTheDocument();
         expect(
             screen.getByText('<iframe src=javascript:alert(1)>Review register'),
         ).toBeInTheDocument();
-        expect(container.querySelector('script, img, svg, iframe')).toBeNull();
+        expect(
+            container.querySelector('script, img, svg[onload], iframe'),
+        ).toBeNull();
         expect(screen.getAllByDisplayValue('تمييز')[0]).toHaveAttribute(
             'lang',
             'ar',
@@ -212,46 +231,121 @@ describe('dictionary generation review', () => {
         ).toHaveAttribute('lang', 'ar');
     });
 
-    it('edits all candidate override families and submits no client authorship', async () => {
+    it('retains candidate override families and dormant values through editing and acceptance without client authorship', async () => {
         const user = userEvent.setup();
         const onAccept = vi.fn().mockResolvedValue(undefined);
-        panel({ onAccept });
-        await user.selectOptions(
-            screen.getByLabelText('Definition language'),
-            'target',
-        );
-        await user.selectOptions(
-            screen.getByRole('combobox', { name: 'Context example' }),
-            'disabled',
-        );
-        await user.selectOptions(
-            screen.getByLabelText('Transcription notation'),
-            'custom',
-        );
-        await user.type(
-            screen.getByLabelText(/Custom notation label/),
-            'Studio',
-        );
+        const retainedOverrides = {
+            definitionEnabled: 'enabled',
+            definitionLanguage: 'target',
+            exampleEnabled: 'disabled',
+            exampleLanguage: 'target',
+            exampleTranslationEnabled: 'enabled',
+            transcriptionCustomLabel: 'Studio',
+            transcriptionEnabled: 'disabled',
+            transcriptionNotation: 'custom',
+        } as const;
+        const candidate = {
+            overrides: retainedOverrides,
+            values: {
+                ...reviewJob.proposal.candidate.values,
+                example: 'A stored disabled example',
+                transcription: 'A stored disabled transcription',
+            },
+        };
+        panel({
+            onAccept,
+            job: {
+                ...reviewJob,
+                proposal: { ...reviewJob.proposal, candidate },
+            },
+        });
+
+        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+        const alternative = screen
+            .getByText('<b>distinguish</b>')
+            .closest('li')!;
         await user.click(
-            screen.getByRole('button', { name: '<b>distinguish</b>' }),
+            within(alternative).getByRole('button', { name: 'Use this' }),
         );
+        const translation = within(
+            screen.getByRole('region', { name: /^Translation/ }),
+        ).getByRole('textbox');
+        await user.clear(translation);
+        await user.type(translation, 'تمييز جديد');
         await user.click(
-            screen.getByRole('button', { name: 'Accept reviewed card' }),
+            screen.getByRole('button', { name: 'Accept and update card' }),
         );
-        expect(onAccept).toHaveBeenCalledWith(
-            expect.objectContaining({
-                overrides: expect.objectContaining({
-                    definitionLanguage: 'target',
-                    exampleEnabled: 'disabled',
-                    transcriptionCustomLabel: 'Studio',
-                    transcriptionNotation: 'custom',
-                }),
-                values: expect.objectContaining({
-                    source: '<b>distinguish</b>',
-                }),
-            }),
-        );
+
+        expect(onAccept).toHaveBeenCalledExactlyOnceWith({
+            overrides: retainedOverrides,
+            values: {
+                ...candidate.values,
+                source: '<b>distinguish</b>',
+                translation: 'تمييز جديد',
+            },
+        });
         expect(onAccept.mock.calls[0]?.[0]).not.toHaveProperty('authorship');
+    });
+
+    it.each(['Source', 'Translation'])(
+        'bounds edited %s by Unicode code points before acceptance',
+        async (field) => {
+            const user = userEvent.setup();
+            const onAccept = vi.fn().mockResolvedValue(undefined);
+            panel({ onAccept });
+            const input = within(
+                screen.getByRole('region', { name: new RegExp(`^${field}`) }),
+            ).getByRole('textbox');
+            const accept = screen.getByRole('button', {
+                name: 'Accept and update card',
+            });
+            const fieldKey = field === 'Source' ? 'source' : 'translation';
+            const astralValue = '😀'.repeat(200);
+
+            fireEvent.change(input, { target: { value: astralValue } });
+            expect(input).toHaveValue(astralValue);
+            expect(accept).toBeEnabled();
+            await user.click(accept);
+            expect(onAccept.mock.calls[0]?.[0].values[fieldKey]).toBe(
+                astralValue,
+            );
+
+            fireEvent.change(input, { target: { value: 'a'.repeat(201) } });
+            expect(input).toHaveValue('a'.repeat(200));
+            await user.click(accept);
+            expect(onAccept.mock.calls[1]?.[0].values[fieldKey]).toBe(
+                'a'.repeat(200),
+            );
+        },
+    );
+
+    it('preserves an invalid retained value for correction while preventing acceptance', async () => {
+        const user = userEvent.setup();
+        const onAccept = vi.fn().mockResolvedValue(undefined);
+        const source = 'a'.repeat(201);
+        panel({
+            onAccept,
+            job: {
+                ...reviewJob,
+                proposal: {
+                    ...reviewJob.proposal,
+                    candidate: {
+                        ...reviewJob.proposal.candidate,
+                        values: {
+                            ...reviewJob.proposal.candidate.values,
+                            source,
+                        },
+                    },
+                },
+            },
+        });
+        expect(screen.getByDisplayValue(source)).toBeInTheDocument();
+        const accept = screen.getByRole('button', {
+            name: 'Accept and update card',
+        });
+        expect(accept).toBeDisabled();
+        await user.click(accept);
+        expect(onAccept).not.toHaveBeenCalled();
     });
 
     it('keeps stale conflict recovery explicit and catches rejected actions', async () => {
@@ -259,7 +353,7 @@ describe('dictionary generation review', () => {
         const onReloadCompare = vi.fn().mockRejectedValue(new Error('offline'));
         panel({ conflict: true, onReloadCompare });
         expect(
-            screen.getByRole('button', { name: 'Accept reviewed card' }),
+            screen.getByRole('button', { name: 'Accept and update card' }),
         ).toBeDisabled();
         await user.click(
             screen.getByRole('button', { name: 'Reload and compare' }),
@@ -270,12 +364,12 @@ describe('dictionary generation review', () => {
     it('keeps retained proposals reviewable while new generation is unavailable', () => {
         panel({ available: false });
 
-        expect(screen.getByText('Original card')).toBeInTheDocument();
+        expect(screen.getAllByText('Saved now')[0]).toBeInTheDocument();
         expect(
-            screen.getByRole('button', { name: 'Regenerate proposal' }),
+            screen.getByRole('button', { name: 'Regenerate' }),
         ).toBeDisabled();
         expect(
-            screen.getByRole('button', { name: 'Accept reviewed card' }),
+            screen.getByRole('button', { name: 'Accept and update card' }),
         ).toBeEnabled();
     });
 });

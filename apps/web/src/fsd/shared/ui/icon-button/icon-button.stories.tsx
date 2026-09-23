@@ -34,3 +34,26 @@ export const Pressed: StoryObj<typeof meta> = {
         </IconButton>
     ),
 };
+
+export const NearViewportBottom: StoryObj<typeof meta> = {
+    args: {
+        children: '◐',
+        label: 'Change theme',
+        tooltipPlacement: 'bottom',
+    },
+    decorators: [
+        (Story) => (
+            <div
+                style={{
+                    alignItems: 'flex-end',
+                    display: 'flex',
+                    height: '100vh',
+                    justifyContent: 'center',
+                    padding: 8,
+                }}
+            >
+                <Story />
+            </div>
+        ),
+    ],
+};

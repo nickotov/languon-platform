@@ -1,4 +1,118 @@
 export const profileFeatureMessages = {
+    'dictionary.authoring.sourceLabel': 'Source word or phrase',
+    'dictionary.authoring.mayStayEmpty': 'May stay empty',
+
+    'dictionary.card.tooLong': 'Use at most {count} characters.',
+    'dictionary.cards.regenerate': 'Regenerate with AI',
+    'dictionary.generation.progressUnchanged': 'The saved card is unchanged.',
+    'dictionary.editor.noCardsTitle': 'No cards yet',
+    'dictionary.editor.noCardsHelp':
+        'Add a word or phrase in {name}. Write it yourself, or enter the source and let AI suggest content you review before saving.',
+    'dictionary.editor.addFirstCard': 'Add your first card',
+    'dictionary.editor.noCardsMatch': 'No {lifecycle} cards match “{query}”',
+    'dictionary.editor.searchHelp':
+        'Search covers the source and translation text.',
+    'dictionary.editor.clearSearch': 'Clear search',
+    'dictionary.create.namePlaceholder': 'Spanish essentials',
+    'dictionary.create.catalogHint':
+        'Pick from the supported language catalog.',
+    'dictionary.generation.phase.queued': 'Queued — waiting for a free slot.',
+    'dictionary.generation.phase.running': 'Generating a proposed replacement…',
+
+    'dictionary.generation.empty': 'Empty',
+    'dictionary.editor.activeCardCount': '{count} active cards',
+    'dictionary.editor.allCardsShown': 'Showing all {count} {lifecycle} cards.',
+    'dictionary.authoring.acceptedIntoField': 'Accepted into the field',
+    'dictionary.authoring.staleChoice': 'Stale — Source changed',
+    'dictionary.authoring.choiceCount': '{count} of 6',
+    'dictionary.generation.instructionHint':
+        'For example: make the translation more formal, or shorten the example.',
+
+    'dictionary.settings.basics': 'Basics',
+    'dictionary.settings.languagePair': 'Language pair',
+    'dictionary.settings.locked': 'Locked',
+    'dictionary.settings.cardFields': 'Card fields',
+    'dictionary.settings.writtenIn': 'Written in',
+    'dictionary.settings.transcriptionHelp':
+        'Show a pronunciation notation next to the source.',
+    'dictionary.settings.saveHelp':
+        'Changes apply only when you save. Hidden fields keep their stored values.',
+    'dictionary.settings.pairEditable':
+        'You can still change the pair because no card has existed here yet.',
+    'dictionary.settings.exampleTranslationHelp': 'Translated into {language}.',
+    'dictionary.settings.exampleTranslationDisabled': 'Enable Example first.',
+    'dictionary.library.restoreHelp':
+        'Select to restore. Restoring makes this dictionary private again; previous sharing is not restored.',
+    'dictionary.authoring.editHelp':
+        'Inline generation is for new cards. To propose AI changes to this saved card, use “Regenerate with AI” from the card actions — the saved card stays unchanged until you accept.',
+    'dictionary.authoring.sourceRequired':
+        'Generation becomes available once Source has content.',
+    'dictionary.override.title': 'Field settings for this card',
+    'dictionary.override.description':
+        'Inherited settings follow the dictionary and update with it.',
+    'dictionary.override.toggle': 'Override dictionary settings for this card',
+    'dictionary.override.help':
+        'Turn off to follow the dictionary again. Stored values are never deleted.',
+    'dictionary.override.inherited': 'Inherited',
+    'dictionary.override.overridden': 'Overridden',
+    'dictionary.generation.savedUnchangedTitle':
+        'The saved card stays as it is',
+    'dictionary.generation.savedUnchangedBody':
+        'Nothing changes until you accept. This review can propose a revised Source as well as the other fields.',
+    'dictionary.generation.retainedTitle': 'Retained review',
+    'dictionary.generation.retainedBody':
+        'This proposal was kept from an earlier session and survives navigation and reload. It is separate from unsaved Add Card drafts, which are not recovered.',
+    'dictionary.generation.pausedTitle': 'New AI work is paused',
+    'dictionary.generation.pausedBody':
+        'You can still review and accept this retained proposal. Starting a new generation is unavailable right now.',
+    'dictionary.generation.sourceMayChange': 'Source may change',
+    'dictionary.generation.replacement': 'Proposed replacement (editable)',
+    'dictionary.generation.useAlternative': 'Use this',
+    'dictionary.generation.alternativesCount': 'Alternatives ({count} of 3)',
+
+    'dictionary.error.rateLimited':
+        'Too many requests. Wait a moment before trying again.',
+    'dictionary.error.network':
+        'The connection failed. Check your network and try again.',
+
+    'dictionary.authoring.rateLimited':
+        'The suggestion service is busy. Wait a moment, then try again. Your draft is kept.',
+    'dictionary.authoring.providerUnavailable':
+        'Suggestions are temporarily unavailable. Try again later or save your draft manually.',
+    'dictionary.authoring.timeout':
+        'Suggestion generation timed out. Your draft is kept; try again or save it manually.',
+
+    'dictionary.card.discardTitle': 'Discard this draft?',
+    'dictionary.card.discardDescription':
+        'Closing abandons your unsaved card changes.',
+    'dictionary.card.keepWriting': 'Keep writing',
+    'dictionary.card.discardDraft': 'Discard draft',
+    'dictionary.card.discardHelp':
+        'Unaccepted suggestions are discarded with the draft. Cancelling generation is a separate action and keeps the draft open.',
+    'dictionary.authoring.expired':
+        'These suggestions expired. Your draft and previously loaded choices are kept. Generate new suggestions or save your draft manually.',
+
+    'dictionary.skipToContent': 'Skip to main content',
+
+    'dictionary.cards.defaults': 'Inherited settings',
+    'dictionary.cards.overrides': 'Overridden fields',
+
+    'dictionary.library.subtitle': 'Personal bilingual dictionaries you own.',
+    'dictionary.library.actions': 'Actions for {name}',
+    'dictionary.library.clearSearch': 'Clear search',
+    'dictionary.create.privateNotice': 'New dictionaries are private.',
+    'dictionary.authoring.choice': 'Choice {number}',
+    'dictionary.authoring.showMore': 'Show {count} more choices',
+    'dictionary.authoring.showFewer': 'Show fewer choices',
+    'dictionary.authoring.optionalContent':
+        'Optional content enabled for this dictionary',
+    'dictionary.authoring.notSaved': 'Suggested · not saved',
+    'dictionary.authoring.savingPaused':
+        'Save is unavailable while suggestions are generating. Cancel generation to save your draft.',
+    'dictionary.generation.savedNow': 'Saved now',
+    'dictionary.editor.actions': 'More dictionary actions',
+    'dictionary.editor.sharing': 'Sharing',
+
     'theme.switchToLight': 'Switch to light theme',
     'theme.switchToDark': 'Switch to dark theme',
     'meta.profile': 'Account settings · Languon',
@@ -38,15 +152,18 @@ export const profileFeatureMessages = {
     'profile.interfaceLanguage': 'Interface language',
     'profile.learningLanguage': 'Learning language & level',
     'profile.timeZone': 'Time zone',
-    'profile.otherDetailsComingSoon': 'Name, learning language and time zone editing are coming soon. Interface language changes immediately.',
+    'profile.otherDetailsComingSoon':
+        'Name, learning language and time zone editing are coming soon. Interface language changes immediately.',
     'profile.handleLabel': 'Username',
-    'profile.handleHelp': 'Use 3–30 letters, numbers, or underscores. Your unique username is saved in lowercase.',
+    'profile.handleHelp':
+        'Use 3–30 letters, numbers, or underscores. Your unique username is saved in lowercase.',
     'profile.handlePlaceholder': 'your_handle',
     'profile.handleSave': 'Save username',
     'profile.handleSaving': 'Saving…',
     'profile.handleSaved': 'Username saved.',
     'profile.handleInvalid': 'Use 3–30 letters, numbers, or underscores.',
-    'profile.handleConflict': 'That username is taken or your account changed. Refresh and try another.',
+    'profile.handleConflict':
+        'That username is taken or your account changed. Refresh and try another.',
     'profile.handleError': 'Could not save your handle. Try again.',
     'profile.handleUnset': 'No handle yet',
     'profile.dataTitle': 'Your data',
@@ -66,21 +183,28 @@ export const profileFeatureMessages = {
     'profile.deleteLossTitle': 'What you will lose',
     'profile.deleteLossAccess': 'Access ends immediately.',
     'profile.deleteLossData': 'Learning and account data purge after 30 days.',
-    'profile.deleteLossRecovery': 'Only an administrator can cancel before cleanup starts.',
+    'profile.deleteLossRecovery':
+        'Only an administrator can cancel before cleanup starts.',
     'profile.deleteConfirmHint': 'Enter “DELETE” exactly as shown.',
-    'profile.deleteAcknowledge': 'I understand access ends now and purge follows.',
+    'profile.deleteAcknowledge':
+        'I understand access ends now and purge follows.',
     'profile.deleteFailedTitle': 'Account removal not scheduled',
-    'profile.deleteConfirmDescription': 'This will sign you out and schedule the removal of your account. Please review what happens before confirming.',
+    'profile.deleteConfirmDescription':
+        'This will sign you out and schedule the removal of your account. Please review what happens before confirming.',
     'profile.deleteConfirmLabel': 'Type DELETE to confirm',
     'profile.deleteConfirmAction': 'Schedule account removal',
     'profile.deletePending': 'Scheduling…',
     'profile.deleteKeep': 'Keep my account',
     'profile.deleteRecentAuth': 'Sign in again before removing your account.',
-    'profile.deleteOwnerTransfer': 'Transfer and revoke administrator ownership before removing this account.',
-    'profile.deleteConflict': 'Your account changed. Refresh the page and decide again.',
-    'profile.deleteFailed': 'Could not confirm removal. It may have completed if the connection was lost; refresh and contact support before trying again.',
+    'profile.deleteOwnerTransfer':
+        'Transfer and revoke administrator ownership before removing this account.',
+    'profile.deleteConflict':
+        'Your account changed. Refresh the page and decide again.',
+    'profile.deleteFailed':
+        'Could not confirm removal. It may have completed if the connection was lost; refresh and contact support before trying again.',
     'profile.deleteScheduledTitle': 'Account removal scheduled',
-    'profile.deleteScheduledDescription': 'Access has ended. Live account data is scheduled for purge on {date}. Only an administrator can restore it before cleanup begins.',
+    'profile.deleteScheduledDescription':
+        'Access has ended. Live account data is scheduled for purge on {date}. Only an administrator can restore it before cleanup begins.',
     'profile.emailTitle': 'Email address',
     'profile.verified': 'Verified',
     'profile.emailMethod': 'Email',
@@ -90,8 +214,10 @@ export const profileFeatureMessages = {
     'profile.emailDescription': 'The primary address used to sign in.',
     'profile.primaryEmail': 'Primary email',
     'profile.requestEmailChange': 'Request email change',
-    'profile.emailChangeComingSoon': 'Email-link changes are coming soon. No email will be sent yet.',
-    'profile.emailChangeNotSent': 'Coming soon — no email was sent and your address was not changed.',
+    'profile.emailChangeComingSoon':
+        'Email-link changes are coming soon. No email will be sent yet.',
+    'profile.emailChangeNotSent':
+        'Coming soon — no email was sent and your address was not changed.',
     'profile.manageSecurity': 'Manage security',
     'profile.passwordTitle': 'Password and passkeys',
     'profile.passwordDescription':
@@ -114,8 +240,7 @@ export const profileFeatureMessages = {
         'No payment method is stored. Billing is coming soon.',
     'profile.addPayment': 'Add payment method',
     'profile.extraCreditsTitle': 'Extra credits',
-    'profile.extraCreditsEmpty':
-        'Credit purchases are not available yet.',
+    'profile.extraCreditsEmpty': 'Credit purchases are not available yet.',
     'profile.buyCredits': 'Buy credits',
     'profile.balanceTitle': 'Credit balance',
     'profile.balanceEmpty':
@@ -302,7 +427,8 @@ export const en = {
     'security.addFirstPasskey': 'Add your first passkey',
     'security.defaultPasskeyName': 'Passkey {number}',
     'security.waitingForDevice': 'Waiting for your device',
-    'security.confirmDevicePrompt': 'Confirm the prompt on your device to finish adding this passkey.',
+    'security.confirmDevicePrompt':
+        'Confirm the prompt on your device to finish adding this passkey.',
     'security.passkeyActionFailed': 'Passkey action failed',
     'security.passkeyAdded': 'Passkey added.',
     'security.passkeyRenamed': 'Passkey renamed.',
@@ -310,12 +436,16 @@ export const en = {
     'security.loadingPasskeys': 'Loading passkeys…',
     'security.retryPasskeys': 'Retry loading passkeys',
     'security.noPasskeys': 'No passkeys yet',
-    'security.passkeyEmptyHelp': 'Passkeys are the fastest way back into your account and work without typing a password.',
-    'security.passkeyUnavailable': 'Passkey registration is not available for this account yet.',
+    'security.passkeyEmptyHelp':
+        'Passkeys are the fastest way back into your account and work without typing a password.',
+    'security.passkeyUnavailable':
+        'Passkey registration is not available for this account yet.',
     'security.loadingCapabilities': 'Checking passkey availability…',
     'security.revokePasskeyTitle': 'Revoke this passkey?',
-    'security.revokePasskeyDescription': '{name} will stop working immediately. You can add it again later.',
-    'security.revokePasskeyFallback': 'Make sure you can still sign in with your email and password before revoking this passkey.',
+    'security.revokePasskeyDescription':
+        '{name} will stop working immediately. You can add it again later.',
+    'security.revokePasskeyFallback':
+        'Make sure you can still sign in with your email and password before revoking this passkey.',
     'security.renamePasskeyTitle': 'Rename passkey',
     'security.keepPasskey': 'Keep passkey',
     'security.revokePasskey': 'Revoke passkey',
@@ -494,10 +624,10 @@ export const en = {
     'dictionary.conflict.help':
         'Another change was saved first. Reload the current dictionary, review it, and try again.',
     'dictionary.conflict.reload': 'Reload current version',
-    'dictionary.authoring.aiSection': 'AI suggestions',
+    'dictionary.authoring.aiSection': 'AI assistance',
     'dictionary.authoring.generate': 'Generate with AI',
     'dictionary.authoring.generateHelp':
-        'AI proposes values below each field. Nothing is applied until you accept it.',
+        'Enter a Source first. Suggestions appear under each field for you to review — nothing is filled in or saved until you accept a choice and press Save card. Translation does not need to be filled in first.',
     'dictionary.authoring.regenerateAll': 'Regenerate all fields',
     'dictionary.authoring.progress': 'AI suggestion progress',
     'dictionary.authoring.stage.queued': 'Waiting to generate suggestions…',
@@ -574,16 +704,17 @@ export const en = {
     'dictionary.batch.error.unavailable':
         'AI batch generation is not available right now.',
     'dictionary.generation.eyebrow': 'AI card review',
-    'dictionary.generation.title': 'Review generated card',
+    'dictionary.generation.title': 'Regenerate card with AI',
     'dictionary.generation.loading': 'Loading generation review…',
     'dictionary.generation.loadFailed': 'Could not load generation review',
     'dictionary.generation.capabilityFailed':
         'AI regeneration availability could not be checked.',
     'dictionary.generation.close': 'Close review',
-    'dictionary.generation.instruction': 'Custom instruction',
+    'dictionary.generation.instruction':
+        'Instruction for this review (optional)',
     'dictionary.generation.instructionHelp':
         'Describe a bounded correction or context for this card. The source card is never changed until you accept.',
-    'dictionary.generation.start': 'Regenerate with AI',
+    'dictionary.generation.start': 'Generate proposal',
     'dictionary.generation.openReview': 'Open AI review',
     'dictionary.generation.startNew': 'Start a new generation',
     'dictionary.generation.persistenceHelp':
@@ -601,7 +732,7 @@ export const en = {
     'dictionary.generation.stage.terminal': 'Generation finished',
     'dictionary.generation.cancel': 'Cancel generation',
     'dictionary.generation.cancelling': 'Cancelling generation…',
-    'dictionary.generation.original': 'Original card',
+    'dictionary.generation.original': 'Saved now',
     'dictionary.generation.current': 'Current card after reload',
     'dictionary.generation.proposal': 'Proposed card',
     'dictionary.generation.editable': 'Editable proposal',
@@ -614,8 +745,8 @@ export const en = {
     'dictionary.generation.alternatives': 'Alternatives',
     'dictionary.generation.warnings': 'Review these warnings',
     'dictionary.generation.discard': 'Discard proposal',
-    'dictionary.generation.regenerate': 'Regenerate proposal',
-    'dictionary.generation.accept': 'Accept reviewed card',
+    'dictionary.generation.regenerate': 'Regenerate',
+    'dictionary.generation.accept': 'Accept and update card',
     'dictionary.generation.retry': 'Retry generation',
     'dictionary.generation.conflictTitle': 'Card changed since generation',
     'dictionary.generation.conflictHelp':

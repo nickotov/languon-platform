@@ -1,0 +1,306 @@
+import React from 'react'
+import { StateFrame, StateSection } from './StateFrame'
+import { Card } from '../Card'
+import { Button } from '../Button'
+import { Input } from '../Input'
+import { Badge } from '../Badge'
+import { InlineAlert } from '../InlineAlert'
+import { FieldAudioControl } from '../audio/FieldAudioControl'
+import { CardRow } from '../workspace/CardRow'
+import type { AudioPhase, AudioSelection } from '../../types/audio'
+import { dictionaries } from '../../data/dictionaries'
+import { cards } from '../../data/cards'
+
+const noop = () => undefined
+const spanish = dictionaries[0]
+const arabic = dictionaries[1]
+const aprovechar = cards[0]
+const arabicCard = cards[6]
+
+function selectionFor(phase: AudioPhase, extra: Partial<AudioSelection> = {}): AudioSelection {
+  return {
+    cardId: 'demo-card',
+    field: 'source',
+    phase,
+    speed: 1,
+    developmentTone: false,
+    cached: true,
+    ...extra,
+  }
+}
+
+function AudioRow({
+  label,
+  selection,
+  availability = 'enabled',
+  cached = true,
+  developmentAudio = false,
+  language = 'es',
+  behaviour = 'normal',
+}: {
+  label: string
+  selection: AudioSelection | null
+  availability?: 'enabled' | 'cached-only' | 'disabled'
+  cached?: boolean
+  developmentAudio?: boolean
+  language?: 'es' | 'en' | 'he'
+  behaviour?: 'normal' | 'blocked-autoplay' | 'failure' | 'unavailable'
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-b border-border-default py-2 last:border-b-0">
+      <span className="w-40 shrink-0 text-xs font-medium text-text-secondary">{label}</span>
+      <FieldAudioControl
+        cardId="demo-card"
+        field="source"
+        fieldLabel="source word"
+        language={language}
+        availability={availability}
+        cached={cached}
+        developmentAudio={developmentAudio}
+        behaviour={behaviour}
+        selection={selection}
+        onPlay={noop}
+        onStop={noop}
+        onSpeed={noop}
+      />
+    </div>
+  )
+}
+
+export function AudioStates() {
+  return (
+    <StateSection
+      id="ui-11"
+      title="UI-11 · Pronunciation audio for saved cards"
+      description="Play sits beside Source, Translation, Context example, and Example translation on active saved cards. Each field is read in its own language, one clip plays at a time, and status is announced without inventing progress."
+    >
+      <StateFrame
+        label="Four-field playback on a saved card"
+        ids={['UI-11']}
+        note="All filled fields are visible by default; each carries its own Play control and language. Status and speed appear in an overlay so the text never reflows."
+      >
+        <ul>
+          <CardRow
+            card={aprovechar}
+            dictionary={spanish}
+            audio={{
+              availability: 'enabled',
+              developmentAudio: false,
+              selection: selectionFor('playing', { cardId: aprovechar.id }),
+              cachedFields: ['source'],
+              play: noop,
+              stop: noop,
+              setSpeed: noop,
+            }}
+          />
+        </ul>
+      </StateFrame>
+
+      <StateFrame label="Playback state sequence" ids={['UI-11']}>
+        <Card variant="outlined" padding="md">
+          <AudioRow label="Idle — press Play" selection={null} cached={false} />
+          <AudioRow label="Preparing audio" selection={selectionFor('preparing')} />
+          <AudioRow label="Playing" selection={selectionFor('playing')} />
+          <AudioRow label="Stopped" selection={selectionFor('stopped')} />
+          <AudioRow
+            label="Blocked autoplay"
+            selection={selectionFor('ready-press-play')}
+            behaviour="blocked-autoplay"
+          />
+          <AudioRow label="Playback failure — retry" selection={selectionFor('failed')} />
+        </Card>
+      </StateFrame>
+
+      <StateFrame label="Development tone and unsupported language" ids={['UI-11']}>
+        <Card variant="outlined" padding="md">
+          <p className="pb-2 text-xs text-text-secondary">
+            Playback always runs at normal speed — no speed picker is shown.
+          </p>
+          <AudioRow
+            label="Development sound"
+            selection={selectionFor('playing', { developmentTone: true })}
+            developmentAudio
+          />
+          <AudioRow label="Unsupported language" selection={null} language="he" cached={false} />
+          <p className="mt-2 text-xs text-text-secondary">
+            No voice picker, waveform, scrubber, recording upload, or microphone control exists.
+          </p>
+        </Card>
+      </StateFrame>
+
+      <StateFrame label="Availability restrictions" ids={['UI-11']}>
+        <Card variant="outlined" padding="md" className="space-y-3">
+          <AudioRow
+            label="Cached-only, no recording"
+            selection={null}
+            availability="cached-only"
+            cached={false}
+          />
+          <AudioRow
+            label="Cached-only, recording exists"
+            selection={selectionFor('stopped')}
+            availability="cached-only"
+            cached
+          />
+          <div className="rounded-lg border border-dashed border-border-strong p-3 text-xs text-text-secondary">
+            Playback disabled: controls are hidden entirely, and reading, editing, saving, and
+            other AI actions continue to work.
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge size="sm" tone="neutral">
+              Hidden field — no Play
+            </Badge>
+            <Badge size="sm" tone="neutral">
+              Empty field — no Play
+            </Badge>
+            <Badge size="sm" tone="neutral">
+              Archived card or dictionary — no Play
+            </Badge>
+            <Badge size="sm" tone="neutral">
+              Unsaved draft, suggestions, transcription, definition — no Play
+            </Badge>
+          </div>
+        </Card>
+      </StateFrame>
+    </StateSection>
+  )
+}
+
+export function SecondaryEntryStates() {
+  return (
+    <StateSection
+      id="ui-10"
+      title="UI-10 · Secondary capability entry points"
+      description="Discoverable but deliberately undesigned here: pasted terms, documents, import, export, and sharing keep their own separate flows."
+    >
+      <StateFrame label="Grouped in the dictionary's more-actions menu" ids={['UI-10']}>
+        <Card variant="outlined" padding="md">
+          <ul className="space-y-2 text-sm text-text-primary">
+            <li>Generate cards from pasted terms</li>
+            <li>Generate cards from a document</li>
+            <li>Import source/translation pairs</li>
+            <li>Export</li>
+            <li>Sharing</li>
+          </ul>
+          <p className="mt-3 text-xs text-text-secondary">
+            Selecting one explains that its flow is implemented separately — no operation is
+            started or simulated.
+          </p>
+        </Card>
+      </StateFrame>
+
+      <StateFrame label="Availability respects real restrictions" ids={['UI-10']}>
+        <Card variant="outlined" padding="md" className="space-y-2 text-xs text-text-secondary">
+          <p>Pasted terms / document: unavailable while AI generation is paused.</p>
+          <p>Export: unavailable until the dictionary has at least one card.</p>
+          <p>
+            Sharing: unavailable in an archived dictionary; restoring returns a dictionary to
+            private.
+          </p>
+        </Card>
+      </StateFrame>
+    </StateSection>
+  )
+}
+
+export function ResponsiveStates() {
+  return (
+    <StateSection
+      id="ui-09"
+      title="UI-09 · Responsive, multilingual, and dark-theme behaviour"
+      description="Narrow viewports down to 320px, wrapped suggestion actions, mixed-direction content, and the same semantics in dark theme."
+    >
+      <StateFrame label="Card at 320px" ids={['UI-09']} width={320}>
+        <ul>
+          <CardRow card={aprovechar} dictionary={spanish} />
+        </ul>
+      </StateFrame>
+
+      <StateFrame label="Right-to-left card at 320px" ids={['UI-09']} width={320}>
+        <ul>
+          <CardRow card={arabicCard} dictionary={arabic} />
+        </ul>
+      </StateFrame>
+
+      <StateFrame
+        label="Add card as a mobile bottom sheet"
+        ids={['UI-04', 'UI-09']}
+        width={360}
+        note="Below 768px the dialog becomes a bottom sheet with a fixed save area that never covers the fields."
+      >
+        <div className="rounded-2xl border border-border-default bg-background-surface">
+          <div className="border-b border-border-default px-3 py-2">
+            <p className="text-sm font-semibold text-text-primary">Add card</p>
+            <p className="text-xs text-text-secondary">Spanish essentials · Spanish → English</p>
+          </div>
+          <div className="space-y-3 px-3 py-3">
+            <Input label="Source word or phrase (Spanish)" value="aprovechar" readOnly />
+            <Input label="Translation (English)" value="" readOnly />
+          </div>
+          <div className="flex items-center justify-between gap-2 border-t border-border-default px-3 py-2">
+            <Button size="compact" variant="ghost">
+              Discard draft
+            </Button>
+            <Button size="compact">Save card</Button>
+          </div>
+        </div>
+      </StateFrame>
+
+      <StateFrame label="Dark theme — saved card" ids={['UI-09']} theme="dark">
+        <ul>
+          <CardRow
+            card={aprovechar}
+            dictionary={spanish}
+            audio={{
+              availability: 'enabled',
+              developmentAudio: false,
+              selection: selectionFor('preparing', { cardId: aprovechar.id }),
+              play: noop,
+              stop: noop,
+              setSpeed: noop,
+            }}
+          />
+        </ul>
+      </StateFrame>
+
+      <StateFrame label="Dark theme — recovery messaging" ids={['UI-09', 'UI-07']} theme="dark">
+        <div className="space-y-3">
+          <InlineAlert tone="warning" title="Source changed — existing suggestions are stale">
+            They stay visible for reference but cannot be accepted or regenerated.
+          </InlineAlert>
+          <InlineAlert tone="error" title="AI suggestions are unavailable right now">
+            Manual authoring is unaffected.
+          </InlineAlert>
+        </div>
+      </StateFrame>
+
+      <StateFrame
+        label="Enlarged text and wrapped actions"
+        ids={['UI-09']}
+        note="Suggestion rows wrap their Accept / Discard controls rather than overflowing horizontally."
+        width={360}
+      >
+        <div className="text-[1.15em]">
+          <Card variant="outlined" padding="md">
+            <p className="text-base font-semibold text-text-primary">
+              en un abrir y cerrar de ojos
+            </p>
+            <p className="mt-1 text-sm text-text-secondary">in the blink of an eye</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button size="compact" variant="secondary">
+                Accept
+              </Button>
+              <Button size="compact" variant="ghost">
+                Discard
+              </Button>
+              <Button size="compact" variant="ghost">
+                Regenerate translation
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </StateFrame>
+    </StateSection>
+  )
+}
+

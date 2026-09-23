@@ -1,0 +1,33 @@
+import type { Language, LanguageCode } from '../types/dictionary'
+
+/** The app's supported language catalog. Free-text language entry is not allowed. */
+export const LANGUAGES: Language[] = [
+  { code: 'en', name: 'English', nativeName: 'English', dir: 'ltr', speechSupported: true },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', dir: 'ltr', speechSupported: true },
+  { code: 'fr', name: 'French', nativeName: 'Français', dir: 'ltr', speechSupported: true },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский', dir: 'ltr', speechSupported: true },
+  { code: 'de', name: 'German', nativeName: 'Deutsch', dir: 'ltr', speechSupported: true },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano', dir: 'ltr', speechSupported: true },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português', dir: 'ltr', speechSupported: true },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語', dir: 'ltr', speechSupported: true },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية', dir: 'rtl', speechSupported: true },
+  { code: 'he', name: 'Hebrew', nativeName: 'עברית', dir: 'rtl', speechSupported: false },
+]
+
+export function getLanguage(code: LanguageCode): Language {
+  return LANGUAGES.find((language) => language.code === code) ?? LANGUAGES[0]
+}
+
+export function languageName(code: LanguageCode): string {
+  return getLanguage(code).name
+}
+
+export function languageDir(code: LanguageCode) {
+  return getLanguage(code).dir
+}
+
+export const LANGUAGE_OPTIONS = LANGUAGES.map((language) => ({
+  label: `${language.name} — ${language.nativeName}`,
+  value: language.code,
+}))
+

@@ -3,10 +3,7 @@
 import { Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import {
-    themeCookieName,
-    useTheme,
-} from '@/fsd/shared/theme';
+import { themeCookieName, useTheme } from '@/fsd/shared/theme';
 import { useI18n } from '@/fsd/shared/i18n';
 import { IconButton } from '@/fsd/shared/ui';
 
@@ -24,19 +21,23 @@ export function ThemeToggle() {
         return () => query.removeEventListener('change', update);
     }, []);
 
-    const dark = preference === 'dark' || (preference === 'system' && systemDark);
+    const dark =
+        preference === 'dark' || (preference === 'system' && systemDark);
     const label = dark ? t('theme.switchToLight') : t('theme.switchToDark');
+
+    function changeTheme() {
+        const next = dark ? 'light' : 'dark';
+
+        setPreference(next);
+        document.cookie = `${themeCookieName}=${next}; Max-Age=31536000; Path=/; SameSite=Lax`;
+    }
 
     return (
         <IconButton
             data-testid='theme-toggle'
             icon={dark ? <Sun /> : <Moon />}
             label={label}
-            onClick={() => {
-                const next = dark ? 'light' : 'dark';
-                setPreference(next);
-                document.cookie = `${themeCookieName}=${next}; Max-Age=31536000; Path=/; SameSite=Lax`;
-            }}
+            onClick={changeTheme}
             tooltipPlacement='bottom'
             variant='ghost'
         />

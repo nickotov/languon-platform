@@ -86,7 +86,9 @@ function processor(input: {
         proposalGenerator:
             input.proposalGenerator ??
             new DeterministicPastedTermsProposalGenerator(),
-        scanner: input.scanner ?? new DeterministicDocumentMalwareScanner(),
+        scanner:
+            input.scanner ??
+            new DeterministicDocumentMalwareScanner(undefined, () => now),
         storage: input.storage,
     });
 }
@@ -216,7 +218,7 @@ describe('DictionaryDocumentGenerationProcessor', () => {
             scanAttestation: {
                 completedAt: now,
                 engineVersion: 'deterministic-1',
-                signatureUpdatedAt: new Date('2026-08-26T00:00:00.000Z'),
+                signatureUpdatedAt: now,
                 signatureVersion: 'deterministic-signatures-1',
             },
         });

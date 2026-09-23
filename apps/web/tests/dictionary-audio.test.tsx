@@ -233,7 +233,7 @@ describe('authorized bounded audio transport', () => {
     });
 });
 
-it('labels the field, honest fixture status, and speed control accessibly', () => {
+it('labels the field and fixture status without a speed selector', () => {
     render(
         <DictionaryAudioControl
             card={selection.card}
@@ -255,8 +255,8 @@ it('labels the field, honest fixture status, and speed control accessibly', () =
         'Development sound — not a pronunciation recording.',
     );
     expect(
-        screen.getByRole('combobox', { name: 'Playback speed' }),
-    ).toHaveValue('1');
+        screen.queryByRole('combobox', { name: 'Playback speed' }),
+    ).not.toBeInTheDocument();
 });
 
 it('preserves exact saved field text when pronunciation controls are present', () => {

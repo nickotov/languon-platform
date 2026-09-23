@@ -1,0 +1,97 @@
+export type UiLocale = 'en' | 'es' | 'fr' | 'ru'
+
+export const UI_LOCALES: { value: UiLocale; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Español' },
+  { value: 'fr', label: 'Français' },
+  { value: 'ru', label: 'Русский' },
+]
+
+/**
+ * Interface strings. Card languages are independent of this setting.
+ * Coverage is intentionally limited to shell, library, and workspace chrome for
+ * this design pass — see the coverage map for the deferred remainder.
+ */
+const strings = {
+  appName: {
+    en: 'Languon',
+    es: 'Languon',
+    fr: 'Languon',
+    ru: 'Languon',
+  },
+  navLibrary: {
+    en: 'My dictionaries',
+    es: 'Mis diccionarios',
+    fr: 'Mes dictionnaires',
+    ru: 'Мои словари',
+  },
+  navStates: {
+    en: 'States & variants',
+    es: 'Estados y variantes',
+    fr: 'États et variantes',
+    ru: 'Состояния и варианты',
+  },
+  navCoverage: {
+    en: 'Coverage map',
+    es: 'Mapa de cobertura',
+    fr: 'Carte de couverture',
+    ru: 'Карта покрытия',
+  },
+  libraryTitle: {
+    en: 'My dictionaries',
+    es: 'Mis diccionarios',
+    fr: 'Mes dictionnaires',
+    ru: 'Мои словари',
+  },
+  librarySubtitle: {
+    en: 'Personal bilingual dictionaries you own.',
+    es: 'Diccionarios bilingües personales que te pertenecen.',
+    fr: 'Dictionnaires bilingues personnels qui vous appartiennent.',
+    ru: 'Личные двуязычные словари, которыми вы владеете.',
+  },
+  newDictionary: {
+    en: 'New dictionary',
+    es: 'Nuevo diccionario',
+    fr: 'Nouveau dictionnaire',
+    ru: 'Новый словарь',
+  },
+  searchDictionaries: {
+    en: 'Search dictionaries',
+    es: 'Buscar diccionarios',
+    fr: 'Rechercher un dictionnaire',
+    ru: 'Поиск словарей',
+  },
+  searchCards: {
+    en: 'Search cards',
+    es: 'Buscar tarjetas',
+    fr: 'Rechercher des cartes',
+    ru: 'Поиск карточек',
+  },
+  active: { en: 'Active', es: 'Activos', fr: 'Actifs', ru: 'Активные' },
+  archived: { en: 'Archived', es: 'Archivados', fr: 'Archivés', ru: 'Архив' },
+  addCard: {
+    en: 'Add card',
+    es: 'Añadir tarjeta',
+    fr: 'Ajouter une carte',
+    ru: 'Добавить карточку',
+  },
+  settings: { en: 'Settings', es: 'Ajustes', fr: 'Paramètres', ru: 'Настройки' },
+  save: { en: 'Save', es: 'Guardar', fr: 'Enregistrer', ru: 'Сохранить' },
+  cancel: { en: 'Cancel', es: 'Cancelar', fr: 'Annuler', ru: 'Отмена' },
+  interfaceLanguage: {
+    en: 'Interface language',
+    es: 'Idioma de la interfaz',
+    fr: "Langue de l'interface",
+    ru: 'Язык интерфейса',
+  },
+  cards: { en: 'cards', es: 'tarjetas', fr: 'cartes', ru: 'карточек' },
+  private: { en: 'Private', es: 'Privado', fr: 'Privé', ru: 'Личный' },
+  unlisted: { en: 'Unlisted', es: 'No listado', fr: 'Non répertorié', ru: 'По ссылке' },
+} as const
+
+export type StringKey = keyof typeof strings
+
+export function t(key: StringKey, locale: UiLocale): string {
+  return strings[key][locale]
+}
+

@@ -1,74 +1,89 @@
 .list {
     display: grid;
-    gap: var(--sys-space-4);
+    gap: 12px;
     list-style: none;
     margin: 0;
     padding: 0;
 }
 .card {
-    align-items: start;
-    display: grid;
-    gap: var(--sys-space-4);
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    padding: var(--sys-space-4);
+    padding: 16px;
+    background: var(--background-surface);
+    border-color: var(--border-default);
+    box-shadow: none;
 }
-.order {
-    color: var(--sys-color-text-secondary);
-    font-weight: 700;
-}
-.content {
-    min-width: 0;
+.topRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
 }
 .pair {
+    min-width: 0;
+    flex: 1;
     display: grid;
-    gap: var(--sys-space-2);
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 2px;
 }
-.pair strong,
-.fields dd {
+.pair strong {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+    font-size: 18px;
+    line-height: 1.375;
+    font-weight: 600;
     overflow-wrap: anywhere;
-    white-space: pre-wrap;
+}
+.pair strong + strong {
+    color: var(--text-secondary);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
 }
 .fields {
-    display: grid;
-    gap: var(--sys-space-2);
-    margin: var(--sys-space-3) 0;
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    background: var(--background-subtle);
+    margin: 12px 0 0;
 }
-.fields div {
-    border-inline-start: 3px solid var(--sys-color-border-subtle);
-    padding-inline-start: var(--sys-space-3);
+.fields > div {
+    padding: 8px 12px;
+}
+.fields > div + div {
+    border-top: 1px solid var(--border-default);
 }
 .fields dt {
-    color: var(--sys-color-text-secondary);
-    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
 }
 .fields dd {
-    margin: 0;
-}
-.actions {
-    align-items: start;
     display: flex;
-    gap: var(--sys-space-2);
-    justify-content: end;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 2px 0 0;
+    font-size: 14px;
 }
-.orderActions {
+.fields dd > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.transcription {
+    font-family: var(--font-mono, monospace);
+    color: var(--text-secondary);
+}
+.metadata {
     display: flex;
-    gap: var(--sys-space-1);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
 }
-@media (max-width: 720px) {
+@media (max-width: 639px) {
     .card {
-        grid-template-columns: auto minmax(0, 1fr);
-    }
-    .actions {
-        grid-column: 2;
-        justify-content: end;
-    }
-}
-@media (max-width: 420px) {
-    .pair {
-        grid-template-columns: 1fr;
-    }
-    .pair > span {
-        display: none;
+        padding: 12px;
     }
 }

@@ -1,0 +1,32 @@
+import type { CardFieldKey } from './dictionary'
+
+export type AudioFieldKey = Extract<
+  CardFieldKey,
+  'source' | 'translation' | 'example' | 'exampleTranslation'
+>
+
+export type AudioPhase =
+  | 'idle'
+  | 'preparing'
+  | 'playing'
+  | 'stopped'
+  | 'ready-press-play'
+  | 'failed'
+  | 'unavailable'
+
+export type PlaybackSpeed = 1 | 0.8
+
+export interface AudioSelection {
+  cardId: string
+  field: AudioFieldKey
+  phase: AudioPhase
+  speed: PlaybackSpeed
+  /** True when the clip comes from a development test tone, not pronunciation. */
+  developmentTone: boolean
+  /** True when a valid recording already exists and playback reuses it. */
+  cached: boolean
+}
+
+/** Whether audio can be played and whether new recordings may be generated. */
+export type AudioAvailability = 'enabled' | 'cached-only' | 'disabled'
+

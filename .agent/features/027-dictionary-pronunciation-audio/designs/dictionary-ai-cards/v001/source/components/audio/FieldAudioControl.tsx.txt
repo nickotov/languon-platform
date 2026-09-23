@@ -1,0 +1,140 @@
+import React from 'react'
+import { AlertCircleIcon, PlayIcon, SquareIcon, VolumeXIcon } from 'lucide-react'
+import { IconAction } from '../common/IconAction'
+import { Badge } from '../Badge'
+import type { AudioAvailability, AudioFieldKey, AudioSelection } from '../../types/audio'
+import type { LanguageCode } from '../../types/dictionary'
+import { getLanguage } from '../../data/languages'
+import type { PlaybackBehaviour } from '../../hooks/useAudioPlayback'
+
+interface FieldAudioControlProps {
+  cardId: string
+  field: AudioFieldKey
+  fieldLabel: string
+  language: LanguageCode
+  availability: AudioAvailability
+  /** A valid recording already exists for this field. */
+  cached?: boolean
+  developmentAudio?: boolean
+  behaviour?: PlaybackBehaviour
+  selection: AudioSelection | null
+  onPlay: (
+    cardId: string,
+    field: AudioFieldKey,
+    options: { cached: boolean; developmentTone: boolean; behaviour: PlaybackBehaviour },
+  ) => void
+  onStop: () => void
+  /** Playback always uses normal speed; kept for API compatibility. */
+  onSpeed?: (speed: 1 | 0.8) => void
+}
+
+const phaseCopy: Record<string, string> = {
+  idle: 'Not playing',
+  preparing: 'Preparing audio',
+  playing: 'Playing',
+  stopped: 'Stopped',
+  'ready-press-play': 'Ready — press Play',
+  failed: 'Playback failed — press Play to retry',
+  unavailable: 'Audio unavailable',
+}
+
+/**
+ * Single, self-contained play affordance. State lives in the button itself plus
+ * a live region, so nothing overlays the card and nothing reflows the text.
+ */
+export function FieldAudioControl({
+  cardId,
+  field,
+  fieldLabel,
+  language,
+  availability,
+  cached = false,
+  developmentAudio = false,
+  behaviour = 'normal',
+  selection,
+  onPlay,
+  onStop,
+}: FieldAudioControlProps) {
+  if (availability === 'disabled') return null
+
+  const languageMeta = getLanguage(language)
+  const speechUnsupported = !languageMeta.speechSupported
+  const isSelected = selection?.cardId === cardId && selection.field === field
+  const phase = isSelected ? selection.phase : 'idle'
+
+  const blockedForNewAudio = availability === 'cached-only' && !cached
+  const unavailable = speechUnsupported || blockedForNewAudio
+  const effectiveBehaviour: PlaybackBehaviour = unavailable ? 'unavailable' : behaviour
+
+  const isBusy = phase === 'preparing'
+  const isPlaying = phase === 'playing'
+  const needsSecondPress = phase === 'ready-press-play'
+  const isError = phase === 'failed' || phase === 'unavailable'
+
+  const unavailableReason = speechUnsupported
+    ? `Pronunciation is not available for ${languageMeta.name}.`
+    : 'New recordings are paused. Fields with an existing recording can still play.'
+
+  const buttonLabel = unavailable
+    ? `Pronunciation unavailable for ${fieldLabel} — ${unavailableReason}`
+    : isPlaying || isBusy
+      ? `Stop ${fieldLabel} in ${languageMeta.name}`
+      : phase === 'failed'
+        ? `Retry ${fieldLabel} in ${languageMeta.name}`
+        : needsSecondPress
+          ? `Ready — press Play again for ${fieldLabel} in ${languageMeta.name}`
+          : `Play ${fieldLabel} in ${languageMeta.name}${
+              developmentAudio ? ' (development test tone)' : ''
+            }`
+
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1.5 align-middle">
+      <IconAction
+        size="xs"
+        plain
+        active={isPlaying || isBusy}
+        loading={isBusy}
+        disabled={unavailable}
+        icon={
+          unavailable ? (
+            <VolumeXIcon aria-hidden />
+          ) : isPlaying ? (
+            <SquareIcon aria-hidden />
+          ) : (
+            <PlayIcon aria-hidden />
+          )
+        }
+        label={buttonLabel}
+        onClick={() =>
+          isPlaying || isBusy
+            ? onStop()
+            : onPlay(cardId, field, {
+                cached,
+                developmentTone: developmentAudio,
+                behaviour: effectiveBehaviour,
+              })
+        }
+      />
+
+      {isError ? (
+        <AlertCircleIcon
+          aria-hidden
+          className="h-4 w-4 text-danger-default"
+          title={phase === 'unavailable' ? unavailableReason : phaseCopy.failed}
+        />
+      ) : null}
+
+      {developmentAudio && !unavailable ? (
+        <Badge size="sm" tone="warning">
+          Test tone
+        </Badge>
+      ) : null}
+
+      <span role="status" aria-live="polite" className="sr-only">
+        {fieldLabel}, {languageMeta.name}:{' '}
+        {phase === 'unavailable' ? unavailableReason : phaseCopy[phase]}
+      </span>
+    </span>
+  )
+}
+

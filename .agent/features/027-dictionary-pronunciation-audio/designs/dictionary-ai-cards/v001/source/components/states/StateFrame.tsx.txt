@@ -1,0 +1,79 @@
+import React from 'react'
+import { Badge } from '../Badge'
+
+interface StateFrameProps {
+  label: string
+  note?: string
+  ids?: string[]
+  theme?: 'light' | 'dark'
+  width?: number
+  children: React.ReactNode
+}
+
+/** Presentation frame for a single documented state variant. */
+export function StateFrame({
+  label,
+  note,
+  ids = [],
+  theme = 'light',
+  width,
+  children,
+}: StateFrameProps) {
+  return (
+    <figure className="min-w-0">
+      <figcaption className="mb-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-text-primary">{label}</span>
+          {ids.map((id) => (
+            <Badge key={id} size="sm" tone="info">
+              {id}
+            </Badge>
+          ))}
+          {theme === 'dark' ? (
+            <Badge size="sm" tone="neutral">
+              Dark theme
+            </Badge>
+          ) : null}
+          {width ? (
+            <Badge size="sm" tone="neutral">
+              {width}px
+            </Badge>
+          ) : null}
+        </div>
+        {note ? <p className="mt-1 text-xs text-text-secondary">{note}</p> : null}
+      </figcaption>
+      <div
+        data-theme={theme}
+        style={width ? { maxWidth: width } : undefined}
+        className="overflow-hidden rounded-2xl border border-border-default bg-background-canvas p-3"
+      >
+        {children}
+      </div>
+    </figure>
+  )
+}
+
+export function StateSection({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id: string
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <section aria-labelledby={`${id}-heading`} className="space-y-4">
+      <div className="border-t border-border-default pt-6">
+        <h2 id={`${id}-heading`} className="text-lg font-semibold text-text-primary">
+          {title}
+        </h2>
+        <p className="mt-1 max-w-[52rem] text-sm text-text-secondary">{description}</p>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">{children}</div>
+    </section>
+  )
+}
+

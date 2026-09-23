@@ -1,0 +1,61 @@
+.aiControls {
+    background: var(--background-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.aiActionRow,
+.aiButtons,
+.aiProgress {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.aiActionRow strong {
+    align-items: center;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 500;
+    gap: 6px;
+}
+
+.aiButtons {
+    justify-content: flex-start;
+}
+
+.aiHelp {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 16px;
+    margin: 8px 0 0;
+}
+
+.sourceHint {
+    align-items: center;
+    color: var(--text-tertiary);
+    display: inline-flex;
+    font-size: 12px;
+    gap: 6px;
+    line-height: 16px;
+    margin: 4px 0 0;
+}
+
+.aiProgress {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    font-size: 14px;
+    margin-top: 12px;
+    padding: 10px;
+}
+
+.aiControls .primaryAction:disabled {
+    background: var(--primary-default);
+    border-color: transparent;
+    color: var(--text-on-primary);
+    opacity: 0.5;
+}

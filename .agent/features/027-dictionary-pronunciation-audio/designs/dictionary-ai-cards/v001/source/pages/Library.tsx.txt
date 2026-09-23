@@ -1,0 +1,230 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { PlusIcon, SearchIcon, BookPlusIcon } from 'lucide-react'
+import { Button } from '../components/Button'
+import { Input } from '../components/Input'
+import { SegmentedTabs } from '../components/common/SegmentedTabs'
+import { Card } from '../components/Card'
+import { Skeleton } from '../components/Skeleton'
+import { InlineAlert } from '../components/InlineAlert'
+import { DictionaryListItem } from '../components/library/DictionaryListItem'
+import { CreateDictionaryDialog } from '../components/library/CreateDictionaryDialog'
+import { DictionarySettingsSheet } from '../components/settings/DictionarySettingsSheet'
+import { useApp } from '../contexts/AppContext'
+import { t } from '../data/i18n'
+
+export function Library() {
+  const navigate = useNavigate()
+  const {
+    dictionaries,
+    activeCardCount,
+    archiveDictionary,
+    restoreDictionary,
+    libraryLoadState,
+    setLibraryLoadState,
+    locale,
+    pushToast,
+  } = useApp()
+  const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<'active' | 'archived'>('active')
+  const [createOpen, setCreateOpen] = useState(false)
+  const [settingsFor, setSettingsFor] = useState<string | null>(null)
+
+  // Brief load on first visit so the loading state is part of the real flow.
+  useEffect(() => {
+    setLibraryLoadState('loading')
+    const timer = window.setTimeout(() => setLibraryLoadState('ready'), 900)
+    return () => window.clearTimeout(timer)
+  }, [setLibraryLoadState])
+
+  const visible = useMemo(() => {
+    const normalized = query.trim().toLowerCase()
+    return dictionaries
+      .filter((dictionary) => dictionary.status === tab)
+      .filter((dictionary) =>
+        normalized.length === 0
+          ? true
+          : `${dictionary.name} ${dictionary.description}`.toLowerCase().includes(normalized),
+      )
+  }, [dictionaries, query, tab])
+
+  const totalCount = dictionaries.length
+  const activeCount = dictionaries.filter((item) => item.status === 'active').length
+  const archivedCount = dictionaries.filter((item) => item.status === 'archived').length
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-text-primary">{t('libraryTitle', locale)}</h1>
+          <p className="mt-1 text-sm text-text-secondary">{t('librarySubtitle', locale)}</p>
+        </div>
+        <Button
+          leadingIcon={<PlusIcon aria-hidden className="h-4 w-4" />}
+          onClick={() => setCreateOpen(true)}
+        >
+          {t('newDictionary', locale)}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SegmentedTabs
+          label="Dictionary status"
+          value={tab}
+          onValueChange={(value) => setTab(value as 'active' | 'archived')}
+          items={[
+            { value: 'active', label: t('active', locale), count: activeCount },
+            { value: 'archived', label: t('archived', locale), count: archivedCount },
+          ]}
+        />
+        <Input
+          type="search"
+          size="sm"
+          aria-label={t('searchDictionaries', locale)}
+          placeholder={t('searchDictionaries', locale)}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          leadingIcon={<SearchIcon aria-hidden className="h-4 w-4" />}
+          wrapperClassName="sm:max-w-xs"
+        />
+      </div>
+
+      {libraryLoadState === 'loading' ? (
+        <ul className="space-y-3" aria-busy="true">
+          {[0, 1, 2].map((item) => (
+            <li key={item}>
+              <Card
+                variant="outlined"
+                padding="md"
+                className="border-border-default bg-background-surface"
+              >
+                <Skeleton width="40%" height={18} />
+                <Skeleton className="mt-3" width="60%" />
+                <Skeleton className="mt-2" width="80%" />
+              </Card>
+            </li>
+          ))}
+        </ul>
+      ) : libraryLoadState === 'error' ? (
+        <InlineAlert
+          tone="error"
+          title="We couldn't load your dictionaries"
+          actions={
+            <Button
+              size="compact"
+              variant="secondary"
+              onClick={() => setLibraryLoadState('ready')}
+            >
+              Try again
+            </Button>
+          }
+        >
+          Nothing was changed. Your dictionaries are safe — this was a loading problem only.
+        </InlineAlert>
+      ) : totalCount === 0 ? (
+        <Card
+          variant="outlined"
+          padding="lg"
+          className="border-border-default bg-background-surface text-center text-text-primary"
+        >
+          <div className="mx-auto flex max-w-md flex-col items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-subtle text-primary-default">
+              <BookPlusIcon aria-hidden className="h-6 w-6" />
+            </span>
+            <h2 className="text-lg font-semibold text-text-primary">
+              Create your first dictionary
+            </h2>
+            <p className="text-sm text-text-secondary">
+              A dictionary holds vocabulary cards for one language pair — for example Spanish to
+              English. You can add cards by hand or with AI help.
+            </p>
+            <Button
+              leadingIcon={<PlusIcon aria-hidden className="h-4 w-4" />}
+              onClick={() => setCreateOpen(true)}
+            >
+              {t('newDictionary', locale)}
+            </Button>
+          </div>
+        </Card>
+      ) : visible.length === 0 ? (
+        <Card
+          variant="outlined"
+          padding="lg"
+          className="border-border-default bg-background-surface text-text-primary"
+        >
+          <h2 className="text-base font-semibold text-text-primary">
+            No {tab} dictionaries match “{query}”
+          </h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Try a shorter search, or switch between active and archived.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="compact" variant="secondary" onClick={() => setQuery('')}>
+              Clear search
+            </Button>
+            <Button
+              size="compact"
+              variant="secondary"
+              onClick={() => setTab(tab === 'active' ? 'archived' : 'active')}
+            >
+              Show {tab === 'active' ? t('archived', locale) : t('active', locale)}
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <ul className="space-y-3">
+          {visible.map((dictionary) => (
+            <DictionaryListItem
+              key={dictionary.id}
+              dictionary={dictionary}
+              activeCards={activeCardCount(dictionary.id)}
+              onOpen={(item) => navigate(`/d/${item.id}`)}
+              onSettings={(item) => setSettingsFor(item.id)}
+              onArchive={(item) => {
+                archiveDictionary(item.id)
+                pushToast({
+                  title: 'Dictionary archived',
+                  description: `“${item.name}” moved to Archived. You can restore it any time.`,
+                  variant: 'info',
+                })
+              }}
+              onRestore={(item) => {
+                restoreDictionary(item.id)
+                pushToast({
+                  title: 'Dictionary restored',
+                  description: `“${item.name}” is active again and set to private. Previous sharing was not restored.`,
+                  variant: 'info',
+                })
+              }}
+            />
+          ))}
+        </ul>
+      )}
+
+      {settingsFor ? (
+        <DictionarySettingsSheet
+          open
+          dictionary={dictionaries.find((item) => item.id === settingsFor)!}
+          onClose={() => setSettingsFor(null)}
+        />
+      ) : null}
+
+      {createOpen ? (
+        <CreateDictionaryDialog
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(id) => {
+            setCreateOpen(false)
+            pushToast({
+              title: 'Dictionary created',
+              description: 'It is private. Add your first card to get started.',
+              variant: 'success',
+            })
+            navigate(`/d/${id}`)
+          }}
+        />
+      ) : null}
+    </div>
+  )
+}
+

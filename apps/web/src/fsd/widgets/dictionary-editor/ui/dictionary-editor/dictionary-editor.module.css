@@ -1,54 +1,290 @@
 .main {
-    display: grid;
-    gap: var(--sys-space-5);
-    margin: 0 auto;
-    max-width: 1180px;
-    padding: clamp(var(--sys-space-4), 5vw, 64px);
-}
-.header,
-.titleRow,
-.cardsHeader,
-.filters {
-    align-items: center;
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--sys-space-4);
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+    margin: 0 auto;
+    max-width: 1232px;
+    padding: 24px 16px 112px;
 }
-.header h1,
-.cardsHeader h2 {
-    font-family: var(--sys-font-display);
+
+.header {
+    display: grid;
+    gap: 16px;
+    padding: 12px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--background-surface);
+}
+
+.summaryContent {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.summaryContent > :first-child {
+    min-width: 0;
+}
+
+.header h1 {
     margin: 0;
+    color: var(--text-primary);
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 32px;
+    overflow-wrap: anywhere;
 }
-.header p,
-.cardsHeader p {
-    color: var(--sys-color-text-secondary);
-    margin: var(--sys-space-2) 0 0;
+
+.metadata {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 20px;
 }
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.description {
+    max-width: 46rem;
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 20px;
+}
+
 .cardsSection {
     display: grid;
-    gap: var(--sys-space-4);
+    gap: 12px;
 }
-.cardsActions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sys-space-3);
-}
+
 .filters {
-    align-items: end;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
-.filters > :first-child {
-    flex: 1 1 280px;
+
+.filters > :last-child {
+    min-width: 0;
 }
+
 .outcome {
-    color: var(--sys-color-text-secondary);
     margin: 0;
-    min-height: 1.5em;
+    color: var(--text-secondary);
 }
-@media (max-width: 420px) {
-    .header > button,
-    .cardsActions,
-    .cardsActions > button {
+
+.addCard {
+    position: fixed;
+    bottom: 96px;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    box-shadow: var(--elevation-lg);
+}
+
+.statusTabs {
+    display: inline-flex;
+    width: fit-content;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--background-subtle);
+}
+
+.statusTabs button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    padding: 0 12px;
+    min-height: 36px;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.statusTabs button[aria-pressed='true'] {
+    background: var(--primary-default);
+    color: var(--text-on-primary);
+    box-shadow: var(--elevation-sm);
+}
+
+.tabCount {
+    padding: 0 6px;
+    border-radius: 9999px;
+    background: var(--background-surface);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.statusTabs button:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+.settingsSheet {
+    max-width: 672px;
+    max-height: 85vh;
+    height: auto;
+    margin: auto;
+    inset: 0;
+    border-radius: 24px;
+}
+
+@media (min-width: 640px) {
+    .header {
+        padding: 16px;
+    }
+    .filters {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .filters > :last-child {
+        max-width: 320px;
+    }
+}
+
+@media (max-width: 767px) {
+    .settingsSheet {
         width: 100%;
+        max-width: none;
+        max-height: 92dvh;
+        margin: auto 0 0;
+        border-radius: 24px 24px 0 0;
+        padding: 0;
+    }
+}
+
+.settingsSheet > div:nth-child(2) {
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+@media (min-width: 1024px) {
+    .main {
+        margin-inline-start: calc(240px + max(0px, (100vw - 1488px) / 2));
+        margin-inline-end: auto;
+        width: calc(100% - 240px);
+        max-width: 1248px;
+        padding: 32px 24px 136px;
+    }
+    .summaryContent {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+    .addCard {
+        bottom: 32px;
+        inset-inline-start: calc(50% + 120px);
+    }
+}
+
+.statusTabs button[aria-pressed='true'] {
+    border-color: var(--primary-default);
+    font-weight: 600;
+}
+
+.statusTabs button[aria-pressed='true'] .tabCount {
+    color: var(--primary-default);
+}
+
+.emptyCards,
+.noMatches {
+    padding: 24px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--background-surface);
+}
+.emptyCards {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+.emptyCards h2,
+.noMatches h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 28px;
+    font-weight: 600;
+}
+.emptyCards p,
+.noMatches p {
+    max-width: 448px;
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+.noMatches h2 {
+    font-size: 16px;
+}
+.noMatches p {
+    margin-top: 4px;
+}
+.noMatches button {
+    margin-top: 12px;
+}
+.emptyIcon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-xl);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+
+.shownSummary {
+    text-align: center;
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.settingsAction {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: 9999px;
+    background: var(--background-surface);
+    color: var(--text-primary);
+}
+.settingsAction:hover:not(:disabled) {
+    background: var(--background-subtle);
+}
+
+@media (max-width: 767px) {
+    .settingsSheet > header {
+        border-bottom: 1px solid var(--border-default);
+        padding: 16px;
+    }
+    .settingsSheet > header h2 {
+        font-size: 16px;
+        line-height: 24px;
+    }
+    .settingsSheet::backdrop {
+        backdrop-filter: none;
     }
 }

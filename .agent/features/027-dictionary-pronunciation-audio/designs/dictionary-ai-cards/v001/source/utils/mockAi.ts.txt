@@ -1,0 +1,99 @@
+import type { CardFieldKey } from '../types/dictionary'
+
+/**
+ * Deterministic stand-in content for prototype suggestions.
+ * Nothing here calls a model; it only illustrates review-before-save behaviour.
+ */
+const pools: Record<string, Partial<Record<CardFieldKey, string[]>>> = {
+  aprovechar: {
+    translation: [
+      'to make the most of',
+      'to take advantage of',
+      'to put to good use',
+      'to seize (an opportunity)',
+      'to capitalise on',
+      'to benefit from',
+    ],
+    transcription: ['/a.pɾo.βeˈt͡ʃaɾ/', '[a.pro.βe.ˈt͡ʃar]', 'a-pro-ve-CHAR'],
+    definition: [
+      'To use an opportunity, resource, or moment fully before it passes.',
+      'To get real value out of something available to you right now.',
+      'To turn a situation, time, or resource into something useful.',
+    ],
+    example: [
+      'Quiero aprovechar el fin de semana.',
+      'Vamos a aprovechar el buen tiempo para caminar.',
+      'Aprovecha que todavía hay luz.',
+    ],
+    exampleTranslation: [
+      'I want to make the most of the weekend.',
+      "Let's make the most of the good weather and take a walk.",
+      'Make the most of it while there is still daylight.',
+    ],
+  },
+  madrugar: {
+    translation: ['to get up very early', 'to rise at dawn', 'to be an early riser'],
+    transcription: ['/ma.ðɾuˈɣaɾ/', 'ma-dru-GAR'],
+    definition: [
+      'To wake and get up in the early hours, usually before sunrise.',
+      'Levantarse muy temprano, normalmente antes del amanecer.',
+    ],
+    example: ['No me gusta madrugar los domingos.', 'Mañana tengo que madrugar.'],
+    exampleTranslation: [
+      "I don't like getting up early on Sundays.",
+      'I have to get up early tomorrow.',
+    ],
+  },
+}
+
+const generic: Record<CardFieldKey, string[]> = {
+  source: [],
+  translation: [
+    'suggested translation',
+    'alternative translation',
+    'a more literal translation',
+    'a more idiomatic translation',
+    'a formal-register translation',
+    'a colloquial translation',
+  ],
+  transcription: ['/suˈdʒest.ʃən/', 'su-jes-TION', '[suˈd͡ʒes.t͡ʃon]'],
+  definition: [
+    'A short, learner-friendly explanation of what this expression means in use.',
+    'A definition that emphasises when a speaker would actually choose this wording.',
+    'A definition contrasting this expression with its closest neighbour.',
+  ],
+  example: [
+    'A short sentence showing the phrase in an everyday situation.',
+    'A sentence placing the phrase in a conversational exchange.',
+    'A sentence using the phrase in a slightly more formal register.',
+  ],
+  exampleTranslation: [
+    'The example sentence rendered in the opposite language.',
+    'A closer, more literal rendering of the example sentence.',
+    'A natural-sounding rendering of the example sentence.',
+  ],
+}
+
+export function suggestionFor(
+  field: CardFieldKey,
+  source: string,
+  attempt: number,
+): string {
+  const key = source.trim().toLowerCase()
+  const pool = pools[key]?.[field] ?? generic[field]
+  if (pool.length === 0) return source
+  const base = pool[attempt % pool.length]
+  const cycle = Math.floor(attempt / pool.length)
+  return cycle === 0 ? base : `${base} (variant ${cycle + 1})`
+}
+
+export function reviewAlternatives(
+  field: CardFieldKey,
+  source: string,
+  count = 3,
+): string[] {
+  return Array.from({ length: count }, (_unused, index) =>
+    suggestionFor(field, source, index + 1),
+  )
+}
+

@@ -1,0 +1,355 @@
+import React from 'react'
+import { SparklesIcon } from 'lucide-react'
+import { StateFrame, StateSection } from './StateFrame'
+import { Card } from '../Card'
+import { Button } from '../Button'
+import { Input } from '../Input'
+import { Badge } from '../Badge'
+import { Textarea } from '../Textarea'
+import { InlineAlert } from '../InlineAlert'
+import { Toast } from '../Toast'
+import { SuggestionList } from '../card/SuggestionList'
+import {
+  AiUnavailableAlert,
+  DuplicateWarning,
+  GenerationFailureAlert,
+  NetworkAlert,
+  ProposalExpiredAlert,
+  RateLimitAlert,
+  ReviewConflictAlert,
+  SaveConflictAlert,
+  StaleSuggestionsAlert,
+} from '../card/DraftAlerts'
+import type { FieldSuggestion } from '../../types/ai'
+
+const noop = () => undefined
+
+function suggestion(
+  index: number,
+  value: string,
+  status: FieldSuggestion['status'] = 'available',
+  stale = false,
+): FieldSuggestion {
+  return { id: `demo-${index}-${value}`, field: 'translation', value, status, stale, index }
+}
+
+const twoChoices = [
+  suggestion(1, 'to make the most of', 'accepted'),
+  suggestion(2, 'to take advantage of'),
+]
+
+const sixChoices = [
+  suggestion(1, 'to make the most of', 'accepted'),
+  suggestion(2, 'to take advantage of'),
+  suggestion(3, 'to put to good use'),
+  suggestion(4, 'to seize (an opportunity)'),
+  suggestion(5, 'to capitalise on'),
+  suggestion(6, 'to benefit from'),
+]
+
+const staleChoices = [
+  suggestion(1, 'to make the most of', 'available', true),
+  suggestion(2, 'to take advantage of', 'available', true),
+]
+
+export function DraftStates() {
+  return (
+    <StateSection
+      id="ui-04"
+      title="UI-04 / UI-05 · Manual authoring and source-only AI entry"
+      description="Manual authoring is first-class. Generation needs only a valid Source, never overwrites a field, and Save card is the single explicit commit."
+    >
+      <StateFrame label="Source entered, generation offered" ids={['UI-04', 'UI-05']}>
+        <Card variant="outlined" padding="md" className="space-y-3">
+          <Input label="Source word or phrase (Spanish)" required value="aprovechar" readOnly />
+          <div className="rounded-xl border border-border-default bg-background-subtle p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-text-primary">
+                <SparklesIcon aria-hidden className="h-4 w-4" />
+                AI assistance
+              </p>
+              <Button size="compact" leadingIcon={<SparklesIcon aria-hidden className="h-4 w-4" />}>
+                Generate with AI
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-text-secondary">
+              Suggestions appear under each field for you to review — nothing is filled in or
+              saved until you accept a choice and press Save card.
+            </p>
+          </div>
+          <Input label="Translation (English)" required value="" readOnly />
+        </Card>
+      </StateFrame>
+
+      <StateFrame
+        label="Generation in progress"
+        ids={['UI-05']}
+        note="Honest queued / generating / validating labels with cancellation. No percentages or time estimates."
+      >
+        <Card variant="outlined" padding="md" className="space-y-2">
+          {['Queued — waiting for a free slot.', 'Generating suggestions…', 'Checking the suggested content…'].map(
+            (copy) => (
+              <div
+                key={copy}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-default bg-background-subtle p-2.5"
+              >
+                <span className="text-sm text-text-primary">{copy}</span>
+                <Button size="compact" variant="secondary">
+                  Cancel generation
+                </Button>
+              </div>
+            ),
+          )}
+          <p className="text-xs text-text-secondary">
+            Manual fields stay editable while this runs. Save is unavailable until it finishes or
+            is cancelled — cancelling generation is separate from discarding the draft.
+          </p>
+        </Card>
+      </StateFrame>
+
+      <StateFrame label="Duplicate source is allowed" ids={['UI-04']}>
+        <DuplicateWarning source="aprovechar" count={1} />
+      </StateFrame>
+
+      <StateFrame label="Discarding an unsaved draft" ids={['UI-04']}>
+        <Card variant="outlined" padding="md">
+          <h3 className="text-base font-semibold text-text-primary">Discard this draft?</h3>
+          <p className="mt-1 text-sm text-text-secondary">
+            Closing abandons the card you are writing. Drafts are not recovered after you
+            navigate away. Unaccepted suggestions are discarded with it.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button size="compact" variant="secondary">
+              Keep writing
+            </Button>
+            <Button size="compact" variant="danger">
+              Discard draft
+            </Button>
+          </div>
+        </Card>
+      </StateFrame>
+    </StateSection>
+  )
+}
+
+export function SuggestionStates() {
+  return (
+    <StateSection
+      id="ui-06"
+      title="UI-06 · Field-level suggestions and retained choices"
+      description="Suggestions sit under their field, stay visibly separate from real input, and are never silently dropped."
+    >
+      <StateFrame label="Accepted choice, alternative retained" ids={['UI-06']}>
+        <Card variant="outlined" padding="md">
+          <Input label="Translation (English)" value="to make the most of" readOnly />
+          <SuggestionList
+            fieldLabel="Translation"
+            suggestions={twoChoices}
+            language="en"
+            dir="ltr"
+            stale={false}
+            busy={false}
+            onAccept={noop}
+            onDiscard={noop}
+            onRegenerate={noop}
+          />
+        </Card>
+      </StateFrame>
+
+      <StateFrame
+        label="Six choices — limit reached"
+        ids={['UI-06']}
+        note="Extra choices collapse behind progressive disclosure; at six, one must be discarded first."
+      >
+        <SuggestionList
+          fieldLabel="Translation"
+          suggestions={sixChoices}
+          language="en"
+          dir="ltr"
+          stale={false}
+          busy={false}
+          onAccept={noop}
+          onDiscard={noop}
+          onRegenerate={noop}
+        />
+      </StateFrame>
+
+      <StateFrame label="Successor generation running" ids={['UI-06']}>
+        <SuggestionList
+          fieldLabel="Translation"
+          suggestions={twoChoices}
+          language="en"
+          dir="ltr"
+          stale={false}
+          busy
+          onAccept={noop}
+          onDiscard={noop}
+          onRegenerate={noop}
+          regenerateDisabledReason="Another generation is running — wait for it to finish. Existing choices and manual edits are preserved."
+        />
+      </StateFrame>
+
+      <StateFrame label="Discarded choice" ids={['UI-06']}>
+        <Card variant="outlined" padding="md">
+          <Input label="Translation (English)" value="to make the most of" readOnly />
+          <SuggestionList
+            fieldLabel="Translation"
+            suggestions={[suggestion(1, 'to make the most of', 'accepted')]}
+            language="en"
+            dir="ltr"
+            stale={false}
+            busy={false}
+            onAccept={noop}
+            onDiscard={noop}
+            onRegenerate={noop}
+          />
+          <p className="mt-2 text-xs text-text-secondary">
+            Discarding removes a choice from the list without clearing what you typed.
+          </p>
+        </Card>
+      </StateFrame>
+    </StateSection>
+  )
+}
+
+export function RecoveryStates() {
+  return (
+    <StateSection
+      id="ui-07"
+      title="UI-07 · Source changes, failures, and saving"
+      description="Every failure keeps the open draft and loaded suggestions. Nothing retries silently and nothing overwrites newer data."
+    >
+      <StateFrame label="Stale suggestions after a Source change" ids={['UI-07']}>
+        <div className="space-y-3">
+          <StaleSuggestionsAlert previousSource="aprovechar" onRegenerate={noop} />
+          <SuggestionList
+            fieldLabel="Translation"
+            suggestions={staleChoices}
+            language="en"
+            dir="ltr"
+            stale
+            busy={false}
+            onAccept={noop}
+            onDiscard={noop}
+            onRegenerate={noop}
+          />
+        </div>
+      </StateFrame>
+
+      <StateFrame label="AI unavailable — manual authoring continues" ids={['UI-07']}>
+        <AiUnavailableAlert />
+      </StateFrame>
+
+      <StateFrame label="Capacity limit and generation failure" ids={['UI-07']}>
+        <div className="space-y-3">
+          <RateLimitAlert onRetry={noop} />
+          <GenerationFailureAlert onRetry={noop} />
+        </div>
+      </StateFrame>
+
+      <StateFrame label="Network/polling failure and expiry" ids={['UI-07']}>
+        <div className="space-y-3">
+          <NetworkAlert onRetry={noop} />
+          <ProposalExpiredAlert onRegenerate={noop} />
+        </div>
+      </StateFrame>
+
+      <StateFrame label="Save conflict" ids={['UI-07']}>
+        <SaveConflictAlert onReload={noop} />
+      </StateFrame>
+
+      <StateFrame
+        label="Successful creation with authorship"
+        ids={['UI-07']}
+        note="One card is created. Accepting any AI choice produces Human + AI; manual-only stays Human."
+      >
+        <div className="space-y-3">
+          <Toast
+            variant="success"
+            title="Card saved"
+            description="“aprovechar” was added. Authorship: Human + AI."
+            duration={null}
+            dismissible={false}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Badge size="sm" tone="info">
+              Human + AI — one accepted suggestion
+            </Badge>
+            <Badge size="sm" tone="neutral">
+              Human — typed manually
+            </Badge>
+          </div>
+        </div>
+      </StateFrame>
+    </StateSection>
+  )
+}
+
+export function ReviewStates() {
+  return (
+    <StateSection
+      id="ui-08"
+      title="UI-08 · AI regeneration for a saved card"
+      description="A separate review flow: optional instruction, original beside an editable proposal, alternatives, and a persistent conflict when the card changed."
+    >
+      <StateFrame label="Original beside editable proposal" ids={['UI-08']}>
+        <Card variant="outlined" padding="md">
+          <h3 className="text-sm font-semibold text-text-primary">
+            Translation <span className="font-normal text-text-tertiary">(English)</span>
+          </h3>
+          <p className="mt-1 text-xs text-warning-default">
+            Register differs from the current translation — check which fits your usage.
+          </p>
+          <div className="mt-2 grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border border-border-default bg-background-subtle p-2.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                Saved now
+              </p>
+              <p className="mt-1 text-sm text-text-primary">to make the most of</p>
+            </div>
+            <Textarea
+              label="Proposed replacement (editable)"
+              rows={2}
+              value="to take full advantage of"
+              readOnly
+            />
+          </div>
+          <p className="mt-2 text-xs text-text-tertiary">Alternatives (3 of 3) available below.</p>
+        </Card>
+      </StateFrame>
+
+      <StateFrame label="Instruction, queued job, retained review" ids={['UI-08']}>
+        <Card variant="outlined" padding="md" className="space-y-3">
+          <Textarea
+            label="Instruction for this review (optional)"
+            maxLength={1000}
+            showCount
+            rows={2}
+            value="Make the translation more formal."
+            readOnly
+          />
+          <div className="rounded-xl border border-border-default bg-background-subtle p-3 text-sm text-text-primary">
+            Queued — waiting for a free slot.{' '}
+            <span className="text-text-tertiary">The saved card is unchanged.</span>
+          </div>
+          <InlineAlert tone="info" title="Retained review">
+            Kept from an earlier session and available after navigation or reload — unlike an
+            unsaved Add Card draft.
+          </InlineAlert>
+        </Card>
+      </StateFrame>
+
+      <StateFrame label="Stale proposal conflict" ids={['UI-08']}>
+        <ReviewConflictAlert onReload={noop} />
+      </StateFrame>
+
+      <StateFrame label="Review available while new AI work is paused" ids={['UI-08']}>
+        <InlineAlert tone="warning" title="New AI work is paused">
+          You can still review and accept this retained proposal. Availability for new-card
+          generation and existing-card review is tracked separately.
+        </InlineAlert>
+      </StateFrame>
+    </StateSection>
+  )
+}
+

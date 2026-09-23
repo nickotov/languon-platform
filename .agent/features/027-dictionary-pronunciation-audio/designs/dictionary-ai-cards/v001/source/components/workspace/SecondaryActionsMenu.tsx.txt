@@ -1,0 +1,153 @@
+import React, { useState } from 'react'
+import {
+  ClipboardPasteIcon,
+  DownloadIcon,
+  FileTextIcon,
+  MoreHorizontalIcon,
+  Share2Icon,
+  UploadIcon,
+} from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../DropdownMenu'
+import { Dialog, DialogActions } from '../Dialog'
+import { Button } from '../Button'
+import type { Dictionary } from '../../types/dictionary'
+
+interface SecondaryActionsMenuProps {
+  dictionary: Dictionary
+  activeCards: number
+  /** Bulk generation depends on the same capability as new-card AI. */
+  aiEnabled: boolean
+}
+
+interface Capability {
+  key: string
+  label: string
+  icon: React.ReactNode
+  disabledReason?: string
+}
+
+/**
+ * UI-10: discoverable entry points for separately implemented capabilities.
+ * Selecting one explains where it leads; no workflow is invented or simulated here.
+ */
+export function SecondaryActionsMenu({
+  dictionary,
+  activeCards,
+  aiEnabled,
+}: SecondaryActionsMenuProps) {
+  const [openCapability, setOpenCapability] = useState<Capability | null>(null)
+  const archived = dictionary.status === 'archived'
+
+  const capabilities: Capability[] = [
+    {
+      key: 'paste',
+      label: 'Generate cards from pasted terms',
+      icon: <ClipboardPasteIcon aria-hidden className="h-4 w-4" />,
+      disabledReason: archived
+        ? 'Unavailable in an archived dictionary.'
+        : !aiEnabled
+          ? 'Unavailable while AI generation is paused.'
+          : undefined,
+    },
+    {
+      key: 'document',
+      label: 'Generate cards from a document',
+      icon: <FileTextIcon aria-hidden className="h-4 w-4" />,
+      disabledReason: archived
+        ? 'Unavailable in an archived dictionary.'
+        : !aiEnabled
+          ? 'Unavailable while AI generation is paused.'
+          : undefined,
+    },
+    {
+      key: 'import',
+      label: 'Import source/translation pairs',
+      icon: <UploadIcon aria-hidden className="h-4 w-4" />,
+      disabledReason: archived ? 'Unavailable in an archived dictionary.' : undefined,
+    },
+    {
+      key: 'export',
+      label: 'Export',
+      icon: <DownloadIcon aria-hidden className="h-4 w-4" />,
+      disabledReason: activeCards === 0 ? 'Nothing to export yet.' : undefined,
+    },
+    {
+      key: 'share',
+      label: 'Sharing',
+      icon: <Share2Icon aria-hidden className="h-4 w-4" />,
+      disabledReason: archived
+        ? 'Archived dictionaries cannot be shared. Restoring returns them to private.'
+        : undefined,
+    },
+  ]
+
+  return (
+    <>
+      <DropdownMenu
+        align="end"
+        menuClassName="bg-background-elevated text-text-primary border-border-default"
+        trigger={
+          <DropdownMenuTrigger
+            hideChevron
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-strong bg-background-surface text-text-primary transition-colors hover:bg-background-subtle"
+            aria-label="More dictionary capabilities"
+          >
+            <MoreHorizontalIcon aria-hidden className="h-4 w-4" />
+          </DropdownMenuTrigger>
+        }
+      >
+        <DropdownMenuLabel>Bulk and sharing</DropdownMenuLabel>
+        {capabilities.slice(0, 3).map((capability) => (
+          <DropdownMenuItem
+            key={capability.key}
+            icon={capability.icon}
+            disabled={Boolean(capability.disabledReason)}
+            onSelect={() => setOpenCapability(capability)}
+          >
+            {capability.label}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        {capabilities.slice(3).map((capability) => (
+          <DropdownMenuItem
+            key={capability.key}
+            icon={capability.icon}
+            disabled={Boolean(capability.disabledReason)}
+            onSelect={() => setOpenCapability(capability)}
+          >
+            {capability.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenu>
+
+      <Dialog
+        open={openCapability !== null}
+        onClose={() => setOpenCapability(null)}
+        size="sm"
+        className="bg-background-surface text-text-primary"
+        title={openCapability?.label ?? ''}
+        description="Separately implemented capability"
+        footer={
+          <DialogActions>
+            <Button variant="secondary" onClick={() => setOpenCapability(null)}>
+              Back to the dictionary
+            </Button>
+          </DialogActions>
+        }
+      >
+        <p className="text-sm text-text-secondary">
+          This entry point is placed here for discoverability. Its detailed flow is out of scope
+          for this design pass and needs its own brief, so nothing is started or simulated from
+          this screen.
+        </p>
+      </Dialog>
+    </>
+  )
+}
+

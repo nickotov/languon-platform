@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/fsd/features/auth';
 import { DictionaryLibrary } from '@/fsd/features/dictionary-library';
-import { DictionaryImportPanel } from '@/fsd/features/dictionary-interchange';
 import { useI18n } from '@/fsd/shared/i18n';
 
 import { AuthenticatedDictionaryBoundary } from '../authenticated-dictionary-boundary';
@@ -15,10 +14,7 @@ export function DictionariesPage() {
             loadingMessage={t('dictionary.library.loading')}
             returnTo='/dictionaries'
         >
-            <DictionaryLibrary
-                importPanel={DictionaryImportPanel}
-                requestWithSession={requestWithSession}
-            />
+            <DictionaryLibrary requestWithSession={requestWithSession} />
         </AuthenticatedDictionaryBoundary>
     );
 }

@@ -1,0 +1,80 @@
+import React from 'react'
+import { Input } from '../Input'
+import { Textarea } from '../Textarea'
+import type { LanguageCode, TextDirection } from '../../types/dictionary'
+
+interface CardFieldEditorProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  maxLength: number
+  language: LanguageCode
+  dir: TextDirection
+  multiline?: boolean
+  required?: boolean
+  hint?: string
+  error?: string
+  disabled?: boolean
+  placeholder?: string
+  children?: React.ReactNode
+}
+
+export function CardFieldEditor({
+  label,
+  value,
+  onChange,
+  maxLength,
+  language,
+  dir,
+  multiline = false,
+  required = false,
+  hint,
+  error,
+  disabled,
+  placeholder,
+  children,
+}: CardFieldEditorProps) {
+  return (
+    <div>
+      {multiline ? (
+        <Textarea
+          label={label}
+          required={required}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          maxLength={maxLength}
+          showCount
+          rows={2}
+          resize="vertical"
+          dir={dir}
+          lang={language}
+          description={hint}
+          error={error}
+          disabled={disabled}
+          placeholder={placeholder}
+        />
+      ) : (
+        <>
+          <Input
+            label={label}
+            required={required}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            maxLength={maxLength}
+            dir={dir}
+            lang={language}
+            hint={hint}
+            error={error}
+            disabled={disabled}
+            placeholder={placeholder}
+          />
+          <p className="mt-1 text-right text-xs text-text-tertiary">
+            {value.length} / {maxLength}
+          </p>
+        </>
+      )}
+      {children}
+    </div>
+  )
+}
+

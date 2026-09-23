@@ -1,0 +1,148 @@
+import React, { forwardRef, useId } from 'react'
+
+export type TextareaResize = 'none' | 'vertical' | 'both'
+
+export interface TextareaProps
+  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'className'> {
+  /** Visible label rendered above the field. */
+  label?: string
+  /** Helper text rendered below the field. Hidden when `error` is set. */
+  description?: string
+  /** Error message. Sets the invalid styling and `aria-invalid`. */
+  error?: string
+  /** Marks the field as required and shows a required indicator. */
+  required?: boolean
+  /** Show a live "current / max" counter. Requires `maxLength`. */
+  showCount?: boolean
+  /** Resize behavior of the field. Defaults to `vertical`. */
+  resize?: TextareaResize
+  /** Additional classes applied to the textarea element. */
+  className?: string
+  /** Additional classes applied to the outer wrapper. */
+  wrapperClassName?: string
+}
+
+const resizeClasses: Record<TextareaResize, string> = {
+  none: 'resize-none',
+  vertical: 'resize-y',
+  both: 'resize',
+}
+
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  function Textarea(
+    {
+      label,
+      description,
+      error,
+      required = false,
+      showCount = false,
+      resize = 'vertical',
+      rows = 4,
+      maxLength,
+      disabled = false,
+      id,
+      value,
+      defaultValue,
+      onChange,
+      className = '',
+      wrapperClassName = '',
+      ...props
+    },
+    ref,
+  ) {
+    const autoId = useId()
+    const fieldId = id ?? `textarea-${autoId}`
+    const descriptionId = `${fieldId}-description`
+    const errorId = `${fieldId}-error`
+
+    const isControlled = value !== undefined
+    const [internalValue, setInternalValue] = React.useState(
+      typeof defaultValue === 'string' ? defaultValue : '',
+    )
+    const currentValue = isControlled ? String(value ?? '') : internalValue
+
+    const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (!isControlled) setInternalValue(event.target.value)
+      onChange?.(event)
+    }
+
+    const describedBy =
+      [error ? errorId : null, description && !error ? descriptionId : null]
+        .filter(Boolean)
+        .join(' ') || undefined
+
+    return (
+      <div className={`flex w-full flex-col gap-1.5 ${wrapperClassName}`}>
+        {label ? (
+          <label
+            htmlFor={fieldId}
+            className={`text-sm font-medium leading-none ${
+              disabled ? 'text-gray-400' : 'text-gray-900'
+            }`}
+          >
+            {label}
+            {required ? (
+              <span className="ml-0.5 text-red-600" aria-hidden="true">
+                *
+              </span>
+            ) : null}
+          </label>
+        ) : null}
+
+        <textarea
+          {...props}
+          ref={ref}
+          id={fieldId}
+          rows={rows}
+          required={required}
+          disabled={disabled}
+          maxLength={maxLength}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          value={isControlled ? value : internalValue}
+          onChange={handleChange}
+          className={[
+            'block w-full rounded-md border bg-white px-3 py-2 text-sm text-gray-900 shadow-sm',
+            'placeholder:text-gray-400',
+            'transition-colors outline-none',
+            'focus:ring-2 focus:ring-offset-0',
+            error
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30'
+              : 'border-gray-300 hover:border-gray-400 focus:border-gray-900 focus:ring-gray-900/15',
+            'disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400',
+            resizeClasses[resize],
+            className,
+          ].join(' ')}
+        />
+
+        {(error || description || (showCount && maxLength)) && (
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              {error ? (
+                <p id={errorId} role="alert" className="text-xs text-red-600">
+                  {error}
+                </p>
+              ) : description ? (
+                <p id={descriptionId} className="text-xs text-gray-500">
+                  {description}
+                </p>
+              ) : null}
+            </div>
+            {showCount && maxLength ? (
+              <span
+                className={`shrink-0 text-xs tabular-nums ${
+                  currentValue.length >= maxLength
+                    ? 'text-red-600'
+                    : 'text-gray-500'
+                }`}
+              >
+                {currentValue.length}/{maxLength}
+              </span>
+            ) : null}
+          </div>
+        )}
+      </div>
+    )
+  },
+)
+

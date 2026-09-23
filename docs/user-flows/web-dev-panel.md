@@ -2,13 +2,14 @@
 feature: web-dev-panel
 title: Web Dev Command Panel
 status: current
-last_verified: 2026-09-14
+last_verified: 2026-09-23
 surfaces:
     - browser
     - cli
     - system
 source_paths:
     - web-dev-panel/**
+    - scripts/dev-all.mjs
     - package.json
     - pnpm-workspace.yaml
     - scripts/check-user-flow-guides.mjs
@@ -19,6 +20,7 @@ e2e_scenarios:
     - parallel-command-control-and-isolated-logs
     - cross-tab-single-source-of-truth
     - portable-custom-command-sections
+    - whole-app-command-control
 related_features:
     - web-dev-panel-custom-sections
 ---
@@ -57,6 +59,19 @@ session. No application server, database, cache, account, or project secret is
 required to render the catalog. For command lifecycle acceptance, use the
 committed Playwright fixture server rather than starting real project services
 merely for testing.
+
+## Start the actual local app
+
+Install dependencies, start Docker with a local daemon/context and configure root `.env.local` from
+`.env.example`. Choose **Development → Start whole app → Start** (`pnpm dev:all`).
+This waits for healthy PostgreSQL/Redis, builds shared dependencies and applies
+migrations before running backend, web, admin, dictionary
+worker. Only local development DB/cache targets are accepted. Wait for each
+service's ready log; defaults are `http://localhost:4000/health`,
+`http://localhost:3333` and `http://localhost:3001`. The command cannot join a
+batch and conflicts with individual app, infrastructure and migration commands.
+External processes must be stopped separately. It does not seed users or
+configure providers. Automated verification below uses synthetic commands only.
 
 ## Browser verification
 
@@ -143,6 +158,11 @@ Closed request validation, source drift, racing duplicate requests, stale run
 IDs, bounded/redacted logs, and structured Codex event projection stay at the
 faster unit and native HTTP integration layers.
 
+- `whole-app-command-control`: the individually runnable **Start whole app**
+  command can start, survive a browser reload and stop through the panel. The
+  browser fixture is synthetic; native runner tests cover ordering, local-target
+  validation, setup failure and process cleanup without real infrastructure.
+
 ## Expected failure and edge cases
 
 - A second production server fails on `EADDRINUSE`; it never creates a second
@@ -180,6 +200,11 @@ faster unit and native HTTP integration layers.
   deliberately unavailable until native Job Object supervision can guarantee
   descendant cleanup after a command leader exits.
 
+- **Whole-app setup failure:** missing `.env.local`, nonlocal service targets,
+  unavailable Docker, build/migration errors or worker exit stop startup and
+  report failure. Resolve the reported cause before retrying. Do not retry
+  migrations against shared or production databases.
+
 ## Automated regression checks
 
 Run the focused safe checks from the repository root:
@@ -214,6 +239,11 @@ browser/cross-tab journeys.
   Host, Origin, or session checks.
 
 ## Cleanup
+
+Stop **Start whole app** before `infra:down`. Stopping during setup prevents later
+steps; stopping after launch terminates owned apps/workers. Containers, volumes
+and already committed migrations remain intact. The command does not roll back
+migrations or delete data.
 
 Use Stop All and confirm the dialog for any panel-owned fixtures still running,
 then press Ctrl+C in the server terminal. This removes only memory-held state and

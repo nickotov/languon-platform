@@ -1,0 +1,138 @@
+import React from 'react'
+import {
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  ChevronRightIcon,
+  MoreHorizontalIcon,
+  SettingsIcon,
+} from 'lucide-react'
+import { Card } from '../Card'
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../DropdownMenu'
+import { ArchivedBadge, LanguagePair, VisibilityBadge } from '../common/Chips'
+import type { Dictionary } from '../../types/dictionary'
+
+interface DictionaryListItemProps {
+  dictionary: Dictionary
+  activeCards: number
+  onOpen: (dictionary: Dictionary) => void
+  onSettings: (dictionary: Dictionary) => void
+  onArchive: (dictionary: Dictionary) => void
+  onRestore: (dictionary: Dictionary) => void
+}
+
+export function DictionaryListItem({
+  dictionary,
+  activeCards,
+  onOpen,
+  onSettings,
+  onArchive,
+  onRestore,
+}: DictionaryListItemProps) {
+  const archived = dictionary.status === 'archived'
+
+  const open = () => {
+    if (archived) onRestore(dictionary)
+    else onOpen(dictionary)
+  }
+
+  return (
+    <Card
+      as="li"
+      variant="outlined"
+      padding="none"
+      interactive
+      role="button"
+      aria-label={
+        archived
+          ? `Restore ${dictionary.name}`
+          : `Open ${dictionary.name}, ${activeCards} active cards`
+      }
+      onClick={open}
+      onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          open()
+        }
+      }}
+      className="border-border-default bg-background-surface p-3 text-text-primary sm:p-4"
+    >
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="break-words text-base font-semibold text-text-primary">
+            {dictionary.name}
+          </h3>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <LanguagePair dictionary={dictionary} />
+            <span className="text-sm text-text-secondary">
+              {activeCards} active {activeCards === 1 ? 'card' : 'cards'}
+            </span>
+            <VisibilityBadge visibility={dictionary.visibility} />
+            {archived ? <ArchivedBadge /> : null}
+          </div>
+          {dictionary.description ? (
+            <p className="mt-2 max-w-[46rem] text-sm text-text-secondary">
+              {dictionary.description}
+            </p>
+          ) : null}
+          {archived ? (
+            <p className="mt-2 text-xs text-text-secondary">
+              Select to restore. Restoring makes this dictionary private again; previous sharing
+              is not restored.
+            </p>
+          ) : null}
+        </div>
+
+        <div
+          className="flex shrink-0 items-center gap-2"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          <DropdownMenu
+            align="end"
+            menuClassName="bg-background-elevated text-text-primary border-border-default"
+            trigger={
+              <DropdownMenuTrigger
+                hideChevron
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-strong bg-background-surface text-text-primary transition-colors hover:bg-background-subtle"
+                aria-label={`Actions for ${dictionary.name}`}
+              >
+                <MoreHorizontalIcon aria-hidden className="h-4 w-4" />
+              </DropdownMenuTrigger>
+            }
+          >
+            <DropdownMenuItem
+              icon={<SettingsIcon aria-hidden className="h-4 w-4" />}
+              disabled={archived}
+              onSelect={() => onSettings(dictionary)}
+            >
+              Dictionary settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {archived ? (
+              <DropdownMenuItem
+                icon={<ArchiveRestoreIcon aria-hidden className="h-4 w-4" />}
+                onSelect={() => onRestore(dictionary)}
+              >
+                Restore (returns to private)
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                icon={<ArchiveIcon aria-hidden className="h-4 w-4" />}
+                onSelect={() => onArchive(dictionary)}
+              >
+                Archive dictionary
+              </DropdownMenuItem>
+            )}
+          </DropdownMenu>
+          <ChevronRightIcon aria-hidden className="h-5 w-5 text-text-tertiary" />
+        </div>
+      </div>
+    </Card>
+  )
+}
+

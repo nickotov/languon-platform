@@ -1,0 +1,51 @@
+import React from 'react'
+import { InlineAlert } from '../components/InlineAlert'
+import {
+  LibraryStates,
+  SettingsStates,
+  WorkspaceStates,
+} from '../components/states/StatesLibraryWorkspace'
+import {
+  DraftStates,
+  RecoveryStates,
+  ReviewStates,
+  SuggestionStates,
+} from '../components/states/StatesAiDraft'
+import {
+  AudioStates,
+  ResponsiveStates,
+  SecondaryEntryStates,
+} from '../components/states/StatesAudioResponsive'
+
+export function StatesGallery() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold text-text-primary">States & variants</h1>
+        <p className="mt-1 max-w-[52rem] text-sm text-text-secondary">
+          Every required state for UI-01 to UI-11, rendered with the same Languon components used
+          in the live screens. Animated transitions here illustrate honest status sequences — they
+          never claim that generation, saving, or audio actually completed.
+        </p>
+      </div>
+
+      <InlineAlert tone="tip" title="How to read this gallery">
+        Frames labelled with a UI id map directly to the coverage map. Interactive flows (creation,
+        generation, suggestion handling, review, playback) are live in the dictionary screens; this
+        page pins down the states that are hard to reach by clicking.
+      </InlineAlert>
+
+      <LibraryStates />
+      <WorkspaceStates />
+      <SettingsStates />
+      <DraftStates />
+      <SuggestionStates />
+      <RecoveryStates />
+      <ReviewStates />
+      <SecondaryEntryStates />
+      <AudioStates />
+      <ResponsiveStates />
+    </div>
+  )
+}
+

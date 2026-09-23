@@ -9,7 +9,7 @@ import {
 } from '@floating-ui/react';
 import {
     type KeyboardEvent,
-    type ReactNode,
+    useCallback,
     useEffect,
     useId,
     useRef,
@@ -18,22 +18,10 @@ import {
 
 import styles from './menu.module.css';
 
-type MenuItem = {
-    disabled?: boolean;
-    label: string;
-    onSelect(): void;
-    tone?: 'danger';
-};
+import { MenuItemButton } from './menu-item';
+import type { MenuItem, MenuProps } from './types';
 
-export function Menu({
-    items,
-    label,
-    trigger,
-}: {
-    items: MenuItem[];
-    label: string;
-    trigger: ReactNode;
-}) {
+export function Menu({ items, label, trigger, iconOnly = false }: MenuProps) {
     const id = useId();
     const root = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -97,6 +85,46 @@ export function Menu({
         enabled[next]?.focus();
     }
 
+    const triggerClassName = [styles.trigger, iconOnly ? styles.iconOnly : '']
+        .filter(Boolean)
+        .join(' ');
+    const setReference = refs.setReference;
+    const registerTrigger = useCallback(
+        (node: HTMLButtonElement | null) => {
+            triggerRef.current = node;
+            setReference(node);
+        },
+        [setReference],
+    );
+    const registerItem = useCallback(
+        (index: number, node: HTMLButtonElement | null) => {
+            itemRefs.current[index] = node;
+        },
+        [],
+    );
+
+    function toggle() {
+        setOpen((current) => !current);
+    }
+
+    function closeAndRestoreFocus() {
+        setOpen(false);
+        triggerRef.current?.focus();
+    }
+
+    function renderItem(item: MenuItem, index: number) {
+        return (
+            <MenuItemButton
+                key={item.label}
+                item={item}
+                index={index}
+                onClose={closeAndRestoreFocus}
+                onMove={move}
+                onRegister={registerItem}
+            />
+        );
+    }
+
     return (
         <div className={styles.root} ref={root}>
             <button
@@ -104,13 +132,10 @@ export function Menu({
                 aria-expanded={open}
                 aria-haspopup='menu'
                 aria-label={label}
-                className={styles.trigger}
+                className={triggerClassName}
                 disabled={disabled}
-                onClick={() => setOpen((current) => !current)}
-                ref={(node) => {
-                    triggerRef.current = node;
-                    refs.setReference(node);
-                }}
+                onClick={toggle}
+                ref={registerTrigger}
                 type='button'
             >
                 {trigger}
@@ -123,27 +148,7 @@ export function Menu({
                     role='menu'
                     style={floatingStyles}
                 >
-                    {items.map((item, index) => (
-                        <button
-                            disabled={item.disabled}
-                            data-tone={item.tone}
-                            key={item.label}
-                            onClick={() => {
-                                item.onSelect();
-                                setOpen(false);
-                                triggerRef.current?.focus();
-                            }}
-                            onKeyDown={(event) => move(event, index)}
-                            ref={(node) => {
-                                itemRefs.current[index] = node;
-                            }}
-                            role='menuitem'
-                            tabIndex={-1}
-                            type='button'
-                        >
-                            {item.label}
-                        </button>
-                    ))}
+                    {items.map(renderItem)}
                 </div>
             ) : null}
         </div>

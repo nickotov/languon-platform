@@ -1,0 +1,122 @@
+import React from 'react'
+import {
+  ArrowRightIcon,
+  EyeOffIcon,
+  LinkIcon,
+  LockIcon,
+  SparklesIcon,
+  UserIcon,
+  UsersIcon,
+} from 'lucide-react'
+import { Badge } from '../Badge'
+import type { Authorship, Dictionary, DictionaryVisibility } from '../../types/dictionary'
+import { languageName } from '../../data/languages'
+
+/** Authorship is system-owned: it is displayed, never chosen by the user. */
+export function AuthorshipBadge({ authorship }: { authorship: Authorship }) {
+  if (authorship === 'human') {
+    return (
+      <Badge
+        size="sm"
+        tone="neutral"
+        icon={<UserIcon aria-hidden className="h-3.5 w-3.5" />}
+        title="Set automatically by Languon"
+      >
+        Human
+      </Badge>
+    )
+  }
+  if (authorship === 'ai') {
+    return (
+      <Badge
+        size="sm"
+        tone="info"
+        icon={<SparklesIcon aria-hidden className="h-3.5 w-3.5" />}
+        title="Set automatically by Languon"
+      >
+        AI-generated
+      </Badge>
+    )
+  }
+  return (
+    <Badge
+      size="sm"
+      tone="info"
+      icon={<UsersIcon aria-hidden className="h-3.5 w-3.5" />}
+      title="Set automatically by Languon"
+    >
+      Human + AI
+    </Badge>
+  )
+}
+
+export function VisibilityBadge({ visibility }: { visibility: DictionaryVisibility }) {
+  return visibility === 'private' ? (
+    <Badge size="sm" tone="neutral" icon={<LockIcon aria-hidden className="h-3.5 w-3.5" />}>
+      Private
+    </Badge>
+  ) : (
+    <Badge size="sm" tone="warning" icon={<LinkIcon aria-hidden className="h-3.5 w-3.5" />}>
+      Unlisted
+    </Badge>
+  )
+}
+
+export function ArchivedBadge() {
+  return (
+    <Badge size="sm" tone="neutral" icon={<EyeOffIcon aria-hidden className="h-3.5 w-3.5" />}>
+      Archived
+    </Badge>
+  )
+}
+
+export function InheritanceBadge({ overridden }: { overridden: boolean }) {
+  return overridden ? (
+    <Badge size="sm" tone="warning">
+      Overridden fields
+    </Badge>
+  ) : (
+    <Badge size="sm" tone="neutral">
+      Inherited settings
+    </Badge>
+  )
+}
+
+export function LanguagePair({
+  dictionary,
+  className = '',
+}: {
+  dictionary: Pick<Dictionary, 'sourceLanguage' | 'targetLanguage'>
+  className?: string
+}) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-sm text-text-secondary ${className}`}>
+      <span>{languageName(dictionary.sourceLanguage)}</span>
+      <ArrowRightIcon aria-hidden className="h-3.5 w-3.5 shrink-0" />
+      <span>{languageName(dictionary.targetLanguage)}</span>
+    </span>
+  )
+}
+
+export function SectionHeading({
+  title,
+  description,
+  action,
+}: {
+  title: string
+  description?: string
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+        {description ? (
+          <p className="mt-1 max-w-[42rem] text-sm text-text-secondary">{description}</p>
+        ) : null}
+      </div>
+      {action}
+    </div>
+  )
+}
+

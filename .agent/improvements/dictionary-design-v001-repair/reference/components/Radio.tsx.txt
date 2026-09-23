@@ -1,0 +1,250 @@
+import React, { createContext, useContext, useId } from 'react'
+import { twMerge } from 'tailwind-merge'
+
+export type RadioSize = 'sm' | 'md'
+export type RadioVariant = 'default' | 'card'
+
+export interface RadioGroupContextValue {
+  name: string
+  value?: string
+  onChange?: (value: string) => void
+  size: RadioSize
+  variant: RadioVariant
+  disabled?: boolean
+  invalid?: boolean
+}
+
+const RadioGroupContext = createContext<RadioGroupContextValue | null>(null)
+
+export interface RadioGroupProps {
+  /** Accessible label for the group. */
+  label?: string
+  /** Helper text rendered under the label. */
+  description?: string
+  /** Error message. Renders the group in an invalid state. */
+  error?: string
+  /** Currently selected value (controlled). */
+  value?: string
+  /** Fired with the newly selected value. */
+  onChange?: (value: string) => void
+  /** Shared input name. Auto-generated when omitted. */
+  name?: string
+  size?: RadioSize
+  variant?: RadioVariant
+  /** Lay options out horizontally. */
+  orientation?: 'vertical' | 'horizontal'
+  disabled?: boolean
+  className?: string
+  children: React.ReactNode
+}
+
+export function RadioGroup({
+  label,
+  description,
+  error,
+  value,
+  onChange,
+  name,
+  size = 'md',
+  variant = 'default',
+  orientation = 'vertical',
+  disabled = false,
+  className,
+  children,
+}: RadioGroupProps) {
+  const autoName = useId()
+  const groupName = name ?? autoName
+  const invalid = Boolean(error)
+
+  return (
+    <fieldset
+      className={twMerge('min-w-0 border-0 p-0 m-0', className)}
+      disabled={disabled}
+      aria-invalid={invalid || undefined}
+    >
+      {label ? (
+        <legend className="mb-1 text-sm font-semibold text-slate-900">
+          {label}
+        </legend>
+      ) : null}
+      {description ? (
+        <p className="mb-3 text-sm text-slate-500">{description}</p>
+      ) : null}
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className={twMerge(
+          'flex gap-2',
+          orientation === 'horizontal'
+            ? 'flex-row flex-wrap items-stretch'
+            : 'flex-col',
+        )}
+      >
+        <RadioGroupContext.Provider
+          value={{
+            name: groupName,
+            value,
+            onChange,
+            size,
+            variant,
+            disabled,
+            invalid,
+          }}
+        >
+          {children}
+        </RadioGroupContext.Provider>
+      </div>
+      {error ? (
+        <p role="alert" className="mt-2 text-sm font-medium text-red-600">
+          {error}
+        </p>
+      ) : null}
+    </fieldset>
+  )
+}
+
+export interface RadioProps {
+  /** Value submitted / reported when this option is selected. */
+  value: string
+  /** Main option label. */
+  children: React.ReactNode
+  /** Secondary line under the label. */
+  description?: React.ReactNode
+  /** Trailing slot, e.g. a badge or shortcut hint. */
+  addon?: React.ReactNode
+  disabled?: boolean
+  /** Standalone usage: controlled checked state (ignored inside RadioGroup). */
+  checked?: boolean
+  /** Standalone usage: change handler (ignored inside RadioGroup). */
+  onChange?: (value: string) => void
+  /** Standalone usage: input name. */
+  name?: string
+  size?: RadioSize
+  variant?: RadioVariant
+  className?: string
+}
+
+const dotSizes: Record<RadioSize, string> = {
+  sm: 'h-4 w-4',
+  md: 'h-5 w-5',
+}
+
+const labelSizes: Record<RadioSize, string> = {
+  sm: 'text-sm',
+  md: 'text-base',
+}
+
+export function Radio({
+  value,
+  children,
+  description,
+  addon,
+  disabled,
+  checked,
+  onChange,
+  name,
+  size,
+  variant,
+  className,
+}: RadioProps) {
+  const group = useContext(RadioGroupContext)
+  const resolvedSize = size ?? group?.size ?? 'md'
+  const resolvedVariant = variant ?? group?.variant ?? 'default'
+  const isDisabled = Boolean(disabled ?? group?.disabled)
+  const isInvalid = Boolean(group?.invalid)
+  const isChecked = group ? group.value === value : Boolean(checked)
+
+  const handleChange = () => {
+    if (isDisabled) return
+    if (group?.onChange) group.onChange(value)
+    else onChange?.(value)
+  }
+
+  const control = (
+    <span
+      aria-hidden="true"
+      className={twMerge(
+        'relative mt-0.5 flex shrink-0 items-center justify-center rounded-full border-2 bg-white transition-colors',
+        dotSizes[resolvedSize],
+        isChecked
+          ? 'border-indigo-600'
+          : isInvalid
+            ? 'border-red-400'
+            : 'border-slate-300',
+        !isDisabled && !isChecked ? 'group-hover:border-slate-400' : '',
+        isDisabled ? 'border-slate-200 bg-slate-100' : '',
+      )}
+    >
+      <span
+        className={twMerge(
+          'rounded-full transition-transform duration-150',
+          resolvedSize === 'sm' ? 'h-1.5 w-1.5' : 'h-2 w-2',
+          isDisabled ? 'bg-slate-400' : 'bg-indigo-600',
+          isChecked ? 'scale-100' : 'scale-0',
+        )}
+      />
+    </span>
+  )
+
+  return (
+    <label
+      className={twMerge(
+        'group relative flex gap-3 transition-colors',
+        resolvedVariant === 'card'
+          ? twMerge(
+              'items-start rounded-xl border bg-white p-4 shadow-sm',
+              isChecked
+                ? 'border-indigo-600 ring-1 ring-indigo-600 bg-indigo-50/60'
+                : isInvalid
+                  ? 'border-red-300'
+                  : 'border-slate-200',
+              !isDisabled && !isChecked ? 'hover:border-slate-300' : '',
+              isDisabled ? 'border-slate-200 bg-slate-50' : '',
+            )
+          : 'items-start py-1',
+        isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
+        'focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 focus-within:rounded-xl',
+        className,
+      )}
+    >
+      <input
+        type="radio"
+        className="sr-only"
+        name={group?.name ?? name}
+        value={value}
+        checked={isChecked}
+        disabled={isDisabled}
+        aria-invalid={isInvalid || undefined}
+        onChange={handleChange}
+      />
+      {control}
+      <span className="min-w-0 flex-1">
+        <span
+          className={twMerge(
+            'block font-medium',
+            labelSizes[resolvedSize],
+            isDisabled ? 'text-slate-400' : 'text-slate-900',
+          )}
+        >
+          {children}
+        </span>
+        {description ? (
+          <span
+            className={twMerge(
+              'mt-0.5 block text-sm',
+              isDisabled ? 'text-slate-400' : 'text-slate-500',
+            )}
+          >
+            {description}
+          </span>
+        ) : null}
+      </span>
+      {addon ? (
+        <span className="ml-auto shrink-0 self-center text-sm text-slate-500">
+          {addon}
+        </span>
+      ) : null}
+    </label>
+  )
+}
+
