@@ -11,8 +11,7 @@ import type { PastedTermsProposalGenerator } from '../../application/ports/paste
 import { createCardAuthoringProposalGenerator } from './card-authoring-proposal-generators';
 import { createCardProposalGenerator } from './card-proposal-generators';
 import {
-    createDictionaryTextMastraModel,
-    createDictionaryTextProviderReadiness,
+    createDictionaryTextMastraGeneratorOptions,
     findDictionaryTextModel,
 } from './dictionary-text-provider-catalog';
 import { createImportPairsProposalGenerator } from './import-pairs-proposal-generators';
@@ -167,21 +166,11 @@ function createProviderSet(
     );
     if (!model)
         throw new Error('Dictionary text provider model is unsupported.');
-    const mastraModel = createDictionaryTextMastraModel({
+    const shared = createDictionaryTextMastraGeneratorOptions({
         apiKey: credential,
         model,
-    });
-    const providerReadiness = createDictionaryTextProviderReadiness({
-        apiKey: credential,
-        readiness: model.readiness,
-    });
-    const shared = {
-        mode: 'mastra' as const,
-        model: mastraModel,
-        modelRequestLimits: model.requestLimits,
         providerBudget: snapshot.aggregateBudget,
-        providerReadiness,
-    };
+    });
     return {
         card: createCardProposalGenerator(shared),
         cardAuthoring: createCardAuthoringProposalGenerator(shared),

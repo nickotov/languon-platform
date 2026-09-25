@@ -173,6 +173,7 @@ describe('dictionary card authoring proposal generators', () => {
             agent: {
                 generate,
             } satisfies DictionaryCardAuthoringStructuredAgent,
+            structuredOutputMode: 'prompt-injection',
         });
         const generationRequest = request();
         await expect(generator.generate(generationRequest)).resolves.toEqual({
@@ -189,7 +190,10 @@ describe('dictionary card authoring proposal generators', () => {
             abortSignal: generationRequest.signal,
             maxOutputTokens: 40_960,
             runId: 'authoring-request-0001',
-            structuredOutput: { schema: expect.anything() },
+            structuredOutput: {
+                jsonPromptInjection: 'inline',
+                schema: expect.anything(),
+            },
             toolChoice: 'none',
             tracingOptions: { hideInput: true, hideOutput: true },
         });

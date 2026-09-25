@@ -29,6 +29,7 @@ import {
 import {
     dictionaryTextRequestLimits,
     type DictionaryTextModelRequestLimits,
+    type DictionaryTextStructuredOutputMode,
 } from './dictionary-text-provider-catalog';
 
 export class ImportPairsProposalGeneratorExecutionError extends CardProposalGeneratorError {}
@@ -41,6 +42,7 @@ export interface DictionaryImportPairsGenerationStructuredAgent {
             maxOutputTokens: number;
             runId: string;
             structuredOutput: {
+                jsonPromptInjection?: 'inline';
                 schema: typeof DictionaryImportPairsGenerationProposalPayloadSchema;
             };
             toolChoice: 'none';
@@ -126,6 +128,7 @@ export function createMastraImportPairsProposalGenerator(options: {
     agent: DictionaryImportPairsGenerationStructuredAgent;
     modelRequestLimits?: DictionaryTextModelRequestLimits;
     providerReadiness?: (signal: AbortSignal) => Promise<void>;
+    structuredOutputMode?: DictionaryTextStructuredOutputMode;
 }): ImportPairsProposalGenerator {
     return {
         async generate(request) {
@@ -172,6 +175,9 @@ export function createMastraImportPairsProposalGenerator(options: {
                     maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
+                        ...(options.structuredOutputMode === 'prompt-injection'
+                            ? { jsonPromptInjection: 'inline' as const }
+                            : {}),
                         schema: DictionaryImportPairsGenerationProposalPayloadSchema,
                     },
                     toolChoice: 'none',
@@ -336,6 +342,7 @@ export type ImportPairsProposalGeneratorFactoryOptions =
           modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerReadiness?: (signal: AbortSignal) => Promise<void>;
+          structuredOutputMode?: DictionaryTextStructuredOutputMode;
       };
 
 export function createImportPairsProposalGenerator(
@@ -367,6 +374,9 @@ export function createImportPairsProposalGenerator(
             : {}),
         ...(options.providerReadiness
             ? { providerReadiness: options.providerReadiness }
+            : {}),
+        ...(options.structuredOutputMode
+            ? { structuredOutputMode: options.structuredOutputMode }
             : {}),
     });
 }

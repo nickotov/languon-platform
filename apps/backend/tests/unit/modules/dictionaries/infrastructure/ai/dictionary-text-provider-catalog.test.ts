@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+    createDictionaryTextMastraGeneratorOptions,
     createDictionaryTextMastraModel,
     createDictionaryTextProviderReadiness,
     dictionaryTextModelCatalog,
@@ -57,6 +58,41 @@ describe('dictionary text provider catalog', () => {
             modelId: 'gemini-2.5-pro',
             providerId: 'kie',
             url: 'https://api.kie.ai/gemini-2.5-pro/v1',
+        });
+    });
+
+    it('maps curated models to shared generator options for legacy and managed composition', () => {
+        const providerBudget = {
+            inputCostMicrosPerMillionTokens: 1_000_000,
+            maxCostMicrosPerAttempt: 400_000,
+            maxInputTokensPerAttempt: 262_144,
+            maxOutputTokensPerAttempt: 40_960,
+            outputCostMicrosPerMillionTokens: 3_000_000,
+        };
+
+        expect(
+            createDictionaryTextMastraGeneratorOptions({
+                apiKey: 'test-deepseek-key',
+                model: dictionaryTextModelCatalog['deepseek/deepseek-chat'],
+                providerBudget,
+            }),
+        ).toMatchObject({
+            mode: 'mastra',
+            model: { modelId: 'deepseek-chat', providerId: 'deepseek' },
+            providerBudget,
+            structuredOutputMode: 'prompt-injection',
+        });
+        expect(
+            createDictionaryTextMastraGeneratorOptions({
+                apiKey: 'test-kie-key',
+                model: dictionaryTextModelCatalog['kie/gemini-2.5-pro'],
+                providerBudget,
+            }),
+        ).toMatchObject({
+            mode: 'mastra',
+            model: { modelId: 'gemini-2.5-pro', providerId: 'kie' },
+            providerBudget,
+            structuredOutputMode: 'native-json-schema',
         });
     });
 

@@ -4,6 +4,7 @@ import {
     findDictionaryAiModel,
     type DictionaryAiModelDefinition,
 } from '../../application/dictionary-ai-provider-catalog';
+import type { DictionaryGenerationProviderBudgetPolicy } from '../../application/ports/dictionary-generation-provider-policy';
 
 export const dictionaryTextProviderIds = ['deepseek', 'kie'] as const;
 export type DictionaryTextProviderId =
@@ -19,6 +20,10 @@ export interface DictionaryTextModelRequestLimits {
     maxInputTokens: number;
     maxOutputTokens: number;
 }
+
+export type DictionaryTextStructuredOutputMode =
+    | 'native-json-schema'
+    | 'prompt-injection';
 
 export type DictionaryTextProviderReadiness =
     | {
@@ -49,7 +54,7 @@ export interface DictionaryTextModelCatalogEntry {
     providerId: DictionaryTextProviderId;
     readiness: DictionaryTextProviderReadiness;
     requestLimits: DictionaryTextModelRequestLimits;
-    structuredOutput: 'json-schema';
+    structuredOutput: DictionaryTextStructuredOutputMode;
     supportedFormats: readonly string[];
 }
 
@@ -90,7 +95,10 @@ export const dictionaryTextModelCatalog = {
             maxInputTokens: deepSeekChat.perCallMaxInputTokens,
             maxOutputTokens: deepSeekChat.perCallMaxOutputTokens,
         },
-        structuredOutput: 'json-schema',
+        // DeepSeek currently rejects response_format.type=json_schema. Mastra
+        // injects the schema into the prompt and still parses and validates the
+        // returned object locally.
+        structuredOutput: 'prompt-injection',
         supportedFormats: deepSeekChat.supportedFormats,
     },
     'kie/gemini-2.5-pro': {
@@ -114,7 +122,7 @@ export const dictionaryTextModelCatalog = {
             maxInputTokens: kieGemini25Pro.perCallMaxInputTokens,
             maxOutputTokens: kieGemini25Pro.perCallMaxOutputTokens,
         },
-        structuredOutput: 'json-schema',
+        structuredOutput: 'native-json-schema',
         supportedFormats: kieGemini25Pro.supportedFormats,
     },
 } as const satisfies Record<
@@ -139,6 +147,31 @@ export function createDictionaryTextMastraModel(options: {
         modelId: options.model.modelId,
         providerId: options.model.providerId,
         url: options.model.apiBaseUrl,
+    };
+}
+
+export function createDictionaryTextMastraGeneratorOptions(options: {
+    apiKey: string;
+    fetchProvider?: typeof fetch;
+    model: DictionaryTextModelCatalogEntry;
+    providerBudget: DictionaryGenerationProviderBudgetPolicy;
+}) {
+    return {
+        mode: 'mastra' as const,
+        model: createDictionaryTextMastraModel({
+            apiKey: options.apiKey,
+            model: options.model,
+        }),
+        modelRequestLimits: options.model.requestLimits,
+        providerBudget: options.providerBudget,
+        providerReadiness: createDictionaryTextProviderReadiness({
+            apiKey: options.apiKey,
+            ...(options.fetchProvider
+                ? { fetchProvider: options.fetchProvider }
+                : {}),
+            readiness: options.model.readiness,
+        }),
+        structuredOutputMode: options.model.structuredOutput,
     };
 }
 

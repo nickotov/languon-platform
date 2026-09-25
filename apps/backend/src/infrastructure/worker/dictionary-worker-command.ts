@@ -19,8 +19,7 @@ import { createCardAuthoringProposalGenerator } from '../../modules/dictionaries
 import { createPastedTermsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators';
 import { createImportPairsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators';
 import {
-    createDictionaryTextMastraModel,
-    createDictionaryTextProviderReadiness,
+    createDictionaryTextMastraGeneratorOptions,
 } from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
 import {
     createDictionaryTextProviderRoutingAdapters,
@@ -119,21 +118,11 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const legacyMastraOptions =
         environment.provider.mode === 'mastra'
             ? environment.provider.catalogModel
-                ? {
-                      mode: 'mastra' as const,
-                      model: createDictionaryTextMastraModel({
-                          apiKey: environment.provider.apiKey,
-                          model: environment.provider.catalogModel,
-                      }),
-                      modelRequestLimits:
-                          environment.provider.catalogModel.requestLimits,
+                ? createDictionaryTextMastraGeneratorOptions({
+                      apiKey: environment.provider.apiKey,
+                      model: environment.provider.catalogModel,
                       providerBudget: environment.providerBudget,
-                      providerReadiness: createDictionaryTextProviderReadiness({
-                          apiKey: environment.provider.apiKey,
-                          readiness:
-                              environment.provider.catalogModel.readiness,
-                      }),
-                  }
+                  })
                 : {
                       mode: 'mastra' as const,
                       model: {

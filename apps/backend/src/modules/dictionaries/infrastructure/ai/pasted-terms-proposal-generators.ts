@@ -34,6 +34,7 @@ import {
 import {
     dictionaryTextRequestLimits,
     type DictionaryTextModelRequestLimits,
+    type DictionaryTextStructuredOutputMode,
 } from './dictionary-text-provider-catalog';
 
 const boundedFailureText = z
@@ -155,6 +156,7 @@ export interface DictionaryPastedTermsGenerationStructuredAgent {
             maxOutputTokens: number;
             runId: string;
             structuredOutput: {
+                jsonPromptInjection?: 'inline';
                 schema: typeof DictionaryPastedTermsChunkModelOutputSchema;
             };
             toolChoice: 'none';
@@ -237,6 +239,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
     agent: DictionaryPastedTermsGenerationStructuredAgent;
     modelRequestLimits?: DictionaryTextModelRequestLimits;
     providerReadiness?: (signal: AbortSignal) => Promise<void>;
+    structuredOutputMode?: DictionaryTextStructuredOutputMode;
 }): PastedTermsProposalGenerator {
     return {
         async generate(request) {
@@ -270,6 +273,9 @@ export function createMastraPastedTermsProposalGenerator(options: {
                     maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
+                        ...(options.structuredOutputMode === 'prompt-injection'
+                            ? { jsonPromptInjection: 'inline' as const }
+                            : {}),
                         schema: DictionaryPastedTermsChunkModelOutputSchema,
                     },
                     toolChoice: 'none',
@@ -460,6 +466,7 @@ export type PastedTermsProposalGeneratorFactoryOptions =
           modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerReadiness?: (signal: AbortSignal) => Promise<void>;
+          structuredOutputMode?: DictionaryTextStructuredOutputMode;
       };
 
 export function createPastedTermsProposalGenerator(
@@ -492,6 +499,9 @@ export function createPastedTermsProposalGenerator(
             : {}),
         ...(options.providerReadiness
             ? { providerReadiness: options.providerReadiness }
+            : {}),
+        ...(options.structuredOutputMode
+            ? { structuredOutputMode: options.structuredOutputMode }
             : {}),
     });
 }

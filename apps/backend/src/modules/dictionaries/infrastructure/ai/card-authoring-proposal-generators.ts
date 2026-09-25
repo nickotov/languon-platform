@@ -28,6 +28,7 @@ import {
 import {
     dictionaryTextRequestLimits,
     type DictionaryTextModelRequestLimits,
+    type DictionaryTextStructuredOutputMode,
 } from './dictionary-text-provider-catalog';
 
 export const DictionaryCardAuthoringModelInputSchema =
@@ -78,6 +79,7 @@ export interface DictionaryCardAuthoringStructuredAgent {
             maxOutputTokens: number;
             runId: string;
             structuredOutput: {
+                jsonPromptInjection?: 'inline';
                 schema: typeof DictionaryCardAuthoringModelOutputSchema;
             };
             toolChoice: 'none';
@@ -98,6 +100,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
     agent: DictionaryCardAuthoringStructuredAgent;
     modelRequestLimits?: DictionaryTextModelRequestLimits;
     providerReadiness?: (signal: AbortSignal) => Promise<void>;
+    structuredOutputMode?: DictionaryTextStructuredOutputMode;
 }): CardAuthoringProposalGenerator {
     return {
         async generate(request) {
@@ -126,6 +129,9 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                     maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
+                        ...(options.structuredOutputMode === 'prompt-injection'
+                            ? { jsonPromptInjection: 'inline' as const }
+                            : {}),
                         schema: DictionaryCardAuthoringModelOutputSchema,
                     },
                     toolChoice: 'none',
@@ -256,6 +262,7 @@ export type CardAuthoringProposalGeneratorFactoryOptions =
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerProbeFetch?: typeof fetch;
           providerReadiness?: (signal: AbortSignal) => Promise<void>;
+          structuredOutputMode?: DictionaryTextStructuredOutputMode;
       };
 
 export function createCardAuthoringProposalGenerator(
@@ -285,6 +292,9 @@ export function createCardAuthoringProposalGenerator(
             ? { modelRequestLimits: options.modelRequestLimits }
             : {}),
         ...(providerReadiness ? { providerReadiness } : {}),
+        ...(options.structuredOutputMode
+            ? { structuredOutputMode: options.structuredOutputMode }
+            : {}),
     });
 }
 

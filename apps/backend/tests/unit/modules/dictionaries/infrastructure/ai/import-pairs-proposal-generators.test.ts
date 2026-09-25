@@ -110,6 +110,7 @@ describe('deterministic import-pairs provider', () => {
         });
         const provider = createMastraImportPairsProposalGenerator({
             agent: { generate },
+            structuredOutputMode: 'prompt-injection',
         });
         await expect(provider.generate(request)).resolves.toMatchObject({
             proposal: valid,
@@ -119,6 +120,10 @@ describe('deterministic import-pairs provider', () => {
             expect.any(String),
             expect.objectContaining({
                 runId: 'job/import-chunk/1-of-1',
+                structuredOutput: {
+                    jsonPromptInjection: 'inline',
+                    schema: expect.anything(),
+                },
                 toolChoice: 'none',
                 tracingOptions: { hideInput: true, hideOutput: true },
             }),

@@ -27,6 +27,7 @@ import {
 import {
     dictionaryTextRequestLimits,
     type DictionaryTextModelRequestLimits,
+    type DictionaryTextStructuredOutputMode,
 } from './dictionary-text-provider-catalog';
 
 export const DictionaryCardGenerationModelInputSchema =
@@ -80,6 +81,7 @@ export interface DictionaryCardGenerationStructuredAgent {
             maxOutputTokens: number;
             runId: string;
             structuredOutput: {
+                jsonPromptInjection?: 'inline';
                 schema: typeof DictionaryCardGenerationModelOutputSchema;
             };
             toolChoice: 'none';
@@ -100,6 +102,7 @@ export function createMastraCardProposalGenerator(options: {
     agent: DictionaryCardGenerationStructuredAgent;
     modelRequestLimits?: DictionaryTextModelRequestLimits;
     providerReadiness?: (signal: AbortSignal) => Promise<void>;
+    structuredOutputMode?: DictionaryTextStructuredOutputMode;
 }): CardProposalGenerator {
     return {
         async generate(request) {
@@ -129,6 +132,9 @@ export function createMastraCardProposalGenerator(options: {
                     maxOutputTokens: requestLimits.maxOutputTokens,
                     runId: request.idempotencyKey,
                     structuredOutput: {
+                        ...(options.structuredOutputMode === 'prompt-injection'
+                            ? { jsonPromptInjection: 'inline' as const }
+                            : {}),
                         schema: DictionaryCardGenerationModelOutputSchema,
                     },
                     toolChoice: 'none',
@@ -262,6 +268,7 @@ export type CardProposalGeneratorFactoryOptions =
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerProbeFetch?: typeof fetch;
           providerReadiness?: (signal: AbortSignal) => Promise<void>;
+          structuredOutputMode?: DictionaryTextStructuredOutputMode;
       };
 
 export function createCardProposalGenerator(
@@ -292,6 +299,9 @@ export function createCardProposalGenerator(
             ? { modelRequestLimits: options.modelRequestLimits }
             : {}),
         ...(providerReadiness ? { providerReadiness } : {}),
+        ...(options.structuredOutputMode
+            ? { structuredOutputMode: options.structuredOutputMode }
+            : {}),
     });
 }
 

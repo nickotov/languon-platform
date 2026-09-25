@@ -117,6 +117,7 @@ describe('dictionary text provider wire contracts', () => {
                 modelRequestLimits: catalogModel.requestLimits,
                 providerBudget: model.aggregateBudget,
                 providerReadiness: async () => undefined,
+                structuredOutputMode: catalogModel.structuredOutput,
             });
 
             await expect(
@@ -139,10 +140,24 @@ describe('dictionary text provider wire contracts', () => {
             expect(init?.headers).toMatchObject({
                 authorization: 'Bearer wire-contract-key',
             });
-            expect(JSON.parse(String(init?.body))).toMatchObject({
-                model: catalogModel.modelId,
-                response_format: { type: 'json_schema' },
-            });
+            const body = JSON.parse(String(init?.body)) as {
+                messages: Array<{
+                    content: string | Array<{ text: string; type: string }>;
+                }>;
+                model: string;
+                response_format?: { type: string };
+            };
+            expect(body.model).toBe(catalogModel.modelId);
+            if (catalogModel.structuredOutput === 'prompt-injection') {
+                expect(body.response_format).toBeUndefined();
+                expect(JSON.stringify(body.messages)).toContain(
+                    'Return your response as JSON matching this schema',
+                );
+            } else {
+                expect(body.response_format).toMatchObject({
+                    type: 'json_schema',
+                });
+            }
         });
     }
 });

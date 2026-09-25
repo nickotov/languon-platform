@@ -187,6 +187,7 @@ describe('pasted-terms proposal generators', () => {
             agent: {
                 generate,
             } satisfies DictionaryPastedTermsGenerationStructuredAgent,
+            structuredOutputMode: 'prompt-injection',
         });
         const generationRequest = request();
 
@@ -202,7 +203,10 @@ describe('pasted-terms proposal generators', () => {
                 abortSignal: generationRequest.signal,
                 maxOutputTokens: 40_960,
                 runId: 'job/generate/chunk/1-of-1',
-                structuredOutput: { schema: expect.anything() },
+                structuredOutput: {
+                    jsonPromptInjection: 'inline',
+                    schema: expect.anything(),
+                },
                 toolChoice: 'none',
                 tracingOptions: { hideInput: true, hideOutput: true },
             }),

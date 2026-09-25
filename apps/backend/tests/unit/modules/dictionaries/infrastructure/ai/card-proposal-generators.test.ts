@@ -163,6 +163,7 @@ describe('dictionary card proposal generators', () => {
             agent: {
                 generate,
             } satisfies DictionaryCardGenerationStructuredAgent,
+            structuredOutputMode: 'prompt-injection',
         });
         const generationRequest = request();
 
@@ -174,7 +175,10 @@ describe('dictionary card proposal generators', () => {
             abortSignal: generationRequest.signal,
             maxOutputTokens: 40_960,
             runId: 'generation-request-0001',
-            structuredOutput: { schema: expect.anything() },
+            structuredOutput: {
+                jsonPromptInjection: 'inline',
+                schema: expect.anything(),
+            },
             toolChoice: 'none',
             tracingOptions: { hideInput: true, hideOutput: true },
         });
