@@ -2,7 +2,7 @@
 feature: web-dev-panel
 title: Web Dev Command Panel
 status: current
-last_verified: 2026-09-23
+last_verified: 2026-09-24
 surfaces:
     - browser
     - cli
@@ -66,9 +66,14 @@ Install dependencies, start Docker with a local daemon/context and configure roo
 `.env.example`. Choose **Development → Start whole app → Start** (`pnpm dev:all`).
 This waits for healthy PostgreSQL/Redis, builds shared dependencies and applies
 migrations before running backend, web, admin, dictionary
-worker. Only local development DB/cache targets are accepted. Wait for each
-service's ready log; defaults are `http://localhost:4000/health`,
-`http://localhost:3333` and `http://localhost:3001`. The command cannot join a
+worker. Only local development DB/cache targets are accepted. Expand **Running
+service URLs** to open the public web, admin, or backend API in a new tab. The
+table is driven by the same server snapshot as the process cards, appears only
+for active panel-owned commands, and removes rows after they stop. The reviewed
+fixed defaults are `http://localhost:3333`, `http://localhost:3001`, and
+`http://localhost:4000`. Commands that choose a URL dynamically continue to
+report it in their own logs. When a configured port overrides a reviewed
+default, the command's ready log is authoritative. The command cannot join a
 batch and conflicts with individual app, infrastructure and migration commands.
 External processes must be stopped separately. It does not seed users or
 configure providers. Automated verification below uses synthetic commands only.
@@ -76,6 +81,7 @@ configure providers. Automated verification below uses synthetic commands only.
 ## Browser verification
 
 1. Open the panel and confirm the connection indicator becomes Connected.
+   **Running service URLs** initially reports `0 available` and is collapsed.
    The sidebar lists every category and every category panel is collapsed.
    Following a sidebar link opens its matching panel. Every root package script
    has a collapsed command card whose summary shows title, description, and
@@ -91,7 +97,10 @@ configure providers. Automated verification below uses synthetic commands only.
 3. Select two incompatible inactive fixture commands. The server rejects the
    atomic batch and an in-viewport alert shows the full conflict explanation.
 4. Stop one running command. Its card enters Cancelled while the other fixture
-   remains Running. Stop All requires dialog confirmation.
+   remains Running. Expand **Running service URLs** with the keyboard and confirm
+   the remaining fixed service URL is a link with Running status and its source
+   command. Stop All requires dialog confirmation, and stopped services disappear
+   from the URL table.
 5. Create a quick-access section named `Daily workspace`. Add two compatible
    fixture commands from their expanded cards and confirm the custom section is
    first and visually separate in both content and sidebar. Use its Start all,
@@ -160,6 +169,8 @@ faster unit and native HTTP integration layers.
 
 - `whole-app-command-control`: the individually runnable **Start whole app**
   command can start, survive a browser reload and stop through the panel. The
+  journey also proves that its three fixed service URLs appear in the collapsed
+  disclosure, are keyboard accessible links, and disappear after stop. The
   browser fixture is synthetic; native runner tests cover ordering, local-target
   validation, setup failure and process cleanup without real infrastructure.
 

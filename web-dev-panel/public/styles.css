@@ -160,6 +160,98 @@ h1 {
     backdrop-filter: blur(12px);
 }
 
+.running-services {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    overflow: clip;
+}
+
+.running-services > summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-weight: 750;
+    list-style: none;
+}
+
+.running-services > summary::-webkit-details-marker {
+    display: none;
+}
+
+.running-services > summary::before {
+    content: '›';
+    color: var(--primary);
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.running-services[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.running-services__count {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.running-services__content {
+    padding: 0 18px 18px;
+}
+
+.running-services__empty {
+    margin: 0;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--surface-subtle);
+    color: var(--text-secondary);
+}
+
+.running-services__note {
+    margin: 12px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.running-services__table-wrap {
+    overflow-x: auto;
+}
+
+.running-services table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.running-services th,
+.running-services td {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.running-services thead th {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.running-services tbody th {
+    min-width: 140px;
+}
+
+.running-services a {
+    color: var(--primary);
+    font-weight: 650;
+}
+
 .select-all,
 .command-select {
     display: inline-flex;
@@ -886,6 +978,10 @@ input[type='checkbox'] {
         flex-wrap: wrap;
     }
 
+    .running-services__content {
+        padding-inline: 12px;
+    }
+
     .toolbar__actions {
         width: 100%;
         margin-left: 0;
@@ -963,6 +1059,7 @@ input[type='checkbox'] {
     .command-card,
     .command-group > summary::after,
     .command-card > summary::before,
+    .running-services > summary::before,
     .custom-section-toggle::before {
         transition:
             background-color 140ms ease,

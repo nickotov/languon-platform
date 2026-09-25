@@ -19,6 +19,7 @@ const commandKeys = new Set([
     'id',
     'kind',
     'outputProtocol',
+    'serviceUrls',
     'source',
     'title',
 ]);
@@ -32,6 +33,7 @@ const documentedSourceKeys = new Set([
     'revision',
     'type',
 ]);
+const serviceUrlKeys = new Set(['label', 'url']);
 const commandIdPattern = /^[a-z0-9](?:[a-z0-9:-]{0,78}[a-z0-9])?$/;
 const revisionPattern = /^sha256:[a-f0-9]{64}$/;
 const activeStatuses = new Set(['running', 'starting', 'stopping']);
@@ -89,6 +91,43 @@ function stringArray(value, path, maximumItems = 64) {
         fail(path, 'must not contain duplicate values');
     }
     return result;
+}
+
+function validateServiceUrls(value, path) {
+    if (value === undefined) return [];
+    if (!Array.isArray(value) || value.length > 8) {
+        fail(path, 'must be an array with at most 8 items');
+    }
+    const urls = value.map((item, index) => {
+        const itemPath = `${path}[${index}]`;
+        assertExactKeys(item, serviceUrlKeys, itemPath);
+        const label = requiredString(item.label, `${itemPath}.label`, 80);
+        const url = requiredString(item.url, `${itemPath}.url`, 256);
+        let parsed;
+        try {
+            parsed = new URL(url);
+        } catch {
+            fail(`${itemPath}.url`, 'must be a valid URL');
+        }
+        if (
+            !['http:', 'https:'].includes(parsed.protocol) ||
+            !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname) ||
+            parsed.username ||
+            parsed.password ||
+            parsed.search ||
+            parsed.hash
+        ) {
+            fail(
+                `${itemPath}.url`,
+                'must be a credential-free loopback HTTP(S) URL without query or fragment',
+            );
+        }
+        return { label, url };
+    });
+    if (new Set(urls.map(({ url }) => url)).size !== urls.length) {
+        fail(path, 'must not contain duplicate URLs');
+    }
+    return urls;
 }
 
 function validateSource(value, path) {
@@ -172,6 +211,10 @@ function validateCommand(value, index) {
             value.outputProtocol,
             `${path}.outputProtocol`,
             24,
+        ),
+        serviceUrls: validateServiceUrls(
+            value.serviceUrls,
+            `${path}.serviceUrls`,
         ),
         source: validateSource(value.source, `${path}.source`),
         title: requiredString(value.title, `${path}.title`, 100),
@@ -456,6 +499,7 @@ export async function loadCatalog({
             id: script,
             kind: 'task',
             outputProtocol: 'plain',
+            serviceUrls: [],
             runtimeReason: issue,
             source: {
                 revision: null,
@@ -496,6 +540,7 @@ function publicCommand(command) {
         id: command.id,
         kind: command.kind,
         outputProtocol: command.outputProtocol,
+        serviceUrls: command.serviceUrls,
         reviewedRevision: command.source.revision,
         runtimeReason: command.runtimeReason,
         sourcePath:

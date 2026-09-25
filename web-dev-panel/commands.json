@@ -356,6 +356,20 @@
             "id": "dev",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Public web",
+                    "url": "http://localhost:3333"
+                },
+                {
+                    "label": "Admin",
+                    "url": "http://localhost:3001"
+                },
+                {
+                    "label": "Backend API",
+                    "url": "http://localhost:4000"
+                }
+            ],
             "source": {
                 "revision": "sha256:2160344a4a82ab07ce39c9a8cdca0626a73a6dfaaff3f360877e505c1b91fb73",
                 "script": "dev",
@@ -390,6 +404,12 @@
             "id": "dev:admin",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Admin",
+                    "url": "http://localhost:3001"
+                }
+            ],
             "source": {
                 "revision": "sha256:a5a7057fbc5538d45863a331bcdeb888fa44dc1f578839e0459c9e16ae1773f3",
                 "script": "dev:admin",
@@ -440,6 +460,20 @@
             "id": "dev:all",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Public web",
+                    "url": "http://localhost:3333"
+                },
+                {
+                    "label": "Admin",
+                    "url": "http://localhost:3001"
+                },
+                {
+                    "label": "Backend API",
+                    "url": "http://localhost:4000"
+                }
+            ],
             "source": {
                 "revision": "sha256:c6a3148d387c5c626df928f304ab858f7a72bb0b616afde7e0fe98dee753f3d7",
                 "script": "dev:all",
@@ -463,6 +497,20 @@
             "id": "dev:apps:docker",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Public web",
+                    "url": "http://localhost:3333"
+                },
+                {
+                    "label": "Admin",
+                    "url": "http://localhost:3001"
+                },
+                {
+                    "label": "Backend API",
+                    "url": "http://localhost:4000"
+                }
+            ],
             "source": {
                 "revision": "sha256:9def6a38643ca9ccd54367e6a36dcc4b8d3c9eb3ae051943cde0df30ae9cc019",
                 "script": "dev:apps:docker",
@@ -480,6 +528,12 @@
             "id": "dev:backend",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Backend API",
+                    "url": "http://localhost:4000"
+                }
+            ],
             "source": {
                 "revision": "sha256:5bc2210c5e5c057db748060f27906ad6d5fb14ff13e0b992f9a8c50fd0924738",
                 "script": "dev:backend",
@@ -599,6 +653,12 @@
             "id": "dev:web",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Public web",
+                    "url": "http://localhost:3333"
+                }
+            ],
             "source": {
                 "revision": "sha256:0a95917c6078f26fa99e98029d21629a8fca8957a5a44f354b2821bd9cd642be",
                 "script": "dev:web",
@@ -847,7 +907,7 @@
         {
             "batchEligible": true,
             "category": "Tests",
-            "conflictsWith": [],
+            "conflictsWith": ["test:e2e:ai-provider-management"],
             "description": "Runs the administration user-management end-to-end journey.",
             "disabledReason": null,
             "enabled": true,
@@ -860,6 +920,23 @@
                 "type": "package-script"
             },
             "title": "Test · E2e · Admin User Management"
+        },
+        {
+            "batchEligible": true,
+            "category": "Tests",
+            "conflictsWith": ["test:e2e:admin-user-management"],
+            "description": "Runs the administration AI-provider management end-to-end journey.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:e2e:ai-provider-management",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:030ad157ec08cfe18d6992238fc28e205e12847b16d6241da8bf503919271048",
+                "script": "test:e2e:ai-provider-management",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · AI Provider Management"
         },
         {
             "batchEligible": true,

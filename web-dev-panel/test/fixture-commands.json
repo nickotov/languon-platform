@@ -10,6 +10,12 @@
             "id": "alpha",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Alpha service",
+                    "url": "http://localhost:4555"
+                }
+            ],
             "source": {
                 "args": ["scripts/command.mjs", "alpha", "4000"],
                 "command": "node scripts/command.mjs alpha 4000",
@@ -115,10 +121,24 @@
             "id": "dev:all",
             "kind": "service",
             "outputProtocol": "plain",
+            "serviceUrls": [
+                {
+                    "label": "Public web",
+                    "url": "http://localhost:3333"
+                },
+                {
+                    "label": "Admin",
+                    "url": "http://localhost:3001"
+                },
+                {
+                    "label": "Backend API",
+                    "url": "http://localhost:4000"
+                }
+            ],
             "source": {
                 "type": "package-script",
                 "script": "dev:all",
-                "revision": "sha256:7efb487cc00d93b38764a5902e6df0e951789b7e428ac105165e7145c747d062"
+                "revision": "sha256:ef100c0897af7f5cad269eb11082f32f2db6b61682acfc1f1130fd630c5dfff4"
             },
             "title": "Start whole app"
         }

@@ -25,6 +25,50 @@
         </header>
 
         <main>
+            <details id="running-services" class="running-services">
+                <summary>
+                    <span>Running service URLs</span>
+                    <span
+                        id="running-service-count"
+                        class="running-services__count"
+                        >0 available</span
+                    >
+                </summary>
+                <div class="running-services__content">
+                    <p
+                        id="running-services-empty"
+                        class="running-services__empty"
+                    >
+                        Start a service with a fixed local URL to see it here.
+                    </p>
+                    <div
+                        id="running-services-table-wrap"
+                        class="running-services__table-wrap"
+                        hidden
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Service</th>
+                                    <th scope="col">Default local URL</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Started by</th>
+                                </tr>
+                            </thead>
+                            <tbody id="running-services-body"></tbody>
+                        </table>
+                    </div>
+                    <p
+                        id="running-services-note"
+                        class="running-services__note"
+                        hidden
+                    >
+                        These are reviewed defaults. If you override a port, use
+                        the command ready log for the active URL.
+                    </p>
+                </div>
+            </details>
+
             <section class="toolbar" aria-label="Command actions">
                 <label class="select-all">
                     <input id="select-all" type="checkbox" />

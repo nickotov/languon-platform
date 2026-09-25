@@ -82,9 +82,69 @@ const catalogIssuesElement = document.querySelector('#catalog-issues');
 const preferenceIssuesElement = document.querySelector('#preference-issues');
 const connectionStatusElement = document.querySelector('#connection-status');
 const connectionDotElement = document.querySelector('#connection-dot');
+const runningServiceCountElement = document.querySelector(
+    '#running-service-count',
+);
+const runningServicesBodyElement = document.querySelector(
+    '#running-services-body',
+);
+const runningServicesEmptyElement = document.querySelector(
+    '#running-services-empty',
+);
+const runningServicesNoteElement = document.querySelector(
+    '#running-services-note',
+);
+const runningServicesTableWrapElement = document.querySelector(
+    '#running-services-table-wrap',
+);
 
 function commandActive(command) {
     return command.run && activeStatuses.has(command.run.status);
+}
+
+function renderRunningServices() {
+    const servicesByUrl = new Map();
+    for (const command of panelState.commands) {
+        if (!commandActive(command)) continue;
+        for (const service of command.serviceUrls) {
+            if (!servicesByUrl.has(service.url)) {
+                servicesByUrl.set(service.url, {
+                    ...service,
+                    commandTitle: command.title,
+                    status: command.run.status,
+                });
+            }
+        }
+    }
+    const services = [...servicesByUrl.values()];
+    runningServiceCountElement.textContent = `${services.length} available`;
+    runningServicesEmptyElement.hidden = services.length > 0;
+    runningServicesNoteElement.hidden = services.length === 0;
+    runningServicesTableWrapElement.hidden = services.length === 0;
+    runningServicesBodyElement.replaceChildren();
+    for (const service of services) {
+        const row = document.createElement('tr');
+        const label = document.createElement('th');
+        label.scope = 'row';
+        label.textContent = service.label;
+        const urlCell = document.createElement('td');
+        const link = document.createElement('a');
+        link.href = service.url;
+        link.rel = 'noopener';
+        link.target = '_blank';
+        link.textContent = service.url;
+        urlCell.append(link);
+        const status = document.createElement('td');
+        const statusLabel = document.createElement('span');
+        statusLabel.className = 'status';
+        statusLabel.dataset.state = service.status;
+        statusLabel.textContent = service.status;
+        status.append(statusLabel);
+        const command = document.createElement('td');
+        command.textContent = service.commandTitle;
+        row.append(label, urlCell, status, command);
+        runningServicesBodyElement.append(row);
+    }
 }
 
 function setConnection(state, label) {
@@ -667,6 +727,7 @@ function reportStoredCatalogDrift() {
 
 function render() {
     if (!panelState) return;
+    renderRunningServices();
     groupsElement.replaceChildren();
     sectionLinksElement.replaceChildren();
     const commandsById = new Map(

@@ -48,6 +48,32 @@ test('requires symmetric declared conflicts', () => {
     );
 });
 
+test('accepts reviewed loopback service URLs and rejects unsafe URLs', () => {
+    const safe = command('safe', 'node safe.mjs');
+    safe.serviceUrls = [
+        { label: 'Safe service', url: 'http://localhost:4555' },
+    ];
+    const catalog = validateCatalogDocument({ commands: [safe], version: 1 });
+    assert.deepEqual(catalog.commands[0].serviceUrls, safe.serviceUrls);
+
+    for (const unsafeUrl of [
+        'https://example.com',
+        'http://user:secret@localhost:4555',
+        'http://localhost:4555?token=value',
+    ]) {
+        const unsafe = command('unsafe', 'node unsafe.mjs');
+        unsafe.serviceUrls = [{ label: 'Unsafe service', url: unsafeUrl }];
+        assert.throws(
+            () =>
+                validateCatalogDocument({
+                    commands: [unsafe],
+                    version: 1,
+                }),
+            /credential-free loopback HTTP\(S\) URL/u,
+        );
+    }
+});
+
 test('materializes added scripts and disables changed reviewed sources', async () => {
     const root = await mkdtemp(resolve(tmpdir(), 'web-dev-panel-catalog-'));
     const catalogPath = resolve(root, 'commands.json');

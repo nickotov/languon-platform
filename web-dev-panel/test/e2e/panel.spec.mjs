@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// @user-flow-revision web-dev-panel sha256:d8e919c7d552f950
+// @user-flow-revision web-dev-panel sha256:7cb188017be95b83
 // @user-flow web-dev-panel/parallel-command-control-and-isolated-logs
 test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     await page.goto('/?launch=web-dev-panel-fixture-launch');
@@ -348,6 +348,10 @@ test('portable-custom-command-sections', async ({ browser }) => {
 // @user-flow web-dev-panel/whole-app-command-control
 test('whole-app-command-control', async ({ page }) => {
     await page.goto('/?launch=web-dev-panel-fixture-launch');
+    const runningServices = page.locator('#running-services');
+    await expect(runningServices.locator('summary')).toContainText(
+        '0 available',
+    );
     await page.locator('#command-section-development > summary').click();
     const command = page.locator('[data-command-id="dev:all"]');
     await command.locator(':scope > summary').click();
@@ -358,10 +362,34 @@ test('whole-app-command-control', async ({ page }) => {
     await command.getByRole('button', { name: 'Start', exact: true }).click();
     await expect(command.locator('.status')).toHaveText('Running');
     await expect(command.locator('pre')).toContainText('whole-app: started');
+    await expect(runningServices.locator('summary')).toContainText(
+        '3 available',
+    );
+    await runningServices.locator('summary').focus();
+    await runningServices.locator('summary').press('Enter');
+    await expect(runningServices).toHaveAttribute('open', '');
+    await expect(
+        runningServices.getByRole('columnheader', {
+            name: 'Default local URL',
+        }),
+    ).toBeVisible();
+    await expect(runningServices).toContainText(
+        'If you override a port, use the command ready log',
+    );
+    await expect(
+        runningServices.getByRole('link', { name: 'http://localhost:3333' }),
+    ).toHaveAttribute('href', 'http://localhost:3333');
+    await expect(runningServices.getByRole('row')).toHaveCount(4);
+    await expect(
+        runningServices.getByRole('cell', { name: 'Running' }),
+    ).toHaveCount(3);
     await page.reload();
     await page.locator('#command-section-development > summary').click();
     await expect(command.locator('.status')).toHaveText('Running');
     await command.locator(':scope > summary').click();
     await command.getByRole('button', { name: 'Stop', exact: true }).click();
     await expect(command.locator('.status')).toHaveText('Cancelled');
+    await expect(runningServices.locator('summary')).toContainText(
+        '0 available',
+    );
 });

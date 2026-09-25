@@ -31,10 +31,12 @@ With Docker running on a local daemon/context, dependencies installed and root `
 from `.env.example`, open **Development → Start whole app** and click **Start**.
 The reviewed `dev:all` command waits for PostgreSQL and Redis health, builds shared
 dependencies, applies migrations, then starts backend, web, admin and the
-dictionary worker. Watch that command's log for setup progress
-and each application's ready message. Default URLs are backend
-`http://localhost:4000/health`, web `http://localhost:3333`, and admin
-`http://localhost:3001`.
+dictionary worker. Watch that command's log for setup progress and each
+application's ready message. Expand **Running service URLs** above the toolbar
+to open the reviewed fixed endpoints: web `http://localhost:3333`, admin
+`http://localhost:3001`, and backend API `http://localhost:4000`. Commands that
+choose a URL dynamically, or use an overridden port, report the active URL in
+their command log.
 
 The command accepts only local development database/cache targets; it does not
 install dependencies, start Docker itself, seed accounts or configure external
