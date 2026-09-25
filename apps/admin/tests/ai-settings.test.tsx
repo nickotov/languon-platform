@@ -38,6 +38,12 @@ const response: AiSettingsResponse = {
             label: 'DeepSeek',
             models: [
                 {
+                    creditPricing: {
+                        inputCreditsPerMillionTokens: 1_000_000,
+                        maxCreditsPerAttempt: 400_000,
+                        outputCreditsPerMillionTokens: 3_000_000,
+                        revision: 1,
+                    },
                     id: 'deepseek-chat',
                     label: 'DeepSeek Chat',
                     available: true,
@@ -57,6 +63,12 @@ const response: AiSettingsResponse = {
             label: 'Kie',
             models: [
                 {
+                    creditPricing: {
+                        inputCreditsPerMillionTokens: 10_000_000,
+                        maxCreditsPerAttempt: 4_000_000,
+                        outputCreditsPerMillionTokens: 30_000_000,
+                        revision: 1,
+                    },
                     id: 'gemini-2.5-pro',
                     label: 'Gemini 2.5 Pro',
                     available: false,
@@ -123,6 +135,9 @@ describe('AI settings form behavior', () => {
 
         expect(screen.getByText('Configured')).toBeInTheDocument();
         expect(screen.getByText('Available')).toBeInTheDocument();
+        expect(
+            screen.getByText(/1,000,000 input.*3,000,000 output.*400,000/),
+        ).toBeInTheDocument();
         fireEvent.click(
             screen.getByRole('checkbox', { name: /DeepSeek Chat/i }),
         );

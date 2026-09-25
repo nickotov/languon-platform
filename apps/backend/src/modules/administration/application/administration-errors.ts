@@ -30,6 +30,30 @@ export class AdminAiSettingsUnavailableError extends Error {
         this.name = 'AdminAiSettingsUnavailableError';
     }
 }
+export class AdminAiCreditAccountConflictError extends Error {
+    public constructor() {
+        super('AI credit account changed since it was loaded.');
+        this.name = 'AdminAiCreditAccountConflictError';
+    }
+}
+export class AdminAiCreditAdjustmentExceedsAvailableError extends Error {
+    public constructor() {
+        super('The requested credit removal exceeds the available balance.');
+        this.name = 'AdminAiCreditAdjustmentExceedsAvailableError';
+    }
+}
+export class AdminAiCreditTargetUnavailableError extends Error {
+    public constructor() {
+        super('AI credits cannot be managed for this user state.');
+        this.name = 'AdminAiCreditTargetUnavailableError';
+    }
+}
+export class AdminAiCreditInvalidRequestError extends Error {
+    public constructor(message: string) {
+        super(message);
+        this.name = 'AdminAiCreditInvalidRequestError';
+    }
+}
 export class AdminDeletionCancellationUnavailableError extends Error {
     public constructor() {
         super('Account deletion can no longer be cancelled.');

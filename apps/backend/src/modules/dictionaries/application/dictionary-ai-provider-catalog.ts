@@ -10,9 +10,17 @@ export const dictionaryAiTextFormats = [
 
 export type DictionaryAiProviderId = 'deepseek' | 'kie';
 
+export interface DictionaryAiCreditPricing {
+    inputCreditsPerMillionTokens: number;
+    maxCreditsPerAttempt: number;
+    outputCreditsPerMillionTokens: number;
+    revision: 1;
+}
+
 export interface DictionaryAiModelDefinition {
     adapterRevision: 'openai-compatible:v1';
     aggregateBudget: DictionaryGenerationProviderBudgetPolicy;
+    creditPricing: DictionaryAiCreditPricing;
     credentialReference: 'DEEPSEEK_API_KEY' | 'KIE_API_KEY';
     id: string;
     label: string;
@@ -26,6 +34,8 @@ export interface DictionaryAiExecutionSnapshot {
     adapterRevision: string;
     aggregateBudget: DictionaryGenerationProviderBudgetPolicy;
     credentialReference: 'DEEPSEEK_API_KEY' | 'KIE_API_KEY';
+    /** Missing only on immutable revisions created before AI-credit support. */
+    creditPricing?: DictionaryAiCreditPricing;
     enabledModelIds: string[];
     modelId: string;
     perCallMaxInputTokens: number;
@@ -49,6 +59,12 @@ export const dictionaryAiModelCatalog: readonly DictionaryAiModelDefinition[] =
                 maxCostMicrosPerAttempt: 400_000,
                 outputCostMicrosPerMillionTokens: 3_000_000,
             },
+            creditPricing: {
+                inputCreditsPerMillionTokens: 1_000_000,
+                maxCreditsPerAttempt: 400_000,
+                outputCreditsPerMillionTokens: 3_000_000,
+                revision: 1,
+            },
             credentialReference: 'DEEPSEEK_API_KEY',
             id: 'deepseek-chat',
             label: 'DeepSeek Chat',
@@ -64,6 +80,12 @@ export const dictionaryAiModelCatalog: readonly DictionaryAiModelDefinition[] =
                 inputCostMicrosPerMillionTokens: 10_000_000,
                 maxCostMicrosPerAttempt: 4_000_000,
                 outputCostMicrosPerMillionTokens: 30_000_000,
+            },
+            creditPricing: {
+                inputCreditsPerMillionTokens: 10_000_000,
+                maxCreditsPerAttempt: 4_000_000,
+                outputCreditsPerMillionTokens: 30_000_000,
+                revision: 1,
             },
             credentialReference: 'KIE_API_KEY',
             id: 'gemini-2.5-pro',
@@ -83,5 +105,19 @@ export function findDictionaryAiModel(
         dictionaryAiModelCatalog.find(
             (model) => model.providerId === providerId && model.id === modelId,
         ) ?? null
+    );
+}
+
+export function dictionaryAiCreditPricingMatches(
+    left: DictionaryAiCreditPricing | undefined,
+    right: DictionaryAiCreditPricing,
+): boolean {
+    return (
+        left?.revision === right.revision &&
+        left.inputCreditsPerMillionTokens ===
+            right.inputCreditsPerMillionTokens &&
+        left.outputCreditsPerMillionTokens ===
+            right.outputCreditsPerMillionTokens &&
+        left.maxCreditsPerAttempt === right.maxCreditsPerAttempt
     );
 }

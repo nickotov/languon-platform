@@ -40,6 +40,35 @@ GRANT SELECT, INSERT, UPDATE ON TABLE
     dictionary_ai_worker_observations
 TO :"dictionary_worker_role";
 
+GRANT SELECT (user_id, mode, unlimited_until) ON TABLE
+    ai_credit_accounts TO :"dictionary_worker_role";
+
+GRANT SELECT (id, owner_id, amount, created_at, expires_at) ON TABLE
+    ai_credit_grants TO :"dictionary_worker_role";
+
+GRANT SELECT (id, owner_id) ON TABLE
+    ai_credit_admin_removals TO :"dictionary_worker_role";
+
+GRANT SELECT (removal_id, grant_id, allocated_credits) ON TABLE
+    ai_credit_admin_removal_allocations TO :"dictionary_worker_role";
+
+GRANT SELECT, INSERT ON TABLE
+    ai_credit_reservations,
+    ai_credit_reservation_allocations
+TO :"dictionary_worker_role";
+
+GRANT UPDATE (charged_credits, dispatched_at, measured_credits, measurement, settled_at, state) ON TABLE
+    ai_credit_reservations
+TO :"dictionary_worker_role";
+
+GRANT UPDATE (settled_credits) ON TABLE
+    ai_credit_reservation_allocations
+TO :"dictionary_worker_role";
+
+GRANT INSERT ON TABLE
+    ai_credit_history
+TO :"dictionary_worker_role";
+
 GRANT SELECT (id, dictionary_id, source, sort_key, translation, example, example_translation, lifecycle, version, example_enabled_override, example_translation_enabled_override, example_language_role_override) ON TABLE
     dictionary_cards
 TO :"dictionary_worker_role";

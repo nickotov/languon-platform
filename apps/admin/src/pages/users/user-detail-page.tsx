@@ -22,6 +22,7 @@ import { Link, useParams } from 'react-router';
 
 import { AdminApiError } from '@/shared/api/admin-api';
 import styles from '../shared/page.module.css';
+import { AiCreditsPanel } from './ui/ai-credits-panel/ai-credits-panel';
 import { StatusTag } from './users-page';
 
 type Operation = 'disable' | 'restore' | 'deletion/cancel';
@@ -39,7 +40,7 @@ export function UserDetailPage() {
     const [operation, setOperation] = useState<Operation | null>(null);
     const [error, setError] = useState<AdminApiError | Error | null>(null);
     const [form] = Form.useForm<{ reason: string }>();
-    const detail = user.result;
+    const detail = user.result?.id === id ? user.result : undefined;
     const closeOperation = () => {
         setOperation(null);
         setError(null);
@@ -223,6 +224,15 @@ export function UserDetailPage() {
                     </Card>
                 </Space>
             </div>
+            {detail ? (
+                <AiCreditsPanel
+                    key={detail.id}
+                    mutable={['active', 'disabled', 'pending'].includes(
+                        detail.status,
+                    )}
+                    userId={detail.id}
+                />
+            ) : null}
             <Modal
                 destroyOnHidden
                 footer={null}

@@ -2,6 +2,10 @@ import { RecentAuthenticationRequiredError } from '../../../authentication/appli
 import { mapAuthenticationHttpError } from '../../../authentication/interface/http/auth-http-error-mapping';
 import {
     AdminAccessDeniedError,
+    AdminAiCreditAccountConflictError,
+    AdminAiCreditAdjustmentExceedsAvailableError,
+    AdminAiCreditInvalidRequestError,
+    AdminAiCreditTargetUnavailableError,
     AdminAiSettingsConflictError,
     AdminAiSettingsUnavailableError,
     AdminCancellationJournalUnavailableError,
@@ -57,6 +61,34 @@ export function mapAdministrationHttpError(
             'capability_unavailable',
             error.message,
             503,
+        );
+    }
+    if (error instanceof AdminAiCreditAccountConflictError) {
+        return new AdministrationHttpError(
+            'ai_credit_account_conflict',
+            error.message,
+            409,
+        );
+    }
+    if (error instanceof AdminAiCreditAdjustmentExceedsAvailableError) {
+        return new AdministrationHttpError(
+            'ai_credit_adjustment_exceeds_available',
+            error.message,
+            409,
+        );
+    }
+    if (error instanceof AdminAiCreditTargetUnavailableError) {
+        return new AdministrationHttpError(
+            'ai_credit_target_unavailable',
+            error.message,
+            409,
+        );
+    }
+    if (error instanceof AdminAiCreditInvalidRequestError) {
+        return new AdministrationHttpError(
+            'invalid_request',
+            error.message,
+            400,
         );
     }
     if (error instanceof AdminDeletionCancellationUnavailableError) {

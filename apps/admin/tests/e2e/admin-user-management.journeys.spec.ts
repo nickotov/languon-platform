@@ -14,7 +14,8 @@ import {
 import postgres from 'postgres';
 
 // @user-flow-revision admin-user-management sha256:43c037477d75d58d
-// @user-flow-revision ai-provider-management sha256:ebace910d71591e6
+// @user-flow-revision ai-provider-management sha256:dc741eefb55aaec6
+// @user-flow-revision ai-credit-wallet sha256:9cf122911016613c
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(
@@ -195,7 +196,7 @@ async function startDictionaryWorker() {
                 APP_ENV: 'test',
                 DEEPSEEK_API_KEY: 'admin-e2e-deepseek-worker-key',
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
-                DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
                 DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v1',
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'single-card:v1',
                 DICTIONARY_WORKER_CONCURRENCY: '1',
@@ -395,8 +396,8 @@ test.describe.serial('admin user management journeys', () => {
         assertNoBrowserErrors();
     });
 
-    // @user-flow ai-provider-management/admin-configures-dictionary-ai-default
-    test('owner configures providers and queued jobs retain their selected revisions', async ({
+    // @user-flow ai-credit-wallet/admin-grants-and-generation-consumes-ai-credits
+    test('owner grants AI credits and a managed generation consumes them', async ({
         page,
         request,
     }) => {
@@ -405,6 +406,7 @@ test.describe.serial('admin user management journeys', () => {
             '/api/admin/auth/refresh': 401,
         });
         await passwordLogin(page);
+
         await page.getByRole('menuitem', { name: 'AI settings' }).click();
         await expect(
             page.getByRole('heading', { name: 'AI providers' }),
@@ -420,9 +422,238 @@ test.describe.serial('admin user management journeys', () => {
         await page.getByLabel('Default model').press('Enter');
         await page
             .getByLabel('Reason for change')
-            .fill('Enable curated DeepSeek dictionary generation');
+            .fill('Configure priced managed generation for credit E2E');
         await page.getByRole('button', { name: 'Save configuration' }).click();
-        await expect(page.getByText('Version 1')).toBeVisible();
+        await expect(page.getByText(/Configuration version \d+/)).toBeVisible();
+
+        await page.goto(`/users/${targetId}`);
+        await expect(
+            page.getByRole('heading', { name: targetEmail }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('AI credits', { exact: true }),
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'Adjust credits' }).click();
+        const adjustmentDialog = page.getByRole('dialog', {
+            name: 'Adjust AI credits',
+        });
+        const amount = adjustmentDialog.getByRole('spinbutton', {
+            name: 'Credits',
+        });
+        await expect(amount).toHaveValue('1');
+        await amount.fill('5000000');
+        await expect(amount).toHaveValue('5000000');
+        await adjustmentDialog
+            .getByLabel('Reason')
+            .fill('Grant one deterministic managed generation attempt');
+        await expect(adjustmentDialog.getByLabel('Reason')).toHaveValue(
+            'Grant one deterministic managed generation attempt',
+        );
+        await adjustmentDialog
+            .getByRole('button', { name: 'Apply adjustment' })
+            .click();
+        await expect(
+            page.getByText('Grant', { exact: true }).first(),
+        ).toBeVisible();
+
+        const targetLogin = await request.post(
+            `${backendOrigin}/auth/login/password`,
+            {
+                data: { email: targetEmail, password: ownerPassword },
+                headers: { Origin: webOrigin },
+            },
+        );
+        expect(targetLogin.status()).toBe(200);
+        const accessToken = (
+            (await targetLogin.json()) as { accessToken: string }
+        ).accessToken;
+        const apiHeaders = {
+            Authorization: `Bearer ${accessToken}`,
+            Origin: webOrigin,
+        };
+        const dictionaryResponse = await request.post(
+            `${backendOrigin}/dictionaries`,
+            {
+                data: {
+                    name: `AI credit wallet ${runId}`,
+                    sourceLanguage: 'en',
+                    targetLanguage: 'fr',
+                },
+                headers: {
+                    ...apiHeaders,
+                    'Idempotency-Key': `credit-dictionary-${runId}`,
+                },
+            },
+        );
+        expect(dictionaryResponse.status()).toBe(201);
+        const dictionary = (await dictionaryResponse.json()) as {
+            dictionary: {
+                id: string;
+                settingsVersion: number;
+                version: number;
+            };
+        };
+        const cardResponse = await request.post(
+            `${backendOrigin}/dictionaries/${dictionary.dictionary.id}/cards`,
+            {
+                data: {
+                    expectedDictionaryVersion: dictionary.dictionary.version,
+                    expectedSettingsVersion:
+                        dictionary.dictionary.settingsVersion,
+                    values: { source: 'wallet', translation: 'portefeuille' },
+                },
+                headers: {
+                    ...apiHeaders,
+                    'Idempotency-Key': `credit-card-${runId}`,
+                },
+            },
+        );
+        expect(cardResponse.status()).toBe(201);
+        const card = (await cardResponse.json()) as {
+            card: { id: string; version: number };
+            dictionaryVersion: number;
+        };
+        const generationResponse = await request.post(
+            `${backendOrigin}/dictionaries/${dictionary.dictionary.id}/cards/${card.card.id}/generations`,
+            {
+                data: {
+                    expectedCardVersion: card.card.version,
+                    expectedDictionaryVersion: card.dictionaryVersion,
+                    expectedSettingsVersion:
+                        dictionary.dictionary.settingsVersion,
+                    instruction: 'Keep the translation concise.',
+                },
+                headers: {
+                    ...apiHeaders,
+                    'Idempotency-Key': `credit-generation-${runId}`,
+                },
+            },
+        );
+        expect(generationResponse.status()).toBe(202);
+        const jobId = (
+            (await generationResponse.json()) as {
+                job: { id: string };
+            }
+        ).job.id;
+
+        let worker: ChildProcess | undefined;
+        try {
+            worker = await startDictionaryWorker();
+            const job = await waitForGenerationReview(
+                request,
+                accessToken,
+                jobId,
+            );
+            const database = postgres(databaseUrl, { max: 1 });
+            try {
+                const [reservation] = await database<
+                    Array<{
+                        chargedCredits: string;
+                        dispatchedAt: Date | null;
+                        measurement: string | null;
+                        reservedCredits: string;
+                        settledAt: Date | null;
+                        state: string;
+                    }>
+                >`
+                    select
+                        charged_credits as "chargedCredits",
+                        dispatched_at as "dispatchedAt",
+                        measurement,
+                        reserved_credits as "reservedCredits",
+                        settled_at as "settledAt",
+                        state
+                    from ai_credit_reservations
+                    where job_id = ${jobId}
+                    order by attempt
+                `;
+                expect(reservation).toMatchObject({
+                    dispatchedAt: expect.any(Date),
+                    measurement: 'estimated',
+                    reservedCredits: '400000',
+                    settledAt: expect.any(Date),
+                    state: 'settled',
+                });
+                expect(reservation!.chargedCredits).toBe('400000');
+                const history = await database<Array<{ kind: string }>>`
+                    select kind
+                    from ai_credit_history
+                    where owner_id = ${targetId}
+                    order by created_at, id
+                `;
+                expect(history.map((entry) => entry.kind)).toEqual(
+                    expect.arrayContaining([
+                        'grant',
+                        'reservation',
+                        'settlement',
+                    ]),
+                );
+            } finally {
+                await database.end();
+            }
+            await page.reload();
+            const settlementHistoryRow = page
+                .getByRole('row')
+                .filter({ hasText: 'Settlement' })
+                .filter({ hasText: 'Estimated maximum' });
+            await expect(settlementHistoryRow).toContainText('−400,000');
+            const accepted = await request.post(
+                `${backendOrigin}/dictionary-generation-jobs/${jobId}/accept`,
+                {
+                    data: { candidate: job.proposal!.candidate },
+                    headers: apiHeaders,
+                },
+            );
+            expect(accepted.status()).toBe(200);
+            expect(
+                ((await accepted.json()) as { job: { state: string } }).job
+                    .state,
+            ).toBe('accepted');
+        } finally {
+            await stopDictionaryWorker(worker);
+        }
+        assertNoBrowserErrors();
+    });
+
+    // @user-flow ai-provider-management/admin-configures-dictionary-ai-default
+    test('owner configures providers and queued jobs retain their selected revisions', async ({
+        page,
+        request,
+    }) => {
+        test.setTimeout(120_000);
+        const assertNoBrowserErrors = captureBrowserErrors(page, {
+            '/api/admin/auth/refresh': 401,
+        });
+        await passwordLogin(page);
+        await page.getByRole('menuitem', { name: 'AI settings' }).click();
+        await expect(
+            page.getByRole('heading', { name: 'AI providers' }),
+        ).toBeVisible();
+        const hasManagedRevision =
+            (await page.getByText(/Configuration version \d+/).count()) > 0;
+        if (!hasManagedRevision) {
+            await page
+                .locator('label.ant-radio-button-wrapper')
+                .filter({ hasText: 'DeepSeek' })
+                .click();
+            const deepSeekCheckbox = page.getByRole('checkbox', {
+                name: /DeepSeek Chat/,
+            });
+            await deepSeekCheckbox.evaluate((element: HTMLInputElement) =>
+                element.click(),
+            );
+            await page.getByLabel('Default model').press('ArrowDown');
+            await page.getByLabel('Default model').press('Enter');
+            await page
+                .getByLabel('Reason for change')
+                .fill('Enable curated DeepSeek dictionary generation');
+            await page
+                .getByRole('button', { name: 'Save configuration' })
+                .click();
+            await expect(
+                page.getByText(/Configuration version \d+/),
+            ).toBeVisible();
+        }
 
         const targetLogin = await request.post(
             `${backendOrigin}/auth/login/password`,
@@ -516,16 +747,23 @@ test.describe.serial('admin user management journeys', () => {
             .locator('label.ant-radio-button-wrapper')
             .filter({ hasText: 'Kie' })
             .click();
-        await page
-            .getByRole('checkbox', { name: /Gemini 2\.5 Pro via Kie/ })
-            .evaluate((element: HTMLInputElement) => element.click());
+        const kieCheckbox = page.getByRole('checkbox', {
+            name: /Gemini 2\.5 Pro via Kie/,
+        });
+        if (!(await kieCheckbox.isChecked())) {
+            await kieCheckbox.evaluate((element: HTMLInputElement) =>
+                element.click(),
+            );
+        }
         await page.getByLabel('Default model').press('ArrowDown');
         await page.getByLabel('Default model').press('Enter');
         await page
             .getByLabel('Reason for change')
             .fill('Switch new dictionary jobs to the curated Kie model');
         await page.getByRole('button', { name: 'Save configuration' }).click();
-        await expect(page.getByText('Version 2')).toBeVisible();
+        await expect(
+            page.getByText(/Configuration version \d+/i),
+        ).toBeVisible();
         const kieJobId = await enqueue(kieCard);
 
         const database = postgres(databaseUrl, { max: 1 });
@@ -596,7 +834,9 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByRole('checkbox', { name: /Gemini 2\.5 Pro via Kie/ }),
         ).toBeChecked();
-        await expect(page.getByText('Version 2')).toBeVisible();
+        await expect(
+            page.getByText(/Configuration version \d+/i),
+        ).toBeVisible();
         assertNoBrowserErrors();
     });
 

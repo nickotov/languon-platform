@@ -103,6 +103,9 @@ const RawEnvironmentSchema = z
         DICTIONARY_JOB_API_DISCARDABLE_FORMATS: z.string().default(''),
         DICTIONARY_JOB_API_ENQUEUED_FORMATS: z.string().default(''),
         DICTIONARY_JOB_API_READABLE_FORMATS: z.string().default(''),
+        DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: z
+            .enum(['true', 'false'])
+            .default('false'),
         DICTIONARY_HMAC_SECRET: DictionarySecretSchema,
         DICTIONARY_DOCUMENT_OCR_MODE: z
             .enum(['deterministic', 'unavailable'])
@@ -221,6 +224,7 @@ export type Environment = Omit<
     | 'DICTIONARY_JOB_API_DISCARDABLE_FORMATS'
     | 'DICTIONARY_JOB_API_ENQUEUED_FORMATS'
     | 'DICTIONARY_JOB_API_READABLE_FORMATS'
+    | 'DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED'
 > & {
     ADMIN_BASE_URL: string;
     AUTH_ACCESS_TOKEN_TTL: number;
@@ -237,6 +241,7 @@ export type Environment = Omit<
     DICTIONARY_JOB_API_DISCARDABLE_FORMATS: string[];
     DICTIONARY_JOB_API_ENQUEUED_FORMATS: string[];
     DICTIONARY_JOB_API_READABLE_FORMATS: string[];
+    DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: boolean;
     DICTIONARY_GENERATION_PROVIDER_BUDGET: DictionaryGenerationProviderBudgetPolicy;
     DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: boolean;
     DICTIONARY_DOCUMENT_STORAGE: DictionaryDocumentS3Environment | undefined;
@@ -387,6 +392,7 @@ export function loadEnvironment(
         DICTIONARY_JOB_API_DISCARDABLE_FORMATS: _rawDiscardableFormats,
         DICTIONARY_JOB_API_ENQUEUED_FORMATS: _rawEnqueuedFormats,
         DICTIONARY_JOB_API_READABLE_FORMATS: _rawReadableFormats,
+        DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: _rawAiCreditEnforcement,
         ...environment
     } = raw;
     const dictionaryJobCapabilities = {
@@ -473,6 +479,8 @@ export function loadEnvironment(
         DICTIONARY_JOB_API_READABLE_FORMATS: dictionaryJobCapabilities.readable,
         DICTIONARY_GENERATION_PROVIDER_BUDGET:
             dictionaryGenerationProviderBudget,
+        DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED:
+            _rawAiCreditEnforcement === 'true',
         DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: documentTermsLifecycleEnabled,
         DICTIONARY_DOCUMENT_STORAGE: dictionaryDocumentStorage,
         DICTIONARY_DOCUMENT_UPLOAD_AUTHORIZATION_ENABLED:

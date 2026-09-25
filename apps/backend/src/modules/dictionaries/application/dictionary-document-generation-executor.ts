@@ -63,6 +63,9 @@ export class DictionaryDocumentGenerationExecutor implements DictionaryGeneratio
         return this.dependencies.processor.process({
             idempotencyKey: `${request.jobId}/document`,
             input: request.input,
+            ...(request.markProviderDispatch
+                ? { markProviderDispatch: request.markProviderDispatch }
+                : {}),
             object,
             providerBudget: request.providerBudget,
             providerExecution: request.providerExecution ?? null,

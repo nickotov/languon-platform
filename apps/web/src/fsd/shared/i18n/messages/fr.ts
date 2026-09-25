@@ -1,7 +1,6 @@
 import { profileFeatureMessages, type Messages } from './en';
 
 export const fr = {
-
     'dictionary.audio.playField': 'Écouter {field}',
     'dictionary.audio.stopField': 'Arrêter {field}',
     'dictionary.audio.play': 'Écouter',
@@ -101,15 +100,19 @@ export const fr = {
     'profile.interfaceLanguage': 'Langue de l’interface',
     'profile.learningLanguage': 'Langue étudiée et niveau',
     'profile.timeZone': 'Fuseau horaire',
-    'profile.otherDetailsComingSoon': 'Le nom, la langue étudiée et le fuseau horaire arriveront bientôt. La langue de l’interface change immédiatement.',
+    'profile.otherDetailsComingSoon':
+        'Le nom, la langue étudiée et le fuseau horaire arriveront bientôt. La langue de l’interface change immédiatement.',
     'profile.handleLabel': 'Nom d’utilisateur',
-    'profile.handleHelp': 'Utilisez 3 à 30 lettres ASCII, chiffres ou traits de soulignement. Il sera enregistré en minuscules.',
+    'profile.handleHelp':
+        'Utilisez 3 à 30 lettres ASCII, chiffres ou traits de soulignement. Il sera enregistré en minuscules.',
     'profile.handlePlaceholder': 'your_handle',
     'profile.handleSave': 'Enregistrer le nom d’utilisateur',
     'profile.handleSaving': 'Enregistrement…',
     'profile.handleSaved': 'Identifiant enregistré.',
-    'profile.handleInvalid': 'Utilisez 3 à 30 lettres ASCII, chiffres ou traits de soulignement.',
-    'profile.handleConflict': 'Cet identifiant est pris ou le compte a changé. Actualisez et choisissez-en un autre.',
+    'profile.handleInvalid':
+        'Utilisez 3 à 30 lettres ASCII, chiffres ou traits de soulignement.',
+    'profile.handleConflict':
+        'Cet identifiant est pris ou le compte a changé. Actualisez et choisissez-en un autre.',
     'profile.handleError': 'Impossible d’enregistrer l’identifiant. Réessayez.',
     'profile.handleUnset': 'Aucun identifiant',
     'profile.dataTitle': 'Vos données',
@@ -128,33 +131,46 @@ export const fr = {
     'profile.deleteConfirmTitle': 'Supprimer votre compte ?',
     'profile.deleteLossTitle': 'Ce que vous perdrez',
     'profile.deleteLossAccess': 'L’accès cesse immédiatement.',
-    'profile.deleteLossData': 'Les données d’apprentissage et du compte seront effacées dans 30 jours.',
-    'profile.deleteLossRecovery': 'Seul un administrateur peut annuler avant le nettoyage.',
+    'profile.deleteLossData':
+        'Les données d’apprentissage et du compte seront effacées dans 30 jours.',
+    'profile.deleteLossRecovery':
+        'Seul un administrateur peut annuler avant le nettoyage.',
     'profile.deleteConfirmHint': 'Saisissez « DELETE » exactement.',
-    'profile.deleteAcknowledge': 'Je comprends que l’accès cesse maintenant et que les données seront effacées.',
+    'profile.deleteAcknowledge':
+        'Je comprends que l’accès cesse maintenant et que les données seront effacées.',
     'profile.deleteFailedTitle': 'Suppression non planifiée',
-    'profile.deleteConfirmDescription': 'Vous serez déconnecté et la suppression de votre compte sera planifiée. Consultez les conséquences avant de confirmer.',
+    'profile.deleteConfirmDescription':
+        'Vous serez déconnecté et la suppression de votre compte sera planifiée. Consultez les conséquences avant de confirmer.',
     'profile.deleteConfirmLabel': 'Saisissez DELETE pour confirmer',
     'profile.deleteConfirmAction': 'Planifier la suppression',
     'profile.deletePending': 'Planification…',
     'profile.deleteKeep': 'Conserver le compte',
-    'profile.deleteRecentAuth': 'Reconnectez-vous avant de supprimer votre compte.',
-    'profile.deleteOwnerTransfer': 'Transférez et révoquez vos droits d’administrateur avant la suppression.',
-    'profile.deleteConflict': 'Le compte a changé. Actualisez et confirmez à nouveau.',
-    'profile.deleteFailed': 'Impossible de confirmer la suppression. Si la connexion a été perdue, elle a pu aboutir ; actualisez ou contactez l’assistance.',
+    'profile.deleteRecentAuth':
+        'Reconnectez-vous avant de supprimer votre compte.',
+    'profile.deleteOwnerTransfer':
+        'Transférez et révoquez vos droits d’administrateur avant la suppression.',
+    'profile.deleteConflict':
+        'Le compte a changé. Actualisez et confirmez à nouveau.',
+    'profile.deleteFailed':
+        'Impossible de confirmer la suppression. Si la connexion a été perdue, elle a pu aboutir ; actualisez ou contactez l’assistance.',
     'profile.deleteScheduledTitle': 'Suppression du compte planifiée',
-    'profile.deleteScheduledDescription': 'L’accès a cessé. Les données actives seront effacées le {date}. Seul un administrateur peut restaurer avant le nettoyage.',
+    'profile.deleteScheduledDescription':
+        'L’accès a cessé. Les données actives seront effacées le {date}. Seul un administrateur peut restaurer avant le nettoyage.',
     'profile.emailTitle': 'Adresse e-mail',
     'profile.verified': 'Vérifiée',
     'profile.emailMethod': 'E-mail',
     'profile.available': 'Disponible',
-    'profile.providerComingSoon': 'La connexion de ce fournisseur arrive bientôt.',
+    'profile.providerComingSoon':
+        'La connexion de ce fournisseur arrive bientôt.',
     'profile.connectProvider': 'Connecter',
-    'profile.emailDescription': 'L’adresse principale utilisée pour se connecter.',
+    'profile.emailDescription':
+        'L’adresse principale utilisée pour se connecter.',
     'profile.primaryEmail': 'E-mail principal',
     'profile.requestEmailChange': 'Demander un changement d’adresse',
-    'profile.emailChangeComingSoon': 'Le changement par lien arrivera bientôt. Aucun e-mail n’est envoyé pour le moment.',
-    'profile.emailChangeNotSent': 'Bientôt disponible : aucun e-mail n’a été envoyé et votre adresse n’a pas changé.',
+    'profile.emailChangeComingSoon':
+        'Le changement par lien arrivera bientôt. Aucun e-mail n’est envoyé pour le moment.',
+    'profile.emailChangeNotSent':
+        'Bientôt disponible : aucun e-mail n’a été envoyé et votre adresse n’a pas changé.',
     'profile.manageSecurity': 'Gérer la sécurité',
     'profile.passwordTitle': 'Mot de passe et clés d’accès',
     'profile.passwordDescription':
@@ -176,7 +192,8 @@ export const fr = {
         'Aucun moyen de paiement enregistré. La facturation arrive bientôt.',
     'profile.addPayment': 'Ajouter un moyen de paiement',
     'profile.extraCreditsTitle': 'Crédits supplémentaires',
-    'profile.extraCreditsEmpty': 'L’achat de crédits n’est pas encore disponible.',
+    'profile.extraCreditsEmpty':
+        'L’achat de crédits n’est pas encore disponible.',
     'profile.buyCredits': 'Acheter des crédits',
     'profile.balanceTitle': 'Solde de crédits',
     'profile.balanceEmpty':
@@ -347,7 +364,8 @@ export const fr = {
     'security.addFirstPasskey': 'Ajouter votre première clé',
     'security.defaultPasskeyName': 'Clé d’accès {number}',
     'security.waitingForDevice': 'En attente de votre appareil',
-    'security.confirmDevicePrompt': 'Confirmez la demande sur votre appareil pour terminer l’ajout.',
+    'security.confirmDevicePrompt':
+        'Confirmez la demande sur votre appareil pour terminer l’ajout.',
     'security.passkeyActionFailed': 'Échec de l’action sur la clé d’accès',
     'security.passkeyAdded': 'Clé d’accès ajoutée.',
     'security.passkeyRenamed': 'Clé d’accès renommée.',
@@ -355,12 +373,17 @@ export const fr = {
     'security.loadingPasskeys': 'Chargement des clés d’accès…',
     'security.retryPasskeys': 'Réessayer le chargement des clés',
     'security.noPasskeys': 'Aucune clé d’accès pour le moment',
-    'security.passkeyEmptyHelp': 'Les clés d’accès sont le moyen le plus rapide de retrouver votre compte sans saisir de mot de passe.',
-    'security.passkeyUnavailable': 'L’ajout de clés d’accès n’est pas encore disponible pour ce compte.',
-    'security.loadingCapabilities': 'Vérification de la disponibilité des clés d’accès…',
+    'security.passkeyEmptyHelp':
+        'Les clés d’accès sont le moyen le plus rapide de retrouver votre compte sans saisir de mot de passe.',
+    'security.passkeyUnavailable':
+        'L’ajout de clés d’accès n’est pas encore disponible pour ce compte.',
+    'security.loadingCapabilities':
+        'Vérification de la disponibilité des clés d’accès…',
     'security.revokePasskeyTitle': 'Révoquer cette clé d’accès ?',
-    'security.revokePasskeyDescription': '{name} cessera de fonctionner immédiatement. Vous pourrez l’ajouter à nouveau plus tard.',
-    'security.revokePasskeyFallback': 'Vérifiez que vous pouvez toujours vous connecter avec votre e-mail et votre mot de passe avant de révoquer cette clé.',
+    'security.revokePasskeyDescription':
+        '{name} cessera de fonctionner immédiatement. Vous pourrez l’ajouter à nouveau plus tard.',
+    'security.revokePasskeyFallback':
+        'Vérifiez que vous pouvez toujours vous connecter avec votre e-mail et votre mot de passe avant de révoquer cette clé.',
     'security.renamePasskeyTitle': 'Renommer la clé d’accès',
     'security.keepPasskey': 'Garder la clé',
     'security.revokePasskey': 'Révoquer la clé',
@@ -682,6 +705,8 @@ export const fr = {
     'dictionary.generation.state.failed': 'La génération n’a pas pu aboutir.',
     'dictionary.generation.error.unavailable':
         'La régénération par IA est indisponible pour le moment.',
+    'dictionary.generation.error.creditsExhausted':
+        'Vous n’avez pas assez de crédits d’IA pour cette génération.',
     'dictionary.generation.error.notFound':
         'Cette tâche de génération n’est plus disponible.',
     'dictionary.generation.error.notReviewable':

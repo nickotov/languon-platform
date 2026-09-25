@@ -1,7 +1,6 @@
 import { profileFeatureMessages, type Messages } from './en';
 
 export const es = {
-
     'dictionary.audio.playField': 'Escuchar {field}',
     'dictionary.audio.stopField': 'Detener {field}',
     'dictionary.audio.play': 'Escuchar',
@@ -100,16 +99,21 @@ export const es = {
     'profile.interfaceLanguage': 'Idioma de la interfaz',
     'profile.learningLanguage': 'Idioma de estudio y nivel',
     'profile.timeZone': 'Zona horaria',
-    'profile.otherDetailsComingSoon': 'El nombre, idioma de estudio y zona horaria estarán disponibles pronto. El idioma de la interfaz cambia de inmediato.',
+    'profile.otherDetailsComingSoon':
+        'El nombre, idioma de estudio y zona horaria estarán disponibles pronto. El idioma de la interfaz cambia de inmediato.',
     'profile.handleLabel': 'Nombre de usuario',
-    'profile.handleHelp': 'Usa de 3 a 30 letras ASCII, números o guiones bajos. Se guardará en minúsculas.',
+    'profile.handleHelp':
+        'Usa de 3 a 30 letras ASCII, números o guiones bajos. Se guardará en minúsculas.',
     'profile.handlePlaceholder': 'your_handle',
     'profile.handleSave': 'Guardar nombre de usuario',
     'profile.handleSaving': 'Guardando…',
     'profile.handleSaved': 'Identificador guardado.',
-    'profile.handleInvalid': 'Usa de 3 a 30 letras ASCII, números o guiones bajos.',
-    'profile.handleConflict': 'El identificador está ocupado o la cuenta cambió. Actualiza y elige otro.',
-    'profile.handleError': 'No se pudo guardar el identificador. Inténtalo de nuevo.',
+    'profile.handleInvalid':
+        'Usa de 3 a 30 letras ASCII, números o guiones bajos.',
+    'profile.handleConflict':
+        'El identificador está ocupado o la cuenta cambió. Actualiza y elige otro.',
+    'profile.handleError':
+        'No se pudo guardar el identificador. Inténtalo de nuevo.',
     'profile.handleUnset': 'Sin identificador',
     'profile.dataTitle': 'Tus datos',
     'profile.dataDescription':
@@ -127,33 +131,45 @@ export const es = {
     'profile.deleteConfirmTitle': '¿Eliminar tu cuenta?',
     'profile.deleteLossTitle': 'Lo que perderás',
     'profile.deleteLossAccess': 'El acceso termina de inmediato.',
-    'profile.deleteLossData': 'Los datos de estudio y cuenta se borrarán en 30 días.',
-    'profile.deleteLossRecovery': 'Solo un administrador puede cancelar antes de la limpieza.',
+    'profile.deleteLossData':
+        'Los datos de estudio y cuenta se borrarán en 30 días.',
+    'profile.deleteLossRecovery':
+        'Solo un administrador puede cancelar antes de la limpieza.',
     'profile.deleteConfirmHint': 'Escribe «DELETE» exactamente.',
-    'profile.deleteAcknowledge': 'Entiendo que el acceso termina ahora y luego se borrarán los datos.',
+    'profile.deleteAcknowledge':
+        'Entiendo que el acceso termina ahora y luego se borrarán los datos.',
     'profile.deleteFailedTitle': 'Eliminación no programada',
-    'profile.deleteConfirmDescription': 'Se cerrará tu sesión y se programará la eliminación de tu cuenta. Revisa las consecuencias antes de confirmar.',
+    'profile.deleteConfirmDescription':
+        'Se cerrará tu sesión y se programará la eliminación de tu cuenta. Revisa las consecuencias antes de confirmar.',
     'profile.deleteConfirmLabel': 'Escribe DELETE para confirmar',
     'profile.deleteConfirmAction': 'Programar eliminación',
     'profile.deletePending': 'Programando…',
     'profile.deleteKeep': 'Conservar cuenta',
-    'profile.deleteRecentAuth': 'Vuelve a iniciar sesión antes de eliminar tu cuenta.',
-    'profile.deleteOwnerTransfer': 'Transfiere y revoca tus permisos de administrador antes de eliminar la cuenta.',
-    'profile.deleteConflict': 'La cuenta cambió. Actualiza y confirma de nuevo.',
-    'profile.deleteFailed': 'No se pudo confirmar la eliminación. Si se perdió la conexión, puede haberse completado; actualiza o contacta con soporte.',
+    'profile.deleteRecentAuth':
+        'Vuelve a iniciar sesión antes de eliminar tu cuenta.',
+    'profile.deleteOwnerTransfer':
+        'Transfiere y revoca tus permisos de administrador antes de eliminar la cuenta.',
+    'profile.deleteConflict':
+        'La cuenta cambió. Actualiza y confirma de nuevo.',
+    'profile.deleteFailed':
+        'No se pudo confirmar la eliminación. Si se perdió la conexión, puede haberse completado; actualiza o contacta con soporte.',
     'profile.deleteScheduledTitle': 'Eliminación programada',
-    'profile.deleteScheduledDescription': 'El acceso terminó. Los datos activos se borrarán el {date}. Solo un administrador puede restaurar antes de la limpieza.',
+    'profile.deleteScheduledDescription':
+        'El acceso terminó. Los datos activos se borrarán el {date}. Solo un administrador puede restaurar antes de la limpieza.',
     'profile.emailTitle': 'Correo electrónico',
     'profile.verified': 'Verificado',
     'profile.emailMethod': 'Correo electrónico',
     'profile.available': 'Disponible',
-    'profile.providerComingSoon': 'La conexión con este proveedor estará disponible pronto.',
+    'profile.providerComingSoon':
+        'La conexión con este proveedor estará disponible pronto.',
     'profile.connectProvider': 'Conectar',
     'profile.emailDescription': 'La dirección principal utilizada para entrar.',
     'profile.primaryEmail': 'Correo principal',
     'profile.requestEmailChange': 'Solicitar cambio de correo',
-    'profile.emailChangeComingSoon': 'El cambio por enlace llegará pronto. Todavía no se envía ningún correo.',
-    'profile.emailChangeNotSent': 'Próximamente: no se envió ningún correo ni se cambió la dirección.',
+    'profile.emailChangeComingSoon':
+        'El cambio por enlace llegará pronto. Todavía no se envía ningún correo.',
+    'profile.emailChangeNotSent':
+        'Próximamente: no se envió ningún correo ni se cambió la dirección.',
     'profile.manageSecurity': 'Gestionar seguridad',
     'profile.passwordTitle': 'Contraseña y llaves de acceso',
     'profile.passwordDescription':
@@ -175,7 +191,8 @@ export const es = {
         'No hay método de pago guardado. La facturación llegará pronto.',
     'profile.addPayment': 'Añadir método de pago',
     'profile.extraCreditsTitle': 'Créditos extra',
-    'profile.extraCreditsEmpty': 'La compra de créditos aún no está disponible.',
+    'profile.extraCreditsEmpty':
+        'La compra de créditos aún no está disponible.',
     'profile.buyCredits': 'Comprar créditos',
     'profile.balanceTitle': 'Saldo de créditos',
     'profile.balanceEmpty':
@@ -345,7 +362,8 @@ export const es = {
     'security.addFirstPasskey': 'Añadir tu primera llave',
     'security.defaultPasskeyName': 'Llave de acceso {number}',
     'security.waitingForDevice': 'Esperando a tu dispositivo',
-    'security.confirmDevicePrompt': 'Confirma la solicitud en tu dispositivo para terminar de añadir la llave.',
+    'security.confirmDevicePrompt':
+        'Confirma la solicitud en tu dispositivo para terminar de añadir la llave.',
     'security.passkeyActionFailed': 'No se pudo completar la acción',
     'security.passkeyAdded': 'Llave de acceso añadida.',
     'security.passkeyRenamed': 'Llave de acceso renombrada.',
@@ -353,12 +371,17 @@ export const es = {
     'security.loadingPasskeys': 'Cargando llaves…',
     'security.retryPasskeys': 'Reintentar la carga de llaves',
     'security.noPasskeys': 'Aún no hay llaves de acceso',
-    'security.passkeyEmptyHelp': 'Las llaves de acceso son la forma más rápida de volver a tu cuenta sin escribir una contraseña.',
-    'security.passkeyUnavailable': 'Todavía no se pueden añadir llaves de acceso en esta cuenta.',
-    'security.loadingCapabilities': 'Comprobando disponibilidad de llaves de acceso…',
+    'security.passkeyEmptyHelp':
+        'Las llaves de acceso son la forma más rápida de volver a tu cuenta sin escribir una contraseña.',
+    'security.passkeyUnavailable':
+        'Todavía no se pueden añadir llaves de acceso en esta cuenta.',
+    'security.loadingCapabilities':
+        'Comprobando disponibilidad de llaves de acceso…',
     'security.revokePasskeyTitle': '¿Revocar esta llave de acceso?',
-    'security.revokePasskeyDescription': '{name} dejará de funcionar de inmediato. Puedes añadirla de nuevo más adelante.',
-    'security.revokePasskeyFallback': 'Comprueba que todavía puedes entrar con tu correo y contraseña antes de revocar esta llave.',
+    'security.revokePasskeyDescription':
+        '{name} dejará de funcionar de inmediato. Puedes añadirla de nuevo más adelante.',
+    'security.revokePasskeyFallback':
+        'Comprueba que todavía puedes entrar con tu correo y contraseña antes de revocar esta llave.',
     'security.renamePasskeyTitle': 'Cambiar nombre de la llave',
     'security.keepPasskey': 'Conservar llave',
     'security.revokePasskey': 'Revocar llave',
@@ -677,6 +700,8 @@ export const es = {
     'dictionary.generation.state.failed': 'La generación no pudo finalizar.',
     'dictionary.generation.error.unavailable':
         'La regeneración con IA no está disponible ahora.',
+    'dictionary.generation.error.creditsExhausted':
+        'No tienes suficientes créditos de IA para esta generación.',
     'dictionary.generation.error.notFound':
         'Este trabajo de generación ya no está disponible.',
     'dictionary.generation.error.notReviewable':

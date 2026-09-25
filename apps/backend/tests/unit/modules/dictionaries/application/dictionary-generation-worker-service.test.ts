@@ -127,6 +127,7 @@ function store(overrides: Partial<DictionaryGenerationStore> = {}) {
         expireReviewPayloads: vi.fn(async () => 0),
         fail: vi.fn(async () => true),
         heartbeat: vi.fn(async () => true),
+        markProviderDispatch: vi.fn(async () => true),
         readiness: vi.fn(async () => undefined),
         releaseWorkerLeases: vi.fn(async () => undefined),
         ...overrides,
@@ -621,6 +622,36 @@ describe('DictionaryGenerationWorkerService', () => {
         controller.abort(new Error('shutdown'));
 
         await expect(processing).resolves.toBe(true);
+        expect(generationStore.fail).not.toHaveBeenCalled();
+    });
+
+    it('does not invoke the provider after the dispatch fence is lost', async () => {
+        const generate = vi.fn(async () => proposal);
+        const generationStore = store({
+            markProviderDispatch: vi.fn(async () => false),
+        });
+        const service = new DictionaryGenerationWorkerService(
+            {
+                clock: { now: () => new Date('2026-08-21T12:00:00.000Z') },
+                provider: { generate },
+                store: generationStore,
+            },
+            {
+                heartbeatIntervalMs: 10,
+                leaseDurationMs: 100,
+                providerTimeoutMs: 50,
+            },
+        );
+
+        await expect(
+            service.processNext({
+                signal: new AbortController().signal,
+                supportedFormats: [dictionaryGenerationFormat],
+                workerId: 'worker-a',
+            }),
+        ).resolves.toBe(true);
+        expect(generate).not.toHaveBeenCalled();
+        expect(generationStore.complete).not.toHaveBeenCalled();
         expect(generationStore.fail).not.toHaveBeenCalled();
     });
 

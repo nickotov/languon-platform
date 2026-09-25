@@ -57,6 +57,7 @@
         "test:document-services": "node --test infra/test/document-services.test.mjs",
         "test:e2e:admin-user-management": "node scripts/run-admin-user-management-e2e.mjs",
         "test:e2e:ai-provider-management": "pnpm --filter @languon/admin exec playwright test tests/e2e/admin-user-management.journeys.spec.ts --grep \"owner configures providers\"",
+        "test:e2e:ai-credit-wallet": "pnpm turbo run build --filter=@languon/contracts --filter=@languon/database --filter=@languon/languages --filter=@languon/prompts && DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED=true pnpm --filter @languon/admin exec playwright test tests/e2e/admin-user-management.journeys.spec.ts --grep \"owner grants AI credits\"",
         "test:frontend-architecture": "node --test scripts/eslint-fsd-boundaries.test.mjs",
         "test:mastra-harness": "node --test scripts/dev-mastra.test.mjs",
         "test:release-deployment": "node --test infra/backup/backup.test.mjs infra/deploy/tests/*.test.mjs scripts/migration-classification.test.mjs scripts/release-manifest.test.mjs scripts/release-workflow-contract.test.mjs scripts/resources/resources.test.mjs",

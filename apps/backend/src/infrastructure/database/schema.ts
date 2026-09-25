@@ -26,6 +26,20 @@ export {
     adminMembershipsTable,
 } from '../../modules/administration/infrastructure/persistence/drizzle/schema';
 export {
+    aiCreditAccountsTable,
+    aiCreditAdminRemovalAllocationsTable,
+    aiCreditAdminRemovalsTable,
+    aiCreditGrantSourceEnum,
+    aiCreditGrantsTable,
+    aiCreditHistoryKindEnum,
+    aiCreditHistoryTable,
+    aiCreditMeasurementEnum,
+    aiCreditPolicyModeEnum,
+    aiCreditReservationAllocationsTable,
+    aiCreditReservationsTable,
+    aiCreditReservationStateEnum,
+} from '../../modules/ai-credits/infrastructure/persistence/drizzle/schema';
+export {
     dictionariesTable,
     dictionaryCardAuthorshipEnum,
     dictionaryCardMutationKindEnum,
@@ -57,6 +71,15 @@ import {
     adminAuditEventsTable,
     adminMembershipsTable,
 } from '../../modules/administration/infrastructure/persistence/drizzle/schema';
+import {
+    aiCreditAccountsTable,
+    aiCreditAdminRemovalAllocationsTable,
+    aiCreditAdminRemovalsTable,
+    aiCreditGrantsTable,
+    aiCreditHistoryTable,
+    aiCreditReservationAllocationsTable,
+    aiCreditReservationsTable,
+} from '../../modules/ai-credits/infrastructure/persistence/drizzle/schema';
 
 import {
     authPasskeysTable,
@@ -102,6 +125,13 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
 
 export const databaseSchema = {
+    aiCreditAccounts: aiCreditAccountsTable,
+    aiCreditAdminRemovalAllocations: aiCreditAdminRemovalAllocationsTable,
+    aiCreditAdminRemovals: aiCreditAdminRemovalsTable,
+    aiCreditGrants: aiCreditGrantsTable,
+    aiCreditHistory: aiCreditHistoryTable,
+    aiCreditReservationAllocations: aiCreditReservationAllocationsTable,
+    aiCreditReservations: aiCreditReservationsTable,
     dictionaryAudioAssets: dictionaryAudioAssetsTable,
     dictionaryAudioJobs: dictionaryAudioJobsTable,
     dictionaryAudioBindings: dictionaryAudioBindingsTable,

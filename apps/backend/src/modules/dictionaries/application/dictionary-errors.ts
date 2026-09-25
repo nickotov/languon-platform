@@ -93,6 +93,13 @@ export class DictionaryGenerationNotAvailableError extends Error {
     }
 }
 
+export class DictionaryAiCreditsExhaustedError extends Error {
+    public constructor() {
+        super('The AI credit balance is insufficient for this generation.');
+        this.name = 'DictionaryAiCreditsExhaustedError';
+    }
+}
+
 export class DictionaryGenerationNotReviewableError extends Error {
     public constructor() {
         super('The dictionary generation proposal is not reviewable.');

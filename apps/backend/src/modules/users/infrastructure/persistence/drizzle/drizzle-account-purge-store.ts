@@ -2,6 +2,7 @@ import { and, eq, gt, inArray, lte, or, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import {
     dictionaryAudioAssetsTable,
     dictionaryAudioBindingsTable,
@@ -353,6 +354,9 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await tx
                 .delete(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.ownerId, input.userId));
+            await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
+                input.userId,
+            );
             await tx
                 .delete(dictionaryIdempotencyKeysTable)
                 .where(

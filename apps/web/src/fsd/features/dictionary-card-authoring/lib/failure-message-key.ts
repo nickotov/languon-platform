@@ -10,6 +10,8 @@ export function cardAuthoringFailureMessageKey(
     code: AuthoringFailureCode | null | undefined,
 ): MessageKey {
     switch (code) {
+        case 'ai_credits_exhausted':
+            return 'dictionary.generation.error.creditsExhausted';
         case 'provider_rate_limited':
             return 'dictionary.authoring.rateLimited';
         case 'provider_unavailable':

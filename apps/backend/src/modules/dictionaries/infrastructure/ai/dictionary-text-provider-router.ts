@@ -1,5 +1,8 @@
 import type { DictionaryAiExecutionSnapshot } from '../../application/dictionary-ai-provider-catalog';
-import { findDictionaryAiModel } from '../../application/dictionary-ai-provider-catalog';
+import {
+    dictionaryAiCreditPricingMatches,
+    findDictionaryAiModel,
+} from '../../application/dictionary-ai-provider-catalog';
 import type { CardAuthoringProposalGenerator } from '../../application/ports/card-authoring-proposal-generator';
 import type { CardProposalGenerator } from '../../application/ports/card-proposal-generator';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../application/ports/dictionary-generation-provider-policy';
@@ -200,6 +203,11 @@ function validateExecutionSnapshot(
         snapshot.perCallMaxOutputTokens !== model.perCallMaxOutputTokens ||
         !snapshot.enabledModelIds.includes(snapshot.modelId) ||
         !sameStringSet(snapshot.supportedFormats, model.supportedFormats) ||
+        (snapshot.creditPricing !== undefined &&
+            !dictionaryAiCreditPricingMatches(
+                snapshot.creditPricing,
+                model.creditPricing,
+            )) ||
         !sameBudget(snapshot.aggregateBudget, budget)
     )
         throw new Error(
@@ -240,6 +248,7 @@ function stableSnapshotKey(snapshot: DictionaryAiExecutionSnapshot): string {
         adapterRevision: snapshot.adapterRevision,
         aggregateBudget: snapshot.aggregateBudget,
         credentialReference: snapshot.credentialReference,
+        creditPricing: snapshot.creditPricing,
         modelId: snapshot.modelId,
         perCallMaxInputTokens: snapshot.perCallMaxInputTokens,
         perCallMaxOutputTokens: snapshot.perCallMaxOutputTokens,

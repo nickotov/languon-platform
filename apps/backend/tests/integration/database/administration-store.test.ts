@@ -30,6 +30,7 @@ import {
     adminMembershipsTable,
 } from '../../../src/modules/administration/infrastructure/persistence/drizzle/schema';
 import { authSessionsTable } from '../../../src/modules/authentication/infrastructure/persistence/drizzle/schema';
+import { aiCreditGrantsTable } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
 import {
     userEmailsTable,
     usersTable,
@@ -664,6 +665,108 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
         });
 
+        it('atomically manages AI credit policy and grants with optimistic versions', async () => {
+            const { database, store } = await seed();
+            const policy = await store.updateAiCreditPolicy({
+                ...creditMutation(
+                    '0198c305-06db-7ed2-a917-ac60af3c5ea0',
+                    '0198c305-3f0d-7279-bfc6-1de92e25a20c',
+                    0,
+                ),
+                mode: 'unlimited',
+                unlimitedUntil: null,
+            });
+            expect(policy).toMatchObject({
+                ok: true,
+                response: {
+                    account: {
+                        configuredMode: 'unlimited',
+                        effectiveMode: 'unlimited',
+                        managementVersion: 1,
+                    },
+                },
+            });
+
+            const adjustment = await store.adjustAiCredits({
+                ...creditMutation(
+                    '0198c305-6e90-7caa-a0ce-93e7faf1405f',
+                    '0198c305-9c28-7d02-81d4-1ea13de886a8',
+                    1,
+                ),
+                amountCredits: 500,
+                expiresAt: null,
+            });
+            expect(adjustment).toMatchObject({
+                ok: true,
+                response: {
+                    account: {
+                        availableCredits: 500,
+                        managementVersion: 2,
+                    },
+                },
+            });
+            expect(
+                await database.select().from(aiCreditGrantsTable),
+            ).toHaveLength(1);
+            expect(
+                await database
+                    .select()
+                    .from(adminAuditEventsTable)
+                    .where(
+                        eq(adminAuditEventsTable.action, 'ai_credits_adjusted'),
+                    ),
+            ).toMatchObject([
+                {
+                    afterVersion: 2,
+                    beforeVersion: 1,
+                    outcome: 'success',
+                    targetUserId: targetId,
+                },
+            ]);
+        });
+
+        it('commits the rejection audit while leaving a stale credit mutation unchanged', async () => {
+            const { database, store } = await seed();
+            await store.adjustAiCredits({
+                ...creditMutation(
+                    '0198c306-06db-7ed2-a917-ac60af3c5ea0',
+                    '0198c306-3f0d-7279-bfc6-1de92e25a20c',
+                    0,
+                ),
+                amountCredits: 500,
+                expiresAt: null,
+            });
+
+            const rejected = await store.adjustAiCredits({
+                ...creditMutation(
+                    '0198c306-6e90-7caa-a0ce-93e7faf1405f',
+                    '0198c306-9c28-7d02-81d4-1ea13de886a8',
+                    0,
+                ),
+                amountCredits: 250,
+                expiresAt: null,
+            });
+
+            expect(rejected).toEqual({
+                ok: false,
+                rejection: 'account_conflict',
+            });
+            expect(
+                await database.select().from(aiCreditGrantsTable),
+            ).toHaveLength(1);
+            const events = await database
+                .select()
+                .from(adminAuditEventsTable)
+                .where(eq(adminAuditEventsTable.action, 'ai_credits_adjusted'));
+            expect(events).toHaveLength(2);
+            expect(events).toContainEqual(
+                expect.objectContaining({
+                    outcome: 'rejected',
+                    targetUserId: targetId,
+                }),
+            );
+        });
+
         it('guards the last owner and records retention pruning', async () => {
             const { database, operator } = await seed();
             await operator.grant({
@@ -883,5 +986,25 @@ function mutation(
         expectedVersion,
         reason,
         targetUserId,
+    };
+}
+
+function creditMutation(
+    correlationId: string,
+    auditId: string,
+    expectedVersion: number,
+) {
+    return {
+        actorSessionId: '0198c302-93c8-7536-a0e5-055605f614db',
+        actorUserId: ownerId,
+        audit: {
+            correlationId,
+            expiresAt: new Date('2027-08-20T09:00:00.000Z'),
+            id: auditId,
+            occurredAt: now,
+        },
+        expectedVersion,
+        reason: 'Support approved this AI credit change',
+        targetUserId: targetId,
     };
 }

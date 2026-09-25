@@ -6,6 +6,7 @@ export const DictionaryErrorCodeSchema = z.enum([
     'card_not_found',
     'generation_job_not_found',
     'generation_not_available',
+    'ai_credits_exhausted',
     'generation_not_reviewable',
     'generation_proposal_expired',
     'generation_candidate_conflict',

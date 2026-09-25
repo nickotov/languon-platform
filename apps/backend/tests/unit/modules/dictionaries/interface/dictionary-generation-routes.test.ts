@@ -6,6 +6,26 @@ import { dictionaryPastedTermsGenerationFormat } from '../../../../../src/module
 import { createDictionaryGenerationRoutes } from '../../../../../src/modules/dictionaries/interface/http/dictionary-generation.routes';
 
 describe('dictionary generation HTTP routes', () => {
+    it('publishes credit exhaustion in the OpenAPI contract', () => {
+        const routes = createDictionaryGenerationRoutes({
+            policy: new AuthHttpPolicy({
+                allowedOrigins: ['http://localhost:3333'],
+                appEnvironment: 'test',
+                refreshTokenTtlSeconds: 3_600,
+            }),
+            service: {} as never,
+        });
+        const document = routes.getOpenAPIDocument({
+            info: { title: 'Dictionary generation routes', version: '1' },
+            openapi: '3.1.0',
+        });
+        expect(
+            document.paths?.[
+                '/dictionaries/{dictionaryId}/card-authoring-generations'
+            ]?.post?.responses?.['402'],
+        ).toBeDefined();
+    });
+
     it('validates and dispatches cardless authoring enqueue', async () => {
         const enqueueCardAuthoring = vi.fn(async () => ({
             cancellationRequested: false,

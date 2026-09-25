@@ -231,6 +231,12 @@ describe('admin API boundary', () => {
                     label: 'DeepSeek',
                     models: [
                         {
+                            creditPricing: {
+                                inputCreditsPerMillionTokens: 1_000_000,
+                                maxCreditsPerAttempt: 400_000,
+                                outputCreditsPerMillionTokens: 3_000_000,
+                                revision: 1,
+                            },
                             id: 'deepseek-chat',
                             label: 'DeepSeek Chat',
                             available: true,
@@ -282,6 +288,47 @@ describe('admin API boundary', () => {
         });
     });
 
+    it('loads and mutates a versioned user AI credit account', async () => {
+        const response = aiCreditsResponse();
+        const fetchMock = vi
+            .fn()
+            .mockImplementation(async () => jsonResponse(response));
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set('admin-access-token');
+        const userId = '0198c600-52bb-7e53-8ac3-3102668e32ab';
+
+        await expect(
+            adminApi.aiCredits(userId, { page: 2, pageSize: 10 }),
+        ).resolves.toEqual(response);
+        await adminApi.updateAiCreditPolicy(userId, {
+            expectedVersion: 3,
+            mode: 'unlimited',
+            reason: 'Approved support exception',
+            unlimitedUntil: null,
+        });
+        await adminApi.adjustAiCredits(userId, {
+            amountCredits: -250,
+            expectedVersion: 3,
+            expiresAt: null,
+            reason: 'Correct duplicate support grant',
+        });
+
+        expect(String(fetchMock.mock.calls[0]?.[0])).toMatch(
+            /\/admin\/users\/[^/]+\/ai-credits\?page=2&pageSize=10$/,
+        );
+        expect(fetchMock.mock.calls[1]?.[1]).toEqual(
+            expect.objectContaining({ method: 'PATCH' }),
+        );
+        const adjustmentRequest = fetchMock.mock.calls[2]?.[1] as RequestInit;
+        expect(adjustmentRequest.method).toBe('POST');
+        expect(JSON.parse(String(adjustmentRequest.body))).toEqual({
+            amountCredits: -250,
+            expectedVersion: 3,
+            expiresAt: null,
+            reason: 'Correct duplicate support grant',
+        });
+    });
+
     it('keeps an active in-memory session available during a transient network failure', async () => {
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
         accessTokenStore.set('aaa.bbb.ccc');
@@ -299,6 +346,27 @@ function jsonResponse(body: unknown, status = 200) {
         headers: { 'Content-Type': 'application/json' },
         status,
     });
+}
+
+function aiCreditsResponse() {
+    return {
+        account: {
+            availableCredits: 2_000,
+            configuredMode: 'limited',
+            effectiveMode: 'limited',
+            enforcementEnabled: true,
+            lifetimeConsumedCredits: 750,
+            managementVersion: 3,
+            nextExpirationAt: null,
+            reservedCredits: 250,
+            unlimitedUntil: null,
+            userId: '0198c600-52bb-7e53-8ac3-3102668e32ab',
+        },
+        history: [],
+        page: 1,
+        pageSize: 10,
+        total: 0,
+    };
 }
 
 function authenticationResponse() {

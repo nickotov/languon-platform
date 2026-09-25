@@ -907,7 +907,10 @@
         {
             "batchEligible": true,
             "category": "Tests",
-            "conflictsWith": ["test:e2e:ai-provider-management"],
+            "conflictsWith": [
+                "test:e2e:ai-credit-wallet",
+                "test:e2e:ai-provider-management"
+            ],
             "description": "Runs the administration user-management end-to-end journey.",
             "disabledReason": null,
             "enabled": true,
@@ -922,9 +925,32 @@
             "title": "Test · E2e · Admin User Management"
         },
         {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [
+                "test:e2e:admin-user-management",
+                "test:e2e:ai-provider-management"
+            ],
+            "description": "Runs the administration AI-credit wallet end-to-end journey.",
+            "disabledReason": null,
+            "enabled": true,
+            "id": "test:e2e:ai-credit-wallet",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:91a3898d7baab70be6ffe7cfb510eac83fe847cb1fcd3e1e8171f8700d7ccf84",
+                "script": "test:e2e:ai-credit-wallet",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Ai Credit Wallet"
+        },
+        {
             "batchEligible": true,
             "category": "Tests",
-            "conflictsWith": ["test:e2e:admin-user-management"],
+            "conflictsWith": [
+                "test:e2e:admin-user-management",
+                "test:e2e:ai-credit-wallet"
+            ],
             "description": "Runs the administration AI-provider management end-to-end journey.",
             "disabledReason": null,
             "enabled": true,

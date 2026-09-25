@@ -1,6 +1,9 @@
 import { BrowserApiError, createBrowserApiClient } from '@languon/browser-auth';
 import {
     AdminAuditEventsResponseSchema,
+    AdminAiCreditAdjustmentRequestSchema,
+    AdminAiCreditPolicyMutationRequestSchema,
+    AdminAiCreditsResponseSchema,
     AdminAiSettingsMutationRequestSchema,
     AdminAiSettingsMutationResponseSchema,
     AdminAiSettingsResponseSchema,
@@ -21,6 +24,9 @@ import {
     PasswordLoginResponseSchema,
     RefreshRequestSchema,
     type AdminAuditEventsQuery,
+    type AdminAiCreditAdjustmentRequest,
+    type AdminAiCreditPolicyMutationRequest,
+    type AdminAiCreditsQuery,
     type AdminAiSettingsMutationRequest,
     type AdminErrorResponse,
     type AdminUserStatusMutationRequest,
@@ -174,6 +180,42 @@ export const adminApi = {
         authorized(
             `/admin/users/${encodeURIComponent(userId)}`,
             AdminUserResponseSchema,
+            signal,
+        ),
+    aiCredits: (
+        userId: string,
+        query: AdminAiCreditsQuery,
+        signal?: AbortSignal,
+    ) =>
+        authorized(
+            `/admin/users/${encodeURIComponent(userId)}/ai-credits?${queryString(query)}`,
+            AdminAiCreditsResponseSchema,
+            signal,
+        ),
+    updateAiCreditPolicy: (
+        userId: string,
+        body: AdminAiCreditPolicyMutationRequest,
+        signal?: AbortSignal,
+    ) =>
+        authorizedRequest(
+            `/admin/users/${encodeURIComponent(userId)}/ai-credits/policy`,
+            body,
+            AdminAiCreditPolicyMutationRequestSchema,
+            AdminAiCreditsResponseSchema,
+            'PATCH',
+            signal,
+        ),
+    adjustAiCredits: (
+        userId: string,
+        body: AdminAiCreditAdjustmentRequest,
+        signal?: AbortSignal,
+    ) =>
+        authorizedRequest(
+            `/admin/users/${encodeURIComponent(userId)}/ai-credits/adjustments`,
+            body,
+            AdminAiCreditAdjustmentRequestSchema,
+            AdminAiCreditsResponseSchema,
+            'POST',
             signal,
         ),
     mutateUser: (

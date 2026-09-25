@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AdministrationService } from '../../../../../../src/modules/administration/application/administration-service';
 import {
     AdminAccessDeniedError,
+    AdminAiCreditAccountConflictError,
     AdminAiSettingsConflictError,
     AdminCancellationJournalUnavailableError,
 } from '../../../../../../src/modules/administration/application/administration-errors';
@@ -40,6 +41,8 @@ function authenticatedResponse() {
 
 function setup(options: { denyMembership?: boolean } = {}) {
     const administration = {
+        adjustAiCredits: vi.fn().mockResolvedValue(creditResponse()),
+        aiCredits: vi.fn().mockResolvedValue(creditResponse()),
         assertActiveMembership: options.denyMembership
             ? vi.fn().mockRejectedValue(new AdminAccessDeniedError())
             : vi.fn().mockResolvedValue({ role: 'owner' }),
@@ -68,6 +71,7 @@ function setup(options: { denyMembership?: boolean } = {}) {
                 version: 1,
             },
         }),
+        updateAiCreditPolicy: vi.fn().mockResolvedValue(creditResponse()),
         dashboard: vi.fn(),
         cancelUserDeletion: vi.fn().mockResolvedValue({
             activeSessionCount: 0,
@@ -183,6 +187,70 @@ describe('administration routes', () => {
             'header.payload.signature',
             { page: 2, pageSize: 10 },
         );
+    });
+
+    it('validates and routes AI credit reads and mutations', async () => {
+        const { administration, app } = setup();
+        const authorization = 'Bearer header.payload.signature';
+        const read = await app.request(
+            `/admin/users/${userId}/ai-credits?page=2&pageSize=10`,
+            { headers: { Authorization: authorization } },
+        );
+        expect(read.status).toBe(200);
+        expect(administration.aiCredits).toHaveBeenCalledWith(
+            'header.payload.signature',
+            userId,
+            { page: 2, pageSize: 10 },
+        );
+
+        const policy = {
+            expectedVersion: 0,
+            mode: 'unlimited',
+            reason: 'Support approved unlimited model access',
+            unlimitedUntil: null,
+        };
+        const updated = await app.request(
+            `/admin/users/${userId}/ai-credits/policy`,
+            {
+                body: JSON.stringify(policy),
+                headers: {
+                    Authorization: authorization,
+                    'Content-Type': 'application/json',
+                },
+                method: 'PATCH',
+            },
+        );
+        expect(updated.status).toBe(200);
+        expect(administration.updateAiCreditPolicy).toHaveBeenCalledWith(
+            'header.payload.signature',
+            userId,
+            policy,
+            expect.any(String),
+        );
+
+        vi.mocked(administration.adjustAiCredits).mockRejectedValue(
+            new AdminAiCreditAccountConflictError(),
+        );
+        const conflict = await app.request(
+            `/admin/users/${userId}/ai-credits/adjustments`,
+            {
+                body: JSON.stringify({
+                    amountCredits: 250,
+                    expectedVersion: 0,
+                    expiresAt: null,
+                    reason: 'Support approved a manual token grant',
+                }),
+                headers: {
+                    Authorization: authorization,
+                    'Content-Type': 'application/json',
+                },
+                method: 'POST',
+            },
+        );
+        expect(conflict.status).toBe(409);
+        expect(await conflict.json()).toMatchObject({
+            error: { code: 'ai_credit_account_conflict' },
+        });
     });
 
     it('validates, routes, and maps conflicts for AI settings mutations', async () => {
@@ -339,3 +407,24 @@ describe('administration routes', () => {
         expect(response.status).toBe(403);
     });
 });
+
+function creditResponse() {
+    return {
+        account: {
+            availableCredits: 0,
+            configuredMode: 'limited',
+            effectiveMode: 'limited',
+            enforcementEnabled: false,
+            lifetimeConsumedCredits: 0,
+            managementVersion: 0,
+            nextExpirationAt: null,
+            reservedCredits: 0,
+            unlimitedUntil: null,
+            userId,
+        },
+        history: [],
+        page: 1,
+        pageSize: 25,
+        total: 0,
+    };
+}

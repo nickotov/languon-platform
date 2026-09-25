@@ -258,6 +258,38 @@ run('dictionary worker version overlap', () => {
         warnings: [],
     };
 
+    it('does not let a worker without credit settlement capability claim a credited job', async () => {
+        const seeded = await seedCard();
+        const job = await enqueue(seeded);
+        await database
+            .update(dictionaryGenerationJobsTable)
+            .set({
+                aiCreditAccounted: true,
+                aiCreditInputCreditsPerMillionTokens: 1_000_000,
+                aiCreditMaxCreditsPerAttempt: 400_000,
+                aiCreditOutputCreditsPerMillionTokens: 3_000_000,
+                aiCreditPricingRevision: 1,
+            })
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
+        await expect(
+            generationStore.claim({
+                context: context(3),
+                globalConcurrency: 2,
+                leaseDurationMs: 1_000,
+                ownerConcurrency: 1,
+                supportedFormats: [dictionaryGenerationFormat],
+                workerId: 'old-worker',
+            }),
+        ).resolves.toBeNull();
+        const [persisted] = await database
+            .select()
+            .from(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+        expect(persisted?.executionState).toBe('queued');
+        expect(persisted?.attemptCount).toBe(0);
+    });
+
     it('lets only a compatible worker claim, recovers an expired lease, and fences paused stale output', async () => {
         const seeded = await seedCard();
         const job = await enqueue(seeded);

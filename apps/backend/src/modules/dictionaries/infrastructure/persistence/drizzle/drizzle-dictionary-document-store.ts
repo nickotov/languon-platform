@@ -13,12 +13,18 @@ import {
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import {
+    AiCreditInsufficientBalanceError,
+    resolveAiCreditMeasurement,
+} from '../../../../ai-credits/domain/ai-credit';
 import {
     DictionaryDocumentUploadCapacityError,
     DictionaryDocumentUploadConflictError,
     DictionaryDocumentUploadNotFoundError,
     DictionaryGenerationJobNotFoundError,
     DictionaryGenerationNotAvailableError,
+    DictionaryAiCreditsExhaustedError,
     DictionaryIdempotencyConflictError,
     DictionaryNotFoundError,
     DictionaryVersionConflictError,
@@ -63,6 +69,7 @@ import {
 type Database = PostgresJsDatabase<typeof databaseSchema>;
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 type UploadRow = typeof dictionaryDocumentUploadsTable.$inferSelect;
+type DocumentJobRow = typeof dictionaryGenerationJobsTable.$inferSelect;
 
 const documentAdmissionLock = 4_312_189_073;
 const documentQuota = {
@@ -83,6 +90,36 @@ const formatByMediaType: Record<DictionaryDocumentMediaType, string> = {
     'text/markdown': 'markdown',
     'text/plain': 'txt',
 };
+
+async function enableAiCreditSettlement(tx: Transaction): Promise<void> {
+    await tx.execute(
+        sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+    );
+}
+
+function documentCreditUsage(
+    job: DocumentJobRow,
+    usage: { inputTokens: number; outputTokens: number },
+): bigint {
+    if (
+        job.aiCreditInputCreditsPerMillionTokens === null ||
+        job.aiCreditOutputCreditsPerMillionTokens === null
+    )
+        throw new Error('AI credit pricing is missing');
+    const million = 1_000_000n;
+    return (
+        (BigInt(usage.inputTokens) *
+            BigInt(job.aiCreditInputCreditsPerMillionTokens) +
+            million -
+            1n) /
+            million +
+        (BigInt(usage.outputTokens) *
+            BigInt(job.aiCreditOutputCreditsPerMillionTokens) +
+            million -
+            1n) /
+            million
+    );
+}
 
 function abort(signal: AbortSignal): void {
     signal.throwIfAborted();
@@ -148,6 +185,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         private readonly ids: DictionaryGenerationIdGenerator,
         private readonly generationStore: DictionaryGenerationStore,
         private readonly providerBudget: DictionaryGenerationProviderBudgetPolicy = defaultDictionaryGenerationProviderBudgetPolicy,
+        private readonly aiCreditEnforcementEnabled = false,
     ) {}
 
     private async activeProviderExecution(tx: Transaction) {
@@ -171,8 +209,41 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
             ? {
                   budget: configured.snapshot.aggregateBudget,
                   revisionId: configured.id,
+                  snapshot: configured.snapshot,
               }
-            : { budget: this.providerBudget, revisionId: null };
+            : { budget: this.providerBudget, revisionId: null, snapshot: null };
+    }
+
+    private async settleAiCreditAttempt(
+        tx: Transaction,
+        job: DocumentJobRow,
+        at: Date,
+        providerUsage?: { inputTokens: number; outputTokens: number },
+    ) {
+        if (!job.aiCreditAccounted || !job.aiCreditReservationId) return;
+        if (!job.aiCreditPolicyMode)
+            throw new Error('AI credit reservation is missing');
+        const participant = new DrizzleAiCreditTransactionParticipant(tx);
+        if (!job.aiCreditProviderDispatchedAt) {
+            await participant.releaseUndispatchedAttempt({
+                ownerId: job.ownerId,
+                releasedAt: at,
+                reservationId: job.aiCreditReservationId,
+            });
+            return;
+        }
+        await participant.settleAttempt({
+            measuredCredits: providerUsage
+                ? documentCreditUsage(job, providerUsage)
+                : null,
+            measurement: resolveAiCreditMeasurement(
+                job.aiCreditPolicyMode,
+                providerUsage !== undefined,
+            ),
+            ownerId: job.ownerId,
+            reservationId: job.aiCreditReservationId,
+            settledAt: at,
+        });
     }
 
     public async expireUploadAuthorizations(
@@ -181,6 +252,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         >[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             const uploads = await tx
                 .select()
                 .from(dictionaryDocumentUploadsTable)
@@ -202,6 +274,20 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 .limit(input.limit)
                 .for('update', { skipLocked: true });
             for (const upload of uploads) {
+                const [job] = await tx
+                    .select()
+                    .from(dictionaryGenerationJobsTable)
+                    .where(eq(dictionaryGenerationJobsTable.id, upload.jobId))
+                    .for('update');
+                if (job?.aiCreditReservationId) {
+                    await new DrizzleAiCreditTransactionParticipant(
+                        tx,
+                    ).releaseUndispatchedAttempt({
+                        ownerId: job.ownerId,
+                        releasedAt: input.context.now,
+                        reservationId: job.aiCreditReservationId,
+                    });
+                }
                 await tx
                     .update(dictionaryDocumentUploadsTable)
                     .set({
@@ -215,6 +301,9 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 await tx
                     .update(dictionaryGenerationJobsTable)
                     .set({
+                        aiCreditReservationId: job?.aiCreditAccounted
+                            ? null
+                            : job?.aiCreditReservationId,
                         awaitingUploadAt: null,
                         completedAt: input.context.now,
                         executionState: 'expired',
@@ -275,6 +364,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         input: Parameters<DictionaryDocumentStore['authorize']>[0],
     ) {
         const authorization = await this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             abort(input.context.signal);
             await tx.execute(
                 sql`select pg_advisory_xact_lock(${documentAdmissionLock})`,
@@ -386,9 +476,29 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
 
             const jobId = this.ids.generate();
             const providerExecution = await this.activeProviderExecution(tx);
+            const creditPricing = this.aiCreditEnforcementEnabled
+                ? providerExecution.snapshot?.creditPricing
+                : undefined;
+            if (
+                this.aiCreditEnforcementEnabled &&
+                (!providerExecution.revisionId || !creditPricing)
+            )
+                throw new DictionaryGenerationNotAvailableError();
             const uploadId = this.ids.generate();
             const objectKey = `dictionary-documents/${input.ownerId}/${uploadId}`;
             await tx.insert(dictionaryGenerationJobsTable).values({
+                ...(creditPricing
+                    ? {
+                          aiCreditAccounted: true,
+                          aiCreditInputCreditsPerMillionTokens:
+                              creditPricing.inputCreditsPerMillionTokens,
+                          aiCreditMaxCreditsPerAttempt:
+                              creditPricing.maxCreditsPerAttempt,
+                          aiCreditOutputCreditsPerMillionTokens:
+                              creditPricing.outputCreditsPerMillionTokens,
+                          aiCreditPricingRevision: creditPricing.revision,
+                      }
+                    : {}),
                 awaitingUploadAt: input.context.now,
                 createdAt: input.context.now,
                 dictionaryId: input.dictionaryId,
@@ -433,6 +543,35 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 targetLanguageTag: current.dictionary.targetLanguageTag,
                 updatedAt: input.context.now,
             });
+            if (creditPricing) {
+                const reservationId = this.ids.generate();
+                try {
+                    const reservation =
+                        await new DrizzleAiCreditTransactionParticipant(
+                            tx,
+                        ).reserveAttempt({
+                            at: input.context.now,
+                            attempt: 1,
+                            jobId,
+                            maximumCredits: BigInt(
+                                creditPricing.maxCreditsPerAttempt,
+                            ),
+                            ownerId: input.ownerId,
+                            reservationId,
+                        });
+                    await tx
+                        .update(dictionaryGenerationJobsTable)
+                        .set({
+                            aiCreditPolicyMode: reservation.policy.mode,
+                            aiCreditReservationId: reservationId,
+                        })
+                        .where(eq(dictionaryGenerationJobsTable.id, jobId));
+                } catch (error) {
+                    if (error instanceof AiCreditInsufficientBalanceError)
+                        throw new DictionaryAiCreditsExhaustedError();
+                    throw error;
+                }
+            }
             const [upload] = await tx
                 .insert(dictionaryDocumentUploadsTable)
                 .values({
@@ -474,6 +613,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         input: Parameters<DictionaryDocumentStore['completeUpload']>[0],
     ) {
         const completion = await this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             abort(input.context.signal);
             await tx.execute(
                 sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
@@ -562,6 +702,14 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 current.contentType !== upload.expectedContentType ||
                 input.detectedFormat !== upload.expectedFormat
             ) {
+                if (job.aiCreditReservationId)
+                    await new DrizzleAiCreditTransactionParticipant(
+                        tx,
+                    ).releaseUndispatchedAttempt({
+                        ownerId: job.ownerId,
+                        releasedAt: input.context.now,
+                        reservationId: job.aiCreditReservationId,
+                    });
                 await this.persistObservedVersions(
                     tx,
                     upload,
@@ -586,6 +734,9 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 await tx
                     .update(dictionaryGenerationJobsTable)
                     .set({
+                        aiCreditReservationId: job.aiCreditAccounted
+                            ? null
+                            : job.aiCreditReservationId,
                         awaitingUploadAt: null,
                         completedAt: input.context.now,
                         executionState: 'failed',
@@ -649,27 +800,36 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 );
             if (
                 !dictionaryGenerationProviderBudgetAllows(
-                    Object.fromEntries(
-                        (
-                            [
-                                'globalActiveCostMicros',
-                                'globalActiveInputTokens',
-                                'globalActiveOutputTokens',
-                                'globalSettledCostMicros',
-                                'globalSettledInputTokens',
-                                'globalSettledOutputTokens',
-                                'ownerActiveCostMicros',
-                                'ownerActiveInputTokens',
-                                'ownerActiveOutputTokens',
-                                'ownerSettledCostMicros',
-                                'ownerSettledInputTokens',
-                                'ownerSettledOutputTokens',
-                            ] as const
-                        ).map((key) => [
-                            key,
-                            Number(providerAdmission?.[key] ?? 0),
-                        ]),
-                    ) as unknown as DictionaryGenerationProviderBudgetUsage,
+                    {
+                        ...(Object.fromEntries(
+                            (
+                                [
+                                    'globalActiveCostMicros',
+                                    'globalActiveInputTokens',
+                                    'globalActiveOutputTokens',
+                                    'globalSettledCostMicros',
+                                    'globalSettledInputTokens',
+                                    'globalSettledOutputTokens',
+                                    'ownerActiveCostMicros',
+                                    'ownerActiveInputTokens',
+                                    'ownerActiveOutputTokens',
+                                    'ownerSettledCostMicros',
+                                    'ownerSettledInputTokens',
+                                    'ownerSettledOutputTokens',
+                                ] as const
+                            ).map((key) => [
+                                key,
+                                Number(providerAdmission?.[key] ?? 0),
+                            ]),
+                        ) as unknown as DictionaryGenerationProviderBudgetUsage),
+                        ...(job.aiCreditAccounted
+                            ? {
+                                  ownerSettledCostMicros: 0,
+                                  ownerSettledInputTokens: 0,
+                                  ownerSettledOutputTokens: 0,
+                              }
+                            : {}),
+                    },
                     true,
                     providerBudget,
                 )
@@ -813,6 +973,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         input: Parameters<DictionaryDocumentStore['stageDocumentProposal']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             if (
                 !validScanAttestation(input.scanAttestation) ||
                 input.scanAttestation.completedAt > input.context.now
@@ -944,9 +1105,18 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                     updatedAt: input.context.now,
                 })
                 .where(eq(dictionaryDocumentUploadsTable.id, upload.id));
+            await this.settleAiCreditAttempt(
+                tx,
+                job,
+                input.context.now,
+                input.providerUsage,
+            );
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
+                    aiCreditReservationId: job.aiCreditAccounted
+                        ? null
+                        : job.aiCreditReservationId,
                     executionState: 'queued',
                     heartbeatAt: null,
                     leaseDeadline: null,
@@ -967,6 +1137,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         >[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             const [upload] = await tx
                 .select()
                 .from(dictionaryDocumentUploadsTable)
@@ -1036,6 +1207,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         input: Parameters<DictionaryDocumentStore['terminalizeExtraction']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             if (
                 !validScanAttestation(input.scanAttestation) ||
                 input.scanAttestation.completedAt > input.context.now
@@ -1088,9 +1260,13 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                     updatedAt: input.context.now,
                 })
                 .where(eq(dictionaryDocumentUploadsTable.id, upload.id));
+            await this.settleAiCreditAttempt(tx, job, input.context.now);
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
+                    aiCreditReservationId: job.aiCreditAccounted
+                        ? null
+                        : job.aiCreditReservationId,
                     completedAt: input.context.now,
                     executionState: 'failed',
                     failureCategory: input.outcome,
@@ -1125,6 +1301,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         >[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             if (
                 !validScanAttestation(input.scanAttestation) ||
                 input.scanAttestation.completedAt > input.context.now
@@ -1170,9 +1347,16 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 })
                 .where(eq(dictionaryDocumentUploadsTable.id, upload.id));
             const priorAttempts = Math.max(0, job.attemptCount - 1);
+            await this.settleAiCreditAttempt(tx, job, input.context.now);
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
+                    aiCreditProviderDispatchedAt: job.aiCreditAccounted
+                        ? null
+                        : job.aiCreditProviderDispatchedAt,
+                    aiCreditReservationId: job.aiCreditAccounted
+                        ? null
+                        : job.aiCreditReservationId,
                     completedAt: retry ? null : input.context.now,
                     executionState: retry ? 'queued' : 'failed',
                     failureCategory: retry ? null : input.category,
@@ -1208,6 +1392,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         input: Parameters<DictionaryDocumentStore['claimCleanup']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             const [upload] = await tx
                 .select()
                 .from(dictionaryDocumentUploadsTable)
@@ -1324,6 +1509,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         input: Parameters<DictionaryDocumentStore['recordCleanupTombstone']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             const [upload] = await tx
                 .select()
                 .from(dictionaryDocumentUploadsTable)
@@ -1377,6 +1563,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         >[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             const [upload] = await tx
                 .select()
                 .from(dictionaryDocumentUploadsTable)
@@ -1486,6 +1673,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         input: Parameters<DictionaryDocumentStore['completeCleanup']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await enableAiCreditSettlement(tx);
             const [upload] = await tx
                 .select()
                 .from(dictionaryDocumentUploadsTable)

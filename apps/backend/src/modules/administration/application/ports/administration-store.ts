@@ -2,6 +2,10 @@ import type {
     AdminAuditAction,
     AdminAuditEvent,
     AdminAuditEventsQuery,
+    AdminAiCreditAdjustmentRequest,
+    AdminAiCreditPolicyMutationRequest,
+    AdminAiCreditsQuery,
+    AdminAiCreditsResponse,
     AdminAiSettingsMutationRequest,
     AdminAiSettingsResponse,
     AdminDashboardResponse,
@@ -58,7 +62,42 @@ export interface AdminAiSettingsMutationInput extends AdminAiSettingsMutationReq
     revisionId: string;
 }
 
+interface AdminAiCreditMutationBase {
+    actorSessionId: string;
+    actorUserId: string;
+    audit: Pick<
+        AdminAuditWrite,
+        'correlationId' | 'expiresAt' | 'id' | 'occurredAt'
+    >;
+    targetUserId: string;
+}
+
+export type AdminAiCreditPolicyMutationInput = AdminAiCreditMutationBase &
+    AdminAiCreditPolicyMutationRequest;
+export type AdminAiCreditAdjustmentMutationInput = AdminAiCreditMutationBase &
+    AdminAiCreditAdjustmentRequest;
+
+export type AdminAiCreditMutationRejection =
+    | 'account_conflict'
+    | 'adjustment_exceeds_available'
+    | 'invalid_request'
+    | 'recent_authentication_required'
+    | 'target_unavailable'
+    | 'admin_access_denied';
+
+export type AdminAiCreditMutationResult =
+    | { ok: true; response: AdminAiCreditsResponse }
+    | { ok: false; rejection: AdminAiCreditMutationRejection };
+
 export interface AdministrationStore {
+    aiCredits(
+        userId: string,
+        query: AdminAiCreditsQuery,
+        at: Date,
+    ): Promise<AdminAiCreditsResponse>;
+    adjustAiCredits(
+        input: AdminAiCreditAdjustmentMutationInput,
+    ): Promise<AdminAiCreditMutationResult>;
     aiSettings(): Promise<AdminAiSettingsResponse>;
     cancelUserDeletion(input: AdminUserMutationInput): Promise<AdminUserDetail>;
     dashboard(): Promise<AdminDashboardResponse>;
@@ -74,6 +113,9 @@ export interface AdministrationStore {
     listUsers(input: AdminUsersQuery): Promise<AdminUsersResponse>;
     recordAudit(input: AdminAuditWrite): Promise<void>;
     restoreUser(input: AdminUserMutationInput): Promise<AdminUserDetail>;
+    updateAiCreditPolicy(
+        input: AdminAiCreditPolicyMutationInput,
+    ): Promise<AdminAiCreditMutationResult>;
     updateAiSettings(
         input: AdminAiSettingsMutationInput,
     ): Promise<AdminAiSettingsResponse>;

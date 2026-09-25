@@ -207,6 +207,7 @@ export interface DictionaryGenerationStore {
         ownerId: string;
     }): Promise<DictionaryGenerationJobView>;
     claim(input: {
+        creditSettlementRevision?: 1;
         context: DictionaryOperationContext;
         leaseDurationMs: number;
         globalConcurrency: number;
@@ -355,6 +356,9 @@ export interface DictionaryGenerationStore {
         dictionaryId: string;
         ownerId: string;
     }): Promise<DictionaryGenerationJobView | null>;
+    markProviderDispatch(
+        input: DictionaryGenerationWorkerWrite,
+    ): Promise<boolean>;
     observeOperationalState(input: {
         context: DictionaryOperationContext;
         windowStartedAt: Date;

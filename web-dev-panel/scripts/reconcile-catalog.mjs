@@ -112,6 +112,8 @@ const descriptions = {
     'test:coverage': 'Runs workspace tests with coverage collection.',
     'test:e2e:admin-user-management':
         'Runs the administration user-management end-to-end journey.',
+    'test:e2e:ai-credit-wallet':
+        'Runs the administration AI-credit wallet end-to-end journey.',
     'test:e2e:web-dev-panel':
         'Runs web dev panel Playwright journeys against synthetic commands.',
     'test:frontend-architecture':

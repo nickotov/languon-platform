@@ -761,6 +761,8 @@ export const en = {
     'dictionary.generation.state.failed': 'Generation could not finish.',
     'dictionary.generation.error.unavailable':
         'AI regeneration is not available right now.',
+    'dictionary.generation.error.creditsExhausted':
+        'You do not have enough AI credits for this generation.',
     'dictionary.generation.error.notFound':
         'This generation job is no longer available.',
     'dictionary.generation.error.notReviewable':

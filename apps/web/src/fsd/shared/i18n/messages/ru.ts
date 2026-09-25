@@ -752,6 +752,8 @@ export const ru = {
     'dictionary.generation.state.failed': 'Не удалось завершить создание.',
     'dictionary.generation.error.unavailable':
         'Сейчас пересоздание с ИИ недоступно.',
+    'dictionary.generation.error.creditsExhausted':
+        'Недостаточно ИИ-кредитов для этой генерации.',
     'dictionary.generation.error.notFound':
         'Эта задача создания больше недоступна.',
     'dictionary.generation.error.notReviewable':

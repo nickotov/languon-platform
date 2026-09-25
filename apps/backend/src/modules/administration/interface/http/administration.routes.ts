@@ -5,6 +5,10 @@ import {
     AdminAiSettingsMutationRequestSchema,
     AdminAiSettingsMutationResponseSchema,
     AdminAiSettingsResponseSchema,
+    AdminAiCreditAdjustmentRequestSchema,
+    AdminAiCreditPolicyMutationRequestSchema,
+    AdminAiCreditsQuerySchema,
+    AdminAiCreditsResponseSchema,
     AdminAuditEventsQuerySchema,
     AdminAuditEventsResponseSchema,
     AdminDashboardResponseSchema,
@@ -484,6 +488,92 @@ function registerResourceRoutes(
             if (!user) throw new AdminUserNotFoundError();
             return context.json({ user }, 200);
         },
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/admin/users/{userId}/ai-credits',
+            request: {
+                params: AdminUserIdParamsSchema,
+                query: AdminAiCreditsQuerySchema,
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminAiCreditsResponseSchema,
+                    'User AI credit account and history.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Administration'],
+        }),
+        async (context) =>
+            context.json(
+                await dependencies.administration.aiCredits(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('param').userId,
+                    context.req.valid('query'),
+                ),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'patch',
+            path: '/admin/users/{userId}/ai-credits/policy',
+            request: {
+                params: AdminUserIdParamsSchema,
+                body: requestBody(AdminAiCreditPolicyMutationRequestSchema),
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminAiCreditsResponseSchema,
+                    'User AI credit policy updated.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Administration'],
+        }),
+        async (context) =>
+            context.json(
+                await dependencies.administration.updateAiCreditPolicy(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('param').userId,
+                    context.req.valid('json'),
+                    correlationId(context.req.header('X-Correlation-ID')),
+                ),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/admin/users/{userId}/ai-credits/adjustments',
+            request: {
+                params: AdminUserIdParamsSchema,
+                body: requestBody(AdminAiCreditAdjustmentRequestSchema),
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminAiCreditsResponseSchema,
+                    'User AI credits adjusted.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Administration'],
+        }),
+        async (context) =>
+            context.json(
+                await dependencies.administration.adjustAiCredits(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('param').userId,
+                    context.req.valid('json'),
+                    correlationId(context.req.header('X-Correlation-ID')),
+                ),
+                200,
+            ),
     );
     for (const operation of ['disable', 'restore'] as const) {
         app.openapi(

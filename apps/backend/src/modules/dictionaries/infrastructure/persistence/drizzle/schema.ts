@@ -470,6 +470,25 @@ export const dictionaryAiWorkerObservationsTable = pgTable(
 export const dictionaryGenerationJobsTable = pgTable(
     'dictionary_generation_jobs',
     {
+        aiCreditAccounted: boolean('ai_credit_accounted')
+            .default(false)
+            .notNull(),
+        aiCreditInputCreditsPerMillionTokens: integer(
+            'ai_credit_input_credits_per_million_tokens',
+        ),
+        aiCreditMaxCreditsPerAttempt: integer(
+            'ai_credit_max_credits_per_attempt',
+        ),
+        aiCreditOutputCreditsPerMillionTokens: integer(
+            'ai_credit_output_credits_per_million_tokens',
+        ),
+        aiCreditPolicyMode: text('ai_credit_policy_mode'),
+        aiCreditPricingRevision: integer('ai_credit_pricing_revision'),
+        aiCreditProviderDispatchedAt: timestamp(
+            'ai_credit_provider_dispatched_at',
+            { mode: 'date', withTimezone: true },
+        ),
+        aiCreditReservationId: uuid('ai_credit_reservation_id'),
         attemptCount: integer('attempt_count').default(0).notNull(),
         awaitingUploadAt: timestamp('awaiting_upload_at', {
             mode: 'date',
@@ -635,6 +654,10 @@ export const dictionaryGenerationJobsTable = pgTable(
         check(
             'dictionary_generation_jobs_provider_policy',
             sql`${table.providerMaxInputTokensPerAttempt} between ${sql.raw(String(dictionaryGenerationMinimumSupportedInputTokens))} and 262144 and ${table.providerMaxOutputTokensPerAttempt} between 128 and 40960 and ${table.providerInputCostMicrosPerMillionTokens} between 0 and 1000000000 and ${table.providerOutputCostMicrosPerMillionTokens} between 0 and 1000000000 and ${table.providerMaxCostMicrosPerAttempt} between 1 and 10000000 and ${table.providerMaxCostMicrosPerAttempt} >= ((((${table.providerMaxInputTokensPerAttempt})::bigint * ${table.providerInputCostMicrosPerMillionTokens}) + 999999) / 1000000) + ((((${table.providerMaxOutputTokensPerAttempt})::bigint * ${table.providerOutputCostMicrosPerMillionTokens}) + 999999) / 1000000)`,
+        ),
+        check(
+            'dictionary_generation_jobs_ai_credit_state',
+            sql`(${table.aiCreditAccounted} = false and ${table.aiCreditInputCreditsPerMillionTokens} is null and ${table.aiCreditMaxCreditsPerAttempt} is null and ${table.aiCreditOutputCreditsPerMillionTokens} is null and ${table.aiCreditPolicyMode} is null and ${table.aiCreditPricingRevision} is null and ${table.aiCreditProviderDispatchedAt} is null and ${table.aiCreditReservationId} is null) or (${table.aiCreditAccounted} = true and ${table.aiCreditInputCreditsPerMillionTokens} >= 0 and ${table.aiCreditMaxCreditsPerAttempt} > 0 and ${table.aiCreditOutputCreditsPerMillionTokens} >= 0 and ${table.aiCreditPricingRevision} = 1 and (${table.aiCreditPolicyMode} is null or ${table.aiCreditPolicyMode} in ('limited', 'unlimited')) and (${table.aiCreditProviderDispatchedAt} is null or ${table.aiCreditPolicyMode} is not null))`,
         ),
         check(
             'dictionary_generation_jobs_language_pair',

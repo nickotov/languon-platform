@@ -23,6 +23,7 @@ e2e_scenarios:
     - admin-configures-dictionary-ai-default
 related_features:
     - admin-user-management
+    - ai-credit-wallet
     - dictionary-platform
 ---
 
@@ -68,7 +69,8 @@ then restart the API and worker once. Later admin default changes need no restar
    available after its authenticated model-list probe. Kie's route-only probe
    remains unverified because it does not prove the key or structured output.
 3. Select an enabled provider, enable at least one selectable model, choose an
-   enabled default, enter a reason, and save.
+   enabled default, review its read-only input/output credit rates and maximum
+   attempt reservation, enter a reason, and save.
 4. Reload the page. Confirm the saved provider/model and incremented version
    remain selected. Check keyboard focus, a narrow viewport, and light/dark modes.
 

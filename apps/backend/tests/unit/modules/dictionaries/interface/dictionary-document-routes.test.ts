@@ -12,6 +12,21 @@ const policy = new AuthHttpPolicy({
 });
 
 describe('dictionary document HTTP routes', () => {
+    it('publishes credit exhaustion in the OpenAPI contract', () => {
+        const routes = createDictionaryDocumentRoutes({
+            policy,
+            service: {} as never,
+        });
+        const document = routes.getOpenAPIDocument({
+            info: { title: 'Dictionary document routes', version: '1' },
+            openapi: '3.1.0',
+        });
+        expect(
+            document.paths?.['/dictionaries/{dictionaryId}/document-uploads']
+                ?.post?.responses?.['402'],
+        ).toBeDefined();
+    });
+
     it('validates and dispatches document upload authorization', async () => {
         const authorizeUpload = vi.fn(async () => ({ ok: true }));
         const routes = createDictionaryDocumentRoutes({

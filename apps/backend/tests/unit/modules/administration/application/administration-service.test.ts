@@ -7,6 +7,7 @@ import type { Clock } from '../../../../../src/modules/authentication/applicatio
 import type { IdGenerator } from '../../../../../src/modules/authentication/application/ports/id-generator';
 import {
     AdminAccessDeniedError,
+    AdminAiCreditAccountConflictError,
     AdminSelfDisableForbiddenError,
 } from '../../../../../src/modules/administration/application/administration-errors';
 import { AdministrationService } from '../../../../../src/modules/administration/application/administration-service';
@@ -19,6 +20,11 @@ const now = new Date('2026-08-20T08:00:00.000Z');
 
 function setup(options: { membership?: boolean } = {}) {
     const store = {
+        adjustAiCredits: vi.fn().mockResolvedValue({
+            ok: true,
+            response: creditResponse(),
+        }),
+        aiCredits: vi.fn().mockResolvedValue(creditResponse()),
         aiSettings: vi.fn().mockResolvedValue({
             providers: [],
             settings: {
@@ -56,6 +62,10 @@ function setup(options: { membership?: boolean } = {}) {
                 updatedAt: now.toISOString(),
                 version: 1,
             },
+        }),
+        updateAiCreditPolicy: vi.fn().mockResolvedValue({
+            ok: true,
+            response: creditResponse(),
         }),
     } as unknown as AdministrationStore;
     const authentication = {
@@ -95,6 +105,72 @@ function setup(options: { membership?: boolean } = {}) {
 }
 
 describe('AdministrationService', () => {
+    it('reads AI credits at the application clock time', async () => {
+        const { service, store } = setup();
+
+        await service.aiCredits('access-token', targetId, {
+            page: 2,
+            pageSize: 10,
+        });
+
+        expect(store.aiCredits).toHaveBeenCalledWith(
+            targetId,
+            { page: 2, pageSize: 10 },
+            now,
+        );
+    });
+
+    it('requires recent authentication and delegates an audited credit policy mutation', async () => {
+        const { authentication, service, store } = setup();
+        const input = {
+            expectedVersion: 0,
+            mode: 'unlimited' as const,
+            reason: 'Enable support-approved unlimited access',
+            unlimitedUntil: null,
+        };
+
+        await service.updateAiCreditPolicy(
+            'access-token',
+            targetId,
+            input,
+            '0198c203-6b64-71cd-877b-752ff3fe056f',
+        );
+
+        expect(
+            authentication.requireRecentlyAuthenticatedSession,
+        ).toHaveBeenCalledWith({ sessionId, userId: actorId });
+        expect(store.updateAiCreditPolicy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                ...input,
+                actorSessionId: sessionId,
+                actorUserId: actorId,
+                targetUserId: targetId,
+            }),
+        );
+    });
+
+    it('throws the public conflict only after the store returns an audited rejection', async () => {
+        const { service, store } = setup();
+        vi.mocked(store.adjustAiCredits).mockResolvedValue({
+            ok: false,
+            rejection: 'account_conflict',
+        });
+
+        await expect(
+            service.adjustAiCredits(
+                'access-token',
+                targetId,
+                {
+                    amountCredits: 100,
+                    expectedVersion: 2,
+                    expiresAt: null,
+                    reason: 'Support approved a manual credit grant',
+                },
+                '0198c203-7c47-7334-9488-a1a5175127a5',
+            ),
+        ).rejects.toBeInstanceOf(AdminAiCreditAccountConflictError);
+        expect(store.recordAudit).not.toHaveBeenCalled();
+    });
     it('requires recent authentication and supplies immutable AI revision identity', async () => {
         const { authentication, service, store } = setup();
         const input = {
@@ -275,3 +351,24 @@ describe('AdministrationService', () => {
         );
     });
 });
+
+function creditResponse() {
+    return {
+        account: {
+            availableCredits: 0,
+            configuredMode: 'limited' as const,
+            effectiveMode: 'limited' as const,
+            enforcementEnabled: false,
+            lifetimeConsumedCredits: 0,
+            managementVersion: 0,
+            nextExpirationAt: null,
+            reservedCredits: 0,
+            unlimitedUntil: null,
+            userId: targetId,
+        },
+        history: [],
+        page: 1,
+        pageSize: 25,
+        total: 0,
+    };
+}

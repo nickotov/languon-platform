@@ -6,6 +6,7 @@ import {
 } from '../../../authentication/interface/http/auth-http-policy';
 import {
     DictionaryCardNotFoundError,
+    DictionaryAiCreditsExhaustedError,
     DictionaryDocumentUploadCapacityError,
     DictionaryDocumentUploadConflictError,
     DictionaryDocumentUploadNotFoundError,
@@ -89,6 +90,12 @@ export function mapDictionaryHttpError(error: Error): DictionaryHttpError {
             'Dictionary generation is temporarily unavailable.',
             503,
             error.retryAfterSeconds,
+        );
+    if (error instanceof DictionaryAiCreditsExhaustedError)
+        return new DictionaryHttpError(
+            'ai_credits_exhausted',
+            'The AI credit balance is insufficient for this generation.',
+            402,
         );
     if (error instanceof DictionaryGenerationNotReviewableError)
         return new DictionaryHttpError(

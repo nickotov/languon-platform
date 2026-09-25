@@ -17,6 +17,11 @@ import {
 } from 'vitest';
 
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import {
+    aiCreditAccountsTable,
+    aiCreditReservationsTable,
+} from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
 import { dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
 import {
     DictionaryGenerationCandidateConflictError,
@@ -77,8 +82,6 @@ run('card-authoring generation persistence', () => {
     beforeAll(async () => {
         client = createTestPostgresClient();
         database = createDrizzleDatabase(client, databaseSchema);
-        await resetTestDatabase(client);
-        await migrateTestDatabase(client);
         dictionaryStore = new DrizzleDictionaryStore(database, {
             generate: randomUUID,
         });
@@ -88,13 +91,8 @@ run('card-authoring generation persistence', () => {
     });
 
     beforeEach(async () => {
-        await database.delete(dictionaryGenerationProposalsTable);
-        await database.delete(dictionaryCardRevisionsTable);
-        await database.delete(dictionaryGenerationJobsTable);
-        await database.delete(dictionaryGenerationProviderCircuitTable);
-        await database.delete(dictionaryAiConfigurationTable);
-        await database.delete(dictionaryAiConfigurationRevisionsTable);
-        await database.delete(usersTable);
+        await resetTestDatabase(client);
+        await migrateTestDatabase(client);
         ownerId = randomUUID();
         await database.insert(usersTable).values({
             createdAt: instant(),
@@ -107,6 +105,19 @@ run('card-authoring generation persistence', () => {
     afterAll(async () => client.end());
 
     it('pins the active AI revision at admission and replays the original job after a default switch', async () => {
+        const creditedStore = new DrizzleDictionaryGenerationStore(
+            database,
+            { generate: randomUUID },
+            undefined,
+            true,
+        );
+        await database.insert(aiCreditAccountsTable).values({
+            createdAt: instant(),
+            mode: 'unlimited',
+            unlimitedUntil: null,
+            updatedAt: instant(),
+            userId: ownerId,
+        });
         const dictionary = await dictionaryStore.createDictionary({
             context: context(),
             fingerprint: fingerprint('P'),
@@ -147,6 +158,7 @@ run('card-authoring generation persistence', () => {
             adapterRevision: model.adapterRevision,
             aggregateBudget: model.aggregateBudget,
             credentialReference: model.credentialReference,
+            creditPricing: model.creditPricing,
             enabledModelIds: [model.id],
             modelId: model.id,
             perCallMaxInputTokens: model.perCallMaxInputTokens,
@@ -179,7 +191,7 @@ run('card-authoring generation persistence', () => {
             instruction: null,
             ownerId,
         };
-        const first = await generationStore.enqueue(request);
+        const first = await creditedStore.enqueue(request);
 
         await database.insert(dictionaryAiConfigurationRevisionsTable).values({
             catalogSnapshot: snapshot(kie),
@@ -197,11 +209,11 @@ run('card-authoring generation persistence', () => {
             })
             .where(eq(dictionaryAiConfigurationTable.id, 'global'));
 
-        const replay = await generationStore.enqueue({
+        const replay = await creditedStore.enqueue({
             ...request,
             context: context(5),
         });
-        const second = await generationStore.enqueue({
+        const second = await creditedStore.enqueue({
             ...request,
             context: context(6),
             fingerprint: fingerprint('R'),
@@ -221,21 +233,25 @@ run('card-authoring generation persistence', () => {
             ]),
         );
 
-        const oldWorkerUpdate = await database
-            .update(dictionaryGenerationJobsTable)
-            .set({
-                executionState: 'running',
-                heartbeatAt: instant(7),
-                leaseDeadline: instant(1_007),
-                workerId: 'old-worker-without-managed-routing',
-            })
-            .where(eq(dictionaryGenerationJobsTable.id, first.id))
-            .returning({ id: dictionaryGenerationJobsTable.id });
-        expect(oldWorkerUpdate).toEqual([]);
+        await expect(
+            database
+                .update(dictionaryGenerationJobsTable)
+                .set({
+                    executionState: 'running',
+                    heartbeatAt: instant(7),
+                    leaseDeadline: instant(1_007),
+                    workerId: 'old-worker-without-managed-routing',
+                })
+                .where(eq(dictionaryGenerationJobsTable.id, first.id))
+                .returning({ id: dictionaryGenerationJobsTable.id }),
+        ).rejects.toThrow();
 
         const compatibleUpdate = await database.transaction(async (tx) => {
             await tx.execute(
                 sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
+            );
+            await tx.execute(
+                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
             return tx
                 .update(dictionaryGenerationJobsTable)
@@ -250,21 +266,27 @@ run('card-authoring generation persistence', () => {
         });
         expect(compatibleUpdate).toEqual([{ id: first.id }]);
 
-        await database
-            .update(dictionaryGenerationJobsTable)
-            .set({
-                executionState: 'queued',
-                heartbeatAt: null,
-                leaseDeadline: null,
-                workerId: null,
-            })
-            .where(eq(dictionaryGenerationJobsTable.id, first.id));
+        await database.transaction(async (tx) => {
+            await tx.execute(
+                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+            );
+            await tx
+                .update(dictionaryGenerationJobsTable)
+                .set({
+                    executionState: 'queued',
+                    heartbeatAt: null,
+                    leaseDeadline: null,
+                    workerId: null,
+                })
+                .where(eq(dictionaryGenerationJobsTable.id, first.id));
+        });
         await database
             .delete(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, second.id));
 
-        const claim = await generationStore.claim({
+        const claim = await creditedStore.claim({
             context: context(9),
+            creditSettlementRevision: 1,
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
             managedRoutingRevision: 1,
@@ -281,6 +303,15 @@ run('card-authoring generation persistence', () => {
             claim.input.format !== 'single-card:v1'
         )
             throw new Error('Expected a pinned single-card claim.');
+        await expect(
+            creditedStore.markProviderDispatch({
+                context: context(9),
+                fencingToken: claim.fencingToken,
+                jobId: claim.id,
+                leaseDeadline: claim.leaseDeadline,
+                workerId: claim.workerId,
+            }),
+        ).resolves.toBe(true);
 
         const generated = {
             proposal: {
@@ -294,7 +325,6 @@ run('card-authoring generation persistence', () => {
                 fieldFeedback: [],
                 warnings: [],
             },
-            usage: { inputTokens: 20, outputTokens: 10 },
         };
         const cardGenerate = vi.fn(async () => generated);
         const unusedGenerate = vi.fn(async () => {
@@ -326,7 +356,7 @@ run('card-authoring generation persistence', () => {
                 ? result
                 : { proposal: result, usage: undefined };
         await expect(
-            generationStore.complete({
+            creditedStore.complete({
                 context: context(10),
                 fencingToken: claim.fencingToken,
                 jobId: claim.id,
@@ -338,12 +368,186 @@ run('card-authoring generation persistence', () => {
             }),
         ).resolves.toBe(true);
         await expect(
-            generationStore.read({
+            creditedStore.read({
                 context: context(11),
                 jobId: claim.id,
                 ownerId,
             }),
         ).resolves.toMatchObject({ state: 'review' });
+        await expect(
+            database
+                .select({
+                    chargedCredits: aiCreditReservationsTable.chargedCredits,
+                    measurement: aiCreditReservationsTable.measurement,
+                    policyMode: aiCreditReservationsTable.policyMode,
+                })
+                .from(aiCreditReservationsTable)
+                .where(eq(aiCreditReservationsTable.jobId, claim.id)),
+        ).resolves.toEqual([
+            {
+                chargedCredits: 0n,
+                measurement: 'unmetered',
+                policyMode: 'unlimited',
+            },
+        ]);
+    });
+
+    it('settles provider budget and exposes credit exhaustion when a retry cannot reserve credits', async () => {
+        const dictionary = await dictionaryStore.createDictionary({
+            context: context(),
+            fingerprint: fingerprint('C'),
+            idempotencyKey: `credit-dictionary-${randomUUID()}`,
+            ownerId,
+            request: {
+                description: null,
+                name: 'Credit retry',
+                sourceLanguage: 'en',
+                targetLanguage: 'fr',
+            },
+        });
+        const model = dictionaryAiModelCatalog[0]!;
+        const revisionId = randomUUID();
+        await database.insert(dictionaryAiConfigurationRevisionsTable).values({
+            catalogSnapshot: {
+                adapterRevision: model.adapterRevision,
+                aggregateBudget: model.aggregateBudget,
+                credentialReference: model.credentialReference,
+                creditPricing: model.creditPricing,
+                enabledModelIds: [model.id],
+                modelId: model.id,
+                perCallMaxInputTokens: model.perCallMaxInputTokens,
+                perCallMaxOutputTokens: model.perCallMaxOutputTokens,
+                providerId: model.providerId,
+                supportedFormats: [...model.supportedFormats],
+            },
+            createdAt: instant(1),
+            createdByUserId: ownerId,
+            id: revisionId,
+            version: 1,
+        });
+        await database.insert(dictionaryAiConfigurationTable).values({
+            activeRevisionId: revisionId,
+            id: 'global',
+            updatedAt: instant(1),
+            version: 1,
+        });
+        await database.transaction(async (transaction) => {
+            await new DrizzleAiCreditTransactionParticipant(
+                transaction,
+            ).issueGrant({
+                amount: BigInt(model.creditPricing.maxCreditsPerAttempt),
+                createdAt: instant(1),
+                expiresAt: null,
+                ownerId,
+                source: 'admin',
+                sourceReference: `retry-credit-${randomUUID()}`,
+            });
+        });
+        const creditedStore = new DrizzleDictionaryGenerationStore(
+            database,
+            { generate: randomUUID },
+            undefined,
+            true,
+        );
+        const job = await creditedStore.enqueueCardAuthoring({
+            context: context(2),
+            dictionaryId: dictionary.id,
+            draft: {
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: null,
+                },
+            },
+            expectedDictionaryVersion: dictionary.version,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('D'),
+            idempotencyKey: `credit-authoring-${randomUUID()}`,
+            ownerId,
+            scope: { kind: 'all' },
+            source: 'hello',
+        });
+        const firstClaim = await creditedStore.claim({
+            context: context(3),
+            creditSettlementRevision: 1,
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            managedRoutingRevision: 1,
+            ownerConcurrency: 1,
+            supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+            workerId: 'credit-retry-worker',
+        });
+        expect(firstClaim?.id).toBe(job.id);
+        await expect(
+            creditedStore.markProviderDispatch({
+                context: context(4),
+                fencingToken: firstClaim!.fencingToken,
+                jobId: job.id,
+                leaseDeadline: firstClaim!.leaseDeadline,
+                workerId: firstClaim!.workerId,
+            }),
+        ).resolves.toBe(true);
+        await expect(
+            creditedStore.fail({
+                context: context(5),
+                failureCategory: 'provider_timeout',
+                fencingToken: firstClaim!.fencingToken,
+                jobId: job.id,
+                leaseDeadline: firstClaim!.leaseDeadline,
+                retryAt: instant(6),
+                workerId: firstClaim!.workerId,
+            }),
+        ).resolves.toBe(true);
+
+        await expect(
+            creditedStore.claim({
+                context: context(6),
+                creditSettlementRevision: 1,
+                globalConcurrency: 2,
+                leaseDurationMs: 1_000,
+                managedRoutingRevision: 1,
+                ownerConcurrency: 1,
+                supportedFormats: [dictionaryCardAuthoringGenerationFormat],
+                workerId: 'credit-retry-worker',
+            }),
+        ).resolves.toBeNull();
+        await expect(
+            creditedStore.read({
+                context: context(7),
+                jobId: job.id,
+                ownerId,
+            }),
+        ).resolves.toMatchObject({
+            failure: { code: 'ai_credits_exhausted', retryable: false },
+            state: 'failed',
+        });
+        const [stored] = await database
+            .select({
+                actualCost:
+                    dictionaryGenerationJobsTable.providerActualCostMicros,
+                actualInput:
+                    dictionaryGenerationJobsTable.providerActualInputTokens,
+                actualOutput:
+                    dictionaryGenerationJobsTable.providerActualOutputTokens,
+                reservedCost:
+                    dictionaryGenerationJobsTable.providerReservedCostMicros,
+                reservedInput:
+                    dictionaryGenerationJobsTable.providerReservedInputTokens,
+                reservedOutput:
+                    dictionaryGenerationJobsTable.providerReservedOutputTokens,
+                state: dictionaryGenerationJobsTable.providerReservationState,
+            })
+            .from(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+        expect(stored).toMatchObject({
+            actualCost: stored?.reservedCost,
+            actualInput: stored?.reservedInput,
+            actualOutput: stored?.reservedOutput,
+            state: 'settled',
+        });
     });
 
     it('preserves predecessor review, merges a successor, and atomically replays mixed card creation with redaction', async () => {

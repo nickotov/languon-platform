@@ -58,6 +58,8 @@ DICTIONARY_GENERATION_MODEL_ID=deepseek/deepseek-chat
 DEEPSEEK_API_KEY=replace-with-a-private-worker-key
 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED=true
 DICTIONARY_AI_MANAGED_ROUTING_ENABLED=true
+# Keep false until the priced revision and current worker pass rollout preflight.
+DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED=false
 
 DICTIONARY_JOB_API_READABLE_FORMATS=card-authoring:v1
 DICTIONARY_JOB_API_CANCELLABLE_FORMATS=card-authoring:v1
@@ -87,6 +89,14 @@ another restart; queued jobs retain their pinned provider/model and budget.
 The database claim guard also rejects a pinned job unless the worker transaction
 declares the managed-routing revision, so an old process cannot execute it with a
 legacy default even if both releases temporarily overlap.
+
+`DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED` activates per-user normalized AI
+credits for newly admitted managed-routing jobs. It is off by default. Before
+enabling it, apply the AI-credit migrations, save a new provider configuration
+so the active immutable revision contains credit pricing, and verify every
+active worker supports settlement revision `1`. Existing provider revisions and
+legacy jobs are never retroactively charged. Disable the flag to stop accounting
+new admissions; already accounted jobs must drain on current workers.
 
 The six format settings above enable the complete local card-authoring lifecycle.
 If a setting already contains other formats, preserve them as comma-separated

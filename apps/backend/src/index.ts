@@ -116,6 +116,8 @@ const dictionaries = createDictionaryComposition({
             environment.DICTIONARY_DOCUMENT_OCR_MODE === 'deterministic',
     },
     generationProviderBudget: environment.DICTIONARY_GENERATION_PROVIDER_BUDGET,
+    aiCreditEnforcementEnabled:
+        environment.DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED,
     dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
     documentUploadAuthorizationEnabled:
         environment.DICTIONARY_DOCUMENT_UPLOAD_AUTHORIZATION_ENABLED,

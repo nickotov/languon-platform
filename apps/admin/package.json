@@ -10,7 +10,7 @@
         "lint": "eslint .",
         "preview": "vite preview --host 127.0.0.1 --port 3001",
         "test": "vitest run --passWithNoTests",
-        "test:e2e": "playwright test",
+        "test:e2e": "DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED=true playwright test",
         "test:coverage": "vitest run --coverage --passWithNoTests",
         "typecheck": "tsc --noEmit"
     },

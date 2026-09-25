@@ -431,6 +431,7 @@ export class DictionaryGenerationWorkerService {
             limit: 100,
         });
         const claim = await this.dependencies.store.claim({
+            creditSettlementRevision: 1,
             context: { now, signal: input.signal },
             globalConcurrency: this.settings.globalConcurrency,
             leaseDurationMs: this.settings.leaseDurationMs,
@@ -529,6 +530,26 @@ export class DictionaryGenerationWorkerService {
                           : this.settings.providerTimeoutMs,
                 );
             });
+            const markProviderDispatch = async () => {
+                const retained =
+                    await this.dependencies.store.markProviderDispatch({
+                        context: {
+                            now: this.dependencies.clock.now(),
+                            signal: internalSignal,
+                        },
+                        fencingToken: claim.fencingToken,
+                        jobId: claim.id,
+                        leaseDeadline,
+                        workerId: claim.workerId,
+                    });
+                if (!retained) throw new WorkerLeaseLostError();
+            };
+            const afterDispatchMarked = async <T>(
+                operation: () => Promise<T>,
+            ) => {
+                await markProviderDispatch();
+                return operation();
+            };
             const generation =
                 claim.input.format === dictionaryCardAuthoringGenerationFormat
                     ? this.dependencies.cardAuthoringProvider
@@ -537,25 +558,27 @@ export class DictionaryGenerationWorkerService {
                                   dictionaryCardAuthoringProviderInput(
                                       claim.input,
                                   );
-                              return this.dependencies.cardAuthoringProvider
-                                  .generate({
-                                      idempotencyKey: `${claim.id}/generate`,
-                                      input: providerInput,
-                                      providerBudget: claim.providerBudget,
-                                      providerExecution:
-                                          claim.providerExecution ?? null,
-                                      signal: providerAbort.signal,
-                                  })
-                                  .then((response) =>
-                                      parseCardAuthoringGeneratorResponse(
-                                          response,
-                                          claim.providerBudget,
-                                          providerInput,
-                                          (usage) => {
-                                              returnedProviderUsage = usage;
-                                          },
-                                      ),
-                                  );
+                              return afterDispatchMarked(() =>
+                                  this.dependencies.cardAuthoringProvider!.generate(
+                                      {
+                                          idempotencyKey: `${claim.id}/generate`,
+                                          input: providerInput,
+                                          providerBudget: claim.providerBudget,
+                                          providerExecution:
+                                              claim.providerExecution ?? null,
+                                          signal: providerAbort.signal,
+                                      },
+                                  ),
+                              ).then((response) =>
+                                  parseCardAuthoringGeneratorResponse(
+                                      response,
+                                      claim.providerBudget,
+                                      providerInput,
+                                      (usage) => {
+                                          returnedProviderUsage = usage;
+                                      },
+                                  ),
+                              );
                           })()
                         : Promise.reject(
                               new CardAuthoringProposalGeneratorError(
@@ -565,11 +588,14 @@ export class DictionaryGenerationWorkerService {
                     : claim.input.format ===
                         dictionaryImportPairsGenerationFormat
                       ? this.dependencies.importPairsProvider
-                          ? generateImportPairsProposal({
-                                claim,
-                                provider: this.dependencies.importPairsProvider,
-                                signal: providerAbort.signal,
-                            })
+                          ? afterDispatchMarked(() =>
+                                generateImportPairsProposal({
+                                    claim,
+                                    provider:
+                                        this.dependencies.importPairsProvider!,
+                                    signal: providerAbort.signal,
+                                }),
+                            )
                           : Promise.reject(
                                 new CardProposalGeneratorError(
                                     'provider_unavailable',
@@ -578,33 +604,39 @@ export class DictionaryGenerationWorkerService {
                       : claim.input.format ===
                           dictionaryPastedTermsGenerationFormat
                         ? this.dependencies.pastedTermsProvider
-                            ? generatePastedTermsProposal({
-                                  claim,
-                                  provider:
-                                      this.dependencies.pastedTermsProvider,
-                                  signal: providerAbort.signal,
-                              })
+                            ? afterDispatchMarked(() =>
+                                  generatePastedTermsProposal({
+                                      claim,
+                                      provider:
+                                          this.dependencies
+                                              .pastedTermsProvider!,
+                                      signal: providerAbort.signal,
+                                  }),
+                              )
                             : Promise.reject(
                                   new CardProposalGeneratorError(
                                       'provider_unavailable',
                                   ),
                               )
                         : claim.input.format === dictionaryGenerationFormat
-                          ? this.dependencies.provider
-                                .generate({
-                                    idempotencyKey: `${claim.id}/generate`,
-                                    input: claim.input,
-                                    providerBudget: claim.providerBudget,
-                                    providerExecution:
-                                        claim.providerExecution ?? null,
-                                    signal: providerAbort.signal,
-                                })
-                                .then((response) =>
-                                    parseGeneratorResponse(
-                                        response,
-                                        claim.providerBudget,
-                                    ),
-                                )
+                          ? (() => {
+                                const providerInput = claim.input;
+                                return afterDispatchMarked(() =>
+                                    this.dependencies.provider.generate({
+                                        idempotencyKey: `${claim.id}/generate`,
+                                        input: providerInput,
+                                        providerBudget: claim.providerBudget,
+                                        providerExecution:
+                                            claim.providerExecution ?? null,
+                                        signal: providerAbort.signal,
+                                    }),
+                                );
+                            })().then((response) =>
+                                parseGeneratorResponse(
+                                    response,
+                                    claim.providerBudget,
+                                ),
+                            )
                           : claim.input.format ===
                                   dictionaryDocumentGenerationFormat &&
                               this.dependencies.documentExecutor
@@ -614,6 +646,7 @@ export class DictionaryGenerationWorkerService {
                                   input: claim.input,
                                   jobId: claim.id,
                                   leaseDeadline: claim.leaseDeadline,
+                                  markProviderDispatch,
                                   providerBudget: claim.providerBudget,
                                   providerExecution:
                                       claim.providerExecution ?? null,
@@ -714,6 +747,7 @@ export class DictionaryGenerationWorkerService {
             if (!completed) throw new WorkerLeaseLostError();
         } catch (error) {
             if (shutdownRequested) return true;
+            if (error instanceof WorkerLeaseLostError) return true;
             const failureNow = this.dependencies.clock.now();
             if (
                 claim.input.format === dictionaryDocumentGenerationFormat &&

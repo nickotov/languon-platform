@@ -24,6 +24,8 @@ export function dictionaryErrorMessage(error: unknown, t: Translate): string {
         return t('dictionary.error.capacity');
     if (error.detail.code === 'generation_not_available')
         return t('dictionary.generation.error.unavailable');
+    if (error.detail.code === 'ai_credits_exhausted')
+        return t('dictionary.generation.error.creditsExhausted');
     if (error.detail.code === 'generation_job_not_found')
         return t('dictionary.generation.error.notFound');
     if (error.detail.code === 'generation_not_reviewable')

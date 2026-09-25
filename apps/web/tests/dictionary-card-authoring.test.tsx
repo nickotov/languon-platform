@@ -181,6 +181,10 @@ describe('dictionary settings and card authoring', () => {
         ['provider_timeout', 'dictionary.authoring.timeout'],
         ['invalid_model_output', 'dictionary.authoring.failed'],
         ['retry_exhausted', 'dictionary.authoring.failed'],
+        [
+            'ai_credits_exhausted',
+            'dictionary.generation.error.creditsExhausted',
+        ],
         ['internal_error', 'dictionary.authoring.failed'],
         ['generation_conflict', 'dictionary.authoring.failed'],
         [null, 'dictionary.authoring.failed'],

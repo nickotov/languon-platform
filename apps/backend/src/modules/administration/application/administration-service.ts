@@ -1,5 +1,8 @@
 import type {
     AdminActor,
+    AdminAiCreditAdjustmentRequest,
+    AdminAiCreditPolicyMutationRequest,
+    AdminAiCreditsQuery,
     AdminAiSettingsMutationRequest,
     AdminAuditEventsQuery,
     AdminReason,
@@ -15,6 +18,10 @@ import type { Clock } from '../../authentication/application/ports/clock';
 import type { IdGenerator } from '../../authentication/application/ports/id-generator';
 import {
     AdminAccessDeniedError,
+    AdminAiCreditAccountConflictError,
+    AdminAiCreditAdjustmentExceedsAvailableError,
+    AdminAiCreditInvalidRequestError,
+    AdminAiCreditTargetUnavailableError,
     AdminAiSettingsConflictError,
     AdminAiSettingsUnavailableError,
     AdminDeletionCancellationUnavailableError,
@@ -25,6 +32,7 @@ import {
 } from './administration-errors';
 import type {
     AdministrationStore,
+    AdminAiCreditMutationRejection,
     AdminAiSettingsMutationInput,
     AdminUserMutationInput,
 } from './ports/administration-store';
@@ -92,6 +100,49 @@ export class AdministrationService {
     public async aiSettings(accessToken: string) {
         await this.authorize(accessToken);
         return this.dependencies.store.aiSettings();
+    }
+
+    public async aiCredits(
+        accessToken: string,
+        targetUserId: string,
+        query: AdminAiCreditsQuery,
+    ) {
+        await this.authorize(accessToken);
+        return this.dependencies.store.aiCredits(
+            targetUserId,
+            query,
+            this.dependencies.clock.now(),
+        );
+    }
+
+    public async updateAiCreditPolicy(
+        accessToken: string,
+        targetUserId: string,
+        input: AdminAiCreditPolicyMutationRequest,
+        correlationId: string,
+    ) {
+        return this.mutateAiCredits(
+            'ai_credit_policy_updated',
+            accessToken,
+            targetUserId,
+            input,
+            correlationId,
+        );
+    }
+
+    public async adjustAiCredits(
+        accessToken: string,
+        targetUserId: string,
+        input: AdminAiCreditAdjustmentRequest,
+        correlationId: string,
+    ) {
+        return this.mutateAiCredits(
+            'ai_credits_adjusted',
+            accessToken,
+            targetUserId,
+            input,
+            correlationId,
+        );
     }
 
     public async updateAiSettings(
@@ -298,6 +349,66 @@ export class AdministrationService {
         }
     }
 
+    private async mutateAiCredits(
+        action: 'ai_credit_policy_updated' | 'ai_credits_adjusted',
+        accessToken: string,
+        targetUserId: string,
+        input:
+            AdminAiCreditPolicyMutationRequest | AdminAiCreditAdjustmentRequest,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken, correlationId);
+        try {
+            await this.requireRecent(principal);
+        } catch (error) {
+            if (!(error instanceof RecentAuthenticationRequiredError)) {
+                throw error;
+            }
+            const target = await this.dependencies.store.findUser(targetUserId);
+            await this.recordRejected({
+                action,
+                actorUserId: principal.actor.id,
+                correlationId,
+                metadata: {
+                    expectedVersion: input.expectedVersion,
+                    rejection: 'recent_authentication_required',
+                    requestedTargetUserId: targetUserId,
+                    targetId: targetUserId,
+                    targetKind: 'ai_credit_account',
+                },
+                reason: input.reason,
+                ...(target ? { targetUserId: target.id } : {}),
+            });
+            throw error;
+        }
+        const occurredAt = this.dependencies.clock.now();
+        const common = {
+            actorSessionId: principal.sessionId,
+            actorUserId: principal.actor.id,
+            audit: {
+                correlationId,
+                expiresAt: new Date(
+                    occurredAt.getTime() + auditRetentionMilliseconds,
+                ),
+                id: this.dependencies.ids.generate(),
+                occurredAt,
+            },
+            targetUserId,
+        };
+        const result =
+            action === 'ai_credit_policy_updated'
+                ? await this.dependencies.store.updateAiCreditPolicy({
+                      ...common,
+                      ...(input as AdminAiCreditPolicyMutationRequest),
+                  })
+                : await this.dependencies.store.adjustAiCredits({
+                      ...common,
+                      ...(input as AdminAiCreditAdjustmentRequest),
+                  });
+        if (result.ok) return result.response;
+        throw creditMutationError(result.rejection);
+    }
+
     private async requireRecent(principal: AdminPrincipal): Promise<void> {
         await this.dependencies.authentication.requireRecentlyAuthenticatedSession(
             {
@@ -334,6 +445,8 @@ export class AdministrationService {
     private async recordRejected(input: {
         action:
             | 'access_denied'
+            | 'ai_credit_policy_updated'
+            | 'ai_credits_adjusted'
             | 'ai_settings_updated'
             | 'user_disabled'
             | 'user_restored'
@@ -366,6 +479,27 @@ export class AdministrationService {
             ...(input.targetUserId ? { targetUserId: input.targetUserId } : {}),
         });
     }
+}
+
+function creditMutationError(rejection: AdminAiCreditMutationRejection): Error {
+    if (rejection === 'account_conflict') {
+        return new AdminAiCreditAccountConflictError();
+    }
+    if (rejection === 'adjustment_exceeds_available') {
+        return new AdminAiCreditAdjustmentExceedsAvailableError();
+    }
+    if (rejection === 'target_unavailable') {
+        return new AdminAiCreditTargetUnavailableError();
+    }
+    if (rejection === 'invalid_request') {
+        return new AdminAiCreditInvalidRequestError(
+            'The AI credit mutation is invalid.',
+        );
+    }
+    if (rejection === 'recent_authentication_required') {
+        return new RecentAuthenticationRequiredError();
+    }
+    return new AdminAccessDeniedError();
 }
 
 function isAuditableMutationRejection(error: unknown): error is Error {

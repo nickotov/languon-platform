@@ -31,6 +31,16 @@ function application() {
 }
 
 describe('dictionary HTTP routes', () => {
+    it('publishes credit exhaustion in the OpenAPI contract', () => {
+        const document = application().getOpenAPIDocument({
+            info: { title: 'Dictionary routes', version: '1' },
+            openapi: '3.1.0',
+        });
+        expect(
+            document.paths?.['/dictionary-imports']?.post?.responses?.['402'],
+        ).toBeDefined();
+    });
+
     it('serves the public catalog with private no-store and no-referrer policy', async () => {
         const response = await application().request('/languages');
         expect(response.status).toBe(200);

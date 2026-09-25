@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import {
     AdminAuditEventSchema,
+    AdminAiCreditAccountSchema,
+    AdminAiCreditHistoryEntrySchema,
     AdminDashboardResponseSchema,
     AdminMeResponseSchema,
     AdminUserDetailSchema,
@@ -9,6 +11,7 @@ import {
 } from './models';
 import {
     AdminAuditActionSchema,
+    AdminAiCreditModeSchema,
     AdminAuditOutcomeSchema,
     AdminIdSchema,
     AdminPageSchema,
@@ -29,6 +32,9 @@ export const AdminErrorCodeSchema = z.enum([
     'user_not_found',
     'user_state_conflict',
     'ai_settings_conflict',
+    'ai_credit_account_conflict',
+    'ai_credit_adjustment_exceeds_available',
+    'ai_credit_target_unavailable',
     'deletion_cancellation_unavailable',
     'self_disable_forbidden',
     'last_owner_forbidden',
@@ -118,6 +124,14 @@ export const AdminAiModelSchema = z
     .object({
         id: z.string().trim().min(1).max(160),
         label: z.string().trim().min(1).max(160),
+        creditPricing: z
+            .object({
+                revision: z.literal(1),
+                inputCreditsPerMillionTokens: z.number().int().positive(),
+                outputCreditsPerMillionTokens: z.number().int().positive(),
+                maxCreditsPerAttempt: z.number().int().positive(),
+            })
+            .strict(),
         supportedFormats: z.array(z.string().trim().min(1).max(160)).min(1),
         available: z.boolean(),
         unavailableReason: z.string().trim().min(1).max(300).nullable(),
@@ -183,6 +197,71 @@ export const AdminAiSettingsMutationRequestSchema = z
 export const AdminAiSettingsMutationResponseSchema =
     AdminAiSettingsResponseSchema;
 
+export const AdminAiCreditsQuerySchema = z
+    .object({
+        page: AdminPageSchema.default(1),
+        pageSize: AdminPageSizeSchema.default(25),
+    })
+    .strict();
+
+export const AdminAiCreditsResponseSchema = z
+    .object({
+        account: AdminAiCreditAccountSchema,
+        history: z.array(AdminAiCreditHistoryEntrySchema),
+        page: z.number().int().positive(),
+        pageSize: z.number().int().positive().max(100),
+        total: z.number().int().nonnegative(),
+    })
+    .strict();
+
+export const AdminAiCreditPolicyMutationRequestSchema = z
+    .object({
+        expectedVersion: z.number().int().nonnegative(),
+        mode: AdminAiCreditModeSchema,
+        unlimitedUntil: z.string().datetime().nullable(),
+        reason: AdminReasonSchema,
+    })
+    .strict()
+    .superRefine((value, context) => {
+        if (value.mode === 'limited' && value.unlimitedUntil !== null) {
+            context.addIssue({
+                code: 'custom',
+                message:
+                    'Limited credit policy cannot have an unlimited expiry.',
+                path: ['unlimitedUntil'],
+            });
+        }
+    });
+
+export const AdminAiCreditAdjustmentRequestSchema = z
+    .object({
+        expectedVersion: z.number().int().nonnegative(),
+        amountCredits: z
+            .number()
+            .int()
+            .min(-1_000_000_000_000)
+            .max(1_000_000_000_000),
+        expiresAt: z.string().datetime().nullable(),
+        reason: AdminReasonSchema,
+    })
+    .strict()
+    .superRefine((value, context) => {
+        if (value.amountCredits === 0) {
+            context.addIssue({
+                code: 'custom',
+                message: 'Credit adjustment must be non-zero.',
+                path: ['amountCredits'],
+            });
+        }
+        if (value.amountCredits < 0 && value.expiresAt !== null) {
+            context.addIssue({
+                code: 'custom',
+                message: 'Credit removals cannot have an expiry.',
+                path: ['expiresAt'],
+            });
+        }
+    });
+
 export const AdminEndpointSchemas = {
     me: { response: AdminMeResponseSchema, error: AdminErrorResponseSchema },
     dashboard: {
@@ -231,6 +310,24 @@ export const AdminEndpointSchemas = {
         response: AdminAiSettingsMutationResponseSchema,
         error: AdminErrorResponseSchema,
     },
+    aiCredits: {
+        params: AdminUserIdParamsSchema,
+        query: AdminAiCreditsQuerySchema,
+        response: AdminAiCreditsResponseSchema,
+        error: AdminErrorResponseSchema,
+    },
+    updateAiCreditPolicy: {
+        params: AdminUserIdParamsSchema,
+        body: AdminAiCreditPolicyMutationRequestSchema,
+        response: AdminAiCreditsResponseSchema,
+        error: AdminErrorResponseSchema,
+    },
+    adjustAiCredits: {
+        params: AdminUserIdParamsSchema,
+        body: AdminAiCreditAdjustmentRequestSchema,
+        response: AdminAiCreditsResponseSchema,
+        error: AdminErrorResponseSchema,
+    },
 } as const;
 
 export type AdminErrorCode = z.infer<typeof AdminErrorCodeSchema>;
@@ -256,4 +353,14 @@ export type AdminAiSettingsMutationRequest = z.infer<
 >;
 export type AdminAiSettingsMutationResponse = z.infer<
     typeof AdminAiSettingsMutationResponseSchema
+>;
+export type AdminAiCreditsQuery = z.infer<typeof AdminAiCreditsQuerySchema>;
+export type AdminAiCreditsResponse = z.infer<
+    typeof AdminAiCreditsResponseSchema
+>;
+export type AdminAiCreditPolicyMutationRequest = z.infer<
+    typeof AdminAiCreditPolicyMutationRequestSchema
+>;
+export type AdminAiCreditAdjustmentRequest = z.infer<
+    typeof AdminAiCreditAdjustmentRequestSchema
 >;

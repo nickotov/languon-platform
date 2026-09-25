@@ -14,6 +14,8 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type {
     AdminAiSettingsResponse,
+    AdminAiCreditsQuery,
+    AdminAiCreditsResponse,
     AdminAuditEvent,
     AdminAuditEventsQuery,
     AdminDashboardResponse,
@@ -28,6 +30,13 @@ import {
     authSessionsTable,
 } from '../../../../authentication/infrastructure/persistence/drizzle/schema';
 import { User } from '../../../../users/domain/user';
+import {
+    AiCreditIdempotencyConflictError,
+    AiCreditInsufficientBalanceError,
+    AiCreditInvalidAmountError,
+    AiCreditManagementConflictError,
+} from '../../../../ai-credits/domain/ai-credit';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import type { AccountDeletionRecoveryJournal } from '../../../../users/application/ports/account-deletion-recovery-journal';
 import { accountDeletionRequestsTable } from '../../../../users/infrastructure/persistence/drizzle/account-deletion-schema';
 import {
@@ -36,6 +45,7 @@ import {
 } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import {
     AdminAccessDeniedError,
+    AdminAiCreditTargetUnavailableError,
     AdminAiSettingsConflictError,
     AdminAiSettingsUnavailableError,
     AdminCancellationJournalUnavailableError,
@@ -47,6 +57,9 @@ import {
 import { RecentAuthenticationRequiredError } from '../../../../authentication/application/authentication-errors';
 import type {
     AdministrationStore,
+    AdminAiCreditAdjustmentMutationInput,
+    AdminAiCreditMutationRejection,
+    AdminAiCreditPolicyMutationInput,
     AdminAiSettingsMutationInput,
     AdminAuditWrite,
     AdminUserMutationInput,
@@ -144,6 +157,26 @@ export class DrizzleAdministrationStore implements AdministrationStore {
                 : null,
             observations,
         );
+    }
+
+    public async aiCredits(
+        userId: string,
+        query: AdminAiCreditsQuery,
+        at: Date,
+    ): Promise<AdminAiCreditsResponse> {
+        return this.database.transaction(async (transaction) => {
+            const target = await this.creditTarget(transaction, userId);
+            if (!target) throw new AdminUserNotFoundError();
+            return this.aiCreditsResponse(transaction, userId, query, at);
+        });
+    }
+
+    public updateAiCreditPolicy(input: AdminAiCreditPolicyMutationInput) {
+        return this.mutateAiCredits(input, 'ai_credit_policy_updated');
+    }
+
+    public adjustAiCredits(input: AdminAiCreditAdjustmentMutationInput) {
+        return this.mutateAiCredits(input, 'ai_credits_adjusted');
     }
 
     public async updateAiSettings(
@@ -251,6 +284,7 @@ export class DrizzleAdministrationStore implements AdministrationStore {
                         adapterRevision: selected.adapterRevision,
                         aggregateBudget: selected.aggregateBudget,
                         credentialReference: selected.credentialReference,
+                        creditPricing: selected.creditPricing,
                         enabledModelIds: enabledModels,
                         modelId: selected.id,
                         perCallMaxInputTokens: selected.perCallMaxInputTokens,
@@ -699,7 +733,10 @@ export class DrizzleAdministrationStore implements AdministrationStore {
     private async assertActorCanMutate(
         transaction: AdministrationTransaction,
         input: Pick<
-            AdminUserMutationInput | AdminAiSettingsMutationInput,
+            | AdminUserMutationInput
+            | AdminAiSettingsMutationInput
+            | AdminAiCreditPolicyMutationInput
+            | AdminAiCreditAdjustmentMutationInput,
             'actorSessionId' | 'actorUserId'
         >,
         operationTime: Date,
@@ -742,6 +779,205 @@ export class DrizzleAdministrationStore implements AdministrationStore {
         ) {
             throw new RecentAuthenticationRequiredError();
         }
+    }
+
+    private async mutateAiCredits(
+        input:
+            | AdminAiCreditPolicyMutationInput
+            | AdminAiCreditAdjustmentMutationInput,
+        action: 'ai_credit_policy_updated' | 'ai_credits_adjusted',
+    ) {
+        return this.database.transaction(async (transaction) => {
+            await transaction.execute(
+                sql`select pg_advisory_xact_lock(${activeOwnerMutationLock})`,
+            );
+            const [clock] = await transaction
+                .select({ value: sql<string>`clock_timestamp()::text` })
+                .from(usersTable)
+                .limit(1);
+            const operationTime = new Date(clock?.value ?? Number.NaN);
+            if (Number.isNaN(operationTime.getTime())) {
+                throw new AdminAccessDeniedError();
+            }
+
+            let target: {
+                id: string;
+                status: AdminUserDetail['status'];
+            } | null = null;
+            let beforeVersion: number | null = null;
+            let rejection: AdminAiCreditMutationRejection | null = null;
+            let response: AdminAiCreditsResponse | null = null;
+            try {
+                await this.assertActorCanMutate(
+                    transaction,
+                    input,
+                    operationTime,
+                );
+                target = await this.creditTarget(
+                    transaction,
+                    input.targetUserId,
+                    true,
+                );
+                if (!target || !isCreditManageableStatus(target.status)) {
+                    throw new AdminAiCreditTargetUnavailableError();
+                }
+                const credits = new DrizzleAiCreditTransactionParticipant(
+                    transaction,
+                );
+                const before = await credits.accountSummary(
+                    target.id,
+                    operationTime,
+                );
+                beforeVersion = before.managementVersion;
+                if (action === 'ai_credit_policy_updated') {
+                    const policy = input as AdminAiCreditPolicyMutationInput;
+                    await credits.updatePolicy({
+                        at: operationTime,
+                        expectedManagementVersion: policy.expectedVersion,
+                        mode: policy.mode,
+                        ownerId: target.id,
+                        reason: policy.reason,
+                        unlimitedUntil: policy.unlimitedUntil
+                            ? new Date(policy.unlimitedUntil)
+                            : null,
+                    });
+                } else {
+                    const adjustment =
+                        input as AdminAiCreditAdjustmentMutationInput;
+                    await credits.adjustByAdmin({
+                        amount: BigInt(adjustment.amountCredits),
+                        at: operationTime,
+                        expectedManagementVersion: adjustment.expectedVersion,
+                        expiresAt: adjustment.expiresAt
+                            ? new Date(adjustment.expiresAt)
+                            : null,
+                        ownerId: target.id,
+                        reason: adjustment.reason,
+                        sourceReference: `admin:${input.audit.correlationId}`,
+                    });
+                }
+                response = await this.aiCreditsResponse(
+                    transaction,
+                    target.id,
+                    { page: 1, pageSize: 25 },
+                    operationTime,
+                );
+            } catch (error) {
+                rejection = aiCreditRejection(error);
+                if (rejection === null) throw error;
+            }
+
+            const afterVersion = response?.account.managementVersion ?? null;
+            await transaction.insert(adminAuditEventsTable).values(
+                auditValues({
+                    action,
+                    actorUserId: input.actorUserId,
+                    ...(afterVersion !== null && { afterVersion }),
+                    ...(beforeVersion !== null && { beforeVersion }),
+                    ...input.audit,
+                    expiresAt: new Date(
+                        operationTime.getTime() +
+                            (input.audit.expiresAt.getTime() -
+                                input.audit.occurredAt.getTime()),
+                    ),
+                    metadata: {
+                        expectedVersion: input.expectedVersion,
+                        ...(action === 'ai_credit_policy_updated'
+                            ? {
+                                  mode: (
+                                      input as AdminAiCreditPolicyMutationInput
+                                  ).mode,
+                                  unlimitedUntil: (
+                                      input as AdminAiCreditPolicyMutationInput
+                                  ).unlimitedUntil,
+                              }
+                            : {
+                                  amountCredits: (
+                                      input as AdminAiCreditAdjustmentMutationInput
+                                  ).amountCredits,
+                                  expiresAt: (
+                                      input as AdminAiCreditAdjustmentMutationInput
+                                  ).expiresAt,
+                              }),
+                        ...(rejection ? { rejection } : {}),
+                        requestedTargetUserId: input.targetUserId,
+                        targetId: input.targetUserId,
+                        targetKind: 'ai_credit_account',
+                    },
+                    occurredAt: operationTime,
+                    outcome: rejection ? 'rejected' : 'success',
+                    reason: input.reason,
+                    ...(target ? { targetUserId: target.id } : {}),
+                }),
+            );
+            return rejection
+                ? ({ ok: false, rejection } as const)
+                : ({ ok: true, response: response! } as const);
+        });
+    }
+
+    private async creditTarget(
+        database: QueryDatabase,
+        userId: string,
+        lock = false,
+    ) {
+        let query = database
+            .select({ id: usersTable.id, status: usersTable.status })
+            .from(usersTable)
+            .where(eq(usersTable.id, userId))
+            .limit(1);
+        if (lock) {
+            // QueryDatabase's union does not retain Drizzle's lock builder type.
+            query = query.for('update') as typeof query;
+        }
+        const [target] = await query;
+        return target ?? null;
+    }
+
+    private async aiCreditsResponse(
+        transaction: AdministrationTransaction,
+        userId: string,
+        query: AdminAiCreditsQuery,
+        at: Date,
+    ): Promise<AdminAiCreditsResponse> {
+        const credits = new DrizzleAiCreditTransactionParticipant(transaction);
+        const summary = await credits.accountSummary(userId, at);
+        const history = await credits.history({
+            ownerId: userId,
+            page: query.page,
+            pageSize: query.pageSize,
+        });
+        return {
+            account: {
+                availableCredits: Number(summary.availableCredits),
+                configuredMode: summary.policy.configuredMode,
+                effectiveMode: summary.policy.effectiveMode,
+                enforcementEnabled:
+                    process.env.DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED ===
+                    'true',
+                lifetimeConsumedCredits: Number(summary.consumedCredits),
+                managementVersion: summary.managementVersion,
+                nextExpirationAt:
+                    summary.nextExpirationAt?.toISOString() ?? null,
+                reservedCredits: Number(summary.reservedCredits),
+                unlimitedUntil:
+                    summary.policy.unlimitedUntil?.toISOString() ?? null,
+                userId,
+            },
+            history: history.entries.map((entry) => ({
+                amountCredits: Number(entry.amount),
+                expiresAt: entry.expiresAt?.toISOString() ?? null,
+                id: entry.id,
+                kind: entry.kind === 'admin_removal' ? 'removal' : entry.kind,
+                measurementSource: entry.measurement,
+                occurredAt: entry.createdAt.toISOString(),
+                reason: entry.reason,
+                sourceKind: entry.grantSource,
+            })),
+            page: query.page,
+            pageSize: query.pageSize,
+            total: history.total,
+        };
     }
 
     private aiSettingsResponse(
@@ -822,6 +1058,7 @@ export class DrizzleAdministrationStore implements AdministrationStore {
                             configured &&
                             routingEnabled &&
                             health.status !== 'unavailable',
+                        creditPricing: model.creditPricing,
                         id: model.id,
                         label: model.label,
                         supportedFormats: [...model.supportedFormats],
@@ -1049,12 +1286,40 @@ function mapAuditEvent(
                 ? metadata.targetId
                 : row.targetUserId,
         targetKind:
-            metadata.targetKind === 'dictionary_ai_configuration'
-                ? 'dictionary_ai_configuration'
+            metadata.targetKind === 'dictionary_ai_configuration' ||
+            metadata.targetKind === 'ai_credit_account'
+                ? metadata.targetKind
                 : row.targetUserId
                   ? 'user'
                   : null,
     };
+}
+
+function isCreditManageableStatus(status: AdminUserDetail['status']): boolean {
+    return status === 'pending' || status === 'active' || status === 'disabled';
+}
+
+function aiCreditRejection(
+    error: unknown,
+): AdminAiCreditMutationRejection | null {
+    if (
+        error instanceof AiCreditManagementConflictError ||
+        error instanceof AiCreditIdempotencyConflictError
+    ) {
+        return 'account_conflict';
+    }
+    if (error instanceof AiCreditInsufficientBalanceError) {
+        return 'adjustment_exceeds_available';
+    }
+    if (error instanceof AiCreditInvalidAmountError) return 'invalid_request';
+    if (error instanceof AdminAiCreditTargetUnavailableError) {
+        return 'target_unavailable';
+    }
+    if (error instanceof RecentAuthenticationRequiredError) {
+        return 'recent_authentication_required';
+    }
+    if (error instanceof AdminAccessDeniedError) return 'admin_access_denied';
+    return null;
 }
 
 function auditValues(input: AdminAuditWrite) {

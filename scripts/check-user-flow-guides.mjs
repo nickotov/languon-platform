@@ -9,6 +9,7 @@ const guidesDirectory = join(repositoryRoot, 'docs', 'user-flows');
 const indexPath = join(guidesDirectory, 'README.md');
 const maximumTestFileBytes = 2 * 1024 * 1024;
 export const e2eCommands = new Map([
+    ['ai-credit-wallet', 'pnpm test:e2e:ai-credit-wallet'],
     ['ai-provider-management', 'pnpm test:e2e:ai-provider-management'],
     ['admin-user-management', 'pnpm test:e2e:admin-user-management'],
     [

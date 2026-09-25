@@ -27,7 +27,21 @@ export const AdminAuditActionSchema = z.enum([
     'access_denied',
     'audit_pruned',
     'ai_settings_updated',
+    'ai_credit_policy_updated',
+    'ai_credits_adjusted',
 ]);
+
+export const AdminAiCreditModeSchema = z.enum(['limited', 'unlimited']);
+export const AdminAiCreditAmountSchema = z
+    .number()
+    .int()
+    .min(0)
+    .max(Number.MAX_SAFE_INTEGER);
+export const AdminAiCreditSignedAmountSchema = z
+    .number()
+    .int()
+    .min(Number.MIN_SAFE_INTEGER)
+    .max(Number.MAX_SAFE_INTEGER);
 
 export const AdminAiProviderIdSchema = z.enum(['deepseek', 'kie']);
 export const AdminAiModelIdSchema = z.string().trim().min(1).max(160);
@@ -46,3 +60,4 @@ export type AdminUserStatus = z.infer<typeof AdminUserStatusSchema>;
 export type AdminAuditOutcome = z.infer<typeof AdminAuditOutcomeSchema>;
 export type AdminAuditAction = z.infer<typeof AdminAuditActionSchema>;
 export type AdminReason = z.infer<typeof AdminReasonSchema>;
+export type AdminAiCreditMode = z.infer<typeof AdminAiCreditModeSchema>;

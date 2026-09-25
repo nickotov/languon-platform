@@ -207,6 +207,7 @@ export const DictionaryCardAuthoringGenerationJobSchema = z.discriminatedUnion(
                             'provider_rate_limited',
                             'invalid_model_output',
                             'retry_exhausted',
+                            'ai_credits_exhausted',
                             'internal_error',
                             'generation_conflict',
                         ]),

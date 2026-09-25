@@ -23,6 +23,7 @@ export interface DictionaryGenerationFormatExecutor<TFormat extends string> {
         fencingToken: bigint;
         jobId: string;
         leaseDeadline: Date;
+        markProviderDispatch?: () => Promise<void>;
         input: Extract<DictionaryGenerationInputPayload, { format: TFormat }>;
         providerBudget: DictionaryGenerationProviderBudgetPolicy;
         providerExecution?: DictionaryAiExecutionSnapshot | null;

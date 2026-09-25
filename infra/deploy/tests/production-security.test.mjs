@@ -139,6 +139,7 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
         'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED',
         'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED',
         'DICTIONARY_AI_MANAGED_ROUTING_ENABLED',
+        'DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED',
     ]) {
         assert.match(backend, new RegExp(`^\\s+${safeSetting}:`, 'm'));
         assert.doesNotMatch(worker, new RegExp(`^\\s+${safeSetting}:`, 'm'));

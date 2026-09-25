@@ -147,6 +147,7 @@ export const DictionaryGenerationSafeFailureSchema = z
             'provider_rate_limited',
             'invalid_model_output',
             'retry_exhausted',
+            'ai_credits_exhausted',
             'internal_error',
             'malware_detected',
             'scan_failed',

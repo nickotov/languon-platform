@@ -33,6 +33,8 @@ export const adminAuditActionEnum = pgEnum('admin_audit_action', [
     'access_denied',
     'audit_pruned',
     'ai_settings_updated',
+    'ai_credit_policy_updated',
+    'ai_credits_adjusted',
 ]);
 
 export const adminMembershipsTable = pgTable(
@@ -131,7 +133,7 @@ export const adminAuditEventsTable = pgTable(
         ),
         check(
             'admin_audit_events_version_positive',
-            sql`(${table.beforeVersion} is null or ${table.beforeVersion} > 0) and (${table.afterVersion} is null or ${table.afterVersion} > 0)`,
+            sql`(${table.beforeVersion} is null or ${table.beforeVersion} >= 0) and (${table.afterVersion} is null or ${table.afterVersion} >= 0)`,
         ),
         check(
             'admin_audit_events_expiry_after_occurrence',

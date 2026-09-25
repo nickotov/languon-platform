@@ -50,6 +50,7 @@ export interface DictionaryCompositionDependencies {
     ids: DictionaryIdGenerator;
     generation?: DictionaryGenerationApiCapabilities;
     generationProviderBudget?: DictionaryGenerationProviderBudgetPolicy;
+    aiCreditEnforcementEnabled?: boolean;
     documentUploadStorage?: DictionaryDocumentUploadStorage;
     documentUploadAuthorizationEnabled?: boolean;
     rateLimiter: RateLimiter;
@@ -88,6 +89,7 @@ export function createDictionaryComposition(
         dependencies.database,
         dependencies.ids,
         dependencies.generationProviderBudget,
+        dependencies.aiCreditEnforcementEnabled ?? false,
     );
     const dictionaryStore = new DrizzleDictionaryStore(
         dependencies.database,
@@ -152,6 +154,7 @@ export function createDictionaryComposition(
                   dependencies.ids,
                   generationStore,
                   dependencies.generationProviderBudget,
+                  dependencies.aiCreditEnforcementEnabled ?? false,
               ),
           })
         : undefined;

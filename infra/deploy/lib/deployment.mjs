@@ -107,6 +107,13 @@ export function assertDictionaryWorkerDatabasePrivileges(
         privileges.aiConfiguration !== true ||
         privileges.aiConfigurationRevisions !== true ||
         privileges.aiWorkerObservations !== true ||
+        privileges.aiCreditAccounts !== true ||
+        privileges.aiCreditGrants !== true ||
+        privileges.aiCreditAdminRemovals !== true ||
+        privileges.aiCreditAdminRemovalAllocations !== true ||
+        privileges.aiCreditReservations !== true ||
+        privileges.aiCreditReservationAllocations !== true ||
+        privileges.aiCreditHistory !== true ||
         privileges.dictionaryCardDuplicateColumns !== true ||
         privileges.jobsUnexpected !== false ||
         privileges.proposalsUnexpected !== false ||
@@ -118,6 +125,13 @@ export function assertDictionaryWorkerDatabasePrivileges(
         privileges.aiConfigurationUnexpected !== false ||
         privileges.aiConfigurationRevisionsUnexpected !== false ||
         privileges.aiWorkerObservationsUnexpected !== false ||
+        privileges.aiCreditAccountsUnexpected !== false ||
+        privileges.aiCreditGrantsUnexpected !== false ||
+        privileges.aiCreditAdminRemovalsUnexpected !== false ||
+        privileges.aiCreditAdminRemovalAllocationsUnexpected !== false ||
+        privileges.aiCreditReservationsUnexpected !== false ||
+        privileges.aiCreditReservationAllocationsUnexpected !== false ||
+        privileges.aiCreditHistoryUnexpected !== false ||
         privileges.dictionaries !== false ||
         privileges.dictionaryCards !== false ||
         privileges.dictionaryCardsUnexpectedColumns !== false ||
@@ -147,6 +161,19 @@ function tablePrivilegeExpression(table, privileges, operator) {
                 `has_table_privilege(current_user, 'public.${table}', '${privilege}')`,
         )
         .join(` ${operator} `)})`;
+}
+
+function columnPrivilegeExpression(table, columns, privilege, operator) {
+    return columns
+        .map(
+            (column) =>
+                `has_column_privilege(current_user, 'public.${table}', '${column}', '${privilege}')`,
+        )
+        .join(` ${operator} `);
+}
+
+function unexpectedColumnPrivilegeExpression(table, allowed, privilege) {
+    return `exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = '${table}' and column_name not in (${allowed.map((column) => `'${column}'`).join(', ')}) and has_column_privilege(current_user, 'public.${table}', column_name, '${privilege}'))`;
 }
 
 const forbiddenTablePrivileges = [
@@ -186,6 +213,15 @@ export const DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY = `select
     has_table_privilege(current_user, 'public.dictionary_ai_configuration', 'SELECT') as "aiConfiguration",
     has_table_privilege(current_user, 'public.dictionary_ai_configuration_revisions', 'SELECT') as "aiConfigurationRevisions",
     ${tablePrivilegeExpression('dictionary_ai_worker_observations', ['SELECT', 'INSERT', 'UPDATE'], 'and')} as "aiWorkerObservations",
+    (${columnPrivilegeExpression('ai_credit_accounts', ['user_id', 'mode', 'unlimited_until'], 'SELECT', 'and')}) as "aiCreditAccounts",
+    (${columnPrivilegeExpression('ai_credit_grants', ['id', 'owner_id', 'amount', 'created_at', 'expires_at'], 'SELECT', 'and')}) as "aiCreditGrants",
+    (${columnPrivilegeExpression('ai_credit_admin_removals', ['id', 'owner_id'], 'SELECT', 'and')}) as "aiCreditAdminRemovals",
+    (${columnPrivilegeExpression('ai_credit_admin_removal_allocations', ['removal_id', 'grant_id', 'allocated_credits'], 'SELECT', 'and')}) as "aiCreditAdminRemovalAllocations",
+    (${tablePrivilegeExpression('ai_credit_reservations', ['SELECT', 'INSERT'], 'and')}
+        and ${['charged_credits', 'dispatched_at', 'measured_credits', 'measurement', 'settled_at', 'state'].map((column) => `has_column_privilege(current_user, 'public.ai_credit_reservations', '${column}', 'UPDATE')`).join(' and ')}) as "aiCreditReservations",
+    (${tablePrivilegeExpression('ai_credit_reservation_allocations', ['SELECT', 'INSERT'], 'and')}
+        and has_column_privilege(current_user, 'public.ai_credit_reservation_allocations', 'settled_credits', 'UPDATE')) as "aiCreditReservationAllocations",
+    ${tablePrivilegeExpression('ai_credit_history', ['INSERT'], 'and')} as "aiCreditHistory",
     (has_column_privilege(current_user, 'public.dictionary_cards', 'id', 'SELECT')
         and has_column_privilege(current_user, 'public.dictionary_cards', 'dictionary_id', 'SELECT')
         and has_column_privilege(current_user, 'public.dictionary_cards', 'source', 'SELECT')
@@ -200,6 +236,15 @@ export const DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY = `select
     ${tablePrivilegeExpression('dictionary_ai_configuration', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "aiConfigurationUnexpected",
     ${tablePrivilegeExpression('dictionary_ai_configuration_revisions', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "aiConfigurationRevisionsUnexpected",
     ${tablePrivilegeExpression('dictionary_ai_worker_observations', ['DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "aiWorkerObservationsUnexpected",
+    (${tablePrivilegeExpression('ai_credit_accounts', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} or ${unexpectedColumnPrivilegeExpression('ai_credit_accounts', ['user_id', 'mode', 'unlimited_until'], 'SELECT')}) as "aiCreditAccountsUnexpected",
+    (${tablePrivilegeExpression('ai_credit_grants', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} or ${unexpectedColumnPrivilegeExpression('ai_credit_grants', ['id', 'owner_id', 'amount', 'created_at', 'expires_at'], 'SELECT')}) as "aiCreditGrantsUnexpected",
+    (${tablePrivilegeExpression('ai_credit_admin_removals', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} or ${unexpectedColumnPrivilegeExpression('ai_credit_admin_removals', ['id', 'owner_id'], 'SELECT')}) as "aiCreditAdminRemovalsUnexpected",
+    (${tablePrivilegeExpression('ai_credit_admin_removal_allocations', ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} or ${unexpectedColumnPrivilegeExpression('ai_credit_admin_removal_allocations', ['removal_id', 'grant_id', 'allocated_credits'], 'SELECT')}) as "aiCreditAdminRemovalAllocationsUnexpected",
+    (${tablePrivilegeExpression('ai_credit_reservations', ['UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')}
+        or exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'ai_credit_reservations' and column_name not in ('charged_credits', 'dispatched_at', 'measured_credits', 'measurement', 'settled_at', 'state') and has_column_privilege(current_user, 'public.ai_credit_reservations', column_name, 'UPDATE'))) as "aiCreditReservationsUnexpected",
+    (${tablePrivilegeExpression('ai_credit_reservation_allocations', ['UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')}
+        or exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'ai_credit_reservation_allocations' and column_name <> 'settled_credits' and has_column_privilege(current_user, 'public.ai_credit_reservation_allocations', column_name, 'UPDATE'))) as "aiCreditReservationAllocationsUnexpected",
+    ${tablePrivilegeExpression('ai_credit_history', ['SELECT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'or')} as "aiCreditHistoryUnexpected",
     ${tablePrivilegeExpression('dictionaries', forbiddenTablePrivileges, 'or')} as "dictionaries",
     ${tablePrivilegeExpression('dictionary_cards', forbiddenTablePrivileges, 'or')} as "dictionaryCards",
     exists (

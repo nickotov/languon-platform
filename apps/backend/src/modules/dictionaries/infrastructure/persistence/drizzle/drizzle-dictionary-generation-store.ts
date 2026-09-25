@@ -41,6 +41,11 @@ import {
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import {
+    AiCreditInsufficientBalanceError,
+    resolveAiCreditMeasurement,
+} from '../../../../ai-credits/domain/ai-credit';
 import type { DictionaryAiExecutionSnapshot } from '../../../application/dictionary-ai-provider-catalog';
 import {
     DictionaryCardNotFoundError,
@@ -48,6 +53,7 @@ import {
     DictionaryGenerationCompletionConflictError,
     DictionaryGenerationJobNotFoundError,
     DictionaryGenerationNotAvailableError,
+    DictionaryAiCreditsExhaustedError,
     DictionaryGenerationNotReviewableError,
     DictionaryGenerationProposalExpiredError,
     DictionaryIdempotencyConflictError,
@@ -130,6 +136,31 @@ type ProviderExecution = {
 type ProposalRow = typeof dictionaryGenerationProposalsTable.$inferSelect;
 type CardRow = typeof dictionaryCardsTable.$inferSelect;
 type SettingsRow = typeof dictionarySettingsTable.$inferSelect;
+
+function creditUsage(
+    job: JobRow,
+    usage: { inputTokens: number; outputTokens: number },
+): bigint {
+    if (
+        job.aiCreditInputCreditsPerMillionTokens === null ||
+        job.aiCreditOutputCreditsPerMillionTokens === null
+    )
+        throw new Error('AI credit pricing is missing');
+    const perMillion = 1_000_000n;
+    const input =
+        (BigInt(usage.inputTokens) *
+            BigInt(job.aiCreditInputCreditsPerMillionTokens) +
+            perMillion -
+            1n) /
+        perMillion;
+    const output =
+        (BigInt(usage.outputTokens) *
+            BigInt(job.aiCreditOutputCreditsPerMillionTokens) +
+            perMillion -
+            1n) /
+        perMillion;
+    return input + output;
+}
 
 export const dictionaryGenerationAdmissionLock = 4_312_189_072;
 const generationLimits = {
@@ -441,6 +472,7 @@ function mapJob(
         'invalid_model_output',
         'generation_conflict',
         'retry_exhausted',
+        'ai_credits_exhausted',
         'internal_error',
         'malware_detected',
         'scan_failed',
@@ -674,6 +706,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         private readonly database: Database,
         private readonly ids: DictionaryGenerationIdGenerator,
         private readonly providerBudget: DictionaryGenerationProviderBudgetPolicy = defaultDictionaryGenerationProviderBudgetPolicy,
+        private readonly aiCreditEnforcementEnabled = false,
     ) {}
 
     public async enqueue(
@@ -859,6 +892,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
                 .values({
+                    ...this.aiCreditJobValues(providerExecution),
                     cardId: input.cardId,
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
@@ -899,6 +933,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     updatedAt: input.context.now,
                 })
                 .returning();
+            await this.reserveInitialAiCreditAttempt(
+                tx,
+                job!,
+                input.context.now,
+            );
             return mapJob(job!, null);
         });
     }
@@ -1134,6 +1173,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
                 .values({
+                    ...this.aiCreditJobValues(providerExecution),
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
@@ -1174,6 +1214,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     updatedAt: input.context.now,
                 })
                 .returning();
+            await this.reserveInitialAiCreditAttempt(
+                tx,
+                job!,
+                input.context.now,
+            );
             return mapJob(job!, null);
         });
     }
@@ -1342,6 +1387,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
                 .values({
+                    ...this.aiCreditJobValues(providerExecution),
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
@@ -1382,6 +1428,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     updatedAt: input.context.now,
                 })
                 .returning();
+            await this.reserveInitialAiCreditAttempt(
+                tx,
+                job!,
+                input.context.now,
+            );
             return mapJob(job!, null);
         });
     }
@@ -1682,6 +1733,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
                 .values({
+                    ...this.aiCreditJobValues(providerExecution),
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: current.dictionary.id,
@@ -1723,6 +1775,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 })
                 .returning();
             if (!job) throw new DictionaryVersionConflictError();
+            await this.reserveInitialAiCreditAttempt(
+                tx,
+                job,
+                input.context.now,
+            );
             const [counts] = await tx
                 .select({
                     active: sql<number>`count(*) filter (where ${dictionaryCardsTable.lifecycle} = 'active')`,
@@ -1927,6 +1984,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
                 .values({
+                    ...this.aiCreditJobValues(providerExecution),
                     cardId: null,
                     createdAt: input.context.now,
                     dictionaryId: current.dictionary.id,
@@ -1968,6 +2026,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 })
                 .returning();
             if (!job) throw new DictionaryVersionConflictError();
+            await this.reserveInitialAiCreditAttempt(
+                tx,
+                job,
+                input.context.now,
+            );
             return mapJob(job, null);
         });
     }
@@ -2029,6 +2092,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         input: Parameters<DictionaryGenerationStore['cancel']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await tx.execute(
+                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+            );
             abort(input.context);
             const job = await this.lockOwnedJob(tx, input.ownerId, input.jobId);
             abort(input.context);
@@ -2040,9 +2106,17 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 return this.readView(tx, job, input.context.now);
             const queued = job.executionState === 'queued';
             const incurredProviderCost = queued && job.attemptCount > 0;
+            if (queued)
+                await this.settleCurrentAiCreditAttempt(tx, job, {
+                    at: input.context.now,
+                });
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
+                    aiCreditReservationId:
+                        queued && job.aiCreditAccounted
+                            ? null
+                            : job.aiCreditReservationId,
                     awaitingUploadAt: queued ? null : job.awaitingUploadAt,
                     cancellationRequestedAt: input.context.now,
                     completedAt: queued ? input.context.now : null,
@@ -3079,6 +3153,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ): Promise<ClaimedDictionaryGenerationJob | null> {
         return this.database.transaction(async (tx) => {
             abort(input.context);
+            if (input.creditSettlementRevision === 1)
+                await tx.execute(
+                    sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+                );
             if (input.managedRoutingRevision === 1) {
                 await tx.execute(
                     sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
@@ -3100,6 +3178,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             dictionaryGenerationJobsTable.leaseDeadline,
                             input.context.now,
                         ),
+                        input.creditSettlementRevision === 1
+                            ? undefined
+                            : eq(
+                                  dictionaryGenerationJobsTable.aiCreditAccounted,
+                                  false,
+                              ),
                     ),
                 )
                 .orderBy(asc(dictionaryGenerationJobsTable.leaseDeadline))
@@ -3108,9 +3192,15 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             for (const job of stale) {
                 const cancelled = job.cancellationRequestedAt !== null;
                 const exhausted = job.attemptCount >= job.maxAttempts;
+                await this.settleCurrentAiCreditAttempt(tx, job, {
+                    at: input.context.now,
+                });
                 await tx
                     .update(dictionaryGenerationJobsTable)
                     .set({
+                        aiCreditReservationId: job.aiCreditAccounted
+                            ? null
+                            : job.aiCreditReservationId,
                         completedAt:
                             cancelled || exhausted ? input.context.now : null,
                         executionState: cancelled
@@ -3188,15 +3278,27 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         isNotNull(
                             dictionaryGenerationJobsTable.cancellationRequestedAt,
                         ),
+                        input.creditSettlementRevision === 1
+                            ? undefined
+                            : eq(
+                                  dictionaryGenerationJobsTable.aiCreditAccounted,
+                                  false,
+                              ),
                     ),
                 )
                 .limit(25)
                 .for('update', { skipLocked: true });
             for (const job of cancelledQueued) {
                 const incurredProviderCost = job.attemptCount > 0;
+                await this.settleCurrentAiCreditAttempt(tx, job, {
+                    at: input.context.now,
+                });
                 await tx
                     .update(dictionaryGenerationJobsTable)
                     .set({
+                        aiCreditReservationId: job.aiCreditAccounted
+                            ? null
+                            : job.aiCreditReservationId,
                         completedAt: input.context.now,
                         executionState: 'cancelled',
                         inputPayload: null,
@@ -3292,6 +3394,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         isNull(
                             dictionaryGenerationJobsTable.cancellationRequestedAt,
                         ),
+                        input.creditSettlementRevision === 1
+                            ? undefined
+                            : eq(
+                                  dictionaryGenerationJobsTable.aiCreditAccounted,
+                                  false,
+                              ),
                         or(
                             isNotNull(
                                 dictionaryGenerationJobsTable.executionRevisionId,
@@ -3349,14 +3457,74 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 input.context.now,
                 candidateProviderBudget,
             );
+            const effectiveBudgetUsage = candidate.aiCreditAccounted
+                ? {
+                      ...budgetUsage,
+                      ownerSettledCostMicros: 0,
+                      ownerSettledInputTokens: 0,
+                      ownerSettledOutputTokens: 0,
+                  }
+                : budgetUsage;
             if (
                 !dictionaryGenerationProviderBudgetAllows(
-                    budgetUsage,
+                    effectiveBudgetUsage,
                     needsAttemptReservation,
                     candidateProviderBudget,
                 )
             )
                 return null;
+            let aiCreditReservation:
+                { id: string; mode: 'limited' | 'unlimited' } | undefined;
+            if (
+                candidate.aiCreditAccounted &&
+                !candidate.aiCreditReservationId
+            ) {
+                try {
+                    aiCreditReservation = await this.reserveAiCreditAttempt(
+                        tx,
+                        candidate,
+                        candidate.attemptCount + 1,
+                        input.context.now,
+                    );
+                } catch (error) {
+                    if (!(error instanceof AiCreditInsufficientBalanceError))
+                        throw error;
+                    await tx
+                        .update(dictionaryGenerationJobsTable)
+                        .set({
+                            completedAt: input.context.now,
+                            executionState: 'failed',
+                            failureCategory: 'ai_credits_exhausted',
+                            heartbeatAt: null,
+                            inputPayload: null,
+                            leaseDeadline: null,
+                            nextAttemptAt: input.context.now,
+                            progressPercent: 100,
+                            progressStage: 'terminal',
+                            providerActualCostMicros:
+                                candidate.providerReservedCostMicros,
+                            providerActualInputTokens:
+                                candidate.providerReservedInputTokens,
+                            providerActualOutputTokens:
+                                candidate.providerReservedOutputTokens,
+                            providerReservationSettledAt: input.context.now,
+                            providerReservationState: 'settled',
+                            updatedAt: input.context.now,
+                            workerId: null,
+                        })
+                        .where(
+                            eq(dictionaryGenerationJobsTable.id, candidate.id),
+                        );
+                    if (candidate.kind === 'document-terms')
+                        await this.scheduleDocumentCleanup(
+                            tx,
+                            candidate.id,
+                            input.context.now,
+                            'failed',
+                        );
+                    return null;
+                }
+            }
             const parsed = parseDictionaryGenerationInput(
                 candidate.inputPayload,
             );
@@ -3367,6 +3535,15 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const [claimed] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
+                    aiCreditPolicyMode:
+                        aiCreditReservation?.mode ??
+                        candidate.aiCreditPolicyMode,
+                    aiCreditProviderDispatchedAt: aiCreditReservation
+                        ? null
+                        : candidate.aiCreditProviderDispatchedAt,
+                    aiCreditReservationId:
+                        aiCreditReservation?.id ??
+                        candidate.aiCreditReservationId,
                     attemptCount: candidate.attemptCount + 1,
                     executionState: 'running',
                     fencingToken,
@@ -3466,10 +3643,44 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         return Boolean(updated);
     }
 
+    public async markProviderDispatch(
+        input: Parameters<DictionaryGenerationStore['markProviderDispatch']>[0],
+    ) {
+        return this.database.transaction(async (tx) => {
+            abort(input.context);
+            const [job] = await tx
+                .select()
+                .from(dictionaryGenerationJobsTable)
+                .where(this.workerCas(input))
+                .for('update');
+            if (!job) return false;
+            if (!job.aiCreditAccounted) return true;
+            if (!job.aiCreditReservationId)
+                throw new Error('AI credit reservation is missing');
+            const credits = new DrizzleAiCreditTransactionParticipant(tx);
+            await credits.markProviderDispatched({
+                dispatchedAt: input.context.now,
+                ownerId: job.ownerId,
+                reservationId: job.aiCreditReservationId,
+            });
+            await tx
+                .update(dictionaryGenerationJobsTable)
+                .set({
+                    aiCreditProviderDispatchedAt: input.context.now,
+                    updatedAt: input.context.now,
+                })
+                .where(this.workerCas(input));
+            return true;
+        });
+    }
+
     public async complete(
         input: Parameters<DictionaryGenerationStore['complete']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            await tx.execute(
+                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+            );
             abort(input.context);
             const [job] = await tx
                 .select()
@@ -3770,12 +3981,21 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 schemaVersion: job.proposalSchemaVersion,
                 updatedAt: input.context.now,
             });
+            await this.settleCurrentAiCreditAttempt(tx, job, {
+                at: input.context.now,
+                ...(input.providerUsage
+                    ? { providerUsage: input.providerUsage }
+                    : {}),
+            });
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
                     completedAt: input.context.now,
                     executionState: 'completed',
                     heartbeatAt: null,
+                    aiCreditReservationId: job.aiCreditAccounted
+                        ? null
+                        : job.aiCreditReservationId,
                     inputPayload:
                         jobInput.format === dictionaryGenerationFormat
                             ? { ...jobInput, instruction: null }
@@ -3802,6 +4022,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
 
     public async fail(input: Parameters<DictionaryGenerationStore['fail']>[0]) {
         return this.database.transaction(async (tx) => {
+            await tx.execute(
+                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+            );
             abort(input.context);
             const [job] = await tx
                 .select()
@@ -3852,9 +4075,21 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 settledOutputTokens > job.providerReservedOutputTokens
             )
                 throw new Error('Provider usage exceeds reservation');
+            await this.settleCurrentAiCreditAttempt(tx, job, {
+                at: input.context.now,
+                ...(input.providerUsage
+                    ? { providerUsage: input.providerUsage }
+                    : {}),
+            });
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
+                    aiCreditProviderDispatchedAt: job.aiCreditAccounted
+                        ? null
+                        : job.aiCreditProviderDispatchedAt,
+                    aiCreditReservationId: job.aiCreditAccounted
+                        ? null
+                        : job.aiCreditReservationId,
                     completedAt: retry ? null : input.context.now,
                     executionState: retry ? 'queued' : 'failed',
                     failureCategory: retry ? null : input.failureCategory,
@@ -3909,6 +4144,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         input: Parameters<DictionaryGenerationStore['releaseWorkerLeases']>[0],
     ) {
         await this.database.transaction(async (tx) => {
+            await tx.execute(
+                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+            );
             const jobs = await tx
                 .select()
                 .from(dictionaryGenerationJobsTable)
@@ -3926,9 +4164,15 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 )
                 .for('update');
             for (const job of jobs) {
+                await this.settleCurrentAiCreditAttempt(tx, job, {
+                    at: input.context.now,
+                });
                 await tx
                     .update(dictionaryGenerationJobsTable)
                     .set({
+                        aiCreditReservationId: job.aiCreditAccounted
+                            ? null
+                            : job.aiCreditReservationId,
                         completedAt: job.cancellationRequestedAt
                             ? input.context.now
                             : null,
@@ -4530,15 +4774,124 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             now,
             providerExecution.budget,
         );
+        const effectiveProviderAdmission = this.aiCreditEnforcementEnabled
+            ? {
+                  ...providerAdmission,
+                  ownerSettledCostMicros: 0,
+                  ownerSettledInputTokens: 0,
+                  ownerSettledOutputTokens: 0,
+              }
+            : providerAdmission;
         if (
             !dictionaryGenerationProviderBudgetAllows(
-                providerAdmission,
+                effectiveProviderAdmission,
                 true,
                 providerExecution.budget,
             )
         )
             throw new DictionaryGenerationNotAvailableError();
         return providerExecution;
+    }
+
+    private aiCreditJobValues(providerExecution: ProviderExecution) {
+        if (!this.aiCreditEnforcementEnabled) return {};
+        const pricing = providerExecution.snapshot?.creditPricing;
+        if (!providerExecution.revisionId || !pricing)
+            throw new DictionaryGenerationNotAvailableError();
+        return {
+            aiCreditAccounted: true,
+            aiCreditInputCreditsPerMillionTokens:
+                pricing.inputCreditsPerMillionTokens,
+            aiCreditMaxCreditsPerAttempt: pricing.maxCreditsPerAttempt,
+            aiCreditOutputCreditsPerMillionTokens:
+                pricing.outputCreditsPerMillionTokens,
+            aiCreditPricingRevision: pricing.revision,
+        } as const;
+    }
+
+    private async reserveInitialAiCreditAttempt(
+        tx: Transaction,
+        job: JobRow,
+        at: Date,
+    ) {
+        if (!job.aiCreditAccounted) return;
+        try {
+            const reservation = await this.reserveAiCreditAttempt(
+                tx,
+                job,
+                1,
+                at,
+            );
+            await tx
+                .update(dictionaryGenerationJobsTable)
+                .set({
+                    aiCreditPolicyMode: reservation.mode,
+                    aiCreditReservationId: reservation.id,
+                })
+                .where(eq(dictionaryGenerationJobsTable.id, job.id));
+        } catch (error) {
+            if (error instanceof AiCreditInsufficientBalanceError)
+                throw new DictionaryAiCreditsExhaustedError();
+            throw error;
+        }
+    }
+
+    private async reserveAiCreditAttempt(
+        tx: Transaction,
+        job: JobRow,
+        attempt: number,
+        at: Date,
+    ) {
+        if (!job.aiCreditMaxCreditsPerAttempt)
+            throw new Error('AI credit pricing is missing');
+        const reservationId = this.ids.generate();
+        const reservation = await new DrizzleAiCreditTransactionParticipant(
+            tx,
+        ).reserveAttempt({
+            at,
+            attempt,
+            jobId: job.id,
+            maximumCredits: BigInt(job.aiCreditMaxCreditsPerAttempt),
+            ownerId: job.ownerId,
+            reservationId,
+        });
+        return { id: reservationId, mode: reservation.policy.mode };
+    }
+
+    private async settleCurrentAiCreditAttempt(
+        tx: Transaction,
+        job: JobRow,
+        input: {
+            at: Date;
+            providerUsage?: { inputTokens: number; outputTokens: number };
+        },
+    ) {
+        if (!job.aiCreditAccounted) return;
+        if (!job.aiCreditReservationId) return;
+        if (!job.aiCreditPolicyMode)
+            throw new Error('AI credit reservation is missing');
+        const credits = new DrizzleAiCreditTransactionParticipant(tx);
+        if (!job.aiCreditProviderDispatchedAt) {
+            await credits.releaseUndispatchedAttempt({
+                ownerId: job.ownerId,
+                releasedAt: input.at,
+                reservationId: job.aiCreditReservationId,
+            });
+            return;
+        }
+        const measuredCredits = input.providerUsage
+            ? creditUsage(job, input.providerUsage)
+            : null;
+        await credits.settleAttempt({
+            measuredCredits,
+            measurement: resolveAiCreditMeasurement(
+                job.aiCreditPolicyMode,
+                input.providerUsage !== undefined,
+            ),
+            ownerId: job.ownerId,
+            reservationId: job.aiCreditReservationId,
+            settledAt: input.at,
+        });
     }
 
     private async activeProviderExecution(
@@ -4768,9 +5121,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         job: JobRow,
         now: Date,
     ) {
+        await this.settleCurrentAiCreditAttempt(tx, job, { at: now });
         await tx
             .update(dictionaryGenerationJobsTable)
             .set({
+                aiCreditReservationId: job.aiCreditAccounted
+                    ? null
+                    : job.aiCreditReservationId,
                 completedAt: now,
                 executionState: 'cancelled',
                 heartbeatAt: null,

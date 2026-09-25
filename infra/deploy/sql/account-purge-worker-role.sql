@@ -12,7 +12,9 @@ GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs, dictionary_document_up
     dictionary_audio_assets, dictionary_audio_bindings, dictionary_audio_blobs, dictionary_audio_jobs,
     dictionary_document_extractions, dictionary_document_object_versions,
     dictionary_generation_proposals, dictionary_card_revisions,
-    dictionary_idempotency_keys, dictionaries TO :"account_purge_role";
+    dictionary_idempotency_keys, dictionaries,
+    ai_credit_accounts, ai_credit_admin_removals, ai_credit_grants,
+    ai_credit_history, ai_credit_reservations TO :"account_purge_role";
 GRANT DELETE ON TABLE auth_verification_challenges, auth_passkeys,
     password_credentials, auth_sessions, user_emails TO :"account_purge_role";
 -- DELETE filters need only the opaque owner column, never email/hash/credential data.

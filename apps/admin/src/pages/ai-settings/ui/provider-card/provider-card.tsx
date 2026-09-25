@@ -130,6 +130,17 @@ export function ProviderCard({
                                         <Typography.Text type='secondary'>
                                             {model.supportedFormats.join(', ')}
                                         </Typography.Text>
+                                        <Typography.Text type='secondary'>
+                                            {translate(
+                                                'aiSettings.creditPricing',
+                                                {
+                                                    input: model.creditPricing.inputCreditsPerMillionTokens.toLocaleString(),
+                                                    maximum:
+                                                        model.creditPricing.maxCreditsPerAttempt.toLocaleString(),
+                                                    output: model.creditPricing.outputCreditsPerMillionTokens.toLocaleString(),
+                                                },
+                                            )}
+                                        </Typography.Text>
                                         {!model.available ? (
                                             <Typography.Text type='danger'>
                                                 {model.unavailableReason ||

@@ -61,6 +61,7 @@ export interface DictionaryDocumentScanAttestation {
 export interface DictionaryDocumentGenerationProcessorRequest {
     idempotencyKey: string;
     input: DictionaryDocumentTermsGenerationInputPayload;
+    markProviderDispatch?: () => Promise<void>;
     object: DictionaryDocumentObjectReference;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
     providerExecution?: DictionaryAiExecutionSnapshot | null;
@@ -421,6 +422,7 @@ export class DictionaryDocumentGenerationProcessor {
             );
 
         await request.reportStage?.('generating', 60);
+        await request.markProviderDispatch?.();
         const candidates: ReturnType<
             typeof parseDictionaryBatchGenerationProposal
         >['candidates'] = [];

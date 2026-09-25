@@ -75,6 +75,15 @@ worker-local parser child <------ bounded IPC ------------------------+
   unless the claim transaction sets managed-routing revision `1`. Current workers
   set it transaction-locally; pre-feature workers cannot bypass the guard. During
   overlap an old worker may poll a pinned row, but it cannot lease or execute it.
+- AI-credit enforcement is a separate inactive-by-default activation. Apply the
+  ledger migrations, deploy the current API and worker, save a new priced
+  provider revision, then set `DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED=true`.
+  A database trigger rejects every execution-state transition for an accounted
+  job unless the transaction declares settlement revision `1`, including stale
+  lease and cancellation sweeps. Disable the flag to stop accounting new jobs;
+  current workers must drain already accounted jobs before rollback. The worker
+  role receives only the credit grants, reservation/allocation, account-policy,
+  and history privileges needed to reserve and settle attempts.
 - Running workers refresh provider observations every minute with a two-minute
   validity window. Any fresh unavailable observation for the selected model
   prevents activation. DeepSeek's authenticated model-list probe can report

@@ -12,6 +12,10 @@ describe('safe dictionary recovery messages', () => {
         ['owner_capacity_exceeded', 'dictionary.error.capacity'],
         ['card_capacity_exceeded', 'dictionary.error.capacity'],
         ['generation_not_available', 'dictionary.generation.error.unavailable'],
+        [
+            'ai_credits_exhausted',
+            'dictionary.generation.error.creditsExhausted',
+        ],
     ] as const)(
         'distinguishes admission failure %s without exposing its payload',
         (code, key) => {
