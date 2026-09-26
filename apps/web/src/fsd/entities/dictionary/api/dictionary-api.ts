@@ -17,9 +17,13 @@ import {
     CreateDictionaryDocumentUploadResponseSchema,
     CreateDictionaryRequestSchema,
     DictionaryCardLifecycleMutationRequestSchema,
+    DictionaryDeletionPreviewResponseSchema,
+    DictionaryDeletionReceiptResponseSchema,
     DictionaryCardResponseSchema,
     DictionaryErrorResponseSchema,
     DictionaryLifecycleMutationRequestSchema,
+    DeleteDictionariesRequestSchema,
+    DeleteDictionaryCardsRequestSchema,
     DictionaryGenerationJobIdParamsSchema,
     DictionaryGenerationJobResponseSchema,
     DictionaryDocumentUploadIdParamsSchema,
@@ -74,6 +78,8 @@ import {
     type DictionaryErrorResponse,
     type DictionaryLifecycle,
     type DictionaryLifecycleMutationRequest,
+    type DeleteDictionariesRequest,
+    type DeleteDictionaryCardsRequest,
     type DiscardDictionaryGenerationJobRequest,
     type EnqueueDictionaryCardGenerationRequest,
     type EnqueueDictionaryCardAuthoringGenerationRequest,
@@ -344,6 +350,25 @@ export const dictionaryApi = {
             responseSchema: ListDictionariesResponseSchema,
             signal,
         }),
+    previewDictionaryDeletion: (accessToken: string, signal?: AbortSignal) =>
+        ownerRequest(accessToken, '/dictionary-deletions/preview', {
+            responseSchema: DictionaryDeletionPreviewResponseSchema,
+            signal,
+        }),
+    deleteDictionaries: (
+        accessToken: string,
+        body: DeleteDictionariesRequest,
+        idempotencyKey: string,
+        signal?: AbortSignal,
+    ) =>
+        ownerRequest(accessToken, '/dictionary-deletions', {
+            body,
+            bodySchema: DeleteDictionariesRequestSchema,
+            headers: idempotencyHeaders(idempotencyKey),
+            method: 'POST',
+            responseSchema: DictionaryDeletionReceiptResponseSchema,
+            signal,
+        }),
     createDictionary: (
         accessToken: string,
         body: CreateDictionaryRequest,
@@ -447,6 +472,38 @@ export const dictionaryApi = {
             accessToken,
             `/dictionaries/${dictionaryId}/cards${queryString(query)}`,
             { responseSchema: ListDictionaryCardsResponseSchema, signal },
+        ),
+    previewDictionaryCardDeletion: (
+        accessToken: string,
+        dictionaryId: string,
+        signal?: AbortSignal,
+    ) =>
+        ownerRequest(
+            accessToken,
+            `/dictionaries/${dictionaryId}/card-deletions/preview`,
+            {
+                responseSchema: DictionaryDeletionPreviewResponseSchema,
+                signal,
+            },
+        ),
+    deleteDictionaryCards: (
+        accessToken: string,
+        dictionaryId: string,
+        body: DeleteDictionaryCardsRequest,
+        idempotencyKey: string,
+        signal?: AbortSignal,
+    ) =>
+        ownerRequest(
+            accessToken,
+            `/dictionaries/${dictionaryId}/card-deletions`,
+            {
+                body,
+                bodySchema: DeleteDictionaryCardsRequestSchema,
+                headers: idempotencyHeaders(idempotencyKey),
+                method: 'POST',
+                responseSchema: DictionaryDeletionReceiptResponseSchema,
+                signal,
+            },
         ),
     readCard: (
         accessToken: string,

@@ -4,6 +4,10 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import {
     CreateDictionaryCardRequestSchema,
     CreateDictionaryRequestSchema,
+    DeleteDictionariesRequestSchema,
+    DeleteDictionaryCardsRequestSchema,
+    DictionaryDeletionPreviewResponseSchema,
+    DictionaryDeletionReceiptResponseSchema,
     DictionaryCardIdParamsSchema,
     DictionaryCardLifecycleMutationRequestSchema,
     DictionaryCardResponseSchema,
@@ -166,6 +170,114 @@ export function createDictionaryRoutes({
 
     const bearer = (value: string | undefined) =>
         policy.parseBearerAuthorization(value ?? null);
+
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/dictionary-deletions/preview',
+            responses: {
+                200: jsonResponse(
+                    DictionaryDeletionPreviewResponseSchema,
+                    'Exact archived dictionary deletion preview.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+        }),
+        async (context) =>
+            context.json(
+                await service.previewDictionaryDeletion(
+                    bearer(context.req.header('Authorization')),
+                    requestContext(context),
+                ),
+                200,
+            ),
+    );
+
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/dictionary-deletions',
+            request: {
+                body: requestBody(DeleteDictionariesRequestSchema),
+                headers: DictionaryIdempotencyHeadersSchema,
+            },
+            responses: {
+                200: jsonResponse(
+                    DictionaryDeletionReceiptResponseSchema,
+                    'Archived dictionaries permanently deleted.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+        }),
+        async (context) =>
+            context.json(
+                await service.deleteDictionaries(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('header')['idempotency-key'],
+                    context.req.valid('json'),
+                    requestContext(context),
+                ),
+                200,
+            ),
+    );
+
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/dictionaries/{dictionaryId}/card-deletions/preview',
+            request: { params: DictionaryIdParamsSchema },
+            responses: {
+                200: jsonResponse(
+                    DictionaryDeletionPreviewResponseSchema,
+                    'Exact archived card deletion preview.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+        }),
+        async (context) =>
+            context.json(
+                await service.previewDictionaryCardDeletion(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('param').dictionaryId,
+                    requestContext(context),
+                ),
+                200,
+            ),
+    );
+
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/dictionaries/{dictionaryId}/card-deletions',
+            request: {
+                params: DictionaryIdParamsSchema,
+                body: requestBody(DeleteDictionaryCardsRequestSchema),
+                headers: DictionaryIdempotencyHeadersSchema,
+            },
+            responses: {
+                200: jsonResponse(
+                    DictionaryDeletionReceiptResponseSchema,
+                    'Archived cards permanently deleted.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+        }),
+        async (context) =>
+            context.json(
+                await service.deleteDictionaryCards(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('param').dictionaryId,
+                    context.req.valid('header')['idempotency-key'],
+                    context.req.valid('json'),
+                    requestContext(context),
+                ),
+                200,
+            ),
+    );
 
     app.openapi(
         createRoute({

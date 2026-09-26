@@ -22,6 +22,7 @@ import type {
     DictionaryImportPairsGenerationProposal,
     DictionaryPastedTermsGenerationAcceptedOutcome,
     DictionaryPastedTermsGenerationProposal,
+    DictionaryDeletionReceiptResponse,
     ImportDictionaryResponse,
 } from '@languon/contracts';
 
@@ -1287,7 +1288,7 @@ export const dictionaryIdempotencyKeysTable = pgTable(
         ),
         check(
             'dictionary_idempotency_keys_state_result',
-            sql`(${table.state} = 'in_progress' and ${table.completedAt} is null and ${table.resultDictionaryId} is null and ${table.resultPayload} is null) or (${table.state} = 'completed' and ${table.completedAt} is not null and ${table.resultDictionaryId} is not null and ((${table.operation} in ('create', 'fork') and ${table.resultPayload} is null) or (${table.operation} = 'bulk_commit' and ${table.resultPayload} is not null and jsonb_typeof(${table.resultPayload}) = 'object' and jsonb_typeof(${table.resultPayload}->'dictionary') = 'object' and octet_length(${table.resultPayload}::text) <= 4194304 and ((${table.resultPayload}->>'mode' = 'deterministic' and jsonb_typeof(${table.resultPayload}->'cards') = 'array' and jsonb_typeof(${table.resultPayload}->'warnings') = 'array') or (${table.resultPayload}->>'mode' = 'ai' and jsonb_typeof(${table.resultPayload}->'job') = 'object')))))`,
+            sql`(${table.state} = 'in_progress' and ${table.completedAt} is null and ${table.resultDictionaryId} is null and ${table.resultPayload} is null) or (${table.state} = 'completed' and ${table.completedAt} is not null and ((${table.resultDictionaryId} is null and ${table.resultPayload} is null) or (${table.resultDictionaryId} is not null and ((${table.operation} in ('create', 'fork') and ${table.resultPayload} is null) or (${table.operation} = 'bulk_commit' and ${table.resultPayload} is not null and jsonb_typeof(${table.resultPayload}) = 'object' and jsonb_typeof(${table.resultPayload}->'dictionary') = 'object' and octet_length(${table.resultPayload}::text) <= 4194304 and ((${table.resultPayload}->>'mode' = 'deterministic' and jsonb_typeof(${table.resultPayload}->'cards') = 'array' and jsonb_typeof(${table.resultPayload}->'warnings') = 'array') or (${table.resultPayload}->>'mode' = 'ai' and jsonb_typeof(${table.resultPayload}->'job') = 'object')))))))`,
         ),
         check(
             'dictionary_idempotency_keys_timestamps_ordered',
@@ -1305,5 +1306,100 @@ export const dictionaryIdempotencyKeysTable = pgTable(
         index('dictionary_idempotency_keys_result_dictionary_idx')
             .on(table.resultDictionaryId)
             .where(sql`${table.resultDictionaryId} is not null`),
+    ],
+);
+
+export const dictionaryDeletionReceiptsTable = pgTable(
+    'dictionary_deletion_receipts',
+    {
+        createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        expiresAt: timestamp('expires_at', {
+            mode: 'date',
+            withTimezone: true,
+        }).notNull(),
+        id: uuid('id').primaryKey(),
+        idempotencyKey: text('idempotency_key').notNull(),
+        ownerId: uuid('owner_id')
+            .notNull()
+            .references(() => usersTable.id, { onDelete: 'cascade' }),
+        requestFingerprint: text('request_fingerprint').notNull(),
+        resultPayload: jsonb('result_payload')
+            .$type<DictionaryDeletionReceiptResponse>()
+            .notNull(),
+        targetKind: text('target_kind').notNull(),
+    },
+    (table) => [
+        check(
+            'dictionary_deletion_receipts_key_length',
+            sql`char_length(${table.idempotencyKey}) between 16 and 128`,
+        ),
+        check(
+            'dictionary_deletion_receipts_fingerprint_format',
+            versionedDigestCheck(table.requestFingerprint),
+        ),
+        check(
+            'dictionary_deletion_receipts_target_kind',
+            sql`${table.targetKind} in ('dictionary', 'card')`,
+        ),
+        check(
+            'dictionary_deletion_receipts_result',
+            sql`jsonb_typeof(${table.resultPayload}) = 'object' and octet_length(${table.resultPayload}::text) <= 1024`,
+        ),
+        uniqueIndex('dictionary_deletion_receipts_owner_kind_key_unique').on(
+            table.ownerId,
+            table.targetKind,
+            table.idempotencyKey,
+        ),
+        index('dictionary_deletion_receipts_expiry_idx').on(table.expiresAt),
+    ],
+);
+
+export const dictionaryGenerationProviderUsageArchiveTable = pgTable(
+    'dictionary_generation_provider_usage_archive',
+    {
+        actualCostMicros: integer('actual_cost_micros').notNull(),
+        actualInputTokens: integer('actual_input_tokens').notNull(),
+        actualOutputTokens: integer('actual_output_tokens').notNull(),
+        archivedAt: timestamp('archived_at', {
+            mode: 'date',
+            withTimezone: true,
+        })
+            .defaultNow()
+            .notNull(),
+        id: uuid('id').primaryKey(),
+        inputCostMicrosPerMillionTokens: integer(
+            'input_cost_micros_per_million_tokens',
+        ).notNull(),
+        maxCostMicrosPerAttempt: integer(
+            'max_cost_micros_per_attempt',
+        ).notNull(),
+        maxInputTokensPerAttempt: integer(
+            'max_input_tokens_per_attempt',
+        ).notNull(),
+        maxOutputTokensPerAttempt: integer(
+            'max_output_tokens_per_attempt',
+        ).notNull(),
+        outputCostMicrosPerMillionTokens: integer(
+            'output_cost_micros_per_million_tokens',
+        ).notNull(),
+        ownerId: uuid('owner_id')
+            .notNull()
+            .references(() => usersTable.id, { onDelete: 'cascade' }),
+        settledAt: timestamp('settled_at', {
+            mode: 'date',
+            withTimezone: true,
+        }).notNull(),
+    },
+    (table) => [
+        check(
+            'dictionary_generation_provider_usage_archive_nonnegative',
+            sql`${table.actualCostMicros} >= 0 and ${table.actualInputTokens} >= 0 and ${table.actualOutputTokens} >= 0`,
+        ),
+        index('dictionary_generation_provider_usage_archive_budget_idx').on(
+            table.settledAt,
+            table.ownerId,
+        ),
     ],
 );

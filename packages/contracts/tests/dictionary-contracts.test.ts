@@ -10,6 +10,9 @@ import {
     DictionaryDocumentUploadCapabilitySchema,
     CreateDictionaryCardRequestSchema,
     CreateDictionaryRequestSchema,
+    DeleteDictionariesRequestSchema,
+    DeleteDictionaryCardsRequestSchema,
+    DictionaryDeletionPreviewResponseSchema,
     DictionaryCardEffectiveSettingsSchema,
     DictionaryEndpointInventory,
     DictionaryEndpointSchemas,
@@ -339,6 +342,18 @@ describe('dictionary HTTP contracts', () => {
                     'owner',
                 ],
                 [
+                    'previewDictionaryDeletion',
+                    'GET',
+                    '/dictionary-deletions/preview',
+                    'owner',
+                ],
+                [
+                    'deleteDictionaries',
+                    'POST',
+                    '/dictionary-deletions',
+                    'owner',
+                ],
+                [
                     'previewDictionaryImport',
                     'POST',
                     '/dictionary-imports/preview',
@@ -385,6 +400,18 @@ describe('dictionary HTTP contracts', () => {
                     'restoreDictionaryCard',
                     'POST',
                     '/dictionaries/:dictionaryId/cards/:cardId/restore',
+                    'owner',
+                ],
+                [
+                    'previewDictionaryCardDeletion',
+                    'GET',
+                    '/dictionaries/:dictionaryId/card-deletions/preview',
+                    'owner',
+                ],
+                [
+                    'deleteDictionaryCards',
+                    'POST',
+                    '/dictionaries/:dictionaryId/card-deletions',
                     'owner',
                 ],
                 [
@@ -515,12 +542,60 @@ describe('dictionary HTTP contracts', () => {
             'shared_dictionary_not_found',
         );
         expect(DictionaryErrorCodeSchema.options).toContain('version_conflict');
+        expect(DictionaryErrorCodeSchema.options).toContain('deletion_busy');
         expect(DictionaryErrorCodeSchema.options).toContain(
             'owner_capacity_exceeded',
         );
         expect(DictionaryErrorCodeSchema.options).not.toContain(
             'share_key_invalid',
         );
+    });
+
+    it('keeps permanent deletion selections strict, unique, and bounded', () => {
+        expect(
+            DeleteDictionariesRequestSchema.parse({
+                scope: {
+                    kind: 'selected',
+                    targets: [{ dictionaryId: CARD_ID_1, expectedVersion: 2 }],
+                },
+            }),
+        ).toEqual({
+            scope: {
+                kind: 'selected',
+                targets: [{ dictionaryId: CARD_ID_1, expectedVersion: 2 }],
+            },
+        });
+        expect(() =>
+            DeleteDictionariesRequestSchema.parse({
+                scope: {
+                    kind: 'selected',
+                    targets: [
+                        { dictionaryId: CARD_ID_1, expectedVersion: 2 },
+                        { dictionaryId: CARD_ID_1, expectedVersion: 2 },
+                    ],
+                },
+            }),
+        ).toThrow();
+        expect(
+            DeleteDictionaryCardsRequestSchema.parse({
+                expectedDictionaryVersion: 3,
+                scope: { kind: 'all-archived', snapshot: 'abc_123' },
+            }),
+        ).toEqual({
+            expectedDictionaryVersion: 3,
+            scope: { kind: 'all-archived', snapshot: 'abc_123' },
+        });
+        expect(
+            DictionaryDeletionPreviewResponseSchema.parse({
+                eligibleCount: 0,
+                snapshot: 'empty_snapshot',
+                targetKind: 'dictionary',
+            }),
+        ).toEqual({
+            eligibleCount: 0,
+            snapshot: 'empty_snapshot',
+            targetKind: 'dictionary',
+        });
     });
 
     it('bounds single-card generation input and keeps authorship server-owned', () => {

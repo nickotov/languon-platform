@@ -11,6 +11,7 @@ import {
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
 import { retainIdempotencyAttempt } from '../lib/idempotency-attempt';
+import { useDictionaryLibraryDeletion } from './use-dictionary-library-deletion';
 import { useLibraryQueries } from './use-library-queries';
 
 export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
@@ -34,6 +35,10 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
         lifecycle,
         search,
     );
+    const catalog = languages.data?.languages ?? [];
+    const list = dictionaries.data?.pages.flatMap((page) => page.data) ?? [];
+    const loadError =
+        languages.error ?? (dictionaries.data ? null : dictionaries.error);
     const create = useMutation({
         mutationFn: (body: {
             description: string | null;
@@ -87,6 +92,12 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
             void queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
         },
     });
+    const deletion = useDictionaryLibraryDeletion({
+        list,
+        refetchDictionaries: () => dictionaries.refetch(),
+        requestWithSession,
+        setMessage,
+    });
     function submitCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
@@ -98,11 +109,6 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
         });
     }
 
-    const catalog = languages.data?.languages ?? [];
-    const list = dictionaries.data?.pages.flatMap((page) => page.data) ?? [];
-    const loadError =
-        languages.error ?? (dictionaries.data ? null : dictionaries.error);
-
     function openCreate() {
         setCreateOpen(true);
     }
@@ -110,18 +116,22 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
         setCreateOpen(false);
     }
     function changeSearch(event: ChangeEvent<HTMLInputElement>) {
+        deletion.clearSelection();
         setSearch(event.currentTarget.value);
     }
     function clearSearch() {
+        deletion.clearSelection();
         setSearch('');
     }
     function selectActive() {
+        deletion.clearSelection();
         setLifecycle('active');
     }
     function selectArchived() {
         setLifecycle('archived');
     }
     function switchLifecycle() {
+        deletion.clearSelection();
         setLifecycle(lifecycle === 'active' ? 'archived' : 'active');
     }
     function changeSource(event: ChangeEvent<HTMLSelectElement>) {
@@ -162,6 +172,7 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
         dictionaries,
         create,
         lifecycleMutation,
+        ...deletion,
         submitCreate,
         openCreate,
         closeCreate,

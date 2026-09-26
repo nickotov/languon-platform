@@ -28,6 +28,8 @@ import {
     dictionaryDocumentUploadsTable,
     dictionaryGenerationJobsTable,
     dictionaryGenerationProposalsTable,
+    dictionaryDeletionReceiptsTable,
+    dictionaryGenerationProviderUsageArchiveTable,
     dictionaryIdempotencyKeysTable,
 } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
 import type {
@@ -361,6 +363,19 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 .delete(dictionaryIdempotencyKeysTable)
                 .where(
                     eq(dictionaryIdempotencyKeysTable.ownerId, input.userId),
+                );
+            await tx
+                .delete(dictionaryDeletionReceiptsTable)
+                .where(
+                    eq(dictionaryDeletionReceiptsTable.ownerId, input.userId),
+                );
+            await tx
+                .delete(dictionaryGenerationProviderUsageArchiveTable)
+                .where(
+                    eq(
+                        dictionaryGenerationProviderUsageArchiveTable.ownerId,
+                        input.userId,
+                    ),
                 );
             await tx
                 .delete(dictionariesTable)

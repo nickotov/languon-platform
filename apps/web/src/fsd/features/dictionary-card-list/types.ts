@@ -4,6 +4,7 @@ import type {
     OwnedDictionary,
 } from '@languon/contracts';
 import type { ReactNode } from 'react';
+import type { DictionaryCardDeletionController } from './hooks/use-dictionary-card-deletion';
 export type DictionaryCardListProps = {
     cards: readonly DictionaryCard[];
     dictionary: OwnedDictionary;
@@ -20,6 +21,7 @@ export type DictionaryCardListProps = {
         card: DictionaryCard,
         field: 'source' | 'translation' | 'example' | 'exampleTranslation',
     ): ReactNode;
+    deletion?: DictionaryCardDeletionController;
 };
 
 export type DictionaryCardRowProps = Pick<
@@ -36,4 +38,5 @@ export type DictionaryCardRowProps = Pick<
     generationAvailable: DictionaryCardListProps['generationAvailable'];
     onGenerate: DictionaryCardListProps['onGenerate'];
     renderAudio: DictionaryCardListProps['renderAudio'];
+    deletion: DictionaryCardListProps['deletion'];
 };

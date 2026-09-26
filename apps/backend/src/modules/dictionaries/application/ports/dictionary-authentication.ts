@@ -5,4 +5,7 @@ export interface DictionaryPrincipal {
 
 export interface DictionaryAuthentication {
     authenticate(accessToken: string): Promise<DictionaryPrincipal>;
+    requireRecentlyAuthenticatedSession?(
+        input: DictionaryPrincipal,
+    ): Promise<unknown>;
 }

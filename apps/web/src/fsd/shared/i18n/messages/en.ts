@@ -493,6 +493,36 @@ export const en = {
     'dictionary.library.retryLoadMore': 'Retry loading more dictionaries',
     'dictionary.library.loadMoreFailed':
         'More dictionaries could not be loaded. Your current results are still available.',
+    'dictionary.deletion.deletePermanently': 'Delete permanently',
+    'dictionary.deletion.deleteSelected': 'Delete selected',
+    'dictionary.deletion.deleteAllArchived': 'Delete all archived',
+    'dictionary.deletion.selectLoaded': 'Select loaded items',
+    'dictionary.deletion.selectedCount': 'Selected: {count}',
+    'dictionary.deletion.selectNamed': 'Select {name}',
+    'dictionary.deletion.selectCard': 'Select card {source}',
+    'dictionary.deletion.dictionaryTitle': 'Delete dictionaries permanently?',
+    'dictionary.deletion.dictionaryHelp':
+        'Archived dictionaries to delete: {count}.',
+    'dictionary.deletion.dictionaryConsequences':
+        'Every card and sharing link in these dictionaries will be removed. This cannot be undone.',
+    'dictionary.deletion.dictionaryPhrase': 'DELETE {count}',
+    'dictionary.deletion.typePhrase': 'Type “{phrase}” to confirm',
+    'dictionary.deletion.cardTitle': 'Delete cards permanently?',
+    'dictionary.deletion.cardHelp':
+        'Archived cards to delete from this dictionary: {count}.',
+    'dictionary.deletion.cardIdentity': '{source} → {translation}',
+    'dictionary.deletion.cardAcknowledge':
+        'I understand these cards cannot be recovered. Cards: {count}.',
+    'dictionary.deletion.dictionariesDeleted':
+        'Dictionaries permanently deleted: {count}.',
+    'dictionary.deletion.cardsDeleted': 'Cards permanently deleted: {count}.',
+    'dictionary.deletion.failed': 'Deletion failed',
+    'dictionary.deletion.busy':
+        'Some related work is still finishing. Wait a moment and try again.',
+    'dictionary.deletion.noneAvailable':
+        'There is no archived content to delete.',
+    'dictionary.deletion.selectionLimit':
+        'You can select up to {count} items. Use Delete all archived for larger cleanup.',
     'dictionary.lifecycle.active': 'Active',
     'dictionary.lifecycle.archived': 'Archived',
     'dictionary.visibility.private': 'Private',

@@ -46,6 +46,7 @@ export function createWorkspaceViews(
         generationAction: controller.mutations.generationAction,
         cardLifecycleMutation: controller.mutations.cardLifecycleMutation,
         cardMutation: controller.mutations.cardMutation,
+        cardDeletion: controller.mutations.cardDeletion,
         reorder: controller.mutations.reorder,
         cardsQueryKey: controller.state.cardsQueryKey,
         queryClient: controller.state.queryClient,

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { RecentAuthenticationRequiredError } from '../../../../../src/modules/authentication/application/authentication-errors';
 
 import { DictionaryService } from '../../../../../src/modules/dictionaries/application/dictionary-service';
 import {
@@ -12,6 +13,101 @@ const signal = new AbortController().signal;
 const requestContext = { clientAddress: '192.0.2.10', signal };
 
 describe('DictionaryService', () => {
+    it('binds card deletion idempotency fingerprints to operation and dictionary path', async () => {
+        const fingerprint = vi.fn().mockReturnValue('fingerprint');
+        const deleteDictionaryCards = vi.fn().mockResolvedValue({
+            deletedCount: 1,
+            operationId: '11111111-1111-4111-8111-111111111111',
+            resultingDictionaryVersion: 4,
+            targetKind: 'card',
+        });
+        const requireRecentlyAuthenticatedSession = vi
+            .fn()
+            .mockResolvedValue(undefined);
+        const service = new DictionaryService({
+            authentication: {
+                authenticate: vi.fn().mockResolvedValue({
+                    sessionId: 'session',
+                    userId: 'owner',
+                }),
+                requireRecentlyAuthenticatedSession,
+            },
+            clock: { now: () => new Date() },
+            cryptography: { fingerprint } as never,
+            rateLimiter: {
+                consume: vi.fn().mockResolvedValue({ allowed: true }),
+            },
+            store: { deleteDictionaryCards } as never,
+        });
+        const request = {
+            expectedDictionaryVersion: 3,
+            scope: {
+                kind: 'selected' as const,
+                targets: [
+                    {
+                        cardId: '22222222-2222-4222-8222-222222222222',
+                        expectedVersion: 2,
+                    },
+                ],
+            },
+        };
+        await service.deleteDictionaryCards(
+            'access.token.value',
+            '11111111-1111-4111-8111-111111111111',
+            'idempotency-key-1234',
+            request,
+            requestContext,
+        );
+        expect(fingerprint).toHaveBeenCalledWith({
+            dictionaryId: '11111111-1111-4111-8111-111111111111',
+            operation: 'delete-dictionary-cards',
+            request,
+        });
+        expect(requireRecentlyAuthenticatedSession).toHaveBeenCalledWith({
+            sessionId: 'session',
+            userId: 'owner',
+        });
+    });
+    it('rejects permanent deletion before storage when authentication is not recent', async () => {
+        const deleteDictionaries = vi.fn();
+        const service = new DictionaryService({
+            authentication: {
+                authenticate: vi.fn().mockResolvedValue({
+                    sessionId: 'session',
+                    userId: 'owner',
+                }),
+                requireRecentlyAuthenticatedSession: vi
+                    .fn()
+                    .mockRejectedValue(new RecentAuthenticationRequiredError()),
+            },
+            clock: { now: () => new Date() },
+            cryptography: { fingerprint: vi.fn() } as never,
+            rateLimiter: {
+                consume: vi.fn().mockResolvedValue({ allowed: true }),
+            },
+            store: { deleteDictionaries } as never,
+        });
+        await expect(
+            service.deleteDictionaries(
+                'access.token.value',
+                'idempotency-key-1234',
+                {
+                    scope: {
+                        kind: 'selected',
+                        targets: [
+                            {
+                                dictionaryId:
+                                    '11111111-1111-4111-8111-111111111111',
+                                expectedVersion: 1,
+                            },
+                        ],
+                    },
+                },
+                requestContext,
+            ),
+        ).rejects.toBeInstanceOf(RecentAuthenticationRequiredError);
+        expect(deleteDictionaries).not.toHaveBeenCalled();
+    });
     it('requires a verified active principal and applies the owner limiter before storage', async () => {
         const authenticate = vi
             .fn()

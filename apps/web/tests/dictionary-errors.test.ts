@@ -11,6 +11,10 @@ describe('safe dictionary recovery messages', () => {
         ['rate_limited', 'dictionary.error.rateLimited'],
         ['owner_capacity_exceeded', 'dictionary.error.capacity'],
         ['card_capacity_exceeded', 'dictionary.error.capacity'],
+        [
+            'recent_authentication_required',
+            'error.recent_authentication_required',
+        ],
         ['generation_not_available', 'dictionary.generation.error.unavailable'],
         [
             'ai_credits_exhausted',

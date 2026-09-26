@@ -32,6 +32,7 @@ export function EditorCards({
         | 'generationAction'
         | 'cardLifecycleMutation'
         | 'cardMutation'
+        | 'cardDeletion'
         | 'reorder'
         | 'cardsQueryKey'
         | 'queryClient'
@@ -52,6 +53,7 @@ export function EditorCards({
         generationAction,
         cardLifecycleMutation,
         cardMutation,
+        cardDeletion,
         reorder,
         cardsQueryKey,
         queryClient,
@@ -129,7 +131,7 @@ export function EditorCards({
             {cards.isError ? (
                 <ErrorState title={errorTitle}>{errorMessage}</ErrorState>
             ) : null}
-            {cardList.length ? (
+            {cardList.length || cardLifecycle === 'archived' ? (
                 <DictionaryCardList
                     cards={cardList}
                     dictionary={current}
@@ -143,6 +145,10 @@ export function EditorCards({
                     onMove={move}
                     pending={pending}
                     renderAudio={renderAudio}
+                    {...(current.lifecycle === 'active' &&
+                    cardLifecycle === 'archived'
+                        ? { deletion: cardDeletion }
+                        : {})}
                 />
             ) : (
                 <EditorEmptyCards model={model.emptyState} />

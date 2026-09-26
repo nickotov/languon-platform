@@ -75,6 +75,8 @@ import {
     dictionaryIdempotencyKeysTable,
     dictionarySettingsTable,
 } from './schema';
+import { DrizzleDictionaryDeletionStore } from './drizzle-dictionary-deletion-store';
+import type { DictionaryIdGenerator } from './dictionary-id-generator';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 
 type DictionaryDatabase = PostgresJsDatabase<typeof databaseSchema>;
@@ -82,10 +84,6 @@ type DictionaryTransaction = Parameters<
     Parameters<DictionaryDatabase['transaction']>[0]
 >[0];
 type QueryDatabase = DictionaryDatabase | DictionaryTransaction;
-
-export interface DictionaryIdGenerator {
-    generate(): string;
-}
 
 const idempotencyLifetimeMs = 24 * 60 * 60 * 1_000;
 const uuidPattern =
@@ -324,11 +322,39 @@ function revisionSnapshot(row: CardRow, settings: SettingsRow) {
 }
 
 export class DrizzleDictionaryStore implements DictionaryStore {
+    private readonly deletionStore: DrizzleDictionaryDeletionStore;
+
     public constructor(
         private readonly database: DictionaryDatabase,
         private readonly ids: DictionaryIdGenerator,
         private readonly ownerLimits: DictionaryOwnerLimits = dictionaryLimits,
-    ) {}
+    ) {
+        this.deletionStore = new DrizzleDictionaryDeletionStore(database, ids);
+    }
+
+    public async previewDictionaryDeletion(
+        input: Parameters<DictionaryStore['previewDictionaryDeletion']>[0],
+    ) {
+        return this.deletionStore.previewDictionaryDeletion(input);
+    }
+
+    public async previewDictionaryCardDeletion(
+        input: Parameters<DictionaryStore['previewDictionaryCardDeletion']>[0],
+    ) {
+        return this.deletionStore.previewDictionaryCardDeletion(input);
+    }
+
+    public async deleteDictionaries(
+        input: Parameters<DictionaryStore['deleteDictionaries']>[0],
+    ) {
+        return this.deletionStore.deleteDictionaries(input);
+    }
+
+    public async deleteDictionaryCards(
+        input: Parameters<DictionaryStore['deleteDictionaryCards']>[0],
+    ) {
+        return this.deletionStore.deleteDictionaryCards(input);
+    }
 
     public async listDictionaries(
         input: Parameters<DictionaryStore['listDictionaries']>[0],

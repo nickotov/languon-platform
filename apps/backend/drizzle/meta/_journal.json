@@ -232,6 +232,13 @@
       "when": 1790352414119,
       "tag": "0032_ai_credit_ledger_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790439684397,
+      "tag": "0033_stiff_purple_man",
+      "breakpoints": true
     }
   ]
 }

@@ -57,6 +57,7 @@ export function EditorToolbar({
                     </span>
                 </button>
                 <button
+                    id='archived-cards-filter'
                     type='button'
                     aria-pressed={archivedSelected}
                     onClick={showArchived}

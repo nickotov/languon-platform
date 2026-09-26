@@ -1,4 +1,7 @@
-import { AuthenticationRequiredError } from '../../../authentication/application/authentication-errors';
+import {
+    AuthenticationRequiredError,
+    RecentAuthenticationRequiredError,
+} from '../../../authentication/application/authentication-errors';
 import { InvalidAccessTokenError } from '../../../authentication/application/ports/access-token';
 import {
     InvalidBearerAuthorizationError,
@@ -10,6 +13,7 @@ import {
     DictionaryDocumentUploadCapacityError,
     DictionaryDocumentUploadConflictError,
     DictionaryDocumentUploadNotFoundError,
+    DictionaryDeletionBusyError,
     DictionaryGenerationCandidateConflictError,
     DictionaryGenerationJobNotFoundError,
     DictionaryGenerationNotAvailableError,
@@ -46,6 +50,13 @@ export function mapDictionaryHttpError(error: Error): DictionaryHttpError {
             'authentication_required',
             'Authentication is required.',
             401,
+        );
+    }
+    if (error instanceof RecentAuthenticationRequiredError) {
+        return new DictionaryHttpError(
+            'recent_authentication_required',
+            'Recent authentication is required.',
+            403,
         );
     }
     if (error instanceof DictionaryNotFoundError)
@@ -132,6 +143,13 @@ export function mapDictionaryHttpError(error: Error): DictionaryHttpError {
             'idempotency_conflict',
             'The idempotency key conflicts with an earlier request.',
             409,
+        );
+    if (error instanceof DictionaryDeletionBusyError)
+        return new DictionaryHttpError(
+            'deletion_busy',
+            'Deletion is temporarily blocked by active processing or cleanup.',
+            409,
+            error.retryAfterSeconds,
         );
     if (
         error instanceof DictionaryLanguagePairLockedError ||

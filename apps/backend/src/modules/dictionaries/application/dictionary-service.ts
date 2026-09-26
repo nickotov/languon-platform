@@ -1,7 +1,10 @@
 import { LANGUAGE_CATALOG, LANGUAGE_CATALOG_VERSION } from '@languon/languages';
+import { RecentAuthenticationRequiredError } from '../../authentication/application/authentication-errors';
 import type {
     CreateDictionaryCardRequest,
     CreateDictionaryRequest,
+    DeleteDictionariesRequest,
+    DeleteDictionaryCardsRequest,
     DictionaryCardLifecycleMutationRequest,
     DictionaryExportFormat,
     DictionaryLifecycleMutationRequest,
@@ -83,6 +86,79 @@ export class DictionaryService {
             context: this.context(context),
             ownerId,
             query,
+        });
+    }
+
+    public async previewDictionaryDeletion(
+        accessToken: string,
+        context: DictionaryRequestContext,
+    ) {
+        const ownerId = await this.owner(accessToken, context);
+        return this.dependencies.store.previewDictionaryDeletion({
+            context: this.context(context),
+            ownerId,
+        });
+    }
+
+    public async deleteDictionaries(
+        accessToken: string,
+        idempotencyKey: string,
+        request: DeleteDictionariesRequest,
+        context: DictionaryRequestContext,
+    ) {
+        const ownerId = await this.recentlyAuthenticatedOwner(
+            accessToken,
+            context,
+        );
+        await this.limit('owner', ownerId, context);
+        return this.dependencies.store.deleteDictionaries({
+            context: this.context(context),
+            fingerprint: this.dependencies.cryptography.fingerprint({
+                operation: 'delete-dictionaries',
+                request,
+            }),
+            idempotencyKey,
+            ownerId,
+            request,
+        });
+    }
+
+    public async previewDictionaryCardDeletion(
+        accessToken: string,
+        dictionaryId: string,
+        context: DictionaryRequestContext,
+    ) {
+        const ownerId = await this.owner(accessToken, context);
+        return this.dependencies.store.previewDictionaryCardDeletion({
+            context: this.context(context),
+            dictionaryId,
+            ownerId,
+        });
+    }
+
+    public async deleteDictionaryCards(
+        accessToken: string,
+        dictionaryId: string,
+        idempotencyKey: string,
+        request: DeleteDictionaryCardsRequest,
+        context: DictionaryRequestContext,
+    ) {
+        const ownerId = await this.recentlyAuthenticatedOwner(
+            accessToken,
+            context,
+        );
+        await this.limit('card-write', ownerId, context);
+        return this.dependencies.store.deleteDictionaryCards({
+            context: this.context(context),
+            dictionaryId,
+            fingerprint: this.dependencies.cryptography.fingerprint({
+                dictionaryId,
+                operation: 'delete-dictionary-cards',
+                request,
+            }),
+            idempotencyKey,
+            ownerId,
+            request,
         });
     }
 
@@ -594,6 +670,22 @@ export class DictionaryService {
         const principal =
             await this.dependencies.authentication.authenticate(accessToken);
         await this.limit('owner', principal.userId, context);
+        context.signal.throwIfAborted();
+        return principal.userId;
+    }
+
+    private async recentlyAuthenticatedOwner(
+        accessToken: string,
+        context: DictionaryRequestContext,
+    ): Promise<string> {
+        context.signal.throwIfAborted();
+        const principal =
+            await this.dependencies.authentication.authenticate(accessToken);
+        const requireRecent =
+            this.dependencies.authentication
+                .requireRecentlyAuthenticatedSession;
+        if (!requireRecent) throw new RecentAuthenticationRequiredError();
+        await requireRecent(principal);
         context.signal.throwIfAborted();
         return principal.userId;
     }

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const DictionaryErrorCodeSchema = z.enum([
     'authentication_required',
+    'recent_authentication_required',
     'dictionary_not_found',
     'card_not_found',
     'generation_job_not_found',
@@ -14,6 +15,7 @@ export const DictionaryErrorCodeSchema = z.enum([
     'invalid_request',
     'version_conflict',
     'idempotency_conflict',
+    'deletion_busy',
     'language_pair_locked',
     'card_capacity_exceeded',
     'owner_capacity_exceeded',

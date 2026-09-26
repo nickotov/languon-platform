@@ -11,6 +11,7 @@ import type { AccessTokenSigner } from '../../authentication/application/ports/a
 import type { AuthenticationService } from '../../authentication/application/authentication-service';
 import type { AuthHttpPolicy } from '../../authentication/interface/http/auth-http-policy';
 import type { DictionaryClock } from '../application/dictionary-service';
+import type { DictionaryAuthentication } from '../application/ports/dictionary-authentication';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../application/ports/dictionary-generation-provider-policy';
 import type { DictionaryDocumentUploadStorage } from '../application/ports/dictionary-document-upload-storage';
 import { DictionaryDocumentService } from '../application/dictionary-document-service';
@@ -29,10 +30,8 @@ import {
     HmacDictionaryCryptography,
     type DictionaryEntropySource,
 } from './crypto/dictionary-cryptography';
-import {
-    DrizzleDictionaryStore,
-    type DictionaryIdGenerator,
-} from './persistence/drizzle/drizzle-dictionary-store';
+import { DrizzleDictionaryStore } from './persistence/drizzle/drizzle-dictionary-store';
+import type { DictionaryIdGenerator } from './persistence/drizzle/dictionary-id-generator';
 import { BoundedDictionaryRateLimiter } from './rate-limit/bounded-dictionary-rate-limiter';
 import { dictionaryImportPairsGenerationFormat } from '../domain/generation';
 
@@ -42,7 +41,10 @@ export interface DictionaryCompositionDependencies {
         'authentication' | 'dictionaries' | 'clock' | 'rateLimiter'
     >;
     accessTokens: AccessTokenSigner;
-    authentication: Pick<AuthenticationService, 'requireActiveSession'>;
+    authentication: Pick<
+        AuthenticationService,
+        'requireActiveSession' | 'requireRecentlyAuthenticatedSession'
+    >;
     clock: DictionaryClock;
     database: PostgresJsDatabase<typeof databaseSchema>;
     entropy: DictionaryEntropySource;
@@ -68,7 +70,7 @@ export interface DictionaryComposition {
 export function createDictionaryComposition(
     dependencies: DictionaryCompositionDependencies,
 ): DictionaryComposition {
-    const authentication = {
+    const authentication: DictionaryAuthentication = {
         authenticate: async (accessToken: string) => {
             const claims = await dependencies.accessTokens.verify(accessToken);
             await dependencies.authentication.requireActiveSession({
@@ -77,6 +79,10 @@ export function createDictionaryComposition(
             });
             return { sessionId: claims.sessionId, userId: claims.userId };
         },
+        requireRecentlyAuthenticatedSession: (principal) =>
+            dependencies.authentication.requireRecentlyAuthenticatedSession(
+                principal,
+            ),
     };
     const cryptography = new HmacDictionaryCryptography({
         entropy: dependencies.entropy,

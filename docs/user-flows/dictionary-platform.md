@@ -35,6 +35,7 @@ e2e_scenarios:
     - document-generation-cleans-original-and-commits-final-review
     - quizlet-import-and-export-round-trip
 related_features:
+    - dictionary-permanent-deletion
     - dictionary-pronunciation-audio
     - inline-ai-card-authoring
     - user-authentication
@@ -153,6 +154,9 @@ shared, staging, or production database.
    active cards and expect its values to be unchanged.
 5. Return to the library, search for the dictionary, open its labelled actions
    menu to archive it, select **Archived**, and use its menu to restore it. Restored dictionaries are private and editable.
+6. Archive remains the reversible lifecycle action. Permanent single, selected,
+   and all-archived cleanup follows the separate
+   [Dictionary Permanent Deletion](./dictionary-permanent-deletion.md) guide.
 
 Settings and sharing open in focused sheets. Batch generation and import/export
 remain available under **More dictionary actions**; **Sharing** opens the existing

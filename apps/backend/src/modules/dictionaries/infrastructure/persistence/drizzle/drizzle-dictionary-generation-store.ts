@@ -120,6 +120,7 @@ import {
     dictionaryAiConfigurationTable,
     dictionaryGenerationProposalsTable,
     dictionaryGenerationProviderCircuitTable,
+    dictionaryGenerationProviderUsageArchiveTable,
     dictionaryIdempotencyKeysTable,
     dictionaryDocumentUploadsTable,
     dictionarySettingsTable,
@@ -4934,6 +4935,14 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         policy: DictionaryGenerationProviderBudgetPolicy,
     ): Promise<DictionaryGenerationProviderBudgetUsage> {
         const windowStart = new Date(now.getTime() - 86_400_000).toISOString();
+        await tx
+            .delete(dictionaryGenerationProviderUsageArchiveTable)
+            .where(
+                lte(
+                    dictionaryGenerationProviderUsageArchiveTable.settledAt,
+                    new Date(windowStart),
+                ),
+            );
         const [usage] = await tx
             .select({
                 globalActiveCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active'), 0)`,
@@ -4974,6 +4983,44 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ),
                 ),
             );
+        const [archivedUsage] = await tx
+            .select({
+                globalSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualCostMicros}), 0)`,
+                globalSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualInputTokens}), 0)`,
+                globalSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualOutputTokens}), 0)`,
+                ownerSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualCostMicros}) filter (where ${dictionaryGenerationProviderUsageArchiveTable.ownerId} = ${ownerId}), 0)`,
+                ownerSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualInputTokens}) filter (where ${dictionaryGenerationProviderUsageArchiveTable.ownerId} = ${ownerId}), 0)`,
+                ownerSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualOutputTokens}) filter (where ${dictionaryGenerationProviderUsageArchiveTable.ownerId} = ${ownerId}), 0)`,
+            })
+            .from(dictionaryGenerationProviderUsageArchiveTable)
+            .where(
+                and(
+                    gt(
+                        dictionaryGenerationProviderUsageArchiveTable.settledAt,
+                        new Date(windowStart),
+                    ),
+                    eq(
+                        dictionaryGenerationProviderUsageArchiveTable.inputCostMicrosPerMillionTokens,
+                        policy.inputCostMicrosPerMillionTokens,
+                    ),
+                    eq(
+                        dictionaryGenerationProviderUsageArchiveTable.outputCostMicrosPerMillionTokens,
+                        policy.outputCostMicrosPerMillionTokens,
+                    ),
+                    eq(
+                        dictionaryGenerationProviderUsageArchiveTable.maxCostMicrosPerAttempt,
+                        policy.maxCostMicrosPerAttempt,
+                    ),
+                    eq(
+                        dictionaryGenerationProviderUsageArchiveTable.maxInputTokensPerAttempt,
+                        policy.maxInputTokensPerAttempt,
+                    ),
+                    eq(
+                        dictionaryGenerationProviderUsageArchiveTable.maxOutputTokensPerAttempt,
+                        policy.maxOutputTokensPerAttempt,
+                    ),
+                ),
+            );
         return {
             globalActiveCostMicros: Number(usage?.globalActiveCostMicros ?? 0),
             globalActiveInputTokens: Number(
@@ -4982,27 +5029,29 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             globalActiveOutputTokens: Number(
                 usage?.globalActiveOutputTokens ?? 0,
             ),
-            globalSettledCostMicros: Number(
-                usage?.globalSettledCostMicros ?? 0,
-            ),
-            globalSettledInputTokens: Number(
-                usage?.globalSettledInputTokens ?? 0,
-            ),
-            globalSettledOutputTokens: Number(
-                usage?.globalSettledOutputTokens ?? 0,
-            ),
+            globalSettledCostMicros:
+                Number(usage?.globalSettledCostMicros ?? 0) +
+                Number(archivedUsage?.globalSettledCostMicros ?? 0),
+            globalSettledInputTokens:
+                Number(usage?.globalSettledInputTokens ?? 0) +
+                Number(archivedUsage?.globalSettledInputTokens ?? 0),
+            globalSettledOutputTokens:
+                Number(usage?.globalSettledOutputTokens ?? 0) +
+                Number(archivedUsage?.globalSettledOutputTokens ?? 0),
             ownerActiveCostMicros: Number(usage?.ownerActiveCostMicros ?? 0),
             ownerActiveInputTokens: Number(usage?.ownerActiveInputTokens ?? 0),
             ownerActiveOutputTokens: Number(
                 usage?.ownerActiveOutputTokens ?? 0,
             ),
-            ownerSettledCostMicros: Number(usage?.ownerSettledCostMicros ?? 0),
-            ownerSettledInputTokens: Number(
-                usage?.ownerSettledInputTokens ?? 0,
-            ),
-            ownerSettledOutputTokens: Number(
-                usage?.ownerSettledOutputTokens ?? 0,
-            ),
+            ownerSettledCostMicros:
+                Number(usage?.ownerSettledCostMicros ?? 0) +
+                Number(archivedUsage?.ownerSettledCostMicros ?? 0),
+            ownerSettledInputTokens:
+                Number(usage?.ownerSettledInputTokens ?? 0) +
+                Number(archivedUsage?.ownerSettledInputTokens ?? 0),
+            ownerSettledOutputTokens:
+                Number(usage?.ownerSettledOutputTokens ?? 0) +
+                Number(archivedUsage?.ownerSettledOutputTokens ?? 0),
         };
     }
 

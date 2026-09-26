@@ -29,6 +29,8 @@ evidence with a repeatable manual/browser/API/device recipe.
   owner playback, on-demand generation and cached audio.
 - [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
   card authoring, lifecycle recovery, unlisted reading, and private forks.
+- [Dictionary Permanent Deletion](./dictionary-permanent-deletion.md) —
+  irreversible single, selected, and all-archived dictionary and card cleanup.
 - [Admin User Management](./admin-user-management.md) — owner authentication,
   user inspection, safe disable/restore operations, audit history, and guarded
   membership commands.

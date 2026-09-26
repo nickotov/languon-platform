@@ -92,6 +92,10 @@ run('composed dictionary routes', () => {
                     account: {} as never,
                     session: {} as never,
                 }),
+                requireRecentlyAuthenticatedSession: async () => ({
+                    account: {} as never,
+                    session: {} as never,
+                }),
             },
             clock: { now: () => new Date('2026-08-21T12:00:00.000Z') },
             database,

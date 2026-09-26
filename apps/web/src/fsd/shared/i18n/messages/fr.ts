@@ -433,6 +433,38 @@ export const fr = {
         'Réessayer de charger plus de dictionnaires',
     'dictionary.library.loadMoreFailed':
         'Impossible de charger plus de dictionnaires. Les résultats actuels restent disponibles.',
+    'dictionary.deletion.deletePermanently': 'Supprimer définitivement',
+    'dictionary.deletion.deleteSelected': 'Supprimer la sélection',
+    'dictionary.deletion.deleteAllArchived': 'Supprimer tous les archivés',
+    'dictionary.deletion.selectLoaded': 'Sélectionner les éléments chargés',
+    'dictionary.deletion.selectedCount': 'Nombre sélectionné : {count}',
+    'dictionary.deletion.selectNamed': 'Sélectionner {name}',
+    'dictionary.deletion.selectCard': 'Sélectionner la carte {source}',
+    'dictionary.deletion.dictionaryTitle':
+        'Supprimer définitivement les dictionnaires ?',
+    'dictionary.deletion.dictionaryHelp':
+        'Nombre de dictionnaires archivés à supprimer : {count}.',
+    'dictionary.deletion.dictionaryConsequences':
+        'Toutes les cartes et tous les liens de partage seront supprimés. Cette action est irréversible.',
+    'dictionary.deletion.dictionaryPhrase': 'SUPPRIMER {count}',
+    'dictionary.deletion.typePhrase': 'Saisissez « {phrase} » pour confirmer',
+    'dictionary.deletion.cardTitle': 'Supprimer définitivement les cartes ?',
+    'dictionary.deletion.cardHelp':
+        'Nombre de cartes archivées à supprimer de ce dictionnaire : {count}.',
+    'dictionary.deletion.cardIdentity': '{source} → {translation}',
+    'dictionary.deletion.cardAcknowledge':
+        'Je comprends que ces cartes ne peuvent pas être récupérées. Nombre : {count}.',
+    'dictionary.deletion.dictionariesDeleted':
+        'Nombre de dictionnaires supprimés définitivement : {count}.',
+    'dictionary.deletion.cardsDeleted':
+        'Nombre de cartes supprimées définitivement : {count}.',
+    'dictionary.deletion.failed': 'Échec de la suppression',
+    'dictionary.deletion.busy':
+        'Une opération associée se termine encore. Patientez puis réessayez.',
+    'dictionary.deletion.noneAvailable':
+        'Aucun contenu archivé ne peut être supprimé.',
+    'dictionary.deletion.selectionLimit':
+        'Vous pouvez sélectionner jusqu’à {count} éléments. Utilisez Supprimer tous les archivés au-delà.',
     'dictionary.lifecycle.active': 'Actif',
     'dictionary.lifecycle.archived': 'Archivé',
     'dictionary.visibility.private': 'Privé',

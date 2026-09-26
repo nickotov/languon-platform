@@ -17,6 +17,8 @@ export function dictionaryErrorMessage(error: unknown, t: Translate): string {
         return t('dictionary.settings.pairLocked');
     if (error.detail.code === 'authentication_required')
         return t('dictionary.error.signIn');
+    if (error.detail.code === 'recent_authentication_required')
+        return t('error.recent_authentication_required');
     if (
         error.detail.code === 'owner_capacity_exceeded' ||
         error.detail.code === 'card_capacity_exceeded'

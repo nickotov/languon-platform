@@ -5,21 +5,44 @@ import {
     type PostgresClient,
     type PostgresJsDatabase,
 } from '@languon/database';
-import { count, eq, sql } from 'drizzle-orm';
+import { count, eq, inArray, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
 import {
+    aiCreditAccountsTable,
+    aiCreditGrantsTable,
+    aiCreditHistoryTable,
+} from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import {
+    DictionaryDeletionBusyError,
+    DictionaryGenerationNotAvailableError,
+    DictionaryIdempotencyConflictError,
     DictionaryLanguagePairLockedError,
     DictionaryNotFoundError,
     DictionaryRateLimitError,
     DictionaryVersionConflictError,
+    SharedDictionaryNotFoundError,
 } from '../../../../../src/modules/dictionaries/application/dictionary-errors';
 import { DictionaryOwnerCapacityError } from '../../../../../src/modules/dictionaries/domain/limits';
 import { DrizzleDictionaryStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
 import {
+    dictionaryAudioAssetsTable,
+    dictionaryAudioJobsTable,
+} from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
+import {
+    dictionaryGenerationAdmissionLock,
+    DrizzleDictionaryGenerationStore,
+} from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
+import {
     dictionaryCardRevisionsTable,
     dictionaryCardsTable,
+    dictionaryDocumentUploadsTable,
+    dictionaryIdempotencyKeysTable,
+    dictionaryGenerationJobsTable,
+    dictionaryGenerationProposalsTable,
+    dictionaryGenerationProviderUsageArchiveTable,
     dictionariesTable,
     dictionarySettingsTable,
 } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
@@ -52,6 +75,12 @@ run('DrizzleDictionaryStore', () => {
     });
 
     beforeEach(async () => {
+        await database.delete(dictionaryAudioJobsTable);
+        await database.delete(dictionaryAudioAssetsTable);
+        await database.delete(dictionaryDocumentUploadsTable);
+        await database.delete(dictionaryGenerationProposalsTable);
+        await database.delete(dictionaryCardRevisionsTable);
+        await database.delete(dictionaryGenerationJobsTable);
         await database.delete(usersTable);
         ownerId = randomUUID();
         otherOwnerId = randomUUID();
@@ -89,6 +118,1149 @@ run('DrizzleDictionaryStore', () => {
             },
         });
     }
+
+    it('deletes a selected archived-card subset atomically and rejects a stale all-archived snapshot', async () => {
+        const dictionary = await createDictionary();
+        const createCard = async (
+            source: string,
+            expectedDictionaryVersion: number,
+        ) =>
+            store.createCard({
+                context: context(),
+                dictionaryId: dictionary.id,
+                ownerId,
+                request: {
+                    expectedDictionaryVersion,
+                    expectedSettingsVersion: dictionary.settings.version,
+                    overrides: {
+                        definitionEnabled: null,
+                        definitionLanguage: null,
+                        exampleEnabled: null,
+                        exampleLanguage: null,
+                        exampleTranslationEnabled: null,
+                        transcriptionCustomLabel: null,
+                        transcriptionEnabled: null,
+                        transcriptionNotation: null,
+                    },
+                    values: {
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                        source,
+                        transcription: null,
+                        translation: `${source}-translated`,
+                    },
+                },
+            });
+        const first = await createCard('first', dictionary.version);
+        const second = await createCard('second', first.dictionaryVersion);
+        const firstArchived = await store.archiveCard({
+            cardId: first.card.id,
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedCardVersion: first.card.version,
+                expectedDictionaryVersion: second.dictionaryVersion,
+            },
+        });
+        const secondArchived = await store.archiveCard({
+            cardId: second.card.id,
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedCardVersion: second.card.version,
+                expectedDictionaryVersion: firstArchived.dictionaryVersion,
+            },
+        });
+        const preview = await store.previewDictionaryCardDeletion({
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+        });
+        expect(preview.eligibleCount).toBe(2);
+        const deletionInput = {
+            context: context(),
+            dictionaryId: dictionary.id,
+            fingerprint: `hmac-sha256:v1:${'J'.repeat(43)}`,
+            idempotencyKey: `card-deletion-${randomUUID()}`,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: secondArchived.dictionaryVersion,
+                scope: {
+                    kind: 'selected' as const,
+                    targets: [
+                        {
+                            cardId: firstArchived.card.id,
+                            expectedVersion: firstArchived.card.version,
+                        },
+                    ],
+                },
+            },
+        };
+        const receipt = await store.deleteDictionaryCards(deletionInput);
+        expect(receipt).toMatchObject({ deletedCount: 1, targetKind: 'card' });
+        await expect(
+            store.deleteDictionaryCards(deletionInput),
+        ).resolves.toEqual(receipt);
+        const remaining = await store.listCards({
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            query: { lifecycle: 'archived', limit: 25 },
+        });
+        expect(remaining.data.map((card) => card.id)).toEqual([
+            secondArchived.card.id,
+        ]);
+        await expect(
+            store.deleteDictionaryCards({
+                context: context(),
+                dictionaryId: dictionary.id,
+                fingerprint: `hmac-sha256:v1:${'K'.repeat(43)}`,
+                idempotencyKey: `card-deletion-${randomUUID()}`,
+                ownerId,
+                request: {
+                    expectedDictionaryVersion:
+                        receipt.resultingDictionaryVersion!,
+                    scope: {
+                        kind: 'all-archived',
+                        snapshot: preview.snapshot,
+                    },
+                },
+            }),
+        ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+
+        const busyJobId = randomUUID();
+        await database.insert(dictionaryGenerationJobsTable).values({
+            cardId: secondArchived.card.id,
+            createdAt: now,
+            dictionaryId: dictionary.id,
+            expectedCardVersion: secondArchived.card.version,
+            expectedDictionaryVersion: receipt.resultingDictionaryVersion!,
+            expectedSettingsVersion: dictionary.settings.version,
+            format: 'single-card:v1',
+            id: busyJobId,
+            idempotencyKey: `busy-generation-${randomUUID()}`,
+            inputPayload: { source: 'second' } as never,
+            kind: 'single-card',
+            nextAttemptAt: now,
+            ownerId,
+            requestFingerprint: `hmac-sha256:v1:${'P'.repeat(43)}`,
+            sourceLanguageTag: 'en',
+            targetLanguageTag: 'es',
+            updatedAt: now,
+        });
+        const deleteRemaining = () =>
+            store.deleteDictionaryCards({
+                context: context(),
+                dictionaryId: dictionary.id,
+                fingerprint: `hmac-sha256:v1:${'Q'.repeat(43)}`,
+                idempotencyKey: `remaining-card-deletion-${randomUUID()}`,
+                ownerId,
+                request: {
+                    expectedDictionaryVersion:
+                        receipt.resultingDictionaryVersion!,
+                    scope: {
+                        kind: 'selected' as const,
+                        targets: [
+                            {
+                                cardId: secondArchived.card.id,
+                                expectedVersion: secondArchived.card.version,
+                            },
+                        ],
+                    },
+                },
+            });
+        await expect(deleteRemaining()).rejects.toBeInstanceOf(
+            DictionaryDeletionBusyError,
+        );
+        await expect(
+            database
+                .select({ id: dictionaryCardsTable.id })
+                .from(dictionaryCardsTable)
+                .where(eq(dictionaryCardsTable.id, secondArchived.card.id)),
+        ).resolves.toEqual([{ id: secondArchived.card.id }]);
+        await database
+            .delete(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, busyJobId));
+
+        const audioAssetId = randomUUID();
+        const audioJobId = randomUUID();
+        await database.insert(dictionaryAudioAssetsTable).values({
+            cardId: secondArchived.card.id,
+            createdAt: now,
+            dictionaryId: dictionary.id,
+            field: 'source',
+            fingerprint: 'audio-fingerprint',
+            id: audioAssetId,
+            lastAccessedAt: now,
+            ownerId,
+            state: 'pending',
+            storage: {
+                backend: 'postgres',
+                key: `dictionary-audio/${ownerId}/${audioAssetId}`,
+                namespace: 'dictionary-audio-v1',
+            },
+            writerExpiresAt: new Date(now.getTime() + 60_000),
+        });
+        await database.insert(dictionaryAudioJobsTable).values({
+            assetId: audioAssetId,
+            cardId: secondArchived.card.id,
+            cardVersion: secondArchived.card.version,
+            createdAt: now,
+            deadlineAt: new Date(now.getTime() + 60_000),
+            dictionaryId: dictionary.id,
+            field: 'source',
+            fingerprint: 'audio-fingerprint',
+            id: audioJobId,
+            nextPollAt: now,
+            ownerId,
+            profile: {
+                configurationId: 'fixture-v1',
+                estimatedCostUnitsPerCharacter: 1,
+                language: 'en',
+                model: 'fixture',
+                provider: 'fixture',
+                settingsVersion: '1',
+                voice: 'fixture',
+            },
+            reservedCost: 1,
+            settingsVersion: dictionary.settings.version,
+            leaseExpiresAt: new Date(now.getTime() + 60_000),
+            leaseToken: randomUUID(),
+            state: 'submitting',
+            text: 'second',
+        });
+        await expect(deleteRemaining()).rejects.toBeInstanceOf(
+            DictionaryDeletionBusyError,
+        );
+        await expect(
+            database
+                .select({ id: dictionaryCardsTable.id })
+                .from(dictionaryCardsTable)
+                .where(eq(dictionaryCardsTable.id, secondArchived.card.id)),
+        ).resolves.toEqual([{ id: secondArchived.card.id }]);
+        await expect(
+            database
+                .select({ state: dictionaryAudioAssetsTable.state })
+                .from(dictionaryAudioAssetsTable)
+                .where(eq(dictionaryAudioAssetsTable.id, audioAssetId)),
+        ).resolves.toEqual([{ state: 'pending' }]);
+        await expect(
+            database
+                .select({
+                    state: dictionaryAudioJobsTable.state,
+                    text: dictionaryAudioJobsTable.text,
+                })
+                .from(dictionaryAudioJobsTable)
+                .where(eq(dictionaryAudioJobsTable.id, audioJobId)),
+        ).resolves.toEqual([{ state: 'submitting', text: 'second' }]);
+        await database
+            .update(dictionaryAudioJobsTable)
+            .set({ leaseExpiresAt: null, leaseToken: null, state: 'ready' })
+            .where(eq(dictionaryAudioJobsTable.id, audioJobId));
+        await database
+            .update(dictionaryAudioAssetsTable)
+            .set({ state: 'ready', writerExpiresAt: null })
+            .where(eq(dictionaryAudioAssetsTable.id, audioAssetId));
+        await expect(deleteRemaining()).resolves.toMatchObject({
+            deletedCount: 1,
+        });
+        await expect(
+            database
+                .select({ state: dictionaryAudioAssetsTable.state })
+                .from(dictionaryAudioAssetsTable)
+                .where(eq(dictionaryAudioAssetsTable.id, audioAssetId)),
+        ).resolves.toEqual([{ state: 'deleting' }]);
+        await expect(
+            database
+                .select({
+                    state: dictionaryAudioJobsTable.state,
+                    text: dictionaryAudioJobsTable.text,
+                })
+                .from(dictionaryAudioJobsTable)
+                .where(eq(dictionaryAudioJobsTable.id, audioJobId)),
+        ).resolves.toEqual([{ state: 'cancelled', text: '' }]);
+    });
+
+    it('archives direct settled provider usage and keeps it in the effective owner budget', async () => {
+        const dictionary = await createDictionary();
+        const createCard = (
+            source: string,
+            expectedDictionaryVersion: number,
+        ) =>
+            store.createCard({
+                context: context(),
+                dictionaryId: dictionary.id,
+                ownerId,
+                request: {
+                    expectedDictionaryVersion,
+                    expectedSettingsVersion: dictionary.settings.version,
+                    overrides: {
+                        definitionEnabled: null,
+                        definitionLanguage: null,
+                        exampleEnabled: null,
+                        exampleLanguage: null,
+                        exampleTranslationEnabled: null,
+                        transcriptionCustomLabel: null,
+                        transcriptionEnabled: null,
+                        transcriptionNotation: null,
+                    },
+                    values: {
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                        source,
+                        transcription: null,
+                        translation: `${source}-translated`,
+                    },
+                },
+            });
+        const deleted = await createCard('settled usage', dictionary.version);
+        const survivor = await createCard(
+            'remaining card',
+            deleted.dictionaryVersion,
+        );
+        const jobId = randomUUID();
+        await database.insert(dictionaryGenerationJobsTable).values({
+            cardId: deleted.card.id,
+            completedAt: now,
+            createdAt: now,
+            dictionaryId: dictionary.id,
+            executionState: 'completed',
+            expectedCardVersion: deleted.card.version,
+            expectedDictionaryVersion: survivor.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            format: 'single-card:v1',
+            id: jobId,
+            idempotencyKey: `settled-direct-${randomUUID()}`,
+            inputPayload: { source: 'settled usage' } as never,
+            kind: 'single-card',
+            nextAttemptAt: now,
+            ownerId,
+            providerActualCostMicros: 2_000_000,
+            providerActualInputTokens: 2_000_000,
+            providerActualOutputTokens: 2_000_000,
+            providerMaxCostMicrosPerAttempt: 50_000,
+            providerMaxInputTokensPerAttempt: 262_144,
+            providerMaxOutputTokensPerAttempt: 40_960,
+            providerReservationSettledAt: now,
+            providerReservationState: 'settled',
+            requestFingerprint: `hmac-sha256:v1:${'V'.repeat(43)}`,
+            sourceLanguageTag: 'en',
+            targetLanguageTag: 'es',
+            updatedAt: now,
+        });
+        const archived = await store.archiveCard({
+            cardId: deleted.card.id,
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedCardVersion: deleted.card.version,
+                expectedDictionaryVersion: survivor.dictionaryVersion,
+            },
+        });
+        const receipt = await store.deleteDictionaryCards({
+            context: context(),
+            dictionaryId: dictionary.id,
+            fingerprint: `hmac-sha256:v1:${'W'.repeat(43)}`,
+            idempotencyKey: `settled-direct-delete-${randomUUID()}`,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: archived.dictionaryVersion,
+                scope: {
+                    kind: 'selected',
+                    targets: [
+                        {
+                            cardId: archived.card.id,
+                            expectedVersion: archived.card.version,
+                        },
+                    ],
+                },
+            },
+        });
+
+        await expect(
+            database
+                .select({ id: dictionaryGenerationJobsTable.id })
+                .from(dictionaryGenerationJobsTable)
+                .where(eq(dictionaryGenerationJobsTable.id, jobId)),
+        ).resolves.toEqual([]);
+        await expect(
+            database
+                .select({
+                    actualCostMicros:
+                        dictionaryGenerationProviderUsageArchiveTable.actualCostMicros,
+                    actualInputTokens:
+                        dictionaryGenerationProviderUsageArchiveTable.actualInputTokens,
+                    actualOutputTokens:
+                        dictionaryGenerationProviderUsageArchiveTable.actualOutputTokens,
+                    id: dictionaryGenerationProviderUsageArchiveTable.id,
+                })
+                .from(dictionaryGenerationProviderUsageArchiveTable)
+                .where(
+                    eq(dictionaryGenerationProviderUsageArchiveTable.id, jobId),
+                ),
+        ).resolves.toEqual([
+            {
+                actualCostMicros: 2_000_000,
+                actualInputTokens: 2_000_000,
+                actualOutputTokens: 2_000_000,
+                id: jobId,
+            },
+        ]);
+        const generationStore = new DrizzleDictionaryGenerationStore(database, {
+            generate: randomUUID,
+        });
+        await expect(
+            generationStore.enqueue({
+                cardId: survivor.card.id,
+                context: context(),
+                dictionaryId: dictionary.id,
+                expectedCardVersion: survivor.card.version,
+                expectedDictionaryVersion: receipt.resultingDictionaryVersion!,
+                expectedSettingsVersion: dictionary.settings.version,
+                fingerprint: `hmac-sha256:v1:${'X'.repeat(43)}`,
+                idempotencyKey: `post-deletion-generation-${randomUUID()}`,
+                instruction: null,
+                ownerId,
+            }),
+        ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+    });
+
+    it('preserves an incomplete linked document atomically and removes its terminal metadata', async () => {
+        const dictionary = await createDictionary();
+        const created = await store.createCard({
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                overrides: {
+                    definitionEnabled: null,
+                    definitionLanguage: null,
+                    exampleEnabled: null,
+                    exampleLanguage: null,
+                    exampleTranslationEnabled: null,
+                    transcriptionCustomLabel: null,
+                    transcriptionEnabled: null,
+                    transcriptionNotation: null,
+                },
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'document source',
+                    transcription: null,
+                    translation: 'document translation',
+                },
+            },
+        });
+        const jobId = randomUUID();
+        const uploadId = randomUUID();
+        const capabilityExpiresAt = new Date(now.getTime() + 60_000);
+        await database.insert(dictionaryGenerationJobsTable).values({
+            cardId: null,
+            completedAt: now,
+            createdAt: now,
+            dictionaryId: dictionary.id,
+            executionState: 'completed',
+            expectedCardVersion: null,
+            expectedDictionaryVersion: created.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            format: 'document-terms:v1',
+            id: jobId,
+            idempotencyKey: `document-linked-${randomUUID()}`,
+            inputPayload: { objectKey: 'sensitive-document' } as never,
+            kind: 'document-terms',
+            nextAttemptAt: now,
+            ownerId,
+            requestFingerprint: `hmac-sha256:v1:${'Y'.repeat(43)}`,
+            sourceLanguageTag: 'en',
+            targetLanguageTag: 'es',
+            updatedAt: now,
+        });
+        await database
+            .update(dictionaryCardRevisionsTable)
+            .set({ acceptedGenerationJobId: jobId })
+            .where(eq(dictionaryCardRevisionsTable.cardId, created.card.id));
+        await database.insert(dictionaryDocumentUploadsTable).values({
+            accountedPhysicalBytes: 12,
+            capabilityExpiresAt,
+            cleanupNextAttemptAt: now,
+            createdAt: now,
+            dictionaryId: dictionary.id,
+            expectedChecksumSha256: 'a'.repeat(64),
+            expectedContentType: 'text/plain',
+            expectedFormat: 'txt',
+            expectedSizeBytes: 12,
+            id: uploadId,
+            jobId,
+            objectKey: `dictionary_documents/${uploadId}`,
+            ownerId,
+            updatedAt: now,
+        });
+        const archived = await store.archiveCard({
+            cardId: created.card.id,
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedCardVersion: created.card.version,
+                expectedDictionaryVersion: created.dictionaryVersion,
+            },
+        });
+        const deleteCard = () =>
+            store.deleteDictionaryCards({
+                context: context(),
+                dictionaryId: dictionary.id,
+                fingerprint: `hmac-sha256:v1:${'Z'.repeat(43)}`,
+                idempotencyKey: `document-linked-delete-${randomUUID()}`,
+                ownerId,
+                request: {
+                    expectedDictionaryVersion: archived.dictionaryVersion,
+                    scope: {
+                        kind: 'selected' as const,
+                        targets: [
+                            {
+                                cardId: archived.card.id,
+                                expectedVersion: archived.card.version,
+                            },
+                        ],
+                    },
+                },
+            });
+        await expect(deleteCard()).rejects.toBeInstanceOf(
+            DictionaryDeletionBusyError,
+        );
+        await expect(
+            database
+                .select({ id: dictionaryCardsTable.id })
+                .from(dictionaryCardsTable)
+                .where(eq(dictionaryCardsTable.id, created.card.id)),
+        ).resolves.toEqual([{ id: created.card.id }]);
+        await expect(
+            database
+                .select({ id: dictionaryDocumentUploadsTable.id })
+                .from(dictionaryDocumentUploadsTable)
+                .where(eq(dictionaryDocumentUploadsTable.id, uploadId)),
+        ).resolves.toEqual([{ id: uploadId }]);
+
+        await database
+            .update(dictionaryDocumentUploadsTable)
+            .set({
+                cleanupCompletedAt: capabilityExpiresAt,
+                cleanupState: 'complete',
+                dataVersionsDeletedAt: new Date(now.getTime() + 3_000),
+                processingState: 'failed',
+                quotaReleasedAt: new Date(now.getTime() + 3_000),
+                terminalAt: new Date(now.getTime() + 1_000),
+                tombstoneCreatedAt: new Date(now.getTime() + 2_000),
+                tombstoneStorageVersionId: 'tombstone-v1',
+                updatedAt: capabilityExpiresAt,
+            })
+            .where(eq(dictionaryDocumentUploadsTable.id, uploadId));
+        await expect(deleteCard()).resolves.toMatchObject({ deletedCount: 1 });
+        await expect(
+            database
+                .select({ id: dictionaryDocumentUploadsTable.id })
+                .from(dictionaryDocumentUploadsTable)
+                .where(eq(dictionaryDocumentUploadsTable.id, uploadId)),
+        ).resolves.toEqual([]);
+        await expect(
+            database
+                .select({
+                    inputPayload: dictionaryGenerationJobsTable.inputPayload,
+                })
+                .from(dictionaryGenerationJobsTable)
+                .where(eq(dictionaryGenerationJobsTable.id, jobId)),
+        ).resolves.toEqual([{ inputPayload: null }]);
+    });
+
+    it('tombstones prior create idempotency without adding a new enum state', async () => {
+        const idempotencyKey = `dictionary-delete-source-${randomUUID()}`;
+        const fingerprint = `hmac-sha256:v1:${'L'.repeat(43)}`;
+        const request = {
+            description: null,
+            name: 'Delete idempotency source',
+            sourceLanguage: 'en' as const,
+            targetLanguage: 'es' as const,
+        };
+        const dictionary = await store.createDictionary({
+            context: context(),
+            fingerprint,
+            idempotencyKey,
+            ownerId,
+            request,
+        });
+        const child = await store.createCard({
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                overrides: {
+                    definitionEnabled: null,
+                    definitionLanguage: null,
+                    exampleEnabled: null,
+                    exampleLanguage: null,
+                    exampleTranslationEnabled: null,
+                    transcriptionCustomLabel: null,
+                    transcriptionEnabled: null,
+                    transcriptionNotation: null,
+                },
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'active child',
+                    transcription: null,
+                    translation: 'child translation',
+                },
+            },
+        });
+        const shareDigest = `hmac-sha256:v1:${'R'.repeat(43)}`;
+        const published = await store.rotateShare({
+            context: context(),
+            digest: shareDigest,
+            dictionaryId: dictionary.id,
+            expectedDictionaryVersion: child.dictionaryVersion,
+            keyVersion: 1,
+            locator: 'delete-source-share-locator',
+            ownerId,
+        });
+        const fork = await store.forkSharedDictionary({
+            context: context(),
+            fingerprint: `hmac-sha256:v1:${'S'.repeat(43)}`,
+            idempotencyKey: `delete-source-fork-${randomUUID()}`,
+            ownerId: otherOwnerId,
+            request: { name: 'Surviving fork' },
+            sourceDictionaryId: dictionary.id,
+            verifiedShareDigest: shareDigest,
+        });
+        const creditGrantId = randomUUID();
+        const creditHistoryId = randomUUID();
+        await database.insert(aiCreditAccountsTable).values({
+            createdAt: now,
+            mode: 'limited',
+            updatedAt: now,
+            userId: ownerId,
+        });
+        await database.insert(aiCreditGrantsTable).values({
+            amount: 250n,
+            createdAt: now,
+            id: creditGrantId,
+            ownerId,
+            source: 'purchase',
+            sourceReference: `deletion-retention-${randomUUID()}`,
+        });
+        await database.insert(aiCreditHistoryTable).values({
+            amount: 250n,
+            createdAt: now,
+            grantSource: 'purchase',
+            id: creditHistoryId,
+            kind: 'grant',
+            ownerId,
+        });
+        const archived = await store.archiveDictionary({
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: { expectedDictionaryVersion: published.version },
+        });
+        await store.deleteDictionaries({
+            context: context(),
+            fingerprint: `hmac-sha256:v1:${'M'.repeat(43)}`,
+            idempotencyKey: `dictionary-deletion-${randomUUID()}`,
+            ownerId,
+            request: {
+                scope: {
+                    kind: 'selected',
+                    targets: [
+                        {
+                            dictionaryId: archived.id,
+                            expectedVersion: archived.version,
+                        },
+                    ],
+                },
+            },
+        });
+        const [tombstone] = await database
+            .select()
+            .from(dictionaryIdempotencyKeysTable)
+            .where(
+                eq(
+                    dictionaryIdempotencyKeysTable.idempotencyKey,
+                    idempotencyKey,
+                ),
+            );
+        expect(tombstone).toMatchObject({
+            resultDictionaryId: null,
+            resultPayload: null,
+            state: 'completed',
+        });
+        await expect(
+            database
+                .select({ id: dictionaryCardsTable.id })
+                .from(dictionaryCardsTable)
+                .where(eq(dictionaryCardsTable.id, child.card.id)),
+        ).resolves.toEqual([]);
+        await expect(
+            store.readDictionary({
+                context: context(),
+                dictionaryId: fork.id,
+                ownerId: otherOwnerId,
+            }),
+        ).resolves.toMatchObject({
+            id: fork.id,
+            sourceDictionaryId: null,
+        });
+        await expect(
+            store.readSharedDictionary({
+                context: context(),
+                dictionaryId: dictionary.id,
+                query: { limit: 25 },
+                verifiedShareDigest: shareDigest,
+            }),
+        ).rejects.toBeInstanceOf(SharedDictionaryNotFoundError);
+        await expect(
+            database
+                .select({ mode: aiCreditAccountsTable.mode })
+                .from(aiCreditAccountsTable)
+                .where(eq(aiCreditAccountsTable.userId, ownerId)),
+        ).resolves.toEqual([{ mode: 'limited' }]);
+        await expect(
+            database
+                .select({ amount: aiCreditGrantsTable.amount })
+                .from(aiCreditGrantsTable)
+                .where(eq(aiCreditGrantsTable.id, creditGrantId)),
+        ).resolves.toEqual([{ amount: 250n }]);
+        await expect(
+            database
+                .select({ amount: aiCreditHistoryTable.amount })
+                .from(aiCreditHistoryTable)
+                .where(eq(aiCreditHistoryTable.id, creditHistoryId)),
+        ).resolves.toEqual([{ amount: 250n }]);
+        await expect(
+            store.createDictionary({
+                context: context(),
+                fingerprint,
+                idempotencyKey,
+                ownerId,
+                request,
+            }),
+        ).rejects.toBeInstanceOf(DictionaryIdempotencyConflictError);
+        await database.transaction((tx) =>
+            new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(ownerId),
+        );
+    });
+
+    it('does not take the global audio lock and waits for generation admission before row locks', async () => {
+        const archiveDictionary = async () => {
+            const dictionary = await createDictionary();
+            return store.archiveDictionary({
+                context: context(),
+                dictionaryId: dictionary.id,
+                ownerId,
+                request: { expectedDictionaryVersion: dictionary.version },
+            });
+        };
+        const audioTarget = await archiveDictionary();
+        let releaseAudio!: () => void;
+        let audioReady!: () => void;
+        const audioHeld = new Promise<void>((resolve) => {
+            releaseAudio = resolve;
+        });
+        const audioAcquired = new Promise<void>((resolve) => {
+            audioReady = resolve;
+        });
+        const audioBlocker = database.transaction(async (tx) => {
+            await tx.execute(sql`select pg_advisory_xact_lock(76021941)`);
+            audioReady();
+            await audioHeld;
+        });
+        await audioAcquired;
+        const audioDeletion = store.deleteDictionaries({
+            context: context(),
+            fingerprint: `hmac-sha256:v1:${'N'.repeat(43)}`,
+            idempotencyKey: `audio-lock-deletion-${randomUUID()}`,
+            ownerId,
+            request: {
+                scope: {
+                    kind: 'selected',
+                    targets: [
+                        {
+                            dictionaryId: audioTarget.id,
+                            expectedVersion: audioTarget.version,
+                        },
+                    ],
+                },
+            },
+        });
+        const audioOutcome = await Promise.race([
+            audioDeletion.then(() => 'deleted' as const),
+            new Promise<'blocked'>((resolve) =>
+                setTimeout(() => resolve('blocked'), 500),
+            ),
+        ]);
+        releaseAudio();
+        await audioBlocker;
+        expect(audioOutcome).toBe('deleted');
+
+        const admissionTarget = await archiveDictionary();
+        let releaseAdmission!: () => void;
+        let admissionReady!: () => void;
+        const admissionHeld = new Promise<void>((resolve) => {
+            releaseAdmission = resolve;
+        });
+        const admissionAcquired = new Promise<void>((resolve) => {
+            admissionReady = resolve;
+        });
+        const admissionBlocker = database.transaction(async (tx) => {
+            await tx.execute(
+                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
+            );
+            admissionReady();
+            await admissionHeld;
+        });
+        await admissionAcquired;
+        let completed = false;
+        const admissionDeletion = store
+            .deleteDictionaries({
+                context: context(),
+                fingerprint: `hmac-sha256:v1:${'O'.repeat(43)}`,
+                idempotencyKey: `admission-lock-deletion-${randomUUID()}`,
+                ownerId,
+                request: {
+                    scope: {
+                        kind: 'selected',
+                        targets: [
+                            {
+                                dictionaryId: admissionTarget.id,
+                                expectedVersion: admissionTarget.version,
+                            },
+                        ],
+                    },
+                },
+            })
+            .then((receipt) => {
+                completed = true;
+                return receipt;
+            });
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(completed).toBe(false);
+        const rowProbe = database.transaction(async (tx) => {
+            const [lockedOwner] = await tx
+                .select({ id: usersTable.id })
+                .from(usersTable)
+                .where(eq(usersTable.id, ownerId))
+                .for('update');
+            const [lockedDictionary] = await tx
+                .select({ id: dictionariesTable.id })
+                .from(dictionariesTable)
+                .where(eq(dictionariesTable.id, admissionTarget.id))
+                .for('update');
+            expect(lockedOwner?.id).toBe(ownerId);
+            expect(lockedDictionary?.id).toBe(admissionTarget.id);
+        });
+        try {
+            await expect(
+                Promise.race([
+                    rowProbe.then(() => 'acquired' as const),
+                    new Promise<'blocked'>((resolve) =>
+                        setTimeout(() => resolve('blocked'), 500),
+                    ),
+                ]),
+            ).resolves.toBe('acquired');
+        } finally {
+            releaseAdmission();
+            await admissionBlocker;
+            await rowProbe;
+        }
+        await expect(admissionDeletion).resolves.toMatchObject({
+            deletedCount: 1,
+        });
+    });
+
+    it('rolls back selected dictionary deletion for active, foreign, or missing targets', async () => {
+        const archivedSource = await createDictionary();
+        const archived = await store.archiveDictionary({
+            context: context(),
+            dictionaryId: archivedSource.id,
+            ownerId,
+            request: { expectedDictionaryVersion: archivedSource.version },
+        });
+        const active = await createDictionary();
+        const foreignSource = await store.createDictionary({
+            context: context(),
+            fingerprint: `hmac-sha256:v1:${'T'.repeat(43)}`,
+            idempotencyKey: `foreign-dictionary-${randomUUID()}`,
+            ownerId: otherOwnerId,
+            request: {
+                description: null,
+                name: 'Foreign archived',
+                sourceLanguage: 'en',
+                targetLanguage: 'es',
+            },
+        });
+        const foreign = await store.archiveDictionary({
+            context: context(),
+            dictionaryId: foreignSource.id,
+            ownerId: otherOwnerId,
+            request: { expectedDictionaryVersion: foreignSource.version },
+        });
+        for (const invalidTarget of [
+            { id: active.id, version: active.version },
+            { id: foreign.id, version: foreign.version },
+            { id: randomUUID(), version: 1 },
+        ]) {
+            await expect(
+                store.deleteDictionaries({
+                    context: context(),
+                    fingerprint: `hmac-sha256:v1:${'U'.repeat(43)}`,
+                    idempotencyKey: `atomic-delete-${randomUUID()}`,
+                    ownerId,
+                    request: {
+                        scope: {
+                            kind: 'selected',
+                            targets: [
+                                {
+                                    dictionaryId: archived.id,
+                                    expectedVersion: archived.version,
+                                },
+                                {
+                                    dictionaryId: invalidTarget.id,
+                                    expectedVersion: invalidTarget.version,
+                                },
+                            ],
+                        },
+                    },
+                }),
+            ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+            await expect(
+                store.readDictionary({
+                    context: context(),
+                    dictionaryId: archived.id,
+                    ownerId,
+                }),
+            ).resolves.toMatchObject({ id: archived.id });
+        }
+    });
+
+    it('scrubs a retained completed batch job when one linked card is deleted', async () => {
+        const dictionary = await createDictionary();
+        const createCard = (
+            source: string,
+            translation: string,
+            expectedDictionaryVersion: number,
+        ) =>
+            store.createCard({
+                context: context(),
+                dictionaryId: dictionary.id,
+                ownerId,
+                request: {
+                    expectedDictionaryVersion,
+                    expectedSettingsVersion: dictionary.settings.version,
+                    overrides: {
+                        definitionEnabled: null,
+                        definitionLanguage: null,
+                        exampleEnabled: null,
+                        exampleLanguage: null,
+                        exampleTranslationEnabled: null,
+                        transcriptionCustomLabel: null,
+                        transcriptionEnabled: null,
+                        transcriptionNotation: null,
+                    },
+                    values: {
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                        source,
+                        transcription: null,
+                        translation,
+                    },
+                },
+            });
+        const deleted = await createCard(
+            'sensitive source',
+            'sensitive translation',
+            dictionary.version,
+        );
+        const survivor = await createCard(
+            'surviving source',
+            'surviving translation',
+            deleted.dictionaryVersion,
+        );
+        const jobId = randomUUID();
+        const settledAt = new Date(now.getTime() + 1_000);
+        await database.insert(dictionaryGenerationJobsTable).values({
+            cardId: null,
+            completedAt: settledAt,
+            createdAt: now,
+            dictionaryId: dictionary.id,
+            executionState: 'completed',
+            expectedCardVersion: null,
+            expectedDictionaryVersion: survivor.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            format: 'pasted-terms:v1',
+            id: jobId,
+            idempotencyKey: `completed-generation-${randomUUID()}`,
+            inputPayload: {
+                rawText: 'sensitive source',
+            } as never,
+            kind: 'pasted-terms',
+            nextAttemptAt: now,
+            ownerId,
+            providerActualCostMicros: 41,
+            providerActualInputTokens: 17,
+            providerActualOutputTokens: 11,
+            providerReservationSettledAt: settledAt,
+            providerReservationState: 'settled',
+            requestFingerprint: `hmac-sha256:v1:${'L'.repeat(43)}`,
+            sourceLanguageTag: 'en',
+            targetLanguageTag: 'es',
+            updatedAt: settledAt,
+        });
+        await database.insert(dictionaryGenerationProposalsTable).values({
+            createdAt: settledAt,
+            expiresAt: new Date(settledAt.getTime() + 60_000),
+            jobId,
+            payload: {
+                candidates: [{ source: 'sensitive source' }],
+            } as never,
+            reviewState: 'reviewable',
+            updatedAt: settledAt,
+        });
+        await database
+            .update(dictionaryCardRevisionsTable)
+            .set({ acceptedGenerationJobId: jobId })
+            .where(
+                inArray(dictionaryCardRevisionsTable.cardId, [
+                    deleted.card.id,
+                    survivor.card.id,
+                ]),
+            );
+
+        const archived = await store.archiveCard({
+            cardId: deleted.card.id,
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedCardVersion: deleted.card.version,
+                expectedDictionaryVersion: survivor.dictionaryVersion,
+            },
+        });
+        await store.deleteDictionaryCards({
+            context: context(),
+            dictionaryId: dictionary.id,
+            fingerprint: `hmac-sha256:v1:${'M'.repeat(43)}`,
+            idempotencyKey: `content-deletion-${randomUUID()}`,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: archived.dictionaryVersion,
+                scope: {
+                    kind: 'selected',
+                    targets: [
+                        {
+                            cardId: deleted.card.id,
+                            expectedVersion: archived.card.version,
+                        },
+                    ],
+                },
+            },
+        });
+
+        await expect(
+            database
+                .select({ id: dictionaryCardsTable.id })
+                .from(dictionaryCardsTable)
+                .where(eq(dictionaryCardsTable.id, deleted.card.id)),
+        ).resolves.toEqual([]);
+        await expect(
+            database
+                .select({ id: dictionaryCardRevisionsTable.id })
+                .from(dictionaryCardRevisionsTable)
+                .where(
+                    eq(dictionaryCardRevisionsTable.cardId, deleted.card.id),
+                ),
+        ).resolves.toEqual([]);
+        await expect(
+            database
+                .select({ jobId: dictionaryGenerationProposalsTable.jobId })
+                .from(dictionaryGenerationProposalsTable)
+                .where(eq(dictionaryGenerationProposalsTable.jobId, jobId)),
+        ).resolves.toEqual([]);
+        await expect(
+            database
+                .select({
+                    actualCostMicros:
+                        dictionaryGenerationJobsTable.providerActualCostMicros,
+                    inputPayload: dictionaryGenerationJobsTable.inputPayload,
+                    id: dictionaryGenerationJobsTable.id,
+                })
+                .from(dictionaryGenerationJobsTable)
+                .where(eq(dictionaryGenerationJobsTable.id, jobId)),
+        ).resolves.toEqual([
+            { actualCostMicros: 41, id: jobId, inputPayload: null },
+        ]);
+        const readable = await new DrizzleDictionaryGenerationStore(database, {
+            generate: randomUUID,
+        }).read({ context: context(), jobId, ownerId });
+        expect(readable).toMatchObject({
+            id: jobId,
+            kind: 'pasted-terms',
+            proposal: null,
+            state: 'failed',
+        });
+        await expect(
+            database
+                .select({
+                    actualCostMicros:
+                        dictionaryGenerationProviderUsageArchiveTable.actualCostMicros,
+                    actualInputTokens:
+                        dictionaryGenerationProviderUsageArchiveTable.actualInputTokens,
+                    actualOutputTokens:
+                        dictionaryGenerationProviderUsageArchiveTable.actualOutputTokens,
+                    id: dictionaryGenerationProviderUsageArchiveTable.id,
+                    ownerId:
+                        dictionaryGenerationProviderUsageArchiveTable.ownerId,
+                })
+                .from(dictionaryGenerationProviderUsageArchiveTable)
+                .where(
+                    eq(dictionaryGenerationProviderUsageArchiveTable.id, jobId),
+                ),
+        ).resolves.toEqual([]);
+        await expect(
+            database
+                .select({
+                    acceptedGenerationJobId:
+                        dictionaryCardRevisionsTable.acceptedGenerationJobId,
+                })
+                .from(dictionaryCardRevisionsTable)
+                .where(
+                    eq(dictionaryCardRevisionsTable.cardId, survivor.card.id),
+                ),
+        ).resolves.toEqual([{ acceptedGenerationJobId: jobId }]);
+        await expect(
+            database
+                .select({
+                    source: dictionaryCardsTable.source,
+                    translation: dictionaryCardsTable.translation,
+                })
+                .from(dictionaryCardsTable)
+                .where(eq(dictionaryCardsTable.id, survivor.card.id)),
+        ).resolves.toEqual([
+            {
+                source: 'surviving source',
+                translation: 'surviving translation',
+            },
+        ]);
+    });
 
     it('persists typed current values and immutable validated revision snapshots with owner isolation', async () => {
         const dictionary = await createDictionary();

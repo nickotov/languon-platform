@@ -51,6 +51,13 @@ export class DictionaryIdempotencyConflictError extends Error {
     }
 }
 
+export class DictionaryDeletionBusyError extends Error {
+    public constructor(public readonly retryAfterSeconds = 30) {
+        super('Dictionary deletion is waiting for active work to finish.');
+        this.name = 'DictionaryDeletionBusyError';
+    }
+}
+
 export class DictionaryLanguagePairLockedError extends Error {
     public constructor() {
         super('The language pair is locked after the first card.');

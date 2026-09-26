@@ -27,6 +27,9 @@ export type LibraryResultsProps = {
         lifecycle: DictionaryLifecycle;
         version: number;
     }): void;
+    selected: ReadonlySet<string>;
+    toggleSelected(dictionaryId: string): void;
+    openSelectedDeletion(dictionary?: DictionarySummary): void;
 };
 
 export function LibraryResults({ state }: { state: LibraryResultsProps }) {
@@ -145,6 +148,9 @@ export function LibraryResults({ state }: { state: LibraryResultsProps }) {
                     catalog={state.catalog}
                     disabled={state.disabled}
                     onChangeLifecycle={state.changeLifecycle}
+                    selected={state.selected.has(dictionary.id)}
+                    onToggleSelected={state.toggleSelected}
+                    onDelete={state.openSelectedDeletion}
                 />
             ))}
         </ul>

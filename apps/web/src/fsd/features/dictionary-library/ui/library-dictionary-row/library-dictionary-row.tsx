@@ -5,12 +5,13 @@ import {
     Link as LinkIcon,
     Lock,
     MoreHorizontal,
+    Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { languageLabel } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Badge, Card, Menu } from '@/fsd/shared/ui';
+import { Badge, Card, Checkbox, Menu } from '@/fsd/shared/ui';
 import type {
     DictionarySummary,
     DictionaryLifecycle,
@@ -27,6 +28,9 @@ type Props = {
         lifecycle: DictionaryLifecycle;
         version: number;
     }): void;
+    selected: boolean;
+    onToggleSelected(dictionaryId: string): void;
+    onDelete(dictionary: DictionarySummary): void;
 };
 
 export function LibraryDictionaryRow({
@@ -34,6 +38,9 @@ export function LibraryDictionaryRow({
     catalog,
     disabled,
     onChangeLifecycle,
+    selected,
+    onToggleSelected,
+    onDelete,
 }: Props) {
     const { href, locale, t } = useI18n();
     const router = useRouter();
@@ -68,6 +75,12 @@ export function LibraryDictionaryRow({
             version: dictionary.version,
         });
     }
+    function deleteDictionary() {
+        onDelete(dictionary);
+    }
+    function toggleSelection() {
+        onToggleSelected(dictionary.id);
+    }
 
     const items = [
         {
@@ -76,6 +89,16 @@ export function LibraryDictionaryRow({
             onSelect: openSettings,
             icon: <Settings size={16} />,
         },
+        ...(archived
+            ? [
+                  {
+                      label: t('dictionary.deletion.deletePermanently'),
+                      disabled,
+                      onSelect: deleteDictionary,
+                      icon: <Trash2 size={16} />,
+                  },
+              ]
+            : []),
         {
             label: t(
                 archived
@@ -96,6 +119,17 @@ export function LibraryDictionaryRow({
                 variant='outlined'
             >
                 <div className={styles.cardContent}>
+                    {archived ? (
+                        <Checkbox
+                            aria-label={t('dictionary.deletion.selectNamed', {
+                                name: dictionary.name,
+                            })}
+                            checked={selected}
+                            className={styles.rowSelection}
+                            disabled={disabled}
+                            onChange={toggleSelection}
+                        />
+                    ) : null}
                     <h2 dir='auto'>
                         {archived ? (
                             <button

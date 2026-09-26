@@ -15,6 +15,7 @@ import { useEditorState } from './use-editor-state';
 import { useGenerationJob } from './use-generation-job';
 import { useGenerationMutation } from './use-generation-mutation';
 import { useInterchangeMutations } from './use-interchange-mutations';
+import { useDictionaryCardDeletion } from '@/fsd/features/dictionary-card-list';
 
 export function useDictionaryEditorController(
     dictionaryId: string,
@@ -23,6 +24,18 @@ export function useDictionaryEditorController(
     const state = useEditorState(dictionaryId, requestWithSession);
 
     const queries = useEditorQueries(state);
+
+    const cardDeletion = useDictionaryCardDeletion({
+        cards: queries.cards.data?.pages.flatMap((page) => page.data) ?? [],
+        dictionaryId,
+        dictionaryVersion:
+            queries.cards.data?.pages[0]?.dictionaryVersion ??
+            queries.dictionary.data?.dictionary.version ??
+            0,
+        requestWithSession,
+        resetKey: `${state.cardLifecycle}:${state.search}`,
+        setOutcome: state.setOutcome,
+    });
 
     const workspace = { ...state, ...queries };
 
@@ -38,6 +51,7 @@ export function useDictionaryEditorController(
     const cleanup = useAuthoringCleanup(context);
 
     const mutations = {
+        cardDeletion,
         ...useDictionaryMutations(context),
         ...useCardMutation({ ...context, ...cleanup }),
         ...useAuthoringMutation(context),

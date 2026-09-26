@@ -5,6 +5,10 @@ import type {
     DictionaryCardLifecycleMutationRequest,
     DictionaryExportFormat,
     DictionaryDeterministicImportResponse,
+    DeleteDictionariesRequest,
+    DeleteDictionaryCardsRequest,
+    DictionaryDeletionPreviewResponse,
+    DictionaryDeletionReceiptResponse,
     DictionaryImportRowWarning,
     DictionaryImportTarget,
     DictionaryLifecycleMutationRequest,
@@ -38,6 +42,30 @@ export interface SharedDictionaryCandidate {
 }
 
 export interface DictionaryStore {
+    previewDictionaryDeletion(input: {
+        context: DictionaryOperationContext;
+        ownerId: string;
+    }): Promise<DictionaryDeletionPreviewResponse>;
+    deleteDictionaries(input: {
+        context: DictionaryOperationContext;
+        fingerprint: string;
+        idempotencyKey: string;
+        ownerId: string;
+        request: DeleteDictionariesRequest;
+    }): Promise<DictionaryDeletionReceiptResponse>;
+    previewDictionaryCardDeletion(input: {
+        context: DictionaryOperationContext;
+        dictionaryId: string;
+        ownerId: string;
+    }): Promise<DictionaryDeletionPreviewResponse>;
+    deleteDictionaryCards(input: {
+        context: DictionaryOperationContext;
+        dictionaryId: string;
+        fingerprint: string;
+        idempotencyKey: string;
+        ownerId: string;
+        request: DeleteDictionaryCardsRequest;
+    }): Promise<DictionaryDeletionReceiptResponse>;
     authorizeDictionaryImportTarget(input: {
         context: DictionaryOperationContext;
         ownerId: string;

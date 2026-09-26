@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { DictionaryService } from '../../../../../src/modules/dictionaries/application/dictionary-service';
 import { DictionaryGenerationNotAvailableError } from '../../../../../src/modules/dictionaries/application/dictionary-errors';
+import { RecentAuthenticationRequiredError } from '../../../../../src/modules/authentication/application/authentication-errors';
+import { mapDictionaryHttpError } from '../../../../../src/modules/dictionaries/interface/http/dictionary-http-error-mapping';
 import { createDictionaryRoutes } from '../../../../../src/modules/dictionaries/interface/http/dictionary.routes';
 import { AuthHttpPolicy } from '../../../../../src/modules/authentication/interface/http/auth-http-policy';
 
@@ -31,6 +33,19 @@ function application() {
 }
 
 describe('dictionary HTTP routes', () => {
+    it('maps recent-auth deletion failures to the established transport error', () => {
+        const mapped = mapDictionaryHttpError(
+            new RecentAuthenticationRequiredError(),
+        );
+        expect(mapped.status).toBe(403);
+        expect(mapped.response('correlation')).toEqual({
+            error: {
+                code: 'recent_authentication_required',
+                correlationId: 'correlation',
+                message: 'Recent authentication is required.',
+            },
+        });
+    });
     it('publishes credit exhaustion in the OpenAPI contract', () => {
         const document = application().getOpenAPIDocument({
             info: { title: 'Dictionary routes', version: '1' },

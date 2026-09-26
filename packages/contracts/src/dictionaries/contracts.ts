@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 import { DictionaryErrorResponseSchema } from './errors';
 import {
+    DeleteDictionariesRequestSchema,
+    DeleteDictionaryCardsRequestSchema,
+    DictionaryDeletionPreviewResponseSchema,
+    DictionaryDeletionReceiptResponseSchema,
+} from './deletion';
+import {
     AcceptDictionaryCardAuthoringGenerationJobRequestSchema,
     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
     EnqueueDictionaryCardAuthoringGenerationResponseSchema,
@@ -754,6 +760,16 @@ export const DictionaryEndpointSchemas = {
         response: DictionaryResponseSchema,
         error: DictionaryErrorResponseSchema,
     },
+    previewDictionaryDeletion: {
+        response: DictionaryDeletionPreviewResponseSchema,
+        error: DictionaryErrorResponseSchema,
+    },
+    deleteDictionaries: {
+        headers: DictionaryIdempotencyHeadersSchema,
+        body: DeleteDictionariesRequestSchema,
+        response: DictionaryDeletionReceiptResponseSchema,
+        error: DictionaryErrorResponseSchema,
+    },
     previewDictionaryImport: {
         body: PreviewDictionaryImportRequestSchema,
         response: PreviewDictionaryImportResponseSchema,
@@ -804,6 +820,18 @@ export const DictionaryEndpointSchemas = {
         params: DictionaryCardIdParamsSchema,
         body: DictionaryCardLifecycleMutationRequestSchema,
         response: DictionaryCardResponseSchema,
+        error: DictionaryErrorResponseSchema,
+    },
+    previewDictionaryCardDeletion: {
+        params: DictionaryIdParamsSchema,
+        response: DictionaryDeletionPreviewResponseSchema,
+        error: DictionaryErrorResponseSchema,
+    },
+    deleteDictionaryCards: {
+        params: DictionaryIdParamsSchema,
+        headers: DictionaryIdempotencyHeadersSchema,
+        body: DeleteDictionaryCardsRequestSchema,
+        response: DictionaryDeletionReceiptResponseSchema,
         error: DictionaryErrorResponseSchema,
     },
     reorderDictionaryCards: {
@@ -983,6 +1011,18 @@ export const DictionaryEndpointInventory = [
         access: 'owner',
     },
     {
+        name: 'previewDictionaryDeletion',
+        method: 'GET',
+        path: '/dictionary-deletions/preview',
+        access: 'owner',
+    },
+    {
+        name: 'deleteDictionaries',
+        method: 'POST',
+        path: '/dictionary-deletions',
+        access: 'owner',
+    },
+    {
         name: 'previewDictionaryImport',
         method: 'POST',
         path: '/dictionary-imports/preview',
@@ -1034,6 +1074,18 @@ export const DictionaryEndpointInventory = [
         name: 'restoreDictionaryCard',
         method: 'POST',
         path: '/dictionaries/:dictionaryId/cards/:cardId/restore',
+        access: 'owner',
+    },
+    {
+        name: 'previewDictionaryCardDeletion',
+        method: 'GET',
+        path: '/dictionaries/:dictionaryId/card-deletions/preview',
+        access: 'owner',
+    },
+    {
+        name: 'deleteDictionaryCards',
+        method: 'POST',
+        path: '/dictionaries/:dictionaryId/card-deletions',
         access: 'owner',
     },
     {

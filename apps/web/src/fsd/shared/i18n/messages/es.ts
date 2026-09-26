@@ -431,6 +431,38 @@ export const es = {
     'dictionary.library.retryLoadMore': 'Reintentar cargar más diccionarios',
     'dictionary.library.loadMoreFailed':
         'No se pudieron cargar más diccionarios. Los resultados actuales siguen disponibles.',
+    'dictionary.deletion.deletePermanently': 'Eliminar permanentemente',
+    'dictionary.deletion.deleteSelected': 'Eliminar seleccionados',
+    'dictionary.deletion.deleteAllArchived': 'Eliminar todos los archivados',
+    'dictionary.deletion.selectLoaded': 'Seleccionar elementos cargados',
+    'dictionary.deletion.selectedCount': 'Cantidad seleccionada: {count}',
+    'dictionary.deletion.selectNamed': 'Seleccionar {name}',
+    'dictionary.deletion.selectCard': 'Seleccionar tarjeta {source}',
+    'dictionary.deletion.dictionaryTitle':
+        '¿Eliminar diccionarios permanentemente?',
+    'dictionary.deletion.dictionaryHelp':
+        'Cantidad de diccionarios archivados que se eliminarán: {count}.',
+    'dictionary.deletion.dictionaryConsequences':
+        'Se eliminarán todas las tarjetas y enlaces compartidos. Esta acción no se puede deshacer.',
+    'dictionary.deletion.dictionaryPhrase': 'ELIMINAR {count}',
+    'dictionary.deletion.typePhrase': 'Escribe “{phrase}” para confirmar',
+    'dictionary.deletion.cardTitle': '¿Eliminar tarjetas permanentemente?',
+    'dictionary.deletion.cardHelp':
+        'Cantidad de tarjetas archivadas que se eliminarán de este diccionario: {count}.',
+    'dictionary.deletion.cardIdentity': '{source} → {translation}',
+    'dictionary.deletion.cardAcknowledge':
+        'Entiendo que estas tarjetas no se pueden recuperar. Cantidad: {count}.',
+    'dictionary.deletion.dictionariesDeleted':
+        'Cantidad de diccionarios eliminados permanentemente: {count}.',
+    'dictionary.deletion.cardsDeleted':
+        'Cantidad de tarjetas eliminadas permanentemente: {count}.',
+    'dictionary.deletion.failed': 'No se pudo eliminar',
+    'dictionary.deletion.busy':
+        'Aún está terminando trabajo relacionado. Espera un momento e inténtalo de nuevo.',
+    'dictionary.deletion.noneAvailable':
+        'No hay contenido archivado para eliminar.',
+    'dictionary.deletion.selectionLimit':
+        'Puedes seleccionar hasta {count} elementos. Usa Eliminar todos los archivados para una limpieza mayor.',
     'dictionary.lifecycle.active': 'Activo',
     'dictionary.lifecycle.archived': 'Archivado',
     'dictionary.visibility.private': 'Privado',

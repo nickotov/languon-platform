@@ -4,7 +4,8 @@ import type {
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -20,7 +21,11 @@ import {
     resolveCardAuthoringCleanupRead,
     retainCardAuthoringIdempotencyAttempt,
 } from '@/fsd/features/dictionary-card-authoring';
-import { DictionaryCardList } from '@/fsd/features/dictionary-card-list';
+import {
+    DictionaryCardList,
+    useDictionaryCardDeletion,
+} from '@/fsd/features/dictionary-card-list';
+import { dictionaryApi } from '@/fsd/entities/dictionary';
 import { DictionarySettingsForm } from '@/fsd/features/dictionary-settings';
 
 import { render } from './render';
@@ -131,6 +136,41 @@ const card: DictionaryCard = {
     },
     version: 1,
 };
+
+function ArchivedCardDeletionHarness({ empty = false }: { empty?: boolean }) {
+    const [outcome, setOutcome] = useState('');
+    const archivedCard = {
+        ...card,
+        archivedAt: '2026-08-22T10:00:00.000Z',
+        lifecycle: 'archived' as const,
+        version: 3,
+    };
+    const cards = empty ? [] : [archivedCard];
+    const deletion = useDictionaryCardDeletion({
+        cards,
+        dictionaryId: dictionary.id,
+        dictionaryVersion: 5,
+        requestWithSession: (operation) => operation('token'),
+        resetKey: 'archived:',
+        setOutcome,
+    });
+    return (
+        <>
+            <p>{outcome}</p>
+            <DictionaryCardList
+                cards={cards}
+                deletion={deletion}
+                dictionary={dictionary}
+                languages={languages}
+                lifecycle='archived'
+                onEdit={vi.fn()}
+                onLifecycle={vi.fn()}
+                onMove={vi.fn()}
+                pending={false}
+            />
+        </>
+    );
+}
 
 const authoringProposal = {
     source: 'medium',
@@ -1253,6 +1293,92 @@ describe('dictionary settings and card authoring', () => {
         expect(
             screen.queryByRole('menuitem', { name: /Move earlier|Move later/ }),
         ).not.toBeInTheDocument();
+    });
+
+    it('deletes a selected archived card after explicit acknowledgement', async () => {
+        const remove = vi
+            .spyOn(dictionaryApi, 'deleteDictionaryCards')
+            .mockResolvedValue({
+                operationId: '30000000-0000-4000-8000-000000000002',
+                targetKind: 'card',
+                deletedCount: 1,
+                resultingDictionaryVersion: 6,
+            });
+        const showModal = HTMLDialogElement.prototype.showModal;
+        const close = HTMLDialogElement.prototype.close;
+        HTMLDialogElement.prototype.showModal = function show() {
+            this.setAttribute('open', '');
+        };
+        HTMLDialogElement.prototype.close = function closeDialog() {
+            this.removeAttribute('open');
+        };
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        });
+        const user = userEvent.setup();
+        render(
+            <QueryClientProvider client={client}>
+                <ArchivedCardDeletionHarness />
+            </QueryClientProvider>,
+        );
+
+        await user.click(
+            screen.getByRole('checkbox', {
+                name: `Select card ${card.values.source}`,
+            }),
+        );
+        await user.click(
+            screen.getByRole('button', { name: 'Delete selected' }),
+        );
+        const confirm = screen.getByRole('button', {
+            name: 'Delete permanently',
+        });
+        expect(confirm).toBeDisabled();
+        await user.click(
+            screen.getByRole('checkbox', {
+                name: 'I understand these cards cannot be recovered. Cards: 1.',
+            }),
+        );
+        await user.click(confirm);
+
+        await waitFor(() =>
+            expect(remove).toHaveBeenCalledWith(
+                'token',
+                dictionary.id,
+                {
+                    expectedDictionaryVersion: 5,
+                    scope: {
+                        kind: 'selected',
+                        targets: [{ cardId: card.id, expectedVersion: 3 }],
+                    },
+                },
+                expect.any(String),
+            ),
+        );
+        expect(
+            await screen.findByText('Cards permanently deleted: 1.'),
+        ).toBeInTheDocument();
+        HTMLDialogElement.prototype.showModal = showModal;
+        HTMLDialogElement.prototype.close = close;
+    });
+
+    it('hides archived-card bulk controls when no cards are loaded', () => {
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        });
+        render(
+            <QueryClientProvider client={client}>
+                <ArchivedCardDeletionHarness empty />
+            </QueryClientProvider>,
+        );
+
+        expect(
+            screen.queryByRole('checkbox', { name: 'Select loaded items' }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'Delete all archived' }),
+        ).not.toBeInTheDocument();
+        expect(screen.getByText('No cards here')).toBeInTheDocument();
     });
 
     it('opens retained generation reviews when starting new work is unavailable', async () => {

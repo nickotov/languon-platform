@@ -486,6 +486,37 @@ export const ru = {
     'dictionary.library.retryLoadMore': 'Повторить загрузку словарей',
     'dictionary.library.loadMoreFailed':
         'Не удалось загрузить другие словари. Уже загруженные результаты по-прежнему доступны.',
+    'dictionary.deletion.deletePermanently': 'Удалить навсегда',
+    'dictionary.deletion.deleteSelected': 'Удалить выбранные',
+    'dictionary.deletion.deleteAllArchived': 'Удалить все архивные',
+    'dictionary.deletion.selectLoaded': 'Выбрать загруженные',
+    'dictionary.deletion.selectedCount': 'Выбрано: {count}',
+    'dictionary.deletion.selectNamed': 'Выбрать {name}',
+    'dictionary.deletion.selectCard': 'Выбрать карточку {source}',
+    'dictionary.deletion.dictionaryTitle': 'Удалить словари навсегда?',
+    'dictionary.deletion.dictionaryHelp':
+        'Количество архивных словарей для удаления: {count}.',
+    'dictionary.deletion.dictionaryConsequences':
+        'Все карточки и ссылки общего доступа будут удалены. Это действие нельзя отменить.',
+    'dictionary.deletion.dictionaryPhrase': 'УДАЛИТЬ {count}',
+    'dictionary.deletion.typePhrase': 'Введите «{phrase}» для подтверждения',
+    'dictionary.deletion.cardTitle': 'Удалить карточки навсегда?',
+    'dictionary.deletion.cardHelp':
+        'Количество архивных карточек для удаления из словаря: {count}.',
+    'dictionary.deletion.cardIdentity': '{source} → {translation}',
+    'dictionary.deletion.cardAcknowledge':
+        'Я понимаю, что карточки нельзя восстановить. Количество: {count}.',
+    'dictionary.deletion.dictionariesDeleted':
+        'Количество словарей, удалённых навсегда: {count}.',
+    'dictionary.deletion.cardsDeleted':
+        'Количество карточек, удалённых навсегда: {count}.',
+    'dictionary.deletion.failed': 'Не удалось удалить',
+    'dictionary.deletion.busy':
+        'Связанные операции ещё завершаются. Подождите и повторите попытку.',
+    'dictionary.deletion.noneAvailable':
+        'Нет архивных материалов для удаления.',
+    'dictionary.deletion.selectionLimit':
+        'Можно выбрать до {count} элементов. Для большего объёма используйте «Удалить все архивные».',
     'dictionary.lifecycle.active': 'Активный',
     'dictionary.lifecycle.archived': 'В архиве',
     'dictionary.visibility.private': 'Приватный',

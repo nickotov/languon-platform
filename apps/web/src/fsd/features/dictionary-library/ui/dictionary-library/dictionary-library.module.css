@@ -136,6 +136,37 @@
     gap: 8px;
     flex-shrink: 0;
 }
+.rowSelection {
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
+}
+.selectionToolbar {
+    align-items: center;
+    background: var(--background-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+}
+.selectionCount {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-inline-end: auto;
+}
+.selectionActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.deletionWarning {
+    color: var(--text-secondary);
+    margin: 0 0 16px;
+}
 .chevron {
     color: var(--text-tertiary);
 }
@@ -161,6 +192,14 @@
     }
     .dictionaryCard {
         padding: 12px;
+    }
+    .selectionToolbar,
+    .selectionActions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .selectionActions {
+        width: 100%;
     }
 }
 @media (max-width: 380px) {

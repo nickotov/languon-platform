@@ -6,13 +6,14 @@ import {
     Sparkles,
     User,
     Users,
+    Trash2,
 } from 'lucide-react';
 import {
     authorshipMessageKey,
     languageDirection,
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Badge, Card, Menu } from '@/fsd/shared/ui';
+import { Badge, Card, Checkbox, Menu } from '@/fsd/shared/ui';
 import type { DictionaryCardRowProps } from '../../types';
 import { OptionalFields } from '../optional-fields/optional-fields';
 import styles from '../dictionary-card-list/dictionary-card-list.module.css';
@@ -29,6 +30,7 @@ export function DictionaryCardRow({
     onGenerate,
     onLifecycle,
     renderAudio,
+    deletion,
 }: DictionaryCardRowProps) {
     const { t } = useI18n();
     const sourceDirection = languageDirection(
@@ -74,6 +76,12 @@ export function DictionaryCardRow({
     function changeLifecycle() {
         onLifecycle(card);
     }
+    function toggleSelection() {
+        deletion?.toggle(card.id);
+    }
+    function deleteCard() {
+        deletion?.openSelected(card);
+    }
 
     const items = [
         {
@@ -106,12 +114,32 @@ export function DictionaryCardRow({
             onSelect: changeLifecycle,
             icon: archived ? <RotateCcw size={16} /> : <Archive size={16} />,
         },
+        ...(archived && deletion
+            ? [
+                  {
+                      disabled: pending || deletion.remove.isPending,
+                      label: t('dictionary.deletion.deletePermanently'),
+                      onSelect: deleteCard,
+                      icon: <Trash2 size={16} />,
+                  },
+              ]
+            : []),
     ];
 
     return (
         <li>
             <Card className={styles.card} variant='outlined' padding='none'>
                 <div className={styles.topRow}>
+                    {archived && deletion ? (
+                        <Checkbox
+                            aria-label={t('dictionary.deletion.selectCard', {
+                                source: card.values.source,
+                            })}
+                            checked={deletion.selected.has(card.id)}
+                            disabled={pending || deletion.remove.isPending}
+                            onChange={toggleSelection}
+                        />
+                    ) : null}
                     <div className={styles.pair}>
                         <strong
                             dir={sourceDirection}

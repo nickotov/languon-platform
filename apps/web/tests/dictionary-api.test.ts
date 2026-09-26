@@ -80,6 +80,59 @@ describe('dictionary API', () => {
         });
     });
 
+    it('maps deletion previews and idempotent commands to owner endpoints', async () => {
+        const dictionaryId = '10000000-0000-4000-8000-000000000001';
+        const cardId = '20000000-0000-4000-8000-000000000001';
+        vi.mocked(fetch)
+            .mockResolvedValueOnce(
+                jsonResponse({
+                    eligibleCount: 2,
+                    snapshot: 'dictionary_snapshot',
+                    targetKind: 'dictionary',
+                }),
+            )
+            .mockResolvedValueOnce(
+                jsonResponse({
+                    deletedCount: 1,
+                    operationId: '30000000-0000-4000-8000-000000000001',
+                    resultingDictionaryVersion: 6,
+                    targetKind: 'card',
+                }),
+            );
+
+        await dictionaryApi.previewDictionaryDeletion('owner-token');
+        await dictionaryApi.deleteDictionaryCards(
+            'owner-token',
+            dictionaryId,
+            {
+                expectedDictionaryVersion: 5,
+                scope: {
+                    kind: 'selected',
+                    targets: [{ cardId, expectedVersion: 3 }],
+                },
+            },
+            'deletion-key',
+        );
+
+        expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain(
+            '/dictionary-deletions/preview',
+        );
+        const [url, init] = vi.mocked(fetch).mock.calls[1]!;
+        expect(String(url)).toContain(
+            `/dictionaries/${dictionaryId}/card-deletions`,
+        );
+        expect(new Headers(init?.headers).get('idempotency-key')).toBe(
+            'deletion-key',
+        );
+        expect(JSON.parse(String(init?.body))).toEqual({
+            expectedDictionaryVersion: 5,
+            scope: {
+                kind: 'selected',
+                targets: [{ cardId, expectedVersion: 3 }],
+            },
+        });
+    });
+
     it('uses typed generation capability, discovery, and enqueue boundaries', async () => {
         vi.mocked(fetch)
             .mockResolvedValueOnce(
