@@ -177,8 +177,11 @@ silently overwrite or replay a stale edit.
    during generation; cancel generation to save manually. The generation action
    stays visible but disabled until Source is valid.
 2. Expect each generated value directly below its corresponding enabled field.
-   **Accept** fills only that input and keeps the suggestion visible. **Discard**
-   hides only that choice without clearing manual text. **Regenerate field**
+   Use **Accept all** to fill the first available choice for every eligible field
+   that does not already have an accepted choice. Use **Discard all** to hide all
+   available choices without clearing field text. **Accept** fills only that input
+   and keeps the suggestion visible. **Discard** hides only that choice without
+   clearing manual text. **Regenerate field**
    requests only that field and appends a distinct choice without removing the
    earlier suggestion. More than two choices use **Show more choices** /
    **Show fewer choices** without deleting retained values. **Regenerate all fields** appends choices for all eligible
@@ -197,8 +200,8 @@ silently overwrite or replay a stale edit.
    failure retains the open draft and already loaded suggestions and never shows
    raw provider detail.
 
-At 320 px and 200% text, suggestions and their named Accept, Discard, and
-Regenerate actions stack without horizontal page overflow. Status is announced
+At 320 px and 200% text, bulk and per-field Accept, Discard, and Regenerate
+actions stack without horizontal page overflow. Status is announced
 politely, keyboard focus follows field order, and suggested values retain their
 resolved language and writing direction.
 

@@ -72,6 +72,31 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
 
     const active = ai?.job?.state === 'queued' || ai?.job?.state === 'running';
 
+    function fieldIsEnabled(field: DictionaryCardAuthoringField) {
+        if (field === 'translation') return true;
+        if (field === 'transcription') return effective.transcriptionEnabled;
+        if (field === 'definition') return effective.definitionEnabled;
+        if (field === 'example') return effective.exampleEnabled;
+        return effective.exampleTranslationEnabled;
+    }
+
+    const availableSuggestions =
+        ai?.proposal?.suggestions.filter(
+            (suggestion) =>
+                fieldIsEnabled(suggestion.field) &&
+                !hiddenSuggestionIds.has(suggestion.id),
+        ) ?? [];
+    const availableSuggestionFields = new Set(
+        availableSuggestions.map((suggestion) => suggestion.field),
+    );
+    const bulkAcceptSuggestions = availableSuggestions.filter(
+        (suggestion, index, suggestions) =>
+            !selectedSuggestions[suggestion.field] &&
+            suggestions.findIndex(
+                (candidate) => candidate.field === suggestion.field,
+            ) === index,
+    );
+
     function acceptSuggestion(
         field: DictionaryCardAuthoringField,
         suggestionId: string,
@@ -95,6 +120,34 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
             const next = { ...current };
             delete next[field];
             return next;
+        });
+    }
+
+    function acceptAllSuggestions() {
+        if (stale || active) return;
+        for (const suggestion of bulkAcceptSuggestions) {
+            acceptSuggestion(
+                suggestion.field,
+                suggestion.id,
+                suggestion.value,
+            );
+        }
+    }
+
+    function discardAllSuggestions() {
+        const discardedIds = new Set(
+            availableSuggestions.map((suggestion) => suggestion.id),
+        );
+        setHiddenSuggestionIds(
+            (current) => new Set([...current, ...discardedIds]),
+        );
+        setSelectedSuggestions((current) => {
+            const retained = Object.fromEntries(
+                Object.entries(current).filter(
+                    ([, suggestionId]) => !discardedIds.has(suggestionId),
+                ),
+            );
+            return retained;
         });
     }
 
@@ -141,7 +194,12 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         validSource,
         validValues,
         acceptSuggestion,
+        acceptAllSuggestions,
+        availableSuggestionCount: availableSuggestions.length,
+        availableSuggestionFieldCount: availableSuggestionFields.size,
+        bulkAcceptSuggestionCount: bulkAcceptSuggestions.length,
         discardSuggestion,
+        discardAllSuggestions,
         regenerateField,
         generateAll,
         handleSubmit,

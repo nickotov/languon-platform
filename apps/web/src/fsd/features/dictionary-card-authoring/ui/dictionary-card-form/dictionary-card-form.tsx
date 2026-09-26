@@ -117,6 +117,21 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             stale={stale}
                             validSource={authoring.validSource}
                             generateAll={authoring.generateAll}
+                            acceptAllSuggestions={
+                                authoring.acceptAllSuggestions
+                            }
+                            availableSuggestionCount={
+                                authoring.availableSuggestionCount
+                            }
+                            availableSuggestionFieldCount={
+                                authoring.availableSuggestionFieldCount
+                            }
+                            bulkAcceptSuggestionCount={
+                                authoring.bulkAcceptSuggestionCount
+                            }
+                            discardAllSuggestions={
+                                authoring.discardAllSuggestions
+                            }
                         />
                     ) : null}
                     {card ? (

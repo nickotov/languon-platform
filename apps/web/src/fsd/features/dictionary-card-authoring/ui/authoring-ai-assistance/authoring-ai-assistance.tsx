@@ -1,4 +1,4 @@
-import { Info, RefreshCw, Sparkles } from 'lucide-react';
+import { CheckCheck, Info, RefreshCw, Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import type { DictionaryCardAuthoringAI } from '../../types';
@@ -22,12 +22,22 @@ export function AuthoringAiAssistance({
     stale,
     validSource,
     generateAll,
+    acceptAllSuggestions,
+    availableSuggestionCount,
+    availableSuggestionFieldCount,
+    bulkAcceptSuggestionCount,
+    discardAllSuggestions,
 }: {
     ai: DictionaryCardAuthoringAI;
     active: boolean;
     stale: boolean;
     validSource: boolean;
     generateAll(): void;
+    acceptAllSuggestions(): void;
+    availableSuggestionCount: number;
+    availableSuggestionFieldCount: number;
+    bulkAcceptSuggestionCount: number;
+    discardAllSuggestions(): void;
 }) {
     const { t } = useI18n();
     const disabled = !validSource || !ai.available || active || ai.pending;
@@ -41,6 +51,9 @@ export function AuthoringAiAssistance({
     const isUnavailable = !ai.available;
     const isExpired = job?.state === 'expired';
     const hasError = Boolean(ai.error);
+    const hasAvailableSuggestions = availableSuggestionCount > 0;
+    const acceptAllDisabled =
+        stale || active || ai.pending || bulkAcceptSuggestionCount === 0;
     const stageKey = authoringStageKey(job);
     const labels = {
         aiSection: t('dictionary.authoring.aiSection'),
@@ -51,6 +64,13 @@ export function AuthoringAiAssistance({
         sourceRequired: t('dictionary.authoring.sourceRequired'),
         stage: t(stageKey),
         unavailable: t('dictionary.authoring.unavailable'),
+        acceptAll: t('dictionary.authoring.acceptAll'),
+        discardAll: t('dictionary.authoring.discardAll'),
+        reviewSuggestions: t('dictionary.authoring.reviewSuggestions'),
+        reviewSummary: t('dictionary.authoring.reviewSummary', {
+            count: availableSuggestionCount,
+            fieldCount: availableSuggestionFieldCount,
+        }),
     };
     const cancelLabel = job?.cancellationRequested
         ? t('dictionary.authoring.cancelling')
@@ -125,6 +145,36 @@ export function AuthoringAiAssistance({
                 <InlineAlert tone='warning'>{labels.expired}</InlineAlert>
             )}
             {hasError && <InlineAlert tone='danger'>{ai.error}</InlineAlert>}
+            {hasAvailableSuggestions ? (
+                <div className={styles.bulkReview}>
+                    <div>
+                        <strong>{labels.reviewSuggestions}</strong>
+                        <small>{labels.reviewSummary}</small>
+                    </div>
+                    <div className={styles.bulkActions}>
+                        <Button
+                            disabled={acceptAllDisabled}
+                            leadingIcon={
+                                <CheckCheck aria-hidden='true' size={16} />
+                            }
+                            onClick={acceptAllSuggestions}
+                            size='compact'
+                            type='button'
+                        >
+                            {labels.acceptAll}
+                        </Button>
+                        <Button
+                            leadingIcon={<X aria-hidden='true' size={16} />}
+                            onClick={discardAllSuggestions}
+                            size='compact'
+                            type='button'
+                            variant='secondary'
+                        >
+                            {labels.discardAll}
+                        </Button>
+                    </div>
+                </div>
+            ) : null}
         </section>
     );
 }

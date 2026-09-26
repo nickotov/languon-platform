@@ -15,6 +15,56 @@
     justify-content: space-between;
 }
 
+.bulkReview,
+.bulkActions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.bulkReview {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 10px;
+}
+
+.bulkReview strong,
+.bulkReview small {
+    display: block;
+}
+
+.bulkReview strong {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.bulkReview small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 16px;
+    margin-top: 2px;
+}
+
+.bulkActions {
+    justify-content: flex-start;
+}
+
+@media (max-width: 479px) {
+    .bulkReview,
+    .bulkActions {
+        align-items: stretch;
+    }
+
+    .bulkReview > div,
+    .bulkActions > button {
+        width: 100%;
+    }
+}
+
 .aiActionRow strong {
     align-items: center;
     display: inline-flex;

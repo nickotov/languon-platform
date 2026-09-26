@@ -641,9 +641,14 @@ export const ru = {
     'dictionary.authoring.accepted': 'Принято',
     'dictionary.authoring.acceptNamed':
         'Принять предложение для поля «{field}»',
+    'dictionary.authoring.acceptAll': 'Принять все',
     'dictionary.authoring.discard': 'Удалить',
     'dictionary.authoring.discardNamed':
         'Удалить предложение для поля «{field}»',
+    'dictionary.authoring.discardAll': 'Удалить все',
+    'dictionary.authoring.reviewSuggestions': 'Проверка предложений',
+    'dictionary.authoring.reviewSummary':
+        'Варианты: {count} · Поля: {fieldCount}',
     'dictionary.authoring.failed':
         'Не удалось создать предложения. Введённые данные и прежние предложения сохранены.',
     'dictionary.batch.open': 'Создать карточки из списка терминов',

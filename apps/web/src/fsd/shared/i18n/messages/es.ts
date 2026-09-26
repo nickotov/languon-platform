@@ -587,8 +587,13 @@ export const es = {
     'dictionary.authoring.accept': 'Aceptar',
     'dictionary.authoring.accepted': 'Aceptada',
     'dictionary.authoring.acceptNamed': 'Aceptar sugerencia de {field}',
+    'dictionary.authoring.acceptAll': 'Aceptar todo',
     'dictionary.authoring.discard': 'Descartar',
     'dictionary.authoring.discardNamed': 'Descartar sugerencia de {field}',
+    'dictionary.authoring.discardAll': 'Descartar todo',
+    'dictionary.authoring.reviewSuggestions': 'Revisar sugerencias',
+    'dictionary.authoring.reviewSummary':
+        'Opciones: {count} · Campos: {fieldCount}',
     'dictionary.authoring.failed':
         'No se pudieron generar sugerencias. Tus datos y sugerencias anteriores no cambiaron.',
     'dictionary.batch.open': 'Generar tarjetas desde términos pegados',

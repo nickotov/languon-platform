@@ -128,6 +128,16 @@ export const AIFieldSuggestions320: Story = {
                         id: '40000000-0000-4000-8000-000000000002',
                         value: 'soporte curatorial',
                     },
+                    {
+                        field: 'example',
+                        id: '40000000-0000-4000-8000-000000000003',
+                        value: 'The artist chose video as a curatorial medium.',
+                    },
+                    {
+                        field: 'exampleTranslation',
+                        id: '40000000-0000-4000-8000-000000000004',
+                        value: 'La artista eligió el vídeo como medio curatorial.',
+                    },
                 ],
             },
         },
@@ -141,7 +151,17 @@ export const AIFieldSuggestions320: Story = {
     ],
     play: async ({ canvasElement }) => {
         await userEvent.type(
-            within(canvasElement).getByLabelText(/^Source phrase/),
+            within(canvasElement).getByLabelText(/^Source word or phrase/),
+            'curatorial medium',
+        );
+    },
+};
+
+export const AIFieldSuggestionsDesktop: Story = {
+    args: AIFieldSuggestions320.args,
+    play: async ({ canvasElement }) => {
+        await userEvent.type(
+            within(canvasElement).getByLabelText(/^Source word or phrase/),
             'curatorial medium',
         );
     },

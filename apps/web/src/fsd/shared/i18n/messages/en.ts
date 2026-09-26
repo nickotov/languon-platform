@@ -648,8 +648,13 @@ export const en = {
     'dictionary.authoring.accept': 'Accept',
     'dictionary.authoring.accepted': 'Accepted',
     'dictionary.authoring.acceptNamed': 'Accept {field} suggestion',
+    'dictionary.authoring.acceptAll': 'Accept all',
     'dictionary.authoring.discard': 'Discard',
     'dictionary.authoring.discardNamed': 'Discard {field} suggestion',
+    'dictionary.authoring.discardAll': 'Discard all',
+    'dictionary.authoring.reviewSuggestions': 'Review suggestions',
+    'dictionary.authoring.reviewSummary':
+        'Choices: {count} · Fields: {fieldCount}',
     'dictionary.authoring.failed':
         'AI suggestions could not be generated. Your entries and earlier suggestions are unchanged.',
     'dictionary.batch.open': 'Generate cards from pasted terms',

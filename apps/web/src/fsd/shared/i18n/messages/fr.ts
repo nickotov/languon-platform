@@ -589,8 +589,13 @@ export const fr = {
     'dictionary.authoring.accept': 'Accepter',
     'dictionary.authoring.accepted': 'Acceptée',
     'dictionary.authoring.acceptNamed': 'Accepter la suggestion pour {field}',
+    'dictionary.authoring.acceptAll': 'Tout accepter',
     'dictionary.authoring.discard': 'Supprimer',
     'dictionary.authoring.discardNamed': 'Supprimer la suggestion pour {field}',
+    'dictionary.authoring.discardAll': 'Tout supprimer',
+    'dictionary.authoring.reviewSuggestions': 'Vérifier les suggestions',
+    'dictionary.authoring.reviewSummary':
+        'Choix : {count} · Champs : {fieldCount}',
     'dictionary.authoring.failed':
         'Les suggestions n’ont pas pu être générées. Vos saisies et anciennes suggestions sont conservées.',
     'dictionary.batch.open': 'Générer des cartes à partir de termes collés',

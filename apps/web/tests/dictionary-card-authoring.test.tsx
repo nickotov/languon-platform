@@ -624,6 +624,156 @@ describe('dictionary settings and card authoring', () => {
         );
     });
 
+    it('accepts and discards all available field suggestions without replacing an existing choice', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const proposal = {
+            source: 'medium',
+            suggestions: [
+                {
+                    field: 'translation' as const,
+                    id: '41000000-0000-4000-8000-000000000001',
+                    value: 'medio',
+                },
+                {
+                    field: 'translation' as const,
+                    id: '41000000-0000-4000-8000-000000000002',
+                    value: 'entorno',
+                },
+                {
+                    field: 'example' as const,
+                    id: '41000000-0000-4000-8000-000000000003',
+                    value: 'A medium-sized room.',
+                },
+                {
+                    field: 'example' as const,
+                    id: '41000000-0000-4000-8000-000000000004',
+                    value: 'A second example.',
+                },
+                {
+                    field: 'exampleTranslation' as const,
+                    id: '41000000-0000-4000-8000-000000000005',
+                    value: 'Una habitación mediana.',
+                },
+                {
+                    field: 'definition' as const,
+                    id: '41000000-0000-4000-8000-000000000006',
+                    value: 'Disabled field content',
+                },
+            ],
+        };
+
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: false,
+                    proposal,
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
+
+        expect(screen.getByText('Choices: 5 · Fields: 3')).toBeInTheDocument();
+        await user.click(
+            screen.getAllByRole('button', {
+                name: 'Accept Translation suggestion',
+            })[1]!,
+        );
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
+
+        await user.click(screen.getByRole('button', { name: 'Accept all' }));
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
+        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
+            'A medium-sized room.',
+        );
+        expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
+            'Una habitación mediana.',
+        );
+        expect(
+            screen.getByRole('button', { name: 'Accept all' }),
+        ).toBeDisabled();
+
+        await user.click(screen.getByRole('button', { name: 'Discard all' }));
+        expect(
+            screen.queryByRole('button', { name: 'Discard all' }),
+        ).not.toBeInTheDocument();
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
+        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
+            'A medium-sized room.',
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({
+                    example: 'A medium-sized room.',
+                    exampleTranslation: 'Una habitación mediana.',
+                    translation: 'entorno',
+                }),
+            }),
+            [],
+        );
+    });
+
+    it.each([
+        ['stale', 'another source', undefined],
+        ['active', 'medium', authoringSuccessorJob],
+    ] as const)(
+        'keeps bulk acceptance disabled for a %s proposal while discard remains safe',
+        async (_state, proposalSource, job) => {
+            const user = userEvent.setup();
+            render(
+                <DictionaryCardForm
+                    ai={{
+                        available: true,
+                        ...(job ? { job } : {}),
+                        onAction: vi.fn().mockResolvedValue(undefined),
+                        pending: false,
+                        proposal: {
+                            source: proposalSource,
+                            suggestions: [
+                                {
+                                    field: 'translation',
+                                    id: '42000000-0000-4000-8000-000000000001',
+                                    value: 'medio',
+                                },
+                            ],
+                        },
+                    }}
+                    dictionary={dictionary}
+                    languages={languages}
+                    onCancel={vi.fn()}
+                    onSave={vi.fn().mockResolvedValue(undefined)}
+                    pending={false}
+                />,
+            );
+            await user.type(
+                screen.getByLabelText(/Source word or phrase/),
+                'medium',
+            );
+
+            expect(
+                screen.getByText('Choices: 1 · Fields: 1'),
+            ).toBeInTheDocument();
+            expect(
+                screen.getByRole('button', { name: 'Accept all' }),
+            ).toBeDisabled();
+            expect(
+                screen.getByRole('button', { name: 'Discard all' }),
+            ).toBeEnabled();
+        },
+    );
+
     it.each(['source', 'translation'] as const)(
         'accepts 200 astral code points and limits a 201st BMP character in %s',
         async (field) => {

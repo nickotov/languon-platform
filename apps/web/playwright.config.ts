@@ -142,6 +142,8 @@ export default defineConfig({
                 DICTIONARY_AUDIO_STORAGE: 'postgres',
                 DICTIONARY_AUDIO_FINGERPRINT_SECRET:
                     'audio-e2e-only-fingerprint-secret-32bytes',
+                DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'false',
+                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'false',
                 DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_CANCELLABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_DISCARDABLE_FORMATS: dictionaryJobFormats,
@@ -174,7 +176,10 @@ export default defineConfig({
             command: `until curl --fail --silent ${backendOrigin}/health >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend dictionary:worker`,
             env: {
                 APP_ENV: 'test',
+                DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'false',
+                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'false',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
+                DICTIONARY_GENERATION_MODEL_ID: '',
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_DOCUMENT_OCR_MODE: documentServicesEnabled
                     ? 'deterministic'

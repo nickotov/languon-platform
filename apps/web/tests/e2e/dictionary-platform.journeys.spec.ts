@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:1e8e047e7a475a69
+// @user-flow-revision dictionary-platform sha256:fc1ae148f87749bc
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -1166,10 +1166,15 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             translationSuggestions.getByText('atelier (es)', { exact: true }),
         ).toBeVisible({ timeout: 20_000 });
-        await translationSuggestions
-            .getByRole('button', { name: 'Accept Translation suggestion' })
-            .click();
+        await expect(
+            editor.getByRole('button', { name: 'Accept all' }),
+        ).toBeVisible();
+        await expect(
+            editor.getByRole('button', { name: 'Discard all' }),
+        ).toBeVisible();
+        await editor.getByRole('button', { name: 'Accept all' }).click();
         await expect(translation).toHaveValue('atelier (es)');
+        await expect(definition).not.toHaveValue('');
 
         await translationSuggestions
             .getByRole('button', { name: 'Regenerate Translation' })
