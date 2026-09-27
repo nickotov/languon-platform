@@ -8,6 +8,7 @@ import {
     AcceptDictionaryGenerationJobResponseSchema,
     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
     EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+    EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
     CancelDictionaryGenerationJobRequestSchema,
     CancelDictionaryGenerationJobResponseSchema,
     CompleteDictionaryDocumentUploadRequestSchema,
@@ -83,6 +84,7 @@ import {
     type DiscardDictionaryGenerationJobRequest,
     type EnqueueDictionaryCardGenerationRequest,
     type EnqueueDictionaryCardAuthoringGenerationRequest,
+    type EnqueueDictionaryCardAuthoringUpdateGenerationRequest,
     type EnqueueDictionaryPastedTermsGenerationRequest,
     type DictionaryExportFormat,
     type ForkSharedDictionaryRequest,
@@ -677,6 +679,28 @@ export const dictionaryApi = {
                 body,
                 bodySchema:
                     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+                headers: idempotencyHeaders(idempotencyKey),
+                method: 'POST',
+                responseSchema:
+                    EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+                signal,
+            },
+        ),
+    enqueueCardAuthoringUpdateGeneration: (
+        accessToken: string,
+        dictionaryId: string,
+        cardId: string,
+        body: EnqueueDictionaryCardAuthoringUpdateGenerationRequest,
+        idempotencyKey: string,
+        signal?: AbortSignal,
+    ) =>
+        ownerRequest(
+            accessToken,
+            `/dictionaries/${dictionaryId}/cards/${cardId}/card-authoring-generations`,
+            {
+                body,
+                bodySchema:
+                    EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
                 headers: idempotencyHeaders(idempotencyKey),
                 method: 'POST',
                 responseSchema:

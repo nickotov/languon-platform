@@ -388,43 +388,60 @@ function validatedOutput(
 function defaultDeterministicDelta(
     request: CardAuthoringProposalGeneratorRequest,
 ): DictionaryCardAuthoringProviderDelta {
+    const sourceRequested = request.input.requestedFields.includes('source');
+    const normalizedSource = request.input.source
+        .replace(/\bteh\b/giu, 'the')
+        .replace(/\s+/gu, ' ')
+        .trim();
+    const sourceResult = sourceRequested
+        ? normalizedSource === request.input.source
+            ? ({ kind: 'unchanged' } as const)
+            : ({ kind: 'suggested', value: normalizedSource } as const)
+        : null;
+    const basisSource =
+        sourceResult?.kind === 'suggested'
+            ? sourceResult.value
+            : request.input.source;
     return {
-        suggestions: request.input.requestedFields.map((field) => {
-            const base =
-                field === 'translation'
-                    ? `${request.input.source} (${request.input.targetLanguage})`
-                    : field === 'transcription'
-                      ? `[${request.input.source}]`
-                      : field === 'definition'
-                        ? `Meaning of ${request.input.source}`
-                        : field === 'example'
-                          ? `Example with ${request.input.source}.`
-                          : `Translation of example with ${request.input.source}.`;
-            const context = request.input.fieldContext.find(
-                (entry) => entry.field === field,
-            )!;
-            const excluded = new Set([
-                ...context.excludedValues,
-                ...(context.currentValue === null
-                    ? []
-                    : [context.currentValue]),
-            ]);
-            const maximum = ['translation', 'transcription'].includes(field)
-                ? 200
-                : 2_000;
-            let nextValue = truncateCodePoints(base, maximum);
-            for (let index = 1; excluded.has(nextValue); index += 1) {
-                const suffix = ` · alternative ${index}`;
-                nextValue = `${truncateCodePoints(
-                    base,
-                    maximum - [...suffix].length,
-                )}${suffix}`;
-            }
-            return {
-                field,
-                value: nextValue,
-            };
-        }),
+        ...(sourceRequested ? { sourceResult } : {}),
+        suggestions: request.input.requestedFields
+            .filter((field) => field !== 'source')
+            .map((field) => {
+                const base =
+                    field === 'translation'
+                        ? `${basisSource} (${request.input.targetLanguage})`
+                        : field === 'transcription'
+                          ? `[${basisSource}]`
+                          : field === 'definition'
+                            ? `Meaning of ${basisSource}`
+                            : field === 'example'
+                              ? `Example with ${basisSource}.`
+                              : `Translation of ${request.input.exampleForTranslation ?? `example with ${basisSource}`}.`;
+                const context = request.input.fieldContext.find(
+                    (entry) => entry.field === field,
+                )!;
+                const excluded = new Set([
+                    ...context.excludedValues,
+                    ...(context.currentValue === null
+                        ? []
+                        : [context.currentValue]),
+                ]);
+                const maximum = ['translation', 'transcription'].includes(field)
+                    ? 200
+                    : 2_000;
+                let nextValue = truncateCodePoints(base, maximum);
+                for (let index = 1; excluded.has(nextValue); index += 1) {
+                    const suffix = ` · alternative ${index}`;
+                    nextValue = `${truncateCodePoints(
+                        base,
+                        maximum - [...suffix].length,
+                    )}${suffix}`;
+                }
+                return {
+                    field,
+                    value: nextValue,
+                };
+            }),
     };
 }
 

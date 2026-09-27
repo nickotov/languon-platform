@@ -5,7 +5,9 @@ import {
     DictionaryCardAuthoringAcceptedOutcomeSchema,
     DictionaryCardAuthoringGenerationJobSchema,
     DictionaryCardAuthoringProposalSchema,
+    DictionaryCardAuthoringV2ProposalSchema,
     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
+    EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
     ReadDictionaryGenerationCapabilitiesResponseSchema,
     RegenerateDictionaryCardAuthoringGenerationRequestSchema,
 } from '../src/dictionaries';
@@ -97,6 +99,102 @@ describe('dictionary card authoring contracts', () => {
                 discardedSuggestionIds: [
                     base.discardedSuggestionIds[0],
                     base.discardedSuggestionIds[0],
+                ],
+            }),
+        ).toThrow();
+    });
+
+    it('supports v2 initial Source fields and saved-card targets', () => {
+        const request = {
+            format: 'card-authoring:v2',
+            expectedDictionaryVersion: 4,
+            expectedSettingsVersion: 3,
+            source: 'teh atelier',
+            draft,
+            scope: { kind: 'field', field: 'source' },
+        } as const;
+        expect(
+            EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse(
+                request,
+            ),
+        ).toBeDefined();
+        expect(
+            EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema.parse({
+                ...request,
+                expectedCardVersion: 2,
+            }),
+        ).toBeDefined();
+        expect(
+            RegenerateDictionaryCardAuthoringGenerationRequestSchema.parse({
+                ...request,
+                discardedSuggestionIds: [],
+            }),
+        ).toBeDefined();
+        expect(() =>
+            EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
+                ...request,
+                scope: { kind: 'field', field: 'exampleTranslation' },
+            }),
+        ).toThrow();
+        expect(
+            EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
+                ...request,
+                draft: {
+                    ...draft,
+                    values: { ...draft.values, example: 'An example.' },
+                },
+                scope: { kind: 'field', field: 'exampleTranslation' },
+            }),
+        ).toBeDefined();
+    });
+
+    it('validates v2 Source history and required non-Source basis', () => {
+        const sourceId = '11111111-1111-4111-8111-111111111111';
+        expect(
+            DictionaryCardAuthoringV2ProposalSchema.parse({
+                source: 'teh atelier',
+                sourceResult: { kind: 'suggested', suggestionId: sourceId },
+                sourceSuggestions: [
+                    { id: sourceId, field: 'source', value: 'the atelier' },
+                ],
+                suggestions: [
+                    {
+                        id: '22222222-2222-4222-8222-222222222222',
+                        field: 'translation',
+                        value: 'el taller',
+                        basisSource: 'the atelier',
+                    },
+                ],
+            }),
+        ).toBeDefined();
+        expect(() =>
+            DictionaryCardAuthoringV2ProposalSchema.parse({
+                source: 'teh atelier',
+                sourceResult: { kind: 'suggested', suggestionId: sourceId },
+                sourceSuggestions: [
+                    { id: sourceId, field: 'source', value: 'the atelier' },
+                ],
+                suggestions: [
+                    {
+                        id: '22222222-2222-4222-8222-222222222222',
+                        field: 'translation',
+                        value: 'el taller',
+                    },
+                ],
+            }),
+        ).toThrow();
+        expect(() =>
+            DictionaryCardAuthoringV2ProposalSchema.parse({
+                source: 'bank',
+                sourceResult: null,
+                sourceSuggestions: [],
+                suggestions: [
+                    {
+                        id: '22222222-2222-4222-8222-222222222222',
+                        field: 'translation',
+                        value: 'x'.repeat(201),
+                        basisSource: 'bank',
+                    },
                 ],
             }),
         ).toThrow();

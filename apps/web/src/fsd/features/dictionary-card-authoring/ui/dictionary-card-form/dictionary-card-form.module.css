@@ -83,6 +83,66 @@
     margin-top: 8px;
     padding: 12px;
 }
+.inlineSuggestion,
+.fieldProgress {
+    background: var(--background-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    min-height: 44px;
+    padding: 10px 12px;
+}
+.inlineSuggestion {
+    display: grid;
+    gap: 10px;
+}
+.inlineSuggestion > p {
+    font-size: 14px;
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.inlineSuggestionHeading {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+}
+.inlineSuggestionHeading span {
+    align-items: center;
+    color: var(--text-secondary);
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 600;
+    gap: 6px;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+}
+.inlineSuggestionHeading small,
+.suggestionDependency {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+.fieldProgress {
+    align-items: center;
+    color: var(--text-secondary);
+    display: flex;
+    font-size: 14px;
+    gap: 8px;
+}
+.previousSuggestions {
+    margin-top: 8px;
+}
+.previousSuggestions summary {
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    width: fit-content;
+}
+.previousSuggestions[open] summary {
+    margin-bottom: 8px;
+}
 .suggestionHeading strong {
     color: var(--text-secondary);
     font-size: 12px;

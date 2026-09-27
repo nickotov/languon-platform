@@ -1,10 +1,10 @@
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import {
     type DictionaryCardAuthoringAction,
+    type DictionaryCardAuthoringSelectedSuggestion,
     type DictionaryCardDraft,
     retainCardAuthoringIdempotencyAttempt,
 } from '@/fsd/features/dictionary-card-authoring';
-import type { DictionaryCardAuthoringSelectedSuggestion } from '@languon/contracts';
 import { useMutation } from '@tanstack/react-query';
 
 import type { useEditorQueries } from './use-editor-queries';
@@ -23,6 +23,7 @@ export function useAuthoringMutation({
     dictionaryId,
     requestWithSession,
     cards,
+    editing,
 }: Pick<
     ReturnType<typeof useEditorState>,
     | 't'
@@ -36,6 +37,7 @@ export function useAuthoringMutation({
     | 'authoringAttempt'
     | 'dictionaryId'
     | 'requestWithSession'
+    | 'editing'
 > &
     Pick<ReturnType<typeof useEditorQueries>, 'cards'>) {
     const cardAuthoringAction = useMutation({
@@ -60,13 +62,37 @@ export function useAuthoringMutation({
             if (action.kind === 'accept') {
                 if (!authoringReviewJob)
                     throw new Error('Card authoring proposal unavailable');
+                if (authoringReviewJob.format === 'card-authoring:v1') {
+                    const selectedSuggestions =
+                        action.selectedSuggestions.filter(
+                            (
+                                selection,
+                            ): selection is DictionaryCardAuthoringSelectedSuggestion & {
+                                field: Exclude<
+                                    DictionaryCardAuthoringSelectedSuggestion['field'],
+                                    'source'
+                                >;
+                            } => selection.field !== 'source',
+                        );
+                    return requestWithSession((token) =>
+                        dictionaryApi.acceptGenerationJob(
+                            token,
+                            authoringReviewJob.id,
+                            {
+                                candidate: action.draft,
+                                format: 'card-authoring:v1',
+                                selectedSuggestions,
+                            },
+                        ),
+                    );
+                }
                 return requestWithSession((token) =>
                     dictionaryApi.acceptGenerationJob(
                         token,
                         authoringReviewJob.id,
                         {
                             candidate: action.draft,
-                            format: 'card-authoring:v1',
+                            format: 'card-authoring:v2',
                             selectedSuggestions: action.selectedSuggestions,
                         },
                     ),
@@ -88,6 +114,7 @@ export function useAuthoringMutation({
                 draft: bodyDraft,
                 expectedDictionaryVersion: versions.dictionaryVersion,
                 expectedSettingsVersion: versions.settingsVersion,
+                format: 'card-authoring:v2' as const,
                 source,
             };
             const fingerprint = JSON.stringify({
@@ -97,10 +124,13 @@ export function useAuthoringMutation({
                     ? {
                           ...base,
                           discardedSuggestionIds: action.discardedSuggestionIds,
-                          format: 'card-authoring:v1',
                           scope: action.scope,
                       }
-                    : { ...base, scope: { kind: 'all' } },
+                    : {
+                          ...base,
+                          cardId: editing === 'new' ? null : editing?.id,
+                          scope: action.scope,
+                      },
             });
             const attempt = retainCardAuthoringIdempotencyAttempt(
                 authoringAttempt.current,
@@ -111,6 +141,34 @@ export function useAuthoringMutation({
                 if (action.successor) {
                     if (!authoringReviewJob)
                         throw new Error('Card authoring proposal unavailable');
+                    if (authoringReviewJob.format === 'card-authoring:v1') {
+                        const scope = (() => {
+                            if (action.scope.kind === 'all') {
+                                return action.scope;
+                            }
+                            if (action.scope.field === 'source') {
+                                throw new Error(
+                                    'Source generation requires card-authoring:v2',
+                                );
+                            }
+                            return {
+                                field: action.scope.field,
+                                kind: 'field' as const,
+                            };
+                        })();
+                        return dictionaryApi.regenerateCardAuthoringGeneration(
+                            token,
+                            authoringReviewJob.id,
+                            {
+                                ...base,
+                                discardedSuggestionIds:
+                                    action.discardedSuggestionIds,
+                                format: 'card-authoring:v1',
+                                scope,
+                            },
+                            attempt.key,
+                        );
+                    }
                     return dictionaryApi.regenerateCardAuthoringGeneration(
                         token,
                         authoringReviewJob.id,
@@ -118,7 +176,20 @@ export function useAuthoringMutation({
                             ...base,
                             discardedSuggestionIds:
                                 action.discardedSuggestionIds,
-                            format: 'card-authoring:v1',
+                            format: 'card-authoring:v2',
+                            scope: action.scope,
+                        },
+                        attempt.key,
+                    );
+                }
+                if (editing && editing !== 'new') {
+                    return dictionaryApi.enqueueCardAuthoringUpdateGeneration(
+                        token,
+                        dictionaryId,
+                        editing.id,
+                        {
+                            ...base,
+                            expectedCardVersion: editing.version,
                             scope: action.scope,
                         },
                         attempt.key,
@@ -127,7 +198,7 @@ export function useAuthoringMutation({
                 return dictionaryApi.enqueueCardAuthoringGeneration(
                     token,
                     dictionaryId,
-                    { ...base, scope: { kind: 'all' } },
+                    { ...base, scope: action.scope },
                     attempt.key,
                 );
             });

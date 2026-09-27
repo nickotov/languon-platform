@@ -1,30 +1,34 @@
-import { useState } from 'react';
-import { RefreshCw, Sparkles } from 'lucide-react';
-import type { DictionaryCardAuthoringField } from '@languon/contracts';
+import { Check, RefreshCw, Sparkles, X } from 'lucide-react';
+import type {
+    DictionaryCardAuthoringField,
+    DictionaryCardAuthoringSuggestion,
+} from '../../types';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button } from '@/fsd/shared/ui';
-import type { DictionaryCardAuthoringAI } from '../../types';
 import { SuggestionChoice } from '../suggestion-choice/suggestion-choice';
 import styles from '../dictionary-card-form/dictionary-card-form.module.css';
 
 export function FieldSuggestions({
-    ai,
+    'aria-describedby': ariaDescribedBy,
+    'aria-labelledby': ariaLabelledBy,
+    current,
     direction,
     disabled,
     field,
-    hidden,
+    fieldLabel,
     lang,
     onAccept,
     onDiscard,
-    onRegenerate,
-    regenerationDisabled,
-    selectedId,
+    onGenerate,
+    previous,
 }: {
-    ai?: Pick<DictionaryCardAuthoringAI, 'pending' | 'proposal'> | undefined;
+    'aria-describedby'?: string;
+    'aria-labelledby'?: string;
+    current: DictionaryCardAuthoringSuggestion;
     direction: 'ltr' | 'rtl';
     disabled: boolean;
     field: DictionaryCardAuthoringField;
-    hidden: ReadonlySet<string>;
+    fieldLabel: string;
     lang: string;
     onAccept(
         field: DictionaryCardAuthoringField,
@@ -32,103 +36,114 @@ export function FieldSuggestions({
         value: string,
     ): void;
     onDiscard(field: DictionaryCardAuthoringField, id: string): void;
-    onRegenerate(field: DictionaryCardAuthoringField): void;
-    regenerationDisabled: boolean;
-    selectedId?: string | undefined;
+    onGenerate(field: DictionaryCardAuthoringField): void;
+    previous: DictionaryCardAuthoringSuggestion[];
 }) {
     const { t } = useI18n();
-    const [expanded, setExpanded] = useState(false);
-    const suggestions =
-        ai?.proposal?.suggestions.filter(
-            (suggestion) =>
-                suggestion.field === field && !hidden.has(suggestion.id),
-        ) ?? [];
-    if (suggestions.length === 0) return null;
-    const fieldLabel = t(`dictionary.field.${field}`);
-    const atLimit = suggestions.length >= 6;
-    const visibleSuggestions = expanded ? suggestions : suggestions.slice(0, 2);
-    const sectionLabel = t('dictionary.authoring.suggestionsFor', {
+    const acceptLabel = t('dictionary.authoring.acceptNamed', {
         field: fieldLabel,
     });
-    const regenerateLabel = t('dictionary.authoring.regenerateFieldNamed', {
+    const rejectLabel = t('dictionary.authoring.rejectNamed', {
         field: fieldLabel,
     });
-    const regenerateDisabled = regenerationDisabled || ai?.pending || atLimit;
-    const expandedLabel = expanded
-        ? t('dictionary.authoring.showFewer')
-        : t('dictionary.authoring.showMore', { count: suggestions.length - 2 });
+    const tryAnotherLabel = t('dictionary.authoring.tryAnotherNamed', {
+        field: fieldLabel,
+    });
 
-    function regenerate() {
-        onRegenerate(field);
+    function accept() {
+        onAccept(field, current.id, current.value);
     }
-    function toggleExpanded() {
-        setExpanded(!expanded);
+
+    function reject() {
+        onDiscard(field, current.id);
     }
-    function renderSuggestion(
-        suggestion: NonNullable<
-            DictionaryCardAuthoringAI['proposal']
-        >['suggestions'][number],
-        index: number,
-    ) {
-        const selected = selectedId === suggestion.id;
-        return (
-            <SuggestionChoice
-                key={suggestion.id}
-                suggestion={suggestion}
-                index={index}
-                selected={selected}
-                disabled={disabled}
-                field={field}
-                fieldLabel={fieldLabel}
-                direction={direction}
-                lang={lang}
-                onAccept={onAccept}
-                onDiscard={onDiscard}
-            />
-        );
+
+    function generateAnother() {
+        onGenerate(field);
     }
 
     return (
-        <section aria-label={sectionLabel} className={styles.suggestions}>
-            <div className={styles.suggestionHeading}>
-                <strong>
+        <div
+            aria-describedby={ariaDescribedBy}
+            aria-labelledby={ariaLabelledBy}
+            className={styles.inlineSuggestion}
+            data-testid={`ai-review-${field}`}
+            role='group'
+        >
+            <div className={styles.inlineSuggestionHeading}>
+                <span>
                     <Sparkles aria-hidden size={14} />
-                    {t('dictionary.authoring.notSaved')}{' '}
-                    <span className={styles.choiceCount}>
-                        {t('dictionary.authoring.choiceCount', {
-                            count: suggestions.length,
-                        })}
-                    </span>
-                </strong>
+                    {t('dictionary.authoring.aiSuggestion')}
+                </span>
+                <small>{t('dictionary.authoring.notSaved')}</small>
+            </div>
+            <p dir={direction} lang={lang}>
+                {current.value}
+            </p>
+            {disabled ? (
+                <small className={styles.suggestionDependency}>
+                    {t('dictionary.authoring.acceptSourceFirst')}
+                </small>
+            ) : null}
+            <div className={styles.suggestionActions}>
                 <Button
-                    leadingIcon={<RefreshCw aria-hidden='true' size={14} />}
-                    aria-label={regenerateLabel}
-                    disabled={regenerateDisabled}
-                    onClick={regenerate}
+                    aria-label={acceptLabel}
+                    disabled={disabled}
+                    leadingIcon={<Check aria-hidden size={16} />}
+                    onClick={accept}
+                    size='compact'
+                    type='button'
+                >
+                    {t('dictionary.authoring.accept')}
+                </Button>
+                <Button
+                    aria-label={rejectLabel}
+                    leadingIcon={<X aria-hidden size={16} />}
+                    onClick={reject}
                     size='compact'
                     type='button'
                     variant='secondary'
                 >
-                    {regenerateLabel}
+                    {t('dictionary.authoring.reject')}
+                </Button>
+                <Button
+                    aria-label={tryAnotherLabel}
+                    disabled={disabled}
+                    leadingIcon={<RefreshCw aria-hidden size={16} />}
+                    onClick={generateAnother}
+                    size='compact'
+                    type='button'
+                    variant='ghost'
+                >
+                    {t('dictionary.authoring.tryAnother')}
                 </Button>
             </div>
-            {atLimit ? (
-                <small>{t('dictionary.authoring.limitReached')}</small>
+            {previous.length > 0 ? (
+                <details className={styles.previousSuggestions}>
+                    <summary>
+                        {t('dictionary.authoring.previousOptions', {
+                            count: previous.length,
+                        })}
+                    </summary>
+                    <ul className={styles.suggestionList}>
+                        {previous.map((suggestion, index) => (
+                            <SuggestionChoice
+                                key={suggestion.id}
+                                suggestion={suggestion}
+                                index={index}
+                                selected={false}
+                                disabled={disabled}
+                                field={field}
+                                fieldLabel={fieldLabel}
+                                direction={direction}
+                                lang={lang}
+                                onAccept={onAccept}
+                                onDiscard={onDiscard}
+                            />
+                        ))}
+                    </ul>
+                </details>
             ) : null}
-            <ul className={styles.suggestionList}>
-                {visibleSuggestions.map(renderSuggestion)}
-            </ul>
-            {suggestions.length > 2 ? (
-                <Button
-                    aria-expanded={expanded}
-                    onClick={toggleExpanded}
-                    size='compact'
-                    type='button'
-                    variant='secondary'
-                >
-                    {expandedLabel}
-                </Button>
-            ) : null}
-        </section>
+        </div>
     );
 }

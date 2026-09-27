@@ -1,7 +1,8 @@
 import { dictionaryDocumentGenerationFormat } from '../../../domain/document-ingestion';
 import {
-    DictionaryCardAuthoringGenerationJobSchema,
+    DictionaryCardAuthoringAnyGenerationJobSchema,
     DictionaryCardAuthoringProposalSchema,
+    DictionaryCardAuthoringV2ProposalSchema,
     DictionaryAiImportResponseSchema,
     DictionaryGenerationJobSchema,
     DictionaryImportPairsGenerationAcceptedOutcomeSchema,
@@ -18,9 +19,11 @@ import {
     DictionaryCardAuthoringSuggestionLimitError,
     dictionaryCardAuthoringSuggestionLimitPerField,
     dictionaryCardAuthoringGenerationFormat,
+    dictionaryCardAuthoringGenerationFormatV1,
     mergeDictionaryCardAuthoringProposal,
     resolveDictionaryCardAuthoringFields,
     type DictionaryCardAuthoringProposalPayload,
+    type DictionaryCardAuthoringGenerationInputPayload,
 } from '../../../domain/card-authoring';
 import {
     and,
@@ -628,10 +631,28 @@ function mapJob(
         });
     }
     if (job.kind === 'card-authoring') {
-        return DictionaryCardAuthoringGenerationJobSchema.parse({
+        const persistedAuthoringTarget =
+            job.cardId && job.expectedCardVersion
+                ? {
+                      kind: 'update' as const,
+                      cardId: job.cardId,
+                      expectedCardVersion: job.expectedCardVersion,
+                  }
+                : ({ kind: 'create' } as const);
+        if (
+            job.format === dictionaryCardAuthoringGenerationFormat &&
+            input?.format === dictionaryCardAuthoringGenerationFormat &&
+            JSON.stringify(input.target) !==
+                JSON.stringify(persistedAuthoringTarget)
+        )
+            throw new DictionaryGenerationNotAvailableError();
+        return DictionaryCardAuthoringAnyGenerationJobSchema.parse({
             ...shared,
-            format: dictionaryCardAuthoringGenerationFormat,
+            format: job.format,
             kind: 'card-authoring',
+            ...(job.format === dictionaryCardAuthoringGenerationFormat
+                ? { target: persistedAuthoringTarget }
+                : {}),
             outcome:
                 state === 'accepted' &&
                 proposal?.acceptedCardId &&
@@ -647,9 +668,13 @@ function mapJob(
                     : null,
             proposal:
                 state === 'review' && proposal?.payload
-                    ? DictionaryCardAuthoringProposalSchema.parse(
-                          proposal.payload,
-                      )
+                    ? job.format === dictionaryCardAuthoringGenerationFormat
+                        ? DictionaryCardAuthoringV2ProposalSchema.parse(
+                              proposal.payload,
+                          )
+                        : DictionaryCardAuthoringProposalSchema.parse(
+                              proposal.payload,
+                          )
                     : null,
         });
     }
@@ -947,6 +972,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         input: Parameters<DictionaryGenerationStore['enqueueCardAuthoring']>[0],
     ) {
         return this.database.transaction(async (tx) => {
+            const format =
+                input.format ?? dictionaryCardAuthoringGenerationFormatV1;
+            const target = input.target ?? { kind: 'create' as const };
             abort(input.context);
             await tx.execute(
                 sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
@@ -1014,6 +1042,27 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             )
                 throw new DictionaryVersionConflictError();
 
+            if (target.kind === 'update') {
+                const [card] = await tx
+                    .select({ version: dictionaryCardsTable.version })
+                    .from(dictionaryCardsTable)
+                    .where(
+                        and(
+                            eq(dictionaryCardsTable.id, target.cardId),
+                            eq(
+                                dictionaryCardsTable.dictionaryId,
+                                input.dictionaryId,
+                            ),
+                            eq(dictionaryCardsTable.lifecycle, 'active'),
+                        ),
+                    )
+                    .limit(1)
+                    .for('update');
+                if (!card) throw new DictionaryCardNotFoundError();
+                if (card.version !== target.expectedCardVersion)
+                    throw new DictionaryVersionConflictError();
+            }
+
             const overrides = domainOverrides(input.draft.overrides);
             assertCardSettingsOverrideTransition({
                 dictionary: domainSettings(current.settings),
@@ -1027,10 +1076,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const requestedFields = resolveDictionaryCardAuthoringFields(
                 effectiveSettings,
                 input.scope,
+                format === dictionaryCardAuthoringGenerationFormat,
             );
             const eligibleFields = resolveDictionaryCardAuthoringFields(
                 effectiveSettings,
                 { kind: 'all' },
+                format === dictionaryCardAuthoringGenerationFormat,
             );
             const excludedValues: Array<{
                 field: (typeof requestedFields)[number];
@@ -1045,8 +1096,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 );
                 if (
                     predecessor.kind !== 'card-authoring' ||
-                    predecessor.format !==
-                        dictionaryCardAuthoringGenerationFormat ||
+                    predecessor.format !== format ||
                     predecessor.dictionaryId !== input.dictionaryId ||
                     predecessor.expectedDictionaryVersion !==
                         current.dictionary.version ||
@@ -1077,15 +1127,39 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 const predecessorInput = predecessor.inputPayload
                     ? parseDictionaryGenerationInput(predecessor.inputPayload)
                     : null;
+                const retainedSourceSuggestionValues = new Set(
+                    (stored.sourceSuggestions ?? [])
+                        .filter(
+                            (suggestion) =>
+                                !input.predecessor!.discardedSuggestionIds.includes(
+                                    suggestion.id,
+                                ),
+                        )
+                        .map((suggestion) => suggestion.value),
+                );
                 if (
-                    predecessorInput?.format !==
-                        dictionaryCardAuthoringGenerationFormat ||
-                    predecessorInput.source !== input.source ||
-                    stored.source !== input.source
+                    predecessorInput?.format !== format ||
+                    (predecessorInput.source !== stored.source &&
+                        !(
+                            format ===
+                                dictionaryCardAuthoringGenerationFormat &&
+                            retainedSourceSuggestionValues.has(
+                                predecessorInput.source,
+                            )
+                        )) ||
+                    (stored.source !== input.source &&
+                        !(
+                            format ===
+                                dictionaryCardAuthoringGenerationFormat &&
+                            retainedSourceSuggestionValues.has(input.source)
+                        ))
                 )
                     throw new DictionaryGenerationCandidateConflictError();
                 const availableIds = new Set(
-                    stored.suggestions.map((suggestion) => suggestion.id),
+                    [
+                        ...stored.suggestions,
+                        ...(stored.sourceSuggestions ?? []),
+                    ].map((suggestion) => suggestion.id),
                 );
                 const alreadyDiscardedIds = new Set(
                     predecessorInput.predecessor?.discardedSuggestionIds ?? [],
@@ -1110,13 +1184,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         ...stored.suggestions.map(
                             (suggestion) => suggestion.field,
                         ),
+                        ...(stored.sourceSuggestions?.length
+                            ? ['source' as const]
+                            : []),
                     ]),
                 ];
                 for (const field of historyFields) {
                     const fieldSuggestions = stored.suggestions.filter(
                         (suggestion) => suggestion.field === field,
                     );
-                    const remaining = fieldSuggestions.filter(
+                    const sourceSuggestions =
+                        field === 'source'
+                            ? (stored.sourceSuggestions ?? [])
+                            : [];
+                    const historicalSuggestions = [
+                        ...fieldSuggestions,
+                        ...sourceSuggestions,
+                    ];
+                    const remaining = historicalSuggestions.filter(
                         (suggestion) => !discarded.has(suggestion.id),
                     );
                     if (
@@ -1130,7 +1215,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             ...(predecessorInput.excludedValues.find(
                                 (entry) => entry.field === field,
                             )?.values ?? []),
-                            ...fieldSuggestions.map(
+                            ...historicalSuggestions.map(
                                 (suggestion) => suggestion.value,
                             ),
                         ]),
@@ -1147,7 +1232,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const providerExecution = await this.assertGenerationAdmission(
                 tx,
                 input.ownerId,
-                dictionaryCardAuthoringGenerationFormat,
+                format,
                 input.context.now,
             );
             abort(input.context);
@@ -1164,25 +1249,31 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     draft: input.draft,
                     effectiveSettings,
                     excludedValues,
-                    format: dictionaryCardAuthoringGenerationFormat,
+                    format,
+                    ...(format === dictionaryCardAuthoringGenerationFormat
+                        ? { target }
+                        : {}),
                     ...(input.predecessor
                         ? { predecessor: input.predecessor }
                         : {}),
                     scope: input.scope,
                     source: input.source,
-                });
+                }) as DictionaryCardAuthoringGenerationInputPayload;
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
                 .values({
                     ...this.aiCreditJobValues(providerExecution),
-                    cardId: null,
+                    cardId: target.kind === 'update' ? target.cardId : null,
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
                     executionRevisionId: providerExecution.revisionId,
-                    expectedCardVersion: null,
+                    expectedCardVersion:
+                        target.kind === 'update'
+                            ? target.expectedCardVersion
+                            : null,
                     expectedDictionaryVersion: input.expectedDictionaryVersion,
                     expectedSettingsVersion: input.expectedSettingsVersion,
-                    format: dictionaryCardAuthoringGenerationFormat,
+                    format,
                     id: this.ids.generate(),
                     idempotencyKey: input.idempotencyKey,
                     inputPayload: payload,
@@ -2550,25 +2641,49 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const stored = DictionaryCardAuthoringProposalPayloadSchema.parse(
                 proposal.payload,
             );
+            const jobInput = parseDictionaryGenerationInput(job.inputPayload);
+            if (
+                jobInput.format !== dictionaryCardAuthoringGenerationFormat &&
+                jobInput.format !== dictionaryCardAuthoringGenerationFormatV1
+            )
+                throw new DictionaryGenerationCandidateConflictError();
             const candidateValues = normalizeCardValues(input.candidate.values);
             const aiAssisted = input.selectedSuggestions.length > 0;
-            if (aiAssisted && candidateValues.source !== stored.source)
+            if (
+                jobInput.format === dictionaryCardAuthoringGenerationFormatV1 &&
+                aiAssisted &&
+                candidateValues.source !== stored.source
+            )
                 throw new DictionaryGenerationCandidateConflictError();
             const suggestionsById = new Map(
-                stored.suggestions.map((suggestion) => [
-                    suggestion.id,
-                    suggestion,
-                ]),
+                [
+                    ...stored.suggestions,
+                    ...(stored.sourceSuggestions ?? []),
+                ].map((suggestion) => [suggestion.id, suggestion]),
             );
             for (const selected of input.selectedSuggestions) {
                 const suggestion = suggestionsById.get(selected.suggestionId);
                 if (
                     !suggestion ||
                     suggestion.field !== selected.field ||
-                    candidateValues[selected.field] !== suggestion.value
+                    candidateValues[selected.field] !== suggestion.value ||
+                    (suggestion.field !== 'source' &&
+                        suggestion.basisSource !== undefined &&
+                        suggestion.basisSource !== candidateValues.source)
                 )
                     throw new DictionaryGenerationCandidateConflictError();
             }
+            if (
+                jobInput.format === dictionaryCardAuthoringGenerationFormat &&
+                candidateValues.source !== stored.source &&
+                input.selectedSuggestions.some(
+                    (selected) => selected.field !== 'source',
+                ) &&
+                !input.selectedSuggestions.some(
+                    (selected) => selected.field === 'source',
+                )
+            )
+                throw new DictionaryGenerationCandidateConflictError();
 
             const [current] = await tx
                 .select({
@@ -2603,10 +2718,38 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const candidateOverrides = domainOverrides(
                 input.candidate.overrides,
             );
+            const target =
+                jobInput.format === dictionaryCardAuthoringGenerationFormat
+                    ? jobInput.target
+                    : ({ kind: 'create' } as const);
+            let targetCard: CardRow | null = null;
+            if (target.kind === 'update') {
+                const [lockedCard] = await tx
+                    .select()
+                    .from(dictionaryCardsTable)
+                    .where(
+                        and(
+                            eq(dictionaryCardsTable.id, target.cardId),
+                            eq(
+                                dictionaryCardsTable.dictionaryId,
+                                job.dictionaryId,
+                            ),
+                            eq(dictionaryCardsTable.lifecycle, 'active'),
+                        ),
+                    )
+                    .limit(1)
+                    .for('update');
+                if (!lockedCard) throw new DictionaryCardNotFoundError();
+                if (lockedCard.version !== target.expectedCardVersion)
+                    throw new DictionaryVersionConflictError();
+                targetCard = lockedCard;
+            }
             assertCardSettingsOverrideTransition({
                 dictionary: domainSettings(current.settings),
                 next: candidateOverrides,
-                previous: null,
+                previous: targetCard
+                    ? domainOverrides(wireOverrides(targetCard))
+                    : null,
             });
 
             const [cardState] = await tx
@@ -2618,7 +2761,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 })
                 .from(dictionaryCardsTable)
                 .where(eq(dictionaryCardsTable.dictionaryId, job.dictionaryId));
-            assertDictionaryCardCapacity(Number(cardState?.active ?? 0) + 1);
+            if (!targetCard)
+                assertDictionaryCardCapacity(
+                    Number(cardState?.active ?? 0) + 1,
+                );
             const [ownerCardCount] = await tx
                 .select({ value: count() })
                 .from(dictionaryCardsTable)
@@ -2648,7 +2794,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     dictionaries: Number(ownerDictionaryCount?.value ?? 0),
                     revisions: Number(ownerRevisionCount?.value ?? 0),
                 },
-                { cards: 1, dictionaries: 0, revisions: 1 },
+                {
+                    cards: targetCard ? 0 : 1,
+                    dictionaries: 0,
+                    revisions: 1,
+                },
                 dictionaryLimits,
             );
             const [duplicateSourceMatch] = await tx
@@ -2663,65 +2813,111 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                                 candidateValues.source,
                             ),
                         ),
+                        ...(targetCard
+                            ? [
+                                  sql`${dictionaryCardsTable.id} <> ${targetCard.id}`,
+                              ]
+                            : []),
                     ),
                 )
                 .limit(1);
             const duplicateSource = Boolean(duplicateSourceMatch);
             abort(input.context);
 
-            const cardId = this.ids.generate();
-            const [card] = await tx
-                .insert(dictionaryCardsTable)
-                .values({
-                    authorship: aiAssisted ? 'mixed' : 'human',
-                    createdAt: input.context.now,
-                    customNotationLabelOverride:
-                        candidateOverrides.customNotationLabel,
-                    definition: candidateValues.definition,
-                    definitionEnabledOverride:
-                        candidateOverrides.definitionEnabled,
-                    definitionLanguageRoleOverride:
-                        candidateOverrides.definitionLanguageRole,
-                    dictionaryId: job.dictionaryId,
-                    example: candidateValues.example,
-                    exampleEnabledOverride: candidateOverrides.exampleEnabled,
-                    exampleLanguageRoleOverride:
-                        candidateOverrides.exampleLanguageRole,
-                    exampleTranslation: candidateValues.exampleTranslation,
-                    exampleTranslationEnabledOverride:
-                        candidateOverrides.exampleTranslationEnabled,
-                    id: cardId,
-                    lifecycle: 'active',
-                    normalizedSource: normalizeDictionaryCardSourceForSearch(
-                        candidateValues.source,
-                    ),
-                    sortKey:
-                        BigInt(cardState?.maximumSortKey ?? 0) +
+            const authorship = targetCard
+                ? resolveCardMutationAuthorship({
+                      mutationKind: 'ai_proposal_accept',
+                      prior: targetCard.authorship,
+                      proposalEdited: true,
+                      semanticChange: !areCardSemanticStatesEqual(
+                          {
+                              overrides: domainOverrides(
+                                  wireOverrides(targetCard),
+                              ),
+                              values: values(targetCard),
+                          },
+                          {
+                              overrides: candidateOverrides,
+                              values: candidateValues,
+                          },
+                      ),
+                  }).authorship
+                : aiAssisted
+                  ? 'mixed'
+                  : 'human';
+            const cardId = targetCard?.id ?? this.ids.generate();
+            const cardValues = {
+                authorship,
+                createdAt: input.context.now,
+                customNotationLabelOverride:
+                    candidateOverrides.customNotationLabel,
+                definition: candidateValues.definition,
+                definitionEnabledOverride: candidateOverrides.definitionEnabled,
+                definitionLanguageRoleOverride:
+                    candidateOverrides.definitionLanguageRole,
+                dictionaryId: job.dictionaryId,
+                example: candidateValues.example,
+                exampleEnabledOverride: candidateOverrides.exampleEnabled,
+                exampleLanguageRoleOverride:
+                    candidateOverrides.exampleLanguageRole,
+                exampleTranslation: candidateValues.exampleTranslation,
+                exampleTranslationEnabledOverride:
+                    candidateOverrides.exampleTranslationEnabled,
+                lifecycle: 'active' as const,
+                normalizedSource: normalizeDictionaryCardSourceForSearch(
+                    candidateValues.source,
+                ),
+                sortKey:
+                    targetCard?.sortKey ??
+                    BigInt(cardState?.maximumSortKey ?? 0) +
                         dictionaryCardSortGap,
-                    source: candidateValues.source,
-                    transcription: candidateValues.transcription,
-                    transcriptionEnabledOverride:
-                        candidateOverrides.transcriptionEnabled,
-                    transcriptionNotationOverride:
-                        candidateOverrides.transcriptionNotation,
-                    translation: candidateValues.translation,
-                    updatedAt: input.context.now,
-                })
-                .returning();
+                source: candidateValues.source,
+                transcription: candidateValues.transcription,
+                transcriptionEnabledOverride:
+                    candidateOverrides.transcriptionEnabled,
+                transcriptionNotationOverride:
+                    candidateOverrides.transcriptionNotation,
+                translation: candidateValues.translation,
+                updatedAt: input.context.now,
+            };
+            const [card] = targetCard
+                ? await tx
+                      .update(dictionaryCardsTable)
+                      .set({
+                          ...cardValues,
+                          createdAt: targetCard.createdAt,
+                          version: targetCard.version + 1,
+                      })
+                      .where(
+                          and(
+                              eq(dictionaryCardsTable.id, targetCard.id),
+                              eq(
+                                  dictionaryCardsTable.version,
+                                  targetCard.version,
+                              ),
+                          ),
+                      )
+                      .returning()
+                : await tx
+                      .insert(dictionaryCardsTable)
+                      .values({ ...cardValues, id: cardId })
+                      .returning();
             if (!card) throw new DictionaryVersionConflictError();
             const revisionId = this.ids.generate();
             await tx.insert(dictionaryCardRevisionsTable).values({
                 acceptedGenerationJobId: job.id,
                 actorUserId: input.ownerId,
-                authorship: aiAssisted ? 'mixed' : 'human',
+                authorship: card.authorship,
                 cardId: card.id,
                 cardVersion: card.version,
                 createdAt: input.context.now,
                 dictionaryId: card.dictionaryId,
                 id: revisionId,
-                mutationKind: aiAssisted
+                mutationKind: targetCard
                     ? 'ai_proposal_accept'
-                    : 'manual_create',
+                    : aiAssisted
+                      ? 'ai_proposal_accept'
+                      : 'manual_create',
                 revisionNumber: card.version,
                 schemaVersion: 1,
                 settingsVersion: current.settings.version,
@@ -3695,16 +3891,16 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 return true;
             }
             const jobInput = parseDictionaryGenerationInput(job.inputPayload);
+            const isAuthoring =
+                jobInput.format === dictionaryCardAuthoringGenerationFormat ||
+                jobInput.format === dictionaryCardAuthoringGenerationFormatV1;
             if (jobInput.format === dictionaryDocumentGenerationFormat)
                 throw new Error(
                     'Document completion requires staged cleanup publication',
                 );
             let authoringPredecessor:
                 DictionaryCardAuthoringProposalPayload | undefined;
-            if (
-                jobInput.format === dictionaryCardAuthoringGenerationFormat &&
-                jobInput.predecessor
-            ) {
+            if (isAuthoring && jobInput.predecessor) {
                 const predecessorJob = await this.lockOwnedJob(
                     tx,
                     job.ownerId,
@@ -3747,8 +3943,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 for (const field of resolveDictionaryCardAuthoringFields(
                     jobInput.effectiveSettings,
                     jobInput.scope,
+                    jobInput.format === dictionaryCardAuthoringGenerationFormat,
                 )) {
-                    const remaining = authoringPredecessor.suggestions.filter(
+                    const remaining = [
+                        ...authoringPredecessor.suggestions,
+                        ...(authoringPredecessor.sourceSuggestions ?? []),
+                    ].filter(
                         (suggestion) =>
                             suggestion.field === field &&
                             !discarded.has(suggestion.id),
@@ -3768,29 +3968,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         delta: DictionaryCardAuthoringProviderDeltaSchema.parse(
                             input.proposal,
                         ),
-                        discardedSuggestionIds:
-                            jobInput.format ===
-                            dictionaryCardAuthoringGenerationFormat
-                                ? (jobInput.predecessor
-                                      ?.discardedSuggestionIds ?? [])
-                                : [],
+                        discardedSuggestionIds: isAuthoring
+                            ? (jobInput.predecessor?.discardedSuggestionIds ??
+                              [])
+                            : [],
                         nextId: () => this.ids.generate(),
                         ...(authoringPredecessor
                             ? { predecessor: authoringPredecessor }
                             : {}),
-                        requestedFields:
-                            jobInput.format ===
-                            dictionaryCardAuthoringGenerationFormat
-                                ? resolveDictionaryCardAuthoringFields(
-                                      jobInput.effectiveSettings,
-                                      jobInput.scope,
-                                  )
-                                : [],
-                        source:
-                            jobInput.format ===
-                            dictionaryCardAuthoringGenerationFormat
-                                ? jobInput.source
-                                : '',
+                        requestedFields: isAuthoring
+                            ? resolveDictionaryCardAuthoringFields(
+                                  jobInput.effectiveSettings,
+                                  jobInput.scope,
+                                  jobInput.format ===
+                                      dictionaryCardAuthoringGenerationFormat,
+                              )
+                            : [],
+                        source: isAuthoring ? jobInput.source : '',
+                        ...(isAuthoring ? { format: jobInput.format } : {}),
                     });
                 } catch (error) {
                     if (
@@ -3803,17 +3998,15 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     throw error;
                 }
             };
-            let proposal =
-                jobInput.format === dictionaryCardAuthoringGenerationFormat
-                    ? mergeAuthoringProposal()
-                    : jobInput.format === dictionaryPastedTermsGenerationFormat
-                      ? parseDictionaryBatchGenerationProposal(input.proposal)
-                      : jobInput.format ===
-                          dictionaryImportPairsGenerationFormat
-                        ? parseDictionaryImportPairsGenerationProposal(
-                              input.proposal,
-                          )
-                        : parseDictionaryGenerationProposal(input.proposal);
+            let proposal = isAuthoring
+                ? mergeAuthoringProposal()
+                : jobInput.format === dictionaryPastedTermsGenerationFormat
+                  ? parseDictionaryBatchGenerationProposal(input.proposal)
+                  : jobInput.format === dictionaryImportPairsGenerationFormat
+                    ? parseDictionaryImportPairsGenerationProposal(
+                          input.proposal,
+                      )
+                    : parseDictionaryGenerationProposal(input.proposal);
             if (jobInput.format === dictionaryPastedTermsGenerationFormat) {
                 const batchProposal =
                     parseDictionaryBatchGenerationProposal(proposal);
@@ -4517,9 +4710,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             queueImportPairsDepth: number(
                 queueFor(dictionaryImportPairsGenerationFormat)?.depth,
             ),
-            queueCardAuthoringDepth: number(
-                queueFor(dictionaryCardAuthoringGenerationFormat)?.depth,
-            ),
+            queueCardAuthoringDepth:
+                number(
+                    queueFor(dictionaryCardAuthoringGenerationFormatV1)?.depth,
+                ) +
+                number(
+                    queueFor(dictionaryCardAuthoringGenerationFormat)?.depth,
+                ),
             queueSingleCardOldestAgeMs: queueAge(dictionaryGenerationFormat),
             queuePastedTermsOldestAgeMs: queueAge(
                 dictionaryPastedTermsGenerationFormat,
@@ -4530,8 +4727,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             queueImportPairsOldestAgeMs: queueAge(
                 dictionaryImportPairsGenerationFormat,
             ),
-            queueCardAuthoringOldestAgeMs: queueAge(
-                dictionaryCardAuthoringGenerationFormat,
+            queueCardAuthoringOldestAgeMs: Math.max(
+                queueAge(dictionaryCardAuthoringGenerationFormatV1),
+                queueAge(dictionaryCardAuthoringGenerationFormat),
             ),
             expiredRunningLeaseDepth: number(jobs?.expiredRunningLeases),
             generationQueueCapacityRemaining: Math.max(

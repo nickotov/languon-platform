@@ -22,8 +22,12 @@ describe('local prompts', () => {
         const prompt = getLocalPrompt('dictionary-card-authoring-agent');
 
         expect(prompt).toContain('atomic review-only values');
-        expect(prompt).toContain('only the explicitly requested target fields');
-        expect(prompt).toContain('never generate or alter Source');
+        expect(prompt).toContain('only the explicitly requested fields');
+        expect(prompt).toContain(
+            'conventional dictionary lemma or verb infinitive',
+        );
+        expect(prompt).toContain('add an article when appropriate');
+        expect(prompt).toContain('translate the newly generated Example');
         expect(prompt).toContain('server assigns stable identities');
         expect(prompt).toContain(
             'distinct from its current and excluded values',

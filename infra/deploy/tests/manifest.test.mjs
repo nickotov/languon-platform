@@ -246,15 +246,16 @@ test('preflight enforces full lifecycle compatibility in both rollback direction
     );
 });
 
-test('card-authoring format follows expand-before-activate and remains lifecycle-readable across rollback', () => {
-    const format = 'card-authoring:v1';
+test('card-authoring v2 follows expand-before-activate while v1 remains lifecycle-readable', () => {
+    const legacyFormat = 'card-authoring:v1';
+    const format = 'card-authoring:v2';
     const lifecycle = {
-        workerProcessable: [format],
-        apiReadable: [format],
-        apiCancellable: [format],
-        apiDiscardable: [format],
-        apiAcceptable: [format],
-        webReadable: [format],
+        workerProcessable: [legacyFormat, format],
+        apiReadable: [legacyFormat, format],
+        apiCancellable: [legacyFormat, format],
+        apiDiscardable: [legacyFormat, format],
+        apiAcceptable: [legacyFormat, format],
+        webReadable: [legacyFormat, format],
     };
     const expand = validateReleaseManifest({
         ...valid,
@@ -262,7 +263,7 @@ test('card-authoring format follows expand-before-activate and remains lifecycle
         dictionaryJobs: {
             ...valid.dictionaryJobs,
             ...lifecycle,
-            apiEnqueued: [],
+            apiEnqueued: [legacyFormat],
         },
     });
     const activate = validateReleaseManifest({
@@ -271,7 +272,7 @@ test('card-authoring format follows expand-before-activate and remains lifecycle
         dictionaryJobs: {
             ...expand.dictionaryJobs,
             phase: 'activate',
-            apiEnqueued: [format],
+            apiEnqueued: [legacyFormat, format],
         },
     });
 
@@ -297,7 +298,7 @@ test('card-authoring format follows expand-before-activate and remains lifecycle
                 },
                 expand,
             ),
-        /retireFormats must exactly declare.*card-authoring:v1/i,
+        /apiReadable.*card-authoring:v1/i,
     );
 });
 

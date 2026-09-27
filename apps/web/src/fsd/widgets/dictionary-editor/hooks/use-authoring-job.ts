@@ -24,7 +24,7 @@ export function useAuthoringJob({
             );
             return response.job.kind === 'card-authoring' ? response.job : null;
         },
-        enabled: editing === 'new' && authoringJobId !== null,
+        enabled: editing !== null && authoringJobId !== null,
         refetchInterval: (query) => {
             const state = query.state.data?.state;
             return state === 'queued' || state === 'running' ? 1_000 : false;

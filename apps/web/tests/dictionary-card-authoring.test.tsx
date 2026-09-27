@@ -4,7 +4,7 @@ import type {
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
@@ -27,6 +27,7 @@ import {
 } from '@/fsd/features/dictionary-card-list';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import { DictionarySettingsForm } from '@/fsd/features/dictionary-settings';
+import { shouldAcceptAuthoringProposal } from '@/fsd/widgets/dictionary-editor/ui/editor-card-sheet/editor-card-sheet';
 
 import { render } from './render';
 
@@ -215,6 +216,11 @@ const authoringSuccessorJob = {
 } satisfies DictionaryCardAuthoringGenerationJob;
 
 describe('dictionary settings and card authoring', () => {
+    it('uses ordinary create and update saves when no AI suggestion remains selected', () => {
+        expect(shouldAcceptAuthoringProposal(true, 0)).toBe(false);
+        expect(shouldAcceptAuthoringProposal(false, 0)).toBe(false);
+        expect(shouldAcceptAuthoringProposal(true, 1)).toBe(true);
+    });
     it.each([
         ['provider_rate_limited', 'dictionary.authoring.rateLimited'],
         ['provider_unavailable', 'dictionary.authoring.providerUnavailable'],
@@ -296,6 +302,14 @@ describe('dictionary settings and card authoring', () => {
             const user = userEvent.setup();
             const onSave = vi.fn().mockResolvedValue(undefined);
             const onAction = vi.fn().mockResolvedValue(undefined);
+            const startingCard = {
+                ...card,
+                values: {
+                    ...card.values,
+                    source: 'medium',
+                    translation: '',
+                },
+            };
             function ExpiringForm() {
                 const [expired, setExpired] = useState(false);
                 return (
@@ -315,6 +329,7 @@ describe('dictionary settings and card authoring', () => {
                                 proposal: retained ? authoringProposal : null,
                                 successorActive: retained && !expired,
                             }}
+                            card={startingCard}
                             dictionary={dictionary}
                             languages={languages}
                             onCancel={vi.fn()}
@@ -325,10 +340,13 @@ describe('dictionary settings and card authoring', () => {
                 );
             }
             render(<ExpiringForm />);
-            await user.type(
-                screen.getByLabelText(/Source word or phrase/),
-                'medium',
-            );
+            if (retained) {
+                await user.click(
+                    screen.getByRole('button', {
+                        name: 'Reject Translation suggestion',
+                    }),
+                );
+            }
             await user.type(
                 screen.getByLabelText(/Translation \(/),
                 'manual translation',
@@ -346,21 +364,14 @@ describe('dictionary settings and card authoring', () => {
             expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
                 'medium',
             );
-            expect(screen.getByLabelText(/Translation \(/)).toHaveValue(
-                'manual translation',
-            );
+            expect(
+                screen.getByDisplayValue('manual translation'),
+            ).toBeInTheDocument();
             const generate = screen.getByRole('button', {
-                name: retained ? 'Regenerate all fields' : 'Generate with AI',
+                name: retained ? 'Regenerate all fields' : 'Generate all',
             });
             expect(generate).toBeEnabled();
-            if (retained) {
-                expect(screen.getByText('medio')).toBeInTheDocument();
-                expect(
-                    screen.getByRole('button', {
-                        name: 'Accept Translation suggestion',
-                    }),
-                ).toBeEnabled();
-            }
+            expect(screen.queryByText('medio')).not.toBeInTheDocument();
             await user.click(screen.getByRole('button', { name: 'Save card' }));
             expect(onSave).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -456,6 +467,10 @@ describe('dictionary settings and card authoring', () => {
                         })),
                     },
                 }}
+                card={{
+                    ...card,
+                    values: { ...card.values, source: 'medium' },
+                }}
                 dictionary={dictionary}
                 languages={languages}
                 onCancel={vi.fn()}
@@ -463,26 +478,18 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        expect(
-            screen.queryByText('translation choice 3'),
-        ).not.toBeInTheDocument();
-        expect(
-            screen.getAllByRole('button', { name: 'Regenerate Translation' }),
-        ).toHaveLength(1);
-        await user.click(
-            screen.getByRole('button', { name: 'Show 1 more choices' }),
-        );
         expect(screen.getByText('translation choice 3')).toBeInTheDocument();
-        await user.click(
-            screen.getByRole('button', { name: 'Show fewer choices' }),
-        );
+        expect(screen.getByText('translation choice 1')).not.toBeVisible();
         expect(
-            screen.queryByText('translation choice 3'),
-        ).not.toBeInTheDocument();
+            screen.getAllByRole('button', {
+                name: 'Generate Translation with AI',
+            }),
+        ).toHaveLength(1);
+        await user.click(screen.getByText('Previous AI options (2)'));
+        expect(screen.getByText('translation choice 1')).toBeInTheDocument();
     });
 
     it('blocks Save while a successor is active but keeps proposal review available', async () => {
-        const user = userEvent.setup();
         render(
             <DictionaryCardForm
                 ai={{
@@ -493,16 +500,16 @@ describe('dictionary settings and card authoring', () => {
                     proposal: authoringProposal,
                     successorActive: true,
                 }}
+                card={{
+                    ...card,
+                    values: { ...card.values, source: 'medium' },
+                }}
                 dictionary={dictionary}
                 languages={languages}
                 onCancel={vi.fn()}
                 onSave={vi.fn().mockResolvedValue(undefined)}
                 pending={false}
             />,
-        );
-        await user.type(
-            screen.getByLabelText(/Source word or phrase/),
-            'medium',
         );
         expect(
             screen.getByRole('button', { name: 'Save card' }),
@@ -513,7 +520,9 @@ describe('dictionary settings and card authoring', () => {
             }),
         ).toBeEnabled();
         expect(
-            screen.getByRole('button', { name: 'Regenerate Translation' }),
+            screen.getByRole('button', {
+                name: 'Generate Translation with AI',
+            }),
         ).toBeDisabled();
     });
     it('retains a payload-scoped idempotency key after an ambiguous attempt', () => {
@@ -573,15 +582,13 @@ describe('dictionary settings and card authoring', () => {
             />,
         );
         expect(
-            screen.getByRole('button', { name: 'Generate with AI' }),
+            screen.getByRole('button', { name: 'Generate all' }),
         ).toBeDisabled();
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'medium',
         );
-        await user.click(
-            screen.getByRole('button', { name: 'Generate with AI' }),
-        );
+        await user.click(screen.getByRole('button', { name: 'Generate all' }));
         expect(onAction).toHaveBeenCalledWith(
             expect.objectContaining({
                 kind: 'generate',
@@ -594,6 +601,14 @@ describe('dictionary settings and card authoring', () => {
         render(
             <DictionaryCardForm
                 ai={{ available: true, onAction, pending: false, proposal }}
+                card={{
+                    ...card,
+                    values: {
+                        ...card.values,
+                        source: 'medium',
+                        translation: '',
+                    },
+                }}
                 dictionary={dictionary}
                 languages={languages}
                 onCancel={vi.fn()}
@@ -601,39 +616,28 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(
-            screen.getByLabelText(/Source word or phrase/),
-            'medium',
+        expect(screen.getByTestId('ai-review-translation')).toHaveTextContent(
+            'entorno',
         );
         await user.click(
-            screen.getAllByRole('button', {
-                name: 'Accept Translation suggestion',
-            })[0]!,
+            within(screen.getByTestId('ai-review-translation')).getAllByRole(
+                'button',
+                {
+                    name: 'Accept Translation suggestion',
+                },
+            )[0]!,
         );
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
-        expect(screen.getByText('medio')).toBeInTheDocument();
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
         await user.click(
-            screen.getAllByRole('button', {
-                name: 'Discard Translation suggestion',
-            })[0]!,
-        );
-        expect(screen.queryByText('medio')).not.toBeInTheDocument();
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
-        await user.click(
-            screen.getByRole('button', { name: 'Regenerate Translation' }),
+            screen.getByRole('button', {
+                name: 'Generate Translation with AI',
+            }),
         );
         expect(onAction).toHaveBeenLastCalledWith(
             expect.objectContaining({
-                discardedSuggestionIds: [
-                    '40000000-0000-4000-8000-000000000001',
-                ],
+                discardedSuggestionIds: [],
                 scope: { field: 'translation', kind: 'field' },
                 successor: true,
-            }),
-        );
-        await user.click(
-            screen.getByRole('button', {
-                name: 'Accept Translation suggestion',
             }),
         );
         await user.click(screen.getByRole('button', { name: 'Save card' }));
@@ -664,7 +668,7 @@ describe('dictionary settings and card authoring', () => {
         );
     });
 
-    it('accepts and discards all available field suggestions without replacing an existing choice', async () => {
+    it('accepts the latest available suggestion for every field', async () => {
         const user = userEvent.setup();
         const onSave = vi.fn().mockResolvedValue(undefined);
         const proposal = {
@@ -711,6 +715,14 @@ describe('dictionary settings and card authoring', () => {
                     pending: false,
                     proposal,
                 }}
+                card={{
+                    ...card,
+                    values: {
+                        ...card.values,
+                        source: 'medium',
+                        translation: '',
+                    },
+                }}
                 dictionary={dictionary}
                 languages={languages}
                 onCancel={vi.fn()}
@@ -718,23 +730,23 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.type(
-            screen.getByLabelText(/Source word or phrase/),
-            'medium',
-        );
 
         expect(screen.getByText('Choices: 5 · Fields: 3')).toBeInTheDocument();
+        const translationReview = screen.getByTestId('ai-review-translation');
         await user.click(
-            screen.getAllByRole('button', {
+            within(translationReview).getByText('Previous AI options (1)'),
+        );
+        await user.click(
+            within(translationReview).getAllByRole('button', {
                 name: 'Accept Translation suggestion',
             })[1]!,
         );
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
 
         await user.click(screen.getByRole('button', { name: 'Accept all' }));
         expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
-            'A medium-sized room.',
+            'A second example.',
         );
         expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
             'Una habitación mediana.',
@@ -743,26 +755,371 @@ describe('dictionary settings and card authoring', () => {
             screen.getByRole('button', { name: 'Accept all' }),
         ).toBeDisabled();
 
-        await user.click(screen.getByRole('button', { name: 'Discard all' }));
+        await user.click(screen.getByRole('button', { name: 'Reject all' }));
         expect(
-            screen.queryByRole('button', { name: 'Discard all' }),
+            screen.queryByRole('button', { name: 'Reject all' }),
         ).not.toBeInTheDocument();
         expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
-            'A medium-sized room.',
+            'A second example.',
         );
 
         await user.click(screen.getByRole('button', { name: 'Save card' }));
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({
-                    example: 'A medium-sized room.',
+                    example: 'A second example.',
                     exampleTranslation: 'Una habitación mediana.',
                     translation: 'entorno',
                 }),
             }),
             [],
         );
+    });
+
+    it('reviews a normalized Source before dependent results and rejects them together', async () => {
+        const user = userEvent.setup();
+        const proposal = {
+            source: 'alarmer',
+            sourceResult: {
+                kind: 'suggested' as const,
+                suggestionId: '43000000-0000-4000-8000-000000000001',
+            },
+            sourceSuggestions: [
+                {
+                    field: 'source' as const,
+                    id: '43000000-0000-4000-8000-000000000001',
+                    value: "s'alarmer",
+                },
+            ],
+            suggestions: [
+                {
+                    basisSource: "s'alarmer",
+                    field: 'translation' as const,
+                    id: '43000000-0000-4000-8000-000000000002',
+                    value: 'to become alarmed',
+                },
+            ],
+        };
+
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: false,
+                    proposal,
+                }}
+                card={{
+                    ...card,
+                    values: { ...card.values, source: 'alarmer' },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={vi.fn().mockResolvedValue(undefined)}
+                pending={false}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('textbox', { name: /Source word or phrase/ }),
+        ).toBeNull();
+        expect(screen.getByTestId('ai-review-source')).toHaveTextContent(
+            "s'alarmer",
+        );
+        expect(
+            within(screen.getByTestId('ai-review-translation')).getByRole(
+                'button',
+                { name: 'Accept Translation suggestion' },
+            ),
+        ).toBeDisabled();
+
+        await user.click(
+            within(screen.getByTestId('ai-review-source')).getByRole('button', {
+                name: 'Reject Source suggestion',
+            }),
+        );
+
+        expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
+            'alarmer',
+        );
+        expect(screen.queryByTestId('ai-review-source')).toBeNull();
+        expect(screen.queryByTestId('ai-review-translation')).toBeNull();
+    });
+
+    it('accepts Source first, unlocks dependent results, and saves their provenance', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const sourceId = '44000000-0000-4000-8000-000000000001';
+        const translationId = '44000000-0000-4000-8000-000000000002';
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: false,
+                    proposal: {
+                        source: 'alarmer',
+                        sourceResult: {
+                            kind: 'suggested',
+                            suggestionId: sourceId,
+                        },
+                        sourceSuggestions: [
+                            {
+                                field: 'source',
+                                id: sourceId,
+                                value: "s'alarmer",
+                            },
+                        ],
+                        suggestions: [
+                            {
+                                basisSource: "s'alarmer",
+                                field: 'translation',
+                                id: translationId,
+                                value: 'to become alarmed',
+                            },
+                        ],
+                    },
+                }}
+                card={{
+                    ...card,
+                    values: { ...card.values, source: 'alarmer' },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+
+        await user.click(
+            within(screen.getByTestId('ai-review-source')).getByRole('button', {
+                name: 'Accept Source suggestion',
+            }),
+        );
+        expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
+            "s'alarmer",
+        );
+        const translationReview = screen.getByTestId('ai-review-translation');
+        const acceptTranslation = within(translationReview).getByRole(
+            'button',
+            { name: 'Accept Translation suggestion' },
+        );
+        expect(acceptTranslation).toBeEnabled();
+        await user.click(acceptTranslation);
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({ source: "s'alarmer" }),
+            }),
+            [
+                { field: 'source', suggestionId: sourceId },
+                { field: 'translation', suggestionId: translationId },
+            ],
+        );
+    });
+
+    it('labels review as a group and clears AI provenance after a manual Source edit', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const sourceId = '45000000-0000-4000-8000-000000000001';
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: false,
+                    proposal: {
+                        source: 'alarmer',
+                        sourceResult: {
+                            kind: 'suggested',
+                            suggestionId: sourceId,
+                        },
+                        sourceSuggestions: [
+                            {
+                                field: 'source',
+                                id: sourceId,
+                                value: "s'alarmer",
+                            },
+                        ],
+                        suggestions: [
+                            {
+                                basisSource: "s'alarmer",
+                                field: 'translation',
+                                id: '45000000-0000-4000-8000-000000000002',
+                                value: 'to become alarmed',
+                            },
+                        ],
+                    },
+                }}
+                card={{
+                    ...card,
+                    values: { ...card.values, source: 'alarmer' },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+
+        const sourceReview = screen.getByRole('group', {
+            name: /Source word or phrase/,
+        });
+        expect(sourceReview).not.toHaveAttribute('required');
+        expect(sourceReview).toHaveAttribute('aria-labelledby');
+        await user.click(
+            within(sourceReview).getByRole('button', {
+                name: 'Accept Source suggestion',
+            }),
+        );
+        await user.type(
+            screen.getByRole('textbox', { name: /Source word or phrase/ }),
+            ' manually changed',
+        );
+
+        expect(screen.queryByTestId('ai-review-translation')).toBeNull();
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave).toHaveBeenCalledWith(expect.any(Object), []);
+    });
+
+    it('preserves accepted Source provenance when a successor rebases its history', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const sourceId = '46000000-0000-4000-8000-000000000001';
+        const startingCard = {
+            ...card,
+            values: { ...card.values, source: 'alarmer' },
+        };
+
+        function RebasedProposal() {
+            const [rebased, setRebased] = useState(false);
+            return (
+                <>
+                    <button onClick={() => setRebased(true)}>
+                        Rebase proposal
+                    </button>
+                    <DictionaryCardForm
+                        ai={{
+                            available: true,
+                            onAction: vi.fn().mockResolvedValue(undefined),
+                            pending: false,
+                            proposal: {
+                                source: 'alarmer',
+                                sourceResult: rebased
+                                    ? { kind: 'unchanged' }
+                                    : {
+                                          kind: 'suggested',
+                                          suggestionId: sourceId,
+                                      },
+                                sourceSuggestions: [
+                                    {
+                                        field: 'source',
+                                        id: sourceId,
+                                        value: "s'alarmer",
+                                    },
+                                ],
+                                suggestions: [],
+                            },
+                        }}
+                        card={startingCard}
+                        dictionary={dictionary}
+                        languages={languages}
+                        onCancel={vi.fn()}
+                        onSave={onSave}
+                        pending={false}
+                    />
+                </>
+            );
+        }
+
+        render(<RebasedProposal />);
+        await user.click(
+            within(screen.getByTestId('ai-review-source')).getByRole('button', {
+                name: 'Accept Source suggestion',
+            }),
+        );
+        await user.click(
+            screen.getByRole('button', { name: 'Rebase proposal' }),
+        );
+        expect(screen.queryByText(/Previous AI options/)).toBeNull();
+        expect(
+            screen.queryByText(/source phrase changed/i),
+        ).not.toBeInTheDocument();
+        expect(screen.getByText('Source already looks correct.')).toBeVisible();
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave).toHaveBeenCalledWith(expect.any(Object), [
+            { field: 'source', suggestionId: sourceId },
+        ]);
+    });
+
+    it('generates a single initial field and keeps Source unchanged feedback inline', async () => {
+        const user = userEvent.setup();
+        const onAction = vi.fn().mockResolvedValue(undefined);
+        const first = render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    onAction,
+                    pending: false,
+                    proposal: null,
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={vi.fn().mockResolvedValue(undefined)}
+                pending={false}
+            />,
+        );
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Generate Translation with AI',
+            }),
+        );
+        expect(onAction).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: { field: 'translation', kind: 'field' },
+                successor: false,
+            }),
+        );
+        first.unmount();
+
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    onAction,
+                    pending: false,
+                    proposal: {
+                        source: 'medium',
+                        sourceResult: { kind: 'unchanged' },
+                        sourceSuggestions: [],
+                        suggestions: [],
+                    },
+                }}
+                card={{
+                    ...card,
+                    values: { ...card.values, source: 'medium' },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={vi.fn().mockResolvedValue(undefined)}
+                pending={false}
+            />,
+        );
+        expect(screen.getByText('Source already looks correct.')).toBeVisible();
+        expect(
+            screen.getByRole('textbox', { name: /Source word or phrase/ }),
+        ).toHaveValue('medium');
     });
 
     it.each([
@@ -790,6 +1147,17 @@ describe('dictionary settings and card authoring', () => {
                             ],
                         },
                     }}
+                    {...(job
+                        ? {
+                              card: {
+                                  ...card,
+                                  values: {
+                                      ...card.values,
+                                      source: 'medium',
+                                  },
+                              },
+                          }
+                        : {})}
                     dictionary={dictionary}
                     languages={languages}
                     onCancel={vi.fn()}
@@ -797,20 +1165,31 @@ describe('dictionary settings and card authoring', () => {
                     pending={false}
                 />,
             );
-            await user.type(
-                screen.getByLabelText(/Source word or phrase/),
-                'medium',
-            );
+            if (!job) {
+                await user.type(
+                    screen.getByLabelText(/Source word or phrase/),
+                    'medium',
+                );
+            }
 
-            expect(
-                screen.getByText('Choices: 1 · Fields: 1'),
-            ).toBeInTheDocument();
-            expect(
-                screen.getByRole('button', { name: 'Accept all' }),
-            ).toBeDisabled();
-            expect(
-                screen.getByRole('button', { name: 'Discard all' }),
-            ).toBeEnabled();
+            if (_state === 'stale') {
+                expect(
+                    screen.queryByText('Choices: 1 · Fields: 1'),
+                ).not.toBeInTheDocument();
+                expect(
+                    screen.queryByTestId('ai-review-translation'),
+                ).not.toBeInTheDocument();
+            } else {
+                expect(
+                    screen.getByText('Choices: 1 · Fields: 1'),
+                ).toBeInTheDocument();
+                expect(
+                    screen.getByRole('button', { name: 'Accept all' }),
+                ).toBeDisabled();
+                expect(
+                    screen.getByRole('button', { name: 'Reject all' }),
+                ).toBeEnabled();
+            }
         },
     );
 
@@ -926,11 +1305,11 @@ describe('dictionary settings and card authoring', () => {
         const source = screen.getByLabelText(/Source word or phrase/);
         fireEvent.change(source, { target: { value: '😀'.repeat(200) } });
         expect(
-            screen.getByRole('button', { name: 'Generate with AI' }),
+            screen.getByRole('button', { name: 'Generate all' }),
         ).toBeEnabled();
         fireEvent.change(source, { target: { value: 'unsafe\u0085' } });
         expect(
-            screen.getByRole('button', { name: 'Generate with AI' }),
+            screen.getByRole('button', { name: 'Generate all' }),
         ).toBeDisabled();
     });
 
@@ -1042,12 +1421,10 @@ describe('dictionary settings and card authoring', () => {
         );
         expect(screen.getByText(/source phrase changed/i)).toBeInTheDocument();
         expect(
-            screen.getByRole('button', {
-                name: 'Accept Translation suggestion',
-            }),
-        ).toBeDisabled();
+            screen.queryByTestId('ai-review-translation'),
+        ).not.toBeInTheDocument();
         expect(
-            screen.getByRole('button', { name: 'Generate with AI' }),
+            screen.getByRole('button', { name: 'Generate all' }),
         ).toBeEnabled();
     });
     it('previews draft overrides without replacing server authority', () => {
@@ -1178,7 +1555,7 @@ describe('dictionary settings and card authoring', () => {
         );
         await user.type(screen.getByLabelText(/^Translation/), 'guardado');
         await user.type(
-            screen.getByLabelText(/Context example/),
+            screen.getByRole('textbox', { name: /Context example/ }),
             'A retained example',
         );
         const override = screen.getByRole('switch', {
@@ -1230,7 +1607,7 @@ describe('dictionary settings and card authoring', () => {
             'Different senses and contexts are allowed',
         );
         await user.type(
-            screen.getByLabelText(/Translation/),
+            screen.getByRole('textbox', { name: /Translation/ }),
             'medio artístico',
         );
         await user.click(screen.getByRole('button', { name: 'Save card' }));
@@ -1256,14 +1633,44 @@ describe('dictionary settings and card authoring', () => {
             'dir',
             'rtl',
         );
-        expect(screen.getByLabelText(/Translation/)).toHaveAttribute(
-            'dir',
-            'ltr',
-        );
+        expect(
+            screen.getByRole('textbox', { name: /Translation/ }),
+        ).toHaveAttribute('dir', 'ltr');
 
         expect(
             screen.getByRole('button', { name: 'Discard draft' }),
         ).toBeDisabled();
+    });
+
+    it('blocks saving and cancellation while an AI enqueue is pending', async () => {
+        const user = userEvent.setup();
+        const onCancel = vi.fn();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: true,
+                    proposal: null,
+                }}
+                card={card}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={onCancel}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+
+        const cancel = screen.getByRole('button', { name: 'Cancel' });
+        const save = screen.getByRole('button', { name: 'Save card' });
+        expect(cancel).toBeDisabled();
+        expect(save).toBeDisabled();
+        await user.click(cancel);
+        await user.click(save);
+        expect(onCancel).not.toHaveBeenCalled();
+        expect(onSave).not.toHaveBeenCalled();
     });
 
     it('renders malicious card strings as inert text in responsive semantic DOM', async () => {

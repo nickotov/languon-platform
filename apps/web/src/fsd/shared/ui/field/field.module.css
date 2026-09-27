@@ -8,6 +8,18 @@
     color: var(--text-primary);
     font-weight: 500;
 }
+.labelRow {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+}
+.labelAction {
+    align-items: center;
+    display: flex;
+    margin-inline-start: auto;
+}
 .label[data-required]::after {
     content: ' *';
 }

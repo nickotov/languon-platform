@@ -239,6 +239,13 @@
       "when": 1790439684397,
       "tag": "0033_stiff_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790537733341,
+      "tag": "0034_crazy_lila_cheney",
+      "breakpoints": true
     }
   ]
 }

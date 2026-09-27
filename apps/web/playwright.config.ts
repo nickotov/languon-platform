@@ -93,6 +93,7 @@ const documentWorkerSecretKey =
 const dictionaryJobFormats = [
     'single-card:v1',
     'card-authoring:v1',
+    'card-authoring:v2',
     'pasted-terms:v1',
     'import-pairs:v1',
     ...(documentServicesEnabled ? ['document-terms:v1'] : []),

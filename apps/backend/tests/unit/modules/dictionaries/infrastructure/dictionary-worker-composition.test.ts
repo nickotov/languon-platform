@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { createDictionaryWorkerComposition } from '../../../../../src/modules/dictionaries/infrastructure/dictionary-worker-composition';
-import { dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
+import {
+    dictionaryCardAuthoringGenerationFormat,
+    dictionaryCardAuthoringGenerationFormatV1,
+} from '../../../../../src/modules/dictionaries/domain/card-authoring';
 
 const base = {
     clock: { now: () => new Date('2026-08-26T12:00:00.000Z') },
@@ -13,11 +16,20 @@ const base = {
 };
 
 describe('dictionary worker composition', () => {
-    it('requires the card-authoring provider whenever the format is processable', () => {
-        expect(() => createDictionaryWorkerComposition(base)).toThrow(
-            /Card-authoring provider is required/,
-        );
-    });
+    it.each([
+        dictionaryCardAuthoringGenerationFormatV1,
+        dictionaryCardAuthoringGenerationFormat,
+    ])(
+        'requires the card-authoring provider whenever %s is processable',
+        (format) => {
+            expect(() =>
+                createDictionaryWorkerComposition({
+                    ...base,
+                    supportedFormats: [format],
+                }),
+            ).toThrow(/Card-authoring provider is required/);
+        },
+    );
 
     it('composes the card-authoring worker when its dedicated provider is available', () => {
         expect(

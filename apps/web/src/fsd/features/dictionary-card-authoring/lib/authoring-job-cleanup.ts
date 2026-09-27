@@ -1,7 +1,5 @@
-import type {
-    DictionaryCardAuthoringGenerationJob,
-    DictionaryCardAuthoringProposal,
-} from '@languon/contracts';
+import type { DictionaryCardAuthoringGenerationJob } from '@languon/contracts';
+import type { DictionaryCardAuthoringProposal } from '../types';
 
 export interface CardAuthoringCleanupPlan {
     cancelJobIds: string[];
@@ -47,8 +45,11 @@ export function discardedSuggestionIdsForPredecessor(
     predecessor: DictionaryCardAuthoringProposal | null | undefined,
 ): string[] {
     if (!predecessor) return [];
-    const predecessorIds = new Set(
-        predecessor.suggestions.map((suggestion) => suggestion.id),
-    );
+    const predecessorIds = new Set([
+        ...(predecessor.sourceSuggestions ?? []).map(
+            (suggestion) => suggestion.id,
+        ),
+        ...predecessor.suggestions.map((suggestion) => suggestion.id),
+    ]);
     return [...hiddenSuggestionIds].filter((id) => predecessorIds.has(id));
 }

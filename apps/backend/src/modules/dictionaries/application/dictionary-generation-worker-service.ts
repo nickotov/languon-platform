@@ -37,6 +37,7 @@ import { InvalidDictionarySettingsError } from '../domain/settings';
 import { dictionaryDocumentGenerationFormat } from '../domain/document-ingestion';
 import {
     dictionaryCardAuthoringGenerationFormat,
+    dictionaryCardAuthoringGenerationFormatV1,
     dictionaryCardAuthoringProviderInput,
     type DictionaryCardAuthoringProviderInput,
     validateDictionaryCardAuthoringProviderDelta,
@@ -551,7 +552,9 @@ export class DictionaryGenerationWorkerService {
                 return operation();
             };
             const generation =
-                claim.input.format === dictionaryCardAuthoringGenerationFormat
+                claim.input.format ===
+                    dictionaryCardAuthoringGenerationFormat ||
+                claim.input.format === dictionaryCardAuthoringGenerationFormatV1
                     ? this.dependencies.cardAuthoringProvider
                         ? (() => {
                               const providerInput =

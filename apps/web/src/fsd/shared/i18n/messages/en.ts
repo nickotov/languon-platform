@@ -1,9 +1,10 @@
 export const profileFeatureMessages = {
     'dictionary.authoring.sourceLabel': 'Source word or phrase',
+    'dictionary.authoring.sourceActionName': 'Source',
     'dictionary.authoring.mayStayEmpty': 'May stay empty',
 
     'dictionary.card.tooLong': 'Use at most {count} characters.',
-    'dictionary.cards.regenerate': 'Regenerate with AI',
+    'dictionary.cards.regenerate': 'Rewrite full card with AI',
     'dictionary.generation.progressUnchanged': 'The saved card is unchanged.',
     'dictionary.editor.noCardsTitle': 'No cards yet',
     'dictionary.editor.noCardsHelp':
@@ -655,7 +656,21 @@ export const en = {
         'Another change was saved first. Reload the current dictionary, review it, and try again.',
     'dictionary.conflict.reload': 'Reload current version',
     'dictionary.authoring.aiSection': 'AI assistance',
-    'dictionary.authoring.generate': 'Generate with AI',
+    'dictionary.authoring.generate': 'Generate all',
+    'dictionary.authoring.generateField': 'AI',
+    'dictionary.authoring.generateFieldNamed': 'Generate {field} with AI',
+    'dictionary.authoring.generatingField': 'Generating {field}…',
+    'dictionary.authoring.aiSuggestion': 'AI suggestion',
+    'dictionary.authoring.reject': 'Reject',
+    'dictionary.authoring.rejectNamed': 'Reject {field} suggestion',
+    'dictionary.authoring.tryAnother': 'Try another',
+    'dictionary.authoring.tryAnotherNamed': 'Try another {field}',
+    'dictionary.authoring.previousOptions': 'Previous AI options ({count})',
+    'dictionary.authoring.acceptSourceFirst':
+        'Accept the suggested Source before using this result.',
+    'dictionary.authoring.exampleRequired':
+        'Enter an Example before generating its translation.',
+    'dictionary.authoring.sourceUnchanged': 'Source already looks correct.',
     'dictionary.authoring.generateHelp':
         'Enter a Source first. Suggestions appear under each field for you to review — nothing is filled in or saved until you accept a choice and press Save card. Translation does not need to be filled in first.',
     'dictionary.authoring.regenerateAll': 'Regenerate all fields',
@@ -681,7 +696,7 @@ export const en = {
     'dictionary.authoring.acceptAll': 'Accept all',
     'dictionary.authoring.discard': 'Discard',
     'dictionary.authoring.discardNamed': 'Discard {field} suggestion',
-    'dictionary.authoring.discardAll': 'Discard all',
+    'dictionary.authoring.discardAll': 'Reject all',
     'dictionary.authoring.reviewSuggestions': 'Review suggestions',
     'dictionary.authoring.reviewSummary':
         'Choices: {count} · Fields: {fieldCount}',

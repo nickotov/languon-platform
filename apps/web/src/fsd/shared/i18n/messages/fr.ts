@@ -17,6 +17,8 @@ export const fr = {
     'dictionary.audio.speed': 'Vitesse de lecture',
     'dictionary.audio.normal': 'Normale',
     ...profileFeatureMessages,
+    'dictionary.authoring.sourceActionName': 'Source',
+    'dictionary.cards.regenerate': 'Réécrire toute la carte avec l’IA',
 
     'dictionary.error.rateLimited':
         'Trop de demandes. Patientez avant de réessayer.',
@@ -598,7 +600,22 @@ export const fr = {
         'Une autre modification a été enregistrée en premier. Rechargez, examinez et réessayez.',
     'dictionary.conflict.reload': 'Recharger la version actuelle',
     'dictionary.authoring.aiSection': 'Suggestions de l’IA',
-    'dictionary.authoring.generate': 'Générer avec l’IA',
+    'dictionary.authoring.generate': 'Tout générer',
+    'dictionary.authoring.generateField': 'IA',
+    'dictionary.authoring.generateFieldNamed': 'Générer {field} avec l’IA',
+    'dictionary.authoring.generatingField': 'Génération de {field}…',
+    'dictionary.authoring.aiSuggestion': 'Suggestion de l’IA',
+    'dictionary.authoring.reject': 'Refuser',
+    'dictionary.authoring.rejectNamed': 'Refuser la suggestion pour {field}',
+    'dictionary.authoring.tryAnother': 'Essayer une autre',
+    'dictionary.authoring.tryAnotherNamed':
+        'Essayer une autre valeur pour {field}',
+    'dictionary.authoring.previousOptions': 'Options IA précédentes ({count})',
+    'dictionary.authoring.acceptSourceFirst':
+        'Acceptez d’abord la Source suggérée pour utiliser ce résultat.',
+    'dictionary.authoring.exampleRequired':
+        'Saisissez un exemple avant de générer sa traduction.',
+    'dictionary.authoring.sourceUnchanged': 'La Source est déjà correcte.',
     'dictionary.authoring.generateHelp':
         'L’IA propose des valeurs sous chaque champ. Rien ne change avant votre acceptation.',
     'dictionary.authoring.regenerateAll': 'Régénérer tous les champs',
@@ -624,7 +641,7 @@ export const fr = {
     'dictionary.authoring.acceptAll': 'Tout accepter',
     'dictionary.authoring.discard': 'Supprimer',
     'dictionary.authoring.discardNamed': 'Supprimer la suggestion pour {field}',
-    'dictionary.authoring.discardAll': 'Tout supprimer',
+    'dictionary.authoring.discardAll': 'Tout refuser',
     'dictionary.authoring.reviewSuggestions': 'Vérifier les suggestions',
     'dictionary.authoring.reviewSummary':
         'Choix : {count} · Champs : {fieldCount}',

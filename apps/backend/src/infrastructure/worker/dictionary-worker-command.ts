@@ -18,9 +18,7 @@ import { createCardProposalGenerator } from '../../modules/dictionaries/infrastr
 import { createCardAuthoringProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators';
 import { createPastedTermsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators';
 import { createImportPairsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators';
-import {
-    createDictionaryTextMastraGeneratorOptions,
-} from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
+import { createDictionaryTextMastraGeneratorOptions } from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
 import {
     createDictionaryTextProviderRoutingAdapters,
     DictionaryTextProviderRouter,
@@ -32,7 +30,10 @@ import {
     dictionaryPastedTermsGenerationFormat,
 } from '../../modules/dictionaries/domain/generation';
 import { dictionaryDocumentGenerationFormat } from '../../modules/dictionaries/domain/document-ingestion';
-import { dictionaryCardAuthoringGenerationFormat } from '../../modules/dictionaries/domain/card-authoring';
+import {
+    dictionaryCardAuthoringGenerationFormat,
+    dictionaryCardAuthoringGenerationFormatV1,
+} from '../../modules/dictionaries/domain/card-authoring';
 import { createDictionaryDocumentS3Client } from '../../modules/dictionaries/infrastructure/document/s3-document-client';
 import { S3PrivateDocumentStorage } from '../../modules/dictionaries/infrastructure/document/s3-dictionary-document-storage';
 import {
@@ -140,8 +141,11 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     );
     const cardAuthoringProvider = createCardAuthoringProposalGenerator(
         environment.supportedFormats.includes(
-            dictionaryCardAuthoringGenerationFormat,
-        )
+            dictionaryCardAuthoringGenerationFormatV1,
+        ) ||
+            environment.supportedFormats.includes(
+                dictionaryCardAuthoringGenerationFormat,
+            )
             ? environment.provider.mode === 'mastra'
                 ? legacyMastraOptions!
                 : { mode: environment.provider.mode }

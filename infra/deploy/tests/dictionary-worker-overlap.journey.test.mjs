@@ -257,15 +257,17 @@ test('expand, activate, slot overlap, and rollback preserve full dictionary job 
     );
 });
 
-test('card-authoring activation propagates every worker, API, and web capability through slot overlap', async () => {
-    const format = 'card-authoring:v1';
+test('card-authoring v2 activation propagates alongside readable v1 through slot overlap', async () => {
+    const legacyFormat = 'card-authoring:v1';
+    const format = 'card-authoring:v2';
+    const formats = [legacyFormat, format];
     const lifecycle = {
-        workerProcessable: [format],
-        apiReadable: [format],
-        apiCancellable: [format],
-        apiDiscardable: [format],
-        apiAcceptable: [format],
-        webReadable: [format],
+        workerProcessable: formats,
+        apiReadable: formats,
+        apiCancellable: formats,
+        apiDiscardable: formats,
+        apiAcceptable: formats,
+        webReadable: formats,
     };
     const expand = release('expand', 'expand', [], lifecycle);
     const activate = release('activate', 'activate', [format], lifecycle);
@@ -281,12 +283,30 @@ test('card-authoring activation propagates every worker, API, and web capability
             environment.DICTIONARY_JOB_API_ENQUEUED_FORMATS === format,
     );
     assert.ok(activated);
-    assert.equal(activated.DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS, format);
-    assert.equal(activated.DICTIONARY_JOB_API_READABLE_FORMATS, format);
-    assert.equal(activated.DICTIONARY_JOB_API_CANCELLABLE_FORMATS, format);
-    assert.equal(activated.DICTIONARY_JOB_API_DISCARDABLE_FORMATS, format);
-    assert.equal(activated.DICTIONARY_JOB_API_ACCEPTABLE_FORMATS, format);
-    assert.equal(activated.DICTIONARY_JOB_WEB_READABLE_FORMATS, format);
+    assert.equal(
+        activated.DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS,
+        formats.join(','),
+    );
+    assert.equal(
+        activated.DICTIONARY_JOB_API_READABLE_FORMATS,
+        formats.join(','),
+    );
+    assert.equal(
+        activated.DICTIONARY_JOB_API_CANCELLABLE_FORMATS,
+        formats.join(','),
+    );
+    assert.equal(
+        activated.DICTIONARY_JOB_API_DISCARDABLE_FORMATS,
+        formats.join(','),
+    );
+    assert.equal(
+        activated.DICTIONARY_JOB_API_ACCEPTABLE_FORMATS,
+        formats.join(','),
+    );
+    assert.equal(
+        activated.DICTIONARY_JOB_WEB_READABLE_FORMATS,
+        formats.join(','),
+    );
 });
 
 test('activate, steady expand patch, and rollback restore the activated release', async () => {

@@ -3,13 +3,31 @@ import type {
     DictionaryCardEffectiveSettings,
     DictionaryCardOverrides,
     DictionaryCardValues,
-    DictionaryCardAuthoringField,
     DictionaryCardAuthoringGenerationJob,
-    DictionaryCardAuthoringProposal,
-    DictionaryCardAuthoringSelectedSuggestion,
     OwnedDictionary,
 } from '@languon/contracts';
 import type { languageLabel } from '@/fsd/entities/dictionary';
+
+export type DictionaryCardAuthoringField = keyof DictionaryCardValues;
+export type DictionaryCardAuthoringSelectedSuggestion = {
+    field: DictionaryCardAuthoringField;
+    suggestionId: string;
+};
+export type DictionaryCardAuthoringSuggestion = {
+    basisSource?: string;
+    field: DictionaryCardAuthoringField;
+    id: string;
+    value: string;
+};
+export type DictionaryCardAuthoringProposal = {
+    source: string;
+    sourceResult?:
+        | { kind: 'unchanged' }
+        | { kind: 'suggested'; suggestionId: string }
+        | null;
+    sourceSuggestions?: DictionaryCardAuthoringSuggestion[];
+    suggestions: DictionaryCardAuthoringSuggestion[];
+};
 export interface DictionaryCardDraft {
     overrides: DictionaryCardOverrides;
     values: DictionaryCardValues;
@@ -30,6 +48,7 @@ export type DictionaryCardAuthoringAction =
 export interface DictionaryCardAuthoringAI {
     available: boolean;
     error?: string | null;
+    format?: 'card-authoring:v1' | 'card-authoring:v2' | undefined;
     job?: DictionaryCardAuthoringGenerationJob | null;
     onAction(action: DictionaryCardAuthoringAction): Promise<void>;
     pending: boolean;
@@ -66,16 +85,26 @@ export type AuthoringFieldContent = {
 };
 
 export type AuthoringFieldSuggestions = {
-    ai: Pick<DictionaryCardAuthoringAI, 'pending' | 'proposal'> | undefined;
+    ai:
+        | Pick<
+              DictionaryCardAuthoringAI,
+              'available' | 'format' | 'pending' | 'proposal'
+          >
+        | undefined;
     active: boolean;
     stale: boolean;
     hiddenSuggestionIds: ReadonlySet<string>;
+    reviewedSuggestionIds: ReadonlySet<string>;
     selectedSuggestions: Partial<Record<DictionaryCardAuthoringField, string>>;
+    generatingScope:
+        | { kind: 'all' }
+        | { kind: 'field'; field: DictionaryCardAuthoringField }
+        | null;
     acceptSuggestion(
         field: DictionaryCardAuthoringField,
         id: string,
         value: string,
     ): void;
     discardSuggestion(field: DictionaryCardAuthoringField, id: string): void;
-    regenerateField(field: DictionaryCardAuthoringField): void;
+    generateField(field: DictionaryCardAuthoringField): void;
 };

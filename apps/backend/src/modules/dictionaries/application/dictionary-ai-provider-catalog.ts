@@ -3,6 +3,7 @@ import type { DictionaryGenerationProviderBudgetPolicy } from './ports/dictionar
 export const dictionaryAiTextFormats = [
     'single-card:v1',
     'card-authoring:v1',
+    'card-authoring:v2',
     'pasted-terms:v1',
     'import-pairs:v1',
     'document-terms:v1',

@@ -630,7 +630,7 @@ export const dictionaryGenerationJobsTable = pgTable(
         ),
         check(
             'dictionary_generation_jobs_kind_card',
-            sql`(${table.kind} = 'single-card' and ${table.cardId} is not null and ${table.expectedCardVersion} is not null) or (${table.kind} <> 'single-card' and ${table.cardId} is null and ${table.expectedCardVersion} is null)`,
+            sql`(${table.kind} = 'single-card' and ${table.cardId} is not null and ${table.expectedCardVersion} is not null) or (${table.kind} = 'card-authoring' and ((${table.format} = 'card-authoring:v2' and ((${table.cardId} is null and ${table.expectedCardVersion} is null) or (${table.cardId} is not null and ${table.expectedCardVersion} is not null))) or (${table.format} <> 'card-authoring:v2' and ${table.cardId} is null and ${table.expectedCardVersion} is null))) or (${table.kind} not in ('single-card', 'card-authoring') and ${table.cardId} is null and ${table.expectedCardVersion} is null)`,
         ),
         check(
             'dictionary_generation_jobs_attempt_fence',

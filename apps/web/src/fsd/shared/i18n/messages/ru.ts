@@ -2,11 +2,12 @@ import { profileFeatureMessages, type Messages } from './en';
 
 export const ru = {
     ...profileFeatureMessages,
+    'dictionary.authoring.sourceActionName': 'Исходный текст',
     'dictionary.authoring.sourceLabel': 'Исходное слово или фраза',
     'dictionary.authoring.mayStayEmpty': 'Можно оставить пустым',
 
     'dictionary.card.tooLong': 'Используйте не более {count} символов.',
-    'dictionary.cards.regenerate': 'Перегенерировать с ИИ',
+    'dictionary.cards.regenerate': 'Переписать всю карточку с ИИ',
     'dictionary.generation.progressUnchanged':
         'Сохранённая карточка не изменена.',
     'dictionary.editor.noCardsTitle': 'Пока нет карточек',
@@ -648,7 +649,23 @@ export const ru = {
         'Другое изменение было сохранено раньше. Обновите словарь, проверьте его и повторите попытку.',
     'dictionary.conflict.reload': 'Загрузить текущую версию',
     'dictionary.authoring.aiSection': 'Помощь ИИ',
-    'dictionary.authoring.generate': 'Создать с ИИ',
+    'dictionary.authoring.generate': 'Создать всё',
+    'dictionary.authoring.generateField': 'ИИ',
+    'dictionary.authoring.generateFieldNamed':
+        'Создать поле «{field}» с помощью ИИ',
+    'dictionary.authoring.generatingField': 'Создаём поле «{field}»…',
+    'dictionary.authoring.aiSuggestion': 'Предложение ИИ',
+    'dictionary.authoring.reject': 'Отклонить',
+    'dictionary.authoring.rejectNamed':
+        'Отклонить предложение для поля «{field}»',
+    'dictionary.authoring.tryAnother': 'Другой вариант',
+    'dictionary.authoring.tryAnotherNamed': 'Другой вариант поля «{field}»',
+    'dictionary.authoring.previousOptions': 'Предыдущие варианты ИИ ({count})',
+    'dictionary.authoring.acceptSourceFirst':
+        'Сначала примите предложенный исходный текст.',
+    'dictionary.authoring.exampleRequired':
+        'Введите пример, прежде чем создавать его перевод.',
+    'dictionary.authoring.sourceUnchanged': 'Исходный текст уже корректен.',
     'dictionary.authoring.generateHelp':
         'Сначала введите исходный текст. Варианты появятся под каждым полем для проверки — ничего не заполнится и не сохранится, пока вы не примете вариант и не нажмёте «Сохранить карточку». Перевод заранее заполнять не нужно.',
     'dictionary.authoring.regenerateAll': 'Пересоздать все поля',
@@ -676,7 +693,7 @@ export const ru = {
     'dictionary.authoring.discard': 'Удалить',
     'dictionary.authoring.discardNamed':
         'Удалить предложение для поля «{field}»',
-    'dictionary.authoring.discardAll': 'Удалить все',
+    'dictionary.authoring.discardAll': 'Отклонить всё',
     'dictionary.authoring.reviewSuggestions': 'Проверка предложений',
     'dictionary.authoring.reviewSummary':
         'Варианты: {count} · Поля: {fieldCount}',

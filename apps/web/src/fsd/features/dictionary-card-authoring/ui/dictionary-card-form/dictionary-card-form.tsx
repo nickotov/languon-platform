@@ -1,6 +1,6 @@
 'use client';
 
-import type { DictionaryCardValues } from '@languon/contracts';
+import type { DictionaryCardAuthoringField } from '../../types';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Badge, Button, Card, InlineAlert } from '@/fsd/shared/ui';
 import { useCardAuthoring } from '../../hooks/use-card-authoring';
@@ -46,7 +46,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         ? t('common.cancel')
         : t('dictionary.card.discardDraft');
     const saveDisabled =
-        active || ai?.successorActive || !authoring.validValues;
+        active || ai?.pending || ai?.successorActive || !authoring.validValues;
     const fieldContent: AuthoringFieldContent = {
         effective,
         values: authoring.draft.values,
@@ -54,18 +54,25 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
     };
     const fieldSuggestions: AuthoringFieldSuggestions = {
         ai: ai
-            ? { pending: ai.pending, proposal: ai.proposal ?? null }
+            ? {
+                  available: ai.available,
+                  format: ai.format,
+                  pending: ai.pending,
+                  proposal: ai.proposal ?? null,
+              }
             : undefined,
         active,
         stale,
         hiddenSuggestionIds: authoring.hiddenSuggestionIds,
+        reviewedSuggestionIds: authoring.reviewedSuggestionIds,
         selectedSuggestions: authoring.selectedSuggestions,
         acceptSuggestion: authoring.acceptSuggestion,
         discardSuggestion: authoring.discardSuggestion,
-        regenerateField: authoring.regenerateField,
+        generatingScope: authoring.generatingScope,
+        generateField: authoring.generateField,
     };
 
-    const optionalFields: Array<keyof DictionaryCardValues> = [];
+    const optionalFields: DictionaryCardAuthoringField[] = [];
 
     if (effective.transcriptionEnabled) optionalFields.push('transcription');
     if (effective.definitionEnabled) optionalFields.push('definition');
@@ -73,7 +80,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
     if (effective.exampleTranslationEnabled)
         optionalFields.push('exampleTranslation');
 
-    function renderField(field: keyof DictionaryCardValues) {
+    function renderField(field: DictionaryCardAuthoringField) {
         return (
             <AuthoringField
                 key={field}
@@ -110,7 +117,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             {t('dictionary.card.duplicateWarning')}
                         </InlineAlert>
                     ) : null}
-                    {!card && ai ? (
+                    {ai ? (
                         <AuthoringAiAssistance
                             ai={ai}
                             active={active}
@@ -133,11 +140,6 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                                 authoring.discardAllSuggestions
                             }
                         />
-                    ) : null}
-                    {card ? (
-                        <InlineAlert tone='tip'>
-                            {t('dictionary.authoring.editHelp')}
-                        </InlineAlert>
                     ) : null}
                     {stale ? (
                         <InlineAlert tone='warning'>
@@ -202,7 +204,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                     ) : null}
                     <div className={styles.actions}>
                         <Button
-                            disabled={pending}
+                            disabled={pending || ai?.pending}
                             onClick={onCancel}
                             type='button'
                             variant='ghost'

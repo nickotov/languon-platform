@@ -61,12 +61,12 @@ DICTIONARY_AI_MANAGED_ROUTING_ENABLED=true
 # Keep false until the priced revision and current worker pass rollout preflight.
 DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED=false
 
-DICTIONARY_JOB_API_READABLE_FORMATS=card-authoring:v1
-DICTIONARY_JOB_API_CANCELLABLE_FORMATS=card-authoring:v1
-DICTIONARY_JOB_API_DISCARDABLE_FORMATS=card-authoring:v1
-DICTIONARY_JOB_API_ACCEPTABLE_FORMATS=card-authoring:v1
-DICTIONARY_JOB_API_ENQUEUED_FORMATS=card-authoring:v1
-DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS=card-authoring:v1
+DICTIONARY_JOB_API_READABLE_FORMATS=card-authoring:v1,card-authoring:v2
+DICTIONARY_JOB_API_CANCELLABLE_FORMATS=card-authoring:v1,card-authoring:v2
+DICTIONARY_JOB_API_DISCARDABLE_FORMATS=card-authoring:v1,card-authoring:v2
+DICTIONARY_JOB_API_ACCEPTABLE_FORMATS=card-authoring:v1,card-authoring:v2
+DICTIONARY_JOB_API_ENQUEUED_FORMATS=card-authoring:v1,card-authoring:v2
+DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS=card-authoring:v1,card-authoring:v2
 ```
 
 Use `DICTIONARY_GENERATION_MODEL_ID=kie/gemini-2.5-pro` with `KIE_API_KEY` and
@@ -100,7 +100,9 @@ new admissions; already accounted jobs must drain on current workers.
 
 The six format settings above enable the complete local card-authoring lifecycle.
 If a setting already contains other formats, preserve them as comma-separated
-entries when adding `card-authoring:v1`. The endpoint must provide an
+entries when adding `card-authoring:v1` and `card-authoring:v2`. Keep v1
+readable and terminally actionable until its queued and reviewable work drains.
+The endpoint must provide an
 OpenAI-compatible API and the model must support the structured output used by
 dictionary generation. Generic legacy endpoints require `GET /models`; curated
 providers use the provider-specific readiness behavior above. Restart

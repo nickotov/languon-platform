@@ -11,6 +11,7 @@ import {
     AcceptDictionaryCardAuthoringGenerationJobRequestSchema,
     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
     EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+    EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
     RegenerateDictionaryCardAuthoringGenerationRequestSchema,
     RegenerateDictionaryCardAuthoringGenerationResponseSchema,
 } from './card-authoring';
@@ -876,6 +877,13 @@ export const DictionaryEndpointSchemas = {
         response: EnqueueDictionaryCardAuthoringGenerationResponseSchema,
         error: DictionaryErrorResponseSchema,
     },
+    enqueueDictionaryCardAuthoringUpdateGeneration: {
+        params: DictionaryCardIdParamsSchema,
+        headers: DictionaryIdempotencyHeadersSchema,
+        body: EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
+        response: EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+        error: DictionaryErrorResponseSchema,
+    },
     enqueueDictionaryPastedTermsGeneration: {
         params: DictionaryIdParamsSchema,
         headers: DictionaryIdempotencyHeadersSchema,
@@ -1125,6 +1133,12 @@ export const DictionaryEndpointInventory = [
         access: 'owner',
     },
     {
+        name: 'enqueueDictionaryCardAuthoringUpdateGeneration',
+        method: 'POST',
+        path: '/dictionaries/:dictionaryId/cards/:cardId/card-authoring-generations',
+        access: 'owner',
+    },
+    {
         name: 'enqueueDictionaryPastedTermsGeneration',
         method: 'POST',
         path: '/dictionaries/:dictionaryId/batch-generations',
@@ -1274,6 +1288,9 @@ export type EnqueueDictionaryCardAuthoringGenerationRequest = z.infer<
 >;
 export type EnqueueDictionaryCardAuthoringGenerationResponse = z.infer<
     typeof EnqueueDictionaryCardAuthoringGenerationResponseSchema
+>;
+export type EnqueueDictionaryCardAuthoringUpdateGenerationRequest = z.infer<
+    typeof EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema
 >;
 export type RegenerateDictionaryCardAuthoringGenerationRequest = z.infer<
     typeof RegenerateDictionaryCardAuthoringGenerationRequestSchema

@@ -21,7 +21,14 @@ import {
     dictionaryPastedTermsGenerationFormat,
 } from '../domain/generation';
 import { dictionaryDocumentGenerationFormat } from '../domain/document-ingestion';
-import { dictionaryCardAuthoringGenerationFormat } from '../domain/card-authoring';
+import {
+    dictionaryCardAuthoringGenerationFormat,
+    dictionaryCardAuthoringGenerationFormatV1,
+} from '../domain/card-authoring';
+
+const hasCardAuthoringFormat = (formats: readonly string[]) =>
+    formats.includes(dictionaryCardAuthoringGenerationFormatV1) ||
+    formats.includes(dictionaryCardAuthoringGenerationFormat);
 import {
     DrizzleDictionaryGenerationStore,
     type DictionaryGenerationIdGenerator,
@@ -60,13 +67,11 @@ export function createDictionaryWorkerComposition(
         dependencies.providerBudget,
     );
     if (
-        dependencies.supportedFormats.includes(
-            dictionaryCardAuthoringGenerationFormat,
-        ) &&
+        hasCardAuthoringFormat(dependencies.supportedFormats) &&
         !dependencies.cardAuthoringProvider
     )
         throw new Error(
-            'Card-authoring provider is required for card-authoring:v1.',
+            'Card-authoring provider is required for card-authoring:v1 or card-authoring:v2.',
         );
     if (
         dependencies.supportedFormats.includes(
@@ -150,11 +155,7 @@ export function createDictionaryWorkerComposition(
                 provider: dependencies.provider,
                 providerReadiness: async (signal) => {
                     const readiness: Array<Promise<void>> = [];
-                    if (
-                        dependencies.supportedFormats.includes(
-                            dictionaryCardAuthoringGenerationFormat,
-                        )
-                    ) {
+                    if (hasCardAuthoringFormat(dependencies.supportedFormats)) {
                         if (!dependencies.cardAuthoringProvider?.readiness)
                             throw new Error(
                                 'Card-authoring provider readiness is unavailable.',

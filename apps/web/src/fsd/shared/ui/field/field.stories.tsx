@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Input } from '../input/input';
+import { Button } from '../button/button';
 import { Field } from './field';
 const meta = { title: 'UI/Field' } satisfies Meta;
 export default meta;
@@ -22,6 +23,20 @@ export const Success: Story = {
     render: () => (
         <Field label='Email' success='Email address verified.'>
             <Input defaultValue='learner@example.test' type='email' />
+        </Field>
+    ),
+};
+export const WithLabelAction: Story = {
+    render: () => (
+        <Field
+            label='Translation'
+            labelAction={
+                <Button size='compact' type='button' variant='secondary'>
+                    Generate with AI
+                </Button>
+            }
+        >
+            <Input />
         </Field>
     ),
 };

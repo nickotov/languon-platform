@@ -107,6 +107,40 @@ describe('dictionary card authoring proposal generators', () => {
         });
     });
 
+    it('normalizes requested Source and bases other deterministic fields on it', async () => {
+        const generator = new DeterministicCardAuthoringProposalGenerator();
+        const base = request();
+        await expect(
+            generator.generate({
+                ...base,
+                input: {
+                    ...base.input,
+                    source: 'teh atelier',
+                    requestedFields: ['source', 'translation'],
+                    fieldContext: [
+                        {
+                            field: 'source',
+                            currentValue: 'teh atelier',
+                            excludedValues: [],
+                        },
+                        {
+                            field: 'translation',
+                            currentValue: null,
+                            excludedValues: [],
+                        },
+                    ],
+                },
+            }),
+        ).resolves.toMatchObject({
+            delta: {
+                sourceResult: { kind: 'suggested', value: 'the atelier' },
+                suggestions: [
+                    { field: 'translation', value: 'the atelier (es)' },
+                ],
+            },
+        });
+    });
+
     it('rejects output for a field that was not requested', async () => {
         const generator = new DeterministicCardAuthoringProposalGenerator(
             () => ({

@@ -40,7 +40,10 @@ export function AuthoringAiAssistance({
     discardAllSuggestions(): void;
 }) {
     const { t } = useI18n();
-    const disabled = !validSource || !ai.available || active || ai.pending;
+    const legacyReview =
+        ai.format === 'card-authoring:v1' && Boolean(ai.proposal);
+    const disabled =
+        !validSource || !ai.available || active || ai.pending || legacyReview;
     const regenerateDisabled = disabled || stale;
     const loading = ai.pending && !active;
     const job = ai.job;

@@ -22,7 +22,7 @@ import {
     aiCreditAccountsTable,
     aiCreditReservationsTable,
 } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
-import { dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
+import { dictionaryCardAuthoringGenerationFormatV1 as dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
 import {
     DictionaryGenerationCandidateConflictError,
     DictionaryGenerationCompletionConflictError,
@@ -1222,6 +1222,278 @@ run('card-authoring generation persistence', () => {
         expect(manualProposal).toMatchObject({
             payload: null,
             reviewState: 'accepted',
+        });
+    });
+
+    it('updates a saved card through v2 and preserves its order and terminal target', async () => {
+        const dictionary = await dictionaryStore.createDictionary({
+            context: context(),
+            fingerprint: fingerprint('V'),
+            idempotencyKey: `dictionary-create-${randomUUID()}`,
+            ownerId,
+            request: {
+                description: null,
+                name: 'V2 authoring',
+                sourceLanguage: 'en',
+                targetLanguage: 'es',
+            },
+        });
+        const created = await dictionaryStore.createCard({
+            context: context(1),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'teh atelier',
+                    transcription: null,
+                    translation: 'el taller',
+                },
+            },
+        });
+        const card = created.card;
+        const [persistedBefore] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.id, card.id));
+        const job = await generationStore.enqueueCardAuthoring({
+            context: context(2),
+            dictionaryId: dictionary.id,
+            draft: {
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: 'el taller',
+                },
+            },
+            expectedDictionaryVersion: created.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('W'),
+            format: 'card-authoring:v2',
+            idempotencyKey: `authoring-v2-${randomUUID()}`,
+            ownerId,
+            scope: { kind: 'field', field: 'source' },
+            source: 'teh atelier',
+            target: {
+                kind: 'update',
+                cardId: card.id,
+                expectedCardVersion: card.version,
+            },
+        });
+        const claim = await generationStore.claim({
+            context: context(3),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: ['card-authoring:v2'],
+            workerId: 'authoring-v2-worker',
+        });
+        await generationStore.complete({
+            context: context(4),
+            fencingToken: claim!.fencingToken,
+            jobId: job.id,
+            leaseDeadline: claim!.leaseDeadline,
+            proposal: {
+                sourceResult: { kind: 'suggested', value: 'the atelier' },
+                suggestions: [],
+            },
+            providerUsage: { inputTokens: 2, outputTokens: 1 },
+            reviewExpiresAt: instant(60_000),
+            workerId: claim!.workerId,
+        });
+        const review = await generationStore.read({
+            context: context(5),
+            jobId: job.id,
+            ownerId,
+        });
+        if (
+            review.kind !== 'card-authoring' ||
+            review.format !== 'card-authoring:v2' ||
+            review.state !== 'review'
+        )
+            throw new Error('Expected v2 review');
+        const sourceSuggestion = review.proposal.sourceSuggestions[0]!;
+        const successor = await generationStore.enqueueCardAuthoring({
+            context: context(6),
+            dictionaryId: dictionary.id,
+            draft: {
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: 'el taller',
+                },
+            },
+            expectedDictionaryVersion: created.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('Y'),
+            format: 'card-authoring:v2',
+            idempotencyKey: `authoring-v2-successor-${randomUUID()}`,
+            ownerId,
+            predecessor: {
+                discardedSuggestionIds: [],
+                jobId: job.id,
+            },
+            scope: { kind: 'field', field: 'translation' },
+            source: sourceSuggestion.value,
+            target: {
+                kind: 'update',
+                cardId: card.id,
+                expectedCardVersion: card.version,
+            },
+        });
+        const successorClaim = await generationStore.claim({
+            context: context(7),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: ['card-authoring:v2'],
+            workerId: 'authoring-v2-worker',
+        });
+        await generationStore.complete({
+            context: context(8),
+            fencingToken: successorClaim!.fencingToken,
+            jobId: successor.id,
+            leaseDeadline: successorClaim!.leaseDeadline,
+            proposal: {
+                suggestions: [{ field: 'translation', value: 'el estudio' }],
+            },
+            providerUsage: { inputTokens: 2, outputTokens: 1 },
+            reviewExpiresAt: instant(60_000),
+            workerId: successorClaim!.workerId,
+        });
+        const successorReview = await generationStore.read({
+            context: context(9),
+            jobId: successor.id,
+            ownerId,
+        });
+        if (
+            successorReview.kind !== 'card-authoring' ||
+            successorReview.format !== 'card-authoring:v2' ||
+            successorReview.state !== 'review'
+        )
+            throw new Error('Expected v2 successor review');
+        const translationSuggestion = successorReview.proposal.suggestions.find(
+            (suggestion) => suggestion.field === 'translation',
+        )!;
+        expect(translationSuggestion.basisSource).toBe(sourceSuggestion.value);
+        const retry = await generationStore.enqueueCardAuthoring({
+            context: context(10),
+            dictionaryId: dictionary.id,
+            draft: {
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: 'el taller',
+                },
+            },
+            expectedDictionaryVersion: created.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('Q'),
+            format: 'card-authoring:v2',
+            idempotencyKey: `authoring-v2-retry-${randomUUID()}`,
+            ownerId,
+            predecessor: {
+                discardedSuggestionIds: [translationSuggestion.id],
+                jobId: successor.id,
+            },
+            scope: { kind: 'field', field: 'translation' },
+            source: sourceSuggestion.value,
+            target: {
+                kind: 'update',
+                cardId: card.id,
+                expectedCardVersion: card.version,
+            },
+        });
+        expect(retry.id).not.toBe(successor.id);
+        await expect(
+            generationStore.acceptCardAuthoring({
+                acceptanceFingerprint: fingerprint('Z'),
+                candidate: {
+                    overrides,
+                    values: {
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                        source: sourceSuggestion.value,
+                        transcription: null,
+                        translation: translationSuggestion.value,
+                    },
+                },
+                context: context(11),
+                jobId: successor.id,
+                ownerId,
+                selectedSuggestions: [
+                    {
+                        field: 'translation',
+                        suggestionId: translationSuggestion.id,
+                    },
+                ],
+            }),
+        ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+        const accepted = await generationStore.acceptCardAuthoring({
+            acceptanceFingerprint: fingerprint('X'),
+            candidate: {
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: sourceSuggestion.value,
+                    transcription: null,
+                    translation: translationSuggestion.value,
+                },
+            },
+            context: context(12),
+            jobId: successor.id,
+            ownerId,
+            selectedSuggestions: [
+                { field: 'source', suggestionId: sourceSuggestion.id },
+                {
+                    field: 'translation',
+                    suggestionId: translationSuggestion.id,
+                },
+            ],
+        });
+        expect(accepted.job).toMatchObject({
+            state: 'accepted',
+            target: {
+                kind: 'update',
+                cardId: card.id,
+                expectedCardVersion: card.version,
+            },
+        });
+        const [persisted] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.id, card.id));
+        expect(persisted).toMatchObject({
+            source: 'the atelier',
+            sortKey: persistedBefore!.sortKey,
+            version: card.version + 1,
+        });
+        await expect(
+            generationStore.read({
+                context: context(12),
+                jobId: successor.id,
+                ownerId,
+            }),
+        ).resolves.toMatchObject({
+            state: 'accepted',
+            target: { kind: 'update', cardId: card.id },
         });
     });
 });

@@ -1,21 +1,23 @@
 import type { ChangeEvent } from 'react';
-import type {
-    DictionaryCardValues,
-    OwnedDictionary,
-    LanguageCatalogEntry,
-} from '@languon/contracts';
+import type { OwnedDictionary, LanguageCatalogEntry } from '@languon/contracts';
+import { Sparkles } from 'lucide-react';
 import {
     languageDirection,
     languageForRole,
     languageLabel,
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Field, Input, Textarea } from '@/fsd/shared/ui';
+import { Button, Field } from '@/fsd/shared/ui';
 import type {
+    DictionaryCardAuthoringField,
+    DictionaryCardAuthoringSuggestion,
     AuthoringFieldContent,
     AuthoringFieldSuggestions,
 } from '../../types';
 import { FieldSuggestions } from '../field-suggestions/field-suggestions';
+import { PreviousSuggestions } from './previous-suggestions';
+import { AuthoringInput } from './authoring-input';
+import { FieldProgress } from './field-progress';
 import {
     cardFieldLimit,
     limitCardFieldValue,
@@ -29,7 +31,7 @@ export function AuthoringField({
     content,
     suggestions,
 }: {
-    field: keyof DictionaryCardValues;
+    field: DictionaryCardAuthoringField;
     dictionary: OwnedDictionary;
     languages: readonly LanguageCatalogEntry[];
     content: AuthoringFieldContent;
@@ -54,7 +56,6 @@ export function AuthoringField({
         dictionary.sourceLanguage,
         dictionary.targetLanguage,
     );
-
     const direction = languageDirection(languages, language);
     const languageName = languageLabel(languages, language, locale);
     const notation =
@@ -62,12 +63,14 @@ export function AuthoringField({
             ? effective.transcriptionCustomLabel ||
               t('dictionary.notation.custom')
             : t(`dictionary.notation.${effective.transcriptionNotation}`);
-
     const fieldName =
         field === 'source'
             ? t('dictionary.authoring.sourceLabel')
             : t(`dictionary.field.${field}`);
-
+    const actionFieldName =
+        field === 'source'
+            ? t('dictionary.authoring.sourceActionName')
+            : fieldName;
     const label =
         field === 'transcription'
             ? `${t('dictionary.field.transcription')} (${notation})`
@@ -81,17 +84,81 @@ export function AuthoringField({
         length > maxLength
             ? t('dictionary.card.tooLong', { count: maxLength })
             : '';
-
     const multiline =
         field === 'definition' ||
         field === 'example' ||
         field === 'exampleTranslation';
     const required = field === 'source' || field === 'translation';
     const count = `${length} / ${maxLength}`;
-
-    const regenerationDisabled = suggestions.stale || suggestions.active;
-    const selectedId =
-        field === 'source' ? undefined : suggestions.selectedSuggestions[field];
+    const sourceSuggestionId =
+        ai?.proposal?.sourceResult?.kind === 'suggested'
+            ? ai.proposal.sourceResult.suggestionId
+            : null;
+    const sourceSuggestion =
+        ai?.proposal?.sourceSuggestions?.find(
+            (suggestion) => suggestion.id === sourceSuggestionId,
+        ) ?? null;
+    const proposalSuggestions: DictionaryCardAuthoringSuggestion[] = [
+        ...(ai?.proposal?.sourceSuggestions ?? []),
+        ...(ai?.proposal?.suggestions ?? []),
+    ];
+    const fieldSuggestions = proposalSuggestions.filter(
+        (suggestion) => suggestion.field === field,
+    );
+    const latestSuggestion =
+        field === 'source' && sourceSuggestion
+            ? sourceSuggestion
+            : (fieldSuggestions.at(-1) ?? null);
+    const latestIsHidden = latestSuggestion
+        ? suggestions.hiddenSuggestionIds.has(latestSuggestion.id)
+        : false;
+    const currentSuggestion =
+        latestSuggestion &&
+        !latestIsHidden &&
+        !suggestions.reviewedSuggestionIds.has(latestSuggestion.id)
+            ? latestSuggestion
+            : null;
+    const previousSuggestions = fieldSuggestions
+        .filter((suggestion) => suggestion.id !== currentSuggestion?.id)
+        .filter(
+            (suggestion) =>
+                !suggestions.hiddenSuggestionIds.has(suggestion.id) &&
+                suggestions.selectedSuggestions[field] !== suggestion.id,
+        );
+    const isGenerating =
+        suggestions.active &&
+        (suggestions.generatingScope?.kind === 'all' ||
+            (suggestions.generatingScope?.kind === 'field' &&
+                suggestions.generatingScope.field === field));
+    const dependencyBlocked =
+        currentSuggestion !== null &&
+        field !== 'source' &&
+        'basisSource' in currentSuggestion &&
+        currentSuggestion.basisSource !== values.source.trim();
+    const exampleMissing =
+        field === 'exampleTranslation' && !values.example?.trim();
+    const generationDisabled =
+        !ai?.available ||
+        !values.source.trim() ||
+        suggestions.active ||
+        Boolean(ai?.pending) ||
+        (Boolean(ai?.proposal) && ai?.format === 'card-authoring:v1') ||
+        exampleMissing;
+    const generatedSourceUnchanged =
+        field === 'source' &&
+        (ai?.proposal?.source === values.source.trim() ||
+            ai?.proposal?.sourceSuggestions?.some(
+                (suggestion) =>
+                    suggestions.selectedSuggestions.source === suggestion.id &&
+                    suggestion.value === values.source.trim(),
+            )) &&
+        ai.proposal.sourceResult?.kind === 'unchanged';
+    const fieldHint = exampleMissing
+        ? t('dictionary.authoring.exampleRequired')
+        : undefined;
+    const generateLabel = t('dictionary.authoring.generateFieldNamed', {
+        field: actionFieldName,
+    });
 
     function changeValue(
         event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -100,44 +167,90 @@ export function AuthoringField({
         setValue(field, required ? next : next || null);
     }
 
+    function generateField() {
+        suggestions.generateField(field);
+    }
+
+    const input = (
+        <AuthoringInput
+            direction={direction}
+            inputLimit={inputLimit}
+            language={language}
+            multiline={multiline}
+            onChange={changeValue}
+            required={required}
+            value={value}
+        />
+    );
+
+    let control = input;
+    if (isGenerating) {
+        control = (
+            <FieldProgress
+                field={field}
+                message={t('dictionary.authoring.generatingField', {
+                    field: fieldName,
+                })}
+            />
+        );
+    } else if (currentSuggestion) {
+        control = (
+            <FieldSuggestions
+                current={currentSuggestion}
+                direction={direction}
+                disabled={dependencyBlocked || suggestions.stale}
+                field={field}
+                fieldLabel={actionFieldName}
+                lang={language}
+                onAccept={suggestions.acceptSuggestion}
+                onDiscard={suggestions.discardSuggestion}
+                onGenerate={suggestions.generateField}
+                previous={previousSuggestions}
+            />
+        );
+    }
+
     return (
         <div>
-            <Field error={error} label={label} required={required}>
-                {multiline ? (
-                    <Textarea
-                        rows={2}
-                        dir={direction}
-                        lang={language}
-                        maxLength={inputLimit}
-                        onChange={changeValue}
-                        value={value}
-                    />
-                ) : (
-                    <Input
-                        dir={direction}
-                        lang={language}
-                        maxLength={inputLimit}
-                        required={required}
-                        onChange={changeValue}
-                        value={value}
-                    />
-                )}
+            <Field
+                control={!isGenerating && !currentSuggestion}
+                error={error}
+                hint={fieldHint}
+                label={label}
+                labelAction={
+                    <Button
+                        aria-label={generateLabel}
+                        disabled={generationDisabled}
+                        leadingIcon={<Sparkles aria-hidden size={14} />}
+                        onClick={generateField}
+                        size='compact'
+                        type='button'
+                        variant='ghost'
+                    >
+                        {t('dictionary.authoring.generateField')}
+                    </Button>
+                }
+                required={required}
+                success={
+                    generatedSourceUnchanged
+                        ? t('dictionary.authoring.sourceUnchanged')
+                        : undefined
+                }
+            >
+                {control}
             </Field>
-            <p className={styles.fieldCount}>{count}</p>
-            {field !== 'source' ? (
-                <FieldSuggestions
-                    ai={ai}
+            {!currentSuggestion ? (
+                <PreviousSuggestions
                     direction={direction}
-                    disabled={suggestions.stale}
                     field={field}
-                    hidden={suggestions.hiddenSuggestionIds}
+                    fieldLabel={actionFieldName}
                     lang={language}
-                    onAccept={suggestions.acceptSuggestion}
-                    onDiscard={suggestions.discardSuggestion}
-                    onRegenerate={suggestions.regenerateField}
-                    regenerationDisabled={regenerationDisabled}
-                    selectedId={selectedId}
+                    suggestions={suggestions}
+                    values={previousSuggestions}
                 />
+            ) : null}
+            {!isGenerating && !currentSuggestion ? (
+                <p className={styles.fieldCount}>{count}</p>
             ) : null}
         </div>
     );

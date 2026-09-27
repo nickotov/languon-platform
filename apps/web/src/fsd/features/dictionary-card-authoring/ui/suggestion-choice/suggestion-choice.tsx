@@ -1,7 +1,7 @@
 import type {
     DictionaryCardAuthoringField,
-    DictionaryCardAuthoringProposal,
-} from '@languon/contracts';
+    DictionaryCardAuthoringSuggestion,
+} from '../../types';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Check, Clock, X } from 'lucide-react';
 import { Badge, Button } from '@/fsd/shared/ui';
@@ -19,7 +19,7 @@ export function SuggestionChoice({
     onAccept,
     onDiscard,
 }: {
-    suggestion: DictionaryCardAuthoringProposal['suggestions'][number];
+    suggestion: DictionaryCardAuthoringSuggestion;
     index: number;
     selected: boolean;
     disabled: boolean;

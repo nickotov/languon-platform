@@ -35,12 +35,17 @@ type AuthoringActionHandler = NonNullable<
     DictionaryCardFormProps['ai']
 >['onAction'];
 
+export function shouldAcceptAuthoringProposal(
+    hasReview: boolean,
+    selectedSuggestionCount: number,
+) {
+    return hasReview && selectedSuggestionCount > 0;
+}
+
 function buildAiValue(
     model: EditorCardSheetModel,
     onAction: AuthoringActionHandler,
 ): DictionaryCardFormProps['ai'] {
-    if (model.editing !== 'new') return undefined;
-
     const { authoringJob, authoringReviewJob, cardAuthoringAction } = model;
     const requestError = cardAuthoringAction.error ?? authoringJob.error;
     let error: string | null = null;
@@ -63,6 +68,7 @@ function buildAiValue(
             model.generationCapabilities.data?.cardAuthoringGeneration
                 .available === true,
         error,
+        format: authoringReviewJob?.format ?? authoringJob.data?.format,
         job: authoringJob.data ?? null,
         onAction,
         pending: cardAuthoringAction.isPending,
@@ -138,7 +144,10 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
     const handleSave: ComponentProps<
         typeof DictionaryCardForm
     >['onSave'] = async (draft, selectedSuggestions) => {
-        if (isNewCard && authoringReviewJob) {
+        if (
+            authoringReviewJob &&
+            shouldAcceptAuthoringProposal(true, selectedSuggestions.length)
+        ) {
             if (hasRunningSuccessor) {
                 throw new Error('Card authoring successor is active');
             }

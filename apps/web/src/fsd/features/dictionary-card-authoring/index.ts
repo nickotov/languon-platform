@@ -4,6 +4,7 @@ export {
     type DictionaryCardAuthoringAI,
     type DictionaryCardDraft,
 } from './ui/dictionary-card-form/dictionary-card-form';
+export type { DictionaryCardAuthoringSelectedSuggestion } from './types';
 export { previewCardEffectiveSettings } from './lib/preview-card-effective-settings';
 export {
     hasLoadedSourceDuplicate,

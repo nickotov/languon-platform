@@ -256,6 +256,10 @@ export interface DictionaryGenerationStore {
         fingerprint: string;
         idempotencyKey: string;
         ownerId: string;
+        format?: 'card-authoring:v1' | 'card-authoring:v2';
+        target?:
+            | { kind: 'create' }
+            | { kind: 'update'; cardId: string; expectedCardVersion: number };
         predecessor?: {
             discardedSuggestionIds: string[];
             jobId: string;

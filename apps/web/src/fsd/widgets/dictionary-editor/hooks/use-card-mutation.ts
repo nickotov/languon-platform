@@ -71,12 +71,10 @@ export function useCardMutation({
         },
         onSuccess: async (response, input) => {
             setGenerationCompared(false);
-            if (!input.card) {
-                await queueCardAuthoringCleanup();
-                setAuthoringJobId(null);
-                setAuthoringReviewJob(null);
-                authoringAttempt.current = null;
-            }
+            await queueCardAuthoringCleanup();
+            setAuthoringJobId(null);
+            setAuthoringReviewJob(null);
+            authoringAttempt.current = null;
             setEditing((currentEditing) => {
                 if (input.card) {
                     return currentEditing !== 'new' &&

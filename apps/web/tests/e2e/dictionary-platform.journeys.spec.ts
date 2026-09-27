@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:68b79e36c8e6f453
+// @user-flow-revision dictionary-platform sha256:4fc1439df381a465
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -557,7 +557,11 @@ test.describe('dictionary platform journeys', () => {
             page.getByText('obra de arte actualizada', { exact: true }),
         ).toBeVisible();
 
-        await chooseCardAction(page, 'work of art', 'Regenerate with AI');
+        await chooseCardAction(
+            page,
+            'work of art',
+            'Rewrite full card with AI',
+        );
         let review = page.getByRole('dialog', {
             name: 'Regenerate card with AI',
         });
@@ -1127,7 +1131,7 @@ test.describe('dictionary platform journeys', () => {
     });
 
     // @user-flow dictionary-platform/inline-ai-card-authoring-preserves-field-choices
-    test('creates a mixed card from retained inline AI field choices', async ({
+    test('creates a mixed card from replacement inline AI field reviews', async ({
         page,
     }, testInfo) => {
         const assertNoBrowserErrors = captureBrowserErrors(
@@ -1154,66 +1158,125 @@ test.describe('dictionary platform journeys', () => {
 
         await page.getByRole('button', { name: 'Add card' }).click();
         const editor = page.getByRole('dialog', { name: 'Add card' });
-        const source = editor.getByLabel(/^Source word or phrase \(/);
-        const translation = editor.getByLabel(/^Translation \(/);
-        const definition = editor.getByLabel(/^Definition \(/);
-        await source.fill('atelier');
-        await editor.getByRole('button', { name: 'Generate with AI' }).click();
-
-        const translationSuggestions = editor.getByRole('region', {
-            name: 'AI suggestions for Translation',
+        const source = editor.getByRole('textbox', {
+            name: /^Source word or phrase \(/,
         });
+        const translation = editor.getByRole('textbox', {
+            name: /^Translation \(/,
+        });
+        const definition = editor.getByRole('textbox', {
+            name: /^Definition \(/,
+        });
+        await source.fill('teh atelier');
+        await editor
+            .getByRole('button', { name: 'Generate Source with AI' })
+            .click();
+        const sourceReview = editor.getByTestId('ai-review-source');
         await expect(
-            translationSuggestions.getByText('atelier (es)', { exact: true }),
+            sourceReview.getByText('the atelier', { exact: true }),
         ).toBeVisible({ timeout: 20_000 });
         await expect(
-            editor.getByRole('button', { name: 'Accept all' }),
-        ).toBeVisible();
-        await expect(
-            editor.getByRole('button', { name: 'Discard all' }),
-        ).toBeVisible();
-        await editor.getByRole('button', { name: 'Accept all' }).click();
-        await expect(translation).toHaveValue('atelier (es)');
-        await expect(definition).not.toHaveValue('');
-
-        await translationSuggestions
-            .getByRole('button', { name: 'Regenerate Translation' })
+            editor.getByRole('textbox', {
+                name: /^Source word or phrase \(/,
+            }),
+        ).toHaveCount(0);
+        await sourceReview
+            .getByRole('button', { name: 'Reject Source suggestion' })
             .click();
         await expect(
-            translationSuggestions.getByText('atelier (es) · alternative 1', {
+            editor.getByRole('textbox', {
+                name: /^Source word or phrase \(/,
+            }),
+        ).toHaveValue('teh atelier');
+        await editor
+            .getByRole('textbox', { name: /^Source word or phrase \(/ })
+            .fill('teh  atelier');
+
+        await editor
+            .getByRole('button', { name: 'Generate Source with AI' })
+            .click();
+        await expect(sourceReview).toContainText('the atelier', {
+            timeout: 20_000,
+        });
+        await sourceReview
+            .getByRole('button', { name: 'Accept Source suggestion' })
+            .click();
+        await expect(
+            editor.getByRole('textbox', {
+                name: /^Source word or phrase \(/,
+            }),
+        ).toHaveValue('the atelier');
+        await editor
+            .getByRole('button', { name: 'Generate Source with AI' })
+            .click();
+        await expect(
+            editor.getByText('Source already looks correct.'),
+        ).toBeVisible({ timeout: 20_000 });
+        await expect(
+            editor.getByRole('textbox', {
+                name: /^Source word or phrase \(/,
+            }),
+        ).toHaveValue('the atelier');
+
+        await editor
+            .getByRole('button', { name: 'Generate Translation with AI' })
+            .click();
+        const translationReview = editor.getByTestId('ai-review-translation');
+        await expect(
+            translationReview.getByText('the atelier (es)', { exact: true }),
+        ).toBeVisible({ timeout: 20_000 });
+        await expect(
+            editor.getByRole('textbox', { name: /^Translation \(/ }),
+        ).toHaveCount(0);
+        await translationReview
+            .getByRole('button', { name: 'Try another Translation' })
+            .click();
+        await expect(
+            translationReview.getByText('the atelier (es) · alternative 1', {
                 exact: true,
             }),
         ).toBeVisible({ timeout: 20_000 });
-        await expect(translationSuggestions.getByRole('listitem')).toHaveCount(
-            2,
-        );
-        await translationSuggestions
+        await expect(
+            translationReview.getByText(/Previous AI option/),
+        ).toBeVisible();
+        await translationReview.getByText(/Previous AI option/).click();
+        await translationReview
             .getByRole('button', { name: 'Accept Translation suggestion' })
-            .nth(1)
+            .last()
             .click();
-        await expect(translation).toHaveValue('atelier (es) · alternative 1');
+        await expect(
+            editor.getByRole('textbox', { name: /^Translation \(/ }),
+        ).toHaveValue('the atelier (es)');
+        await editor
+            .getByRole('button', { name: 'Generate Translation with AI' })
+            .click();
+        await expect(
+            translationReview.getByText('the atelier (es) · alternative 2', {
+                exact: true,
+            }),
+        ).toBeVisible({ timeout: 20_000 });
+        await translationReview
+            .getByRole('button', { name: 'Accept Translation suggestion' })
+            .first()
+            .click();
+        await expect(
+            editor.getByRole('textbox', { name: /^Translation \(/ }),
+        ).toHaveValue('the atelier (es) · alternative 2');
 
         await editor
             .getByRole('button', { name: 'Regenerate all fields' })
             .click();
-        await translationSuggestions
-            .getByRole('button', { name: 'Show 1 more choices' })
-            .click();
         await expect(
-            translationSuggestions.getByText('atelier (es) · alternative 2', {
-                exact: true,
-            }),
+            editor.getByRole('button', { name: 'Accept all' }),
         ).toBeVisible({ timeout: 20_000 });
-        await expect(translationSuggestions.getByRole('listitem')).toHaveCount(
-            3,
-        );
-        await translationSuggestions
-            .getByRole('button', { name: 'Discard Translation suggestion' })
-            .first()
-            .click();
         await expect(
-            translationSuggestions.getByText('atelier (es)', { exact: true }),
-        ).not.toBeVisible();
+            editor.getByRole('button', { name: 'Reject all' }),
+        ).toBeVisible();
+        await editor.getByRole('button', { name: 'Accept all' }).click();
+        await expect(translation).toHaveValue(
+            'the atelier (es) · alternative 3',
+        );
+        await expect(definition).not.toHaveValue('');
 
         await definition.fill('A manually refined place where artists work.');
         await page.setViewportSize({ width: 320, height: 900 });
@@ -1233,13 +1296,89 @@ test.describe('dictionary platform journeys', () => {
         await page.setViewportSize({ width: 1280, height: 720 });
 
         await editor.getByRole('button', { name: 'Save card' }).click();
-        await expect(page.getByText('atelier', { exact: true })).toBeVisible();
         await expect(
-            page.getByText('atelier (es) · alternative 1', { exact: true }),
+            page.getByText('the atelier', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('the atelier (es) · alternative 3', { exact: true }),
         ).toBeVisible();
         await expect(
             page.getByText('Human + AI', { exact: true }).first(),
         ).toBeVisible();
+        assertNoBrowserErrors();
+    });
+
+    // @user-flow dictionary-platform/saved-card-inline-ai-authoring-preserves-advanced-rewrite
+    test('edits a saved card with inline AI and retains the advanced rewrite', async ({
+        page,
+    }, testInfo) => {
+        const assertNoBrowserErrors = captureBrowserErrors(
+            page,
+            (path, status) => path === '/auth/sign-up' && status === 429,
+        );
+        await signUpAndVerifyOrSignInAfterRateLimit(
+            page,
+            syntheticEmail(testInfo, 'saved-inline-authoring'),
+            '/dictionaries',
+            syntheticEmail(testInfo, 'owner'),
+        );
+        await createDictionary(page, `Saved inline AI Spanish ${runId}`);
+        await addPopulatedCard(page);
+
+        await chooseCardAction(page, 'work of art', 'Edit');
+        const editor = page.getByRole('dialog', { name: 'Edit card' });
+        const translation = editor.getByRole('textbox', {
+            name: /^Translation \(/,
+        });
+        await expect(translation).toHaveValue('obra de arte');
+        await editor
+            .getByRole('button', { name: 'Generate Translation with AI' })
+            .click();
+        const review = editor.getByTestId('ai-review-translation');
+        await expect(
+            review.getByText('work of art (es)', { exact: true }),
+        ).toBeVisible({ timeout: 20_000 });
+        await expect(translation).toHaveCount(0);
+        await review
+            .getByRole('button', { name: 'Reject Translation suggestion' })
+            .click();
+        await expect(
+            editor.getByRole('textbox', { name: /^Translation \(/ }),
+        ).toHaveValue('obra de arte');
+
+        await editor
+            .getByRole('button', { name: 'Generate Translation with AI' })
+            .click();
+        await expect(review).toBeVisible({ timeout: 20_000 });
+        const acceptedTranslation = (
+            await review.getByRole('paragraph').textContent()
+        )?.trim();
+        expect(acceptedTranslation).toBeTruthy();
+        await review
+            .getByRole('button', { name: 'Accept Translation suggestion' })
+            .click();
+        await expect(
+            editor.getByRole('textbox', { name: /^Translation \(/ }),
+        ).toHaveValue(acceptedTranslation!);
+        await editor.getByRole('button', { name: 'Save card' }).click();
+        await expect(
+            page.getByText(acceptedTranslation!, { exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('Human + AI', { exact: true }).first(),
+        ).toBeVisible();
+
+        const card = page.getByRole('listitem').filter({
+            hasText: 'work of art',
+        });
+        await card.getByRole('button', { name: /Card actions, card/ }).click();
+        await expect(
+            card.getByRole('menuitem', {
+                name: 'Rewrite full card with AI',
+                exact: true,
+            }),
+        ).toBeVisible();
+        await page.keyboard.press('Escape');
         assertNoBrowserErrors();
     });
 });

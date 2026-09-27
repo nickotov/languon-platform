@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import {
     AcceptDictionaryCardAuthoringGenerationJobResponseSchema,
-    DictionaryCardAuthoringGenerationJobSchema,
+    DictionaryCardAuthoringAnyGenerationJobSchema,
 } from './card-authoring';
 
 import {
@@ -879,9 +879,9 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
         }
     });
 
-export const DictionaryGenerationJobSchema = z.discriminatedUnion('kind', [
+export const DictionaryGenerationJobSchema = z.union([
     DictionarySingleCardGenerationJobSchema,
-    DictionaryCardAuthoringGenerationJobSchema,
+    DictionaryCardAuthoringAnyGenerationJobSchema,
     DictionaryPastedTermsGenerationJobSchema,
     DictionaryImportPairsGenerationJobSchema,
     DictionaryDocumentTermsGenerationJobSchema,

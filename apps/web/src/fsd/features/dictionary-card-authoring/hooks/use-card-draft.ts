@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import type {
     DictionaryCardValues,
     DictionaryCardOverrides,
-    DictionaryCardAuthoringField,
 } from '@languon/contracts';
-import type { DictionaryCardDraft, DictionaryCardFormProps } from '../types';
+import type {
+    DictionaryCardAuthoringField,
+    DictionaryCardDraft,
+    DictionaryCardFormProps,
+} from '../types';
 
 const EMPTY_VALUES: DictionaryCardValues = {
     definition: null,
@@ -71,9 +74,12 @@ export function useCardDraft({
 
     useEffect(() => {
         if (!ai?.proposal) return;
-        const predecessorIds = new Set(
-            ai.proposal.suggestions.map((suggestion) => suggestion.id),
-        );
+        const predecessorIds = new Set([
+            ...(ai.proposal.sourceSuggestions ?? []).map(
+                (suggestion) => suggestion.id,
+            ),
+            ...ai.proposal.suggestions.map((suggestion) => suggestion.id),
+        ]);
         setHiddenSuggestionIds((current) => {
             const retained = [...current].filter((id) =>
                 predecessorIds.has(id),
@@ -94,6 +100,15 @@ export function useCardDraft({
             values: { ...current.values, [key]: value },
         }));
         if (preserveSelection) return;
+        if (key !== 'source') {
+            const selectedId =
+                selectedSuggestions[key as DictionaryCardAuthoringField];
+            if (selectedId) {
+                setHiddenSuggestionIds((hidden) =>
+                    new Set(hidden).add(selectedId),
+                );
+            }
+        }
         setSelectedSuggestions((current) => {
             if (key === 'source') return {};
             const field = key as DictionaryCardAuthoringField;
@@ -102,6 +117,18 @@ export function useCardDraft({
             delete next[field];
             return next;
         });
+        if (key === 'source' && ai?.proposal) {
+            setHiddenSuggestionIds(
+                new Set([
+                    ...(ai.proposal.sourceSuggestions ?? []).map(
+                        (suggestion) => suggestion.id,
+                    ),
+                    ...ai.proposal.suggestions.map(
+                        (suggestion) => suggestion.id,
+                    ),
+                ]),
+            );
+        }
     }
 
     function setOverride<K extends keyof DictionaryCardOverrides>(

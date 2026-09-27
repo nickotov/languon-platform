@@ -257,16 +257,13 @@ export const DictionaryDocumentTermsGenerationInputPayloadSchema = z
     })
     .strict();
 
-export const DictionaryGenerationInputPayloadSchema = z.discriminatedUnion(
-    'format',
-    [
-        DictionarySingleCardGenerationInputPayloadSchema,
-        DictionaryCardAuthoringGenerationInputPayloadSchema,
-        DictionaryPastedTermsGenerationInputPayloadSchema,
-        DictionaryImportPairsGenerationInputPayloadSchema,
-        DictionaryDocumentTermsGenerationInputPayloadSchema,
-    ],
-);
+export const DictionaryGenerationInputPayloadSchema = z.union([
+    DictionarySingleCardGenerationInputPayloadSchema,
+    DictionaryCardAuthoringGenerationInputPayloadSchema,
+    DictionaryPastedTermsGenerationInputPayloadSchema,
+    DictionaryImportPairsGenerationInputPayloadSchema,
+    DictionaryDocumentTermsGenerationInputPayloadSchema,
+]);
 
 const FieldFeedbackSchema = z
     .object({
@@ -325,15 +322,34 @@ export const DictionaryGenerationProposalPayloadSchema = z
     })
     .strict();
 
-export type DictionaryGenerationInputPayload = z.infer<
-    typeof DictionaryGenerationInputPayloadSchema
->;
+export type DictionaryGenerationInputPayload =
+    | DictionarySingleCardGenerationInputPayload
+    | DictionaryCardAuthoringGenerationInputPayload
+    | DictionaryPastedTermsGenerationInputPayload
+    | DictionaryImportPairsGenerationInputPayload
+    | DictionaryDocumentTermsGenerationInputPayload;
 export type DictionarySingleCardGenerationInputPayload = z.infer<
     typeof DictionarySingleCardGenerationInputPayloadSchema
 >;
-export type DictionaryCardAuthoringGenerationInputPayload = z.infer<
-    typeof DictionaryCardAuthoringGenerationInputPayloadSchema
+type DictionaryCardAuthoringGenerationInputPayloadBase = Omit<
+    z.infer<typeof DictionaryCardAuthoringGenerationInputPayloadSchema>,
+    'format' | 'target'
 >;
+export type DictionaryCardAuthoringGenerationInputPayload =
+    | (DictionaryCardAuthoringGenerationInputPayloadBase & {
+          format: 'card-authoring:v1';
+          target?: never;
+      })
+    | (DictionaryCardAuthoringGenerationInputPayloadBase & {
+          format: 'card-authoring:v2';
+          target:
+              | { kind: 'create' }
+              | {
+                    kind: 'update';
+                    cardId: string;
+                    expectedCardVersion: number;
+                };
+      });
 export type DictionaryPastedTermsGenerationInputPayload = z.infer<
     typeof DictionaryPastedTermsGenerationInputPayloadSchema
 >;
@@ -350,7 +366,9 @@ export type DictionaryGenerationProposalPayload = z.infer<
 export function parseDictionaryGenerationInput(
     value: unknown,
 ): DictionaryGenerationInputPayload {
-    return DictionaryGenerationInputPayloadSchema.parse(value);
+    return DictionaryGenerationInputPayloadSchema.parse(
+        value,
+    ) as DictionaryGenerationInputPayload;
 }
 
 export function parseDictionaryGenerationProposal(

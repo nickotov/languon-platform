@@ -209,6 +209,45 @@ describe('dictionary card authoring domain', () => {
         });
     });
 
+    it('keeps legacy field-local Example translation jobs drainable without an Example', () => {
+        const successor =
+            DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
+                ...input,
+                excludedValues: [],
+                predecessor: {
+                    discardedSuggestionIds: [],
+                    jobId: '22222222-2222-4222-8222-222222222222',
+                },
+                scope: { field: 'exampleTranslation', kind: 'field' },
+            });
+        expect(dictionaryCardAuthoringProviderInput(successor)).toMatchObject({
+            requestedFields: ['exampleTranslation'],
+            fieldContext: [{ field: 'exampleTranslation', excludedValues: [] }],
+        });
+        expect(
+            dictionaryCardAuthoringProviderInput(successor),
+        ).not.toHaveProperty('exampleForTranslation');
+    });
+
+    it('allows a v2 successor to request a field with no predecessor history', () => {
+        const successor =
+            DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
+                ...input,
+                format: 'card-authoring:v2',
+                target: { kind: 'create' },
+                predecessor: {
+                    discardedSuggestionIds: [],
+                    jobId: '22222222-2222-4222-8222-222222222222',
+                },
+                excludedValues: [],
+                scope: { kind: 'field', field: 'translation' },
+            });
+        expect(dictionaryCardAuthoringProviderInput(successor)).toMatchObject({
+            requestedFields: ['translation'],
+            fieldContext: [{ field: 'translation', excludedValues: [] }],
+        });
+    });
+
     it('preserves stable choices, removes discards, rejects duplicates, and bounds each field', () => {
         const predecessor = {
             source: 'bank',
@@ -283,5 +322,148 @@ describe('dictionary card authoring domain', () => {
                 nextId: () => '33333333-3333-4333-8333-333333333333',
             }),
         ).toThrow(DictionaryCardAuthoringSuggestionLimitError);
+    });
+
+    it('supports initial v2 Source generation and retains bounded Source history', () => {
+        const v2 = DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
+            ...input,
+            format: 'card-authoring:v2',
+            target: { kind: 'create' },
+            scope: { kind: 'field', field: 'source' },
+        });
+        const providerInput = dictionaryCardAuthoringProviderInput(v2);
+        expect(providerInput).toMatchObject({
+            requestedFields: ['source'],
+            fieldContext: [
+                { field: 'source', currentValue: 'bank', excludedValues: [] },
+            ],
+        });
+        expect(providerInput).not.toHaveProperty('draft');
+        expect(providerInput).not.toHaveProperty('exampleForTranslation');
+        const ids = ['33333333-3333-4333-8333-333333333333'];
+        expect(
+            mergeDictionaryCardAuthoringProposal({
+                format: 'card-authoring:v2',
+                source: 'teh bank',
+                discardedSuggestionIds: [],
+                delta: {
+                    sourceResult: { kind: 'suggested', value: 'the bank' },
+                    suggestions: [],
+                },
+                requestedFields: ['source'],
+                nextId: () => ids.shift()!,
+            }),
+        ).toEqual({
+            source: 'teh bank',
+            sourceResult: {
+                kind: 'suggested',
+                suggestionId: '33333333-3333-4333-8333-333333333333',
+            },
+            sourceSuggestions: [
+                {
+                    id: '33333333-3333-4333-8333-333333333333',
+                    field: 'source',
+                    value: 'the bank',
+                },
+            ],
+            suggestions: [],
+        });
+    });
+
+    it('minimizes field-local provider context', () => {
+        const v2 = DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
+            ...input,
+            format: 'card-authoring:v2',
+            target: { kind: 'create' },
+            draft: {
+                ...input.draft,
+                values: {
+                    translation: 'current translation',
+                    transcription: 'private transcription',
+                    definition: 'private definition',
+                    example: 'Current example.',
+                    exampleTranslation: 'private example translation',
+                },
+            },
+            scope: { kind: 'field', field: 'translation' },
+        });
+        const translationInput = dictionaryCardAuthoringProviderInput(v2);
+        expect(translationInput.fieldContext).toEqual([
+            {
+                currentValue: 'current translation',
+                excludedValues: [],
+                field: 'translation',
+            },
+        ]);
+        expect(JSON.stringify(translationInput)).not.toMatch(
+            /private transcription|private definition|Current example|private example translation/,
+        );
+
+        const exampleTranslationInput = dictionaryCardAuthoringProviderInput({
+            ...v2,
+            scope: { kind: 'field', field: 'exampleTranslation' },
+        });
+        expect(exampleTranslationInput).toMatchObject({
+            exampleForTranslation: 'Current example.',
+            requestedFields: ['exampleTranslation'],
+        });
+        expect(JSON.stringify(exampleTranslationInput)).not.toMatch(
+            /private transcription|private definition/,
+        );
+    });
+
+    it('bases v2 non-Source suggestions on the normalized Source', () => {
+        const ids = [
+            '33333333-3333-4333-8333-333333333333',
+            '44444444-4444-4444-8444-444444444444',
+        ];
+        const proposal = mergeDictionaryCardAuthoringProposal({
+            format: 'card-authoring:v2',
+            source: 'teh atelier',
+            discardedSuggestionIds: [],
+            delta: {
+                sourceResult: { kind: 'suggested', value: 'the atelier' },
+                suggestions: [{ field: 'translation', value: 'el taller' }],
+            },
+            requestedFields: ['source', 'translation'],
+            nextId: () => ids.shift()!,
+        });
+        expect(proposal.suggestions[0]).toMatchObject({
+            field: 'translation',
+            value: 'el taller',
+            basisSource: 'the atelier',
+        });
+    });
+
+    it('rebases a v2 successor onto a retained accepted Source suggestion', () => {
+        const sourceId = '33333333-3333-4333-8333-333333333333';
+        const proposal = mergeDictionaryCardAuthoringProposal({
+            format: 'card-authoring:v2',
+            source: 'the atelier',
+            predecessor: {
+                source: 'teh atelier',
+                sourceResult: { kind: 'suggested', suggestionId: sourceId },
+                sourceSuggestions: [
+                    { id: sourceId, field: 'source', value: 'the atelier' },
+                ],
+                suggestions: [],
+            },
+            discardedSuggestionIds: [],
+            delta: {
+                suggestions: [{ field: 'translation', value: 'el taller' }],
+            },
+            requestedFields: ['translation'],
+            nextId: () => '44444444-4444-4444-8444-444444444444',
+        });
+        expect(proposal).toMatchObject({
+            source: 'teh atelier',
+            sourceResult: { kind: 'suggested', suggestionId: sourceId },
+            suggestions: [
+                {
+                    field: 'translation',
+                    basisSource: 'the atelier',
+                },
+            ],
+        });
     });
 });

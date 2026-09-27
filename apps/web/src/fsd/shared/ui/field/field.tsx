@@ -11,6 +11,7 @@ import styles from './field.module.css';
 type ControlProps = {
     'aria-describedby'?: string;
     'aria-invalid'?: boolean;
+    'aria-labelledby'?: string;
     'data-validation'?: 'success';
     id?: string;
     required?: boolean;
@@ -18,26 +19,33 @@ type ControlProps = {
 
 export function Field({
     children,
+    control = true,
     error,
     hint,
     label,
+    labelAction,
     optionalLabel,
     required,
     success,
 }: {
     children: ReactElement<ControlProps>;
-    error?: string;
-    hint?: string;
+    control?: boolean;
+    error?: string | undefined;
+    hint?: string | undefined;
     label: ReactNode;
-    optionalLabel?: string;
-    required?: boolean;
-    success?: string;
+    labelAction?: ReactNode;
+    optionalLabel?: string | undefined;
+    required?: boolean | undefined;
+    success?: string | undefined;
 }) {
     const generatedId = useId();
     const controlId = children.props.id ?? `${generatedId}-control`;
+    const labelId = `${generatedId}-label`;
     const descriptionId =
         error || success || hint ? `${generatedId}-description` : undefined;
-    const controlProps: ControlProps = { id: controlId };
+    const controlProps: ControlProps = control
+        ? { id: controlId }
+        : { 'aria-labelledby': labelId };
     if (descriptionId)
         controlProps['aria-describedby'] = [
             children.props['aria-describedby'],
@@ -45,26 +53,46 @@ export function Field({
         ]
             .filter(Boolean)
             .join(' ');
-    if (error) controlProps['aria-invalid'] = true;
-    if (success && !error) controlProps['data-validation'] = 'success';
-    if (required) controlProps.required = true;
-    const control = isValidElement(children)
+    if (control && error) controlProps['aria-invalid'] = true;
+    if (control && success && !error)
+        controlProps['data-validation'] = 'success';
+    if (control && required) controlProps.required = true;
+    const clonedControl = isValidElement(children)
         ? cloneElement(children, controlProps)
         : children;
 
     return (
         <div className={styles.field}>
-            <label
-                className={styles.label}
-                data-required={required || undefined}
-                htmlFor={controlId}
-            >
-                {label}
-                {!required && optionalLabel ? (
-                    <span className={styles.optional}> {optionalLabel}</span>
+            <div className={styles.labelRow}>
+                {control ? (
+                    <label
+                        className={styles.label}
+                        data-required={required || undefined}
+                        htmlFor={controlId}
+                        id={labelId}
+                    >
+                        {label}
+                        {!required && optionalLabel ? (
+                            <span className={styles.optional}>
+                                {' '}
+                                {optionalLabel}
+                            </span>
+                        ) : null}
+                    </label>
+                ) : (
+                    <div
+                        className={styles.label}
+                        data-required={required || undefined}
+                        id={labelId}
+                    >
+                        {label}
+                    </div>
+                )}
+                {labelAction ? (
+                    <div className={styles.labelAction}>{labelAction}</div>
                 ) : null}
-            </label>
-            {control}
+            </div>
+            {clonedControl}
             {error ? (
                 <span className={styles.error} id={descriptionId}>
                     {error}

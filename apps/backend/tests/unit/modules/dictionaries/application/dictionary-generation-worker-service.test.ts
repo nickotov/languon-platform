@@ -17,7 +17,7 @@ import {
 } from '../../../../../src/modules/dictionaries/domain/generation';
 import { InvalidDictionarySettingsError } from '../../../../../src/modules/dictionaries/domain/settings';
 import { dictionaryDocumentGenerationFormat } from '../../../../../src/modules/dictionaries/domain/document-ingestion';
-import { dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
+import { dictionaryCardAuthoringGenerationFormatV1 as dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
 import {
     DictionaryDocumentGenerationError,
     DictionaryDocumentGenerationProcessor,

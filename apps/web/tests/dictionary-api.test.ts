@@ -259,6 +259,7 @@ describe('dictionary API', () => {
     it('uses typed card-authoring enqueue and successor boundaries with retained keys', async () => {
         vi.mocked(fetch)
             .mockResolvedValueOnce(jsonResponse({ job: null }))
+            .mockResolvedValueOnce(jsonResponse({ job: null }))
             .mockResolvedValueOnce(jsonResponse({ job: null }));
         const draft = {
             overrides: {
@@ -312,6 +313,23 @@ describe('dictionary API', () => {
                 'successor-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+        await expect(
+            dictionaryApi.enqueueCardAuthoringUpdateGeneration(
+                'owner-token',
+                '10000000-0000-4000-8000-000000000001',
+                '20000000-0000-4000-8000-000000000001',
+                {
+                    draft,
+                    expectedCardVersion: 4,
+                    expectedDictionaryVersion: 3,
+                    expectedSettingsVersion: 2,
+                    format: 'card-authoring:v2',
+                    scope: { field: 'source', kind: 'field' },
+                    source: 'medium',
+                },
+                'authoring-update-key',
+            ),
+        ).rejects.toMatchObject({ status: 502 });
 
         const [enqueueUrl, enqueueInit] = vi.mocked(fetch).mock.calls[0]!;
         expect(String(enqueueUrl)).toContain(
@@ -328,6 +346,18 @@ describe('dictionary API', () => {
         expect(new Headers(successorInit?.headers).get('idempotency-key')).toBe(
             'successor-key',
         );
+        const [updateUrl, updateInit] = vi.mocked(fetch).mock.calls[2]!;
+        expect(String(updateUrl)).toContain(
+            '/dictionaries/10000000-0000-4000-8000-000000000001/cards/20000000-0000-4000-8000-000000000001/card-authoring-generations',
+        );
+        expect(new Headers(updateInit?.headers).get('idempotency-key')).toBe(
+            'authoring-update-key',
+        );
+        expect(JSON.parse(String(updateInit?.body))).toMatchObject({
+            expectedCardVersion: 4,
+            format: 'card-authoring:v2',
+            scope: { field: 'source', kind: 'field' },
+        });
     });
 
     it('uses owner job actions for retry-safe authoring cleanup', async () => {

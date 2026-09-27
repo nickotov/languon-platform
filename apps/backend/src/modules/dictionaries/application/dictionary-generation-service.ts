@@ -2,6 +2,7 @@ import type {
     AcceptDictionaryCardAuthoringGenerationJobRequest,
     AcceptDictionaryGenerationJobRequest,
     EnqueueDictionaryCardAuthoringGenerationRequest,
+    EnqueueDictionaryCardAuthoringUpdateGenerationRequest,
     EnqueueDictionaryCardGenerationRequest,
     EnqueueDictionaryPastedTermsGenerationRequest,
     RegenerateDictionaryCardAuthoringGenerationRequest,
@@ -17,7 +18,10 @@ import {
     dictionaryPastedTermsGenerationFormat,
 } from '../domain/generation';
 import { parseDictionaryBatchGenerationText } from '../domain/batch-generation';
-import { dictionaryCardAuthoringGenerationFormat } from '../domain/card-authoring';
+import {
+    dictionaryCardAuthoringGenerationFormat,
+    dictionaryCardAuthoringGenerationFormatV1,
+} from '../domain/card-authoring';
 import {
     DictionaryGenerationNotAvailableError,
     DictionaryRateLimitError,
@@ -108,10 +112,11 @@ export class DictionaryGenerationService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
-        this.requireSupport(
-            'enqueued',
-            dictionaryCardAuthoringGenerationFormat,
-        );
+        const format =
+            'format' in request
+                ? request.format
+                : dictionaryCardAuthoringGenerationFormatV1;
+        this.requireSupport('enqueued', format);
         await this.limitEnqueue(ownerId, context);
         return this.dependencies.store.enqueueCardAuthoring({
             context: this.context(context),
@@ -125,8 +130,47 @@ export class DictionaryGenerationService {
             }),
             idempotencyKey,
             ownerId,
+            format,
+            ...(format === dictionaryCardAuthoringGenerationFormat
+                ? { target: { kind: 'create' as const } }
+                : {}),
             scope: request.scope,
             source: request.source,
+        });
+    }
+
+    public async enqueueCardAuthoringUpdate(
+        accessToken: string,
+        idempotencyKey: string,
+        dictionaryId: string,
+        cardId: string,
+        request: EnqueueDictionaryCardAuthoringUpdateGenerationRequest,
+        context: DictionaryRequestContext,
+    ) {
+        const ownerId = await this.owner(accessToken, context);
+        this.requireSupport('enqueued', request.format);
+        await this.limitEnqueue(ownerId, context);
+        return this.dependencies.store.enqueueCardAuthoring({
+            context: this.context(context),
+            dictionaryId,
+            draft: request.draft,
+            expectedDictionaryVersion: request.expectedDictionaryVersion,
+            expectedSettingsVersion: request.expectedSettingsVersion,
+            fingerprint: this.dependencies.cryptography.fingerprint({
+                cardId,
+                dictionaryId,
+                request,
+            }),
+            format: request.format,
+            idempotencyKey,
+            ownerId,
+            scope: request.scope,
+            source: request.source,
+            target: {
+                kind: 'update',
+                cardId,
+                expectedCardVersion: request.expectedCardVersion,
+            },
         });
     }
 
@@ -380,9 +424,10 @@ export class DictionaryGenerationService {
         this.requireSupport('acceptable', job.format);
         if (
             'format' in request &&
-            request.format === dictionaryCardAuthoringGenerationFormat
+            (request.format === dictionaryCardAuthoringGenerationFormatV1 ||
+                request.format === dictionaryCardAuthoringGenerationFormat)
         ) {
-            if (job.kind !== 'card-authoring')
+            if (job.kind !== 'card-authoring' || job.format !== request.format)
                 throw new DictionaryGenerationNotAvailableError();
             const authoringRequest =
                 request as AcceptDictionaryCardAuthoringGenerationJobRequest;
@@ -448,10 +493,7 @@ export class DictionaryGenerationService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
-        this.requireSupport(
-            'enqueued',
-            dictionaryCardAuthoringGenerationFormat,
-        );
+        this.requireSupport('enqueued', request.format);
         await this.limitEnqueue(ownerId, context);
         const prior = await this.dependencies.store.read({
             context: this.context(context),
@@ -476,6 +518,11 @@ export class DictionaryGenerationService {
             }),
             idempotencyKey,
             ownerId,
+            format: request.format,
+            ...(prior.format === dictionaryCardAuthoringGenerationFormat &&
+            'target' in prior
+                ? { target: prior.target }
+                : {}),
             predecessor: { discardedSuggestionIds, jobId },
             scope: request.scope,
             source: request.source,

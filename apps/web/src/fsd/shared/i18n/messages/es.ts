@@ -17,6 +17,8 @@ export const es = {
     'dictionary.audio.speed': 'Velocidad de reproducción',
     'dictionary.audio.normal': 'Normal',
     ...profileFeatureMessages,
+    'dictionary.authoring.sourceActionName': 'Fuente',
+    'dictionary.cards.regenerate': 'Reescribir toda la tarjeta con IA',
 
     'dictionary.error.rateLimited':
         'Demasiadas solicitudes. Espera un momento antes de volver a intentarlo.',
@@ -596,7 +598,22 @@ export const es = {
         'Otro cambio se guardó primero. Recarga, revísalo e inténtalo de nuevo.',
     'dictionary.conflict.reload': 'Recargar versión actual',
     'dictionary.authoring.aiSection': 'Sugerencias de IA',
-    'dictionary.authoring.generate': 'Generar con IA',
+    'dictionary.authoring.generate': 'Generar todo',
+    'dictionary.authoring.generateField': 'IA',
+    'dictionary.authoring.generateFieldNamed': 'Generar {field} con IA',
+    'dictionary.authoring.generatingField': 'Generando {field}…',
+    'dictionary.authoring.aiSuggestion': 'Sugerencia de IA',
+    'dictionary.authoring.reject': 'Rechazar',
+    'dictionary.authoring.rejectNamed': 'Rechazar sugerencia de {field}',
+    'dictionary.authoring.tryAnother': 'Probar otra',
+    'dictionary.authoring.tryAnotherNamed': 'Probar otro valor de {field}',
+    'dictionary.authoring.previousOptions':
+        'Opciones de IA anteriores ({count})',
+    'dictionary.authoring.acceptSourceFirst':
+        'Acepta primero la Fuente sugerida para usar este resultado.',
+    'dictionary.authoring.exampleRequired':
+        'Escribe un ejemplo antes de generar su traducción.',
+    'dictionary.authoring.sourceUnchanged': 'La Fuente ya parece correcta.',
     'dictionary.authoring.generateHelp':
         'La IA propone valores debajo de cada campo. Nada se aplica hasta que lo aceptes.',
     'dictionary.authoring.regenerateAll': 'Regenerar todos los campos',
@@ -622,7 +639,7 @@ export const es = {
     'dictionary.authoring.acceptAll': 'Aceptar todo',
     'dictionary.authoring.discard': 'Descartar',
     'dictionary.authoring.discardNamed': 'Descartar sugerencia de {field}',
-    'dictionary.authoring.discardAll': 'Descartar todo',
+    'dictionary.authoring.discardAll': 'Rechazar todo',
     'dictionary.authoring.reviewSuggestions': 'Revisar sugerencias',
     'dictionary.authoring.reviewSummary':
         'Opciones: {count} · Campos: {fieldCount}',

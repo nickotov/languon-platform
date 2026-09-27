@@ -451,6 +451,12 @@ describe('dictionary HTTP contracts', () => {
                     'owner',
                 ],
                 [
+                    'enqueueDictionaryCardAuthoringUpdateGeneration',
+                    'POST',
+                    '/dictionaries/:dictionaryId/cards/:cardId/card-authoring-generations',
+                    'owner',
+                ],
+                [
                     'enqueueDictionaryPastedTermsGeneration',
                     'POST',
                     '/dictionaries/:dictionaryId/batch-generations',

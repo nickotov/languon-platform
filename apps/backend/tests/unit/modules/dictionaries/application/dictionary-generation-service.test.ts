@@ -280,6 +280,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
                     dictionaryId: 'dictionary-id',
                     format: dictionaryCardAuthoringGenerationFormat,
                     kind: 'card-authoring',
+                    target: { kind: 'create' },
                 }),
             } as never,
         });

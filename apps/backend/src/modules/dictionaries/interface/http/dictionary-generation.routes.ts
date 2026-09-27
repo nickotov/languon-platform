@@ -16,6 +16,7 @@ import {
     DiscardDictionaryGenerationJobResponseSchema,
     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
     EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+    EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
     EnqueueDictionaryCardGenerationRequestSchema,
     EnqueueDictionaryCardGenerationResponseSchema,
     EnqueueDictionaryPastedTermsGenerationRequestSchema,
@@ -135,6 +136,45 @@ export function createDictionaryGenerationRoutes(dependencies: {
                 ),
                 200,
             ),
+    );
+
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/dictionaries/{dictionaryId}/cards/{cardId}/card-authoring-generations',
+            request: {
+                body: requestBody(
+                    EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
+                ),
+                headers: DictionaryIdempotencyHeadersSchema.passthrough(),
+                params: DictionaryCardIdParamsSchema,
+            },
+            responses: {
+                202: jsonResponse(
+                    EnqueueDictionaryCardAuthoringGenerationResponseSchema,
+                    'Saved-card authoring generation enqueued.',
+                ),
+                ...errors,
+            },
+            security: bearerSecurity,
+            tags: ['Dictionaries'],
+        }),
+        async (context) => {
+            const params = context.req.valid('param');
+            return context.json(
+                {
+                    job: await dependencies.service.enqueueCardAuthoringUpdate(
+                        bearer(context.req.header('Authorization')),
+                        context.req.valid('header')['idempotency-key'],
+                        params.dictionaryId,
+                        params.cardId,
+                        context.req.valid('json'),
+                        requestContext(context),
+                    ),
+                },
+                202,
+            );
+        },
     );
 
     app.openapi(
