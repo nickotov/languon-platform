@@ -21,6 +21,7 @@ export function AuthoringAiAssistance({
     active,
     stale,
     validSource,
+    canGenerate,
     generateAll,
     acceptAllSuggestions,
     availableSuggestionCount,
@@ -32,6 +33,7 @@ export function AuthoringAiAssistance({
     active: boolean;
     stale: boolean;
     validSource: boolean;
+    canGenerate: boolean;
     generateAll(): void;
     acceptAllSuggestions(): void;
     availableSuggestionCount: number;
@@ -43,7 +45,12 @@ export function AuthoringAiAssistance({
     const legacyReview =
         ai.format === 'card-authoring:v1' && Boolean(ai.proposal);
     const disabled =
-        !validSource || !ai.available || active || ai.pending || legacyReview;
+        !validSource ||
+        !ai.available ||
+        !canGenerate ||
+        active ||
+        ai.pending ||
+        legacyReview;
     const regenerateDisabled = disabled || stale;
     const loading = ai.pending && !active;
     const job = ai.job;

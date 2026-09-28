@@ -676,6 +676,10 @@ export const ru = {
     'dictionary.authoring.tryAnother': 'Другой вариант',
     'dictionary.authoring.tryAnotherNamed': 'Другой вариант поля «{field}»',
     'dictionary.authoring.previousOptions': 'Предыдущие варианты ИИ ({count})',
+    'dictionary.authoring.versions': 'Версии формы карточки',
+    'dictionary.authoring.previousVersion': 'Предыдущая версия формы',
+    'dictionary.authoring.nextVersion': 'Следующая версия формы',
+    'dictionary.authoring.versionCounter': 'Версия {current} из {total}',
     'dictionary.authoring.acceptSourceFirst':
         'Сначала примите предложенный исходный текст.',
     'dictionary.authoring.exampleRequired':

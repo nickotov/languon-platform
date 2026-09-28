@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:91eb1d68d0b1ecef
+// @user-flow-revision dictionary-platform sha256:07eab11e096f8e2a
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -1272,6 +1272,21 @@ test.describe('dictionary platform journeys', () => {
                 exact: true,
             }),
         ).toBeVisible({ timeout: 20_000 });
+        await expect(editor.getByText('Version 4 of 4')).toBeVisible();
+        await editor
+            .getByRole('button', { name: 'Previous form version' })
+            .click();
+        await expect(editor.getByText('Version 3 of 4')).toBeVisible();
+        await expect(
+            translationReview.getByText('the atelier (es)', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            editor.getByRole('button', {
+                name: 'Try another Translation',
+            }),
+        ).toBeDisabled();
+        await editor.getByRole('button', { name: 'Next form version' }).click();
+        await expect(editor.getByText('Version 4 of 4')).toBeVisible();
         await expect(
             translationReview.getByText(/Previous AI option/),
         ).toBeVisible();

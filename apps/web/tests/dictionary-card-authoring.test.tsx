@@ -7,7 +7,7 @@ import type {
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -267,6 +267,91 @@ const authoringSuccessorJob = {
     state: 'running',
 } satisfies DictionaryCardAuthoringGenerationJob;
 
+const versionedInitialProposal = {
+    source: 'medium',
+    suggestions: [
+        {
+            basisSource: 'medium',
+            field: 'example' as const,
+            id: '48000000-0000-4000-8000-000000000001',
+            value: 'The room is medium-sized.',
+        },
+        {
+            basisSource: 'medium',
+            field: 'exampleTranslation' as const,
+            id: '48000000-0000-4000-8000-000000000002',
+            value: 'La habitación es mediana.',
+        },
+    ],
+};
+
+const versionedSuccessorProposal = {
+    ...versionedInitialProposal,
+    suggestions: [
+        ...versionedInitialProposal.suggestions,
+        {
+            basisSource: 'medium',
+            field: 'example' as const,
+            id: '48000000-0000-4000-8000-000000000003',
+            value: 'They chose a medium suitcase.',
+        },
+        {
+            basisSource: 'medium',
+            field: 'exampleTranslation' as const,
+            id: '48000000-0000-4000-8000-000000000004',
+            value: 'Eligieron una maleta mediana.',
+        },
+    ],
+};
+
+function VersionedAuthoringHarness({
+    onAction,
+    onSave,
+}: {
+    onAction: ReturnType<typeof vi.fn>;
+    onSave: ReturnType<typeof vi.fn>;
+}) {
+    const [proposal, setProposal] = useState(versionedInitialProposal);
+
+    async function handleAction(
+        action: Parameters<
+            NonNullable<
+                ComponentProps<typeof DictionaryCardForm>['ai']
+            >['onAction']
+        >[0],
+    ) {
+        onAction(action);
+        if (action.kind === 'generate') setProposal(versionedSuccessorProposal);
+    }
+
+    return (
+        <DictionaryCardForm
+            ai={{
+                available: true,
+                format: 'card-authoring:v2',
+                job: authoringReviewJob,
+                onAction: handleAction,
+                pending: false,
+                proposal,
+            }}
+            card={{
+                ...card,
+                values: {
+                    ...card.values,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'medium',
+                },
+            }}
+            dictionary={dictionary}
+            languages={languages}
+            onCancel={vi.fn()}
+            onSave={onSave}
+            pending={false}
+        />
+    );
+}
+
 function GeneratingFieldHarness({
     format,
 }: {
@@ -347,6 +432,113 @@ describe('dictionary settings and card authoring', () => {
         expect(shouldAcceptAuthoringProposal(true, 0)).toBe(false);
         expect(shouldAcceptAuthoringProposal(false, 0)).toBe(false);
         expect(shouldAcceptAuthoringProposal(true, 1)).toBe(true);
+    });
+
+    it('keeps regenerated example forms as switchable versions with a fresh translation', async () => {
+        const user = userEvent.setup();
+        const onAction = vi.fn();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(
+            <VersionedAuthoringHarness
+                onAction={onAction}
+                onSave={onSave}
+            />,
+        );
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Accept Context example suggestion',
+            }),
+        );
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Accept Example translation suggestion',
+            }),
+        );
+        expect(screen.queryByText(/Version 1 of/)).not.toBeInTheDocument();
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Generate Context example with AI',
+            }),
+        );
+
+        expect(onAction).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: { field: 'example', kind: 'field' },
+                successor: true,
+            }),
+        );
+        expect(await screen.findByText('Version 2 of 2')).toBeVisible();
+        expect(screen.getByTestId('ai-review-example')).toHaveTextContent(
+            'They chose a medium suitcase.',
+        );
+        expect(
+            screen.getByTestId('ai-review-exampleTranslation'),
+        ).toHaveTextContent('Eligieron una maleta mediana.');
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Accept Context example suggestion',
+            }),
+        );
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Accept Example translation suggestion',
+            }),
+        );
+        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
+            'They chose a medium suitcase.',
+        );
+        expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
+            'Eligieron una maleta mediana.',
+        );
+
+        await user.click(
+            screen.getByRole('button', { name: 'Previous form version' }),
+        );
+        expect(screen.getByText('Version 1 of 2')).toBeVisible();
+        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
+            'The room is medium-sized.',
+        );
+        expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
+            'La habitación es mediana.',
+        );
+        expect(
+            screen.getByRole('button', {
+                name: 'Generate Context example with AI',
+            }),
+        ).toBeDisabled();
+
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({
+                    example: 'The room is medium-sized.',
+                    exampleTranslation: 'La habitación es mediana.',
+                }),
+            }),
+            expect.arrayContaining([
+                {
+                    field: 'example',
+                    suggestionId: '48000000-0000-4000-8000-000000000001',
+                },
+                {
+                    field: 'exampleTranslation',
+                    suggestionId: '48000000-0000-4000-8000-000000000002',
+                },
+            ]),
+        );
+
+        await user.click(
+            screen.getByRole('button', { name: 'Next form version' }),
+        );
+        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
+            'They chose a medium suitcase.',
+        );
+        expect(
+            screen.getByRole('button', { name: 'Next form version' }),
+        ).toBeDisabled();
     });
     it.each([
         ['provider_rate_limited', 'dictionary.authoring.rateLimited'],

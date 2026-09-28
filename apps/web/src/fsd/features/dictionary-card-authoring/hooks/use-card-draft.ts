@@ -1,158 +1,239 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
-    DictionaryCardValues,
     DictionaryCardOverrides,
+    DictionaryCardValues,
 } from '@languon/contracts';
 import type {
     DictionaryCardAuthoringField,
-    DictionaryCardDraft,
     DictionaryCardFormProps,
 } from '../types';
-
-const EMPTY_VALUES: DictionaryCardValues = {
-    definition: null,
-    example: null,
-    exampleTranslation: null,
-    source: '',
-    transcription: null,
-    translation: '',
-};
-
-const EMPTY_OVERRIDES: DictionaryCardOverrides = {
-    definitionEnabled: null,
-    definitionLanguage: null,
-    exampleEnabled: null,
-    exampleLanguage: null,
-    exampleTranslationEnabled: null,
-    transcriptionCustomLabel: null,
-    transcriptionEnabled: null,
-    transcriptionNotation: null,
-};
+import {
+    cardAuthoringProposalKey,
+    cardAuthoringSuggestionIds,
+    cardDraftChanged,
+    createDraftVersion,
+    type DraftVersion,
+    type DraftVersionState,
+} from '../lib/card-draft-versions';
 
 export function useCardDraft({
     card,
     ai,
     onDirtyChange,
 }: DictionaryCardFormProps) {
-    const [draft, setDraft] = useState<DictionaryCardDraft>(() => ({
-        overrides: card ? { ...card.overrides } : { ...EMPTY_OVERRIDES },
-        values: card ? { ...card.values } : { ...EMPTY_VALUES },
+    const incomingProposal = ai?.proposal ?? null;
+    const incomingProposalKey = cardAuthoringProposalKey(incomingProposal);
+    const cardResetKey = card
+        ? `${card.id}:${card.version}:${card.settingsVersion}`
+        : 'new';
+    const [versions, setVersions] = useState<DraftVersionState>(() => ({
+        activeIndex: 0,
+        awaitingSuccessor: false,
+        items: [createDraftVersion(card, incomingProposal)],
     }));
+    const activeVersion = versions.items[versions.activeIndex]!;
 
-    const initialOverrides = card?.overrides ?? EMPTY_OVERRIDES;
-    const valuesChanged = card
-        ? (Object.keys(EMPTY_VALUES) as Array<keyof DictionaryCardValues>).some(
-              (field) => draft.values[field] !== card.values[field],
-          )
-        : Object.values(draft.values).some((value) => Boolean(value?.trim()));
-
-    const dirty =
-        valuesChanged ||
-        (
-            Object.keys(EMPTY_OVERRIDES) as Array<keyof DictionaryCardOverrides>
-        ).some((field) => draft.overrides[field] !== initialOverrides[field]);
+    const dirty = useMemo(
+        () =>
+            versions.items.some(({ draft }) => cardDraftChanged(draft, card)),
+        [card, versions.items],
+    );
 
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
 
-    const [hiddenSuggestionIds, setHiddenSuggestionIds] = useState<Set<string>>(
-        () => new Set(),
-    );
-    const [selectedSuggestions, setSelectedSuggestions] = useState<
-        Partial<Record<DictionaryCardAuthoringField, string>>
-    >({});
-
     useEffect(() => {
-        setDraft({
-            overrides: card ? { ...card.overrides } : { ...EMPTY_OVERRIDES },
-            values: card ? { ...card.values } : { ...EMPTY_VALUES },
+        setVersions({
+            activeIndex: 0,
+            awaitingSuccessor: false,
+            items: [createDraftVersion(card, incomingProposal)],
         });
-        setHiddenSuggestionIds(new Set());
-        setSelectedSuggestions({});
-    }, [card]);
+    }, [cardResetKey]);
 
     useEffect(() => {
-        if (!ai?.proposal) return;
-        const predecessorIds = new Set([
-            ...(ai.proposal.sourceSuggestions ?? []).map(
-                (suggestion) => suggestion.id,
+        if (!incomingProposal) return;
+        setVersions((current) => {
+            const latest = current.items.at(-1)!;
+            if (
+                cardAuthoringProposalKey(latest.proposal) ===
+                incomingProposalKey
+            )
+                return current;
+
+            const retainedIds = cardAuthoringSuggestionIds(incomingProposal);
+            const nextVersion: DraftVersion = {
+                ...latest,
+                draft: {
+                    overrides: { ...latest.draft.overrides },
+                    values: { ...latest.draft.values },
+                },
+                hiddenSuggestionIds: new Set(
+                    [...latest.hiddenSuggestionIds].filter((id) =>
+                        retainedIds.has(id),
+                    ),
+                ),
+                proposal: incomingProposal,
+                reviewedSuggestionIds: new Set(latest.reviewedSuggestionIds),
+                selectedSuggestions: { ...latest.selectedSuggestions },
+            };
+
+            if (current.awaitingSuccessor && latest.proposal) {
+                return {
+                    activeIndex: current.items.length,
+                    awaitingSuccessor: false,
+                    items: [...current.items, nextVersion],
+                };
+            }
+
+            return {
+                ...current,
+                items: [...current.items.slice(0, -1), nextVersion],
+            };
+        });
+    }, [incomingProposal, incomingProposalKey]);
+
+    useEffect(() => {
+        const state = ai?.job?.state;
+        if (
+            state !== 'failed' &&
+            state !== 'cancelled' &&
+            state !== 'expired' &&
+            state !== 'discarded'
+        )
+            return;
+        setVersions((current) =>
+            current.awaitingSuccessor
+                ? { ...current, awaitingSuccessor: false }
+                : current,
+        );
+    }, [ai?.job?.state]);
+
+    function updateActive(
+        update: (current: DraftVersion) => DraftVersion,
+    ) {
+        setVersions((current) => ({
+            ...current,
+            items: current.items.map((item, index) =>
+                index === current.activeIndex ? update(item) : item,
             ),
-            ...ai.proposal.suggestions.map((suggestion) => suggestion.id),
-        ]);
-        setHiddenSuggestionIds((current) => {
-            const retained = [...current].filter((id) =>
-                predecessorIds.has(id),
-            );
-            return retained.length === current.size
-                ? current
-                : new Set(retained);
-        });
-    }, [ai?.proposal]);
+        }));
+    }
 
     function setValue<K extends keyof DictionaryCardValues>(
         key: K,
         value: DictionaryCardValues[K],
         preserveSelection = false,
     ) {
-        setDraft((current) => ({
-            ...current,
-            values: { ...current.values, [key]: value },
-        }));
-        if (preserveSelection) return;
-        if (key !== 'source') {
-            const selectedId =
-                selectedSuggestions[key as DictionaryCardAuthoringField];
-            if (selectedId) {
-                setHiddenSuggestionIds((hidden) =>
-                    new Set(hidden).add(selectedId),
-                );
+        updateActive((current) => {
+            const hiddenSuggestionIds = new Set(current.hiddenSuggestionIds);
+            const selectedSuggestions = { ...current.selectedSuggestions };
+            if (!preserveSelection && key !== 'source') {
+                const field = key as DictionaryCardAuthoringField;
+                const selectedId = selectedSuggestions[field];
+                if (selectedId) hiddenSuggestionIds.add(selectedId);
+                delete selectedSuggestions[field];
             }
-        }
-        setSelectedSuggestions((current) => {
-            if (key === 'source') return {};
-            const field = key as DictionaryCardAuthoringField;
-            if (!current[field]) return current;
-            const next = { ...current };
-            delete next[field];
-            return next;
+            if (!preserveSelection && key === 'source' && current.proposal) {
+                for (const id of cardAuthoringSuggestionIds(current.proposal))
+                    hiddenSuggestionIds.add(id);
+                for (const field of Object.keys(selectedSuggestions))
+                    delete selectedSuggestions[
+                        field as DictionaryCardAuthoringField
+                    ];
+            }
+            return {
+                ...current,
+                draft: {
+                    ...current.draft,
+                    values: { ...current.draft.values, [key]: value },
+                },
+                hiddenSuggestionIds,
+                selectedSuggestions,
+            };
         });
-        if (key === 'source' && ai?.proposal) {
-            setHiddenSuggestionIds(
-                new Set([
-                    ...(ai.proposal.sourceSuggestions ?? []).map(
-                        (suggestion) => suggestion.id,
-                    ),
-                    ...ai.proposal.suggestions.map(
-                        (suggestion) => suggestion.id,
-                    ),
-                ]),
-            );
-        }
     }
 
     function setOverride<K extends keyof DictionaryCardOverrides>(
         key: K,
         value: DictionaryCardOverrides[K],
     ) {
-        setDraft((current) => ({
+        updateActive((current) => ({
             ...current,
-            overrides: { ...current.overrides, [key]: value },
+            draft: {
+                ...current.draft,
+                overrides: { ...current.draft.overrides, [key]: value },
+            },
         }));
     }
 
     function replaceOverrides(overrides: DictionaryCardOverrides) {
-        setDraft((current) => ({ ...current, overrides }));
+        updateActive((current) => ({
+            ...current,
+            draft: { ...current.draft, overrides },
+        }));
     }
 
     return {
+        activeVersionIndex: versions.activeIndex,
+        beginSuccessor: () =>
+            setVersions((current) => ({
+                ...current,
+                awaitingSuccessor: true,
+            })),
+        cancelSuccessor: () =>
+            setVersions((current) => ({
+                ...current,
+                awaitingSuccessor: false,
+            })),
+        draft: activeVersion.draft,
+        hiddenSuggestionIds: activeVersion.hiddenSuggestionIds,
+        isLatestVersion:
+            versions.activeIndex === versions.items.length - 1,
+        proposal: activeVersion.proposal,
         replaceOverrides,
-        draft,
-        setValue,
+        reviewedSuggestionIds: activeVersion.reviewedSuggestionIds,
+        selectedSuggestions: activeVersion.selectedSuggestions,
+        setActiveVersion: (index: number) =>
+            setVersions((current) => ({
+                ...current,
+                activeIndex: Math.max(
+                    0,
+                    Math.min(index, current.items.length - 1),
+                ),
+            })),
+        setHiddenSuggestionIds: (
+            update:
+                | Set<string>
+                | ((current: Set<string>) => Set<string>),
+        ) =>
+            updateActive((current) => ({
+                ...current,
+                hiddenSuggestionIds:
+                    typeof update === 'function'
+                        ? update(current.hiddenSuggestionIds)
+                        : update,
+            })),
         setOverride,
-        hiddenSuggestionIds,
-        setHiddenSuggestionIds,
-        selectedSuggestions,
-        setSelectedSuggestions,
+        setReviewedSuggestionIds: (
+            update: (current: Set<string>) => Set<string>,
+        ) =>
+            updateActive((current) => ({
+                ...current,
+                reviewedSuggestionIds: update(current.reviewedSuggestionIds),
+            })),
+        setSelectedSuggestions: (
+            update: (
+                current: Partial<
+                    Record<DictionaryCardAuthoringField, string>
+                >,
+            ) => Partial<Record<DictionaryCardAuthoringField, string>>,
+        ) =>
+            updateActive((current) => ({
+                ...current,
+                selectedSuggestions: update(current.selectedSuggestions),
+            })),
+        setValue,
+        versionCount: versions.items.length,
     };
 }

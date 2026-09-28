@@ -681,6 +681,10 @@ export const en = {
     'dictionary.authoring.tryAnother': 'Try another',
     'dictionary.authoring.tryAnotherNamed': 'Try another {field}',
     'dictionary.authoring.previousOptions': 'Previous AI options ({count})',
+    'dictionary.authoring.versions': 'Card form versions',
+    'dictionary.authoring.previousVersion': 'Previous form version',
+    'dictionary.authoring.nextVersion': 'Next form version',
+    'dictionary.authoring.versionCounter': 'Version {current} of {total}',
     'dictionary.authoring.acceptSourceFirst':
         'Accept the suggested Source before using this result.',
     'dictionary.authoring.exampleRequired':

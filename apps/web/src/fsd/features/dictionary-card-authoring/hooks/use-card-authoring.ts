@@ -18,6 +18,12 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         setValue,
         hiddenSuggestionIds,
         setHiddenSuggestionIds,
+        proposal,
+        isLatestVersion,
+        beginSuccessor,
+        cancelSuccessor,
+        reviewedSuggestionIds,
+        setReviewedSuggestionIds,
         selectedSuggestions,
         setSelectedSuggestions,
     } = state;
@@ -26,10 +32,6 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         | { kind: 'field'; field: DictionaryCardAuthoringField }
         | null
     >(null);
-    const [reviewedSuggestionIds, setReviewedSuggestionIds] = useState<
-        Set<string>
-    >(() => new Set());
-
     const effective = previewCardEffectiveSettings(
         dictionary.settings.values,
         draft.overrides,
@@ -81,14 +83,14 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
 
     const validSource = isValidCardAuthoringSource(draft.values.source);
 
-    const selectedSourceSuggestion = ai?.proposal?.sourceSuggestions?.find(
+    const selectedSourceSuggestion = proposal?.sourceSuggestions?.find(
         (suggestion) =>
             selectedSuggestions.source === suggestion.id &&
             suggestion.value === draft.values.source.trim(),
     );
     const stale = Boolean(
-        ai?.proposal &&
-        ai.proposal.source !== draft.values.source.trim() &&
+        proposal &&
+        proposal.source !== draft.values.source.trim() &&
         !selectedSourceSuggestion,
     );
 
@@ -107,8 +109,8 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         return effective.exampleTranslationEnabled;
     }
 
-    const proposalSuggestions = ai?.proposal
-        ? [...(ai.proposal.sourceSuggestions ?? []), ...ai.proposal.suggestions]
+    const proposalSuggestions = proposal
+        ? [...(proposal.sourceSuggestions ?? []), ...proposal.suggestions]
         : [];
     const availableSuggestions =
         proposalSuggestions.filter(
@@ -247,26 +249,29 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
             | { kind: 'all' }
             | { kind: 'field'; field: DictionaryCardAuthoringField },
     ) {
-        if (!ai || !validSource || active) return;
+        if (!ai || !validSource || active || !isLatestVersion) return;
         if (
             scope.kind === 'field' &&
             scope.field === 'exampleTranslation' &&
             !draft.values.example?.trim()
         )
             return;
+        const successor = Boolean(proposal) && !stale;
         setGeneratingScope(scope);
+        if (successor) beginSuccessor();
         try {
             await ai.onAction({
                 discardedSuggestionIds: discardedSuggestionIdsForPredecessor(
                     hiddenSuggestionIds,
-                    ai.proposal,
+                    proposal,
                 ),
                 draft,
                 kind: 'generate',
                 scope,
-                successor: Boolean(ai.proposal) && !stale,
+                successor,
             });
         } catch {
+            if (successor) cancelSuccessor();
             setGeneratingScope(null);
             // The owning orchestration renders a safe recoverable error.
         }
@@ -290,6 +295,8 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         duplicate,
         active,
         stale,
+        proposal,
+        isLatestVersion,
         generatingScope,
         reviewedSuggestionIds,
         validSource,

@@ -216,27 +216,35 @@ silently overwrite or replay a stale edit.
    suggestions based on the rejected value. **Accept all** accepts Source first
    and then compatible fields; **Reject all** restores every affected input.
    Example translation cannot be generated until Example contains text.
-4. Edit any accepted field manually, accept at least one AI value, and select
+4. Every successful **Try another**, field regeneration, or **Regenerate all
+   fields** action keeps the preceding complete form as a local version and opens
+   the new version. Use the previous/next arrows and version counter in the footer
+   to switch the whole draft and its review state without another request. Saving
+   uses the displayed version. Generation controls are disabled on a historical
+   version until the newest version is selected. Regenerating Context example
+   displays its newly generated Example translation in the same new version.
+5. Edit any accepted field manually, accept at least one AI value, and select
    **Save card**. Expect one atomic card with **Human + AI** authorship. A draft
    saved without accepting an AI suggestion follows the normal manual path and
    remains **Human**; unaccepted and rejected suggestions are never persisted as
    card values.
-5. Open **Edit** for a saved card. Generate and accept one field inline, then save.
+6. Open **Edit** for a saved card. Generate and accept one field inline, then save.
    Expect one atomic update and **Human + AI** authorship. The card action
    **Rewrite full card with AI** remains available as the separate advanced flow
    with custom instructions, reload-safe review, and stale-card recovery.
-6. Change Source manually after suggestions arrive. Expect incompatible
+7. Change Source manually after suggestions arrive. Expect incompatible
    selections and provenance to clear while visible draft values remain. Generate
    again from the new Source before accepting dependent values.
-7. If AI authoring is unavailable, the form says so and remains fully usable for
+8. If AI authoring is unavailable, the form says so and remains fully usable for
    manual editing. A provider, network, cancellation, admission, or version
    failure retains the open draft and already loaded suggestions and never shows
    raw provider detail.
 
 At 320 px and 200% text, bulk and per-field Generate, Accept, Reject, Try another,
-and Previous AI options actions stack without horizontal page overflow. Status is announced
-politely, keyboard focus follows field order, and suggested values retain their
-resolved language and writing direction.
+Previous AI options, and form-version controls stack without horizontal page
+overflow. Status and the current version are announced politely, keyboard focus
+follows field order, and suggested values retain their resolved language and
+writing direction.
 
 ### Unlisted reading and independent fork
 
@@ -449,9 +457,9 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
   authorship.
 - `inline-ai-card-authoring-preserves-field-choices` proves Source normalization
   and independent field generation in Add Card, replacement review, rejection
-  without draft loss, retained alternatives, coherent whole-set acceptance,
-  responsive layout, and one mixed-authorship atomic save through the real
-  web/API/worker/PostgreSQL stack.
+  without draft loss, retained alternatives, whole-form version navigation,
+  coherent whole-set acceptance, responsive layout, and one mixed-authorship
+  atomic save through the real web/API/worker/PostgreSQL stack.
 - `saved-card-inline-ai-authoring-preserves-advanced-rewrite` proves inline
   field generation, rejection restoration, accepted edit persistence, and mixed
   authorship for a saved card while the separate advanced whole-card rewrite

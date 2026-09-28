@@ -92,6 +92,7 @@ export type AuthoringFieldSuggestions = {
           >
         | undefined;
     active: boolean;
+    canGenerate: boolean;
     stale: boolean;
     hiddenSuggestionIds: ReadonlySet<string>;
     reviewedSuggestionIds: ReadonlySet<string>;

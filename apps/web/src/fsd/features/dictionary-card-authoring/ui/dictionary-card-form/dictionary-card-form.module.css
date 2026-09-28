@@ -195,7 +195,8 @@
 }
 .suggestionActions {
     align-items: start;
-    gap: 4px;
+    gap: 8px;
+    justify-content: flex-start;
 }
 .suggestions > button {
     justify-self: start;
@@ -237,6 +238,29 @@
     gap: 8px;
     padding: 16px 0;
 }
+.footerRow {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+.versionNavigation {
+    align-items: center;
+    display: flex;
+    flex: none;
+    gap: 4px;
+}
+.versionCounter {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    min-width: 72px;
+    text-align: center;
+}
+.actions {
+    flex: 1;
+    justify-content: flex-end;
+}
 .embedded .footer {
     padding: 16px 24px;
 }
@@ -252,6 +276,21 @@
     }
     .embedded .footer {
         padding: 12px 16px;
+    }
+    .footerRow {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .versionNavigation {
+        justify-content: center;
+        order: 2;
+    }
+    .actions {
+        justify-content: space-between;
+    }
+    .versionButton {
+        height: 44px;
+        width: 44px;
     }
 }
 .saveHint {

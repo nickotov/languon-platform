@@ -14,6 +14,7 @@ export function FieldSuggestions({
     current,
     direction,
     disabled,
+    generationDisabled,
     field,
     fieldLabel,
     lang,
@@ -27,6 +28,7 @@ export function FieldSuggestions({
     current: DictionaryCardAuthoringSuggestion;
     direction: 'ltr' | 'rtl';
     disabled: boolean;
+    generationDisabled: boolean;
     field: DictionaryCardAuthoringField;
     fieldLabel: string;
     lang: string;
@@ -108,7 +110,7 @@ export function FieldSuggestions({
                 </Button>
                 <Button
                     aria-label={tryAnotherLabel}
-                    disabled={disabled}
+                    disabled={disabled || generationDisabled}
                     leadingIcon={<RefreshCw aria-hidden size={16} />}
                     onClick={generateAnother}
                     size='compact'

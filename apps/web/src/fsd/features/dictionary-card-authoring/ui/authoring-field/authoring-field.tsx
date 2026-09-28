@@ -143,6 +143,7 @@ export function AuthoringField({
         field === 'exampleTranslation' && !values.example?.trim();
     const generationDisabled =
         !ai?.available ||
+        !suggestions.canGenerate ||
         !values.source.trim() ||
         suggestions.active ||
         Boolean(ai?.pending) ||
@@ -203,6 +204,11 @@ export function AuthoringField({
                 current={currentSuggestion}
                 direction={direction}
                 disabled={dependencyBlocked || suggestions.stale}
+                generationDisabled={
+                    !suggestions.canGenerate ||
+                    suggestions.active ||
+                    Boolean(ai?.pending)
+                }
                 field={field}
                 fieldLabel={actionFieldName}
                 lang={language}

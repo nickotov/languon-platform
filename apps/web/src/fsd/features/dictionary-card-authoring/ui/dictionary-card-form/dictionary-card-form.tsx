@@ -12,6 +12,7 @@ import type {
 import { AuthoringField } from '../authoring-field/authoring-field';
 import { AuthoringAiAssistance } from '../authoring-ai-assistance/authoring-ai-assistance';
 import { CardFieldOverrides } from '../card-field-overrides/card-field-overrides';
+import { FormVersionNavigation } from './form-version-navigation';
 import styles from './dictionary-card-form.module.css';
 
 export type {
@@ -47,21 +48,25 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         : t('dictionary.card.discardDraft');
     const saveDisabled =
         active || ai?.pending || ai?.successorActive || !authoring.validValues;
+    const displayedAi = ai
+        ? { ...ai, proposal: authoring.proposal }
+        : undefined;
     const fieldContent: AuthoringFieldContent = {
         effective,
         values: authoring.draft.values,
         setValue: authoring.setValue,
     };
     const fieldSuggestions: AuthoringFieldSuggestions = {
-        ai: ai
+        ai: displayedAi
             ? {
-                  available: ai.available,
-                  format: ai.format,
-                  pending: ai.pending,
-                  proposal: ai.proposal ?? null,
+                  available: displayedAi.available,
+                  format: displayedAi.format,
+                  pending: displayedAi.pending,
+                  proposal: displayedAi.proposal ?? null,
               }
             : undefined,
         active,
+        canGenerate: authoring.isLatestVersion,
         stale,
         hiddenSuggestionIds: authoring.hiddenSuggestionIds,
         reviewedSuggestionIds: authoring.reviewedSuggestionIds,
@@ -117,12 +122,13 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             {t('dictionary.card.duplicateWarning')}
                         </InlineAlert>
                     ) : null}
-                    {ai ? (
+                    {displayedAi ? (
                         <AuthoringAiAssistance
-                            ai={ai}
+                            ai={displayedAi}
                             active={active}
                             stale={stale}
                             validSource={authoring.validSource}
+                            canGenerate={authoring.isLatestVersion}
                             generateAll={authoring.generateAll}
                             acceptAllSuggestions={
                                 authoring.acceptAllSuggestions
@@ -146,7 +152,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             {t('dictionary.authoring.stale')}
                             <Button
                                 onClick={authoring.generateAll}
-                                disabled={active}
+                                disabled={active || !authoring.isLatestVersion}
                                 size='compact'
                                 variant='secondary'
                                 type='button'
@@ -202,23 +208,30 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             {t('dictionary.authoring.savingPaused')}
                         </p>
                     ) : null}
-                    <div className={styles.actions}>
-                        <Button
-                            disabled={pending || ai?.pending}
-                            onClick={onCancel}
-                            type='button'
-                            variant='ghost'
-                        >
-                            {cancelLabel}
-                        </Button>
-                        <Button
-                            className={styles.primaryAction}
-                            disabled={saveDisabled}
-                            loading={pending}
-                            type='submit'
-                        >
-                            {t('dictionary.card.save')}
-                        </Button>
+                    <div className={styles.footerRow}>
+                        <FormVersionNavigation
+                            current={authoring.activeVersionIndex}
+                            onChange={authoring.setActiveVersion}
+                            total={authoring.versionCount}
+                        />
+                        <div className={styles.actions}>
+                            <Button
+                                disabled={pending || ai?.pending}
+                                onClick={onCancel}
+                                type='button'
+                                variant='ghost'
+                            >
+                                {cancelLabel}
+                            </Button>
+                            <Button
+                                className={styles.primaryAction}
+                                disabled={saveDisabled}
+                                loading={pending}
+                                type='submit'
+                            >
+                                {t('dictionary.card.save')}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </form>

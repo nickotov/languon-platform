@@ -624,6 +624,11 @@ export const es = {
     'dictionary.authoring.tryAnotherNamed': 'Probar otro valor de {field}',
     'dictionary.authoring.previousOptions':
         'Opciones de IA anteriores ({count})',
+    'dictionary.authoring.versions': 'Versiones del formulario de tarjeta',
+    'dictionary.authoring.previousVersion':
+        'Versión anterior del formulario',
+    'dictionary.authoring.nextVersion': 'Versión siguiente del formulario',
+    'dictionary.authoring.versionCounter': 'Versión {current} de {total}',
     'dictionary.authoring.acceptSourceFirst':
         'Acepta primero la Fuente sugerida para usar este resultado.',
     'dictionary.authoring.exampleRequired':
