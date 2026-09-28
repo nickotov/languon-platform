@@ -22,6 +22,7 @@ import { LibraryResults } from '../library-results/library-results';
 import styles from './dictionary-library.module.css';
 
 export function DictionaryLibrary({
+    onOpenSettings,
     requestWithSession,
 }: DictionaryLibraryProps) {
     const { t } = useI18n();
@@ -72,6 +73,7 @@ export function DictionaryLibrary({
         selected: state.selected,
         toggleSelected: state.toggleSelected,
         openSelectedDeletion: state.openSelectedDeletion,
+        openSettings: onOpenSettings,
     };
     const createView = {
         catalog: state.catalog,

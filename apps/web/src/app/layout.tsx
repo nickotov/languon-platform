@@ -9,6 +9,7 @@ import { getRequestI18n } from '@/fsd/shared/i18n/server';
 import { ThemeProvider } from '@/fsd/shared/theme';
 import { getRequestTheme } from '@/fsd/shared/theme/server';
 import { ToastHost } from '@/fsd/shared/ui';
+import { ApplicationChrome } from '@/fsd/widgets/app-shell';
 import { SiteHeader } from '@/fsd/widgets/site-header';
 
 import './globals.css';
@@ -34,8 +35,9 @@ export default async function RootLayout({
                 <I18nProvider locale={locale} messages={messages}>
                     <ThemeProvider preference={theme}>
                         <AuthProvider>
-                            <SiteHeader />
-                            {children}
+                            <ApplicationChrome publicHeader={<SiteHeader />}>
+                                {children}
+                            </ApplicationChrome>
                             <ToastHost
                                 label={messages['toast.notifications']}
                             />

@@ -48,46 +48,12 @@ describe('SiteHeader', () => {
     it.each([
         '/dictionaries',
         '/dictionaries/example',
-        '/ru/dictionaries',
-        '/fr/dictionaries/example',
-    ])('provides real dictionary navigation and preferences on %s', (route) => {
-        pathname = route;
-        render(
-            <ThemeProvider preference='light'>
-                <SiteHeader />
-            </ThemeProvider>,
-        );
-
-        expect(
-            screen.getByRole('navigation', { name: 'Dictionaries' }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByRole('link', { name: 'Skip to main content' }),
-        ).toHaveAttribute('href', '#dictionary-content');
-        expect(
-            screen.getByRole('link', { name: 'Dictionaries' }),
-        ).toHaveAttribute('href', '/dictionaries');
-        expect(
-            screen.getByRole('link', { name: 'Dictionaries' }),
-        ).toHaveAttribute('aria-current', 'page');
-        expect(
-            screen.getByRole('combobox', { name: 'Language' }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByRole('button', { name: 'Switch to dark theme' }),
-        ).toBeInTheDocument();
-        expect(
-            screen.queryByRole('link', { name: /states|coverage/i }),
-        ).not.toBeInTheDocument();
-    });
-
-    it.each([
         '/profile',
         '/ru/profile',
         '/shared/dictionaries/example',
         '/dictionaries-other',
     ])(
-        'retains the global header outside owner dictionary routes at %s',
+        'renders the standalone public header without app navigation at %s',
         (route) => {
             pathname = route;
             render(

@@ -1,8 +1,8 @@
 ---
 feature: magic-profile-page
-title: Magic Patterns Profile Page and Application Header
+title: Magic Patterns Profile Page and Authenticated Shell
 status: current
-last_verified: 2026-09-14
+last_verified: 2026-09-28
 surfaces:
     - browser
 source_paths:
@@ -10,6 +10,7 @@ source_paths:
     - apps/web/src/app/profile/**
     - apps/web/src/fsd/pages/profile/**
     - apps/web/src/fsd/widgets/site-header/**
+    - apps/web/src/fsd/widgets/app-shell/**
     - apps/web/src/fsd/features/change-theme/**
     - apps/web/src/fsd/features/auth/ui/home-session-actions.tsx
     - apps/web/tests/e2e/profile.journeys.spec.ts
@@ -25,13 +26,14 @@ related_features:
     - web-ui-kit
 ---
 
-# Magic Patterns Profile Page and Application Header
+# Magic Patterns Profile Page and Authenticated Shell
 
 ## What this verifies
 
-This guide verifies the Magic Patterns application header and `/profile`
-account-settings composition. It proves that the shared logo returns home, the
-theme button persists an explicit appearance, authenticated identity is real,
+This guide verifies the Magic Patterns authenticated application shell and
+`/profile` account-settings composition. It proves that the shell keeps owner
+navigation available, the account menu persists an explicit appearance,
+authenticated identity is real,
 unsupported billing/export datasets remain empty, and their placeholder actions
 say they are coming soon without performing writes. Handle and deletion actions
 are now real and are covered by the related Profile Account Controls guide.
@@ -69,18 +71,24 @@ test database and Redis services.
    visible as coming soon with disabled Connect actions; the email-change request explicitly sends no email.
 5. In Billing, choose **Compare plans**. Expect an informational notification
    that Subscription is coming soon, with no billing request or account change.
-6. Toggle the theme from the header. Expect `data-theme` and the global
-   `languon-theme` cookie to change while the route remains `/profile`.
-7. Click the Languon logo. Expect navigation to `/`.
-8. Repeat at 320px width and at 200% zoom. Expect the header, summary, tabs,
-   cards, and actions to remain usable without horizontal overflow.
+6. Open the pinned account menu and choose Dark. Expect `data-theme` and the
+   global `languon-theme` cookie to change while the route remains `/profile`.
+   Expect the real handle or Account fallback, email, Profile link, interface
+   language, System/Light/Dark choices, and Sign out action to remain reachable.
+7. Click the Languon logo. Expect navigation to `/dictionaries`, the signed-in
+   application home.
+8. Repeat at 320px width and at 200% zoom. Expect a compact top bar and modal
+   navigation drawer instead of the desktop sidebar. The drawer closes on
+   Escape and restores focus to its menu button; the shell, summary, tabs,
+   cards, and actions remain usable without horizontal overflow.
 
 ## E2E coverage
 
 - `profile-empty-coming-soon-and-header-navigation` signs up and verifies a fake
   account, opens the profile route, validates truthful empty states, selects
-  tabs, exercises a coming-soon action, persists a theme toggle, checks compact
-  reflow, and returns home through the shared logo.
+  tabs, exercises a coming-soon action, persists an account-menu theme choice,
+  checks the compact navigation drawer, and returns to Dictionaries through the
+  shell logo.
 
 Detailed tab keyboard semantics and signed-out/loading boundaries remain in
 focused component tests because they do not require another system boundary.
@@ -125,7 +133,7 @@ pnpm --filter @languon/web exec playwright test tests/e2e/profile.journeys.spec.
 - If `/profile` stays in its loading state, inspect `/auth/refresh`; a 401 is
   expected only for a signed-out browser context.
 - If the selected palette is unexpected, inspect only the `languon-theme`
-  cookie and the root `data-theme` attribute.
+  cookie, root `data-theme` attribute, and account-menu selection.
 - If mapped E2E startup fails, confirm the disposable database and Redis
   containers from `apps/web/tests/e2e/README.md` are healthy.
 

@@ -2,7 +2,7 @@
 feature: dictionary-platform
 title: Dictionary Platform
 status: current
-last_verified: 2026-08-26
+last_verified: 2026-09-28
 surfaces:
     - browser
     - api
@@ -21,6 +21,7 @@ source_paths:
     - apps/web/src/fsd/pages/dictionaries/**
     - apps/web/src/fsd/pages/shared-dictionary/**
     - apps/web/src/fsd/widgets/dictionary-editor/**
+    - apps/web/src/fsd/widgets/app-shell/**
     - apps/web/tests/e2e/dictionary-platform.journeys.spec.ts
     - packages/contracts/src/dictionaries/**
     - packages/languages/**
@@ -139,7 +140,10 @@ shared, staging, or production database.
 ### Owner authoring and lifecycle recovery
 
 1. Sign up with a fresh fake account and use `/dictionaries` as the return path.
-   Verify the email with `0000`. Expect **My dictionaries**.
+   Verify the email with `0000`. Expect **My dictionaries** inside the stable
+   authenticated shell. The expanded desktop sidebar lists active dictionaries,
+   links to **All dictionaries**, and keeps Create dictionary and the pinned
+   account menu reachable independently of the page body.
 2. Select **New dictionary**, name it `Studio Spanish`, choose English to
    Spanish, add a description, and create it. Expect a private dictionary editor.
 3. Open **Dictionary settings** from the header. Enable **Definition**,
@@ -155,13 +159,24 @@ shared, staging, or production database.
    with explicit feedback. Rate limits, connection failures and temporary provider
    unavailability show safe recovery instructions without raw provider details.
 4. Open the card's labelled actions menu to edit it, archive it, select archived
-   cards, and restore it. Return to
-   active cards and expect its values to be unchanged.
+   cards, and restore it. Return to active cards and expect its values to be
+   unchanged.
 5. Return to the library, search for the dictionary, open its labelled actions
-   menu to archive it, select **Archived**, and use its menu to restore it. Restored dictionaries are private and editable.
+   menu, and select **Dictionary settings**. Expect the existing settings dialog
+   over **My dictionaries** while the URL remains `/dictionaries`. Close it, then
+   archive the dictionary, select **Archived**, and use its menu to restore it.
+   Restored dictionaries are private and editable. Library dictionary cards
+   auto-fit into columns no narrower than 400 px on desktop; below 640 px they
+   use a 250 px minimum and do not overflow a 320 px viewport.
 6. Archive remains the reversible lifecycle action. Permanent single, selected,
    and all-archived cleanup follows the separate
    [Dictionary Permanent Deletion](./dictionary-permanent-deletion.md) guide.
+7. Collapse the desktop sidebar and expect a 72px icon rail with labelled icon
+   actions and an active marker; restore it and expect the preference to persist
+   during authenticated navigation. Below 1024px, use the sticky top-bar menu to
+   open the modal drawer. Expect the same active dictionary navigation and create
+   action, Escape/outside dismissal, background scroll prevention, and focus
+   restoration without horizontal overflow.
 
 Settings and sharing open in focused sheets. Batch generation and import/export
 remain available under **More dictionary actions**; **Sharing** opens the existing
@@ -421,7 +436,9 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
 
 - `owner-creates-edits-and-restores-dictionary` proves authenticated creation,
   inherited optional fields, card editing, card archive/restore, dictionary
-  archive/restore, and owner-only recovery through the real web/API/database stack.
+  archive/restore, in-library settings without route navigation, authenticated
+  shell navigation and compact responsive access, and owner-only recovery through
+  the real web/API/database stack.
 - `anonymous-reader-forks-unlisted-dictionary` proves explicit publication,
   anonymous capability reading, fragment-only secret transport through signup,
   and an authenticated independent private fork.

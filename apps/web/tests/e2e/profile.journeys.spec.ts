@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision magic-profile-page sha256:f7704d5de8f100d7
-// @user-flow-revision profile-account-controls sha256:09a09af20e4db889
+// @user-flow-revision magic-profile-page sha256:208fbba1f5d6e832
+// @user-flow-revision profile-account-controls sha256:65250b786a33e71b
 
 const password = 'E2e!Profile-password-2026';
 const changedPassword = 'E2e!Profile-new-password-2026';
@@ -32,7 +32,7 @@ function captureBrowserErrors(page: Page) {
 }
 
 // @user-flow magic-profile-page/profile-empty-coming-soon-and-header-navigation
-test('shows truthful account placeholders and the shared application header', async ({
+test('shows truthful account placeholders and the authenticated application shell', async ({
     page,
 }, testInfo) => {
     const assertNoBrowserErrors = captureBrowserErrors(page);
@@ -55,7 +55,7 @@ test('shows truthful account placeholders and the shared application header', as
     await expect(
         page.getByRole('textbox', { name: 'Full name' }),
     ).toBeDisabled();
-    await expect(page.getByText(email)).toBeVisible();
+    await expect(page.locator('#main-content').getByText(email)).toBeVisible();
     await expect(page.locator('dl').getByText('Not available yet')).toHaveCount(
         2,
     );
@@ -70,9 +70,9 @@ test('shows truthful account placeholders and the shared application header', as
     await expect(page.getByText('Subscription is coming soon.')).toBeVisible();
 
     const html = page.locator('html');
-    const themeToggle = page.getByTestId('theme-toggle');
-    await themeToggle.click();
-    await expect(html).toHaveAttribute('data-theme', /^(light|dark)$/);
+    await page.getByRole('button', { name: /Account menu/ }).click();
+    await page.getByRole('button', { name: 'Dark' }).click();
+    await expect(html).toHaveAttribute('data-theme', 'dark');
     expect(
         (await page.context().cookies()).some(
             (cookie) => cookie.name === 'languon-theme',
@@ -80,6 +80,13 @@ test('shows truthful account placeholders and the shared application header', as
     ).toBe(true);
 
     await page.setViewportSize({ height: 800, width: 320 });
+    const menuButton = page.getByRole('button', { name: 'Open navigation' });
+    await menuButton.click();
+    await expect(
+        page.getByRole('dialog', { name: 'Main navigation' }),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(menuButton).toBeFocused();
     expect(
         await page.evaluate(
             () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -100,7 +107,7 @@ test('shows truthful account placeholders and the shared application header', as
     });
 
     await page.getByRole('link', { name: 'Languon home' }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/dictionaries$/);
     assertNoBrowserErrors();
 });
 

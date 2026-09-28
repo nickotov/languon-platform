@@ -1,0 +1,250 @@
+.sidebarContent {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+.brand,
+.railBrand {
+    align-items: center;
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    flex: none;
+    height: 64px;
+}
+.brand {
+    gap: 8px;
+    justify-content: space-between;
+    padding: 0 12px 0 16px;
+}
+.railBrand {
+    justify-content: center;
+}
+.navigation,
+.railNavigation {
+    flex: 1;
+    min-height: 0;
+}
+.navigation {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px 12px;
+}
+.railNavigation {
+    padding: 12px 8px;
+}
+.railControl {
+    display: flex;
+    margin: 0 auto 12px;
+}
+.navList,
+.dictionaryList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.navList {
+    display: grid;
+    gap: 4px;
+}
+.railItem {
+    display: flex;
+    justify-content: center;
+    min-height: 44px;
+    position: relative;
+}
+.railItem + .railItem {
+    margin-top: 4px;
+}
+.railMarker {
+    background: var(--primary-default);
+    border-radius: 0 var(--radius-full) var(--radius-full) 0;
+    inset-block: 8px;
+    inset-inline-start: -8px;
+    position: absolute;
+    width: 4px;
+}
+.railLink {
+    align-items: center;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    display: flex;
+    height: 44px;
+    justify-content: center;
+    text-decoration: none;
+    width: 44px;
+}
+.railLink[aria-current='page'] {
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+.railLink:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+.railLink:focus-visible,
+.groupButton:focus-visible,
+.groupActive:focus-visible,
+.navLink:focus-visible,
+.navLinkActive:focus-visible,
+.status button:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+.groupHeader {
+    align-items: center;
+    display: flex;
+    gap: 4px;
+    position: relative;
+}
+.groupButton,
+.groupActive {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    flex: 1;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    gap: 10px;
+    min-height: 44px;
+    min-width: 0;
+    padding: 0 10px;
+    text-align: start;
+}
+.groupButton:hover,
+.groupActive {
+    background: var(--background-subtle);
+}
+.groupActive {
+    font-weight: 600;
+}
+.groupButton > span,
+.groupActive > span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.activeIcon {
+    color: var(--primary-default);
+}
+.chevron,
+.chevronClosed {
+    color: var(--text-secondary);
+    flex: none;
+    transition: transform var(--duration-normal);
+}
+.chevronClosed {
+    transform: rotate(-90deg);
+}
+.groupPanel {
+    margin-inline-start: 20px;
+    overflow: hidden;
+    padding: 4px 0 0 8px;
+}
+.dictionaryList {
+    border-inline-start: 1px solid var(--border-default);
+    max-height: min(52vh, 520px);
+    overflow-y: auto;
+    padding: 2px 2px 2px 8px;
+    scrollbar-width: thin;
+}
+.navLink,
+.navLinkActive {
+    align-items: center;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    display: flex;
+    gap: 10px;
+    min-height: 44px;
+    padding: 5px 10px;
+    position: relative;
+    text-decoration: none;
+}
+.navLink:hover,
+.navLinkActive {
+    background: var(--primary-subtle);
+}
+.navLinkActive {
+    font-weight: 600;
+}
+.activeMarker {
+    background: var(--primary-default);
+    border-radius: var(--radius-full);
+    inset-block: 8px;
+    inset-inline-start: 0;
+    position: absolute;
+    width: 3px;
+}
+.navCopy {
+    display: block;
+    min-width: 0;
+}
+.navCopy strong,
+.navCopy span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.navCopy strong {
+    font-size: 13px;
+    font-weight: inherit;
+}
+.navCopy span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin-top: 1px;
+}
+.status {
+    padding: 10px;
+}
+.status p {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+    margin: 0;
+}
+.status button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--primary-default);
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    gap: 6px;
+    margin-top: 8px;
+    min-height: 36px;
+    padding: 0;
+}
+.loading {
+    display: grid;
+    gap: 2px;
+    padding: 2px 0;
+}
+.loading > span {
+    display: grid;
+    gap: 5px;
+    min-height: 44px;
+    padding: 8px 10px;
+}
+.touchButton {
+    height: 44px;
+    width: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .chevron,
+    .chevronClosed {
+        transition: none;
+    }
+}

@@ -175,6 +175,9 @@
     --size-input-height: 44px;
     --size-chat-bubble-max-width: 480px;
     --size-nav-sidebar-width: 240px;
+    --size-nav-rail-width: 72px;
+    --size-nav-drawer-width: 304px;
+    --size-nav-drawer-gutter: 32px;
     --size-topbar-height: 64px;
     --radius-xs: 4px;
     --radius-sm: 8px;

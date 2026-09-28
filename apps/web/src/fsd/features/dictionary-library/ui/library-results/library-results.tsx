@@ -30,6 +30,7 @@ export type LibraryResultsProps = {
     selected: ReadonlySet<string>;
     toggleSelected(dictionaryId: string): void;
     openSelectedDeletion(dictionary?: DictionarySummary): void;
+    openSettings(dictionary: DictionarySummary): void;
 };
 
 export function LibraryResults({ state }: { state: LibraryResultsProps }) {
@@ -151,6 +152,7 @@ export function LibraryResults({ state }: { state: LibraryResultsProps }) {
                     selected={state.selected.has(dictionary.id)}
                     onToggleSelected={state.toggleSelected}
                     onDelete={state.openSelectedDeletion}
+                    onOpenSettings={state.openSettings}
                 />
             ))}
         </ul>

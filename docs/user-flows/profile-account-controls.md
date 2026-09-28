@@ -2,7 +2,7 @@
 feature: profile-account-controls
 title: Profile Account Controls
 status: current
-last_verified: 2026-09-15
+last_verified: 2026-09-28
 surfaces:
     - browser
     - api
@@ -12,6 +12,7 @@ source_paths:
     - apps/web/src/fsd/features/account-controls/**
     - apps/web/src/fsd/pages/profile/**
     - apps/web/src/fsd/widgets/site-header/**
+    - apps/web/src/fsd/widgets/app-shell/**
     - apps/backend/src/modules/users/**
     - apps/backend/src/modules/administration/**
     - apps/backend/src/infrastructure/worker/account-purge-command.ts
@@ -61,7 +62,7 @@ journal; it is never a staging or production restore guarantee.
    control and changes immediately. Full name, learning language, time zone,
    and photo upload are explicitly coming soon rather than editable fake data.
    Enter a handle of 3–30 ASCII letters, digits, or underscores. Save it and
-   expect canonical lowercase `@handle` in the summary and shared header. A
+   expect canonical lowercase `@handle` in the summary and shell account area. A
    second account cannot save the same canonical handle; a 409 leaves the draft
    visible with a conflict message. No availability claim is made before save.
 3. Open `/profile?tab=security`. Expect Email, Password, Sign-in methods,
@@ -87,8 +88,8 @@ journal; it is never a staging or production restore guarantee.
    membership transfer/revocation. A network failure warns that the request may
    have committed and must be checked before another decision.
 6. Repeat at 320 CSS pixels and desktop, using keyboard Tab/Enter/Escape and
-   both themes. The header, forms, tabs, dialog, and status messages must remain
-   usable without horizontal clipping.
+   both themes. The application shell, mobile drawer, forms, tabs, dialog, and
+   status messages must remain usable without horizontal clipping.
 
 ## API verification
 

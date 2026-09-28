@@ -64,6 +64,9 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
         onSuccess: ({ dictionary }) => {
             createAttempt.current = null;
             void queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
+            void queryClient.invalidateQueries({
+                queryKey: ['dictionaries-navigation'],
+            });
             setCreateOpen(false);
             router.push(href(`/dictionaries/${dictionary.id}`));
         },
@@ -90,6 +93,9 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
                     : t('dictionary.library.restoredOutcome'),
             );
             void queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
+            void queryClient.invalidateQueries({
+                queryKey: ['dictionaries-navigation'],
+            });
         },
     });
     const deletion = useDictionaryLibraryDeletion({

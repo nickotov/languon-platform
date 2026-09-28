@@ -84,7 +84,7 @@
 
 .addCard {
     position: fixed;
-    bottom: 96px;
+    bottom: 24px;
     inset-inline-start: 50%;
     transform: translateX(-50%);
     z-index: 40;
@@ -179,11 +179,10 @@
 
 @media (min-width: 1024px) {
     .main {
-        margin-inline-start: calc(240px + max(0px, (100vw - 1488px) / 2));
-        margin-inline-end: auto;
-        width: calc(100% - 240px);
-        max-width: 1248px;
-        padding: 32px 24px 136px;
+        margin-inline: auto;
+        max-width: 1232px;
+        padding: 40px 48px 136px;
+        width: 100%;
     }
     .summaryContent {
         flex-direction: row;
@@ -192,7 +191,7 @@
     }
     .addCard {
         bottom: 32px;
-        inset-inline-start: calc(50% + 120px);
+        inset-inline-start: calc(50% + var(--app-sidebar-center-offset, 0px));
     }
 }
 

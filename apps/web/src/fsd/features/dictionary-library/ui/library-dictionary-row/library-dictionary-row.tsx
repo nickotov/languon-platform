@@ -1,5 +1,6 @@
 import {
     Archive,
+    BookOpen,
     RotateCcw,
     Settings,
     Link as LinkIcon,
@@ -8,7 +9,6 @@ import {
     Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { languageLabel } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Badge, Card, Checkbox, Menu } from '@/fsd/shared/ui';
@@ -31,6 +31,7 @@ type Props = {
     selected: boolean;
     onToggleSelected(dictionaryId: string): void;
     onDelete(dictionary: DictionarySummary): void;
+    onOpenSettings(dictionary: DictionarySummary): void;
 };
 
 export function LibraryDictionaryRow({
@@ -41,16 +42,20 @@ export function LibraryDictionaryRow({
     selected,
     onToggleSelected,
     onDelete,
+    onOpenSettings,
 }: Props) {
     const { href, locale, t } = useI18n();
-    const router = useRouter();
     const path = href(`/dictionaries/${dictionary.id}`);
-    const settingsPath = href(`/dictionaries/${dictionary.id}?settings=open`);
     const source = languageLabel(catalog, dictionary.sourceLanguage, locale);
     const target = languageLabel(catalog, dictionary.targetLanguage, locale);
     const pair = `${source} → ${target}`;
     const count = t('dictionary.library.cardCount', {
         count: dictionary.activeCardCount,
+    });
+    const updated = t('dictionary.library.updated', {
+        date: new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+            new Date(dictionary.updatedAt),
+        ),
     });
     const privateDictionary = dictionary.visibility === 'private';
     const visibilityIcon = privateDictionary ? (
@@ -66,7 +71,7 @@ export function LibraryDictionaryRow({
     });
 
     function openSettings() {
-        router.push(settingsPath);
+        onOpenSettings(dictionary);
     }
     function changeLifecycle() {
         onChangeLifecycle({
@@ -118,6 +123,9 @@ export function LibraryDictionaryRow({
                 padding='none'
                 variant='outlined'
             >
+                <span className={styles.dictionaryIcon}>
+                    <BookOpen aria-hidden size={20} />
+                </span>
                 <div className={styles.cardContent}>
                     {archived ? (
                         <Checkbox
@@ -130,7 +138,7 @@ export function LibraryDictionaryRow({
                             onChange={toggleSelection}
                         />
                     ) : null}
-                    <h2 dir='auto'>
+                    <h2 dir='auto' title={dictionary.name}>
                         {archived ? (
                             <button
                                 className={styles.openLink}
@@ -148,7 +156,6 @@ export function LibraryDictionaryRow({
                     </h2>
                     <div className={styles.cardMeta}>
                         <span>{pair}</span>
-                        <span>{count}</span>
                         <Badge
                             icon={visibilityIcon}
                             size='sm'
@@ -172,6 +179,10 @@ export function LibraryDictionaryRow({
                             {t('dictionary.library.restoreHelp')}
                         </p>
                     ) : null}
+                    <div className={styles.cardFooter}>
+                        <span>{count}</span>
+                        <span>{updated}</span>
+                    </div>
                 </div>
                 <div className={styles.rowActions}>
                     <Menu

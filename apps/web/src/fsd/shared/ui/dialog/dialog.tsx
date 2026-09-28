@@ -77,6 +77,8 @@ export function Dialog({
         if (!open && dialog.open) dialog.close();
     }, [open]);
 
+    if (!open) return null;
+
     return (
         <DialogContext.Provider value={{ onClose }}>
             <dialog

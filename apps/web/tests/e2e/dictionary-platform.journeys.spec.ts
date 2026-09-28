@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:63d722448302522c
+// @user-flow-revision dictionary-platform sha256:91eb1d68d0b1ecef
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -212,6 +212,25 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             page.getByRole('heading', { name: 'My dictionaries' }),
         ).toBeVisible();
+        await expect(
+            page.getByRole('complementary', { name: 'Application sidebar' }),
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+        await expect(
+            page.getByRole('button', { name: 'Expand sidebar' }),
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'Expand sidebar' }).click();
+        await page.setViewportSize({ width: 320, height: 900 });
+        const menuButton = page.getByRole('button', {
+            name: 'Open navigation',
+        });
+        await menuButton.click();
+        await expect(
+            page.getByRole('dialog', { name: 'Main navigation' }),
+        ).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(menuButton).toBeFocused();
+        await page.setViewportSize({ width: 1280, height: 900 });
         await createDictionary(page, name);
         await addPopulatedCard(page);
         await page.setViewportSize({ width: 320, height: 900 });
@@ -332,6 +351,16 @@ test.describe('dictionary platform journeys', () => {
         await expect(page.getByText('Card restored.')).toBeVisible();
 
         await page.getByRole('link', { name: /Back to dictionaries/ }).click();
+        await chooseDictionaryLibraryAction(page, name, 'Dictionary settings');
+        await expect(page).toHaveURL(/\/dictionaries$/);
+        const librarySettings = page.getByRole('dialog', {
+            name: 'Dictionary settings',
+        });
+        await expect(librarySettings).toBeVisible();
+        await librarySettings
+            .getByRole('button', { name: 'Cancel' })
+            .last()
+            .click();
         await chooseDictionaryLibraryAction(page, name, 'Archive');
         await expect(page.getByText(/Dictionary archived/)).toBeVisible();
         await page

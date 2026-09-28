@@ -9,8 +9,10 @@ import { DictionaryLibrary } from '@/fsd/features/dictionary-library';
 
 import { render } from './render';
 
+const push = vi.fn();
+
 vi.mock('next/navigation', () => ({
-    useRouter: () => ({ push: vi.fn() }),
+    useRouter: () => ({ push }),
 }));
 
 const languageResponse = {
@@ -59,7 +61,11 @@ function summary(id: string, name: string): DictionarySummary {
 }
 
 describe('dictionary library', () => {
+    const openSettings = vi.fn();
+
     beforeEach(() => {
+        openSettings.mockReset();
+        push.mockReset();
         vi.spyOn(dictionaryApi, 'listLanguages').mockResolvedValue(
             languageResponse,
         );
@@ -87,6 +93,7 @@ describe('dictionary library', () => {
         render(
             <QueryClientProvider client={client}>
                 <DictionaryLibrary
+                    onOpenSettings={openSettings}
                     requestWithSession={(operation) => operation('token')}
                 />
             </QueryClientProvider>,
@@ -104,6 +111,41 @@ describe('dictionary library', () => {
                 limit: 25,
             }),
         );
+    });
+
+    it('opens settings through the library owner without navigating to the dictionary', async () => {
+        const dictionary = summary(
+            '10000000-0000-4000-8000-000000000008',
+            'Stay in library',
+        );
+        vi.spyOn(dictionaryApi, 'listDictionaries').mockResolvedValue({
+            data: [dictionary],
+            nextCursor: null,
+        });
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        });
+        const user = userEvent.setup();
+        render(
+            <QueryClientProvider client={client}>
+                <DictionaryLibrary
+                    onOpenSettings={openSettings}
+                    requestWithSession={(operation) => operation('token')}
+                />
+            </QueryClientProvider>,
+        );
+
+        await user.click(
+            await screen.findByRole('button', {
+                name: 'Actions for Stay in library',
+            }),
+        );
+        await user.click(
+            screen.getByRole('menuitem', { name: 'Dictionary settings' }),
+        );
+
+        expect(openSettings).toHaveBeenCalledWith(dictionary);
+        expect(push).not.toHaveBeenCalled();
     });
 
     it('filters archived dictionaries and restores from the row menu with its current version', async () => {
@@ -151,6 +193,7 @@ describe('dictionary library', () => {
         render(
             <QueryClientProvider client={client}>
                 <DictionaryLibrary
+                    onOpenSettings={openSettings}
                     requestWithSession={(operation) => operation('token')}
                 />
             </QueryClientProvider>,
@@ -238,6 +281,7 @@ describe('dictionary library', () => {
         render(
             <QueryClientProvider client={client}>
                 <DictionaryLibrary
+                    onOpenSettings={openSettings}
                     requestWithSession={(operation) => operation('token')}
                 />
             </QueryClientProvider>,
@@ -315,6 +359,7 @@ describe('dictionary library', () => {
         render(
             <QueryClientProvider client={client}>
                 <DictionaryLibrary
+                    onOpenSettings={openSettings}
                     requestWithSession={(operation) => operation('token')}
                 />
             </QueryClientProvider>,
@@ -356,6 +401,7 @@ describe('dictionary library', () => {
             render(
                 <QueryClientProvider client={client}>
                     <DictionaryLibrary
+                        onOpenSettings={openSettings}
                         requestWithSession={(operation) => operation('token')}
                     />
                 </QueryClientProvider>,
