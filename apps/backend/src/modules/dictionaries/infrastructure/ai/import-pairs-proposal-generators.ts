@@ -144,6 +144,7 @@ export function createMastraImportPairsProposalGenerator(options: {
             const message = JSON.stringify({
                 effectiveSettings: input.effectiveSettings,
                 instruction: input.instruction,
+                translationContext: input.translationContext,
                 rows: input.rows.map((row) => ({
                     rowIndex: row.rowIndex,
                     source: row.source,

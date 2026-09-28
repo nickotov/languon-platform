@@ -56,7 +56,9 @@ export function useBatchMutation({
                 const format = batchGenerationJob.data?.job?.format;
                 if (
                     format !== 'pasted-terms:v1' &&
-                    format !== 'import-pairs:v1'
+                    format !== 'pasted-terms:v2' &&
+                    format !== 'import-pairs:v1' &&
+                    format !== 'import-pairs:v2'
                 )
                     throw new Error('Batch generation job unavailable');
                 return requestWithSession((token) =>

@@ -17,6 +17,21 @@ export const es = {
     'dictionary.audio.speed': 'Velocidad de reproducción',
     'dictionary.audio.normal': 'Normal',
     ...profileFeatureMessages,
+    'dictionary.context.settingsTitle': 'Contexto de traducción',
+    'dictionary.context.label': 'Contexto del diccionario',
+    'dictionary.context.settingsHelp':
+        'Describe el tema, la situación, el sentido o el registro. Las tarjetas heredan este contexto salvo que definan uno propio.',
+    'dictionary.context.set': 'Definir contexto',
+    'dictionary.context.update': 'Actualizar contexto',
+    'dictionary.context.cardSwitchHelp':
+        'Añade una indicación para esta tarjeta. Su contexto sustituye al del diccionario durante la generación con IA.',
+    'dictionary.context.inherited': 'Contexto heredado del diccionario',
+    'dictionary.context.cardLabel': 'Contexto de la tarjeta',
+    'dictionary.context.cardHelp':
+        'Describe el significado deseado para esta tarjeta. Desactiva la opción para volver a heredar el contexto del diccionario.',
+    'dictionary.context.cardRequired':
+        'Escribe un contexto o desactiva esta opción.',
+    'dictionary.context.tooLong': 'Usa como máximo {count} caracteres.',
     'dictionary.authoring.sourceActionName': 'Fuente',
     'dictionary.cards.regenerate': 'Reescribir toda la tarjeta con IA',
 
@@ -625,8 +640,7 @@ export const es = {
     'dictionary.authoring.previousOptions':
         'Opciones de IA anteriores ({count})',
     'dictionary.authoring.versions': 'Versiones del formulario de tarjeta',
-    'dictionary.authoring.previousVersion':
-        'Versión anterior del formulario',
+    'dictionary.authoring.previousVersion': 'Versión anterior del formulario',
     'dictionary.authoring.nextVersion': 'Versión siguiente del formulario',
     'dictionary.authoring.versionCounter': 'Versión {current} de {total}',
     'dictionary.authoring.acceptSourceFirst':
@@ -646,7 +660,7 @@ export const es = {
     'dictionary.authoring.unavailable':
         'Las sugerencias de IA no están disponibles. Puedes completar la tarjeta manualmente.',
     'dictionary.authoring.stale':
-        'La frase de origen cambió. Estas sugerencias son de la frase anterior y no se pueden usar.',
+        'La frase de origen o el contexto de traducción cambió. Estas sugerencias ya no corresponden a la tarjeta y no se pueden usar.',
     'dictionary.authoring.suggestions': 'Sugerencias de IA',
     'dictionary.authoring.suggestionsFor': 'Sugerencias de IA para {field}',
     'dictionary.authoring.regenerateField': 'Regenerar campo',

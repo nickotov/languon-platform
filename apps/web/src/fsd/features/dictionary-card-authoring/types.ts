@@ -27,9 +27,11 @@ export type DictionaryCardAuthoringProposal = {
         | null;
     sourceSuggestions?: DictionaryCardAuthoringSuggestion[];
     suggestions: DictionaryCardAuthoringSuggestion[];
+    translationContext?: string | null;
 };
 export interface DictionaryCardDraft {
     overrides: DictionaryCardOverrides;
+    translationContext: string | null;
     values: DictionaryCardValues;
 }
 
@@ -48,7 +50,11 @@ export type DictionaryCardAuthoringAction =
 export interface DictionaryCardAuthoringAI {
     available: boolean;
     error?: string | null;
-    format?: 'card-authoring:v1' | 'card-authoring:v2' | undefined;
+    format?:
+        | 'card-authoring:v1'
+        | 'card-authoring:v2'
+        | 'card-authoring:v3'
+        | undefined;
     job?: DictionaryCardAuthoringGenerationJob | null;
     onAction(action: DictionaryCardAuthoringAction): Promise<void>;
     pending: boolean;

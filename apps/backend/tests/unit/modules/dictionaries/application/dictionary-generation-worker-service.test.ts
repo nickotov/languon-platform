@@ -44,6 +44,7 @@ const input = {
     },
     format: dictionaryGenerationFormat,
     instruction: null,
+    translationContext: 'Formal financial-services terminology',
     original: {
         authorship: 'human' as const,
         effectiveSettings: {
@@ -215,6 +216,7 @@ describe('DictionaryGenerationWorkerService', () => {
                 source: 'hello',
                 sourceLanguage: 'en',
                 targetLanguage: 'fr',
+                translationContext: null,
             },
             providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
             providerExecution: null,
@@ -546,6 +548,9 @@ describe('DictionaryGenerationWorkerService', () => {
         expect(generate).toHaveBeenCalledWith(
             expect.objectContaining({
                 idempotencyKey: '00000000-0000-4000-8000-000000000004/generate',
+                input: expect.objectContaining({
+                    translationContext: 'Formal financial-services terminology',
+                }),
             }),
         );
         expect(generationStore.heartbeat).toHaveBeenCalledWith(
@@ -806,6 +811,7 @@ describe('DictionaryGenerationWorkerService', () => {
             format: dictionaryPastedTermsGenerationFormat,
             rows,
             sharedContext: 'Ecology',
+            translationContext: 'Botanical ecology terminology',
         };
         const generationStore = store({
             claim: vi.fn(async () => ({
@@ -880,6 +886,15 @@ describe('DictionaryGenerationWorkerService', () => {
         expect(
             generate.mock.calls.map(([request]) => request.input.rows.length),
         ).toEqual([20, 20, 1]);
+        expect(
+            generate.mock.calls.map(
+                ([request]) => request.input.translationContext,
+            ),
+        ).toEqual([
+            'Botanical ecology terminology',
+            'Botanical ecology terminology',
+            'Botanical ecology terminology',
+        ]);
         expect(generationStore.complete).toHaveBeenCalledWith(
             expect.objectContaining({
                 proposal: expect.objectContaining({
@@ -925,6 +940,7 @@ describe('DictionaryGenerationWorkerService', () => {
                     importFingerprint: fingerprint,
                     instruction: null,
                     rows,
+                    translationContext: null,
                 },
                 leaseDeadline: new Date('2026-08-21T12:00:00.100Z'),
                 providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
@@ -1005,6 +1021,7 @@ describe('DictionaryGenerationWorkerService', () => {
             format: dictionaryPastedTermsGenerationFormat,
             rows: [{ input: 'bank', rowIndex: 0 }],
             sharedContext: null,
+            translationContext: null,
         };
         const generationStore = store({
             claim: vi.fn(async () => ({
@@ -1075,8 +1092,9 @@ describe('DictionaryGenerationWorkerService', () => {
                 targetLanguage: 'fr',
             },
             effectiveSettings: input.original.effectiveSettings,
-            format: dictionaryDocumentGenerationFormat as 'document-terms:v1',
+            format: dictionaryDocumentGenerationFormat,
             instruction: null,
+            translationContext: null,
             uploadId: object.uploadId,
         };
         const generationStore = store({
@@ -1169,8 +1187,9 @@ describe('DictionaryGenerationWorkerService', () => {
                 targetLanguage: 'fr',
             },
             effectiveSettings: input.original.effectiveSettings,
-            format: dictionaryDocumentGenerationFormat as 'document-terms:v1',
+            format: dictionaryDocumentGenerationFormat,
             instruction: null,
+            translationContext: null,
             uploadId: '00000000-0000-4000-8000-000000000005',
         };
         const generationStore = store({

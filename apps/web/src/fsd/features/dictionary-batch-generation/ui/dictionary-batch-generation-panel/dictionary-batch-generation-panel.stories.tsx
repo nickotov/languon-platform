@@ -70,6 +70,7 @@ const dictionary = {
     sourceDictionaryId: null,
     sourceLanguage: 'en',
     targetLanguage: 'ar',
+    translationContext: null,
     updatedAt: '2026-08-25T10:00:00.000Z',
     version: 3,
     visibility: 'private',

@@ -2,7 +2,7 @@
 feature: dictionary-platform
 title: Dictionary Platform
 status: current
-last_verified: 2026-09-28
+last_verified: 2026-09-29
 surfaces:
     - browser
     - api
@@ -74,6 +74,12 @@ versioned storage, follow durable scan/extraction/enrichment progress, and edit
 one final generated-card review after the original bytes have been deleted. A
 Quizlet-compatible pair list can also be previewed, imported atomically, and
 exported again with formula-safe CSV cells and preserved Unicode/quoted data.
+An owner can save private translation context on a dictionary or one card to
+disambiguate sense, domain, situation, or register. Cards inherit dictionary
+context unless they define an override. The resolved context guides every
+generated card field; dictionaries without context retain the existing flow.
+Context is owner-only guidance and is omitted from public shares, forks, and
+exports.
 
 ## Start the development environment
 
@@ -98,9 +104,10 @@ pnpm dev:web
 ```
 
 AI generation additionally requires the local dictionary worker with the
-deterministic provider and `card-authoring:v1`, `card-authoring:v2`, `single-card:v1`, and
-`pasted-terms:v1` enabled for API enqueue and worker processing. Optional AI pair
-enrichment additionally uses `import-pairs:v1`. The mapped Playwright configuration supplies
+deterministic provider and retained legacy plus context-aware formats:
+`card-authoring:v1`, `card-authoring:v2`, `card-authoring:v3`, `single-card:v1`,
+`single-card:v2`, `pasted-terms:v1`, and `pasted-terms:v2`. Optional AI pair
+enrichment uses `import-pairs:v1` and `import-pairs:v2`. The mapped Playwright configuration supplies
 those local-only settings and starts the third process automatically; it never
 calls a live model.
 
@@ -152,6 +159,12 @@ shared, staging, or production database.
    sheet. Add source, translation, definition, example, and translated example,
    then save. Expect the overlay to close and the card to inherit those settings
    and display each value with the correct language metadata.
+   Dictionary settings also expose optional **Translation context**. Save a
+   bounded multiline value and expect it to persist after reopening settings.
+   In Add card, inherited context appears read-only behind **Update context**.
+   Enabling the switch reveals an empty required card-specific field; saving it
+   makes that card use the override. Turning the switch off while editing clears
+   the override and resumes dictionary inheritance.
    Closing a non-empty or changed draft using **Discard draft**, Escape, or the close control
    asks **Discard this draft?**. **Keep writing** preserves it; **Discard draft**
    closes it and queues cleanup of outstanding suggestions. Empty drafts close
@@ -223,6 +236,9 @@ silently overwrite or replay a stale edit.
    uses the displayed version. Generation controls are disabled on a historical
    version until the newest version is selected. Regenerating Context example
    displays its newly generated Example translation in the same new version.
+   Generation uses the current effective translation context. Changing a card
+   override after suggestions arrive invalidates those choices; explicitly
+   regenerate before accepting AI values based on the new meaning.
 5. Edit any accepted field manually, accept at least one AI value, and select
    **Save card**. Expect one atomic card with **Human + AI** authorship. A draft
    saved without accepting an AI suggestion follows the normal manual path and
@@ -299,6 +315,9 @@ completion or cancellation without rereading the multilingual card.
    a focused desktop dialog or mobile bottom sheet. Paste one term or phrase per
    line, up to 100 rows, and optionally add shared context. Blank lines are
    ignored; the server owns trimming, row order, and validation.
+   Dictionary translation context is sent separately from this transient shared
+   context. Both guide the request, but accepted cards keep no card override and
+   continue inheriting the dictionary context.
 2. Start generation. Expect a persisted URL and bounded queued, generating,
    validating, and review-ready progress. Reload during or after processing and
    expect the same server-owned job without raw pasted formatting or proposal
@@ -396,6 +415,9 @@ do not paste it into shell history or documentation. Owner endpoints require
 3. Use `PATCH /dictionaries/{dictionaryId}` and the card create/update/lifecycle/
    reorder routes with the returned dictionary, settings, and card versions.
    Stale expected versions return `version_conflict` without a partial write.
+   Dictionary updates and card create/update accept nullable
+   `translationContext`; owner reads return the raw stored values. Effective
+   context resolves the card value first and then the dictionary value.
 4. `POST /dictionaries/{dictionaryId}/share-key/rotate` returns a capability once.
    `GET /shared/dictionaries/{shareId}` succeeds only with that key in
    `X-Languon-Share-Key`; private, archived, rotated, revoked, wrong-owner, and
@@ -433,7 +455,7 @@ no-store` and its signed capability must never be logged or persisted by the
     target and returns a bounded sample plus advisory capacity. `POST
 /dictionary-imports` reparses the original bounded text and uses an owner-
     scoped idempotency key for either one deterministic atomic commit or a
-    distinct `import-pairs:v1` job. `GET /dictionaries/{dictionaryId}/export`
+    distinct context-aware import-pairs job. `GET /dictionaries/{dictionaryId}/export`
     streams the selected fixed format with private no-store attachment headers.
 
 Inspect response headers as well as bodies: public and owner dictionary reads
@@ -443,6 +465,7 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
 ## E2E coverage
 
 - `owner-creates-edits-and-restores-dictionary` proves authenticated creation,
+  dictionary-context persistence, inherited preview, card override removal,
   inherited optional fields, card editing, card archive/restore, dictionary
   archive/restore, in-library settings without route navigation, authenticated
   shell navigation and compact responsive access, and owner-only recovery through
@@ -455,8 +478,9 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
   editable mixed-language fields, stale acceptance rejection, reload/compare,
   regeneration from current versions, and atomic acceptance with server-owned
   authorship.
-- `inline-ai-card-authoring-preserves-field-choices` proves Source normalization
-  and independent field generation in Add Card, replacement review, rejection
+- `inline-ai-card-authoring-preserves-field-choices` proves context-aware Source
+  normalization and independent field generation in Add Card, stale-context
+  recovery, replacement review, rejection
   without draft loss, retained alternatives, whole-form version navigation,
   coherent whole-set acceptance, responsive layout, and one mixed-authorship
   atomic save through the real web/API/worker/PostgreSQL stack.
@@ -488,6 +512,9 @@ test layers where their failure conditions are deterministic.
 
 - Empty names, equal language pairs, invalid catalog tags, oversized fields, and
   malformed headers return bounded validation errors without writes.
+- Empty translation context normalizes to null; context over 1,000 code points is
+  rejected. Card context overrides dictionary context completely, and clearing
+  it resumes inheritance. Public reads, forks, and exports expose neither value.
 - A language pair cannot change after any card has existed, even if archived.
 - Duplicate normalized source phrases are allowed with a warning because senses
   and contexts can legitimately differ.

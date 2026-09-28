@@ -31,6 +31,7 @@ export function useSettingsDraft({
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setOutcome('');
+        if ([...draft.translationContext].length > 1000) return;
         const settings = changedSettings(
             dictionary.settings.values,
             draft.settings,
@@ -42,6 +43,7 @@ export function useSettingsDraft({
                 ...(Object.keys(settings).length > 0 ? { settings } : {}),
                 sourceLanguage: draft.sourceLanguage,
                 targetLanguage: draft.targetLanguage,
+                translationContext: draft.translationContext.trim() || null,
             });
             setOutcome(t('dictionary.settings.saved'));
         } catch {
@@ -57,6 +59,11 @@ export function useSettingsDraft({
     function changeDescription(event: ChangeEvent<HTMLTextAreaElement>) {
         const description = event.currentTarget.value;
         setDraft((current) => ({ ...current, description }));
+    }
+
+    function changeTranslationContext(event: ChangeEvent<HTMLTextAreaElement>) {
+        const translationContext = event.currentTarget.value;
+        setDraft((current) => ({ ...current, translationContext }));
     }
 
     function changeSource(event: ChangeEvent<HTMLSelectElement>) {
@@ -88,6 +95,7 @@ export function useSettingsDraft({
         setSetting,
         changeName,
         changeDescription,
+        changeTranslationContext,
         changeSource,
         changeTarget,
         cancel,

@@ -26,5 +26,6 @@ export function valuesFrom(dictionary: OwnedDictionary) {
         settings: { ...dictionary.settings.values },
         sourceLanguage: dictionary.sourceLanguage,
         targetLanguage: dictionary.targetLanguage,
+        translationContext: dictionary.translationContext ?? '',
     };
 }

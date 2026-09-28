@@ -47,6 +47,21 @@ export const ru = {
     'dictionary.settings.exampleTranslationHelp': 'Перевод на {language}.',
     'dictionary.settings.exampleTranslationDisabled':
         'Сначала включите пример.',
+    'dictionary.context.settingsTitle': 'Контекст перевода',
+    'dictionary.context.label': 'Контекст словаря',
+    'dictionary.context.settingsHelp':
+        'Опишите тему, ситуацию, значение или стиль. Карточки наследуют этот контекст, если для них не задан собственный.',
+    'dictionary.context.set': 'Задать контекст',
+    'dictionary.context.update': 'Изменить контекст',
+    'dictionary.context.cardSwitchHelp':
+        'Добавьте пояснение для этой карточки. Контекст карточки заменяет контекст словаря при генерации с ИИ.',
+    'dictionary.context.inherited': 'Контекст словаря',
+    'dictionary.context.cardLabel': 'Контекст карточки',
+    'dictionary.context.cardHelp':
+        'Опишите нужное значение для этой карточки. Выключите переключатель, чтобы снова наследовать контекст словаря.',
+    'dictionary.context.cardRequired':
+        'Введите контекст или выключите переключатель.',
+    'dictionary.context.tooLong': 'Используйте не более {count} символов.',
     'dictionary.library.restoreHelp':
         'Нажмите для восстановления. Словарь снова станет приватным; прежний доступ по ссылке не восстановится.',
     'dictionary.authoring.editHelp':
@@ -697,7 +712,7 @@ export const ru = {
     'dictionary.authoring.unavailable':
         'Предложения ИИ сейчас недоступны. Карточку можно заполнить вручную.',
     'dictionary.authoring.stale':
-        'Исходная фраза изменилась. Эти предложения относятся к прежней фразе и недоступны.',
+        'Исходная фраза или контекст перевода изменились. Эти предложения больше не подходят карточке и недоступны.',
     'dictionary.authoring.suggestions': 'Предложения ИИ',
     'dictionary.authoring.suggestionsFor': 'Предложения ИИ для поля «{field}»',
     'dictionary.authoring.regenerateField': 'Пересоздать поле',

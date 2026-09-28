@@ -1,8 +1,12 @@
-import { dictionaryDocumentGenerationFormat } from '../../../domain/document-ingestion';
+import {
+    dictionaryDocumentGenerationFormat,
+    dictionaryDocumentGenerationFormats,
+} from '../../../domain/document-ingestion';
 import {
     DictionaryCardAuthoringAnyGenerationJobSchema,
     DictionaryCardAuthoringProposalSchema,
     DictionaryCardAuthoringV2ProposalSchema,
+    DictionaryCardAuthoringV3ProposalSchema,
     DictionaryAiImportResponseSchema,
     DictionaryGenerationJobSchema,
     DictionaryImportPairsGenerationAcceptedOutcomeSchema,
@@ -17,11 +21,14 @@ import {
     DictionaryCardAuthoringProposalPayloadSchema,
     DictionaryCardAuthoringProviderDeltaSchema,
     DictionaryCardAuthoringSuggestionLimitError,
+    dictionaryCardAuthoringGenerationFormats,
     dictionaryCardAuthoringSuggestionLimitPerField,
     dictionaryCardAuthoringGenerationFormat,
     dictionaryCardAuthoringGenerationFormatV1,
+    dictionaryCardAuthoringGenerationFormatV2,
     mergeDictionaryCardAuthoringProposal,
     resolveDictionaryCardAuthoringFields,
+    usesModernCardAuthoringSemantics,
     type DictionaryCardAuthoringProposalPayload,
     type DictionaryCardAuthoringGenerationInputPayload,
 } from '../../../domain/card-authoring';
@@ -88,11 +95,16 @@ import {
 } from '../../../domain/batch-generation';
 import {
     dictionaryGenerationFormat,
+    dictionarySingleCardGenerationFormats,
     dictionaryImportPairsGenerationFormat,
+    dictionaryImportPairsGenerationFormats,
     dictionaryPastedTermsGenerationFormat,
+    dictionaryPastedTermsGenerationFormats,
     parseDictionaryGenerationInput,
     parseDictionaryGenerationProposal,
+    type DictionaryGenerationInputPayload,
 } from '../../../domain/generation';
+import { resolveTranslationContext } from '../../../domain/translation-context';
 import {
     assertDictionaryOwnerCapacity,
     dictionaryLimits,
@@ -132,12 +144,38 @@ import {
 type Database = PostgresJsDatabase<typeof databaseSchema>;
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 type JobRow = typeof dictionaryGenerationJobsTable.$inferSelect;
+type SingleCardGenerationInput = Extract<
+    DictionaryGenerationInputPayload,
+    { format: (typeof dictionarySingleCardGenerationFormats)[number] }
+>;
 type ProviderExecution = {
     budget: DictionaryGenerationProviderBudgetPolicy;
     revisionId: string | null;
     snapshot: DictionaryAiExecutionSnapshot | null;
 };
+
+function isSingleCardGenerationInput(
+    input: DictionaryGenerationInputPayload | null,
+): input is SingleCardGenerationInput {
+    return Boolean(
+        input &&
+        (dictionarySingleCardGenerationFormats as readonly string[]).includes(
+            input.format,
+        ),
+    );
+}
 type ProposalRow = typeof dictionaryGenerationProposalsTable.$inferSelect;
+
+const inputHasFormat = <
+    const TFormats extends
+        readonly DictionaryGenerationInputPayload['format'][],
+>(
+    input: DictionaryGenerationInputPayload,
+    formats: TFormats,
+): input is Extract<
+    DictionaryGenerationInputPayload,
+    { format: TFormats[number] }
+> => formats.some((format) => format === input.format);
 type CardRow = typeof dictionaryCardsTable.$inferSelect;
 type SettingsRow = typeof dictionarySettingsTable.$inferSelect;
 
@@ -413,6 +451,7 @@ function mapOwnedDictionary(
         languagePairLocked: retainedCardCount > 0,
         lifecycle: dictionary.lifecycle,
         name: dictionary.name,
+        translationContext: dictionary.translationContext,
         settings: {
             updatedAt: settings.updatedAt.toISOString(),
             values: {
@@ -576,7 +615,7 @@ function mapJob(
     if (job.kind === 'pasted-terms') {
         return DictionaryGenerationJobSchema.parse({
             ...shared,
-            format: dictionaryPastedTermsGenerationFormat,
+            format: job.format,
             kind: 'pasted-terms',
             outcome:
                 state === 'accepted' && proposal?.acceptedBatchOutcome
@@ -595,7 +634,7 @@ function mapJob(
     if (job.kind === 'import-pairs') {
         return DictionaryGenerationJobSchema.parse({
             ...shared,
-            format: dictionaryImportPairsGenerationFormat,
+            format: job.format,
             kind: 'import-pairs',
             outcome:
                 state === 'accepted' && proposal?.acceptedBatchOutcome
@@ -614,7 +653,7 @@ function mapJob(
     if (job.kind === 'document-terms') {
         return DictionaryGenerationJobSchema.parse({
             ...shared,
-            format: dictionaryDocumentGenerationFormat,
+            format: job.format,
             kind: 'document-terms',
             outcome:
                 state === 'accepted' && proposal?.acceptedBatchOutcome
@@ -640,8 +679,10 @@ function mapJob(
                   }
                 : ({ kind: 'create' } as const);
         if (
-            job.format === dictionaryCardAuthoringGenerationFormat &&
-            input?.format === dictionaryCardAuthoringGenerationFormat &&
+            usesModernCardAuthoringSemantics(job.format) &&
+            input &&
+            usesModernCardAuthoringSemantics(input.format) &&
+            'target' in input &&
             JSON.stringify(input.target) !==
                 JSON.stringify(persistedAuthoringTarget)
         )
@@ -650,7 +691,7 @@ function mapJob(
             ...shared,
             format: job.format,
             kind: 'card-authoring',
-            ...(job.format === dictionaryCardAuthoringGenerationFormat
+            ...(usesModernCardAuthoringSemantics(job.format)
                 ? { target: persistedAuthoringTarget }
                 : {}),
             outcome:
@@ -669,12 +710,17 @@ function mapJob(
             proposal:
                 state === 'review' && proposal?.payload
                     ? job.format === dictionaryCardAuthoringGenerationFormat
-                        ? DictionaryCardAuthoringV2ProposalSchema.parse(
+                        ? DictionaryCardAuthoringV3ProposalSchema.parse(
                               proposal.payload,
                           )
-                        : DictionaryCardAuthoringProposalSchema.parse(
-                              proposal.payload,
-                          )
+                        : job.format ===
+                            dictionaryCardAuthoringGenerationFormatV2
+                          ? DictionaryCardAuthoringV2ProposalSchema.parse(
+                                proposal.payload,
+                            )
+                          : DictionaryCardAuthoringProposalSchema.parse(
+                                proposal.payload,
+                            )
                     : null,
         });
     }
@@ -684,11 +730,11 @@ function mapJob(
         ...shared,
         cardId: job.cardId!,
         expectedCardVersion: job.expectedCardVersion!,
-        format: dictionaryGenerationFormat,
+        format: job.format,
         kind: 'single-card',
         originalSnapshot:
             ['queued', 'running', 'review'].includes(state) &&
-            input?.format === dictionaryGenerationFormat
+            isSingleCardGenerationInput(input)
                 ? input.original
                 : null,
         outcome:
@@ -708,7 +754,11 @@ function mapJob(
     });
 }
 
-function revisionSnapshot(row: CardRow, settings: SettingsRow) {
+function revisionSnapshot(
+    row: CardRow,
+    settings: SettingsRow,
+    dictionaryTranslationContext: string | null,
+) {
     return DictionaryCardRevisionSnapshotSchema.parse({
         authorship: row.authorship,
         cardVersion: row.version,
@@ -716,8 +766,13 @@ function revisionSnapshot(row: CardRow, settings: SettingsRow) {
             dictionary: domainSettings(settings),
             overrides: domainOverrides(wireOverrides(row)),
         }),
+        effectiveTranslationContext: resolveTranslationContext({
+            card: row.translationContext,
+            dictionary: dictionaryTranslationContext,
+        }),
         rawOverrides: domainOverrides(wireOverrides(row)),
-        schemaVersion: 1,
+        rawTranslationContext: row.translationContext,
+        schemaVersion: 2,
         settingsVersion: settings.version,
         values: values(row),
     });
@@ -896,6 +951,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 },
                 format: dictionaryGenerationFormat,
                 instruction: input.instruction,
+                translationContext: resolveTranslationContext({
+                    card: current.card.translationContext,
+                    dictionary: current.dictionary.translationContext,
+                }),
                 original: {
                     authorship: current.card.authorship,
                     effectiveSettings: {
@@ -1076,12 +1135,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const requestedFields = resolveDictionaryCardAuthoringFields(
                 effectiveSettings,
                 input.scope,
-                format === dictionaryCardAuthoringGenerationFormat,
+                usesModernCardAuthoringSemantics(format),
             );
             const eligibleFields = resolveDictionaryCardAuthoringFields(
                 effectiveSettings,
                 { kind: 'all' },
-                format === dictionaryCardAuthoringGenerationFormat,
+                usesModernCardAuthoringSemantics(format),
             );
             const excludedValues: Array<{
                 field: (typeof requestedFields)[number];
@@ -1141,18 +1200,25 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     predecessorInput?.format !== format ||
                     (predecessorInput.source !== stored.source &&
                         !(
-                            format ===
-                                dictionaryCardAuthoringGenerationFormat &&
+                            usesModernCardAuthoringSemantics(format) &&
                             retainedSourceSuggestionValues.has(
                                 predecessorInput.source,
                             )
                         )) ||
                     (stored.source !== input.source &&
                         !(
-                            format ===
-                                dictionaryCardAuthoringGenerationFormat &&
+                            usesModernCardAuthoringSemantics(format) &&
                             retainedSourceSuggestionValues.has(input.source)
-                        ))
+                        )) ||
+                    (format === dictionaryCardAuthoringGenerationFormat &&
+                        (predecessorInput.translationContext !==
+                            resolveTranslationContext({
+                                card: input.draft.translationContext ?? null,
+                                dictionary:
+                                    current.dictionary.translationContext,
+                            }) ||
+                            predecessorInput.draft.translationContext !==
+                                input.draft.translationContext))
                 )
                     throw new DictionaryGenerationCandidateConflictError();
                 const availableIds = new Set(
@@ -1246,12 +1312,27 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         sourceLanguage: current.dictionary.sourceLanguageTag,
                         targetLanguage: current.dictionary.targetLanguageTag,
                     },
-                    draft: input.draft,
+                    draft:
+                        format === dictionaryCardAuthoringGenerationFormat
+                            ? input.draft
+                            : {
+                                  overrides: input.draft.overrides,
+                                  values: input.draft.values,
+                              },
                     effectiveSettings,
                     excludedValues,
                     format,
-                    ...(format === dictionaryCardAuthoringGenerationFormat
+                    ...(usesModernCardAuthoringSemantics(format)
                         ? { target }
+                        : {}),
+                    ...(format === dictionaryCardAuthoringGenerationFormat
+                        ? {
+                              translationContext: resolveTranslationContext({
+                                  card: input.draft.translationContext ?? null,
+                                  dictionary:
+                                      current.dictionary.translationContext,
+                              }),
+                          }
                         : {}),
                     ...(input.predecessor
                         ? { predecessor: input.predecessor }
@@ -1475,6 +1556,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 ...(predecessor ? { predecessor } : {}),
                 rows,
                 sharedContext,
+                translationContext: current.dictionary.translationContext,
             });
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
@@ -1821,6 +1903,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     },
                     ...row,
                 })),
+                translationContext: current.dictionary.translationContext,
             });
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
@@ -2072,6 +2155,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     rowIndexes,
                 },
                 rows,
+                translationContext: current.dictionary.translationContext,
             });
             const [job] = await tx
                 .insert(dictionaryGenerationJobsTable)
@@ -2511,9 +2595,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     id: revisionId,
                     mutationKind: 'ai_proposal_accept',
                     revisionNumber: card.version,
-                    schemaVersion: 1,
+                    schemaVersion: 2,
                     settingsVersion: current.settings.version,
-                    snapshot: revisionSnapshot(card, current.settings),
+                    snapshot: revisionSnapshot(
+                        card,
+                        current.settings,
+                        current.dictionary.translationContext,
+                    ),
                 });
                 const [updatedDictionary] = await tx
                     .update(dictionariesTable)
@@ -2644,10 +2732,29 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const jobInput = parseDictionaryGenerationInput(job.inputPayload);
             if (
                 jobInput.format !== dictionaryCardAuthoringGenerationFormat &&
+                jobInput.format !== dictionaryCardAuthoringGenerationFormatV2 &&
                 jobInput.format !== dictionaryCardAuthoringGenerationFormatV1
             )
                 throw new DictionaryGenerationCandidateConflictError();
             const candidateValues = normalizeCardValues(input.candidate.values);
+            const candidateTranslationContext =
+                jobInput.format === dictionaryCardAuthoringGenerationFormat
+                    ? (input.candidate.translationContext ?? null)
+                    : undefined;
+            const proposalTranslationContext =
+                jobInput.format === dictionaryCardAuthoringGenerationFormat
+                    ? DictionaryCardAuthoringV3ProposalSchema.parse(
+                          proposal.payload,
+                      ).translationContext
+                    : undefined;
+            if (
+                jobInput.format === dictionaryCardAuthoringGenerationFormat &&
+                (input.candidate.translationContext === undefined ||
+                    candidateTranslationContext !==
+                        jobInput.draft.translationContext ||
+                    proposalTranslationContext !== jobInput.translationContext)
+            )
+                throw new DictionaryGenerationCandidateConflictError();
             const aiAssisted = input.selectedSuggestions.length > 0;
             if (
                 jobInput.format === dictionaryCardAuthoringGenerationFormatV1 &&
@@ -2674,7 +2781,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     throw new DictionaryGenerationCandidateConflictError();
             }
             if (
-                jobInput.format === dictionaryCardAuthoringGenerationFormat &&
+                usesModernCardAuthoringSemantics(jobInput.format) &&
                 candidateValues.source !== stored.source &&
                 input.selectedSuggestions.some(
                     (selected) => selected.field !== 'source',
@@ -2719,9 +2826,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 input.candidate.overrides,
             );
             const target =
-                jobInput.format === dictionaryCardAuthoringGenerationFormat
-                    ? jobInput.target
-                    : ({ kind: 'create' } as const);
+                jobInput.format === dictionaryCardAuthoringGenerationFormatV1
+                    ? ({ kind: 'create' } as const)
+                    : jobInput.target;
             let targetCard: CardRow | null = null;
             if (target.kind === 'update') {
                 const [lockedCard] = await tx
@@ -2744,6 +2851,18 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     throw new DictionaryVersionConflictError();
                 targetCard = lockedCard;
             }
+            const rawTranslationContext =
+                jobInput.format === dictionaryCardAuthoringGenerationFormat
+                    ? candidateTranslationContext!
+                    : (targetCard?.translationContext ?? null);
+            if (
+                jobInput.format === dictionaryCardAuthoringGenerationFormat &&
+                resolveTranslationContext({
+                    card: rawTranslationContext,
+                    dictionary: current.dictionary.translationContext,
+                }) !== jobInput.translationContext
+            )
+                throw new DictionaryGenerationCandidateConflictError();
             assertCardSettingsOverrideTransition({
                 dictionary: domainSettings(current.settings),
                 next: candidateOverrides,
@@ -2829,18 +2948,21 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                       mutationKind: 'ai_proposal_accept',
                       prior: targetCard.authorship,
                       proposalEdited: true,
-                      semanticChange: !areCardSemanticStatesEqual(
-                          {
-                              overrides: domainOverrides(
-                                  wireOverrides(targetCard),
-                              ),
-                              values: values(targetCard),
-                          },
-                          {
-                              overrides: candidateOverrides,
-                              values: candidateValues,
-                          },
-                      ),
+                      semanticChange:
+                          targetCard.translationContext !==
+                              rawTranslationContext ||
+                          !areCardSemanticStatesEqual(
+                              {
+                                  overrides: domainOverrides(
+                                      wireOverrides(targetCard),
+                                  ),
+                                  values: values(targetCard),
+                              },
+                              {
+                                  overrides: candidateOverrides,
+                                  values: candidateValues,
+                              },
+                          ),
                   }).authorship
                 : aiAssisted
                   ? 'mixed'
@@ -2878,6 +3000,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 transcriptionNotationOverride:
                     candidateOverrides.transcriptionNotation,
                 translation: candidateValues.translation,
+                translationContext: rawTranslationContext,
                 updatedAt: input.context.now,
             };
             const [card] = targetCard
@@ -2919,9 +3042,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                       ? 'ai_proposal_accept'
                       : 'manual_create',
                 revisionNumber: card.version,
-                schemaVersion: 1,
+                schemaVersion: 2,
                 settingsVersion: current.settings.version,
-                snapshot: revisionSnapshot(card, current.settings),
+                snapshot: revisionSnapshot(
+                    card,
+                    current.settings,
+                    current.dictionary.translationContext,
+                ),
             });
             const [updatedDictionary] = await tx
                 .update(dictionariesTable)
@@ -3257,9 +3384,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     id: this.ids.generate(),
                     mutationKind: 'ai_proposal_accept' as const,
                     revisionNumber: card.version,
-                    schemaVersion: 1,
+                    schemaVersion: 2,
                     settingsVersion: current.settings.version,
-                    snapshot: revisionSnapshot(card, current.settings),
+                    snapshot: revisionSnapshot(
+                        card,
+                        current.settings,
+                        current.dictionary.translationContext,
+                    ),
                 })),
             );
             const [updatedDictionary] = await tx
@@ -3891,20 +4022,36 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 return true;
             }
             const jobInput = parseDictionaryGenerationInput(job.inputPayload);
-            const isAuthoring =
-                jobInput.format === dictionaryCardAuthoringGenerationFormat ||
-                jobInput.format === dictionaryCardAuthoringGenerationFormatV1;
-            if (jobInput.format === dictionaryDocumentGenerationFormat)
+            const authoringInput = inputHasFormat(
+                jobInput,
+                dictionaryCardAuthoringGenerationFormats,
+            )
+                ? jobInput
+                : null;
+            const pastedTermsInput = inputHasFormat(
+                jobInput,
+                dictionaryPastedTermsGenerationFormats,
+            )
+                ? jobInput
+                : null;
+            const importPairsInput = inputHasFormat(
+                jobInput,
+                dictionaryImportPairsGenerationFormats,
+            )
+                ? jobInput
+                : null;
+            const isAuthoring = authoringInput !== null;
+            if (inputHasFormat(jobInput, dictionaryDocumentGenerationFormats))
                 throw new Error(
                     'Document completion requires staged cleanup publication',
                 );
             let authoringPredecessor:
                 DictionaryCardAuthoringProposalPayload | undefined;
-            if (isAuthoring && jobInput.predecessor) {
+            if (authoringInput?.predecessor) {
                 const predecessorJob = await this.lockOwnedJob(
                     tx,
                     job.ownerId,
-                    jobInput.predecessor.jobId,
+                    authoringInput.predecessor.jobId,
                 );
                 if (
                     predecessorJob.kind !== 'card-authoring' ||
@@ -3938,12 +4085,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         predecessorProposal.payload,
                     );
                 const discarded = new Set(
-                    jobInput.predecessor.discardedSuggestionIds,
+                    authoringInput.predecessor.discardedSuggestionIds,
                 );
                 for (const field of resolveDictionaryCardAuthoringFields(
-                    jobInput.effectiveSettings,
-                    jobInput.scope,
-                    jobInput.format === dictionaryCardAuthoringGenerationFormat,
+                    authoringInput.effectiveSettings,
+                    authoringInput.scope,
+                    usesModernCardAuthoringSemantics(authoringInput.format),
                 )) {
                     const remaining = [
                         ...authoringPredecessor.suggestions,
@@ -3968,9 +4115,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         delta: DictionaryCardAuthoringProviderDeltaSchema.parse(
                             input.proposal,
                         ),
-                        discardedSuggestionIds: isAuthoring
-                            ? (jobInput.predecessor?.discardedSuggestionIds ??
-                              [])
+                        discardedSuggestionIds: authoringInput
+                            ? (authoringInput.predecessor
+                                  ?.discardedSuggestionIds ?? [])
                             : [],
                         nextId: () => this.ids.generate(),
                         ...(authoringPredecessor
@@ -3978,14 +4125,24 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             : {}),
                         requestedFields: isAuthoring
                             ? resolveDictionaryCardAuthoringFields(
-                                  jobInput.effectiveSettings,
-                                  jobInput.scope,
-                                  jobInput.format ===
-                                      dictionaryCardAuthoringGenerationFormat,
+                                  authoringInput!.effectiveSettings,
+                                  authoringInput!.scope,
+                                  usesModernCardAuthoringSemantics(
+                                      authoringInput!.format,
+                                  ),
                               )
                             : [],
-                        source: isAuthoring ? jobInput.source : '',
-                        ...(isAuthoring ? { format: jobInput.format } : {}),
+                        source: authoringInput?.source ?? '',
+                        ...(authoringInput
+                            ? { format: authoringInput.format }
+                            : {}),
+                        ...(authoringInput?.format ===
+                        dictionaryCardAuthoringGenerationFormat
+                            ? {
+                                  translationContext:
+                                      authoringInput.translationContext,
+                              }
+                            : {}),
                     });
                 } catch (error) {
                     if (
@@ -4000,25 +4157,28 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             };
             let proposal = isAuthoring
                 ? mergeAuthoringProposal()
-                : jobInput.format === dictionaryPastedTermsGenerationFormat
+                : pastedTermsInput
                   ? parseDictionaryBatchGenerationProposal(input.proposal)
-                  : jobInput.format === dictionaryImportPairsGenerationFormat
+                  : importPairsInput
                     ? parseDictionaryImportPairsGenerationProposal(
                           input.proposal,
                       )
                     : parseDictionaryGenerationProposal(input.proposal);
-            if (jobInput.format === dictionaryPastedTermsGenerationFormat) {
+            if (pastedTermsInput) {
                 const batchProposal =
                     parseDictionaryBatchGenerationProposal(proposal);
                 const persistedRows = new Map(
-                    jobInput.rows.map((row) => [row.rowIndex, row.input]),
+                    pastedTermsInput.rows.map((row) => [
+                        row.rowIndex,
+                        row.input,
+                    ]),
                 );
                 const resolvedRows = [
                     ...batchProposal.candidates,
                     ...batchProposal.failures,
                 ];
                 if (
-                    resolvedRows.length !== jobInput.rows.length ||
+                    resolvedRows.length !== pastedTermsInput.rows.length ||
                     resolvedRows.some(
                         (row) => persistedRows.get(row.rowIndex) !== row.input,
                     )
@@ -4050,18 +4210,20 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ),
                 });
             }
-            if (jobInput.format === dictionaryImportPairsGenerationFormat) {
+            if (importPairsInput) {
                 const importProposal =
                     parseDictionaryImportPairsGenerationProposal(proposal);
                 const persistedRows = new Map(
-                    jobInput.rows.map((row) => [row.rowIndex, row] as const),
+                    importPairsInput.rows.map(
+                        (row) => [row.rowIndex, row] as const,
+                    ),
                 );
                 const resolvedIndexes = [
                     ...importProposal.candidates.map((row) => row.rowIndex),
                     ...importProposal.failures.map((row) => row.rowIndex),
                 ];
                 if (
-                    resolvedIndexes.length !== jobInput.rows.length ||
+                    resolvedIndexes.length !== importPairsInput.rows.length ||
                     resolvedIndexes.some(
                         (rowIndex) => !persistedRows.has(rowIndex),
                     ) ||
@@ -4108,7 +4270,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     ),
                 });
             }
-            if (jobInput.format === dictionaryGenerationFormat) {
+            if (
+                inputHasFormat(jobInput, dictionarySingleCardGenerationFormats)
+            ) {
                 const [settings] = await tx
                     .select()
                     .from(dictionarySettingsTable)
@@ -4190,10 +4354,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     aiCreditReservationId: job.aiCreditAccounted
                         ? null
                         : job.aiCreditReservationId,
-                    inputPayload:
-                        jobInput.format === dictionaryGenerationFormat
-                            ? { ...jobInput, instruction: null }
-                            : jobInput,
+                    inputPayload: isSingleCardGenerationInput(jobInput)
+                        ? { ...jobInput, instruction: null }
+                        : jobInput,
                     leaseDeadline: null,
                     progressPercent: 100,
                     progressStage: 'review_ready',

@@ -132,6 +132,7 @@ run('DrizzleDictionaryStore', () => {
                 request: {
                     expectedDictionaryVersion,
                     expectedSettingsVersion: dictionary.settings.version,
+                    translationContext: null,
                     overrides: {
                         definitionEnabled: null,
                         definitionLanguage: null,
@@ -397,6 +398,7 @@ run('DrizzleDictionaryStore', () => {
                 request: {
                     expectedDictionaryVersion,
                     expectedSettingsVersion: dictionary.settings.version,
+                    translationContext: null,
                     overrides: {
                         definitionEnabled: null,
                         definitionLanguage: null,
@@ -539,6 +541,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides: {
                     definitionEnabled: null,
                     definitionLanguage: null,
@@ -703,6 +706,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides: {
                     definitionEnabled: null,
                     definitionLanguage: null,
@@ -1065,6 +1069,7 @@ run('DrizzleDictionaryStore', () => {
                 request: {
                     expectedDictionaryVersion,
                     expectedSettingsVersion: dictionary.settings.version,
+                    translationContext: null,
                     overrides: {
                         definitionEnabled: null,
                         definitionLanguage: null,
@@ -1271,6 +1276,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides: {
                     definitionEnabled: 'enabled',
                     definitionLanguage: 'target',
@@ -1334,8 +1340,10 @@ run('DrizzleDictionaryStore', () => {
             .where(eq(dictionaryCardRevisionsTable.cardId, created.card.id));
         expect(revisions).toHaveLength(1);
         expect(revisions[0]?.snapshot).toMatchObject({
-            schemaVersion: 1,
+            schemaVersion: 2,
             cardVersion: 1,
+            effectiveTranslationContext: null,
+            rawTranslationContext: null,
             rawOverrides: { exampleEnabled: 'disabled' },
             effectiveSettings: { exampleEnabled: false },
         });
@@ -1369,6 +1377,122 @@ run('DrizzleDictionaryStore', () => {
                     eq(dictionaryCardRevisionsTable.cardId, created.card.id),
                 ),
         ).rejects.toMatchObject({ cause: { code: '23505' } });
+    });
+
+    it('persists normalized dictionary and card translation context with revision inheritance and constraints', async () => {
+        const createdDictionary = await createDictionary();
+        const dictionary = await store.updateDictionary({
+            context: context(),
+            dictionaryId: createdDictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: createdDictionary.version,
+                translationContext: '  financial services\nand banking  ',
+            },
+        });
+        expect(dictionary).toMatchObject({
+            translationContext: 'financial services\nand banking',
+            version: createdDictionary.version + 1,
+        });
+
+        const inherited = await store.createCard({
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                overrides: {
+                    definitionEnabled: null,
+                    definitionLanguage: null,
+                    exampleEnabled: null,
+                    exampleLanguage: null,
+                    exampleTranslationEnabled: null,
+                    transcriptionCustomLabel: null,
+                    transcriptionEnabled: null,
+                    transcriptionNotation: null,
+                },
+                translationContext: null,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'bank',
+                    transcription: null,
+                    translation: 'banco',
+                },
+            },
+        });
+        expect(inherited.card.translationContext).toBeNull();
+        await expect(
+            database
+                .select({
+                    schemaVersion: dictionaryCardRevisionsTable.schemaVersion,
+                    snapshot: dictionaryCardRevisionsTable.snapshot,
+                })
+                .from(dictionaryCardRevisionsTable)
+                .where(
+                    eq(dictionaryCardRevisionsTable.cardId, inherited.card.id),
+                ),
+        ).resolves.toEqual([
+            expect.objectContaining({
+                schemaVersion: 2,
+                snapshot: expect.objectContaining({
+                    effectiveTranslationContext:
+                        'financial services\nand banking',
+                    rawTranslationContext: null,
+                    schemaVersion: 2,
+                }),
+            }),
+        ]);
+
+        const overridden = await store.updateCard({
+            cardId: inherited.card.id,
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedCardVersion: inherited.card.version,
+                expectedDictionaryVersion: inherited.dictionaryVersion,
+                expectedSettingsVersion: dictionary.settings.version,
+                translationContext: '  river edge  ',
+            },
+        });
+        expect(overridden.card).toMatchObject({
+            authorship: 'human',
+            translationContext: 'river edge',
+            version: inherited.card.version + 1,
+        });
+
+        const returnedToInheritance = await store.updateCard({
+            cardId: inherited.card.id,
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedCardVersion: overridden.card.version,
+                expectedDictionaryVersion: overridden.dictionaryVersion,
+                expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
+            },
+        });
+        expect(returnedToInheritance.card.translationContext).toBeNull();
+        expect(returnedToInheritance.card.version).toBe(
+            overridden.card.version + 1,
+        );
+
+        await expect(
+            database
+                .update(dictionaryCardsTable)
+                .set({ translationContext: ' context with outer whitespace ' })
+                .where(eq(dictionaryCardsTable.id, inherited.card.id)),
+        ).rejects.toMatchObject({ cause: { code: '23514' } });
+        await expect(
+            database
+                .update(dictionariesTable)
+                .set({ translationContext: 'x'.repeat(1_001) })
+                .where(eq(dictionariesTable.id, dictionary.id)),
+        ).rejects.toMatchObject({ cause: { code: '23514' } });
     });
 
     it('exposes the required typed catalog constraints, foreign keys, and indexes without JSON current state', async () => {
@@ -1483,6 +1607,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: 'fruit cultivation',
                 values: {
                     source: 'stable',
                     translation: 'estable',
@@ -1549,6 +1674,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'Medium',
                     translation: 'medio',
@@ -1577,6 +1703,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: archived.dictionaryVersion,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'ＭＥＤＩＵＭ',
                     translation: 'medio artístico',
@@ -1649,6 +1776,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 values: {
                     source: 'same',
                     translation: 'igual',
@@ -1765,6 +1893,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'typed source',
                     translation: 'typed translation',
@@ -1831,6 +1960,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'one',
                     translation: 'uno',
@@ -1901,6 +2031,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: values('first'),
                 overrides,
             },
@@ -1912,6 +2043,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: first.dictionaryVersion,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: values('middle'),
                 overrides,
             },
@@ -1923,6 +2055,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: middle.dictionaryVersion,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: values('last'),
                 overrides,
             },
@@ -1944,6 +2077,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: archived.dictionaryVersion,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: values('appended'),
                 overrides,
             },
@@ -1976,6 +2110,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'orchard apple',
                     translation: 'manzana',
@@ -2003,6 +2138,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: first.dictionaryVersion,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'river',
                     translation: 'río',
@@ -2030,6 +2166,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: second.dictionaryVersion,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'mountain',
                     translation: 'montaña',
@@ -2088,11 +2225,21 @@ run('DrizzleDictionaryStore', () => {
             }),
         ).rejects.toMatchObject({ name: 'InvalidDictionaryRequestError' });
 
+        const contextUpdated = await store.updateDictionary({
+            context: context(),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: reordered.dictionaryVersion,
+                translationContext: 'geography vocabulary',
+            },
+        });
+
         const published = await store.rotateShare({
             context: context(),
             digest: `hmac-sha256:v1:${'B'.repeat(43)}`,
             dictionaryId: dictionary.id,
-            expectedDictionaryVersion: reordered.dictionaryVersion,
+            expectedDictionaryVersion: contextUpdated.version,
             keyVersion: 1,
             locator: 'abcdefghijklmnopqrstuvwxyz123456',
             ownerId,
@@ -2106,10 +2253,23 @@ run('DrizzleDictionaryStore', () => {
             sourceDictionaryId: dictionary.id,
             verifiedShareDigest: `hmac-sha256:v1:${'B'.repeat(43)}`,
         });
+        const publicDictionary = await store.readSharedDictionary({
+            context: context(),
+            dictionaryId: dictionary.id,
+            query: { limit: 25 },
+            verifiedShareDigest: `hmac-sha256:v1:${'B'.repeat(43)}`,
+        });
+        expect(publicDictionary.dictionary).not.toHaveProperty(
+            'translationContext',
+        );
+        expect(publicDictionary.dictionary.cards[0]).not.toHaveProperty(
+            'translationContext',
+        );
         expect(fork).toMatchObject({
             name: 'Independent copy',
             sourceDictionaryId: dictionary.id,
             visibility: 'private',
+            translationContext: null,
         });
         expect(fork).not.toHaveProperty('ownerId');
         const forkCards = await store.listCards({
@@ -2128,6 +2288,9 @@ run('DrizzleDictionaryStore', () => {
             'orchard apple',
             'mountain',
         ]);
+        expect(
+            forkCards.data.every((card) => card.translationContext === null),
+        ).toBe(true);
         const archived = await store.archiveDictionary({
             context: context(),
             dictionaryId: published.id,
@@ -2182,6 +2345,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: values('first'),
             },
@@ -2193,6 +2357,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: first.dictionaryVersion,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: values('second'),
             },
@@ -2229,6 +2394,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: published.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: values('third'),
             },
@@ -2313,6 +2479,7 @@ run('DrizzleDictionaryStore', () => {
                 request: {
                     expectedDictionaryVersion: reordered.dictionaryVersion,
                     expectedSettingsVersion: 1,
+                    translationContext: null,
                     values: {
                         source: 'overflow',
                         translation: 'desbordamiento',
@@ -2496,6 +2663,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 values: {
                     source: 'cancelled',
                     translation: 'cancelado',
@@ -2800,6 +2968,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: 1,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 overrides: {
                     definitionEnabled: null,
                     definitionLanguage: null,
@@ -2827,6 +2996,7 @@ run('DrizzleDictionaryStore', () => {
             request: {
                 expectedDictionaryVersion: first.dictionaryVersion,
                 expectedSettingsVersion: 1,
+                translationContext: null,
                 overrides: first.card.overrides,
                 values: {
                     ...first.card.values,

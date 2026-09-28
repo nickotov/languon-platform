@@ -124,8 +124,9 @@ worker-local parser child <------ bounded IPC ------------------------+
   complete tuple identical so a stop-enqueue release or rollback cannot strand
   queued work after a price-policy reduction. Drain and retire the old format
   before changing its tuple and re-expanding support.
-- Schema-v2 manifests declare `single-card:v1`, `pasted-terms:v1`, and
-  `import-pairs:v1`
+- Schema-v2 manifests declare retained legacy formats and their context-aware
+  successors (`single-card:v2`, `pasted-terms:v2`, `import-pairs:v2`,
+  `document-terms:v2`, and `card-authoring:v3`)
   independently in
   `workerProcessable`, API read/cancel/discard/accept, API enqueue, and web-read
   capability sets. Each format's first supporting release is `expand` without
@@ -155,8 +156,8 @@ worker-local parser child <------ bounded IPC ------------------------+
   provider path such as `/v1`, and worker-only API key. Query strings, fragments,
   localhost, and private literal addresses are rejected in deployed environments.
   Those values never enter HTTP readiness or capability responses.
-- Every currently supported worker format (`single-card:v1`,
-  `pasted-terms:v1`, `import-pairs:v1`, and `document-terms:v1`) depends on the
+- Every currently supported worker format, including the context-aware v2/v3
+  successors, depends on the
   generation provider. Provider mode and its bounded readiness probe therefore
   follow `workerProcessable`, not API enqueue. A stop-enqueue release must keep
   live Mastra configuration and credentials while queued or retryable jobs can
@@ -192,6 +193,9 @@ worker-local parser child <------ bounded IPC ------------------------+
   heartbeat continues to renew the lease; shutdown and lease loss still abort
   the active call immediately. Single-card calls retain their 20-second bound.
 - Keep pasted input rows and shared context only while a proposal is reviewable.
+  Persistent translation context is snapshotted separately from transient shared
+  context or instructions. It is likewise redacted on terminal transitions and
+  must never be logged or traced.
   Retrying failures is an owner-scoped server action over persisted retryable row
   indexes: it locks the predecessor, preserves its shared context, records the
   predecessor job and original row indexes in the successor input, and snapshots

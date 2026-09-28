@@ -442,9 +442,15 @@ export function loadEnvironment(
     );
     const documentTermsLifecycleEnabled = Object.values(
         dictionaryJobCapabilities,
-    ).some((formats) => formats.includes('document-terms:v1'));
+    ).some((formats) =>
+        formats.some((format) =>
+            ['document-terms:v1', 'document-terms:v2'].includes(format),
+        ),
+    );
     const documentUploadAuthorizationEnabled =
-        dictionaryJobCapabilities.enqueued.includes('document-terms:v1');
+        dictionaryJobCapabilities.enqueued.some((format) =>
+            ['document-terms:v1', 'document-terms:v2'].includes(format),
+        );
     const dictionaryDocumentStorage = loadDictionaryDocumentS3Environment(
         values,
         { deployed, required: documentTermsLifecycleEnabled, role: 'api' },

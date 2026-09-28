@@ -42,6 +42,21 @@ export const profileFeatureMessages = {
         'You can still change the pair because no card has existed here yet.',
     'dictionary.settings.exampleTranslationHelp': 'Translated into {language}.',
     'dictionary.settings.exampleTranslationDisabled': 'Enable Example first.',
+    'dictionary.context.settingsTitle': 'Translation context',
+    'dictionary.context.label': 'Dictionary context',
+    'dictionary.context.settingsHelp':
+        'Describe the intended topic, situation, sense, or register. Cards inherit this guidance unless they set their own context.',
+    'dictionary.context.set': 'Set context',
+    'dictionary.context.update': 'Update context',
+    'dictionary.context.cardSwitchHelp':
+        'Add guidance for this card. A card context replaces the dictionary context during AI generation.',
+    'dictionary.context.inherited': 'Inherited dictionary context',
+    'dictionary.context.cardLabel': 'Card context',
+    'dictionary.context.cardHelp':
+        'Describe the intended meaning for this card. Turn off to inherit the dictionary context again.',
+    'dictionary.context.cardRequired':
+        'Enter a context or turn off the context switch.',
+    'dictionary.context.tooLong': 'Use at most {count} characters.',
     'dictionary.library.restoreHelp':
         'Select to restore. Restoring makes this dictionary private again; previous sharing is not restored.',
     'dictionary.authoring.editHelp':
@@ -702,7 +717,7 @@ export const en = {
     'dictionary.authoring.unavailable':
         'AI suggestions are unavailable right now. You can still complete the card manually.',
     'dictionary.authoring.stale':
-        'The source phrase changed. These suggestions are from the previous source and cannot be used.',
+        'The source phrase or translation context changed. These suggestions no longer match this card and cannot be used.',
     'dictionary.authoring.suggestions': 'AI suggestions',
     'dictionary.authoring.suggestionsFor': 'AI suggestions for {field}',
     'dictionary.authoring.regenerateField': 'Regenerate field',

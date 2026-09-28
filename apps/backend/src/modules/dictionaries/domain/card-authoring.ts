@@ -4,12 +4,23 @@ import { dictionaryLimits } from './limits';
 import {
     DictionaryGenerationCardOverridesSchema,
     DictionaryGenerationEffectiveSettingsSchema,
+    DictionaryGenerationTranslationContextSchema,
 } from './generation-card-context';
 
 export const dictionaryCardAuthoringGenerationFormat =
+    'card-authoring:v3' as const;
+export const dictionaryCardAuthoringGenerationFormatV2 =
     'card-authoring:v2' as const;
 export const dictionaryCardAuthoringGenerationFormatV1 =
     'card-authoring:v1' as const;
+export const dictionaryCardAuthoringGenerationFormats = [
+    dictionaryCardAuthoringGenerationFormatV1,
+    dictionaryCardAuthoringGenerationFormatV2,
+    dictionaryCardAuthoringGenerationFormat,
+] as const;
+export const usesModernCardAuthoringSemantics = (format: string) =>
+    format === dictionaryCardAuthoringGenerationFormatV2 ||
+    format === dictionaryCardAuthoringGenerationFormat;
 export const dictionaryCardAuthoringSuggestionLimitPerField = 6;
 export const dictionaryCardAuthoringExcludedValueLimitPerField = 24;
 
@@ -52,6 +63,8 @@ const boundedText = (maximum: number) =>
 export const DictionaryCardAuthoringDraftSchema = z
     .object({
         overrides: DictionaryGenerationCardOverridesSchema,
+        translationContext:
+            DictionaryGenerationTranslationContextSchema.optional(),
         values: z
             .object({
                 translation: boundedText(
@@ -88,6 +101,7 @@ export const DictionaryCardAuthoringGenerationInputPayloadSchema = z
     .object({
         format: z.union([
             z.literal(dictionaryCardAuthoringGenerationFormatV1),
+            z.literal(dictionaryCardAuthoringGenerationFormatV2),
             z.literal(dictionaryCardAuthoringGenerationFormat),
         ]),
         context: z
@@ -104,6 +118,8 @@ export const DictionaryCardAuthoringGenerationInputPayloadSchema = z
                 'Language pair must be distinct',
             ),
         source: boundedText(dictionaryLimits.requiredCardValueCodePoints),
+        translationContext:
+            DictionaryGenerationTranslationContextSchema.optional(),
         target: z
             .discriminatedUnion('kind', [
                 z.object({ kind: z.literal('create') }).strict(),
@@ -207,16 +223,16 @@ export const DictionaryCardAuthoringGenerationInputPayloadSchema = z
                 message: 'V1 card authoring does not support Source generation',
             });
         if (
-            input.format === dictionaryCardAuthoringGenerationFormat &&
+            input.format !== dictionaryCardAuthoringGenerationFormatV1 &&
             !input.target
         )
             context.addIssue({
                 code: 'custom',
                 path: ['target'],
-                message: 'V2 card authoring generation requires a target',
+                message: 'Card authoring generation requires a target',
             });
         if (
-            input.format === dictionaryCardAuthoringGenerationFormat &&
+            input.format !== dictionaryCardAuthoringGenerationFormatV1 &&
             input.scope.kind === 'field' &&
             input.scope.field === 'exampleTranslation' &&
             input.draft.values.example === null
@@ -236,10 +252,46 @@ export const DictionaryCardAuthoringGenerationInputPayloadSchema = z
                 message:
                     'V1 card authoring generation does not support a target',
             });
+        if (
+            input.format === dictionaryCardAuthoringGenerationFormat &&
+            input.translationContext === undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context snapshot is required for v3',
+            });
+        if (
+            input.format === dictionaryCardAuthoringGenerationFormat &&
+            input.draft.translationContext === undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['draft', 'translationContext'],
+                message: 'Card translation context is required for v3',
+            });
+        if (
+            input.format !== dictionaryCardAuthoringGenerationFormat &&
+            input.translationContext !== undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context is not supported before v3',
+            });
+        if (
+            input.format !== dictionaryCardAuthoringGenerationFormat &&
+            input.draft.translationContext !== undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['draft', 'translationContext'],
+                message: 'Card translation context is not supported before v3',
+            });
         const requested = resolveDictionaryCardAuthoringFields(
             input.effectiveSettings,
             input.scope,
-            input.format === dictionaryCardAuthoringGenerationFormat,
+            input.format !== dictionaryCardAuthoringGenerationFormatV1,
         );
         if (input.scope.kind === 'field' && requested.length === 0)
             context.addIssue({
@@ -292,6 +344,7 @@ export const DictionaryCardAuthoringProviderInputSchema = z
             dictionaryLimits.optionalLongValueCodePoints,
         ).optional(),
         effectiveSettings: DictionaryGenerationEffectiveSettingsSchema,
+        translationContext: DictionaryGenerationTranslationContextSchema,
         fieldContext: z
             .array(DictionaryCardAuthoringProviderFieldContextSchema)
             .min(1)
@@ -423,6 +476,8 @@ export const DictionaryCardAuthoringSuggestionSchema = z
 export const DictionaryCardAuthoringProposalPayloadSchema = z
     .object({
         source: boundedText(dictionaryLimits.requiredCardValueCodePoints),
+        translationContext:
+            DictionaryGenerationTranslationContextSchema.optional(),
         sourceResult: z
             .discriminatedUnion('kind', [
                 z.object({ kind: z.literal('unchanged') }).strict(),
@@ -525,7 +580,9 @@ export class DictionaryCardAuthoringDuplicateSuggestionError extends Error {
 export function mergeDictionaryCardAuthoringProposal(input: {
     format?:
         | typeof dictionaryCardAuthoringGenerationFormatV1
+        | typeof dictionaryCardAuthoringGenerationFormatV2
         | typeof dictionaryCardAuthoringGenerationFormat;
+    translationContext?: string | null;
     source: string;
     predecessor?: DictionaryCardAuthoringProposalPayload;
     discardedSuggestionIds: readonly string[];
@@ -538,7 +595,7 @@ export function mergeDictionaryCardAuthoringProposal(input: {
         input.predecessor &&
         input.predecessor.source !== input.source &&
         !(
-            input.format === dictionaryCardAuthoringGenerationFormat &&
+            usesModernCardAuthoringSemantics(input.format ?? '') &&
             (input.predecessor.sourceSuggestions ?? []).some(
                 (suggestion) =>
                     !discarded.has(suggestion.id) &&
@@ -583,7 +640,7 @@ export function mergeDictionaryCardAuthoringProposal(input: {
                 ? input.delta.sourceResult.value
                 : input.source;
         suggestions.push(
-            input.format === dictionaryCardAuthoringGenerationFormat
+            usesModernCardAuthoringSemantics(input.format ?? '')
                 ? { ...candidate, basisSource, id: input.nextId() }
                 : { ...candidate, id: input.nextId() },
         );
@@ -629,8 +686,11 @@ export function mergeDictionaryCardAuthoringProposal(input: {
     }
     return DictionaryCardAuthoringProposalPayloadSchema.parse({
         source: input.predecessor?.source ?? input.source,
-        ...(input.format === dictionaryCardAuthoringGenerationFormat
+        ...(usesModernCardAuthoringSemantics(input.format ?? '')
             ? { sourceResult, sourceSuggestions }
+            : {}),
+        ...(input.format === dictionaryCardAuthoringGenerationFormat
+            ? { translationContext: input.translationContext ?? null }
             : {}),
         suggestions,
     });
@@ -667,7 +727,7 @@ export function dictionaryCardAuthoringProviderInput(
     const requestedFields = resolveDictionaryCardAuthoringFields(
         input.effectiveSettings,
         input.scope,
-        input.format === dictionaryCardAuthoringGenerationFormat,
+        input.format !== dictionaryCardAuthoringGenerationFormatV1,
     );
     return DictionaryCardAuthoringProviderInputSchema.parse({
         sourceLanguage: input.context.sourceLanguage,
@@ -679,6 +739,7 @@ export function dictionaryCardAuthoringProviderInput(
             ? { exampleForTranslation: input.draft.values.example }
             : {}),
         effectiveSettings: input.effectiveSettings,
+        translationContext: input.translationContext ?? null,
         requestedFields,
         fieldContext: requestedFields.map((field) => ({
             field,
@@ -746,15 +807,28 @@ export type DictionaryCardAuthoringScope = z.infer<
 >;
 type DictionaryCardAuthoringGenerationInputPayloadBase = Omit<
     z.infer<typeof DictionaryCardAuthoringGenerationInputPayloadSchema>,
-    'format' | 'target'
+    'format' | 'target' | 'translationContext'
 >;
 export type DictionaryCardAuthoringGenerationInputPayload =
     | (DictionaryCardAuthoringGenerationInputPayloadBase & {
           format: typeof dictionaryCardAuthoringGenerationFormatV1;
+          translationContext?: never;
           target?: never;
       })
     | (DictionaryCardAuthoringGenerationInputPayloadBase & {
+          format: typeof dictionaryCardAuthoringGenerationFormatV2;
+          translationContext?: never;
+          target:
+              | { kind: 'create' }
+              | {
+                    kind: 'update';
+                    cardId: string;
+                    expectedCardVersion: number;
+                };
+      })
+    | (DictionaryCardAuthoringGenerationInputPayloadBase & {
           format: typeof dictionaryCardAuthoringGenerationFormat;
+          translationContext: string | null;
           target:
               | { kind: 'create' }
               | {

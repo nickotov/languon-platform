@@ -9,6 +9,7 @@ export const dictionaryLimits = {
     optionalLongValueCodePoints: 2_000,
     optionalShortValueCodePoints: 200,
     requiredCardValueCodePoints: 200,
+    translationContextCodePoints: 1_000,
 } as const;
 
 export class DictionaryOwnerCapacityError extends Error {
@@ -52,6 +53,7 @@ export type DictionaryTextField =
     | 'definition'
     | 'source'
     | 'transcription'
+    | 'translation_context'
     | 'translation';
 
 export type InvalidDictionaryTextReason =

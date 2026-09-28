@@ -195,7 +195,9 @@ describe('dictionary M4 document persistence schema contract', () => {
                 ?.notNull,
         ).toBe(false);
         expect(uploadWaitSql).toContain('"kind" = \'document-terms\'');
-        expect(uploadWaitSql).toContain('"format" = \'document-terms:v1\'');
+        expect(uploadWaitSql).toContain(
+            "\"format\" in ('document-terms:v1', 'document-terms:v2')",
+        );
         expect(uploadWaitSql).toContain(
             '"provider_reservation_state" = \'released\'',
         );

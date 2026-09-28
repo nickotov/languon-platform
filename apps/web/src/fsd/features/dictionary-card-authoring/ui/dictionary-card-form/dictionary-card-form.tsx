@@ -12,6 +12,7 @@ import type {
 import { AuthoringField } from '../authoring-field/authoring-field';
 import { AuthoringAiAssistance } from '../authoring-ai-assistance/authoring-ai-assistance';
 import { CardFieldOverrides } from '../card-field-overrides/card-field-overrides';
+import { CardTranslationContext } from '../card-translation-context/card-translation-context';
 import { FormVersionNavigation } from './form-version-navigation';
 import styles from './dictionary-card-form.module.css';
 
@@ -47,7 +48,11 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         ? t('common.cancel')
         : t('dictionary.card.discardDraft');
     const saveDisabled =
-        active || ai?.pending || ai?.successorActive || !authoring.validValues;
+        active ||
+        ai?.pending ||
+        ai?.successorActive ||
+        !authoring.validValues ||
+        !authoring.validTranslationContext;
     const displayedAi = ai
         ? { ...ai, proposal: authoring.proposal }
         : undefined;
@@ -66,7 +71,8 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
               }
             : undefined,
         active,
-        canGenerate: authoring.isLatestVersion,
+        canGenerate:
+            authoring.isLatestVersion && authoring.validTranslationContext,
         stale,
         hiddenSuggestionIds: authoring.hiddenSuggestionIds,
         reviewedSuggestionIds: authoring.reviewedSuggestionIds,
@@ -117,6 +123,16 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                         content={fieldContent}
                         suggestions={fieldSuggestions}
                     />
+                    <CardTranslationContext
+                        cardContext={authoring.draft.translationContext}
+                        dictionaryContext={dictionary.translationContext}
+                        disabled={
+                            active ||
+                            pending ||
+                            Boolean(ai?.pending || ai?.successorActive)
+                        }
+                        onChange={authoring.setTranslationContext}
+                    />
                     {duplicate ? (
                         <InlineAlert tone='warning'>
                             {t('dictionary.card.duplicateWarning')}
@@ -128,7 +144,10 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             active={active}
                             stale={stale}
                             validSource={authoring.validSource}
-                            canGenerate={authoring.isLatestVersion}
+                            canGenerate={
+                                authoring.isLatestVersion &&
+                                authoring.validTranslationContext
+                            }
                             generateAll={authoring.generateAll}
                             acceptAllSuggestions={
                                 authoring.acceptAllSuggestions

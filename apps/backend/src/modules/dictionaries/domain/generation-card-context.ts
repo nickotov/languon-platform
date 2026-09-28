@@ -78,3 +78,11 @@ export const DictionaryGenerationEffectiveSettingsSchema = z
         transcriptionNotation: z.enum(['ipa', 'romanization', 'custom']),
     })
     .strict();
+
+/**
+ * Server-resolved semantic guidance for AI generation. This value is user
+ * content, never an instruction channel, and is intentionally kept separate
+ * from transient generation instructions.
+ */
+export const DictionaryGenerationTranslationContextSchema =
+    boundedText(1_000).nullable();

@@ -21,6 +21,8 @@ import type {
 import {
     dictionaryImportPairsGenerationFormat,
     dictionaryPastedTermsGenerationFormat,
+    dictionaryPastedTermsGenerationFormatV1,
+    parseDictionaryGenerationInput,
 } from '../../../../../src/modules/dictionaries/domain/generation';
 import { DictionaryCardCapacityError } from '../../../../../src/modules/dictionaries/domain/ordering';
 import { DrizzleDictionaryGenerationStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
@@ -307,10 +309,12 @@ run('pasted-term generation persistence', () => {
             queueRunningDepth: 0,
             queueRetryDepth: 0,
             queueOldestRunnableAgeMs: 0,
+            queueCardAuthoringDepth: 0,
             queueSingleCardDepth: 0,
             queuePastedTermsDepth: 0,
             queueDocumentTermsDepth: 0,
             queueImportPairsDepth: 0,
+            queueCardAuthoringOldestAgeMs: 0,
             queueSingleCardOldestAgeMs: 0,
             queuePastedTermsOldestAgeMs: 0,
             queueDocumentTermsOldestAgeMs: 0,
@@ -556,6 +560,216 @@ run('pasted-term generation persistence', () => {
                 },
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+    });
+
+    it('keeps persistent import context distinct from transient instruction without creating card overrides', async () => {
+        const created = await createDictionary();
+        const dictionary = await dictionaryStore.updateDictionary({
+            context: operationContext(1),
+            dictionaryId: created.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: created.version,
+                translationContext: 'Retail banking terminology',
+            },
+        });
+        const enqueued = await generationStore.enqueueImportPairs({
+            context: operationContext(2),
+            fingerprint: fingerprint('T'),
+            idempotencyKey: `import-pairs-context-${randomUUID()}`,
+            importFingerprint: fingerprint('U'),
+            instruction: 'Prefer short everyday examples',
+            ownerId,
+            rows: [{ rowIndex: 0, source: 'bank', translation: 'banque' }],
+            target: {
+                dictionaryId: dictionary.id,
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                kind: 'existing',
+            },
+        });
+        const claim = await generationStore.claim({
+            context: operationContext(3),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: [dictionaryImportPairsGenerationFormat],
+            workerId: 'import-context-worker',
+        });
+        expect(claim?.input).toMatchObject({
+            instruction: 'Prefer short everyday examples',
+            translationContext: 'Retail banking terminology',
+        });
+        const candidate = {
+            overrides,
+            values: {
+                definition: 'A financial institution.',
+                example: null,
+                exampleTranslation: null,
+                source: 'bank',
+                transcription: null,
+                translation: 'banque',
+            },
+        };
+        await generationStore.complete({
+            context: operationContext(4),
+            fencingToken: claim!.fencingToken,
+            jobId: claim!.id,
+            leaseDeadline: claim!.leaseDeadline,
+            proposal: {
+                candidates: [
+                    {
+                        candidate,
+                        fieldFeedback: [],
+                        rowIndex: 0,
+                        source: 'bank',
+                        translation: 'banque',
+                    },
+                ],
+                failures: [],
+                warnings: [],
+            },
+            providerUsage: { inputTokens: 4, outputTokens: 2 },
+            reviewExpiresAt: instant(60_000),
+            workerId: claim!.workerId,
+        });
+        await generationStore.acceptBatch({
+            acceptanceFingerprint: fingerprint('V'),
+            context: operationContext(5),
+            jobId: enqueued.job.id,
+            ownerId,
+            selected: [{ candidate, rowIndex: 0 }],
+        });
+        const [card] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+        expect(card?.translationContext).toBeNull();
+    });
+
+    it('keeps persistent pasted-term context distinct from shared request context', async () => {
+        const created = await createDictionary();
+        const dictionary = await dictionaryStore.updateDictionary({
+            context: operationContext(1),
+            dictionaryId: created.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: created.version,
+                translationContext: 'Museum acquisition terminology',
+            },
+        });
+        const job = await generationStore.enqueuePastedTerms({
+            context: operationContext(2),
+            dictionaryId: dictionary.id,
+            expectedDictionaryVersion: dictionary.version,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('W'),
+            idempotencyKey: `pasted-context-${randomUUID()}`,
+            ownerId,
+            sharedContext: 'Use beginner-friendly definitions',
+            text: 'collection',
+        });
+        const claim = await generationStore.claim({
+            context: operationContext(3),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: [dictionaryPastedTermsGenerationFormat],
+            workerId: 'pasted-context-worker',
+        });
+        expect(claim?.input).toMatchObject({
+            sharedContext: 'Use beginner-friendly definitions',
+            translationContext: 'Museum acquisition terminology',
+        });
+        const candidate = {
+            overrides,
+            values: {
+                definition: null,
+                example: null,
+                exampleTranslation: null,
+                source: 'collection',
+                transcription: null,
+                translation: 'collection',
+            },
+        };
+        await generationStore.complete({
+            context: operationContext(4),
+            fencingToken: claim!.fencingToken,
+            jobId: claim!.id,
+            leaseDeadline: claim!.leaseDeadline,
+            proposal: {
+                candidates: [
+                    {
+                        candidate,
+                        fieldFeedback: [],
+                        input: 'collection',
+                        rowIndex: 0,
+                    },
+                ],
+                failures: [],
+                warnings: [],
+            },
+            providerUsage: { inputTokens: 4, outputTokens: 2 },
+            reviewExpiresAt: instant(60_000),
+            workerId: claim!.workerId,
+        });
+        await generationStore.acceptPastedTerms({
+            acceptanceFingerprint: fingerprint('X'),
+            context: operationContext(5),
+            jobId: job.id,
+            ownerId,
+            selected: [{ candidate, rowIndex: 0 }],
+        });
+        const [card] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+        expect(card?.translationContext).toBeNull();
+    });
+
+    it('reports the persisted format for retained v1 pasted-term jobs', async () => {
+        const dictionary = await createDictionary();
+        const job = await generationStore.enqueuePastedTerms({
+            context: operationContext(1),
+            dictionaryId: dictionary.id,
+            expectedDictionaryVersion: dictionary.version,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('Y'),
+            idempotencyKey: `pasted-v1-${randomUUID()}`,
+            ownerId,
+            sharedContext: null,
+            text: 'legacy',
+        });
+        const [persisted] = await database
+            .select({
+                inputPayload: dictionaryGenerationJobsTable.inputPayload,
+            })
+            .from(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+        const currentInput = persisted!.inputPayload as Record<string, unknown>;
+        const { translationContext: _translationContext, ...legacyInput } =
+            currentInput;
+        await database
+            .update(dictionaryGenerationJobsTable)
+            .set({
+                format: dictionaryPastedTermsGenerationFormatV1,
+                inputPayload: parseDictionaryGenerationInput({
+                    ...legacyInput,
+                    format: dictionaryPastedTermsGenerationFormatV1,
+                }),
+            })
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
+        await expect(
+            generationStore.read({
+                context: operationContext(2),
+                jobId: job.id,
+                ownerId,
+            }),
+        ).resolves.toMatchObject({
+            format: dictionaryPastedTermsGenerationFormatV1,
+            state: 'queued',
+        });
     });
 
     async function createDictionary() {
@@ -882,6 +1096,7 @@ run('pasted-term generation persistence', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: {
                     definition: null,
@@ -969,6 +1184,7 @@ run('pasted-term generation persistence', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: {
                     definition: null,

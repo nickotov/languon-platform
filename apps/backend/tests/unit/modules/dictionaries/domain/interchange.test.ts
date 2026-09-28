@@ -31,6 +31,7 @@ function card(values: Partial<DictionaryCard['values']> = {}): DictionaryCard {
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',
         archivedAt: null,
+        translationContext: null,
         values: {
             source: 'bank',
             translation: 'banco',

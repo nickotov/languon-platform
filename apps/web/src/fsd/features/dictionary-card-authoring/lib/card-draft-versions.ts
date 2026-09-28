@@ -34,9 +34,7 @@ export type DraftVersion = {
     hiddenSuggestionIds: Set<string>;
     proposal: DictionaryCardAuthoringProposal | null;
     reviewedSuggestionIds: Set<string>;
-    selectedSuggestions: Partial<
-        Record<DictionaryCardAuthoringField, string>
-    >;
+    selectedSuggestions: Partial<Record<DictionaryCardAuthoringField, string>>;
 };
 
 export type DraftVersionState = {
@@ -54,6 +52,7 @@ export function createDraftVersion(
             overrides: card
                 ? { ...card.overrides }
                 : { ...EMPTY_CARD_OVERRIDES },
+            translationContext: card?.translationContext ?? null,
             values: card ? { ...card.values } : { ...EMPTY_CARD_VALUES },
         },
         hiddenSuggestionIds: new Set(),
@@ -68,19 +67,23 @@ export function cardDraftChanged(
     card: DictionaryCardFormProps['card'],
 ) {
     const initialOverrides = card?.overrides ?? EMPTY_CARD_OVERRIDES;
+    const contextChanged =
+        draft.translationContext !== (card?.translationContext ?? null);
     const valuesChanged = card
-        ? (Object.keys(EMPTY_CARD_VALUES) as Array<keyof DictionaryCardValues>)
-              .some((field) => draft.values[field] !== card.values[field])
+        ? (
+              Object.keys(EMPTY_CARD_VALUES) as Array<
+                  keyof DictionaryCardValues
+              >
+          ).some((field) => draft.values[field] !== card.values[field])
         : Object.values(draft.values).some((value) => Boolean(value?.trim()));
     return (
         valuesChanged ||
+        contextChanged ||
         (
             Object.keys(EMPTY_CARD_OVERRIDES) as Array<
                 keyof DictionaryCardOverrides
             >
-        ).some(
-            (field) => draft.overrides[field] !== initialOverrides[field],
-        )
+        ).some((field) => draft.overrides[field] !== initialOverrides[field])
     );
 }
 

@@ -132,6 +132,39 @@ describe('DictionaryDocumentGenerationProcessor', () => {
         ]);
     });
 
+    it('forwards v2 persistent context separately from document instruction', async () => {
+        const value = fixture(new TextEncoder().encode('bank'));
+        const deterministic = new DeterministicPastedTermsProposalGenerator();
+        const generate = vi.fn((generationRequest) =>
+            deterministic.generate(generationRequest),
+        );
+        await processor({
+            storage: value.storage,
+            proposalGenerator: {
+                generate,
+                readiness: () => Promise.resolve(),
+            } as unknown as DeterministicPastedTermsProposalGenerator,
+        }).process({
+            ...request(value),
+            input: {
+                ...value.input,
+                format: 'document-terms:v2',
+                instruction: 'Prefer concise examples',
+                translationContext: 'Financial compliance terminology',
+            },
+        });
+
+        expect(generate).toHaveBeenCalledWith(
+            expect.objectContaining({
+                input: expect.objectContaining({
+                    format: 'pasted-terms:v2',
+                    sharedContext: 'Prefer concise examples',
+                    translationContext: 'Financial compliance terminology',
+                }),
+            }),
+        );
+    });
+
     it('returns an all-invalid failure-only review without a paid call', async () => {
         const value = fixture(new TextEncoder().encode('x'.repeat(201)));
         const generate = vi.fn();

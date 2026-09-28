@@ -63,6 +63,10 @@ export function useAuthoringMutation({
                 if (!authoringReviewJob)
                     throw new Error('Card authoring proposal unavailable');
                 if (authoringReviewJob.format === 'card-authoring:v1') {
+                    const legacyCandidate = {
+                        overrides: action.draft.overrides,
+                        values: action.draft.values,
+                    };
                     const selectedSuggestions =
                         action.selectedSuggestions.filter(
                             (
@@ -79,9 +83,26 @@ export function useAuthoringMutation({
                             token,
                             authoringReviewJob.id,
                             {
-                                candidate: action.draft,
+                                candidate: legacyCandidate,
                                 format: 'card-authoring:v1',
                                 selectedSuggestions,
+                            },
+                        ),
+                    );
+                }
+                if (authoringReviewJob.format === 'card-authoring:v2') {
+                    const legacyCandidate = {
+                        overrides: action.draft.overrides,
+                        values: action.draft.values,
+                    };
+                    return requestWithSession((token) =>
+                        dictionaryApi.acceptGenerationJob(
+                            token,
+                            authoringReviewJob.id,
+                            {
+                                candidate: legacyCandidate,
+                                format: 'card-authoring:v2',
+                                selectedSuggestions: action.selectedSuggestions,
                             },
                         ),
                     );
@@ -92,7 +113,7 @@ export function useAuthoringMutation({
                         authoringReviewJob.id,
                         {
                             candidate: action.draft,
-                            format: 'card-authoring:v2',
+                            format: 'card-authoring:v3',
                             selectedSuggestions: action.selectedSuggestions,
                         },
                     ),
@@ -101,6 +122,7 @@ export function useAuthoringMutation({
 
             const bodyDraft = {
                 overrides: action.draft.overrides,
+                translationContext: action.draft.translationContext,
                 values: {
                     definition: action.draft.values.definition,
                     example: action.draft.values.example,
@@ -114,7 +136,7 @@ export function useAuthoringMutation({
                 draft: bodyDraft,
                 expectedDictionaryVersion: versions.dictionaryVersion,
                 expectedSettingsVersion: versions.settingsVersion,
-                format: 'card-authoring:v2' as const,
+                format: 'card-authoring:v3' as const,
                 source,
             };
             const fingerprint = JSON.stringify({
@@ -156,15 +178,39 @@ export function useAuthoringMutation({
                                 kind: 'field' as const,
                             };
                         })();
+                        const legacyDraft = {
+                            overrides: bodyDraft.overrides,
+                            values: bodyDraft.values,
+                        };
                         return dictionaryApi.regenerateCardAuthoringGeneration(
                             token,
                             authoringReviewJob.id,
                             {
                                 ...base,
+                                draft: legacyDraft,
                                 discardedSuggestionIds:
                                     action.discardedSuggestionIds,
                                 format: 'card-authoring:v1',
                                 scope,
+                            },
+                            attempt.key,
+                        );
+                    }
+                    if (authoringReviewJob.format === 'card-authoring:v2') {
+                        const legacyDraft = {
+                            overrides: bodyDraft.overrides,
+                            values: bodyDraft.values,
+                        };
+                        return dictionaryApi.regenerateCardAuthoringGeneration(
+                            token,
+                            authoringReviewJob.id,
+                            {
+                                ...base,
+                                draft: legacyDraft,
+                                discardedSuggestionIds:
+                                    action.discardedSuggestionIds,
+                                format: 'card-authoring:v2',
+                                scope: action.scope,
                             },
                             attempt.key,
                         );
@@ -176,7 +222,7 @@ export function useAuthoringMutation({
                             ...base,
                             discardedSuggestionIds:
                                 action.discardedSuggestionIds,
-                            format: 'card-authoring:v2',
+                            format: 'card-authoring:v3',
                             scope: action.scope,
                         },
                         attempt.key,

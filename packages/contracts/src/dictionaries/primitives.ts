@@ -85,6 +85,11 @@ export const DictionaryDescriptionSchema = boundedText({
     maxCodePoints: 2_000,
     trim: true,
 });
+export const DictionaryTranslationContextSchema = boundedText({
+    minCodePoints: 1,
+    maxCodePoints: 1_000,
+    trim: true,
+});
 export const DictionaryCustomNotationLabelSchema = boundedText({
     minCodePoints: 1,
     maxCodePoints: 40,

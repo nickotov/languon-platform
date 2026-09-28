@@ -13,6 +13,7 @@ import {
 } from '../lib/generation-url';
 import type { useEditorQueries } from './use-editor-queries';
 import type { useEditorState } from './use-editor-state';
+import type { useDocumentJob } from './use-document-job';
 
 export function useDocumentMutation({
     t,
@@ -28,6 +29,7 @@ export function useDocumentMutation({
     dictionaryId,
     requestWithSession,
     cards,
+    documentGenerationJob,
 }: Pick<
     ReturnType<typeof useEditorState>,
     | 't'
@@ -43,7 +45,8 @@ export function useDocumentMutation({
     | 'dictionaryId'
     | 'requestWithSession'
 > &
-    Pick<ReturnType<typeof useEditorQueries>, 'cards'>) {
+    Pick<ReturnType<typeof useEditorQueries>, 'cards'> &
+    Pick<ReturnType<typeof useDocumentJob>, 'documentGenerationJob'>) {
     const documentGenerationAction = useMutation({
         mutationFn: async (
             action:
@@ -67,12 +70,18 @@ export function useDocumentMutation({
             if (action.kind === 'accept') {
                 if (!documentGenerationJobId)
                     throw new Error('Document generation job unavailable');
+                const format = documentGenerationJob.data?.job?.format;
+                if (
+                    format !== 'document-terms:v1' &&
+                    format !== 'document-terms:v2'
+                )
+                    throw new Error('Document generation job unavailable');
                 return requestWithSession((token) =>
                     dictionaryApi.acceptGenerationJob(
                         token,
                         documentGenerationJobId,
                         {
-                            format: 'document-terms:v1',
+                            format,
                             selected: [...action.selected],
                         },
                     ),

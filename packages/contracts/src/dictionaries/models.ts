@@ -21,6 +21,7 @@ import {
     DictionaryShareIdSchema,
     DictionaryShareKeySchema,
     DictionaryTimestampSchema,
+    DictionaryTranslationContextSchema,
     DictionaryVersionSchema,
     DictionaryVisibilitySchema,
 } from './primitives';
@@ -202,6 +203,7 @@ export const DictionarySummarySchema =
     });
 
 export const OwnedDictionarySchema = DictionarySummaryFieldsSchema.extend({
+    translationContext: DictionaryTranslationContextSchema.nullable(),
     settings: DictionarySettingsSchema,
     sourceDictionaryId: DictionaryIdSchema.nullable(),
 })
@@ -221,6 +223,7 @@ export const DictionaryCardSchema = z
         id: DictionaryIdSchema,
         dictionaryId: DictionaryIdSchema,
         values: DictionaryCardValuesSchema,
+        translationContext: DictionaryTranslationContextSchema.nullable(),
         overrides: DictionaryCardOverridesSchema,
         effectiveSettings: DictionaryCardEffectiveSettingsSchema,
         authorship: DictionaryAuthorshipSchema,
@@ -245,6 +248,7 @@ export const PublicDictionarySchema = DictionarySummaryFieldsSchema.omit({
             .array(
                 DictionaryCardSchema.omit({
                     dictionaryId: true,
+                    translationContext: true,
                     overrides: true,
                     lifecycle: true,
                     settingsVersion: true,

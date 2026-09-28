@@ -20,12 +20,12 @@ import {
     DictionaryGenerationCandidateSchema,
     DictionaryGenerationJobResponseSchema,
     DictionaryDocumentTermsGenerationJobSchema,
+    DictionaryDocumentTermsGenerationFormatSchema,
     DictionaryImportPairsGenerationJobSchema,
+    DictionaryImportPairsGenerationFormatSchema,
     DictionaryPastedTermsGenerationJobSchema,
+    DictionaryPastedTermsGenerationFormatSchema,
     DictionarySingleCardGenerationJobSchema,
-    DICTIONARY_PASTED_TERMS_GENERATION_FORMAT,
-    DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT,
-    DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT,
 } from './generation';
 import {
     DictionaryDocumentMediaTypeSchema,
@@ -71,6 +71,7 @@ import {
     DictionaryPublicPageSizeSchema,
     DictionarySearchSchema,
     DictionaryShareKeyHeadersSchema,
+    DictionaryTranslationContextSchema,
     DictionaryVersionSchema,
     EmptyDictionaryBodySchema,
     SharedDictionaryParamsSchema,
@@ -180,6 +181,8 @@ export const UpdateDictionaryRequestSchema = z
         expectedSettingsVersion: DictionaryVersionSchema.optional(),
         name: DictionaryNameSchema.optional(),
         description: DictionaryDescriptionSchema.nullable().optional(),
+        translationContext:
+            DictionaryTranslationContextSchema.nullable().optional(),
         sourceLanguage: DictionaryLanguageTagSchema.optional(),
         targetLanguage: DictionaryLanguageTagSchema.optional(),
         visibility: z.literal('private').optional(),
@@ -190,6 +193,7 @@ export const UpdateDictionaryRequestSchema = z
         const hasDictionaryChange =
             request.name !== undefined ||
             request.description !== undefined ||
+            request.translationContext !== undefined ||
             request.sourceLanguage !== undefined ||
             request.targetLanguage !== undefined ||
             request.visibility !== undefined;
@@ -286,6 +290,8 @@ export const CreateDictionaryCardRequestSchema = z
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         values: DictionaryCardInputValuesSchema,
+        translationContext:
+            DictionaryTranslationContextSchema.nullable().default(null),
         overrides: DictionaryCardInputOverridesSchema,
     })
     .strict();
@@ -329,6 +335,8 @@ export const UpdateDictionaryCardRequestSchema = z
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         expectedCardVersion: DictionaryVersionSchema,
+        translationContext:
+            DictionaryTranslationContextSchema.nullable().optional(),
         values: DictionaryCardValuesPatchSchema.optional(),
         overrides: DictionaryCardOverridesPatchSchema.optional(),
     })
@@ -338,7 +346,8 @@ export const UpdateDictionaryCardRequestSchema = z
             (request.values === undefined ||
                 Object.keys(request.values).length === 0) &&
             (request.overrides === undefined ||
-                Object.keys(request.overrides).length === 0)
+                Object.keys(request.overrides).length === 0) &&
+            request.translationContext === undefined
         ) {
             context.addIssue({
                 code: 'custom',
@@ -641,7 +650,7 @@ const DictionaryPastedTermsGenerationSelectionSchema = z
 
 export const AcceptDictionaryPastedTermsGenerationJobRequestSchema = z
     .object({
-        format: z.literal(DICTIONARY_PASTED_TERMS_GENERATION_FORMAT),
+        format: DictionaryPastedTermsGenerationFormatSchema,
         selected: z
             .array(DictionaryPastedTermsGenerationSelectionSchema)
             .min(1)
@@ -662,7 +671,7 @@ export const AcceptDictionaryPastedTermsGenerationJobRequestSchema = z
 
 export const AcceptDictionaryDocumentTermsGenerationJobRequestSchema = z
     .object({
-        format: z.literal(DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT),
+        format: DictionaryDocumentTermsGenerationFormatSchema,
         selected: z
             .array(DictionaryPastedTermsGenerationSelectionSchema)
             .min(1)
@@ -683,7 +692,7 @@ export const AcceptDictionaryDocumentTermsGenerationJobRequestSchema = z
 
 export const AcceptDictionaryImportPairsGenerationJobRequestSchema = z
     .object({
-        format: z.literal(DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT),
+        format: DictionaryImportPairsGenerationFormatSchema,
         selected: z
             .array(
                 DictionaryPastedTermsGenerationSelectionSchema.extend({

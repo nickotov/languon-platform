@@ -55,6 +55,7 @@ const dictionary = {
     sourceDictionaryId: null,
     sourceLanguage: 'en',
     targetLanguage: 'es',
+    translationContext: 'Museum curation and studio visits',
     updatedAt: '2026-08-21T10:00:00.000Z',
     version: 1,
     visibility: 'private',

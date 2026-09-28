@@ -21,9 +21,18 @@ import {
     DictionaryGenerationJobResponseSchema,
     DictionaryGenerationProposalSchema,
     DictionaryPastedTermsGenerationProposalSchema,
+    DictionaryDocumentTermsGenerationFormatSchema,
+    DictionaryImportPairsGenerationFormatSchema,
+    DictionaryPastedTermsGenerationFormatSchema,
+    DictionarySingleCardGenerationFormatSchema,
+    DictionaryCardSchema,
+    DictionarySummarySchema,
+    DictionaryTranslationContextSchema,
     DictionaryIdempotencyHeadersSchema,
     DictionarySettingsValuesSchema,
     LanguagesResponseSchema,
+    OwnedDictionarySchema,
+    PublicDictionarySchema,
     EnqueueDictionaryCardGenerationRequestSchema,
     EnqueueDictionaryPastedTermsGenerationRequestSchema,
     ListDictionariesQuerySchema,
@@ -40,6 +49,116 @@ const CARD_ID_1 = '11111111-1111-4111-8111-111111111111';
 const CARD_ID_2 = '22222222-2222-4222-8222-222222222222';
 
 describe('dictionary HTTP contracts', () => {
+    it('keeps legacy generation formats actionable beside context-aware formats', () => {
+        expect(DictionarySingleCardGenerationFormatSchema.options).toEqual([
+            'single-card:v1',
+            'single-card:v2',
+        ]);
+        expect(DictionaryPastedTermsGenerationFormatSchema.options).toEqual([
+            'pasted-terms:v1',
+            'pasted-terms:v2',
+        ]);
+        expect(DictionaryImportPairsGenerationFormatSchema.options).toEqual([
+            'import-pairs:v1',
+            'import-pairs:v2',
+        ]);
+        expect(DictionaryDocumentTermsGenerationFormatSchema.options).toEqual([
+            'document-terms:v1',
+            'document-terms:v2',
+        ]);
+        expect(
+            DictionaryGenerationJobSchema.parse(
+                generationJob({ format: 'single-card:v2' }),
+            ).format,
+        ).toBe('single-card:v2');
+        expect(
+            AcceptDictionaryPastedTermsGenerationJobRequestSchema.parse({
+                format: 'pasted-terms:v2',
+                selected: [{ rowIndex: 0, candidate: generationCandidate }],
+            }).format,
+        ).toBe('pasted-terms:v2');
+    });
+
+    it('normalizes bounded owner-only dictionary and card translation context', () => {
+        expect(
+            DictionaryTranslationContextSchema.parse(
+                '  Banking and financial institutions  ',
+            ),
+        ).toBe('Banking and financial institutions');
+        expect(() => DictionaryTranslationContextSchema.parse('   ')).toThrow();
+        expect(() =>
+            DictionaryTranslationContextSchema.parse('x'.repeat(1_001)),
+        ).toThrow();
+        expect(() =>
+            DictionaryTranslationContextSchema.parse('valid\u0000unsafe'),
+        ).toThrow();
+
+        expect(
+            UpdateDictionaryRequestSchema.parse({
+                expectedDictionaryVersion: 3,
+                translationContext: '  Legal terminology  ',
+            }).translationContext,
+        ).toBe('Legal terminology');
+        expect(
+            UpdateDictionaryCardRequestSchema.parse({
+                expectedDictionaryVersion: 3,
+                expectedSettingsVersion: 2,
+                expectedCardVersion: 5,
+                translationContext: null,
+            }).translationContext,
+        ).toBeNull();
+        expect(
+            CreateDictionaryCardRequestSchema.parse({
+                expectedDictionaryVersion: 4,
+                expectedSettingsVersion: 2,
+                values: { source: 'bank', translation: 'banco' },
+            }).translationContext,
+        ).toBeNull();
+    });
+
+    it('exposes raw context to owners but rejects it from summaries and public dictionaries', () => {
+        const dictionary = ownedDictionaryFixture();
+        expect(OwnedDictionarySchema.parse(dictionary).translationContext).toBe(
+            'Financial institutions',
+        );
+        expect(
+            DictionaryCardSchema.parse(dictionaryCardFixture())
+                .translationContext,
+        ).toBe('A physical branch of a financial institution');
+        expect(() => DictionarySummarySchema.parse(dictionary)).toThrow();
+
+        const publicDictionary = {
+            ...dictionary,
+            visibility: 'unlisted',
+            settings: dictionary.settings.values,
+            cards: [dictionaryCardFixture()],
+        };
+        const {
+            translationContext: _dictionaryContext,
+            lifecycle: _lifecycle,
+            settingsVersion: _settingsVersion,
+            sourceDictionaryId: _sourceDictionaryId,
+            ...publicFields
+        } = publicDictionary;
+        const publicCard = publicFields.cards[0]!;
+        const {
+            translationContext: _cardContext,
+            dictionaryId: _dictionaryId,
+            overrides: _overrides,
+            lifecycle: _cardLifecycle,
+            settingsVersion: _cardSettingsVersion,
+            archivedAt: _cardArchivedAt,
+            ...publicCardFields
+        } = publicCard;
+        expect(
+            PublicDictionarySchema.parse({
+                ...publicFields,
+                cards: [publicCardFields],
+            }).cards,
+        ).toHaveLength(1);
+        expect(() => PublicDictionarySchema.parse(publicDictionary)).toThrow();
+    });
+
     it('serves the exact versioned language package catalog', () => {
         expect(
             LanguagesResponseSchema.parse({
@@ -166,6 +285,7 @@ describe('dictionary HTTP contracts', () => {
         ).toEqual({
             expectedDictionaryVersion: 4,
             expectedSettingsVersion: 2,
+            translationContext: null,
             values: {
                 source: 'bank',
                 translation: 'banco',
@@ -1081,4 +1201,68 @@ function pastedTermsJob(overrides: Record<string, unknown>) {
         expiresAt: '2026-08-28T12:00:00.000Z',
         ...overrides,
     };
+}
+
+function ownedDictionaryFixture() {
+    return {
+        id: '44444444-4444-4444-8444-444444444444',
+        name: 'Spanish banking',
+        description: null,
+        translationContext: 'Financial institutions',
+        sourceLanguage: 'en',
+        targetLanguage: 'es',
+        visibility: 'private',
+        lifecycle: 'active',
+        activeCardCount: 1,
+        languagePairLocked: true,
+        version: 3,
+        settingsVersion: 2,
+        settings: {
+            version: 2,
+            values: {
+                transcriptionEnabled: false,
+                transcriptionNotation: 'ipa',
+                transcriptionCustomLabel: null,
+                definitionEnabled: false,
+                definitionLanguage: 'target',
+                exampleEnabled: true,
+                exampleLanguage: 'source',
+                exampleTranslationEnabled: true,
+            },
+            updatedAt: '2026-09-28T12:00:00.000Z',
+        },
+        sourceDictionaryId: null,
+        createdAt: '2026-09-28T12:00:00.000Z',
+        updatedAt: '2026-09-28T12:00:00.000Z',
+        archivedAt: null,
+    } as const;
+}
+
+function dictionaryCardFixture() {
+    return {
+        id: CARD_ID_1,
+        dictionaryId: '44444444-4444-4444-8444-444444444444',
+        values: generationCandidate.values,
+        translationContext: 'A physical branch of a financial institution',
+        overrides: generationCandidate.overrides,
+        effectiveSettings: {
+            transcriptionEnabled: false,
+            transcriptionNotation: 'ipa',
+            transcriptionCustomLabel: null,
+            definitionEnabled: false,
+            definitionLanguage: 'target',
+            exampleEnabled: true,
+            exampleLanguage: 'source',
+            exampleTranslationEnabled: true,
+            exampleTranslationLanguage: 'target',
+        },
+        authorship: 'human',
+        lifecycle: 'active',
+        position: 'a0',
+        version: 1,
+        settingsVersion: 2,
+        createdAt: '2026-09-28T12:00:00.000Z',
+        updatedAt: '2026-09-28T12:00:00.000Z',
+        archivedAt: null,
+    } as const;
 }

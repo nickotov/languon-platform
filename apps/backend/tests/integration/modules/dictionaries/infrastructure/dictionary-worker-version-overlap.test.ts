@@ -19,6 +19,8 @@ import {
 import { defaultDictionaryGenerationProviderBudgetPolicy } from '../../../../../src/modules/dictionaries/application/ports/dictionary-generation-provider-policy';
 import {
     dictionaryGenerationFormat,
+    dictionaryGenerationFormatV1,
+    parseDictionaryGenerationInput,
     type DictionaryGenerationProposalPayload,
 } from '../../../../../src/modules/dictionaries/domain/generation';
 import { InvalidDictionarySettingsError } from '../../../../../src/modules/dictionaries/domain/settings';
@@ -107,6 +109,7 @@ run('dictionary worker version overlap', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides: {
                     definitionEnabled: null,
                     definitionLanguage: null,
@@ -150,6 +153,77 @@ run('dictionary worker version overlap', () => {
             ownerId: seeded.ownerId,
         });
     }
+
+    it('keeps retained v1 single-card jobs readable and redacts instructions at review', async () => {
+        const seeded = await seedCard();
+        const job = await enqueue(seeded);
+        const [persisted] = await database
+            .select({
+                inputPayload: dictionaryGenerationJobsTable.inputPayload,
+            })
+            .from(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+        const currentInput = persisted!.inputPayload as Record<string, unknown>;
+        const { translationContext: _translationContext, ...legacyInput } =
+            currentInput;
+        await database
+            .update(dictionaryGenerationJobsTable)
+            .set({
+                format: dictionaryGenerationFormatV1,
+                inputPayload: parseDictionaryGenerationInput({
+                    ...legacyInput,
+                    format: dictionaryGenerationFormatV1,
+                }),
+            })
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
+        await expect(
+            generationStore.read({
+                context: context(3),
+                jobId: job.id,
+                ownerId,
+            }),
+        ).resolves.toMatchObject({
+            format: dictionaryGenerationFormatV1,
+            originalSnapshot: { values: { source: 'hello' } },
+            state: 'queued',
+        });
+        const claim = await generationStore.claim({
+            context: context(4),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: [dictionaryGenerationFormatV1],
+            workerId: 'legacy-v1-worker',
+        });
+        await generationStore.complete({
+            context: context(5),
+            fencingToken: claim!.fencingToken,
+            jobId: claim!.id,
+            leaseDeadline: claim!.leaseDeadline,
+            proposal,
+            reviewExpiresAt: instant(60_000),
+            workerId: claim!.workerId,
+        });
+        await expect(
+            generationStore.read({
+                context: context(6),
+                jobId: job.id,
+                ownerId,
+            }),
+        ).resolves.toMatchObject({
+            format: dictionaryGenerationFormatV1,
+            originalSnapshot: { values: { source: 'hello' } },
+            state: 'review',
+        });
+        const [reviewJob] = await database
+            .select({
+                inputPayload: dictionaryGenerationJobsTable.inputPayload,
+            })
+            .from(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+        expect(reviewJob?.inputPayload).toMatchObject({ instruction: null });
+    });
 
     async function markCardAsAiGenerated(
         seeded: Awaited<ReturnType<typeof seedCard>>,

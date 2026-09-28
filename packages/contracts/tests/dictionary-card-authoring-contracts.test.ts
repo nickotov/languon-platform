@@ -6,6 +6,8 @@ import {
     DictionaryCardAuthoringGenerationJobSchema,
     DictionaryCardAuthoringProposalSchema,
     DictionaryCardAuthoringV2ProposalSchema,
+    DictionaryCardAuthoringV3ProposalSchema,
+    DictionaryCardAuthoringV3GenerationJobSchema,
     EnqueueDictionaryCardAuthoringGenerationRequestSchema,
     EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema,
     ReadDictionaryGenerationCapabilitiesResponseSchema,
@@ -34,6 +36,94 @@ const draft = {
 };
 
 describe('dictionary card authoring contracts', () => {
+    it('keeps translation context exclusive to v3 drafts, proposals, and accepted candidates', () => {
+        const v3Draft = {
+            ...draft,
+            translationContext: '  Financial institutions  ',
+        };
+        expect(
+            EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
+                format: 'card-authoring:v3',
+                expectedDictionaryVersion: 4,
+                expectedSettingsVersion: 3,
+                source: 'bank',
+                draft: v3Draft,
+                scope: { kind: 'all' },
+            }).draft.translationContext,
+        ).toBe('Financial institutions');
+        expect(() =>
+            EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
+                format: 'card-authoring:v2',
+                expectedDictionaryVersion: 4,
+                expectedSettingsVersion: 3,
+                source: 'bank',
+                draft: v3Draft,
+                scope: { kind: 'all' },
+            }),
+        ).toThrow();
+
+        const proposal = {
+            source: 'bank',
+            sourceResult: null,
+            sourceSuggestions: [],
+            suggestions: [],
+            translationContext: 'Financial institutions',
+        } as const;
+        expect(DictionaryCardAuthoringV3ProposalSchema.parse(proposal)).toEqual(
+            proposal,
+        );
+        expect(() =>
+            DictionaryCardAuthoringV2ProposalSchema.parse(proposal),
+        ).toThrow();
+        expect(
+            DictionaryCardAuthoringV3GenerationJobSchema.parse({
+                id: '11111111-1111-4111-8111-111111111111',
+                kind: 'card-authoring',
+                format: 'card-authoring:v3',
+                state: 'review',
+                dictionaryId: '22222222-2222-4222-8222-222222222222',
+                expectedDictionaryVersion: 4,
+                expectedSettingsVersion: 3,
+                sourceLanguage: 'en',
+                targetLanguage: 'es',
+                target: { kind: 'create' },
+                progress: { stage: 'review_ready', percent: 100 },
+                cancellationRequested: false,
+                proposal,
+                failure: null,
+                outcome: null,
+                createdAt: '2026-09-28T12:00:00.000Z',
+                updatedAt: '2026-09-28T12:01:00.000Z',
+                completedAt: null,
+                expiresAt: '2026-09-29T12:01:00.000Z',
+            }).proposal,
+        ).toEqual(proposal);
+
+        expect(
+            AcceptDictionaryCardAuthoringGenerationJobRequestSchema.parse({
+                format: 'card-authoring:v3',
+                candidate: {
+                    values: {
+                        source: 'bank',
+                        translation: 'banco',
+                        transcription: null,
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                    },
+                    translationContext: 'Financial institutions',
+                    overrides,
+                },
+                selectedSuggestions: [
+                    {
+                        field: 'translation',
+                        suggestionId: '33333333-3333-4333-8333-333333333333',
+                    },
+                ],
+            }).candidate.translationContext,
+        ).toBe('Financial institutions');
+    });
+
     it('accepts source-only initial authoring and publishes its capability', () => {
         expect(
             EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({

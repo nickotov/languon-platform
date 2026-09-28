@@ -2,11 +2,16 @@ import type { DictionaryGenerationProviderBudgetPolicy } from './ports/dictionar
 
 export const dictionaryAiTextFormats = [
     'single-card:v1',
+    'single-card:v2',
     'card-authoring:v1',
     'card-authoring:v2',
+    'card-authoring:v3',
     'pasted-terms:v1',
+    'pasted-terms:v2',
     'import-pairs:v1',
+    'import-pairs:v2',
     'document-terms:v1',
+    'document-terms:v2',
 ] as const;
 
 export type DictionaryAiProviderId = 'deepseek' | 'kie';

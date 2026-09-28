@@ -148,6 +148,7 @@ export interface DictionaryGenerationStore {
         acceptanceFingerprint: string;
         candidate: {
             overrides: DictionaryCardOverrides;
+            translationContext?: string | null;
             values: DictionaryCardValues;
         };
         context: DictionaryOperationContext;
@@ -256,7 +257,8 @@ export interface DictionaryGenerationStore {
         fingerprint: string;
         idempotencyKey: string;
         ownerId: string;
-        format?: 'card-authoring:v1' | 'card-authoring:v2';
+        format?:
+            'card-authoring:v1' | 'card-authoring:v2' | 'card-authoring:v3';
         target?:
             | { kind: 'create' }
             | { kind: 'update'; cardId: string; expectedCardVersion: number };

@@ -67,6 +67,7 @@ const dictionary = {
     sourceDictionaryId: null,
     sourceLanguage: 'en',
     targetLanguage: 'es',
+    translationContext: null,
     updatedAt: '2026-08-21T10:00:00.000Z',
     version: 1,
     visibility: 'private',
@@ -106,6 +107,17 @@ export const Compact320: Story = {
             </div>
         ),
     ],
+};
+
+export const InheritedTranslationContext: Story = {
+    args: {
+        ...NewCard.args,
+        dictionary: {
+            ...dictionary,
+            translationContext:
+                'Museum curation and contemporary art terminology',
+        },
+    },
 };
 
 export const AIFieldSuggestions320: Story = {

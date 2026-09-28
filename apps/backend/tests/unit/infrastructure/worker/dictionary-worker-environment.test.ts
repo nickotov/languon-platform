@@ -325,8 +325,8 @@ describe('dictionary worker environment', () => {
                 'https://models.example.test/openai/v1',
             DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'pasted-terms:v1',
-            DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'pasted-terms:v1',
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'pasted-terms:v2',
+            DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'pasted-terms:v2',
             ...pastedBudget,
         };
 

@@ -164,6 +164,7 @@ describe('dictionary card authoring domain', () => {
             sourceLanguage: 'en',
             targetLanguage: 'es',
             source: 'bank',
+            translationContext: null,
             effectiveSettings: settings,
             requestedFields: [
                 'translation',
@@ -200,6 +201,26 @@ describe('dictionary card authoring domain', () => {
         expect(JSON.stringify(providerInput)).not.toContain(
             'private inactive transcription',
         );
+    });
+
+    it('projects the resolved translation context for current authoring jobs', () => {
+        const currentInput =
+            DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
+                ...input,
+                draft: {
+                    ...input.draft,
+                    translationContext: null,
+                },
+                format: 'card-authoring:v3',
+                target: { kind: 'create' },
+                translationContext:
+                    'Use formal financial-services terminology.',
+            });
+
+        expect(
+            dictionaryCardAuthoringProviderInput(currentInput)
+                .translationContext,
+        ).toBe('Use formal financial-services terminology.');
     });
 
     it('retains cross-field exclusion history while projecting only the requested field', () => {

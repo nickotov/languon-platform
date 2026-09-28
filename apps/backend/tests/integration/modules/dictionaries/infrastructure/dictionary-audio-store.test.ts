@@ -64,6 +64,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 request: {
                     expectedDictionaryVersion: dictionary.version,
                     expectedSettingsVersion: dictionary.settings.version,
+                    translationContext: null,
                     values: {
                         source: 'hello',
                         translation: 'hola',

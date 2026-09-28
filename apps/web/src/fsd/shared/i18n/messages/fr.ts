@@ -17,6 +17,21 @@ export const fr = {
     'dictionary.audio.speed': 'Vitesse de lecture',
     'dictionary.audio.normal': 'Normale',
     ...profileFeatureMessages,
+    'dictionary.context.settingsTitle': 'Contexte de traduction',
+    'dictionary.context.label': 'Contexte du dictionnaire',
+    'dictionary.context.settingsHelp':
+        'Décrivez le thème, la situation, le sens ou le registre. Les cartes héritent de ce contexte sauf si elles définissent le leur.',
+    'dictionary.context.set': 'Définir un contexte',
+    'dictionary.context.update': 'Modifier le contexte',
+    'dictionary.context.cardSwitchHelp':
+        'Ajoutez une indication pour cette carte. Son contexte remplace celui du dictionnaire pendant la génération par IA.',
+    'dictionary.context.inherited': 'Contexte hérité du dictionnaire',
+    'dictionary.context.cardLabel': 'Contexte de la carte',
+    'dictionary.context.cardHelp':
+        'Décrivez le sens attendu pour cette carte. Désactivez l’option pour hériter à nouveau du contexte du dictionnaire.',
+    'dictionary.context.cardRequired':
+        'Saisissez un contexte ou désactivez cette option.',
+    'dictionary.context.tooLong': 'Utilisez au maximum {count} caractères.',
     'dictionary.authoring.sourceActionName': 'Source',
     'dictionary.cards.regenerate': 'Réécrire toute la carte avec l’IA',
 
@@ -627,8 +642,7 @@ export const fr = {
         'Essayer une autre valeur pour {field}',
     'dictionary.authoring.previousOptions': 'Options IA précédentes ({count})',
     'dictionary.authoring.versions': 'Versions du formulaire de carte',
-    'dictionary.authoring.previousVersion':
-        'Version précédente du formulaire',
+    'dictionary.authoring.previousVersion': 'Version précédente du formulaire',
     'dictionary.authoring.nextVersion': 'Version suivante du formulaire',
     'dictionary.authoring.versionCounter': 'Version {current} sur {total}',
     'dictionary.authoring.acceptSourceFirst':
@@ -648,7 +662,7 @@ export const fr = {
     'dictionary.authoring.unavailable':
         'Les suggestions de l’IA sont indisponibles. Vous pouvez remplir la carte manuellement.',
     'dictionary.authoring.stale':
-        'La phrase source a changé. Ces suggestions concernent l’ancienne phrase et sont inutilisables.',
+        'La source ou le contexte de traduction a changé. Ces suggestions ne correspondent plus à la carte et sont inutilisables.',
     'dictionary.authoring.suggestions': 'Suggestions de l’IA',
     'dictionary.authoring.suggestionsFor': 'Suggestions de l’IA pour {field}',
     'dictionary.authoring.regenerateField': 'Régénérer le champ',

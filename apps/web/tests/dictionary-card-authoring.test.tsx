@@ -92,6 +92,7 @@ const dictionary: OwnedDictionary = {
     sourceDictionaryId: null,
     sourceLanguage: 'en',
     targetLanguage: 'es',
+    translationContext: null,
     updatedAt: '2026-08-21T10:00:00.000Z',
     version: 1,
     visibility: 'private',
@@ -127,6 +128,7 @@ const card: DictionaryCard = {
     },
     position: '1000',
     settingsVersion: 1,
+    translationContext: null,
     updatedAt: '2026-08-21T10:00:00.000Z',
     values: {
         definition: '<img src=x onerror=alert(1)>',
@@ -187,6 +189,17 @@ describe('dependent card field generation', () => {
                 'card-authoring:v1',
             ),
         ).toBe(false);
+    });
+
+    it('uses v3 coherent dependency groups', () => {
+        expect(
+            isFieldAffectedByGeneration(
+                'exampleTranslation',
+                { kind: 'field', field: 'translation' },
+                card.effectiveSettings,
+                'card-authoring:v3',
+            ),
+        ).toBe(true);
     });
 });
 
@@ -389,6 +402,229 @@ function GeneratingFieldHarness({
 }
 
 describe('dictionary settings and card authoring', () => {
+    it('saves optional dictionary translation context', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(
+            <DictionarySettingsForm
+                dictionary={dictionary}
+                languages={languages}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+
+        const context = screen.getByLabelText(/Dictionary context/);
+        await user.type(context, 'Use the word in a museum-curation sense.');
+        expect(context).toHaveAttribute('maxlength', '2000');
+        await user.click(screen.getByRole('button', { name: 'Save settings' }));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                translationContext: 'Use the word in a museum-curation sense.',
+            }),
+        );
+    });
+
+    it('validates dictionary context by Unicode code points', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(
+            <DictionarySettingsForm
+                dictionary={dictionary}
+                languages={languages}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+
+        const context = screen.getByLabelText(/Dictionary context/);
+        fireEvent.change(context, { target: { value: '😀'.repeat(1000) } });
+        await user.click(screen.getByRole('button', { name: 'Save settings' }));
+        expect(onSave).toHaveBeenCalledOnce();
+
+        fireEvent.change(context, { target: { value: 'a'.repeat(1001) } });
+        expect(screen.getByText('Use at most 1000 characters.')).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Save settings' }),
+        ).toBeDisabled();
+    });
+
+    it('reveals an empty card override while retaining the inherited preview', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const onAction = vi.fn().mockResolvedValue(undefined);
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    format: 'card-authoring:v3',
+                    onAction,
+                    pending: false,
+                }}
+                dictionary={{
+                    ...dictionary,
+                    translationContext: 'Museum curation terminology',
+                }}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+
+        expect(screen.getByText('Museum curation terminology')).toBeVisible();
+        await user.click(
+            screen.getByRole('switch', { name: /Update context/ }),
+        );
+        const context = screen.getByLabelText(/Card context/);
+        expect(context).toHaveValue('');
+        expect(context).toBeRequired();
+        expect(screen.getByText(/Enter a context or turn off/)).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Save card' }),
+        ).toBeDisabled();
+        expect(
+            screen.getByRole('button', { name: 'Generate all' }),
+        ).toBeDisabled();
+
+        await user.type(context, 'Photography as an artistic medium');
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
+        await user.type(screen.getByLabelText(/^Translation/), 'medio');
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                translationContext: 'Photography as an artistic medium',
+            }),
+            [],
+        );
+    });
+
+    it('clears a card override to resume dictionary inheritance', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(
+            <DictionaryCardForm
+                card={{
+                    ...card,
+                    translationContext: 'Photography terminology',
+                }}
+                dictionary={{
+                    ...dictionary,
+                    translationContext: 'Museum terminology',
+                }}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+
+        expect(screen.getByLabelText(/Card context/)).toHaveValue(
+            'Photography terminology',
+        );
+        await user.click(
+            screen.getByRole('switch', { name: /Update context/ }),
+        );
+        expect(screen.queryByLabelText(/Card context/)).not.toBeInTheDocument();
+        expect(screen.getByText('Museum terminology')).toBeVisible();
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({ translationContext: null }),
+            [],
+        );
+    });
+
+    it('invalidates v3 suggestions when translation context changes', async () => {
+        const user = userEvent.setup();
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    format: 'card-authoring:v3',
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: false,
+                    proposal: {
+                        source: 'medium',
+                        suggestions: [
+                            {
+                                field: 'translation',
+                                id: '40000000-0000-4000-8000-000000000001',
+                                value: 'medio',
+                            },
+                        ],
+                        translationContext: null,
+                    },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={vi.fn().mockResolvedValue(undefined)}
+                pending={false}
+            />,
+        );
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
+        await user.click(screen.getByRole('switch', { name: /Set context/ }));
+        await user.type(
+            screen.getByLabelText(/Card context/),
+            'Photography terminology',
+        );
+
+        expect(
+            screen.getByText(/source phrase or translation context changed/i),
+        ).toBeVisible();
+        expect(screen.queryByTestId('ai-review-translation')).toBeNull();
+    });
+
+    it('keeps v3 suggestions when local context differs only by outer whitespace', async () => {
+        render(
+            <DictionaryCardForm
+                ai={{
+                    available: true,
+                    format: 'card-authoring:v3',
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                    pending: false,
+                    proposal: {
+                        source: 'bank',
+                        suggestions: [
+                            {
+                                field: 'translation',
+                                id: '40000000-0000-4000-8000-000000000002',
+                                value: 'banque',
+                            },
+                        ],
+                        translationContext: 'Financial services',
+                    },
+                }}
+                card={{
+                    ...card,
+                    translationContext: '  Financial services  ',
+                    values: { ...card.values, source: 'bank' },
+                }}
+                dictionary={dictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={vi.fn().mockResolvedValue(undefined)}
+                pending={false}
+            />,
+        );
+
+        await waitFor(() =>
+            expect(screen.getByTestId('ai-review-translation')).toBeVisible(),
+        );
+        expect(
+            screen.queryByText(/source phrase or translation context changed/i),
+        ).toBeNull();
+    });
+
     it('renders v2 dependency progress while keeping v1 field-local', async () => {
         const user = userEvent.setup();
         const { unmount } = render(
@@ -439,10 +675,7 @@ describe('dictionary settings and card authoring', () => {
         const onAction = vi.fn();
         const onSave = vi.fn().mockResolvedValue(undefined);
         render(
-            <VersionedAuthoringHarness
-                onAction={onAction}
-                onSave={onSave}
-            />,
+            <VersionedAuthoringHarness onAction={onAction} onSave={onSave} />,
         );
 
         await user.click(
@@ -1738,7 +1971,9 @@ describe('dictionary settings and card authoring', () => {
             screen.getByLabelText(/Source word or phrase/),
             'another',
         );
-        expect(screen.getByText(/source phrase changed/i)).toBeInTheDocument();
+        expect(
+            screen.getByText(/source phrase or translation context changed/i),
+        ).toBeInTheDocument();
         expect(
             screen.queryByTestId('ai-review-translation'),
         ).not.toBeInTheDocument();

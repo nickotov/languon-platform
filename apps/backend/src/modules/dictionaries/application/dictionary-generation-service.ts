@@ -21,6 +21,7 @@ import { parseDictionaryBatchGenerationText } from '../domain/batch-generation';
 import {
     dictionaryCardAuthoringGenerationFormat,
     dictionaryCardAuthoringGenerationFormatV1,
+    dictionaryCardAuthoringGenerationFormatV2,
 } from '../domain/card-authoring';
 import {
     DictionaryGenerationNotAvailableError,
@@ -425,6 +426,7 @@ export class DictionaryGenerationService {
         if (
             'format' in request &&
             (request.format === dictionaryCardAuthoringGenerationFormatV1 ||
+                request.format === dictionaryCardAuthoringGenerationFormatV2 ||
                 request.format === dictionaryCardAuthoringGenerationFormat)
         ) {
             if (job.kind !== 'card-authoring' || job.format !== request.format)
@@ -519,7 +521,7 @@ export class DictionaryGenerationService {
             idempotencyKey,
             ownerId,
             format: request.format,
-            ...(prior.format === dictionaryCardAuthoringGenerationFormat &&
+            ...(prior.format !== dictionaryCardAuthoringGenerationFormatV1 &&
             'target' in prior
                 ? { target: prior.target }
                 : {}),

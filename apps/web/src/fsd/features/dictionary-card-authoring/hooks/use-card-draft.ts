@@ -34,8 +34,7 @@ export function useCardDraft({
     const activeVersion = versions.items[versions.activeIndex]!;
 
     const dirty = useMemo(
-        () =>
-            versions.items.some(({ draft }) => cardDraftChanged(draft, card)),
+        () => versions.items.some(({ draft }) => cardDraftChanged(draft, card)),
         [card, versions.items],
     );
 
@@ -62,10 +61,16 @@ export function useCardDraft({
                 return current;
 
             const retainedIds = cardAuthoringSuggestionIds(incomingProposal);
+            const selectedSuggestions = Object.fromEntries(
+                Object.entries(latest.selectedSuggestions).filter(([, id]) =>
+                    Boolean(id && retainedIds.has(id)),
+                ),
+            );
             const nextVersion: DraftVersion = {
                 ...latest,
                 draft: {
                     overrides: { ...latest.draft.overrides },
+                    translationContext: latest.draft.translationContext,
                     values: { ...latest.draft.values },
                 },
                 hiddenSuggestionIds: new Set(
@@ -75,7 +80,7 @@ export function useCardDraft({
                 ),
                 proposal: incomingProposal,
                 reviewedSuggestionIds: new Set(latest.reviewedSuggestionIds),
-                selectedSuggestions: { ...latest.selectedSuggestions },
+                selectedSuggestions,
             };
 
             if (current.awaitingSuccessor && latest.proposal) {
@@ -109,9 +114,7 @@ export function useCardDraft({
         );
     }, [ai?.job?.state]);
 
-    function updateActive(
-        update: (current: DraftVersion) => DraftVersion,
-    ) {
+    function updateActive(update: (current: DraftVersion) => DraftVersion) {
         setVersions((current) => ({
             ...current,
             items: current.items.map((item, index) =>
@@ -174,6 +177,13 @@ export function useCardDraft({
         }));
     }
 
+    function setTranslationContext(translationContext: string | null) {
+        updateActive((current) => ({
+            ...current,
+            draft: { ...current.draft, translationContext },
+        }));
+    }
+
     return {
         activeVersionIndex: versions.activeIndex,
         beginSuccessor: () =>
@@ -188,8 +198,7 @@ export function useCardDraft({
             })),
         draft: activeVersion.draft,
         hiddenSuggestionIds: activeVersion.hiddenSuggestionIds,
-        isLatestVersion:
-            versions.activeIndex === versions.items.length - 1,
+        isLatestVersion: versions.activeIndex === versions.items.length - 1,
         proposal: activeVersion.proposal,
         replaceOverrides,
         reviewedSuggestionIds: activeVersion.reviewedSuggestionIds,
@@ -203,9 +212,7 @@ export function useCardDraft({
                 ),
             })),
         setHiddenSuggestionIds: (
-            update:
-                | Set<string>
-                | ((current: Set<string>) => Set<string>),
+            update: Set<string> | ((current: Set<string>) => Set<string>),
         ) =>
             updateActive((current) => ({
                 ...current,
@@ -215,6 +222,7 @@ export function useCardDraft({
                         : update,
             })),
         setOverride,
+        setTranslationContext,
         setReviewedSuggestionIds: (
             update: (current: Set<string>) => Set<string>,
         ) =>
@@ -224,9 +232,7 @@ export function useCardDraft({
             })),
         setSelectedSuggestions: (
             update: (
-                current: Partial<
-                    Record<DictionaryCardAuthoringField, string>
-                >,
+                current: Partial<Record<DictionaryCardAuthoringField, string>>,
             ) => Partial<Record<DictionaryCardAuthoringField, string>>,
         ) =>
             updateActive((current) => ({

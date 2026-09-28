@@ -136,8 +136,20 @@ run('dictionary document persistence', () => {
     async function authorize(
         character = 'B',
         instruction: string | null = null,
+        translationContext: string | null = null,
     ) {
-        const dictionary = await createDictionary();
+        const created = await createDictionary();
+        const dictionary = translationContext
+            ? await dictionaryStore.updateDictionary({
+                  context: operationContext(1),
+                  dictionaryId: created.id,
+                  ownerId,
+                  request: {
+                      expectedDictionaryVersion: created.version,
+                      translationContext,
+                  },
+              })
+            : created;
         const input = {
             capabilityExpiresAt: instant(600_000),
             context: operationContext(1),
@@ -154,6 +166,43 @@ run('dictionary document persistence', () => {
         };
         return { authorization: await documentStore.authorize(input), input };
     }
+
+    it('snapshots persistent document context separately from transient instruction', async () => {
+        const { authorization } = await authorize(
+            'C',
+            'Prefer concise examples',
+            'Fine-art insurance appraisal terminology',
+        );
+        await documentStore.completeUpload({
+            context: operationContext(2),
+            detectedFormat: 'txt',
+            ownerId,
+            requestedVersionId: 'context-version',
+            uploadId: authorization.uploadId,
+            versions: [
+                {
+                    checksumSha256: 'a'.repeat(64),
+                    contentType: 'text/plain',
+                    isCurrent: true,
+                    kind: 'data',
+                    sizeBytes: 12,
+                    versionId: 'context-version',
+                },
+            ],
+        });
+        const claim = await generationStore.claim({
+            context: operationContext(3),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: [dictionaryDocumentGenerationFormat],
+            workerId: 'document-context-worker',
+        });
+        expect(claim?.input).toMatchObject({
+            instruction: 'Prefer concise examples',
+            translationContext: 'Fine-art insurance appraisal terminology',
+        });
+    });
 
     it('idempotently authorizes one awaiting job and excludes it from claims until exact completion', async () => {
         const { authorization, input } = await authorize();

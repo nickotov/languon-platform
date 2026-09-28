@@ -14,6 +14,11 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
     const { t } = useI18n();
     const state = useSettingsDraft(props);
     const nameCount = `${state.draft.name.length} / 120`;
+    const translationContextTooLong =
+        [...state.draft.translationContext].length > 1000;
+    const translationContextError = translationContextTooLong
+        ? t('dictionary.context.tooLong', { count: 1000 })
+        : undefined;
 
     return (
         <form className={styles.form} onSubmit={state.submitForm}>
@@ -45,6 +50,22 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                         />
                     </Field>
                 </section>
+                <section className={styles.section}>
+                    <h3>{t('dictionary.context.settingsTitle')}</h3>
+                    <Field
+                        error={translationContextError}
+                        label={t('dictionary.context.label')}
+                        hint={t('dictionary.context.settingsHelp')}
+                        optionalLabel={t('dictionary.field.optional')}
+                    >
+                        <Textarea
+                            maxLength={2000}
+                            rows={4}
+                            onChange={state.changeTranslationContext}
+                            value={state.draft.translationContext}
+                        />
+                    </Field>
+                </section>
                 <SettingsLanguagePair
                     dictionary={dictionary}
                     languages={languages}
@@ -72,7 +93,11 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                     >
                         {t('common.cancel')}
                     </Button>
-                    <Button loading={pending} type='submit'>
+                    <Button
+                        disabled={translationContextTooLong}
+                        loading={pending}
+                        type='submit'
+                    >
                         {t('dictionary.settings.save')}
                     </Button>
                 </div>

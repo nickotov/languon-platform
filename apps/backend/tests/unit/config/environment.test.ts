@@ -209,11 +209,11 @@ describe('loadEnvironment authentication settings', () => {
 
     it('rejects pasted-term API activation below the worker aggregate envelope', () => {
         const capabilities = {
-            DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: 'pasted-terms:v1',
-            DICTIONARY_JOB_API_CANCELLABLE_FORMATS: 'pasted-terms:v1',
-            DICTIONARY_JOB_API_DISCARDABLE_FORMATS: 'pasted-terms:v1',
-            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'pasted-terms:v1',
-            DICTIONARY_JOB_API_READABLE_FORMATS: 'pasted-terms:v1',
+            DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: 'pasted-terms:v2',
+            DICTIONARY_JOB_API_CANCELLABLE_FORMATS: 'pasted-terms:v2',
+            DICTIONARY_JOB_API_DISCARDABLE_FORMATS: 'pasted-terms:v2',
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'pasted-terms:v2',
+            DICTIONARY_JOB_API_READABLE_FORMATS: 'pasted-terms:v2',
         };
 
         expect(() =>
@@ -234,7 +234,7 @@ describe('loadEnvironment authentication settings', () => {
                     DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '40960',
                 }),
             ).DICTIONARY_JOB_API_ENQUEUED_FORMATS,
-        ).toEqual(['pasted-terms:v1']);
+        ).toEqual(['pasted-terms:v2']);
     });
 
     it('normalizes blank optional Langfuse credentials and preserves configured values', () => {

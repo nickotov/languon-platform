@@ -1,0 +1,6 @@
+ALTER TABLE "dictionary_card_revisions" DROP CONSTRAINT "dictionary_card_revisions_positive_versions";--> statement-breakpoint
+ALTER TABLE "dictionaries" ADD COLUMN "translation_context" text;--> statement-breakpoint
+ALTER TABLE "dictionary_cards" ADD COLUMN "translation_context" text;--> statement-breakpoint
+ALTER TABLE "dictionaries" ADD CONSTRAINT "dictionaries_translation_context_length" CHECK ("dictionaries"."translation_context" is null or ("dictionaries"."translation_context" = btrim("dictionaries"."translation_context") and char_length("dictionaries"."translation_context") between 1 and 1000));--> statement-breakpoint
+ALTER TABLE "dictionary_card_revisions" ADD CONSTRAINT "dictionary_card_revisions_positive_versions" CHECK ("dictionary_card_revisions"."revision_number" > 0 and "dictionary_card_revisions"."card_version" > 0 and "dictionary_card_revisions"."settings_version" > 0 and "dictionary_card_revisions"."schema_version" in (1, 2));--> statement-breakpoint
+ALTER TABLE "dictionary_cards" ADD CONSTRAINT "dictionary_cards_translation_context_length" CHECK ("dictionary_cards"."translation_context" is null or ("dictionary_cards"."translation_context" = btrim("dictionary_cards"."translation_context") and char_length("dictionary_cards"."translation_context") between 1 and 1000));

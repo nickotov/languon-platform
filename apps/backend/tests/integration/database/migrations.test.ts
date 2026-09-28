@@ -68,21 +68,38 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
     `;
 
         expect(tables.map(({ table_name }) => table_name)).toEqual([
+            'account_deletion_requests',
             'admin_audit_events',
             'admin_memberships',
+            'ai_credit_accounts',
+            'ai_credit_admin_removal_allocations',
+            'ai_credit_admin_removals',
+            'ai_credit_grants',
+            'ai_credit_history',
+            'ai_credit_reservation_allocations',
+            'ai_credit_reservations',
             'auth_passkeys',
             'auth_security_events',
             'auth_sessions',
             'auth_verification_challenges',
             'dictionaries',
+            'dictionary_ai_configuration',
+            'dictionary_ai_configuration_revisions',
+            'dictionary_ai_worker_observations',
+            'dictionary_audio_assets',
+            'dictionary_audio_bindings',
+            'dictionary_audio_blobs',
+            'dictionary_audio_jobs',
             'dictionary_card_revisions',
             'dictionary_cards',
+            'dictionary_deletion_receipts',
             'dictionary_document_extractions',
             'dictionary_document_object_versions',
             'dictionary_document_uploads',
             'dictionary_generation_jobs',
             'dictionary_generation_proposals',
             'dictionary_generation_provider_circuit',
+            'dictionary_generation_provider_usage_archive',
             'dictionary_idempotency_keys',
             'dictionary_settings',
             'password_credentials',
@@ -120,6 +137,20 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
       where table_schema = 'public'
         and table_name = 'dictionary_generation_jobs'
         and column_name = 'awaiting_upload_at'
+    `;
+        const contextColumns = await client<
+            {
+                column_name: string;
+                is_nullable: 'YES' | 'NO';
+                table_name: string;
+            }[]
+        >`
+      select table_name, column_name, is_nullable
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name in ('dictionaries', 'dictionary_cards')
+        and column_name = 'translation_context'
+      order by table_name
     `;
         const documentProposalColumns = await client<
             {
@@ -232,6 +263,18 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 column_name: 'awaiting_upload_at',
                 data_type: 'timestamp with time zone',
                 is_nullable: 'YES',
+            },
+        ]);
+        expect(contextColumns).toEqual([
+            {
+                column_name: 'translation_context',
+                is_nullable: 'YES',
+                table_name: 'dictionaries',
+            },
+            {
+                column_name: 'translation_context',
+                is_nullable: 'YES',
+                table_name: 'dictionary_cards',
             },
         ]);
         expect(documentProposalColumns).toEqual([
@@ -383,7 +426,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
       from languon_migrations.history
     `;
 
-        expect(history[0]?.count).toBe('19');
+        expect(history[0]?.count).toBe('37');
     });
 
     it('serializes simultaneous migration runners with the advisory lock', async () => {
@@ -404,7 +447,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
         from languon_migrations.history
       `;
 
-            expect(history[0]?.count).toBe('19');
+            expect(history[0]?.count).toBe('37');
         } finally {
             await secondClient.end();
         }

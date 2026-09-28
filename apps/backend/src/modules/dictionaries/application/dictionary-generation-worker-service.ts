@@ -21,11 +21,12 @@ import {
 } from './ports/import-pairs-proposal-generator';
 import type { DictionaryClock } from './dictionary-service';
 import {
-    dictionaryPastedTermsGenerationFormat,
-    dictionaryImportPairsGenerationFormat,
-    dictionaryGenerationFormat,
+    dictionaryPastedTermsGenerationFormats,
+    dictionaryImportPairsGenerationFormats,
+    dictionarySingleCardGenerationFormats,
     dictionaryGenerationReviewLifetimeMs,
     parseDictionaryGenerationProposal,
+    type DictionaryGenerationInputPayload,
 } from '../domain/generation';
 import {
     chunkDictionaryBatchGenerationRows,
@@ -34,10 +35,9 @@ import {
     parseDictionaryBatchGenerationProposal,
 } from '../domain/batch-generation';
 import { InvalidDictionarySettingsError } from '../domain/settings';
-import { dictionaryDocumentGenerationFormat } from '../domain/document-ingestion';
+import { dictionaryDocumentGenerationFormats } from '../domain/document-ingestion';
 import {
-    dictionaryCardAuthoringGenerationFormat,
-    dictionaryCardAuthoringGenerationFormatV1,
+    dictionaryCardAuthoringGenerationFormats,
     dictionaryCardAuthoringProviderInput,
     type DictionaryCardAuthoringProviderInput,
     validateDictionaryCardAuthoringProviderDelta,
@@ -50,6 +50,20 @@ import type { DictionaryDocumentStore } from './ports/dictionary-document-store'
 
 class ProviderDeadlineError extends Error {}
 class WorkerLeaseLostError extends Error {}
+
+const isFormat = (formats: readonly string[], format: string) =>
+    formats.includes(format);
+
+const hasFormat = <
+    const TFormats extends
+        readonly DictionaryGenerationInputPayload['format'][],
+>(
+    input: DictionaryGenerationInputPayload,
+    formats: TFormats,
+): input is Extract<
+    DictionaryGenerationInputPayload,
+    { format: TFormats[number] }
+> => formats.some((format) => format === input.format);
 
 function parseGeneratorResponse(
     response: CardProposalGeneratorResponse,
@@ -118,10 +132,10 @@ async function generatePastedTermsProposal(input: {
     provider: PastedTermsProposalGenerator;
     signal: AbortSignal;
 }) {
-    if (input.claim.input.format !== dictionaryPastedTermsGenerationFormat) {
+    const claimedInput = input.claim.input;
+    if (!hasFormat(claimedInput, dictionaryPastedTermsGenerationFormats)) {
         throw new CardProposalGeneratorError('invalid_model_output');
     }
-    const claimedInput = input.claim.input;
     const chunks = chunkDictionaryBatchGenerationRows(claimedInput.rows);
     if (
         input.claim.providerBudget.maxOutputTokensPerAttempt <
@@ -206,9 +220,9 @@ async function generateImportPairsProposal(input: {
     provider: ImportPairsProposalGenerator;
     signal: AbortSignal;
 }) {
-    if (input.claim.input.format !== dictionaryImportPairsGenerationFormat)
-        throw new CardProposalGeneratorError('invalid_model_output');
     const claimedInput = input.claim.input;
+    if (!hasFormat(claimedInput, dictionaryImportPairsGenerationFormats))
+        throw new CardProposalGeneratorError('invalid_model_output');
     const chunks = Array.from(
         {
             length: Math.ceil(
@@ -521,12 +535,19 @@ export class DictionaryGenerationWorkerService {
                         providerAbort.abort(error);
                         reject(error);
                     },
-                    claim.input.format === dictionaryDocumentGenerationFormat
+                    isFormat(
+                        dictionaryDocumentGenerationFormats,
+                        claim.input.format,
+                    )
                         ? this.settings.documentProviderTimeoutMs
-                        : claim.input.format ===
-                                dictionaryPastedTermsGenerationFormat ||
-                            claim.input.format ===
-                                dictionaryImportPairsGenerationFormat
+                        : isFormat(
+                                dictionaryPastedTermsGenerationFormats,
+                                claim.input.format,
+                            ) ||
+                            isFormat(
+                                dictionaryImportPairsGenerationFormats,
+                                claim.input.format,
+                            )
                           ? this.settings.pastedTermsProviderTimeoutMs
                           : this.settings.providerTimeoutMs,
                 );
@@ -551,120 +572,122 @@ export class DictionaryGenerationWorkerService {
                 await markProviderDispatch();
                 return operation();
             };
-            const generation =
-                claim.input.format ===
-                    dictionaryCardAuthoringGenerationFormat ||
-                claim.input.format === dictionaryCardAuthoringGenerationFormatV1
-                    ? this.dependencies.cardAuthoringProvider
-                        ? (() => {
-                              const providerInput =
-                                  dictionaryCardAuthoringProviderInput(
-                                      claim.input,
-                                  );
-                              return afterDispatchMarked(() =>
-                                  this.dependencies.cardAuthoringProvider!.generate(
-                                      {
-                                          idempotencyKey: `${claim.id}/generate`,
-                                          input: providerInput,
-                                          providerBudget: claim.providerBudget,
-                                          providerExecution:
-                                              claim.providerExecution ?? null,
-                                          signal: providerAbort.signal,
-                                      },
-                                  ),
-                              ).then((response) =>
-                                  parseCardAuthoringGeneratorResponse(
-                                      response,
-                                      claim.providerBudget,
-                                      providerInput,
-                                      (usage) => {
-                                          returnedProviderUsage = usage;
-                                      },
-                                  ),
-                              );
-                          })()
+            const generation = hasFormat(
+                claim.input,
+                dictionaryCardAuthoringGenerationFormats,
+            )
+                ? this.dependencies.cardAuthoringProvider
+                    ? (() => {
+                          const providerInput =
+                              dictionaryCardAuthoringProviderInput(claim.input);
+                          return afterDispatchMarked(() =>
+                              this.dependencies.cardAuthoringProvider!.generate(
+                                  {
+                                      idempotencyKey: `${claim.id}/generate`,
+                                      input: providerInput,
+                                      providerBudget: claim.providerBudget,
+                                      providerExecution:
+                                          claim.providerExecution ?? null,
+                                      signal: providerAbort.signal,
+                                  },
+                              ),
+                          ).then((response) =>
+                              parseCardAuthoringGeneratorResponse(
+                                  response,
+                                  claim.providerBudget,
+                                  providerInput,
+                                  (usage) => {
+                                      returnedProviderUsage = usage;
+                                  },
+                              ),
+                          );
+                      })()
+                    : Promise.reject(
+                          new CardAuthoringProposalGeneratorError(
+                              'provider_unavailable',
+                          ),
+                      )
+                : hasFormat(claim.input, dictionaryImportPairsGenerationFormats)
+                  ? this.dependencies.importPairsProvider
+                      ? afterDispatchMarked(() =>
+                            generateImportPairsProposal({
+                                claim,
+                                provider:
+                                    this.dependencies.importPairsProvider!,
+                                signal: providerAbort.signal,
+                            }),
+                        )
+                      : Promise.reject(
+                            new CardProposalGeneratorError(
+                                'provider_unavailable',
+                            ),
+                        )
+                  : hasFormat(
+                          claim.input,
+                          dictionaryPastedTermsGenerationFormats,
+                      )
+                    ? this.dependencies.pastedTermsProvider
+                        ? afterDispatchMarked(() =>
+                              generatePastedTermsProposal({
+                                  claim,
+                                  provider:
+                                      this.dependencies.pastedTermsProvider!,
+                                  signal: providerAbort.signal,
+                              }),
+                          )
                         : Promise.reject(
-                              new CardAuthoringProposalGeneratorError(
+                              new CardProposalGeneratorError(
                                   'provider_unavailable',
                               ),
                           )
-                    : claim.input.format ===
-                        dictionaryImportPairsGenerationFormat
-                      ? this.dependencies.importPairsProvider
-                          ? afterDispatchMarked(() =>
-                                generateImportPairsProposal({
-                                    claim,
-                                    provider:
-                                        this.dependencies.importPairsProvider!,
+                    : hasFormat(
+                            claim.input,
+                            dictionarySingleCardGenerationFormats,
+                        )
+                      ? (() => {
+                            const providerInput = claim.input;
+                            return afterDispatchMarked(() =>
+                                this.dependencies.provider.generate({
+                                    idempotencyKey: `${claim.id}/generate`,
+                                    input: providerInput,
+                                    providerBudget: claim.providerBudget,
+                                    providerExecution:
+                                        claim.providerExecution ?? null,
                                     signal: providerAbort.signal,
                                 }),
-                            )
-                          : Promise.reject(
-                                new CardProposalGeneratorError(
-                                    'provider_unavailable',
-                                ),
-                            )
-                      : claim.input.format ===
-                          dictionaryPastedTermsGenerationFormat
-                        ? this.dependencies.pastedTermsProvider
-                            ? afterDispatchMarked(() =>
-                                  generatePastedTermsProposal({
-                                      claim,
-                                      provider:
-                                          this.dependencies
-                                              .pastedTermsProvider!,
-                                      signal: providerAbort.signal,
-                                  }),
-                              )
-                            : Promise.reject(
-                                  new CardProposalGeneratorError(
-                                      'provider_unavailable',
-                                  ),
-                              )
-                        : claim.input.format === dictionaryGenerationFormat
-                          ? (() => {
-                                const providerInput = claim.input;
-                                return afterDispatchMarked(() =>
-                                    this.dependencies.provider.generate({
-                                        idempotencyKey: `${claim.id}/generate`,
-                                        input: providerInput,
-                                        providerBudget: claim.providerBudget,
-                                        providerExecution:
-                                            claim.providerExecution ?? null,
-                                        signal: providerAbort.signal,
-                                    }),
-                                );
-                            })().then((response) =>
-                                parseGeneratorResponse(
-                                    response,
-                                    claim.providerBudget,
-                                ),
-                            )
-                          : claim.input.format ===
-                                  dictionaryDocumentGenerationFormat &&
-                              this.dependencies.documentExecutor
-                            ? this.dependencies.documentExecutor.execute({
-                                  attempt: claim.attempt,
-                                  fencingToken: claim.fencingToken,
-                                  input: claim.input,
-                                  jobId: claim.id,
-                                  leaseDeadline: claim.leaseDeadline,
-                                  markProviderDispatch,
-                                  providerBudget: claim.providerBudget,
-                                  providerExecution:
-                                      claim.providerExecution ?? null,
-                                  reportStage: (stage, percent) => {
-                                      currentProgress = { percent, stage };
-                                      return Promise.resolve();
-                                  },
-                                  signal: providerAbort.signal,
-                                  workerId: claim.workerId,
-                              })
-                            : Promise.reject(
-                                  new CardProposalGeneratorError(
-                                      'provider_unavailable',
-                                  ),
-                              );
+                            );
+                        })().then((response) =>
+                            parseGeneratorResponse(
+                                response,
+                                claim.providerBudget,
+                            ),
+                        )
+                      : hasFormat(
+                              claim.input,
+                              dictionaryDocumentGenerationFormats,
+                          ) && this.dependencies.documentExecutor
+                        ? this.dependencies.documentExecutor.execute({
+                              attempt: claim.attempt,
+                              fencingToken: claim.fencingToken,
+                              input: claim.input,
+                              jobId: claim.id,
+                              leaseDeadline: claim.leaseDeadline,
+                              markProviderDispatch,
+                              providerBudget: claim.providerBudget,
+                              providerExecution:
+                                  claim.providerExecution ?? null,
+                              reportStage: (stage, percent) => {
+                                  currentProgress = { percent, stage };
+                                  return Promise.resolve();
+                              },
+                              signal: providerAbort.signal,
+                              workerId: claim.workerId,
+                          })
+                        : Promise.reject(
+                              new CardProposalGeneratorError(
+                                  'provider_unavailable',
+                              ),
+                          );
             const generated = await Promise.race([
                 generation,
                 deadline,
@@ -695,7 +718,7 @@ export class DictionaryGenerationWorkerService {
             leaseDeadline = validatingLeaseDeadline;
 
             const completeNow = this.dependencies.clock.now();
-            if (claim.input.format === dictionaryDocumentGenerationFormat) {
+            if (hasFormat(claim.input, dictionaryDocumentGenerationFormats)) {
                 if (
                     !this.dependencies.documentStore ||
                     !('extraction' in generated)
@@ -753,7 +776,10 @@ export class DictionaryGenerationWorkerService {
             if (error instanceof WorkerLeaseLostError) return true;
             const failureNow = this.dependencies.clock.now();
             if (
-                claim.input.format === dictionaryDocumentGenerationFormat &&
+                isFormat(
+                    dictionaryDocumentGenerationFormats,
+                    claim.input.format,
+                ) &&
                 error instanceof DictionaryDocumentGenerationError &&
                 (error.category === 'no_terms_found' ||
                     error.category === 'too_many_terms') &&
@@ -780,7 +806,10 @@ export class DictionaryGenerationWorkerService {
                 return true;
             }
             if (
-                claim.input.format === dictionaryDocumentGenerationFormat &&
+                isFormat(
+                    dictionaryDocumentGenerationFormats,
+                    claim.input.format,
+                ) &&
                 error instanceof DictionaryDocumentGenerationError &&
                 (error.category === 'extraction_failed' ||
                     error.category === 'invalid_document' ||

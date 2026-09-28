@@ -147,6 +147,20 @@ describe('deterministic import-pairs provider', () => {
             '33333333-3333-4333-8333-333333333333',
         );
 
+        const contextRequest = {
+            ...request,
+            input: {
+                ...request.input,
+                format: 'import-pairs:v2' as const,
+                translationContext: 'Retail banking terminology',
+            },
+        };
+        await provider.generate(contextRequest);
+        expect(JSON.parse(generate.mock.calls[1]?.[0])).toMatchObject({
+            instruction: null,
+            translationContext: 'Retail banking terminology',
+        });
+
         const changed = structuredClone(valid);
         changed.candidates[0]!.source = 'changed';
         generate.mockResolvedValueOnce({

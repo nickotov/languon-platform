@@ -94,9 +94,15 @@ const dictionaryJobFormats = [
     'single-card:v1',
     'card-authoring:v1',
     'card-authoring:v2',
+    'card-authoring:v3',
     'pasted-terms:v1',
+    'pasted-terms:v2',
     'import-pairs:v1',
-    ...(documentServicesEnabled ? ['document-terms:v1'] : []),
+    'import-pairs:v2',
+    'single-card:v2',
+    ...(documentServicesEnabled
+        ? ['document-terms:v1', 'document-terms:v2']
+        : []),
 ].join(',');
 
 export default defineConfig({

@@ -134,6 +134,7 @@ export const dictionariesTable = pgTable(
         ),
         sourceLanguageTag: text('source_language_tag').notNull(),
         targetLanguageTag: text('target_language_tag').notNull(),
+        translationContext: text('translation_context'),
         updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
             .defaultNow()
             .notNull(),
@@ -150,6 +151,10 @@ export const dictionariesTable = pgTable(
         check(
             'dictionaries_description_length',
             sql`${table.description} is null or (${table.description} = btrim(${table.description}) and char_length(${table.description}) between 1 and 2000)`,
+        ),
+        check(
+            'dictionaries_translation_context_length',
+            sql`${table.translationContext} is null or (${table.translationContext} = btrim(${table.translationContext}) and char_length(${table.translationContext}) between 1 and 1000)`,
         ),
         check(
             'dictionaries_language_tags_bounded',
@@ -309,6 +314,7 @@ export const dictionaryCardsTable = pgTable(
             'transcription_notation_override',
         ),
         translation: text('translation').notNull(),
+        translationContext: text('translation_context'),
         updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
             .defaultNow()
             .notNull(),
@@ -330,6 +336,10 @@ export const dictionaryCardsTable = pgTable(
         check(
             'dictionary_cards_long_optional_values_length',
             sql`(${table.definition} is null or char_length(${table.definition}) between 1 and 2000) and (${table.example} is null or char_length(${table.example}) between 1 and 2000) and (${table.exampleTranslation} is null or char_length(${table.exampleTranslation}) between 1 and 2000)`,
+        ),
+        check(
+            'dictionary_cards_translation_context_length',
+            sql`${table.translationContext} is null or (${table.translationContext} = btrim(${table.translationContext}) and char_length(${table.translationContext}) between 1 and 1000)`,
         ),
         check('dictionary_cards_sort_key_positive', sql`${table.sortKey} > 0`),
         check('dictionary_cards_version_positive', sql`${table.version} > 0`),
@@ -630,7 +640,7 @@ export const dictionaryGenerationJobsTable = pgTable(
         ),
         check(
             'dictionary_generation_jobs_kind_card',
-            sql`(${table.kind} = 'single-card' and ${table.cardId} is not null and ${table.expectedCardVersion} is not null) or (${table.kind} = 'card-authoring' and ((${table.format} = 'card-authoring:v2' and ((${table.cardId} is null and ${table.expectedCardVersion} is null) or (${table.cardId} is not null and ${table.expectedCardVersion} is not null))) or (${table.format} <> 'card-authoring:v2' and ${table.cardId} is null and ${table.expectedCardVersion} is null))) or (${table.kind} not in ('single-card', 'card-authoring') and ${table.cardId} is null and ${table.expectedCardVersion} is null)`,
+            sql`(${table.kind} = 'single-card' and ${table.cardId} is not null and ${table.expectedCardVersion} is not null) or (${table.kind} = 'card-authoring' and ((${table.format} in ('card-authoring:v2', 'card-authoring:v3') and ((${table.cardId} is null and ${table.expectedCardVersion} is null) or (${table.cardId} is not null and ${table.expectedCardVersion} is not null))) or (${table.format} not in ('card-authoring:v2', 'card-authoring:v3') and ${table.cardId} is null and ${table.expectedCardVersion} is null))) or (${table.kind} not in ('single-card', 'card-authoring') and ${table.cardId} is null and ${table.expectedCardVersion} is null)`,
         ),
         check(
             'dictionary_generation_jobs_attempt_fence',
@@ -642,7 +652,7 @@ export const dictionaryGenerationJobsTable = pgTable(
         ),
         check(
             'dictionary_generation_jobs_upload_wait',
-            sql`${table.awaitingUploadAt} is null or (${table.kind} = 'document-terms' and ${table.format} = 'document-terms:v1' and ${table.executionState} = 'queued' and ${table.progressStage} = 'awaiting_upload' and ${table.progressPercent} = 0 and ${table.providerReservationState} = 'released' and ${table.providerReservedInputTokens} = 0 and ${table.providerReservedOutputTokens} = 0 and ${table.providerReservedCostMicros} = 0 and ${table.providerReservationSettledAt} is null)`,
+            sql`${table.awaitingUploadAt} is null or (${table.kind} = 'document-terms' and ${table.format} in ('document-terms:v1', 'document-terms:v2') and ${table.executionState} = 'queued' and ${table.progressStage} = 'awaiting_upload' and ${table.progressPercent} = 0 and ${table.providerReservationState} = 'released' and ${table.providerReservedInputTokens} = 0 and ${table.providerReservedOutputTokens} = 0 and ${table.providerReservedCostMicros} = 0 and ${table.providerReservationSettledAt} is null)`,
         ),
         check(
             'dictionary_generation_jobs_provider_reservation',
@@ -800,7 +810,7 @@ export const dictionaryCardRevisionsTable = pgTable(
     (table) => [
         check(
             'dictionary_card_revisions_positive_versions',
-            sql`${table.revisionNumber} > 0 and ${table.cardVersion} > 0 and ${table.settingsVersion} > 0 and ${table.schemaVersion} = 1`,
+            sql`${table.revisionNumber} > 0 and ${table.cardVersion} > 0 and ${table.settingsVersion} > 0 and ${table.schemaVersion} in (1, 2)`,
         ),
         foreignKey({
             columns: [table.cardId, table.dictionaryId],

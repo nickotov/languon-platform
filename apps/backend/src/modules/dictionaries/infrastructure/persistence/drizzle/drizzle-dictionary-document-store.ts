@@ -521,6 +521,7 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                     effectiveSettings: effectiveSettings(current.settings),
                     format: dictionaryDocumentGenerationFormat,
                     instruction: input.instruction,
+                    translationContext: current.dictionary.translationContext,
                     uploadId,
                 },
                 kind: 'document-terms',

@@ -27,6 +27,7 @@ import {
     DictionaryGenerationCandidateConflictError,
     DictionaryGenerationCompletionConflictError,
     DictionaryGenerationNotReviewableError,
+    DictionaryVersionConflictError,
 } from '../../../../../src/modules/dictionaries/application/dictionary-errors';
 import { DrizzleDictionaryGenerationStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
 import { DrizzleDictionaryStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
@@ -137,6 +138,7 @@ run('card-authoring generation persistence', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: {
                     definition: null,
@@ -291,7 +293,7 @@ run('card-authoring generation persistence', () => {
             leaseDurationMs: 1_000,
             managedRoutingRevision: 1,
             ownerConcurrency: 2,
-            supportedFormats: ['single-card:v1'],
+            supportedFormats: ['single-card:v2'],
             workerId: 'managed-routing-worker',
         });
         expect(claim).toMatchObject({
@@ -300,7 +302,7 @@ run('card-authoring generation persistence', () => {
         });
         if (
             !claim?.providerExecution ||
-            claim.input.format !== 'single-card:v1'
+            claim.input.format !== 'single-card:v2'
         )
             throw new Error('Expected a pinned single-card claim.');
         await expect(
@@ -580,6 +582,7 @@ run('card-authoring generation persistence', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: {
                     definition: null,
@@ -1092,7 +1095,7 @@ run('card-authoring generation persistence', () => {
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
             ownerConcurrency: 1,
-            supportedFormats: ['single-card:v1'],
+            supportedFormats: ['single-card:v2'],
             workerId: 'single-card-worker',
         });
         const singleCandidate = {
@@ -1245,6 +1248,7 @@ run('card-authoring generation persistence', () => {
             request: {
                 expectedDictionaryVersion: dictionary.version,
                 expectedSettingsVersion: dictionary.settings.version,
+                translationContext: null,
                 overrides,
                 values: {
                     definition: null,
@@ -1495,5 +1499,271 @@ run('card-authoring generation persistence', () => {
             state: 'accepted',
             target: { kind: 'update', cardId: card.id },
         });
+    });
+
+    it('persists v3 inherited and overridden context through review, acceptance, and stale conflict', async () => {
+        const created = await dictionaryStore.createDictionary({
+            context: context(),
+            fingerprint: fingerprint('K'),
+            idempotencyKey: `dictionary-create-${randomUUID()}`,
+            ownerId,
+            request: {
+                description: null,
+                name: 'Context authoring',
+                sourceLanguage: 'en',
+                targetLanguage: 'fr',
+            },
+        });
+        const dictionary = await dictionaryStore.updateDictionary({
+            context: context(1),
+            dictionaryId: created.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: created.version,
+                translationContext: 'Museum curation terminology',
+            },
+        });
+        const inherited = await generationStore.enqueueCardAuthoring({
+            context: context(2),
+            dictionaryId: dictionary.id,
+            draft: {
+                overrides,
+                translationContext: null,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: null,
+                },
+            },
+            expectedDictionaryVersion: dictionary.version,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('L'),
+            format: 'card-authoring:v3',
+            idempotencyKey: `authoring-v3-${randomUUID()}`,
+            ownerId,
+            scope: { kind: 'field', field: 'translation' },
+            source: 'collection',
+            target: { kind: 'create' },
+        });
+        const inheritedClaim = await generationStore.claim({
+            context: context(3),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: ['card-authoring:v3'],
+            workerId: 'authoring-v3-worker',
+        });
+        expect(inheritedClaim?.input).toMatchObject({
+            draft: { translationContext: null },
+            format: 'card-authoring:v3',
+            translationContext: 'Museum curation terminology',
+        });
+        await generationStore.complete({
+            context: context(4),
+            fencingToken: inheritedClaim!.fencingToken,
+            jobId: inherited.id,
+            leaseDeadline: inheritedClaim!.leaseDeadline,
+            proposal: {
+                suggestions: [{ field: 'translation', value: 'collection' }],
+            },
+            providerUsage: { inputTokens: 3, outputTokens: 1 },
+            reviewExpiresAt: instant(60_000),
+            workerId: inheritedClaim!.workerId,
+        });
+        const review = await generationStore.read({
+            context: context(5),
+            jobId: inherited.id,
+            ownerId,
+        });
+        if (
+            review.kind !== 'card-authoring' ||
+            review.format !== 'card-authoring:v3' ||
+            review.state !== 'review'
+        )
+            throw new Error('Expected v3 review');
+        expect(review.proposal.translationContext).toBe(
+            'Museum curation terminology',
+        );
+        const translationSuggestion = review.proposal.suggestions.find(
+            (suggestion) => suggestion.field === 'translation',
+        )!;
+        await expect(
+            generationStore.acceptCardAuthoring({
+                acceptanceFingerprint: fingerprint('M'),
+                candidate: {
+                    overrides,
+                    translationContext: 'Conflicting card context',
+                    values: {
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                        source: 'collection',
+                        transcription: null,
+                        translation: translationSuggestion.value,
+                    },
+                },
+                context: context(6),
+                jobId: inherited.id,
+                ownerId,
+                selectedSuggestions: [
+                    {
+                        field: 'translation',
+                        suggestionId: translationSuggestion.id,
+                    },
+                ],
+            }),
+        ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+        const accepted = await generationStore.acceptCardAuthoring({
+            acceptanceFingerprint: fingerprint('N'),
+            candidate: {
+                overrides,
+                translationContext: null,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'collection',
+                    transcription: null,
+                    translation: translationSuggestion.value,
+                },
+            },
+            context: context(7),
+            jobId: inherited.id,
+            ownerId,
+            selectedSuggestions: [
+                {
+                    field: 'translation',
+                    suggestionId: translationSuggestion.id,
+                },
+            ],
+        });
+        const [acceptedCard] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.id, accepted.outcome.cardId));
+        const [acceptedRevision] = await database
+            .select()
+            .from(dictionaryCardRevisionsTable)
+            .where(
+                eq(
+                    dictionaryCardRevisionsTable.cardId,
+                    accepted.outcome.cardId,
+                ),
+            );
+        expect(acceptedCard?.translationContext).toBeNull();
+        expect(acceptedRevision?.snapshot).toMatchObject({
+            effectiveTranslationContext: 'Museum curation terminology',
+            rawTranslationContext: null,
+            schemaVersion: 2,
+        });
+        const [acceptedJob] = await database
+            .select({
+                inputPayload: dictionaryGenerationJobsTable.inputPayload,
+            })
+            .from(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, inherited.id));
+        expect(acceptedJob?.inputPayload).toBeNull();
+
+        const overridden = await generationStore.enqueueCardAuthoring({
+            context: context(8),
+            dictionaryId: dictionary.id,
+            draft: {
+                overrides,
+                translationContext: 'Photography collection terminology',
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: null,
+                },
+            },
+            expectedDictionaryVersion: accepted.outcome.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('O'),
+            format: 'card-authoring:v3',
+            idempotencyKey: `authoring-v3-override-${randomUUID()}`,
+            ownerId,
+            scope: { kind: 'field', field: 'translation' },
+            source: 'exposure',
+            target: { kind: 'create' },
+        });
+        const overriddenClaim = await generationStore.claim({
+            context: context(9),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: ['card-authoring:v3'],
+            workerId: 'authoring-v3-worker',
+        });
+        expect(overriddenClaim?.input).toMatchObject({
+            draft: {
+                translationContext: 'Photography collection terminology',
+            },
+            translationContext: 'Photography collection terminology',
+        });
+        await generationStore.complete({
+            context: context(10),
+            fencingToken: overriddenClaim!.fencingToken,
+            jobId: overridden.id,
+            leaseDeadline: overriddenClaim!.leaseDeadline,
+            proposal: {
+                suggestions: [{ field: 'translation', value: 'exposition' }],
+            },
+            providerUsage: { inputTokens: 3, outputTokens: 1 },
+            reviewExpiresAt: instant(60_000),
+            workerId: overriddenClaim!.workerId,
+        });
+        await dictionaryStore.updateDictionary({
+            context: context(11),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: accepted.outcome.dictionaryVersion,
+                translationContext: 'Changed dictionary terminology',
+            },
+        });
+        const overriddenReview = await generationStore.read({
+            context: context(12),
+            jobId: overridden.id,
+            ownerId,
+        });
+        if (
+            overriddenReview.kind !== 'card-authoring' ||
+            overriddenReview.format !== 'card-authoring:v3' ||
+            overriddenReview.state !== 'review'
+        )
+            throw new Error('Expected overridden v3 review');
+        const overriddenSuggestion = overriddenReview.proposal.suggestions.find(
+            (suggestion) => suggestion.field === 'translation',
+        )!;
+        await expect(
+            generationStore.acceptCardAuthoring({
+                acceptanceFingerprint: fingerprint('P'),
+                candidate: {
+                    overrides,
+                    translationContext: 'Photography collection terminology',
+                    values: {
+                        definition: null,
+                        example: null,
+                        exampleTranslation: null,
+                        source: 'exposure',
+                        transcription: null,
+                        translation: overriddenSuggestion.value,
+                    },
+                },
+                context: context(12),
+                jobId: overridden.id,
+                ownerId,
+                selectedSuggestions: [
+                    {
+                        field: 'translation',
+                        suggestionId: overriddenSuggestion.id,
+                    },
+                ],
+            }),
+        ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
     });
 });

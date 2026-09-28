@@ -441,9 +441,15 @@ export class DictionaryDocumentGenerationProcessor {
                     input: {
                         context: request.input.context,
                         effectiveSettings: request.input.effectiveSettings,
-                        format: 'pasted-terms:v1',
                         rows,
                         sharedContext: request.input.instruction,
+                        ...(request.input.format === 'document-terms:v2'
+                            ? {
+                                  format: 'pasted-terms:v2' as const,
+                                  translationContext:
+                                      request.input.translationContext,
+                              }
+                            : { format: 'pasted-terms:v1' as const }),
                     },
                     providerBudget: {
                         ...request.providerBudget,

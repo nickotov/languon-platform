@@ -358,7 +358,9 @@ export function loadDictionaryWorkerEnvironment(
             );
         }
     }
-    const documentEnabled = supportedFormats.includes('document-terms:v1');
+    const documentEnabled = supportedFormats.some((format) =>
+        ['document-terms:v1', 'document-terms:v2'].includes(format),
+    );
     const documentStorage = loadDictionaryDocumentS3Environment(values, {
         deployed: ['staging', 'production'].includes(environment.APP_ENV),
         required: documentEnabled,
@@ -377,7 +379,7 @@ export function loadDictionaryWorkerEnvironment(
             Buffer.byteLength(fingerprintSecret, 'utf8') < 32
         )
             throw new Error(
-                'Document runtime dependencies are required for document-terms:v1.',
+                'Document runtime dependencies are required for document generation.',
             );
         if (environment.DICTIONARY_DOCUMENT_RUNTIME_MODE === 'deterministic') {
             if (['staging', 'production'].includes(environment.APP_ENV))

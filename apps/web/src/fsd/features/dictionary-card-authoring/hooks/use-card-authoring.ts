@@ -45,10 +45,20 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
     const validValues = DictionaryCardValuesSchema.safeParse(
         draft.values,
     ).success;
+    const validTranslationContext =
+        draft.translationContext === null ||
+        (draft.translationContext.trim().length > 0 &&
+            [...draft.translationContext].length <= 1000);
 
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (active || ai?.pending || ai?.successorActive || !validValues)
+        if (
+            active ||
+            ai?.pending ||
+            ai?.successorActive ||
+            !validValues ||
+            !validTranslationContext
+        )
             return;
         try {
             await onSave(
@@ -88,10 +98,22 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
             selectedSuggestions.source === suggestion.id &&
             suggestion.value === draft.values.source.trim(),
     );
+    const normalizedCardContext = draft.translationContext?.trim() || null;
+    const normalizedDictionaryContext =
+        dictionary.translationContext?.trim() || null;
+    const effectiveTranslationContext =
+        normalizedCardContext ?? normalizedDictionaryContext;
+    const contextIsStale = Boolean(
+        proposal &&
+        (ai?.format === 'card-authoring:v3'
+            ? proposal.translationContext !== effectiveTranslationContext
+            : effectiveTranslationContext !== null),
+    );
     const stale = Boolean(
         proposal &&
-        proposal.source !== draft.values.source.trim() &&
-        !selectedSourceSuggestion,
+        ((proposal.source !== draft.values.source.trim() &&
+            !selectedSourceSuggestion) ||
+            contextIsStale),
     );
 
     const active = ai?.job?.state === 'queued' || ai?.job?.state === 'running';
@@ -249,7 +271,14 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
             | { kind: 'all' }
             | { kind: 'field'; field: DictionaryCardAuthoringField },
     ) {
-        if (!ai || !validSource || active || !isLatestVersion) return;
+        if (
+            !ai ||
+            !validSource ||
+            !validTranslationContext ||
+            active ||
+            !isLatestVersion
+        )
+            return;
         if (
             scope.kind === 'field' &&
             scope.field === 'exampleTranslation' &&
@@ -301,6 +330,7 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         reviewedSuggestionIds,
         validSource,
         validValues,
+        validTranslationContext,
         acceptSuggestion,
         acceptAllSuggestions,
         availableSuggestionCount: availableSuggestions.length,

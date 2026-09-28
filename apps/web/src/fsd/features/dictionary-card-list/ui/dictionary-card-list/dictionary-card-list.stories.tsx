@@ -59,6 +59,7 @@ const dictionary = {
     sourceDictionaryId: null,
     sourceLanguage: 'en',
     targetLanguage: 'es',
+    translationContext: null,
     updatedAt: '2026-08-21T10:00:00.000Z',
     version: 1,
     visibility: 'private',
@@ -93,6 +94,7 @@ const card = {
     },
     position: '1000',
     settingsVersion: 1,
+    translationContext: null,
     updatedAt: '2026-08-21T10:00:00.000Z',
     values: {
         definition: null,

@@ -67,6 +67,10 @@ import {
     type DictionarySettings,
 } from '../../../domain/settings';
 import { resolveCardMutationAuthorship } from '../../../domain/authorship';
+import {
+    normalizeTranslationContext,
+    resolveTranslationContext,
+} from '../../../domain/translation-context';
 import { DictionaryCardRevisionSnapshotSchema } from './revision-snapshot-schema';
 import {
     dictionariesTable,
@@ -256,6 +260,7 @@ function mapCard(row: CardRow, settings: SettingsRow): DictionaryCard {
         overrides: wireOverrides(row),
         position: row.sortKey.toString(),
         settingsVersion: settings.version,
+        translationContext: row.translationContext,
         updatedAt: iso(row.updatedAt),
         values: cardValues(row),
         version: row.version,
@@ -302,10 +307,15 @@ function mapOwned(
             version: settings.version,
         },
         sourceDictionaryId: row.sourceDictionaryId,
+        translationContext: row.translationContext,
     };
 }
 
-function revisionSnapshot(row: CardRow, settings: SettingsRow) {
+function revisionSnapshot(
+    row: CardRow,
+    settings: SettingsRow,
+    dictionaryTranslationContext: string | null,
+) {
     const effective = resolveCardSettings({
         dictionary: settingsFromRow(settings),
         overrides: overridesFromRow(row),
@@ -314,8 +324,13 @@ function revisionSnapshot(row: CardRow, settings: SettingsRow) {
         authorship: row.authorship,
         cardVersion: row.version,
         effectiveSettings: effective,
+        effectiveTranslationContext: resolveTranslationContext({
+            card: row.translationContext,
+            dictionary: dictionaryTranslationContext,
+        }),
         rawOverrides: overridesFromRow(row),
-        schemaVersion: 1,
+        rawTranslationContext: row.translationContext,
+        schemaVersion: 2,
         settingsVersion: settings.version,
         values: cardValues(row),
     });
@@ -791,9 +806,13 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                             id: this.ids.generate(),
                             mutationKind: 'deterministic_import' as const,
                             revisionNumber: card.version,
-                            schemaVersion: 1,
+                            schemaVersion: 2,
                             settingsVersion: settings.version,
-                            snapshot: revisionSnapshot(card, settings),
+                            snapshot: revisionSnapshot(
+                                card,
+                                settings,
+                                dictionary.translationContext,
+                            ),
                         })),
                 );
             }
@@ -862,6 +881,11 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                         : input.request.description,
                 name: input.request.name ?? current.dictionary.name,
             });
+            const translationContext = normalizeTranslationContext(
+                input.request.translationContext === undefined
+                    ? current.dictionary.translationContext
+                    : input.request.translationContext,
+            );
             if (input.request.settings) {
                 if (
                     current.settings.version !==
@@ -957,6 +981,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                         : {}),
                     sourceLanguageTag: source,
                     targetLanguageTag: target,
+                    translationContext,
                     updatedAt: input.context.now,
                     version: current.dictionary.version + 1,
                 })
@@ -1155,6 +1180,9 @@ export class DrizzleDictionaryStore implements DictionaryStore {
             );
             assertDictionaryCardCapacity(activeCount + 1);
             const values = normalizeCardValues(input.request.values);
+            const translationContext = normalizeTranslationContext(
+                input.request.translationContext,
+            );
             const duplicateSource = await this.sourceDuplicate(
                 tx,
                 input.dictionaryId,
@@ -1170,7 +1198,11 @@ export class DrizzleDictionaryStore implements DictionaryStore {
             const [row] = await tx
                 .insert(dictionaryCardsTable)
                 .values({
-                    ...this.cardInsertValues(values, overrides),
+                    ...this.cardInsertValues(
+                        values,
+                        overrides,
+                        translationContext,
+                    ),
                     authorship: 'human',
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
@@ -1188,6 +1220,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                 tx,
                 row,
                 current.settings,
+                current.dictionary.translationContext,
                 input.ownerId,
                 'manual_create',
                 input.context.now,
@@ -1278,10 +1311,16 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                 next: overrides,
                 previous: overridesFromRow(row),
             });
+            const translationContext = normalizeTranslationContext(
+                input.request.translationContext === undefined
+                    ? row.translationContext
+                    : input.request.translationContext,
+            );
             const changed =
                 JSON.stringify(values) !== JSON.stringify(cardValues(row)) ||
                 JSON.stringify(overrides) !==
-                    JSON.stringify(overridesFromRow(row));
+                    JSON.stringify(overridesFromRow(row)) ||
+                translationContext !== row.translationContext;
             if (!changed)
                 return {
                     card: mapCard(row, current.settings),
@@ -1297,7 +1336,11 @@ export class DrizzleDictionaryStore implements DictionaryStore {
             const [updated] = await tx
                 .update(dictionaryCardsTable)
                 .set({
-                    ...this.cardInsertValues(values, overrides),
+                    ...this.cardInsertValues(
+                        values,
+                        overrides,
+                        translationContext,
+                    ),
                     authorship,
                     normalizedSource: normalizedSource(values.source),
                     updatedAt: input.context.now,
@@ -1316,6 +1359,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                 tx,
                 updated,
                 current.settings,
+                current.dictionary.translationContext,
                 input.ownerId,
                 'manual_edit',
                 input.context.now,
@@ -1719,6 +1763,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                 sourceDictionaryId: source.dictionary.id,
                 sourceLanguageTag: source.dictionary.sourceLanguageTag,
                 targetLanguageTag: source.dictionary.targetLanguageTag,
+                translationContext: null,
                 updatedAt: input.context.now,
             });
             const [settings] = await tx
@@ -1791,6 +1836,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                             ...this.cardInsertValues(
                                 cardValues(sourceCard),
                                 overridesFromRow(sourceCard),
+                                null,
                             ),
                             authorship: sourceCard.authorship,
                             createdAt: input.context.now,
@@ -1816,9 +1862,9 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                         id: this.ids.generate(),
                         mutationKind: 'fork' as const,
                         revisionNumber: card.version,
-                        schemaVersion: 1,
+                        schemaVersion: 2,
                         settingsVersion: settings.version,
-                        snapshot: revisionSnapshot(card, settings),
+                        snapshot: revisionSnapshot(card, settings, null),
                     })),
                 );
                 const lastSourceCard: CardRow = chunk.at(-1)!;
@@ -2500,6 +2546,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
     private cardInsertValues(
         values: DictionaryCardValues,
         overrides: CardSettingsOverrides,
+        translationContext: string | null = null,
     ) {
         return {
             customNotationLabelOverride: overrides.customNotationLabel,
@@ -2517,6 +2564,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
             transcriptionEnabledOverride: overrides.transcriptionEnabled,
             transcriptionNotationOverride: overrides.transcriptionNotation,
             translation: values.translation,
+            translationContext,
         };
     }
 
@@ -2544,11 +2592,16 @@ export class DrizzleDictionaryStore implements DictionaryStore {
         tx: DictionaryTransaction,
         row: CardRow,
         settings: SettingsRow,
+        dictionaryTranslationContext: string | null,
         actorUserId: string,
         mutationKind: 'fork' | 'manual_create' | 'manual_edit',
         now: Date,
     ) {
-        const snapshot = revisionSnapshot(row, settings);
+        const snapshot = revisionSnapshot(
+            row,
+            settings,
+            dictionaryTranslationContext,
+        );
         await tx.insert(dictionaryCardRevisionsTable).values({
             actorUserId,
             authorship: row.authorship,
@@ -2559,7 +2612,7 @@ export class DrizzleDictionaryStore implements DictionaryStore {
             id: this.ids.generate(),
             mutationKind,
             revisionNumber: row.version,
-            schemaVersion: 1,
+            schemaVersion: 2,
             settingsVersion: settings.version,
             snapshot,
         });

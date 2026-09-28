@@ -10,13 +10,16 @@ import {
     DictionaryIdSchema,
     DictionaryLanguageTagSchema,
     DictionaryTimestampSchema,
+    DictionaryTranslationContextSchema,
     DictionaryVersionSchema,
 } from './primitives';
 
 export const DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V1 =
     'card-authoring:v1' as const;
-export const DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT =
+export const DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V2 =
     'card-authoring:v2' as const;
+export const DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT =
+    'card-authoring:v3' as const;
 export const DICTIONARY_CARD_AUTHORING_GENERATION_KIND =
     'card-authoring' as const;
 export const DICTIONARY_CARD_AUTHORING_SUGGESTION_LIMIT_PER_FIELD = 6;
@@ -48,6 +51,11 @@ export const DictionaryCardAuthoringDraftSchema = z
         overrides: DictionaryCardOverridesSchema,
     })
     .strict();
+
+export const DictionaryCardAuthoringV3DraftSchema =
+    DictionaryCardAuthoringDraftSchema.safeExtend({
+        translationContext: DictionaryTranslationContextSchema.nullable(),
+    }).strict();
 
 export const DictionaryCardAuthoringScopeSchema = z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('all') }).strict(),
@@ -180,6 +188,11 @@ export const DictionaryCardAuthoringV2ProposalSchema = z
                 });
         });
     });
+
+export const DictionaryCardAuthoringV3ProposalSchema =
+    DictionaryCardAuthoringV2ProposalSchema.safeExtend({
+        translationContext: DictionaryTranslationContextSchema.nullable(),
+    }).strict();
 
 export const DictionaryCardAuthoringProposalSchema = z
     .object({
@@ -360,7 +373,7 @@ export const DictionaryCardAuthoringGenerationJobSchema = z.discriminatedUnion(
 
 const authoringV2JobBase = {
     ...authoringJobBase,
-    format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT),
+    format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V2),
     target: z.discriminatedUnion('kind', [
         z.object({ kind: z.literal('create') }).strict(),
         z
@@ -486,9 +499,128 @@ export const DictionaryCardAuthoringV2GenerationJobSchema =
             }),
     ]);
 
+const authoringV3JobBase = {
+    ...authoringV2JobBase,
+    format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT),
+};
+
+export const DictionaryCardAuthoringV3GenerationJobSchema =
+    z.discriminatedUnion('state', [
+        z
+            .object({
+                ...authoringV3JobBase,
+                state: z.enum(['queued', 'running']),
+                progress: z.object({
+                    stage: z.enum(['queued', 'generating', 'validating']),
+                    percent: z.number().int().min(0).max(100),
+                }),
+                proposal: z.null(),
+                failure: z.null(),
+                outcome: z.null(),
+                completedAt: z.null(),
+                expiresAt: z.null(),
+            })
+            .strict()
+            .superRefine((job, context) => {
+                if (job.state === 'queued' && job.progress.stage !== 'queued')
+                    context.addIssue({
+                        code: 'custom',
+                        path: ['progress', 'stage'],
+                        message: 'Queued jobs must report the queued stage',
+                    });
+                if (
+                    job.state === 'running' &&
+                    !['generating', 'validating'].includes(job.progress.stage)
+                )
+                    context.addIssue({
+                        code: 'custom',
+                        path: ['progress', 'stage'],
+                        message: 'Running jobs must report a running stage',
+                    });
+            }),
+        z
+            .object({
+                ...authoringV3JobBase,
+                state: z.literal('review'),
+                progress: z.object({
+                    stage: z.literal('review_ready'),
+                    percent: z.literal(100),
+                }),
+                proposal: DictionaryCardAuthoringV3ProposalSchema,
+                failure: z.null(),
+                outcome: z.null(),
+                completedAt: z.null(),
+                expiresAt: DictionaryTimestampSchema,
+            })
+            .strict(),
+        z
+            .object({
+                ...authoringV3JobBase,
+                state: z.enum([
+                    'accepted',
+                    'discarded',
+                    'cancelled',
+                    'failed',
+                    'expired',
+                ]),
+                progress: z.object({
+                    stage: z.literal('terminal'),
+                    percent: z.number().int().min(0).max(100),
+                }),
+                proposal: z.null(),
+                failure: z
+                    .object({
+                        code: z.enum([
+                            'provider_unavailable',
+                            'provider_timeout',
+                            'provider_rate_limited',
+                            'invalid_model_output',
+                            'retry_exhausted',
+                            'ai_credits_exhausted',
+                            'internal_error',
+                            'generation_conflict',
+                        ]),
+                        message: z.string().trim().min(1).max(500),
+                        retryable: z.boolean(),
+                    })
+                    .strict()
+                    .nullable(),
+                outcome:
+                    DictionaryCardAuthoringAcceptedOutcomeSchema.nullable(),
+                completedAt: DictionaryTimestampSchema,
+                expiresAt: z.null(),
+            })
+            .strict()
+            .superRefine((job, context) => {
+                if ((job.state === 'failed') !== (job.failure !== null))
+                    context.addIssue({
+                        code: 'custom',
+                        path: ['failure'],
+                        message: 'Only failed jobs expose a sanitized failure',
+                    });
+                if ((job.state === 'accepted') !== (job.outcome !== null))
+                    context.addIssue({
+                        code: 'custom',
+                        path: ['outcome'],
+                        message:
+                            'Only accepted jobs expose an accepted outcome',
+                    });
+                if (
+                    job.failure?.code === 'generation_conflict' &&
+                    job.failure.retryable
+                )
+                    context.addIssue({
+                        code: 'custom',
+                        path: ['failure', 'retryable'],
+                        message: 'Generation conflicts are not retryable',
+                    });
+            }),
+    ]);
+
 export const DictionaryCardAuthoringAnyGenerationJobSchema = z.union([
     DictionaryCardAuthoringGenerationJobSchema,
     DictionaryCardAuthoringV2GenerationJobSchema,
+    DictionaryCardAuthoringV3GenerationJobSchema,
 ]);
 
 const EnqueueDictionaryCardAuthoringV1GenerationRequestSchema = z
@@ -502,7 +634,7 @@ const EnqueueDictionaryCardAuthoringV1GenerationRequestSchema = z
     .strict();
 
 const enqueueV2Base = {
-    format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT),
+    format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V2),
     expectedDictionaryVersion: DictionaryVersionSchema,
     expectedSettingsVersion: DictionaryVersionSchema,
     source: DictionaryCardPrimaryValueSchema,
@@ -516,6 +648,11 @@ const enqueueV2Base = {
             })
             .strict(),
     ]),
+};
+const enqueueV3Base = {
+    ...enqueueV2Base,
+    format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT),
+    draft: DictionaryCardAuthoringV3DraftSchema,
 };
 const requireExampleForFieldOnlyTranslation = (
     request: {
@@ -542,18 +679,34 @@ export const EnqueueDictionaryCardAuthoringGenerationRequestSchema = z.union([
         .object(enqueueV2Base)
         .strict()
         .superRefine(requireExampleForFieldOnlyTranslation),
+    z
+        .object(enqueueV3Base)
+        .strict()
+        .superRefine(requireExampleForFieldOnlyTranslation),
 ]);
 
-export const EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema = z
-    .object({ ...enqueueV2Base, expectedCardVersion: DictionaryVersionSchema })
-    .strict()
-    .superRefine(requireExampleForFieldOnlyTranslation);
+export const EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema =
+    z.union([
+        z
+            .object({
+                ...enqueueV2Base,
+                expectedCardVersion: DictionaryVersionSchema,
+            })
+            .strict()
+            .superRefine(requireExampleForFieldOnlyTranslation),
+        z
+            .object({
+                ...enqueueV3Base,
+                expectedCardVersion: DictionaryVersionSchema,
+            })
+            .strict()
+            .superRefine(requireExampleForFieldOnlyTranslation),
+    ]);
 
 const regenerationBase = {
     expectedDictionaryVersion: DictionaryVersionSchema,
     expectedSettingsVersion: DictionaryVersionSchema,
     source: DictionaryCardPrimaryValueSchema,
-    draft: DictionaryCardAuthoringDraftSchema,
     discardedSuggestionIds: z
         .array(DictionaryIdSchema)
         .max(
@@ -576,13 +729,48 @@ export const RegenerateDictionaryCardAuthoringGenerationRequestSchema = z.union(
                 format: z.literal(
                     DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V1,
                 ),
+                draft: DictionaryCardAuthoringDraftSchema,
                 scope: DictionaryCardAuthoringScopeSchema,
             })
             .strict(),
         z
             .object({
                 ...regenerationBase,
+                format: z.literal(
+                    DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V2,
+                ),
+                draft: DictionaryCardAuthoringDraftSchema,
+                discardedSuggestionIds: z
+                    .array(DictionaryIdSchema)
+                    .max(
+                        DICTIONARY_CARD_AUTHORING_SUGGESTION_LIMIT_PER_FIELD *
+                            DictionaryCardAuthoringV2FieldSchema.options.length,
+                    )
+                    .superRefine((ids, context) => {
+                        if (new Set(ids).size !== ids.length)
+                            context.addIssue({
+                                code: 'custom',
+                                message:
+                                    'Discarded suggestion IDs must be unique',
+                            });
+                    }),
+                scope: z.discriminatedUnion('kind', [
+                    z.object({ kind: z.literal('all') }).strict(),
+                    z
+                        .object({
+                            kind: z.literal('field'),
+                            field: DictionaryCardAuthoringV2FieldSchema,
+                        })
+                        .strict(),
+                ]),
+            })
+            .strict()
+            .superRefine(requireExampleForFieldOnlyTranslation),
+        z
+            .object({
+                ...regenerationBase,
                 format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT),
+                draft: DictionaryCardAuthoringV3DraftSchema,
                 discardedSuggestionIds: z
                     .array(DictionaryIdSchema)
                     .max(
@@ -664,10 +852,24 @@ export const AcceptDictionaryCardAuthoringGenerationJobRequestSchema = z.union([
         .strict(),
     z
         .object({
+            format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V2),
+            candidate: z
+                .object({
+                    values: DictionaryCardValuesSchema,
+                    overrides: DictionaryCardOverridesSchema,
+                })
+                .strict(),
+            selectedSuggestions: selectedV2Suggestions,
+        })
+        .strict(),
+    z
+        .object({
             format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT),
             candidate: z
                 .object({
                     values: DictionaryCardValuesSchema,
+                    translationContext:
+                        DictionaryTranslationContextSchema.nullable(),
                     overrides: DictionaryCardOverridesSchema,
                 })
                 .strict(),
@@ -714,6 +916,9 @@ export type DictionaryCardAuthoringV2Field = z.infer<
 export type DictionaryCardAuthoringDraft = z.infer<
     typeof DictionaryCardAuthoringDraftSchema
 >;
+export type DictionaryCardAuthoringV3Draft = z.infer<
+    typeof DictionaryCardAuthoringV3DraftSchema
+>;
 export type DictionaryCardAuthoringScope = z.infer<
     typeof DictionaryCardAuthoringScopeSchema
 >;
@@ -728,6 +933,9 @@ export type DictionaryCardAuthoringAcceptedOutcome = z.infer<
 >;
 export type DictionaryCardAuthoringProposal = z.infer<
     typeof DictionaryCardAuthoringProposalSchema
+>;
+export type DictionaryCardAuthoringV3Proposal = z.infer<
+    typeof DictionaryCardAuthoringV3ProposalSchema
 >;
 export type DictionaryCardAuthoringGenerationJob = z.infer<
     typeof DictionaryCardAuthoringAnyGenerationJobSchema

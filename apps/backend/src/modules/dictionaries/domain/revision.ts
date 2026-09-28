@@ -12,7 +12,20 @@ export interface DictionaryCardRevisionSnapshotV1 {
     values: DictionaryCardValues;
 }
 
-export type DictionaryCardRevisionSnapshot = DictionaryCardRevisionSnapshotV1;
+export interface DictionaryCardRevisionSnapshotV2 {
+    authorship: CardAuthorship;
+    cardVersion: number;
+    effectiveSettings: EffectiveCardSettings;
+    effectiveTranslationContext: string | null;
+    rawOverrides: CardSettingsOverrides;
+    rawTranslationContext: string | null;
+    schemaVersion: 2;
+    settingsVersion: number;
+    values: DictionaryCardValues;
+}
+
+export type DictionaryCardRevisionSnapshot =
+    DictionaryCardRevisionSnapshotV1 | DictionaryCardRevisionSnapshotV2;
 
 export type DictionaryCardRevisionMutationKind =
     CardMutationKind | 'ai_create' | 'deterministic_import' | 'manual_create';

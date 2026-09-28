@@ -19,11 +19,16 @@ export function isFieldAffectedByGeneration(
     field: DictionaryCardAuthoringField,
     scope: GenerationScope | null,
     settings: DictionaryCardEffectiveSettings,
-    format: 'card-authoring:v1' | 'card-authoring:v2' | undefined,
+    format:
+        | 'card-authoring:v1'
+        | 'card-authoring:v2'
+        | 'card-authoring:v3'
+        | undefined,
 ) {
     if (!scope || !isEnabled(field, settings)) return false;
     if (scope.kind === 'all') return true;
-    if (format !== 'card-authoring:v2') return field === scope.field;
+    if (format !== 'card-authoring:v2' && format !== 'card-authoring:v3')
+        return field === scope.field;
     if (scope.field === 'translation') return field !== 'source';
     if (scope.field === 'example')
         return field === 'example' || field === 'exampleTranslation';

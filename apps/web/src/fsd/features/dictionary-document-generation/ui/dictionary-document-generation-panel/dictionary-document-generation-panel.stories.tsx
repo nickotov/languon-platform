@@ -59,6 +59,7 @@ const dictionary = {
     sourceDictionaryId: null,
     sourceLanguage: 'en',
     targetLanguage: 'ar',
+    translationContext: null,
     updatedAt: '2026-08-26T10:00:00.000Z',
     version: 2,
     visibility: 'private',

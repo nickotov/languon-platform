@@ -21,11 +21,40 @@ import {
     DictionaryVersionSchema,
 } from './primitives';
 
-export const DICTIONARY_SINGLE_CARD_GENERATION_FORMAT = 'single-card:v1';
-export const DICTIONARY_PASTED_TERMS_GENERATION_FORMAT = 'pasted-terms:v1';
-export const DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT = 'document-terms:v1';
-export const DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT = 'import-pairs:v1';
+export const DICTIONARY_SINGLE_CARD_GENERATION_FORMAT_V1 =
+    'single-card:v1' as const;
+export const DICTIONARY_SINGLE_CARD_GENERATION_FORMAT =
+    'single-card:v2' as const;
+export const DICTIONARY_PASTED_TERMS_GENERATION_FORMAT_V1 =
+    'pasted-terms:v1' as const;
+export const DICTIONARY_PASTED_TERMS_GENERATION_FORMAT =
+    'pasted-terms:v2' as const;
+export const DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT_V1 =
+    'document-terms:v1' as const;
+export const DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT =
+    'document-terms:v2' as const;
+export const DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT_V1 =
+    'import-pairs:v1' as const;
+export const DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT =
+    'import-pairs:v2' as const;
 export const DICTIONARY_IMPORT_PAIRS_ACCEPTED_AUTHORSHIP = 'mixed' as const;
+
+export const DictionarySingleCardGenerationFormatSchema = z.enum([
+    DICTIONARY_SINGLE_CARD_GENERATION_FORMAT_V1,
+    DICTIONARY_SINGLE_CARD_GENERATION_FORMAT,
+]);
+export const DictionaryPastedTermsGenerationFormatSchema = z.enum([
+    DICTIONARY_PASTED_TERMS_GENERATION_FORMAT_V1,
+    DICTIONARY_PASTED_TERMS_GENERATION_FORMAT,
+]);
+export const DictionaryDocumentTermsGenerationFormatSchema = z.enum([
+    DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT_V1,
+    DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT,
+]);
+export const DictionaryImportPairsGenerationFormatSchema = z.enum([
+    DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT_V1,
+    DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT,
+]);
 
 export const DictionaryGenerationJobStateSchema = z.enum([
     'awaiting-upload',
@@ -185,7 +214,7 @@ export const DictionarySingleCardGenerationJobSchema = z
     .object({
         id: DictionaryIdSchema,
         kind: z.literal('single-card'),
-        format: z.literal(DICTIONARY_SINGLE_CARD_GENERATION_FORMAT),
+        format: DictionarySingleCardGenerationFormatSchema,
         state: DictionaryGenerationJobStateSchema,
         dictionaryId: DictionaryIdSchema,
         cardId: DictionaryIdSchema,
@@ -600,7 +629,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
     .object({
         id: DictionaryIdSchema,
         kind: z.literal('pasted-terms'),
-        format: z.literal(DICTIONARY_PASTED_TERMS_GENERATION_FORMAT),
+        format: DictionaryPastedTermsGenerationFormatSchema,
         state: DictionaryGenerationJobStateSchema,
         dictionaryId: DictionaryIdSchema,
         expectedDictionaryVersion: DictionaryVersionSchema,
@@ -695,7 +724,7 @@ export const DictionaryImportPairsGenerationJobSchema = z
     .object({
         ...DictionaryPastedTermsGenerationJobSchema.shape,
         kind: z.literal('import-pairs'),
-        format: z.literal(DICTIONARY_IMPORT_PAIRS_GENERATION_FORMAT),
+        format: DictionaryImportPairsGenerationFormatSchema,
         proposal: DictionaryImportPairsGenerationProposalSchema.nullable(),
         outcome:
             DictionaryImportPairsGenerationAcceptedOutcomeSchema.nullable(),
@@ -766,7 +795,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
     .object({
         id: DictionaryIdSchema,
         kind: z.literal('document-terms'),
-        format: z.literal(DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT),
+        format: DictionaryDocumentTermsGenerationFormatSchema,
         state: DictionaryGenerationJobStateSchema,
         dictionaryId: DictionaryIdSchema,
         expectedDictionaryVersion: DictionaryVersionSchema,
@@ -1005,6 +1034,18 @@ export const AcceptDictionaryGenerationJobResponseSchema = z.union([
 
 export type DictionaryGenerationJobState = z.infer<
     typeof DictionaryGenerationJobStateSchema
+>;
+export type DictionarySingleCardGenerationFormat = z.infer<
+    typeof DictionarySingleCardGenerationFormatSchema
+>;
+export type DictionaryPastedTermsGenerationFormat = z.infer<
+    typeof DictionaryPastedTermsGenerationFormatSchema
+>;
+export type DictionaryDocumentTermsGenerationFormat = z.infer<
+    typeof DictionaryDocumentTermsGenerationFormatSchema
+>;
+export type DictionaryImportPairsGenerationFormat = z.infer<
+    typeof DictionaryImportPairsGenerationFormatSchema
 >;
 export type DictionaryGenerationJobStage = z.infer<
     typeof DictionaryGenerationJobStageSchema

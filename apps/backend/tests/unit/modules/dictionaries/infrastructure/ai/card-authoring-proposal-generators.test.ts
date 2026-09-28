@@ -15,6 +15,7 @@ const input = {
     sourceLanguage: 'en',
     targetLanguage: 'es',
     source: 'bank',
+    translationContext: null,
     effectiveSettings: {
         transcriptionCustomLabel: null,
         definitionEnabled: true,

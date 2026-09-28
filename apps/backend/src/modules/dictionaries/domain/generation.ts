@@ -1,22 +1,47 @@
 import { z } from 'zod';
 
 import { dictionaryLimits } from './limits';
-import { dictionaryDocumentGenerationFormat } from './document-ingestion';
-import { DictionaryCardAuthoringGenerationInputPayloadSchema } from './card-authoring';
+import {
+    dictionaryDocumentGenerationFormat,
+    dictionaryDocumentGenerationFormatV1,
+} from './document-ingestion';
+import {
+    DictionaryCardAuthoringGenerationInputPayloadSchema,
+    type DictionaryCardAuthoringGenerationInputPayload,
+} from './card-authoring';
 export {
     DictionaryGenerationCardOverridesSchema,
     DictionaryGenerationCardValuesSchema,
     DictionaryGenerationEffectiveSettingsSchema,
+    DictionaryGenerationTranslationContextSchema,
 } from './generation-card-context';
 import {
     DictionaryGenerationCardOverridesSchema,
     DictionaryGenerationCardValuesSchema,
     DictionaryGenerationEffectiveSettingsSchema,
+    DictionaryGenerationTranslationContextSchema,
 } from './generation-card-context';
 
-export const dictionaryGenerationFormat = 'single-card:v1' as const;
-export const dictionaryPastedTermsGenerationFormat = 'pasted-terms:v1' as const;
-export const dictionaryImportPairsGenerationFormat = 'import-pairs:v1' as const;
+export const dictionaryGenerationFormat = 'single-card:v2' as const;
+export const dictionaryGenerationFormatV1 = 'single-card:v1' as const;
+export const dictionaryPastedTermsGenerationFormat = 'pasted-terms:v2' as const;
+export const dictionaryPastedTermsGenerationFormatV1 =
+    'pasted-terms:v1' as const;
+export const dictionaryImportPairsGenerationFormat = 'import-pairs:v2' as const;
+export const dictionaryImportPairsGenerationFormatV1 =
+    'import-pairs:v1' as const;
+export const dictionarySingleCardGenerationFormats = [
+    dictionaryGenerationFormatV1,
+    dictionaryGenerationFormat,
+] as const;
+export const dictionaryPastedTermsGenerationFormats = [
+    dictionaryPastedTermsGenerationFormatV1,
+    dictionaryPastedTermsGenerationFormat,
+] as const;
+export const dictionaryImportPairsGenerationFormats = [
+    dictionaryImportPairsGenerationFormatV1,
+    dictionaryImportPairsGenerationFormat,
+] as const;
 export const dictionaryGenerationReviewLifetimeMs = 7 * 24 * 60 * 60 * 1_000;
 
 const boundedText = (maximum: number) =>
@@ -46,7 +71,10 @@ const boundedText = (maximum: number) =>
 
 export const DictionarySingleCardGenerationInputPayloadSchema = z
     .object({
-        format: z.literal(dictionaryGenerationFormat),
+        format: z.union([
+            z.literal(dictionaryGenerationFormatV1),
+            z.literal(dictionaryGenerationFormat),
+        ]),
         instruction: z.string().trim().min(1).max(1_000).nullable(),
         context: z
             .object({
@@ -71,13 +99,38 @@ export const DictionarySingleCardGenerationInputPayloadSchema = z
                 values: DictionaryGenerationCardValuesSchema,
             })
             .strict(),
+        translationContext:
+            DictionaryGenerationTranslationContextSchema.optional(),
     })
-    .strict();
+    .strict()
+    .superRefine((input, context) => {
+        if (
+            input.format === dictionaryGenerationFormat &&
+            input.translationContext === undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context snapshot is required for v2',
+            });
+        if (
+            input.format === dictionaryGenerationFormatV1 &&
+            input.translationContext !== undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context is not supported by v1',
+            });
+    });
 
 export const DictionaryPastedTermsGenerationInputPayloadSchema = z
     .object({
         effectiveSettings: DictionaryGenerationEffectiveSettingsSchema,
-        format: z.literal(dictionaryPastedTermsGenerationFormat),
+        format: z.union([
+            z.literal(dictionaryPastedTermsGenerationFormatV1),
+            z.literal(dictionaryPastedTermsGenerationFormat),
+        ]),
         predecessor: z
             .object({
                 jobId: z.string().uuid(),
@@ -89,6 +142,8 @@ export const DictionaryPastedTermsGenerationInputPayloadSchema = z
             .strict()
             .optional(),
         sharedContext: z.string().trim().min(1).max(1_000).nullable(),
+        translationContext:
+            DictionaryGenerationTranslationContextSchema.optional(),
         context: z
             .object({
                 dictionaryId: z.string().uuid(),
@@ -127,16 +182,41 @@ export const DictionaryPastedTermsGenerationInputPayloadSchema = z
                 }
             }),
     })
-    .strict();
+    .strict()
+    .superRefine((input, context) => {
+        if (
+            input.format === dictionaryPastedTermsGenerationFormat &&
+            input.translationContext === undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context snapshot is required for v2',
+            });
+        if (
+            input.format === dictionaryPastedTermsGenerationFormatV1 &&
+            input.translationContext !== undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context is not supported by v1',
+            });
+    });
 
 export const DictionaryImportPairsGenerationInputPayloadSchema = z
     .object({
         effectiveSettings: DictionaryGenerationEffectiveSettingsSchema,
-        format: z.literal(dictionaryImportPairsGenerationFormat),
+        format: z.union([
+            z.literal(dictionaryImportPairsGenerationFormatV1),
+            z.literal(dictionaryImportPairsGenerationFormat),
+        ]),
         importFingerprint: z
             .string()
             .regex(/^hmac-sha256:v1:[A-Za-z0-9_-]{43}$/u),
         instruction: z.string().trim().min(1).max(1_000).nullable(),
+        translationContext:
+            DictionaryGenerationTranslationContextSchema.optional(),
         predecessor: z
             .object({
                 jobId: z.string().uuid(),
@@ -233,13 +313,36 @@ export const DictionaryImportPairsGenerationInputPayloadSchema = z
                     message: 'Import lineage must match its trusted import row',
                 });
         });
+        if (
+            input.format === dictionaryImportPairsGenerationFormat &&
+            input.translationContext === undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context snapshot is required for v2',
+            });
+        if (
+            input.format === dictionaryImportPairsGenerationFormatV1 &&
+            input.translationContext !== undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context is not supported by v1',
+            });
     });
 
 export const DictionaryDocumentTermsGenerationInputPayloadSchema = z
     .object({
         effectiveSettings: DictionaryGenerationEffectiveSettingsSchema,
-        format: z.literal(dictionaryDocumentGenerationFormat),
+        format: z.union([
+            z.literal(dictionaryDocumentGenerationFormatV1),
+            z.literal(dictionaryDocumentGenerationFormat),
+        ]),
         instruction: z.string().trim().min(1).max(1_000).nullable(),
+        translationContext:
+            DictionaryGenerationTranslationContextSchema.optional(),
         context: z
             .object({
                 dictionaryId: z.string().uuid(),
@@ -255,7 +358,27 @@ export const DictionaryDocumentTermsGenerationInputPayloadSchema = z
             ),
         uploadId: z.string().uuid(),
     })
-    .strict();
+    .strict()
+    .superRefine((input, context) => {
+        if (
+            input.format === dictionaryDocumentGenerationFormat &&
+            input.translationContext === undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context snapshot is required for v2',
+            });
+        if (
+            input.format === dictionaryDocumentGenerationFormatV1 &&
+            input.translationContext !== undefined
+        )
+            context.addIssue({
+                code: 'custom',
+                path: ['translationContext'],
+                message: 'Translation context is not supported by v1',
+            });
+    });
 
 export const DictionaryGenerationInputPayloadSchema = z.union([
     DictionarySingleCardGenerationInputPayloadSchema,
@@ -328,37 +451,59 @@ export type DictionaryGenerationInputPayload =
     | DictionaryPastedTermsGenerationInputPayload
     | DictionaryImportPairsGenerationInputPayload
     | DictionaryDocumentTermsGenerationInputPayload;
-export type DictionarySingleCardGenerationInputPayload = z.infer<
-    typeof DictionarySingleCardGenerationInputPayloadSchema
+type DictionarySingleCardGenerationInputPayloadBase = Omit<
+    z.infer<typeof DictionarySingleCardGenerationInputPayloadSchema>,
+    'format' | 'translationContext'
 >;
-type DictionaryCardAuthoringGenerationInputPayloadBase = Omit<
-    z.infer<typeof DictionaryCardAuthoringGenerationInputPayloadSchema>,
-    'format' | 'target'
->;
-export type DictionaryCardAuthoringGenerationInputPayload =
-    | (DictionaryCardAuthoringGenerationInputPayloadBase & {
-          format: 'card-authoring:v1';
-          target?: never;
+export type DictionarySingleCardGenerationInputPayload =
+    | (DictionarySingleCardGenerationInputPayloadBase & {
+          format: typeof dictionaryGenerationFormatV1;
+          translationContext?: never;
       })
-    | (DictionaryCardAuthoringGenerationInputPayloadBase & {
-          format: 'card-authoring:v2';
-          target:
-              | { kind: 'create' }
-              | {
-                    kind: 'update';
-                    cardId: string;
-                    expectedCardVersion: number;
-                };
+    | (DictionarySingleCardGenerationInputPayloadBase & {
+          format: typeof dictionaryGenerationFormat;
+          translationContext: string | null;
       });
-export type DictionaryPastedTermsGenerationInputPayload = z.infer<
-    typeof DictionaryPastedTermsGenerationInputPayloadSchema
+export type { DictionaryCardAuthoringGenerationInputPayload } from './card-authoring';
+type DictionaryPastedTermsGenerationInputPayloadBase = Omit<
+    z.infer<typeof DictionaryPastedTermsGenerationInputPayloadSchema>,
+    'format' | 'translationContext'
 >;
-export type DictionaryImportPairsGenerationInputPayload = z.infer<
-    typeof DictionaryImportPairsGenerationInputPayloadSchema
+export type DictionaryPastedTermsGenerationInputPayload =
+    | (DictionaryPastedTermsGenerationInputPayloadBase & {
+          format: typeof dictionaryPastedTermsGenerationFormatV1;
+          translationContext?: never;
+      })
+    | (DictionaryPastedTermsGenerationInputPayloadBase & {
+          format: typeof dictionaryPastedTermsGenerationFormat;
+          translationContext: string | null;
+      });
+type DictionaryImportPairsGenerationInputPayloadBase = Omit<
+    z.infer<typeof DictionaryImportPairsGenerationInputPayloadSchema>,
+    'format' | 'translationContext'
 >;
-export type DictionaryDocumentTermsGenerationInputPayload = z.infer<
-    typeof DictionaryDocumentTermsGenerationInputPayloadSchema
+export type DictionaryImportPairsGenerationInputPayload =
+    | (DictionaryImportPairsGenerationInputPayloadBase & {
+          format: typeof dictionaryImportPairsGenerationFormatV1;
+          translationContext?: never;
+      })
+    | (DictionaryImportPairsGenerationInputPayloadBase & {
+          format: typeof dictionaryImportPairsGenerationFormat;
+          translationContext: string | null;
+      });
+type DictionaryDocumentTermsGenerationInputPayloadBase = Omit<
+    z.infer<typeof DictionaryDocumentTermsGenerationInputPayloadSchema>,
+    'format' | 'translationContext'
 >;
+export type DictionaryDocumentTermsGenerationInputPayload =
+    | (DictionaryDocumentTermsGenerationInputPayloadBase & {
+          format: typeof dictionaryDocumentGenerationFormatV1;
+          translationContext?: never;
+      })
+    | (DictionaryDocumentTermsGenerationInputPayloadBase & {
+          format: typeof dictionaryDocumentGenerationFormat;
+          translationContext: string | null;
+      });
 export type DictionaryGenerationProposalPayload = z.infer<
     typeof DictionaryGenerationProposalPayloadSchema
 >;

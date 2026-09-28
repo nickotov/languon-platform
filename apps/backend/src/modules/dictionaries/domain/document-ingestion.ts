@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import {
     DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT,
+    DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT_V1,
     dictionaryDocumentMediaTypes,
     documentIngestionLimitsV1,
     type DictionaryDocumentMediaType,
@@ -9,6 +10,12 @@ import { z } from 'zod';
 
 export const dictionaryDocumentGenerationFormat =
     DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT;
+export const dictionaryDocumentGenerationFormatV1 =
+    DICTIONARY_DOCUMENT_TERMS_GENERATION_FORMAT_V1;
+export const dictionaryDocumentGenerationFormats = [
+    dictionaryDocumentGenerationFormatV1,
+    dictionaryDocumentGenerationFormat,
+] as const;
 export const dictionaryDocumentGenerationKind = 'document-terms' as const;
 export {
     dictionaryDocumentMediaTypes,

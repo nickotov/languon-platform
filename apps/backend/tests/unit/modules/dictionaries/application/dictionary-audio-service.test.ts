@@ -13,6 +13,7 @@ function dictionary(): OwnedDictionary {
         id: dictionaryId,
         name: 'Words',
         description: null,
+        translationContext: null,
         sourceLanguage: 'en',
         targetLanguage: 'uk',
         visibility: 'private',
@@ -54,6 +55,7 @@ function card(source = 'bank'): DictionaryCard {
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
         archivedAt: null,
+        translationContext: null,
         values: {
             source,
             translation: 'банк',

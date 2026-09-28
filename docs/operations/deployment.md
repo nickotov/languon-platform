@@ -430,6 +430,11 @@ node scripts/release-manifest.mjs create \
 The first expand release omits API enqueue and retirement arguments. A later
 activation adds
 `--dictionary-job-api-enqueued "single-card:v1,pasted-terms:v1,import-pairs:v1"`.
+Translation-context rollout repeats this sequence for `single-card:v2`,
+`pasted-terms:v2`, `import-pairs:v2`, `document-terms:v2`, and
+`card-authoring:v3`: expand worker and API lifecycle support first, activate
+enqueue only after the rollback floor advertises the complete set, and keep the
+predecessors terminally actionable until retained work drains.
 Deterministic import/export does not depend on this model-job activation. A retirement
 release first stops enqueue while keeping lifecycle capabilities; only after the
 database drains may a following manifest remove those capabilities and declare
