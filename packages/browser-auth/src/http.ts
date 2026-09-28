@@ -52,6 +52,16 @@ export class BrowserApiError<
     }
 }
 
+export function isAuthenticationRequiredError(
+    error: unknown,
+): error is BrowserApiError {
+    return (
+        error instanceof BrowserApiError &&
+        (error.status === 401 ||
+            error.detail.code === 'authentication_required')
+    );
+}
+
 export function createBrowserApiClient<TDetail extends BrowserApiErrorDetail>(
     options: BrowserApiClientOptions<TDetail>,
 ) {

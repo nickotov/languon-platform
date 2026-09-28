@@ -4,6 +4,7 @@ import type {
     AuthenticationSuccessResponse,
     AuthCapabilitiesResponse,
 } from '@languon/contracts';
+import { isAuthenticationRequiredError } from '@languon/browser-auth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
     createContext,
@@ -144,8 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
                 return await operation(token);
             } catch (error) {
-                if (!(error instanceof AuthApiError) || error.status !== 401)
-                    throw error;
+                if (!isAuthenticationRequiredError(error)) throw error;
                 const refreshed = await refreshSession();
                 if (!refreshed) throw error;
                 return operation(refreshed.accessToken);

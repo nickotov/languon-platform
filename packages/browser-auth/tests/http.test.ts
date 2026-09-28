@@ -4,7 +4,11 @@ import {
 } from '@languon/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createBrowserApiClient } from '../src';
+import {
+    BrowserApiError,
+    createBrowserApiClient,
+    isAuthenticationRequiredError,
+} from '../src';
 
 const client = createBrowserApiClient({
     baseUrl: 'https://api.example.test/',
@@ -16,6 +20,45 @@ const client = createBrowserApiClient({
 afterEach(() => vi.unstubAllGlobals());
 
 describe('browser API client', () => {
+    it('classifies authentication failures without treating permission denials as refreshable', () => {
+        expect(
+            isAuthenticationRequiredError(
+                new BrowserApiError(401, {
+                    code: 'authentication_required',
+                    correlationId: 'expired-token',
+                    message: 'Authentication is required.',
+                }),
+            ),
+        ).toBe(true);
+        expect(
+            isAuthenticationRequiredError(
+                new BrowserApiError(403, {
+                    code: 'authentication_required',
+                    correlationId: 'compatibility-response',
+                    message: 'Authentication is required.',
+                }),
+            ),
+        ).toBe(true);
+        expect(
+            isAuthenticationRequiredError(
+                new BrowserApiError(403, {
+                    code: 'admin_access_denied',
+                    correlationId: 'permission-denied',
+                    message: 'Administrator access is required.',
+                }),
+            ),
+        ).toBe(false);
+        expect(
+            isAuthenticationRequiredError(
+                new BrowserApiError(403, {
+                    code: 'recent_authentication_required',
+                    correlationId: 'recent-authentication',
+                    message: 'Recent authentication is required.',
+                }),
+            ),
+        ).toBe(false);
+    });
+
     it('sends credentials and bearer auth and validates the response', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             new Response(
@@ -29,6 +72,7 @@ describe('browser API client', () => {
                     },
                     user: {
                         createdAt: '2026-08-19T09:00:00.000Z',
+                        handle: null,
                         id: '0198c500-4b32-79b3-8c04-f4266c43c9ed',
                         primaryEmail: 'owner@example.com',
                         status: 'active',
@@ -99,6 +143,7 @@ describe('browser API client', () => {
                     },
                     user: {
                         createdAt: '2026-08-19T09:00:00.000Z',
+                        handle: null,
                         id: '0198c500-2f03-792c-a68d-d6dc0247bba7',
                         primaryEmail: 'owner@example.com',
                         status: 'active',

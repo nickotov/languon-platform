@@ -107,6 +107,129 @@ describe('admin API boundary', () => {
         expect(accessTokenStore.get()).toBe('aaa.bbb.ccc');
     });
 
+    it('refreshes and retries a compatibility 403 authentication-required response', async () => {
+        const fetchMock = vi.fn(
+            async (input: RequestInfo | URL, init?: RequestInit) => {
+                const url = String(input);
+                const headers = init?.headers as Record<string, string>;
+                if (url.endsWith('/admin/auth/refresh')) {
+                    return jsonResponse(authenticationResponse());
+                }
+                if (headers.Authorization === 'Bearer expired-token') {
+                    return jsonResponse(
+                        {
+                            error: {
+                                code: 'authentication_required',
+                                correlationId: 'expired-request',
+                                message: 'Authentication is required.',
+                            },
+                        },
+                        403,
+                    );
+                }
+                return jsonResponse({
+                    data: [],
+                    page: 1,
+                    pageSize: 25,
+                    total: 0,
+                });
+            },
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set('expired-token');
+
+        await expect(
+            adminApi.users({ page: 1, pageSize: 25 }),
+        ).resolves.toMatchObject({ data: [] });
+
+        expect(
+            fetchMock.mock.calls.filter(([input]) =>
+                String(input).endsWith('/admin/auth/refresh'),
+            ),
+        ).toHaveLength(1);
+        expect(accessTokenStore.get()).toBe('aaa.bbb.ccc');
+    });
+
+    it('does not refresh genuine admin access-denied responses', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+            jsonResponse(
+                {
+                    error: {
+                        code: 'admin_access_denied',
+                        correlationId: 'access-denied',
+                        message: 'Administrator access is required.',
+                    },
+                },
+                403,
+            ),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set('admin-access-token');
+
+        await expect(
+            adminApi.users({ page: 1, pageSize: 25 }),
+        ).rejects.toMatchObject({
+            detail: { code: 'admin_access_denied' },
+            status: 403,
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('refreshes before retrying an expired-token admin mutation', async () => {
+        const userId = '0198c600-52bb-7e53-8ac3-3102668e32ab';
+        const fetchMock = vi.fn(
+            async (input: RequestInfo | URL, init?: RequestInit) => {
+                const url = String(input);
+                const headers = init?.headers as Record<string, string>;
+                if (url.endsWith('/admin/auth/refresh')) {
+                    return jsonResponse(authenticationResponse());
+                }
+                if (headers.Authorization === 'Bearer expired-token') {
+                    return jsonResponse(
+                        {
+                            error: {
+                                code: 'authentication_required',
+                                correlationId: 'expired-mutation',
+                                message: 'Authentication is required.',
+                            },
+                        },
+                        403,
+                    );
+                }
+                return jsonResponse({
+                    user: {
+                        activeSessionCount: 0,
+                        createdAt: '2026-08-19T09:00:00.000Z',
+                        emailVerified: true,
+                        id: userId,
+                        isOwner: false,
+                        passkeyCount: 0,
+                        primaryEmail: 'target@example.com',
+                        status: 'disabled',
+                        updatedAt: '2026-08-20T09:00:00.000Z',
+                        version: 4,
+                    },
+                });
+            },
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set('expired-token');
+
+        await expect(
+            adminApi.mutateUser(userId, 'disable', {
+                expectedVersion: 3,
+                reason: 'Reviewed account policy violation',
+            }),
+        ).resolves.toMatchObject({
+            user: { status: 'disabled', version: 4 },
+        });
+        expect(
+            fetchMock.mock.calls.filter(([input]) =>
+                String(input).endsWith('/admin/auth/refresh'),
+            ),
+        ).toHaveLength(1);
+    });
+
     it('validates protected list responses and sends the bearer token', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             new Response(

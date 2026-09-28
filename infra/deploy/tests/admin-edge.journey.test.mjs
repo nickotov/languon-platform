@@ -7,7 +7,7 @@ import test from 'node:test';
 
 import { runCommand } from '../lib/runner.mjs';
 
-// @user-flow-revision admin-user-management sha256:43c037477d75d58d
+// @user-flow-revision admin-user-management sha256:4f24e107863f2093
 
 const enabled = process.env.LANGUON_DEPLOY_E2E === 'true';
 const nginxImage =

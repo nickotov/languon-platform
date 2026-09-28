@@ -43,8 +43,8 @@ related_features:
 This guide verifies the first owner-only administration capability from a real
 browser through the real admin SPA, backend, PostgreSQL, and Redis. It covers
 password and passkey authentication, persistent membership authorization, user
-inspection, safe disable/restore transitions, session refresh, and denial of a
-verified non-member.
+inspection, safe disable/restore transitions, reload and expired-access-token
+session refresh, and denial of a verified non-member.
 
 It intentionally does not verify immediate hard deletion, identity editing,
 impersonation, browser-based membership management, or application-content
@@ -101,14 +101,19 @@ secret, or owner-management credential.
    activity.
 3. Reload the page. Confirm the dedicated admin refresh cookie restores the
    session without placing an access token in local or session storage.
-4. Change Light, Dark, and System preferences. Confirm the shell, table,
+4. Leave the page idle past the access-token lifetime, then load another admin
+   resource or submit a safe synthetic mutation. Confirm one coordinated admin
+   refresh and one successful retry while the dedicated refresh session remains
+   valid. `admin_access_denied` and `recent_authentication_required` responses
+   must not trigger refresh.
+5. Change Light, Dark, and System preferences. Confirm the shell, table,
    statuses, dialog, and focus indicators remain legible. Reduce the viewport to
    320 CSS pixels and confirm navigation collapses without losing access to
    Overview, Users, Audit, theme, or sign-out actions.
-5. Open Users, search for a synthetic email, filter by status, and open the
+6. Open Users, search for a synthetic email, filter by status, and open the
    result. Confirm only safe account, verification, status, session-count,
    passkey-count, timestamp, version, and owner-membership data is shown.
-6. Enroll a passkey from the public account security page, sign out there, then
+7. Enroll a passkey from the public account security page, sign out there, then
    use **Use a passkey** on the admin login page. Confirm the same database owner
    membership is still required after the passkey assertion.
 
@@ -138,7 +143,9 @@ material, verification code, or secret is rendered or logged.
    completed purge cannot be cancelled; no account session is recreated.
 
 Expected result: destructive intent is explicit, reasons are 5–500 characters,
-the UI never silently retries a mutation, and restore never creates a session.
+the UI retries a mutation only after an explicit authentication-required
+rejection that occurs before authorization; it never retries after an ambiguous
+network/server outcome, and restore never creates a session.
 
 ## API verification
 
@@ -314,7 +321,10 @@ one-year audit event and never removes unexpired entries.
 
 The browser journey does not fake the frontend, backend, database, cache, or
 WebAuthn protocol. Transaction races, last-owner concurrency, and expiry remain
-in focused database tests. The private-edge journey uses real NGINX with a
+in focused database/client tests. Focused admin API tests cover the
+error-triggered retry matrix without adding an access-token-lifetime delay to
+every E2E run; correction evidence records the real-browser shortened-TTL
+check. The private-edge journey uses real NGINX with a
 minimal disposable upstream so credential forwarding and file permissions are
 verified deterministically without shared services.
 
@@ -324,6 +334,8 @@ verified deterministically without shared services.
 - Verified non-member or revoked owner: deny access immediately; do not wait for
   access-token expiry.
 - Disabled owner or revoked session: clear memory state and return to login.
+- Expired access token with a valid admin refresh session: coordinate one
+  refresh and retry the protected request once; do not persist either token.
 - Recent authentication expired: require a fresh sign-in and never replay the
   original mutation.
 - Stale version: show conflict and require a refreshed decision.

@@ -1,3 +1,4 @@
+import { BrowserApiError } from '@languon/browser-auth';
 import {
     DictionaryAudioFieldSchema,
     DictionaryAudioRequestSchema,
@@ -110,14 +111,16 @@ export type RequestWithSession = <T>(
     operation: (accessToken: string) => Promise<T>,
 ) => Promise<T>;
 
-export class DictionaryApiError extends Error {
+export class DictionaryApiError extends BrowserApiError<
+    DictionaryErrorResponse['error']
+> {
     public override readonly name = 'DictionaryApiError';
 
     public constructor(
-        public readonly status: number,
-        public readonly detail: DictionaryErrorResponse['error'],
+        status: number,
+        detail: DictionaryErrorResponse['error'],
     ) {
-        super(detail.message);
+        super(status, detail);
     }
 }
 

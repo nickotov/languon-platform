@@ -13,7 +13,7 @@ import {
 } from '@playwright/test';
 import postgres from 'postgres';
 
-// @user-flow-revision admin-user-management sha256:43c037477d75d58d
+// @user-flow-revision admin-user-management sha256:4f24e107863f2093
 // @user-flow-revision ai-provider-management sha256:dc741eefb55aaec6
 // @user-flow-revision ai-credit-wallet sha256:9cf122911016613c
 

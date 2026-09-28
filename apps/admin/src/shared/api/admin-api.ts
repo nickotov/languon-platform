@@ -1,4 +1,8 @@
-import { BrowserApiError, createBrowserApiClient } from '@languon/browser-auth';
+import {
+    BrowserApiError,
+    createBrowserApiClient,
+    isAuthenticationRequiredError,
+} from '@languon/browser-auth';
 import {
     AdminAuditEventsResponseSchema,
     AdminAiCreditAdjustmentRequestSchema,
@@ -84,9 +88,7 @@ async function authorized<TResponse>(
             signal,
         });
     } catch (error) {
-        if (!(error instanceof AdminApiError) || error.status !== 401) {
-            throw error;
-        }
+        if (!isAuthenticationRequiredError(error)) throw error;
         accessTokenStore.clear();
         accessToken = await refreshAccessToken(signal);
         return client.request(path, {
@@ -271,9 +273,7 @@ async function authorizedMutation(
     try {
         return await request();
     } catch (error) {
-        if (!(error instanceof AdminApiError) || error.status !== 401) {
-            throw error;
-        }
+        if (!isAuthenticationRequiredError(error)) throw error;
         accessTokenStore.clear();
         accessToken = await refreshAccessToken(signal);
         return request();
@@ -302,9 +302,7 @@ async function authorizedRequest<TBody, TResponse>(
     try {
         return await request();
     } catch (error) {
-        if (!(error instanceof AdminApiError) || error.status !== 401) {
-            throw error;
-        }
+        if (!isAuthenticationRequiredError(error)) throw error;
         accessTokenStore.clear();
         accessToken = await refreshAccessToken(signal);
         return request();

@@ -29,12 +29,14 @@ source_paths:
     - apps/web/playwright.config.ts
     - apps/web/tests/e2e/**
     - apps/web/src/app/(auth)/**
+    - apps/web/src/fsd/entities/dictionary/**
     - apps/web/src/fsd/entities/session/**
     - apps/web/src/fsd/features/auth/**
     - apps/web/src/fsd/pages/**
     - apps/web/src/fsd/shared/api/auth-api.ts
     - apps/web/src/fsd/shared/i18n/**
     - packages/contracts/src/auth/**
+    - packages/browser-auth/**
     - packages/database/src/migrations/**
     - packages/database/src/postgres/**
     - scripts/check-user-flow-guides.mjs
@@ -60,6 +62,7 @@ Use this guide to exercise the complete local authentication journey:
 
 - email/password signup and four-digit email verification;
 - session restoration through the HTTP-only refresh cookie;
+- coordinated refresh and one retry after in-memory access-token expiry;
 - current-session and all-session logout;
 - password login, recovery/reset, and authenticated password change;
 - passkey enrollment, discoverable login, rename, and removal;
@@ -174,10 +177,15 @@ characters that is not a common password, such as
 7. Reload the page. Expect **Restoring your session…** briefly, followed by the
    same authenticated security view. The refresh cookie restored the in-memory
    access token.
-8. In browser developer tools, confirm no access token exists in the URL,
+8. Leave the authenticated page idle past the access-token lifetime, then
+   perform a protected action or navigate to another authenticated page. Expect
+   one coordinated refresh request followed by one successful retry; the user
+   remains signed in while the refresh session is valid. A genuine permission
+   denial or recent-authentication requirement must not trigger this retry.
+9. In browser developer tools, confirm no access token exists in the URL,
    `localStorage`, or `sessionStorage`. The refresh cookie is HTTP-only and is not
    readable from page JavaScript.
-9. Select **Sign out here**. Expect `/login`; reloading must remain signed out.
+10. Select **Sign out here**. Expect `/login`; reloading must remain signed out.
 
 ### Password login and unverified account behavior
 
@@ -443,23 +451,24 @@ into issues, logs, or committed documentation.
 
 ## Expected failure and edge cases
 
-| Case                                                              | Expected result                                                                                                         |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Missing/disallowed `Origin` on an auth mutation                   | HTTP `403 forbidden`; no state mutation.                                                                                |
-| Missing/malformed Bearer token                                    | HTTP `401 authentication_required`; no protected data.                                                                  |
-| Wrong/nonexistent password login                                  | Generic HTTP `401 invalid_credentials`; no account-existence detail.                                                    |
-| Correct password for pending account                              | `email_verification_required`; no tokens or refresh cookie.                                                             |
-| Wrong verification/recovery code                                  | HTTP `400 verification_failed`; a fifth wrong attempt exhausts the flow, while a correct fifth attempt succeeds.        |
-| Verification/recovery code after ten minutes                      | `verification_failed`; request a new flow.                                                                              |
-| Immediate resend                                                  | UI countdown or HTTP `429 rate_limited` with `Retry-After`; honor `resendAvailableAt`.                                  |
-| More than five sends in a rolling hour                            | HTTP `429`; do not bypass by repeating signup for the same address.                                                     |
-| Weak/common/short password                                        | Client validation or HTTP `400 password_policy_failed`; account credential is unchanged.                                |
-| Refresh after logout, reset, logout-all, expiry, or revocation    | HTTP `401`; terminal refresh/logout failures clear the browser cookie.                                                  |
-| Replay of an already rotated refresh credential                   | The complete refresh family is revoked; use automated integration tests rather than replaying a primary manual account. |
-| Passkey operation after recent-auth window                        | HTTP `403 recent_authentication_required`; sign in again.                                                               |
-| Duplicate passkey credential/name or more than 50 active passkeys | Stable conflict/operation failure; existing credentials remain intact.                                                  |
-| Redis unavailable during issuance/rate-limit/WebAuthn work        | Fail-closed `503 service_unavailable`; no challenge/session should be issued.                                           |
-| Oversized auth body above 384 KiB                                 | HTTP `413`; bounded contract-valid WebAuthn registration bodies remain accepted for validation.                         |
+| Case                                                                    | Expected result                                                                                                         |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Missing/disallowed `Origin` on an auth mutation                         | HTTP `403 forbidden`; no state mutation.                                                                                |
+| Missing/malformed Bearer token                                          | HTTP `401 authentication_required`; no protected data.                                                                  |
+| Wrong/nonexistent password login                                        | Generic HTTP `401 invalid_credentials`; no account-existence detail.                                                    |
+| Correct password for pending account                                    | `email_verification_required`; no tokens or refresh cookie.                                                             |
+| Wrong verification/recovery code                                        | HTTP `400 verification_failed`; a fifth wrong attempt exhausts the flow, while a correct fifth attempt succeeds.        |
+| Verification/recovery code after ten minutes                            | `verification_failed`; request a new flow.                                                                              |
+| Immediate resend                                                        | UI countdown or HTTP `429 rate_limited` with `Retry-After`; honor `resendAvailableAt`.                                  |
+| More than five sends in a rolling hour                                  | HTTP `429`; do not bypass by repeating signup for the same address.                                                     |
+| Weak/common/short password                                              | Client validation or HTTP `400 password_policy_failed`; account credential is unchanged.                                |
+| Refresh after logout, reset, logout-all, expiry, or revocation          | HTTP `401`; terminal refresh/logout failures clear the browser cookie.                                                  |
+| Protected request after access-token expiry while refresh remains valid | The browser coordinates one refresh and retries once with the replacement access token; no token is persisted.          |
+| Replay of an already rotated refresh credential                         | The complete refresh family is revoked; use automated integration tests rather than replaying a primary manual account. |
+| Passkey operation after recent-auth window                              | HTTP `403 recent_authentication_required`; sign in again.                                                               |
+| Duplicate passkey credential/name or more than 50 active passkeys       | Stable conflict/operation failure; existing credentials remain intact.                                                  |
+| Redis unavailable during issuance/rate-limit/WebAuthn work              | Fail-closed `503 service_unavailable`; no challenge/session should be issued.                                           |
+| Oversized auth body above 384 KiB                                       | HTTP `413`; bounded contract-valid WebAuthn registration bodies remain accepted for validation.                         |
 
 Rate limits are intentionally shared across account/flow and client-address
 dimensions. Use unique test emails and wait for the returned retry interval; do
@@ -479,7 +488,10 @@ The critical cross-boundary journeys are traced by stable scenario IDs in
 These are intentionally the critical E2E slices, not an exhaustive copy of
 every edge-case row above. Contract, HTTP, repository, Redis, and domain suites
 cover validation boundaries, rate limits, transactions, replay, and concurrency
-at lower cost. When the startup, browser/API flow, or expected-failure behavior
+at lower cost. Focused browser-auth and web session tests cover error-triggered
+expired-token retry without adding an access-token-lifetime delay to every E2E
+run; correction evidence records the real-browser shortened-TTL check. When the
+startup, browser/API flow, or expected-failure behavior
 in this guide changes, use the `user-flow-e2e` skill to review and update the
 mapped tests and their derived guide revision before marking the guide current.
 
