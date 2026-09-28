@@ -21,3 +21,4 @@ export {
     type CardAuthoringCleanupPlan,
 } from './lib/authoring-job-cleanup';
 export { cardAuthoringFailureMessageKey } from './lib/failure-message-key';
+export { isFieldAffectedByGeneration } from './lib/affected-generation-fields';

@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:4fc1439df381a465
+// @user-flow-revision dictionary-platform sha256:63d722448302522c
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -1147,6 +1147,8 @@ test.describe('dictionary platform journeys', () => {
         await createDictionary(page, `Inline AI Spanish ${runId}`);
         const settings = await openDictionarySettings(page);
         await settings.getByLabel('Definition').check();
+        await settings.getByLabel('Context example').check();
+        await settings.getByLabel('Example translation').check();
         await settings.getByRole('button', { name: 'Save settings' }).click();
         await expect(
             page.getByText('Dictionary settings saved.'),
@@ -1225,6 +1227,11 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             translationReview.getByText('the atelier (es)', { exact: true }),
         ).toBeVisible({ timeout: 20_000 });
+        await expect(editor.getByTestId('ai-review-definition')).toBeVisible();
+        await expect(editor.getByTestId('ai-review-example')).toBeVisible();
+        await expect(
+            editor.getByTestId('ai-review-exampleTranslation'),
+        ).toBeVisible();
         await expect(
             editor.getByRole('textbox', { name: /^Translation \(/ }),
         ).toHaveCount(0);

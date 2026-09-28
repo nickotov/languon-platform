@@ -22,6 +22,7 @@ import {
     cardFieldLimit,
     limitCardFieldValue,
 } from '../../lib/card-field-limits';
+import { isFieldAffectedByGeneration } from '../../lib/affected-generation-fields';
 import styles from '../dictionary-card-form/dictionary-card-form.module.css';
 
 export function AuthoringField({
@@ -127,9 +128,12 @@ export function AuthoringField({
         );
     const isGenerating =
         suggestions.active &&
-        (suggestions.generatingScope?.kind === 'all' ||
-            (suggestions.generatingScope?.kind === 'field' &&
-                suggestions.generatingScope.field === field));
+        isFieldAffectedByGeneration(
+            field,
+            suggestions.generatingScope,
+            effective,
+            ai?.format,
+        );
     const dependencyBlocked =
         currentSuggestion !== null &&
         field !== 'source' &&

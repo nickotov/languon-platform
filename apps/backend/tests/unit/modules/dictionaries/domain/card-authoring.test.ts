@@ -77,6 +77,32 @@ describe('dictionary card authoring domain', () => {
                 field: 'transcription',
             }),
         ).toEqual([]);
+        expect(
+            resolveDictionaryCardAuthoringFields(
+                settings,
+                { kind: 'field', field: 'translation' },
+                true,
+            ),
+        ).toEqual([
+            'translation',
+            'definition',
+            'example',
+            'exampleTranslation',
+        ]);
+        expect(
+            resolveDictionaryCardAuthoringFields(
+                settings,
+                { kind: 'field', field: 'example' },
+                true,
+            ),
+        ).toEqual(['example', 'exampleTranslation']);
+        expect(
+            resolveDictionaryCardAuthoringFields(
+                { ...settings, exampleTranslationEnabled: false },
+                { kind: 'field', field: 'example' },
+                true,
+            ),
+        ).toEqual(['example']);
     });
 
     it('requires all-fields scope for an initial request and an enabled successor field', () => {
@@ -243,8 +269,12 @@ describe('dictionary card authoring domain', () => {
                 scope: { kind: 'field', field: 'translation' },
             });
         expect(dictionaryCardAuthoringProviderInput(successor)).toMatchObject({
-            requestedFields: ['translation'],
-            fieldContext: [{ field: 'translation', excludedValues: [] }],
+            requestedFields: [
+                'translation',
+                'definition',
+                'example',
+                'exampleTranslation',
+            ],
         });
     });
 
@@ -370,7 +400,7 @@ describe('dictionary card authoring domain', () => {
         });
     });
 
-    it('minimizes field-local provider context', () => {
+    it('sends coherent dependent context while keeping unrelated fields private', () => {
         const v2 = DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
             ...input,
             format: 'card-authoring:v2',
@@ -394,10 +424,35 @@ describe('dictionary card authoring domain', () => {
                 excludedValues: [],
                 field: 'translation',
             },
+            {
+                currentValue: 'private definition',
+                excludedValues: [],
+                field: 'definition',
+            },
+            {
+                currentValue: 'Current example.',
+                excludedValues: [],
+                field: 'example',
+            },
+            {
+                currentValue: 'private example translation',
+                excludedValues: [],
+                field: 'exampleTranslation',
+            },
         ]);
         expect(JSON.stringify(translationInput)).not.toMatch(
-            /private transcription|private definition|Current example|private example translation/,
+            /private transcription/,
         );
+
+        const exampleInput = dictionaryCardAuthoringProviderInput({
+            ...v2,
+            scope: { kind: 'field', field: 'example' },
+        });
+        expect(exampleInput.requestedFields).toEqual([
+            'example',
+            'exampleTranslation',
+        ]);
+        expect(exampleInput).not.toHaveProperty('exampleForTranslation');
 
         const exampleTranslationInput = dictionaryCardAuthoringProviderInput({
             ...v2,

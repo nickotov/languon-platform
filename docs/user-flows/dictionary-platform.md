@@ -188,10 +188,12 @@ silently overwrite or replay a stale edit.
    its input available.
 2. Review a proposed Source in the input's place. **Accept** restores an editable
    Source input containing the canonical value. **Reject** restores the exact
-   previous draft value. Generate Translation alone and expect its progress and
-   review to replace only the Translation input. Use **Try another** to retain a
-   distinct previous option behind **Previous AI options** rather than showing a
-   second manual input.
+   previous draft value. Generate Translation and expect one coherent request to
+   regenerate Translation plus every enabled non-Source field; progress and review
+   replace each affected input while Source stays unchanged. Generate Context
+   example and expect Example translation to regenerate with it when enabled. Use
+   **Try another** to retain distinct previous options behind **Previous AI
+   options** rather than showing second manual inputs.
 3. Select **Generate all**, or **Regenerate all fields** after a proposal
    exists, to normalize Source and generate every enabled field from that
    normalized basis. Dependent suggestions remain unavailable until a changed

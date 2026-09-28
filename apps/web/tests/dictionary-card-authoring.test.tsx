@@ -17,6 +17,7 @@ import {
     hasLoadedSourceDuplicate,
     normalizeDictionarySource,
     previewCardEffectiveSettings,
+    isFieldAffectedByGeneration,
     planCardAuthoringCleanup,
     resolveCardAuthoringCleanupRead,
     retainCardAuthoringIdempotencyAttempt,
@@ -138,6 +139,57 @@ const card: DictionaryCard = {
     version: 1,
 };
 
+describe('dependent card field generation', () => {
+    it('marks coherent v2 dependency groups as affected', () => {
+        expect(
+            [
+                'source',
+                'translation',
+                'transcription',
+                'definition',
+                'example',
+                'exampleTranslation',
+            ].filter((field) =>
+                isFieldAffectedByGeneration(
+                    field as keyof DictionaryCard['values'],
+                    { kind: 'field', field: 'translation' },
+                    card.effectiveSettings,
+                    'card-authoring:v2',
+                ),
+            ),
+        ).toEqual(['translation', 'example', 'exampleTranslation']);
+        expect(
+            ['example', 'exampleTranslation'].filter((field) =>
+                isFieldAffectedByGeneration(
+                    field as keyof DictionaryCard['values'],
+                    { kind: 'field', field: 'example' },
+                    card.effectiveSettings,
+                    'card-authoring:v2',
+                ),
+            ),
+        ).toEqual(['example', 'exampleTranslation']);
+        expect(
+            isFieldAffectedByGeneration(
+                'exampleTranslation',
+                { kind: 'field', field: 'example' },
+                {
+                    ...card.effectiveSettings,
+                    exampleTranslationEnabled: false,
+                },
+                'card-authoring:v2',
+            ),
+        ).toBe(false);
+        expect(
+            isFieldAffectedByGeneration(
+                'exampleTranslation',
+                { kind: 'field', field: 'example' },
+                card.effectiveSettings,
+                'card-authoring:v1',
+            ),
+        ).toBe(false);
+    });
+});
+
 function ArchivedCardDeletionHarness({ empty = false }: { empty?: boolean }) {
     const [outcome, setOutcome] = useState('');
     const archivedCard = {
@@ -215,7 +267,82 @@ const authoringSuccessorJob = {
     state: 'running',
 } satisfies DictionaryCardAuthoringGenerationJob;
 
+function GeneratingFieldHarness({
+    format,
+}: {
+    format: 'card-authoring:v1' | 'card-authoring:v2';
+}) {
+    const [job, setJob] = useState<DictionaryCardAuthoringGenerationJob | null>(
+        null,
+    );
+
+    async function startGeneration() {
+        setJob({ ...authoringSuccessorJob, format });
+    }
+
+    return (
+        <DictionaryCardForm
+            ai={{
+                available: true,
+                format,
+                job,
+                onAction: startGeneration,
+                pending: false,
+                proposal: null,
+            }}
+            card={{
+                ...card,
+                values: { ...card.values, source: 'atelier' },
+            }}
+            dictionary={dictionary}
+            languages={languages}
+            onCancel={vi.fn()}
+            onSave={vi.fn().mockResolvedValue(undefined)}
+            pending={false}
+        />
+    );
+}
+
 describe('dictionary settings and card authoring', () => {
+    it('renders v2 dependency progress while keeping v1 field-local', async () => {
+        const user = userEvent.setup();
+        const { unmount } = render(
+            <GeneratingFieldHarness format='card-authoring:v2' />,
+        );
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Generate Translation with AI',
+            }),
+        );
+        expect(screen.getByLabelText(/^Source word or phrase \(/)).toHaveValue(
+            'atelier',
+        );
+        expect(screen.getByTestId('ai-progress-translation')).toBeVisible();
+        expect(screen.getByTestId('ai-progress-example')).toBeVisible();
+        expect(
+            screen.getByTestId('ai-progress-exampleTranslation'),
+        ).toBeVisible();
+        expect(
+            screen.queryByRole('textbox', { name: /^Translation \(/ }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('textbox', { name: /^Context example \(/ }),
+        ).not.toBeInTheDocument();
+
+        unmount();
+        render(<GeneratingFieldHarness format='card-authoring:v1' />);
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Generate Translation with AI',
+            }),
+        );
+        expect(screen.getByTestId('ai-progress-translation')).toBeVisible();
+        expect(screen.queryByTestId('ai-progress-example')).toBeNull();
+        expect(screen.getByLabelText(/^Context example \(/)).toBeVisible();
+        expect(screen.getByLabelText(/^Example translation \(/)).toBeVisible();
+    });
+
     it('uses ordinary create and update saves when no AI suggestion remains selected', () => {
         expect(shouldAcceptAuthoringProposal(true, 0)).toBe(false);
         expect(shouldAcceptAuthoringProposal(false, 0)).toBe(false);

@@ -639,21 +639,26 @@ export function mergeDictionaryCardAuthoringProposal(input: {
 export function resolveDictionaryCardAuthoringFields(
     settings: z.infer<typeof DictionaryGenerationEffectiveSettingsSchema>,
     scope: z.infer<typeof DictionaryCardAuthoringScopeSchema>,
-    includeSource = false,
+    useV2FieldSemantics = false,
 ): DictionaryCardAuthoringField[] {
     const eligible: DictionaryCardAuthoringField[] = [
-        ...(includeSource ? (['source'] as const) : []),
+        ...(useV2FieldSemantics ? (['source'] as const) : []),
         'translation',
     ];
     if (settings.transcriptionEnabled) eligible.push('transcription');
     if (settings.definitionEnabled) eligible.push('definition');
     if (settings.exampleEnabled) eligible.push('example');
     if (settings.exampleTranslationEnabled) eligible.push('exampleTranslation');
-    return scope.kind === 'all'
-        ? eligible
-        : eligible.includes(scope.field)
-          ? [scope.field]
-          : [];
+    if (scope.kind === 'all') return eligible;
+    if (!eligible.includes(scope.field)) return [];
+    if (!useV2FieldSemantics) return [scope.field];
+    if (scope.field === 'translation')
+        return eligible.filter((field) => field !== 'source');
+    if (scope.field === 'example')
+        return eligible.filter(
+            (field) => field === 'example' || field === 'exampleTranslation',
+        );
+    return [scope.field];
 }
 
 export function dictionaryCardAuthoringProviderInput(
