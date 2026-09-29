@@ -105,6 +105,8 @@ worker-local parser child <------ bounded IPC ------------------------+
 - During overlap, both worker versions may run only against compatible job
   schema versions. Release metadata declares worker-processable,
   API-readable/resolvable, API-enqueued, and web-wire-compatible versions.
+  The root README's dictionary generation section defines each runtime
+  capability variable and includes a concrete expand/activate example.
   Formats use two-release expand/activate: add worker plus API/web read/cancel/
   discard/accept support first, activate enqueue only after the candidate and
   rollback floor support the entire lifecycle, and remove old support only after

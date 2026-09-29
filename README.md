@@ -104,6 +104,53 @@ entries when adding `card-authoring:v3`. Keep v1 and v2 readable and terminally
 actionable until their queued and reviewable work drains. The same rule applies
 when expanding `single-card:v2`, `pasted-terms:v2`, `import-pairs:v2`, and
 `document-terms:v2` beside their v1 predecessors.
+
+Each value such as `card-authoring:v3` is a durable job payload and wire-contract
+version, not an application release number. A persisted v1 job remains v1 until
+it reaches a terminal state; deployments do not rewrite it to the newest format.
+The six settings deliberately control different lifecycle operations:
+
+| Setting                                     | What enabling a format permits                                              |
+| ------------------------------------------- | --------------------------------------------------------------------------- |
+| `DICTIONARY_JOB_API_READABLE_FORMATS`       | Return its status, progress, proposal, or terminal outcome through the API. |
+| `DICTIONARY_JOB_API_CANCELLABLE_FORMATS`    | Cancel its queued or running jobs.                                          |
+| `DICTIONARY_JOB_API_DISCARDABLE_FORMATS`    | Discard its review-ready proposal.                                          |
+| `DICTIONARY_JOB_API_ACCEPTABLE_FORMATS`     | Accept its review-ready proposal and commit the selected card changes.      |
+| `DICTIONARY_JOB_API_ENQUEUED_FORMATS`       | Admit new jobs using that format. This is the activation gate.              |
+| `DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS` | Let a worker claim and execute queued jobs using that format.               |
+
+Keeping these sets separate makes blue/green deployment and rollback safe. For a
+new `card-authoring:v3` format, use these phases:
+
+1. **Expand:** add v3 to worker-processable and API read/cancel/discard/accept
+   sets, but keep API enqueue on v1/v2. This deploys complete lifecycle support
+   without creating v3 work; after rollout, the expand release can become the
+   rollback floor for activation.
+2. **Activate:** add v3 to API enqueue only after deployment preflight confirms
+   the complete overlapping stack supports its lifecycle.
+3. **Drain and retire:** stop enqueueing the old version first. Remove it from
+   read/cancel/discard/accept and worker-processable sets only after no queued,
+   running, retryable, or reviewable work remains and the rollback floor has
+   advanced.
+
+For example, the expand release differs only at enqueue:
+
+```dotenv
+DICTIONARY_JOB_API_READABLE_FORMATS=card-authoring:v1,card-authoring:v2,card-authoring:v3
+DICTIONARY_JOB_API_CANCELLABLE_FORMATS=card-authoring:v1,card-authoring:v2,card-authoring:v3
+DICTIONARY_JOB_API_DISCARDABLE_FORMATS=card-authoring:v1,card-authoring:v2,card-authoring:v3
+DICTIONARY_JOB_API_ACCEPTABLE_FORMATS=card-authoring:v1,card-authoring:v2,card-authoring:v3
+DICTIONARY_JOB_API_ENQUEUED_FORMATS=card-authoring:v1,card-authoring:v2
+DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS=card-authoring:v1,card-authoring:v2,card-authoring:v3
+```
+
+The activate release then adds `card-authoring:v3` to
+`DICTIONARY_JOB_API_ENQUEUED_FORMATS`. Local development may enable the complete
+lifecycle immediately because the API and worker are restarted together. See
+[Dictionary jobs and document operations](docs/operations/dictionary-jobs-and-documents.md#deployment-contract)
+for deployment gates and [ADR-0012](docs/adr/0012-dictionary-worker-and-document-ingestion.md)
+for the authoritative compatibility policy.
+
 The endpoint must provide an
 OpenAI-compatible API and the model must support the structured output used by
 dictionary generation. Generic legacy endpoints require `GET /models`; curated
