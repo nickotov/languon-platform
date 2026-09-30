@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:562bca056097fcee
+// @user-flow-revision dictionary-platform sha256:df00e31b9a58527a
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -1373,9 +1373,36 @@ test.describe('dictionary platform journeys', () => {
             editor.getByRole('textbox', { name: /^Translation \(/ }),
         ).toHaveValue('the atelier (es) · alternative 2');
 
+        await source.fill('teh atelier');
         await editor
+            .getByRole('status')
+            .filter({
+                hasText:
+                    'The source phrase or translation context changed. These suggestions no longer match this card and cannot be used.',
+            })
             .getByRole('button', { name: 'Regenerate all fields' })
             .click();
+        await expect(editor.getByText('Review Source first')).toBeVisible({
+            timeout: 20_000,
+        });
+        const regeneratedSourceReview = editor.getByTestId('ai-review-source');
+        await expect(
+            regeneratedSourceReview.getByText('the atelier', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            translationReview.getByRole('button', {
+                name: 'Accept Translation suggestion',
+            }),
+        ).toBeDisabled();
+        await regeneratedSourceReview
+            .getByRole('button', { name: 'Accept Source suggestion' })
+            .click();
+        await expect(editor.getByText('Review Source first')).toHaveCount(0);
+        await expect(
+            translationReview.getByRole('button', {
+                name: 'Accept Translation suggestion',
+            }),
+        ).toBeEnabled();
         await expect(
             editor.getByRole('button', { name: 'Accept all' }),
         ).toBeVisible({ timeout: 20_000 });
@@ -1383,9 +1410,7 @@ test.describe('dictionary platform journeys', () => {
             editor.getByRole('button', { name: 'Reject all' }),
         ).toBeVisible();
         await editor.getByRole('button', { name: 'Accept all' }).click();
-        await expect(translation).toHaveValue(
-            'the atelier (es) · alternative 3',
-        );
+        await expect(translation).toHaveValue('the atelier (es)');
         await expect(definition).not.toHaveValue('');
 
         await definition.fill('A manually refined place where artists work.');
@@ -1410,7 +1435,7 @@ test.describe('dictionary platform journeys', () => {
             page.getByText('the atelier', { exact: true }),
         ).toBeVisible();
         await expect(
-            page.getByText('the atelier (es) · alternative 3', { exact: true }),
+            page.getByText('the atelier (es)', { exact: true }),
         ).toBeVisible();
         await expect(
             page.getByText('Human + AI', { exact: true }).first(),

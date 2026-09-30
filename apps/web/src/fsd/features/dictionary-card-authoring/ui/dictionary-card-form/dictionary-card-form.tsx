@@ -123,6 +123,14 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                         content={fieldContent}
                         suggestions={fieldSuggestions}
                     />
+                    {authoring.sourceReviewRequired ? (
+                        <InlineAlert
+                            title={t('dictionary.authoring.sourceReviewTitle')}
+                            tone='warning'
+                        >
+                            {t('dictionary.authoring.sourceReviewDescription')}
+                        </InlineAlert>
+                    ) : null}
                     <CardTranslationContext
                         cardContext={authoring.draft.translationContext}
                         dictionaryContext={dictionary.translationContext}

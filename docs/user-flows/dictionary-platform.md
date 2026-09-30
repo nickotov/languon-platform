@@ -2,7 +2,7 @@
 feature: dictionary-platform
 title: Dictionary Platform
 status: current
-last_verified: 2026-09-29
+last_verified: 2026-09-30
 surfaces:
     - browser
     - api
@@ -212,8 +212,13 @@ silently overwrite or replay a stale edit.
    conventionally needs an article. Every rendered field exposes a nearby AI
    action. Generate Source alone and expect durable queued, generating, and
    validating progress to replace only the Source input. No other field is
-   generated. An already canonical Source reports that it is unchanged and keeps
-   its input available.
+   generated. For an isolated count noun in a language with grammatical gender,
+   expect the normalized value to expose gender through its natural article, or
+   a compact gender marker when the article is unavailable or ambiguous; for
+   example, French `parasol` becomes `le parasol`. A bare noun that omits this
+   required gender signal is not treated as already canonical. Other already
+   canonical Sources report that they are unchanged and keep their input
+   available.
 2. Review a proposed Source in the input's place. **Accept** restores an editable
    Source input containing the canonical value. **Reject** restores the exact
    previous draft value. Generate Translation and expect one coherent request to
@@ -225,9 +230,12 @@ silently overwrite or replay a stale edit.
 3. Select **Generate all**, or **Regenerate all fields** after a proposal
    exists, to normalize Source and generate every enabled field from that
    normalized basis. Dependent suggestions remain unavailable until a changed
-   Source is accepted. Rejecting Source restores the previous Source and clears
-   suggestions based on the rejected value. **Accept all** accepts Source first
-   and then compatible fields; **Reject all** restores every affected input.
+   Source is accepted. A prominent **Review Source first** notice explains that
+   the other suggestions use the proposed Source and that the owner must accept
+   or reject Source before using or regenerating them. Rejecting Source restores
+   the previous Source and clears suggestions based on the rejected value.
+   **Accept all** accepts Source first and then compatible fields; **Reject all**
+   restores every affected input.
    Example translation cannot be generated until Example contains text.
 4. Every successful **Try another**, field regeneration, or **Regenerate all
    fields** action keeps the preceding complete form as a local version and opens
@@ -479,8 +487,8 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
   regeneration from current versions, and atomic acceptance with server-owned
   authorship.
 - `inline-ai-card-authoring-preserves-field-choices` proves context-aware Source
-  normalization and independent field generation in Add Card, stale-context
-  recovery, replacement review, rejection
+  normalization, visible Source-first dependency guidance, and independent field
+  generation in Add Card, stale-context recovery, replacement review, rejection
   without draft loss, retained alternatives, whole-form version navigation,
   coherent whole-set acceptance, responsive layout, and one mixed-authorship
   atomic save through the real web/API/worker/PostgreSQL stack.

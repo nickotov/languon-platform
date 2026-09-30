@@ -23,10 +23,18 @@ describe('local prompts', () => {
 
         expect(prompt).toContain('atomic review-only values');
         expect(prompt).toContain('only the explicitly requested fields');
+        expect(prompt).toContain('isolated lexical entry');
+        expect(prompt).toContain('phrase or sentence');
+        expect(prompt).toContain('la femme a mangé');
+        expect(prompt).toContain('natural article');
+        expect(prompt).toContain('grammatical gender');
+        expect(prompt).toContain('must expose its grammatical gender');
+        expect(prompt).toContain('French `parasol` must become `le parasol`');
         expect(prompt).toContain(
-            'conventional dictionary lemma or verb infinitive',
+            'A bare isolated count noun is not already suitable',
         );
-        expect(prompt).toContain('add an article when appropriate');
+        expect(prompt).toContain('`(m)` or `(f)`');
+        expect(prompt).toContain('proper nouns, mass nouns');
         expect(prompt).toContain('translate the newly generated Example');
         expect(prompt).toContain('server assigns stable identities');
         expect(prompt).toContain(

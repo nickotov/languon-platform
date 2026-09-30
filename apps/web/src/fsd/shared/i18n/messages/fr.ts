@@ -647,6 +647,10 @@ export const fr = {
     'dictionary.authoring.versionCounter': 'Version {current} sur {total}',
     'dictionary.authoring.acceptSourceFirst':
         'Acceptez d’abord la Source suggérée pour utiliser ce résultat.',
+    'dictionary.authoring.sourceReviewTitle':
+        'Vérifiez d’abord le texte source',
+    'dictionary.authoring.sourceReviewDescription':
+        'Les autres suggestions de l’IA ont été générées à partir du texte source proposé. Acceptez ou refusez d’abord la Source avant de les utiliser ou de les régénérer. Refuser la Source supprime également les suggestions qui en dépendent.',
     'dictionary.authoring.exampleRequired':
         'Saisissez un exemple avant de générer sa traduction.',
     'dictionary.authoring.sourceUnchanged': 'La Source est déjà correcte.',

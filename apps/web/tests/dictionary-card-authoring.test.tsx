@@ -1380,6 +1380,12 @@ describe('dictionary settings and card authoring', () => {
         expect(screen.getByTestId('ai-review-source')).toHaveTextContent(
             "s'alarmer",
         );
+        expect(screen.getByText('Review Source first')).toBeVisible();
+        expect(
+            screen.getByText(
+                'Other AI suggestions were generated from the suggested Source. Accept or reject Source before using or regenerating them. Rejecting Source also removes its dependent suggestions.',
+            ),
+        ).toBeVisible();
         expect(
             within(screen.getByTestId('ai-review-translation')).getByRole(
                 'button',
@@ -1398,6 +1404,7 @@ describe('dictionary settings and card authoring', () => {
         );
         expect(screen.queryByTestId('ai-review-source')).toBeNull();
         expect(screen.queryByTestId('ai-review-translation')).toBeNull();
+        expect(screen.queryByText('Review Source first')).toBeNull();
     });
 
     it('accepts Source first, unlocks dependent results, and saves their provenance', async () => {
@@ -1451,6 +1458,7 @@ describe('dictionary settings and card authoring', () => {
                 name: 'Accept Source suggestion',
             }),
         );
+        expect(screen.queryByText('Review Source first')).toBeNull();
         expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
             "s'alarmer",
         );

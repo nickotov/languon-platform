@@ -702,6 +702,9 @@ export const en = {
     'dictionary.authoring.versionCounter': 'Version {current} of {total}',
     'dictionary.authoring.acceptSourceFirst':
         'Accept the suggested Source before using this result.',
+    'dictionary.authoring.sourceReviewTitle': 'Review Source first',
+    'dictionary.authoring.sourceReviewDescription':
+        'Other AI suggestions were generated from the suggested Source. Accept or reject Source before using or regenerating them. Rejecting Source also removes its dependent suggestions.',
     'dictionary.authoring.exampleRequired':
         'Enter an Example before generating its translation.',
     'dictionary.authoring.sourceUnchanged': 'Source already looks correct.',

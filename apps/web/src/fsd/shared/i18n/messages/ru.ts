@@ -697,6 +697,10 @@ export const ru = {
     'dictionary.authoring.versionCounter': 'Версия {current} из {total}',
     'dictionary.authoring.acceptSourceFirst':
         'Сначала примите предложенный исходный текст.',
+    'dictionary.authoring.sourceReviewTitle':
+        'Сначала проверьте исходный текст',
+    'dictionary.authoring.sourceReviewDescription':
+        'Остальные предложения ИИ созданы на основе предложенного исходного текста. Сначала примите или отклоните исходный текст, прежде чем использовать или пересоздавать их. При отклонении исходного текста зависимые предложения также будут удалены.',
     'dictionary.authoring.exampleRequired':
         'Введите пример, прежде чем создавать его перевод.',
     'dictionary.authoring.sourceUnchanged': 'Исходный текст уже корректен.',

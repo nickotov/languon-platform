@@ -150,6 +150,26 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
             ) === index &&
             selectedSuggestions[suggestion.field] !== suggestion.id,
     );
+    const proposedSourceId =
+        proposal?.sourceResult?.kind === 'suggested'
+            ? proposal.sourceResult.suggestionId
+            : null;
+    const proposedSource = proposedSourceId
+        ? proposal?.sourceSuggestions?.find(
+              (suggestion) => suggestion.id === proposedSourceId,
+          )
+        : undefined;
+    const sourceReviewRequired = Boolean(
+        proposedSource &&
+        !hiddenSuggestionIds.has(proposedSource.id) &&
+        !reviewedSuggestionIds.has(proposedSource.id) &&
+        availableSuggestions.some(
+            (suggestion) =>
+                suggestion.field !== 'source' &&
+                'basisSource' in suggestion &&
+                suggestion.basisSource === proposedSource.value,
+        ),
+    );
 
     function acceptSuggestion(
         field: DictionaryCardAuthoringField,
@@ -328,6 +348,7 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         isLatestVersion,
         generatingScope,
         reviewedSuggestionIds,
+        sourceReviewRequired,
         validSource,
         validValues,
         validTranslationContext,
