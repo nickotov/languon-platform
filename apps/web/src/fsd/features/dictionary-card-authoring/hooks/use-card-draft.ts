@@ -11,7 +11,7 @@ import {
     cardAuthoringProposalKey,
     cardAuthoringSuggestionIds,
     cardDraftChanged,
-    createDraftVersion,
+    createDraftVersionState,
     type DraftVersion,
     type DraftVersionState,
 } from '../lib/card-draft-versions';
@@ -26,11 +26,9 @@ export function useCardDraft({
     const cardResetKey = card
         ? `${card.id}:${card.version}:${card.settingsVersion}`
         : 'new';
-    const [versions, setVersions] = useState<DraftVersionState>(() => ({
-        activeIndex: 0,
-        awaitingSuccessor: false,
-        items: [createDraftVersion(card, incomingProposal)],
-    }));
+    const [versions, setVersions] = useState<DraftVersionState>(() =>
+        createDraftVersionState(card, incomingProposal),
+    );
     const activeVersion = versions.items[versions.activeIndex]!;
 
     const dirty = useMemo(
@@ -43,11 +41,7 @@ export function useCardDraft({
     }, [dirty, onDirtyChange]);
 
     useEffect(() => {
-        setVersions({
-            activeIndex: 0,
-            awaitingSuccessor: false,
-            items: [createDraftVersion(card, incomingProposal)],
-        });
+        setVersions(createDraftVersionState(card, incomingProposal));
     }, [cardResetKey]);
 
     useEffect(() => {
@@ -83,7 +77,7 @@ export function useCardDraft({
                 selectedSuggestions,
             };
 
-            if (current.awaitingSuccessor && latest.proposal) {
+            if (current.awaitingSuccessor) {
                 return {
                     activeIndex: current.items.length,
                     awaitingSuccessor: false,

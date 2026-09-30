@@ -215,10 +215,11 @@ silently overwrite or replay a stale edit.
    generated. For an isolated count noun in a language with grammatical gender,
    expect the normalized value to expose gender through its natural article, or
    a compact gender marker when the article is unavailable or ambiguous; for
-   example, French `parasol` becomes `le parasol`. A bare noun that omits this
-   required gender signal is not treated as already canonical. Other already
-   canonical Sources report that they are unchanged and keep their input
-   available.
+   example, French `but` becomes `le but` and `parasol` becomes `le parasol`.
+   Resolve ambiguous spellings using the configured Source language rather than
+   another language’s common meaning. A bare noun that omits this required gender
+   signal is not treated as already canonical. Other already canonical Sources
+   report that they are unchanged and keep their input available.
 2. Review a proposed Source in the input's place. **Accept** restores an editable
    Source input containing the canonical value. **Reject** restores the exact
    previous draft value. Generate Translation and expect one coherent request to
@@ -229,15 +230,22 @@ silently overwrite or replay a stale edit.
    options** rather than showing second manual inputs.
 3. Select **Generate all**, or **Regenerate all fields** after a proposal
    exists, to normalize Source and generate every enabled field from that
-   normalized basis. Dependent suggestions remain unavailable until a changed
-   Source is accepted. A prominent **Review Source first** notice explains that
-   the other suggestions use the proposed Source and that the owner must accept
-   or reject Source before using or regenerating them. Rejecting Source restores
-   the previous Source and clears suggestions based on the rejected value.
-   **Accept all** accepts Source first and then compatible fields; **Reject all**
-   restores every affected input.
+   normalized basis. This action is available for a populated saved card without
+   requiring a manual field edit, including after adding or changing card
+   context. If the provider repeats a current or earlier non-Source value, treat
+   that field as unchanged while keeping every novel field from the same
+   response reviewable; one stable value must not fail the whole generation.
+   Dependent suggestions remain unavailable until a changed Source is accepted.
+   A prominent **Review Source first** notice explains that the other suggestions
+   use the proposed Source and that the owner must accept or reject Source before
+   using or regenerating them. Rejecting Source restores the previous Source and
+   clears suggestions based on the rejected value. **Accept all** accepts Source
+   first and then compatible fields; **Reject all** restores every affected
+   input.
    Example translation cannot be generated until Example contains text.
-4. Every successful **Try another**, field regeneration, or **Regenerate all
+4. The first generation of any field on a persisted card keeps the exact
+   pre-generation form as local version 1 and opens the AI review as version 2.
+   Every later successful **Try another**, field regeneration, or **Regenerate all
    fields** action keeps the preceding complete form as a local version and opens
    the new version. Use the previous/next arrows and version counter in the footer
    to switch the whole draft and its review state without another request. Saving
@@ -492,10 +500,11 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
   without draft loss, retained alternatives, whole-form version navigation,
   coherent whole-set acceptance, responsive layout, and one mixed-authorship
   atomic save through the real web/API/worker/PostgreSQL stack.
-- `saved-card-inline-ai-authoring-preserves-advanced-rewrite` proves inline
-  field generation, rejection restoration, accepted edit persistence, and mixed
-  authorship for a saved card while the separate advanced whole-card rewrite
-  remains accessible.
+- `saved-card-inline-ai-authoring-preserves-advanced-rewrite` proves a populated
+  saved card can add context and generate all fields without a manual field edit,
+  preserve the original form as version 1, switch back to the version 2 review,
+  restore rejected values, persist an accepted edit with mixed authorship, and
+  retain access to the separate advanced whole-card rewrite.
 - `batch-generation-review-commits-selected-cards` proves server-owned line
   parsing, deterministic chunked generation, persisted review restoration,
   row-level failure/duplicate handling, candidate editing and selection, and one

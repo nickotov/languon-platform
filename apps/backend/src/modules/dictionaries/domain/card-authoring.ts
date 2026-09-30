@@ -766,34 +766,35 @@ export function validateDictionaryCardAuthoringProviderDelta(
     const requestedValueFields = input.requestedFields.filter(
         (field) => field !== 'source',
     );
-    if (
-        fields.length !== requestedValueFields.length ||
-        requestedValueFields.some((field) => !fields.includes(field))
-    )
+    if (fields.some((field) => !requestedValueFields.includes(field)))
         throw new Error(
-            'Card authoring provider must return every requested field exactly once.',
+            'Card authoring provider must not return unrequested fields.',
         );
-    for (const suggestion of delta.suggestions) {
+    const suggestions = delta.suggestions.filter((suggestion) => {
         const context = input.fieldContext.find(
             (entry) => entry.field === suggestion.field,
         )!;
-        if (
-            suggestion.value === context.currentValue ||
-            context.excludedValues.includes(suggestion.value)
-        )
-            throw new Error(
-                'Card authoring provider suggestion must be distinct.',
-            );
-    }
+        return (
+            suggestion.value !== context.currentValue &&
+            !context.excludedValues.includes(suggestion.value)
+        );
+    });
+    let sourceResult = delta.sourceResult;
     if (
         delta.sourceResult?.kind === 'suggested' &&
-        (delta.sourceResult.value === input.source ||
-            input.fieldContext
-                .find((entry) => entry.field === 'source')
-                ?.excludedValues.includes(delta.sourceResult.value))
+        delta.sourceResult.value === input.source
     )
-        throw new Error('Card authoring Source suggestion must be distinct.');
-    return delta;
+        sourceResult = { kind: 'unchanged' };
+    else if (
+        delta.sourceResult?.kind === 'suggested' &&
+        input.fieldContext
+            .find((entry) => entry.field === 'source')
+            ?.excludedValues.includes(delta.sourceResult.value)
+    )
+        throw new Error(
+            'Card authoring Source suggestion must not repeat an earlier alternative.',
+        );
+    return { ...delta, sourceResult, suggestions };
 }
 
 export type DictionaryCardAuthoringField = z.infer<

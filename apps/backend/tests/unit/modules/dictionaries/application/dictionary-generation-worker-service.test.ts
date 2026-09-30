@@ -137,7 +137,7 @@ function store(overrides: Partial<DictionaryGenerationStore> = {}) {
 }
 
 describe('DictionaryGenerationWorkerService', () => {
-    it('dispatches card authoring to its provider and completes with a validated field delta under the claimed budget', async () => {
+    it('dispatches card authoring and completes with only novel fields from a partial delta', async () => {
         const generationStore = store({
             claim: vi.fn(async () => ({
                 attempt: 1,
@@ -155,11 +155,7 @@ describe('DictionaryGenerationWorkerService', () => {
                     { field: 'translation' as const, value: 'bonjour' },
                     {
                         field: 'example' as const,
-                        value: 'Hello, my friend.',
-                    },
-                    {
-                        field: 'exampleTranslation' as const,
-                        value: 'Bonjour, mon ami.',
+                        value: 'Hello there.',
                     },
                 ],
             },
@@ -225,14 +221,7 @@ describe('DictionaryGenerationWorkerService', () => {
         expect(generationStore.complete).toHaveBeenCalledWith(
             expect.objectContaining({
                 proposal: {
-                    suggestions: [
-                        { field: 'translation', value: 'bonjour' },
-                        { field: 'example', value: 'Hello, my friend.' },
-                        {
-                            field: 'exampleTranslation',
-                            value: 'Bonjour, mon ami.',
-                        },
-                    ],
+                    suggestions: [{ field: 'translation', value: 'bonjour' }],
                 },
                 providerUsage: { inputTokens: 80, outputTokens: 24 },
             }),
@@ -389,7 +378,6 @@ describe('DictionaryGenerationWorkerService', () => {
                 ],
             },
         },
-        { name: 'missing requested output', delta: { suggestions: [] } },
     ])(
         'terminally sanitizes $name and settles valid returned usage',
         async ({ delta }) => {

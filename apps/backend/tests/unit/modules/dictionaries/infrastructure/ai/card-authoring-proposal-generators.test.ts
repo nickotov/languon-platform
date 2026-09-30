@@ -153,24 +153,36 @@ describe('dictionary card authoring proposal generators', () => {
         ).rejects.toBeInstanceOf(CardAuthoringProposalGeneratorExecutionError);
     });
 
-    it('rejects missing requested fields and current or excluded duplicates', async () => {
-        const missing = new DeterministicCardAuthoringProposalGenerator(() => ({
-            suggestions: [],
+    it('retains novel fields when requested fields are missing or repeated', async () => {
+        const partial = new DeterministicCardAuthoringProposalGenerator(() => ({
+            suggestions: [
+                { field: 'definition', value: 'A new contextual definition.' },
+            ],
         }));
-        await expect(missing.generate(request())).rejects.toMatchObject({
-            category: 'invalid_model_output',
+        await expect(partial.generate(request())).resolves.toMatchObject({
+            delta: {
+                suggestions: [
+                    {
+                        field: 'definition',
+                        value: 'A new contextual definition.',
+                    },
+                ],
+            },
         });
 
-        const duplicate = new DeterministicCardAuthoringProposalGenerator(
+        const repeated = new DeterministicCardAuthoringProposalGenerator(
             () => ({
                 suggestions: [
                     { field: 'translation', value: 'banco' },
-                    { field: 'definition', value: 'old definition' },
+                    {
+                        field: 'definition',
+                        value: 'A new contextual definition.',
+                    },
                 ],
             }),
         );
         await expect(
-            duplicate.generate({
+            repeated.generate({
                 ...request(),
                 input: {
                     ...request().input,
@@ -183,7 +195,112 @@ describe('dictionary card authoring proposal generators', () => {
                         {
                             field: 'definition',
                             currentValue: null,
-                            excludedValues: ['old definition'],
+                            excludedValues: [],
+                        },
+                    ],
+                },
+            }),
+        ).resolves.toMatchObject({
+            delta: {
+                suggestions: [
+                    {
+                        field: 'definition',
+                        value: 'A new contextual definition.',
+                    },
+                ],
+            },
+        });
+        await expect(
+            repeated.generate({
+                ...request(),
+                input: {
+                    ...request().input,
+                    fieldContext: [
+                        {
+                            field: 'translation',
+                            currentValue: 'la banca',
+                            excludedValues: ['banco'],
+                        },
+                        {
+                            field: 'definition',
+                            currentValue: null,
+                            excludedValues: [],
+                        },
+                    ],
+                },
+            }),
+        ).resolves.toMatchObject({
+            delta: {
+                suggestions: [
+                    {
+                        field: 'definition',
+                        value: 'A new contextual definition.',
+                    },
+                ],
+            },
+        });
+    });
+
+    it('treats a repeated current Source as unchanged', async () => {
+        const generator = new DeterministicCardAuthoringProposalGenerator(
+            () => ({
+                sourceResult: { kind: 'suggested', value: 'bank' },
+                suggestions: [
+                    { field: 'translation', value: 'entidad bancaria' },
+                ],
+            }),
+        );
+        const base = request(['source', 'translation']);
+        await expect(
+            generator.generate({
+                ...base,
+                input: {
+                    ...base.input,
+                    fieldContext: [
+                        {
+                            field: 'source',
+                            currentValue: 'bank',
+                            excludedValues: [],
+                        },
+                        {
+                            field: 'translation',
+                            currentValue: 'banco',
+                            excludedValues: [],
+                        },
+                    ],
+                },
+            }),
+        ).resolves.toMatchObject({
+            delta: {
+                sourceResult: { kind: 'unchanged' },
+                suggestions: [
+                    { field: 'translation', value: 'entidad bancaria' },
+                ],
+            },
+        });
+
+        const historicalSource =
+            new DeterministicCardAuthoringProposalGenerator(() => ({
+                sourceResult: { kind: 'suggested', value: 'the bank' },
+                suggestions: [
+                    { field: 'translation', value: 'entidad bancaria' },
+                ],
+            }));
+        await expect(
+            historicalSource.generate({
+                ...base,
+                input: {
+                    ...base.input,
+                    fieldContext: [
+                        {
+                            field: 'source',
+                            currentValue: 'bank',
+                            excludedValues: ['the bank'],
+                        },
+                        {
+                            field: 'translation',
+                            currentValue: 'banco',
+                            excludedValues: [],
                         },
                     ],
                 },

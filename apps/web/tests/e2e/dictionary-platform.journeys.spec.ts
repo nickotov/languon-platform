@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:df00e31b9a58527a
+// @user-flow-revision dictionary-platform sha256:06535b610bc884d6
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -1466,13 +1466,27 @@ test.describe('dictionary platform journeys', () => {
             name: /^Translation \(/,
         });
         await expect(translation).toHaveValue('obra de arte');
+        await editor.getByLabel('Set context').check();
         await editor
-            .getByRole('button', { name: 'Generate Translation with AI' })
-            .click();
+            .getByRole('textbox', { name: /Card context/ })
+            .fill('A gallery discussing the meaning of an artwork.');
+        await editor.getByRole('button', { name: 'Generate all' }).click();
         const review = editor.getByTestId('ai-review-translation');
         await expect(
             review.getByText('work of art (es)', { exact: true }),
         ).toBeVisible({ timeout: 20_000 });
+        await expect(editor.getByText('Version 2 of 2')).toBeVisible();
+        await editor
+            .getByRole('button', { name: 'Previous form version' })
+            .click();
+        await expect(editor.getByText('Version 1 of 2')).toBeVisible();
+        await expect(translation).toHaveValue('obra de arte');
+        await expect(
+            editor.getByRole('button', { name: 'Generate all' }),
+        ).toBeDisabled();
+        await editor.getByRole('button', { name: 'Next form version' }).click();
+        await expect(editor.getByText('Version 2 of 2')).toBeVisible();
+        await expect(review).toBeVisible();
         await expect(translation).toHaveCount(0);
         await review
             .getByRole('button', { name: 'Reject Translation suggestion' })

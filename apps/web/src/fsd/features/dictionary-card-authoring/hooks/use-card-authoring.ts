@@ -11,7 +11,7 @@ import { discardedSuggestionIdsForPredecessor } from '../lib/authoring-job-clean
 import { isValidCardAuthoringSource } from '../lib/valid-authoring-source';
 
 export function useCardAuthoring(props: DictionaryCardFormProps) {
-    const { ai, dictionary, onSave, existingSources = [] } = props;
+    const { ai, card, dictionary, onSave, existingSources = [] } = props;
     const state = useCardDraft(props);
     const {
         draft,
@@ -306,8 +306,9 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         )
             return;
         const successor = Boolean(proposal) && !stale;
+        const createsVersion = Boolean(card) || successor;
         setGeneratingScope(scope);
-        if (successor) beginSuccessor();
+        if (createsVersion) beginSuccessor();
         try {
             await ai.onAction({
                 discardedSuggestionIds: discardedSuggestionIdsForPredecessor(
@@ -320,7 +321,7 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
                 successor,
             });
         } catch {
-            if (successor) cancelSuccessor();
+            if (createsVersion) cancelSuccessor();
             setGeneratingScope(null);
             // The owning orchestration renders a safe recoverable error.
         }

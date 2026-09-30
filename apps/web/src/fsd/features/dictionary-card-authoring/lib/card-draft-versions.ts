@@ -62,6 +62,25 @@ export function createDraftVersion(
     };
 }
 
+export function createDraftVersionState(
+    card: DictionaryCardFormProps['card'],
+    proposal: DictionaryCardAuthoringProposal | null,
+): DraftVersionState {
+    const proposalVersion = createDraftVersion(card, proposal);
+    if (!card || !proposal)
+        return {
+            activeIndex: 0,
+            awaitingSuccessor: false,
+            items: [proposalVersion],
+        };
+
+    return {
+        activeIndex: 1,
+        awaitingSuccessor: false,
+        items: [createDraftVersion(card, null), proposalVersion],
+    };
+}
+
 export function cardDraftChanged(
     draft: DictionaryCardDraft,
     card: DictionaryCardFormProps['card'],

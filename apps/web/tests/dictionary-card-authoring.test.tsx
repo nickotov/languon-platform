@@ -688,7 +688,7 @@ describe('dictionary settings and card authoring', () => {
                 name: 'Accept Example translation suggestion',
             }),
         );
-        expect(screen.queryByText(/Version 1 of/)).not.toBeInTheDocument();
+        expect(screen.getByText('Version 2 of 2')).toBeVisible();
 
         await user.click(
             screen.getByRole('button', {
@@ -702,7 +702,7 @@ describe('dictionary settings and card authoring', () => {
                 successor: true,
             }),
         );
-        expect(await screen.findByText('Version 2 of 2')).toBeVisible();
+        expect(await screen.findByText('Version 3 of 3')).toBeVisible();
         expect(screen.getByTestId('ai-review-example')).toHaveTextContent(
             'They chose a medium suitcase.',
         );
@@ -730,7 +730,7 @@ describe('dictionary settings and card authoring', () => {
         await user.click(
             screen.getByRole('button', { name: 'Previous form version' }),
         );
-        expect(screen.getByText('Version 1 of 2')).toBeVisible();
+        expect(screen.getByText('Version 2 of 3')).toBeVisible();
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'The room is medium-sized.',
         );
@@ -766,12 +766,102 @@ describe('dictionary settings and card authoring', () => {
         await user.click(
             screen.getByRole('button', { name: 'Next form version' }),
         );
+        expect(screen.getByText('Version 3 of 3')).toBeVisible();
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'They chose a medium suitcase.',
         );
         expect(
             screen.getByRole('button', { name: 'Next form version' }),
         ).toBeDisabled();
+    });
+
+    it('creates version 2 for the first AI generation on a saved card', async () => {
+        const user = userEvent.setup();
+        const onAction = vi.fn();
+        const sourceSuggestionId = '49000000-0000-4000-8000-000000000001';
+
+        function SavedCardGenerationHarness() {
+            const [proposal, setProposal] = useState<NonNullable<
+                NonNullable<
+                    ComponentProps<typeof DictionaryCardForm>['ai']
+                >['proposal']
+            > | null>(null);
+
+            async function handleAction(
+                action: Parameters<
+                    NonNullable<
+                        ComponentProps<typeof DictionaryCardForm>['ai']
+                    >['onAction']
+                >[0],
+            ) {
+                onAction(action);
+                if (action.kind === 'generate')
+                    setProposal({
+                        source: 'but',
+                        sourceResult: {
+                            kind: 'suggested',
+                            suggestionId: sourceSuggestionId,
+                        },
+                        sourceSuggestions: [
+                            {
+                                field: 'source',
+                                id: sourceSuggestionId,
+                                value: 'le but',
+                            },
+                        ],
+                        suggestions: [],
+                        translationContext: null,
+                    });
+            }
+
+            return (
+                <DictionaryCardForm
+                    ai={{
+                        available: true,
+                        format: 'card-authoring:v3',
+                        onAction: handleAction,
+                        pending: false,
+                        proposal,
+                    }}
+                    card={{
+                        ...card,
+                        values: { ...card.values, source: 'but' },
+                    }}
+                    dictionary={dictionary}
+                    languages={languages}
+                    onCancel={vi.fn()}
+                    onSave={vi.fn().mockResolvedValue(undefined)}
+                    pending={false}
+                />
+            );
+        }
+
+        render(<SavedCardGenerationHarness />);
+        expect(screen.queryByText(/Version 1 of/)).not.toBeInTheDocument();
+
+        await user.click(
+            screen.getByRole('button', { name: 'Generate Source with AI' }),
+        );
+
+        expect(onAction).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: { field: 'source', kind: 'field' },
+                successor: false,
+            }),
+        );
+        expect(await screen.findByText('Version 2 of 2')).toBeVisible();
+        expect(screen.getByTestId('ai-review-source')).toHaveTextContent(
+            'le but',
+        );
+
+        await user.click(
+            screen.getByRole('button', { name: 'Previous form version' }),
+        );
+        expect(screen.getByText('Version 1 of 2')).toBeVisible();
+        expect(
+            screen.getByRole('textbox', { name: /Source word or phrase/ }),
+        ).toHaveValue('but');
+        expect(screen.queryByTestId('ai-review-source')).toBeNull();
     });
     it.each([
         ['provider_rate_limited', 'dictionary.authoring.rateLimited'],

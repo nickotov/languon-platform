@@ -30,6 +30,10 @@ describe('local prompts', () => {
         expect(prompt).toContain('grammatical gender');
         expect(prompt).toContain('must expose its grammatical gender');
         expect(prompt).toContain('French `parasol` must become `le parasol`');
+        expect(prompt).toContain('French `but` must become `le but`');
+        expect(prompt).toContain(
+            'Do not reinterpret a Source token as another language',
+        );
         expect(prompt).toContain(
             'A bare isolated count noun is not already suitable',
         );
@@ -39,6 +43,9 @@ describe('local prompts', () => {
         expect(prompt).toContain('server assigns stable identities');
         expect(prompt).toContain(
             'distinct from its current and excluded values',
+        );
+        expect(prompt).toContain(
+            'omit that field instead of repeating a value or failing the whole response',
         );
         expect(prompt).toContain('Do not use tools');
     });
