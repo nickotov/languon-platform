@@ -91,6 +91,28 @@ describe('dictionary text provider router', () => {
         expect(legacy.card.generate).not.toHaveBeenCalled();
     });
 
+    it('keeps an older pinned revision compatible after additive format expansion', () => {
+        const pinned = providers('pinned');
+        const factory = vi.fn(() => pinned);
+        const router = new DictionaryTextProviderRouter({
+            credentials: { DEEPSEEK_API_KEY: 'deepseek-test-key' },
+            factory,
+        });
+        const execution = snapshot(0, {
+            supportedFormats: [
+                'single-card:v1',
+                'card-authoring:v1',
+                'card-authoring:v2',
+                'pasted-terms:v1',
+                'import-pairs:v1',
+                'document-terms:v1',
+            ],
+        });
+
+        expect(router.resolve(execution, budget)).toBe(pinned);
+        expect(factory).toHaveBeenCalledOnce();
+    });
+
     it('routes pinned jobs by immutable snapshot and caches bounded configurations', async () => {
         const deepseek = providers('deepseek');
         const kie = providers('kie');
@@ -133,6 +155,12 @@ describe('dictionary text provider router', () => {
             snapshot(0, { adapterRevision: 'openai-compatible:v2' }),
             snapshot(0, { perCallMaxOutputTokens: 40_960 }),
             snapshot(0, { enabledModelIds: [] }),
+            snapshot(0, {
+                supportedFormats: [
+                    ...dictionaryAiModelCatalog[0]!.supportedFormats,
+                    'future-format:v1',
+                ],
+            }),
         ]) {
             expect(() => router.resolve(invalid, budget)).toThrow(
                 /snapshot is unsupported/i,

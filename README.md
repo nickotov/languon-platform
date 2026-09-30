@@ -151,6 +151,11 @@ lifecycle immediately because the API and worker are restarted together. See
 for deployment gates and [ADR-0012](docs/adr/0012-dictionary-worker-and-document-ingestion.md)
 for the authoritative compatibility policy.
 
+An existing managed AI provider revision does not need to be resaved after an
+additive job-format release. Its pinned format list remains compatible while all
+formats it originally supported are still present in the current code-owned
+model catalog. Removing support remains a drain-and-retire operation.
+
 The endpoint must provide an
 OpenAI-compatible API and the model must support the structured output used by
 dictionary generation. Generic legacy endpoints require `GET /models`; curated

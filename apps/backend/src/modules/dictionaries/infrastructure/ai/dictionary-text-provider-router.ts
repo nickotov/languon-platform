@@ -191,7 +191,7 @@ function validateExecutionSnapshot(
         snapshot.perCallMaxInputTokens !== model.perCallMaxInputTokens ||
         snapshot.perCallMaxOutputTokens !== model.perCallMaxOutputTokens ||
         !snapshot.enabledModelIds.includes(snapshot.modelId) ||
-        !sameStringSet(snapshot.supportedFormats, model.supportedFormats) ||
+        !isStringSubset(snapshot.supportedFormats, model.supportedFormats) ||
         (snapshot.creditPricing !== undefined &&
             !dictionaryAiCreditPricingMatches(
                 snapshot.creditPricing,
@@ -220,16 +220,15 @@ function sameBudget(
     );
 }
 
-function sameStringSet(
-    left: readonly string[],
-    right: readonly string[],
+function isStringSubset(
+    required: readonly string[],
+    supported: readonly string[],
 ): boolean {
-    return (
-        left.length === right.length &&
-        [...left]
-            .sort()
-            .every((value, index) => value === [...right].sort()[index])
-    );
+    // A newer release may add code-reviewed formats to the same model. Older
+    // revisions remain valid, but rollback workers still reject revisions that
+    // require a format absent from their catalog.
+    const supportedValues = new Set(supported);
+    return required.every((value) => supportedValues.has(value));
 }
 
 function stableSnapshotKey(snapshot: DictionaryAiExecutionSnapshot): string {
