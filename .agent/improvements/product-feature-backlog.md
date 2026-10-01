@@ -22,8 +22,10 @@ Updated: 2026-10-01
 - Current behaviour: the approved backlog and clarifications exist in conversation only.
 - Expected behaviour: `docs/backlog.md` preserves confirmed requirements, baseline
   facts with source links, per-task unresolved decisions, and dependencies.
-- In scope: backlog, README discovery link, and this improvement record.
-- Out of scope: application implementation, technical design, new ADRs, executable
+- In scope: backlog, README discovery link, the agreed task 1 implementation plan,
+  and this improvement record. The follow-up saves a technical plan without
+  implementing it.
+- Out of scope: application implementation, new ADRs, executable
   journey documentation, branches, commits, and model/service calls.
 - Relevant constraints: distinguish local form versions from persisted card revisions;
   immediate generation saving from draft auto-application; reusable exercises from
@@ -41,6 +43,9 @@ Updated: 2026-10-01
 - AC-2 — Crucial baseline findings have repository source links, and open product
   or technical decisions are deferred explicitly rather than invented.
 - AC-3 — README links to the backlog; relative links, formatting, and diff hygiene pass.
+- AC-4 — The task 1 follow-up preserves agreed behaviour, repository constraints,
+  implementation sequence, recovery semantics, and verification requirements;
+  the backlog links it and all product entries remain unimplemented.
 
 ## Plan
 
@@ -48,6 +53,7 @@ Updated: 2026-10-01
 - [x] Save the backlog and README discovery link.
 - [x] Verify task/decision coverage, relative links, and Markdown formatting.
 - [x] Review the final scoped diff and record completion evidence.
+- [x] Save and verify the detailed task 1 plan and synchronize resolved backlog decisions.
 
 ## Verification
 
@@ -84,5 +90,27 @@ Updated: 2026-10-01
 
 ## Remaining risks
 
+### Detailed task 1 plan follow-up — 2026-10-01
+
+- Saved `docs/inline-ai-auto-accept-plan.md` and linked it from BL-001. Preserved
+  full-form automatic saving, explicit new-entry Create, session-local preview
+  history and explicit restoration, the Source-only first-generation exception,
+  paused editing, whole-form-only history, and inline-only scope.
+- Recorded existing implementation seams, proposal/provenance constraints,
+  retry/readback/conflict handling, session guards, bounded history cleanup,
+  implementation steps, and future automated/browser/E2E verification.
+- AC-4 author preflight: pass. Task 1 and responsive task 2 remain unimplemented;
+  no runtime, user-flow guide, API, schema, or trusted workflow changes.
+- Scoped Prettier check: pass for the plan, backlog, and this record.
+- One-off Node assertions: pass — 24 local link targets exist, nine backlog
+  entries and ten Backlog markers remain, and the new plan is marked Planned.
+- `git diff --check`: pass. Independent/security review and runtime verification
+  are not triggered for this prose-only follow-up. No commit was requested for
+  this follow-up; the earlier backlog commit is separate.
+
+### Outstanding delivery risks
+
 - Backlog requirements are intentionally high level; each delivery must resolve
   its recorded open decisions and recheck the repository baseline.
+- The detailed plan's proposed implementation and verification have not been
+  executed; its technical baseline must be rechecked when delivery starts.

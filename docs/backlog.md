@@ -58,20 +58,35 @@ prohibit temporary interaction state during a practice session.
 Status: Backlog
 Original tasks: 1–2
 
+Detailed plan for original task 1:
+[AI auto-accept and regeneration controls](inline-ai-auto-accept-plan.md).
+The plan is agreed preparation, not an implemented feature. Task 2 (responsive
+columns) remains separate and unimplemented.
+
 ### Confirmed requirements
 
 - Apply successfully generated field values automatically, without an Accept or
   Reject step. Remove the corresponding field and bulk acceptance/rejection controls.
 - Show an AI generation action on empty fields. If a field already contains a
   value, replace the plain AI action with a regeneration action bearing an AI symbol.
-- For an existing entry, successful generation saves the generated changes
-  immediately. This is an explicit change to persistence behaviour, not just
+- For an existing entry, successful generation saves the complete visible form,
+  including preceding unsaved manual edits, and keeps the editor open.
+  This is an immediate change to persistence behaviour, not just
   automatic population of an unsaved draft.
 - For a new entry, generation fills the form, but Create remains explicit.
 - Preserve the preceding version whenever successful field or whole-form
   regeneration creates a new version. First generation on an existing entry
   preserves its pre-generation form as version 1 and opens version 2; subsequent
   regenerations append further versions.
+- For a new entry's first generation, preserve version 1 only if a non-Source
+  content field already has a non-whitespace value. Source-only initial drafts
+  receive their first generated content in version 1.
+- Version navigation previews local form history without writing. Explicit Save
+  restores the displayed version; history disappears on close/reload. Use only
+  whole-form history, not previous field-option pickers.
+- During generation/automatic saving, pause editing and version navigation;
+  generation cancellation remains available. Inline Add/Edit is the only scope;
+  advanced rewrite, batch, document, and import review flows remain unchanged.
 - Place source and translation in two columns on wide screens in both the
   Add/Edit form and dictionary card list. Stack them on small screens.
 
@@ -101,17 +116,11 @@ Saving must preserve existing ownership checks, optimistic dictionary/settings/c
 conflict checks, server-computed authorship, provenance, and retry-safe mutations.
 Invalid or failed generation must not become a successful saved change.
 
-### Resolve before implementation
+### Remaining preparation
 
-- Whether version navigation previews prior content or restores saved content,
-  and whether restoration/history should survive closing or reloading.
-- How immediate saving interacts with other unsaved manual edits, concurrent
-  updates, cancellation, partial/unchanged results, and failed save requests.
-- How Source and its dependent fields are validated and saved coherently when
-  the Source review gate disappears.
-- Whether control changes also affect the separate advanced custom-instruction
-  whole-card rewrite. Batch/document/import reviews are separate existing flows;
-  their automatic acceptance is not established by this backlog.
+- Follow the linked task 1 plan for coherent Source application, full-form saving,
+  version/provenance handling, cancellation, conflicts, and retry-safe recovery.
+  Recheck implementation seams against the current repository before delivery.
 - Exact responsive presentation and breakpoints, using existing runtime UI patterns.
 
 ### Acceptance scenarios to refine
