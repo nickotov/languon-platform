@@ -20,6 +20,7 @@ export function useCardMutation({
     requestWithSession,
     dictionary,
     cards,
+    editingSession,
     queueCardAuthoringCleanup,
 }: Pick<
     ReturnType<typeof useEditorState>,
@@ -33,6 +34,7 @@ export function useCardMutation({
     | 'authoringAttempt'
     | 'dictionaryId'
     | 'requestWithSession'
+    | 'editingSession'
 > &
     Pick<ReturnType<typeof useEditorQueries>, 'dictionary' | 'cards'> &
     Pick<ReturnType<typeof useAuthoringCleanup>, 'queueCardAuthoringCleanup'>) {
@@ -69,9 +71,12 @@ export function useCardMutation({
                 }),
             );
         },
-        onSuccess: async (response, input) => {
+        onMutate: () => ({ session: editingSession.current }),
+        onSuccess: async (response, input, attempt) => {
+            if (attempt?.session !== editingSession.current) return;
             setGenerationCompared(false);
             await queueCardAuthoringCleanup();
+            if (attempt.session !== editingSession.current) return;
             setAuthoringJobId(null);
             setAuthoringReviewJob(null);
             authoringAttempt.current = null;

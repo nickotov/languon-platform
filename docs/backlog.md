@@ -60,8 +60,10 @@ Original tasks: 1–2
 
 Detailed plan for original task 1:
 [AI auto-accept and regeneration controls](inline-ai-auto-accept-plan.md).
-The plan is agreed preparation, not an implemented feature. Task 2 (responsive
-columns) remains separate and unimplemented.
+Original task 1 is implemented and verified; see the
+[delivery record](../.agent/improvements/inline-ai-auto-accept.md).
+Task 2 (responsive columns) remains separate and unimplemented, so BL-001 remains
+in Backlog until that work is delivered.
 
 ### Confirmed requirements
 
@@ -92,9 +94,11 @@ columns) remains separate and unimplemented.
 
 ### Existing behaviour and implementation context
 
-The [current dictionary guide](user-flows/dictionary-platform.md) requires explicit
-review and Save. [Inline AI Field Generation](../.agent/features/031-inline-ai-field-generation/FEATURE.md)
-introduced that flow and explicitly excluded automatic saving.
+The [current dictionary guide](user-flows/dictionary-platform.md) now describes
+inline automatic application/saving and local preview history. The earlier
+[Inline AI Field Generation](../.agent/features/031-inline-ai-field-generation/FEATURE.md)
+introduced explicit review and Save and excluded automatic saving; the linked
+delivery supersedes that inline behaviour, not the other review flows.
 
 [Form versions](../.agent/improvements/dictionary-card-authoring-form-versions.md)
 and [first saved-card generation versions](../.agent/improvements/saved-card-source-normalization-versions.md)
@@ -118,9 +122,9 @@ Invalid or failed generation must not become a successful saved change.
 
 ### Remaining preparation
 
-- Follow the linked task 1 plan for coherent Source application, full-form saving,
-  version/provenance handling, cancellation, conflicts, and retry-safe recovery.
-  Recheck implementation seams against the current repository before delivery.
+- Task 1 is delivered; preserve coherent Source application, full-form saving,
+  version/provenance handling, cancellation, conflicts, and retry-safe recovery
+  when delivering the remaining responsive layout work.
 - Exact responsive presentation and breakpoints, using existing runtime UI patterns.
 
 ### Acceptance scenarios to refine

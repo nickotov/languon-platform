@@ -631,7 +631,7 @@ export const fr = {
     'dictionary.conflict.reload': 'Recharger la version actuelle',
     'dictionary.authoring.aiSection': 'Suggestions de l’IA',
     'dictionary.authoring.generate': 'Tout générer',
-    'dictionary.authoring.generateField': 'IA',
+    'dictionary.authoring.generateField': 'Générer',
     'dictionary.authoring.generateFieldNamed': 'Générer {field} avec l’IA',
     'dictionary.authoring.generatingField': 'Génération de {field}…',
     'dictionary.authoring.aiSuggestion': 'Suggestion de l’IA',
@@ -654,8 +654,23 @@ export const fr = {
     'dictionary.authoring.exampleRequired':
         'Saisissez un exemple avant de générer sa traduction.',
     'dictionary.authoring.sourceUnchanged': 'La Source est déjà correcte.',
+    'dictionary.card.ai.savedRefreshFailed':
+        'Enregistrée, mais la carte mise à jour n’a pas pu être actualisée. Réessayez pour la recharger.',
+    'dictionary.authoring.retryRefresh': 'Réessayer l’actualisation',
+    'dictionary.authoring.noChanges': 'Aucune modification à enregistrer.',
     'dictionary.authoring.generateHelp':
-        'L’IA propose des valeurs sous chaque champ. Rien ne change avant votre acceptation.',
+        'Saisissez d’abord une Source. L’IA remplit automatiquement les champs et enregistre tout le formulaire des cartes existantes. Les nouvelles cartes nécessitent Créer.',
+    'dictionary.card.create': 'Créer la carte',
+    'dictionary.card.close': 'Fermer',
+    'dictionary.authoring.autoSaving': 'Enregistrement du contenu généré…',
+    'dictionary.authoring.autoSaved': 'Contenu généré enregistré.',
+    'dictionary.authoring.autoSaveFailed':
+        'L’enregistrement automatique n’a pas abouti. Réessayez sans régénérer.',
+    'dictionary.authoring.retrySave': 'Réessayer l’enregistrement',
+    'dictionary.authoring.candidateInvalid':
+        'Le contenu généré n’est pas enregistré. Corrigez les champs requis ou invalides, puis enregistrez.',
+    'dictionary.authoring.createRequired':
+        'Le contenu généré n’est pas encore enregistré. Sélectionnez Créer la carte pour le conserver.',
     'dictionary.authoring.regenerateAll': 'Régénérer tous les champs',
     'dictionary.authoring.progress': 'Progression des suggestions de l’IA',
     'dictionary.authoring.stage.queued': 'En attente de génération…',
@@ -669,10 +684,10 @@ export const fr = {
         'La source ou le contexte de traduction a changé. Ces suggestions ne correspondent plus à la carte et sont inutilisables.',
     'dictionary.authoring.suggestions': 'Suggestions de l’IA',
     'dictionary.authoring.suggestionsFor': 'Suggestions de l’IA pour {field}',
-    'dictionary.authoring.regenerateField': 'Régénérer le champ',
+    'dictionary.authoring.regenerateField': 'Régénérer',
     'dictionary.authoring.regenerateFieldNamed': 'Régénérer {field}',
     'dictionary.authoring.limitReached':
-        'Supprimez une suggestion avant d’en générer une autre.',
+        'Limite de génération atteinte. Créez cette carte ou fermez le brouillon et recommencez pour générer à nouveau.',
     'dictionary.authoring.accept': 'Accepter',
     'dictionary.authoring.accepted': 'Acceptée',
     'dictionary.authoring.acceptNamed': 'Accepter la suggestion pour {field}',

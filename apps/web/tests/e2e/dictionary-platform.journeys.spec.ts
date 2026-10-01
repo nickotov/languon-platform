@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:06535b610bc884d6
+// @user-flow-revision dictionary-platform sha256:9ef55194a69ad754
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -152,7 +152,7 @@ async function addPopulatedCard(
     await page
         .getByLabel(/^Example translation \(/)
         .fill('La galería adquirió la obra de arte.');
-    await page.getByRole('button', { name: 'Save card' }).click();
+    await page.getByRole('button', { name: 'Create card' }).click();
     await expect(page.getByText('work of art', { exact: true })).toBeVisible();
     const lockedSettings = await openDictionarySettings(page);
     await expect(
@@ -345,10 +345,14 @@ test.describe('dictionary platform journeys', () => {
         await page.getByRole('button', { name: 'Save card' }).click();
         const pendingEditor = cardEditor;
         await expect(
-            pendingEditor.getByRole('button', { name: 'Cancel' }).first(),
+            pendingEditor
+                .getByRole('button', { name: 'Close', exact: true })
+                .first(),
         ).toBeDisabled();
         await expect(
-            pendingEditor.getByRole('button', { name: 'Cancel' }).last(),
+            pendingEditor
+                .getByRole('button', { name: 'Close', exact: true })
+                .last(),
         ).toBeDisabled();
         await expect(addCard).toBeDisabled();
         releaseCardSave?.();
@@ -380,7 +384,7 @@ test.describe('dictionary platform journeys', () => {
             cardEditor.getByText(translationContext, { exact: true }),
         ).toBeVisible();
         await cardEditor
-            .getByRole('button', { name: 'Cancel' })
+            .getByRole('button', { name: 'Close', exact: true })
             .first()
             .click();
 
@@ -1214,9 +1218,10 @@ test.describe('dictionary platform journeys', () => {
     });
 
     // @user-flow dictionary-platform/inline-ai-card-authoring-preserves-field-choices
-    test('creates a mixed card from replacement inline AI field reviews', async ({
+    test('creates the displayed local version after automatic inline AI application', async ({
         page,
     }, testInfo) => {
+        test.setTimeout(90_000);
         const assertNoBrowserErrors = captureBrowserErrors(
             page,
             (path, status) => path === '/auth/sign-up' && status === 429,
@@ -1244,7 +1249,7 @@ test.describe('dictionary platform journeys', () => {
             .click();
 
         await page.getByRole('button', { name: 'Add card' }).click();
-        const editor = page.getByRole('dialog', { name: 'Add card' });
+        let editor = page.getByRole('dialog', { name: 'Add card' });
         await expect(
             editor.getByText(inheritedContext, { exact: true }),
         ).toBeVisible();
@@ -1259,160 +1264,60 @@ test.describe('dictionary platform journeys', () => {
         });
         await source.fill('teh atelier');
         await editor
-            .getByRole('button', { name: 'Generate Source with AI' })
+            .getByRole('button', { name: 'Regenerate Source', exact: true })
             .click();
-        const sourceReview = editor.getByTestId('ai-review-source');
+        await expect(source).toHaveValue('the atelier', { timeout: 20_000 });
         await expect(
-            sourceReview.getByText('the atelier', { exact: true }),
-        ).toBeVisible({ timeout: 20_000 });
-        await expect(
-            editor.getByRole('textbox', {
-                name: /^Source word or phrase \(/,
-            }),
+            editor.getByRole('navigation', { name: 'Card form versions' }),
         ).toHaveCount(0);
-        await sourceReview
-            .getByRole('button', { name: 'Reject Source suggestion' })
-            .click();
+        await expect(translation).toHaveValue('');
+        await expect(editor.getByTestId('ai-review-source')).toHaveCount(0);
         await expect(
-            editor.getByRole('textbox', {
-                name: /^Source word or phrase \(/,
-            }),
-        ).toHaveValue('teh atelier');
-        await editor
-            .getByRole('textbox', { name: /^Source word or phrase \(/ })
-            .fill('teh  atelier');
+            editor.getByRole('button', { name: /^(Accept|Reject)/ }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole('listitem').filter({ hasText: 'the atelier' }),
+        ).toHaveCount(0);
 
         await editor
-            .getByRole('button', { name: 'Generate Source with AI' })
+            .getByRole('button', {
+                name: 'Generate Translation with AI',
+                exact: true,
+            })
             .click();
-        await expect(sourceReview).toContainText('the atelier', {
+        await expect(translation).toHaveValue('the atelier (es)', {
             timeout: 20_000,
         });
-        await sourceReview
-            .getByRole('button', { name: 'Accept Source suggestion' })
-            .click();
+        await expect(definition).not.toHaveValue('');
         await expect(
-            editor.getByRole('textbox', {
-                name: /^Source word or phrase \(/,
-            }),
-        ).toHaveValue('the atelier');
+            editor.getByRole('textbox', { name: /^Context example \(/ }),
+        ).not.toHaveValue('');
+        await expect(
+            editor.getByRole('textbox', { name: /^Example translation \(/ }),
+        ).not.toHaveValue('');
+        await expect(editor.getByText('Version 2 of 2')).toBeVisible();
+        const displayedTranslation = await translation.inputValue();
         await editor
-            .getByRole('button', { name: 'Generate Source with AI' })
-            .click();
-        await expect(
-            editor.getByText('Source already looks correct.'),
-        ).toBeVisible({ timeout: 20_000 });
-        await expect(
-            editor.getByRole('textbox', {
-                name: /^Source word or phrase \(/,
-            }),
-        ).toHaveValue('the atelier');
-
-        await editor
-            .getByRole('button', { name: 'Generate Translation with AI' })
-            .click();
-        const translationReview = editor.getByTestId('ai-review-translation');
-        await expect(
-            translationReview.getByText('the atelier (es)', { exact: true }),
-        ).toBeVisible({ timeout: 20_000 });
-        await expect(editor.getByTestId('ai-review-definition')).toBeVisible();
-        await expect(editor.getByTestId('ai-review-example')).toBeVisible();
-        await expect(
-            editor.getByTestId('ai-review-exampleTranslation'),
-        ).toBeVisible();
-        await expect(
-            editor.getByRole('textbox', { name: /^Translation \(/ }),
-        ).toHaveCount(0);
-        await translationReview
-            .getByRole('button', { name: 'Try another Translation' })
-            .click();
-        await expect(
-            translationReview.getByText('the atelier (es) · alternative 1', {
+            .getByRole('button', {
+                name: 'Regenerate Translation',
                 exact: true,
-            }),
-        ).toBeVisible({ timeout: 20_000 });
-        await expect(editor.getByText('Version 4 of 4')).toBeVisible();
+            })
+            .click();
+        await expect(editor.getByText('Version 3 of 3')).toBeVisible({
+            timeout: 20_000,
+        });
+        await expect(translation).not.toHaveValue(displayedTranslation);
         await editor
             .getByRole('button', { name: 'Previous form version' })
             .click();
-        await expect(editor.getByText('Version 3 of 4')).toBeVisible();
-        await expect(
-            translationReview.getByText('the atelier (es)', { exact: true }),
-        ).toBeVisible();
+        await expect(editor.getByText('Version 2 of 3')).toBeVisible();
+        await expect(translation).toHaveValue(displayedTranslation);
         await expect(
             editor.getByRole('button', {
-                name: 'Try another Translation',
-            }),
-        ).toBeDisabled();
-        await editor.getByRole('button', { name: 'Next form version' }).click();
-        await expect(editor.getByText('Version 4 of 4')).toBeVisible();
-        await expect(
-            translationReview.getByText(/Previous AI option/),
-        ).toBeVisible();
-        await translationReview.getByText(/Previous AI option/).click();
-        await translationReview
-            .getByRole('button', { name: 'Accept Translation suggestion' })
-            .last()
-            .click();
-        await expect(
-            editor.getByRole('textbox', { name: /^Translation \(/ }),
-        ).toHaveValue('the atelier (es)');
-        await editor
-            .getByRole('button', { name: 'Generate Translation with AI' })
-            .click();
-        await expect(
-            translationReview.getByText('the atelier (es) · alternative 2', {
+                name: 'Regenerate Translation',
                 exact: true,
             }),
-        ).toBeVisible({ timeout: 20_000 });
-        await translationReview
-            .getByRole('button', { name: 'Accept Translation suggestion' })
-            .first()
-            .click();
-        await expect(
-            editor.getByRole('textbox', { name: /^Translation \(/ }),
-        ).toHaveValue('the atelier (es) · alternative 2');
-
-        await source.fill('teh atelier');
-        await editor
-            .getByRole('status')
-            .filter({
-                hasText:
-                    'The source phrase or translation context changed. These suggestions no longer match this card and cannot be used.',
-            })
-            .getByRole('button', { name: 'Regenerate all fields' })
-            .click();
-        await expect(editor.getByText('Review Source first')).toBeVisible({
-            timeout: 20_000,
-        });
-        const regeneratedSourceReview = editor.getByTestId('ai-review-source');
-        await expect(
-            regeneratedSourceReview.getByText('the atelier', { exact: true }),
-        ).toBeVisible();
-        await expect(
-            translationReview.getByRole('button', {
-                name: 'Accept Translation suggestion',
-            }),
         ).toBeDisabled();
-        await regeneratedSourceReview
-            .getByRole('button', { name: 'Accept Source suggestion' })
-            .click();
-        await expect(editor.getByText('Review Source first')).toHaveCount(0);
-        await expect(
-            translationReview.getByRole('button', {
-                name: 'Accept Translation suggestion',
-            }),
-        ).toBeEnabled();
-        await expect(
-            editor.getByRole('button', { name: 'Accept all' }),
-        ).toBeVisible({ timeout: 20_000 });
-        await expect(
-            editor.getByRole('button', { name: 'Reject all' }),
-        ).toBeVisible();
-        await editor.getByRole('button', { name: 'Accept all' }).click();
-        await expect(translation).toHaveValue('the atelier (es)');
-        await expect(definition).not.toHaveValue('');
-
         await definition.fill('A manually refined place where artists work.');
         await page.setViewportSize({ width: 320, height: 900 });
         await page.evaluate(() => {
@@ -1429,24 +1334,67 @@ test.describe('dictionary platform journeys', () => {
             document.documentElement.style.fontSize = '';
         });
         await page.setViewportSize({ width: 1280, height: 720 });
-
-        await editor.getByRole('button', { name: 'Save card' }).click();
+        await editor
+            .getByRole('button', { name: 'Create card', exact: true })
+            .click();
+        await expect(editor).not.toBeVisible();
         await expect(
-            page.getByText('the atelier', { exact: true }),
+            page.getByText(displayedTranslation, { exact: true }),
         ).toBeVisible();
         await expect(
-            page.getByText('the atelier (es)', { exact: true }),
+            page.getByText('A manually refined place where artists work.', {
+                exact: true,
+            }),
         ).toBeVisible();
         await expect(
             page.getByText('Human + AI', { exact: true }).first(),
+        ).toBeVisible();
+        await page.reload();
+        await expect(
+            page.getByText(displayedTranslation, { exact: true }),
+        ).toBeVisible();
+
+        // Non-Source content preserves the initial new-card version, even for Source generation.
+        await page.getByRole('button', { name: 'Add card' }).click();
+        editor = page.getByRole('dialog', { name: 'Add card' });
+        const secondSource = editor.getByRole('textbox', {
+            name: /^Source word or phrase \(/,
+        });
+        const secondTranslation = editor.getByRole('textbox', {
+            name: /^Translation \(/,
+        });
+        await secondSource.fill('teh studio');
+        await secondTranslation.fill('manual studio');
+        await editor
+            .getByRole('button', { name: 'Regenerate Source', exact: true })
+            .click();
+        await expect(secondSource).toHaveValue('the studio', {
+            timeout: 20_000,
+        });
+        await expect(editor.getByText('Version 2 of 2')).toBeVisible();
+        await editor
+            .getByRole('button', { name: 'Previous form version' })
+            .click();
+        await expect(secondSource).toHaveValue('teh studio');
+        await expect(secondTranslation).toHaveValue('manual studio');
+        await editor
+            .getByRole('button', { name: 'Create card', exact: true })
+            .click();
+        await expect(editor).not.toBeVisible();
+        await expect(
+            page.getByText('teh studio', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('manual studio', { exact: true }),
         ).toBeVisible();
         assertNoBrowserErrors();
     });
 
     // @user-flow dictionary-platform/saved-card-inline-ai-authoring-preserves-advanced-rewrite
-    test('edits a saved card with inline AI and retains the advanced rewrite', async ({
+    test('automatically saves full inline forms while history remains preview-only and advanced rewrite remains available', async ({
         page,
     }, testInfo) => {
+        test.setTimeout(90_000);
         const assertNoBrowserErrors = captureBrowserErrors(
             page,
             (path, status) => path === '/auth/sign-up' && status === 429,
@@ -1459,75 +1407,119 @@ test.describe('dictionary platform journeys', () => {
         );
         await createDictionary(page, `Saved inline AI Spanish ${runId}`);
         await addPopulatedCard(page);
-
         await chooseCardAction(page, 'work of art', 'Edit');
         const editor = page.getByRole('dialog', { name: 'Edit card' });
         const translation = editor.getByRole('textbox', {
             name: /^Translation \(/,
         });
-        await expect(translation).toHaveValue('obra de arte');
+        const definition = editor.getByRole('textbox', {
+            name: /^Definition \(/,
+        });
+        const manualDefinition =
+            'Manual refinement included in the automatic save.';
+        const overrideContext =
+            'A gallery discussing the meaning of an artwork.';
+        await definition.fill(manualDefinition);
         await editor.getByLabel('Set context').check();
         await editor
             .getByRole('textbox', { name: /Card context/ })
-            .fill('A gallery discussing the meaning of an artwork.');
-        await editor.getByRole('button', { name: 'Generate all' }).click();
-        const review = editor.getByTestId('ai-review-translation');
+            .fill(overrideContext);
+        // A Source-only success saves unrelated manual values as part of the complete form.
+        await editor
+            .getByRole('textbox', { name: /^Source word or phrase \(/ })
+            .fill('teh work of art');
+        await editor
+            .getByRole('button', { name: 'Regenerate Source', exact: true })
+            .click();
         await expect(
-            review.getByText('work of art (es)', { exact: true }),
+            editor.getByText('Generated content saved.', { exact: true }),
         ).toBeVisible({ timeout: 20_000 });
+        await expect(editor).toBeVisible();
         await expect(editor.getByText('Version 2 of 2')).toBeVisible();
+        await expect(definition).toHaveValue(manualDefinition);
+        const normalizedSource = await editor
+            .getByRole('textbox', { name: /^Source word or phrase \(/ })
+            .inputValue();
+        const card = page
+            .getByRole('listitem')
+            .filter({ hasText: normalizedSource });
+        await expect(
+            card.getByText(manualDefinition, { exact: true }),
+        ).toBeVisible();
+
+        await editor
+            .getByRole('button', { name: 'Regenerate all fields', exact: true })
+            .click();
+        await expect(translation).toHaveValue(`${normalizedSource} (es)`, {
+            timeout: 20_000,
+        });
+        await expect(
+            editor.getByText('Generated content saved.', { exact: true }),
+        ).toBeVisible({ timeout: 20_000 });
+        await expect(editor.getByText('Version 3 of 3')).toBeVisible();
+        await expect(
+            editor.getByRole('textbox', { name: /Card context/ }),
+        ).toHaveValue(overrideContext);
+        const savedTranslation = await translation.inputValue();
+        await expect(
+            card.getByText(savedTranslation, { exact: true }),
+        ).toBeVisible();
         await editor
             .getByRole('button', { name: 'Previous form version' })
             .click();
-        await expect(editor.getByText('Version 1 of 2')).toBeVisible();
+        await expect(editor.getByText('Version 2 of 3')).toBeVisible();
         await expect(translation).toHaveValue('obra de arte');
         await expect(
-            editor.getByRole('button', { name: 'Generate all' }),
+            editor.getByRole('button', {
+                name: 'Regenerate all fields',
+                exact: true,
+            }),
         ).toBeDisabled();
-        await editor.getByRole('button', { name: 'Next form version' }).click();
-        await expect(editor.getByText('Version 2 of 2')).toBeVisible();
-        await expect(review).toBeVisible();
-        await expect(translation).toHaveCount(0);
-        await review
-            .getByRole('button', { name: 'Reject Translation suggestion' })
-            .click();
+        // Navigation is a local preview; the dictionary still shows the saved latest result.
         await expect(
-            editor.getByRole('textbox', { name: /^Translation \(/ }),
-        ).toHaveValue('obra de arte');
-
+            card.getByText(savedTranslation, { exact: true }),
+        ).toBeVisible();
         await editor
-            .getByRole('button', { name: 'Generate Translation with AI' })
+            .getByRole('button', { name: 'Save card', exact: true })
             .click();
-        await expect(review).toBeVisible({ timeout: 20_000 });
-        const acceptedTranslation = (
-            await review.getByRole('paragraph').textContent()
-        )?.trim();
-        expect(acceptedTranslation).toBeTruthy();
-        await review
-            .getByRole('button', { name: 'Accept Translation suggestion' })
-            .click();
+        await expect(editor).not.toBeVisible();
+        await page.reload();
         await expect(
-            editor.getByRole('textbox', { name: /^Translation \(/ }),
-        ).toHaveValue(acceptedTranslation!);
-        await editor.getByRole('button', { name: 'Save card' }).click();
-        await expect(
-            page.getByText(acceptedTranslation!, { exact: true }),
+            page.getByText('obra de arte', { exact: true }),
         ).toBeVisible();
         await expect(
-            page.getByText('Human + AI', { exact: true }).first(),
+            page.getByText(manualDefinition, { exact: true }),
         ).toBeVisible();
+        await chooseCardAction(page, normalizedSource, 'Edit');
+        const reopened = page.getByRole('dialog', { name: 'Edit card' });
+        await expect(
+            reopened.getByRole('navigation', { name: 'Card form versions' }),
+        ).toHaveCount(0);
+        await expect(
+            reopened.getByRole('textbox', { name: /Card context/ }),
+        ).toHaveValue(overrideContext);
+        await reopened
+            .getByRole('button', { name: 'Close', exact: true })
+            .last()
+            .click();
 
-        const card = page.getByRole('listitem').filter({
-            hasText: 'work of art',
+        await chooseCardAction(
+            page,
+            normalizedSource,
+            'Rewrite full card with AI',
+        );
+        const advanced = page.getByRole('dialog', {
+            name: 'Regenerate card with AI',
         });
-        await card.getByRole('button', { name: /Card actions, card/ }).click();
         await expect(
-            card.getByRole('menuitem', {
-                name: 'Rewrite full card with AI',
+            advanced.getByRole('button', {
+                name: 'Generate proposal',
                 exact: true,
             }),
         ).toBeVisible();
-        await page.keyboard.press('Escape');
+        await expect(
+            advanced.getByLabel('Instruction for this review (optional)'),
+        ).toBeVisible();
         assertNoBrowserErrors();
     });
 });

@@ -2243,6 +2243,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 .from(dictionaryGenerationJobsTable)
                 .where(
                     and(
+                        eq(dictionaryGenerationJobsTable.kind, 'single-card'),
                         eq(
                             dictionaryGenerationJobsTable.ownerId,
                             input.ownerId,

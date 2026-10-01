@@ -5,6 +5,7 @@ import type {
 import type {
     DictionaryCardAuthoringField,
     DictionaryCardAuthoringProposal,
+    DictionaryCardAuthoringGeneration,
     DictionaryCardDraft,
     DictionaryCardFormProps,
 } from '../types';
@@ -30,6 +31,7 @@ export const EMPTY_CARD_OVERRIDES: DictionaryCardOverrides = {
 };
 
 export type DraftVersion = {
+    generation?: DictionaryCardAuthoringGeneration;
     draft: DictionaryCardDraft;
     hiddenSuggestionIds: Set<string>;
     proposal: DictionaryCardAuthoringProposal | null;

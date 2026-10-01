@@ -26,6 +26,13 @@ export function useAuthoringCleanup({
     const authoringCleanupInFlight = useRef<Promise<void> | null>(null);
 
     const authoringCleanupRequested = useRef(false);
+    const retainedReviewIds = useRef(new Set<string>());
+    useEffect(() => {
+        if (authoringReviewJob?.state === 'review')
+            retainedReviewIds.current.add(authoringReviewJob.id);
+        if (authoringJob.data?.state === 'review')
+            retainedReviewIds.current.add(authoringJob.data.id);
+    }, [authoringReviewJob, authoringJob.data]);
 
     function flushCardAuthoringCleanup(): Promise<void> {
         if (authoringCleanupInFlight.current) {
@@ -72,6 +79,19 @@ export function useAuthoringCleanup({
                     ...authoringCleanup.current.discardJobIds,
                 ]) {
                     try {
+                        const { job } = await requestWithSession((token) =>
+                            dictionaryApi.readGenerationJob(token, jobId),
+                        );
+                        if (job.kind !== 'card-authoring') continue;
+                        if (
+                            resolveCardAuthoringCleanupRead(job) === 'complete'
+                        ) {
+                            authoringCleanup.current.discardJobIds.delete(
+                                jobId,
+                            );
+                            continue;
+                        }
+                        if (job.state !== 'review') continue;
                         await requestWithSession((token) =>
                             dictionaryApi.discardGenerationJob(token, jobId),
                         );
@@ -115,6 +135,10 @@ export function useAuthoringCleanup({
         plan.discardJobIds.forEach((jobId) =>
             authoringCleanup.current.discardJobIds.add(jobId),
         );
+        retainedReviewIds.current.forEach((jobId) =>
+            authoringCleanup.current.discardJobIds.add(jobId),
+        );
+        retainedReviewIds.current.clear();
         return flushCardAuthoringCleanup();
     }
 

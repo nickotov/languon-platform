@@ -1,12 +1,13 @@
 import type { LanguageCatalogEntry, OwnedDictionary } from '@languon/contracts';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { userEvent, within } from 'storybook/test';
 
 import { I18nProvider } from '@/fsd/shared/i18n';
 import { en } from '@/fsd/shared/i18n/messages/en';
 import { BottomSheet } from '@/fsd/shared/ui';
 
 import { DictionaryCardForm } from './dictionary-card-form';
+import { AutoSaveFeedback } from './auto-save-feedback';
+import { generatedStoryCard } from './card-form-story-fixtures';
 
 const languages = [
     {
@@ -87,6 +88,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+function noStoryAction() {}
+
 export const NewCard: Story = {
     args: {
         dictionary,
@@ -120,38 +123,14 @@ export const InheritedTranslationContext: Story = {
     },
 };
 
-export const AIFieldSuggestions320: Story = {
+export const AutoFilledInputs320: Story = {
     args: {
         ...NewCard.args,
+        card: generatedStoryCard(dictionary),
         ai: {
             available: true,
             onAction: async () => undefined,
             pending: false,
-            proposal: {
-                source: 'curatorial medium',
-                suggestions: [
-                    {
-                        field: 'translation',
-                        id: '40000000-0000-4000-8000-000000000001',
-                        value: 'medio curatorial con una sugerencia deliberadamente larga que debe ajustarse sin desbordamiento',
-                    },
-                    {
-                        field: 'translation',
-                        id: '40000000-0000-4000-8000-000000000002',
-                        value: 'soporte curatorial',
-                    },
-                    {
-                        field: 'example',
-                        id: '40000000-0000-4000-8000-000000000003',
-                        value: 'The artist chose video as a curatorial medium.',
-                    },
-                    {
-                        field: 'exampleTranslation',
-                        id: '40000000-0000-4000-8000-000000000004',
-                        value: 'La artista eligió el vídeo como medio curatorial.',
-                    },
-                ],
-            },
         },
     },
     decorators: [
@@ -161,22 +140,91 @@ export const AIFieldSuggestions320: Story = {
             </div>
         ),
     ],
-    play: async ({ canvasElement }) => {
-        await userEvent.type(
-            within(canvasElement).getByLabelText(/^Source word or phrase/),
-            'curatorial medium',
-        );
-    },
 };
 
-export const AIFieldSuggestionsDesktop: Story = {
-    args: AIFieldSuggestions320.args,
-    play: async ({ canvasElement }) => {
-        await userEvent.type(
-            within(canvasElement).getByLabelText(/^Source word or phrase/),
-            'curatorial medium',
-        );
-    },
+export const AutoFilledInputsDesktop: Story = {
+    args: AutoFilledInputs320.args,
+};
+
+export const AutomaticSaving: Story = {
+    args: NewCard.args,
+    render: () => (
+        <AutoSaveFeedback
+            existing
+            hasGeneratedContent
+            onRetry={noStoryAction}
+            status='saving'
+        />
+    ),
+};
+export const AutomaticallySaved: Story = {
+    args: NewCard.args,
+    render: () => (
+        <AutoSaveFeedback
+            existing
+            hasGeneratedContent
+            onRetry={noStoryAction}
+            status='saved'
+        />
+    ),
+};
+export const AutomaticSaveFailed: Story = {
+    args: NewCard.args,
+    render: () => (
+        <AutoSaveFeedback
+            existing
+            hasGeneratedContent
+            onRetry={noStoryAction}
+            status='failed'
+        />
+    ),
+};
+export const InvalidGeneratedCandidate: Story = {
+    args: NewCard.args,
+    render: () => (
+        <AutoSaveFeedback
+            existing
+            hasGeneratedContent
+            onRetry={noStoryAction}
+            status='invalid'
+        />
+    ),
+};
+
+export const SavedRefreshFailed: Story = {
+    args: NewCard.args,
+    render: () => (
+        <AutoSaveFeedback
+            existing
+            hasGeneratedContent
+            onRetry={noStoryAction}
+            status='refreshFailed'
+        />
+    ),
+};
+
+export const NoChangesToSave: Story = {
+    args: NewCard.args,
+    render: () => (
+        <AutoSaveFeedback
+            existing
+            hasGeneratedContent
+            onRetry={noStoryAction}
+            status='unchanged'
+        />
+    ),
+};
+
+export const ConflictingSave: Story = {
+    args: NewCard.args,
+    render: () => (
+        <AutoSaveFeedback
+            existing
+            hasGeneratedContent
+            onRetry={noStoryAction}
+            status='conflict'
+        />
+    ),
 };
 
 export const FocusedEditorOverlay: Story = {
@@ -188,7 +236,7 @@ export const FocusedEditorOverlay: Story = {
     render: (args) => (
         <BottomSheet
             closeLabel='Cancel editing'
-            onClose={() => undefined}
+            onClose={noStoryAction}
             open
             size='large'
             title='Add card'
@@ -213,7 +261,7 @@ export const MixedDirectionEditorOverlay: Story = {
     render: (args) => (
         <BottomSheet
             closeLabel='Cancel editing'
-            onClose={() => undefined}
+            onClose={noStoryAction}
             open
             size='large'
             title='Add card'

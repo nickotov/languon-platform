@@ -1,9 +1,14 @@
 # Inline AI auto-accept and regeneration controls
 
-Status: Planned — not implemented
+Status: Implemented — 2026-10-01
 Created: 2026-10-01
 Updated: 2026-10-01
 Backlog: [BL-001, original task 1](backlog.md#bl-001--streamlined-dictionary-editing)
+
+Delivery and verification:
+[Inline AI auto-accept improvement](../.agent/improvements/inline-ai-auto-accept.md).
+Delivery also narrowed the existing advanced-rewrite lookup to single-card jobs,
+preserving its response contract without API, schema, permission, or worker changes.
 
 ## Summary and scope
 

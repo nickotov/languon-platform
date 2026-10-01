@@ -9,7 +9,13 @@ import type {
     PreviewDictionaryImportResponse,
 } from '@languon/contracts';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type SetStateAction,
+} from 'react';
 import { UUID_PATTERN } from '../lib/generation-url';
 
 export function useEditorState(
@@ -41,7 +47,25 @@ export function useEditorState(
     const [cardLifecycle, setCardLifecycle] =
         useState<DictionaryLifecycle>('active');
 
-    const [editing, setEditing] = useState<DictionaryCard | 'new' | null>(null);
+    const [editing, updateEditing] = useState<DictionaryCard | 'new' | null>(
+        null,
+    );
+    const editingSession = useRef(0);
+    const editingValue = useRef<DictionaryCard | 'new' | null>(null);
+    const setEditing = useCallback(
+        (action: SetStateAction<DictionaryCard | 'new' | null>) => {
+            const previous = editingValue.current;
+            const next =
+                typeof action === 'function' ? action(previous) : action;
+            const identity = (value: typeof previous) =>
+                value && typeof value === 'object' ? value.id : value;
+            if (identity(previous) !== identity(next))
+                editingSession.current += 1;
+            editingValue.current = next;
+            updateEditing(next);
+        },
+        [],
+    );
 
     const [authoringJobId, setAuthoringJobId] = useState<string | null>(null);
 
@@ -135,6 +159,7 @@ export function useEditorState(
         cardLifecycle,
         setCardLifecycle,
         editing,
+        editingSession,
         setEditing,
         authoringJobId,
         setAuthoringJobId,

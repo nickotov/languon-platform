@@ -4,7 +4,13 @@ import type {
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { useState, type ComponentProps } from 'react';
@@ -31,6 +37,12 @@ import { DictionarySettingsForm } from '@/fsd/features/dictionary-settings';
 import { shouldAcceptAuthoringProposal } from '@/fsd/widgets/dictionary-editor/ui/editor-card-sheet/editor-card-sheet';
 
 import { render } from './render';
+import { I18nProvider } from '@/fsd/shared/i18n';
+import { en } from '@/fsd/shared/i18n/messages/en';
+import { useCardDraft } from '@/fsd/features/dictionary-card-authoring/hooks/use-card-draft';
+import { useAuthoringAutoSave } from '@/fsd/features/dictionary-card-authoring/hooks/use-authoring-auto-save';
+import { applyAuthoringResult } from '@/fsd/features/dictionary-card-authoring/lib/apply-authoring-result';
+import { createDraftVersion } from '@/fsd/features/dictionary-card-authoring/lib/card-draft-versions';
 
 const languages = [
     {
@@ -202,7 +214,6 @@ describe('dependent card field generation', () => {
         ).toBe(true);
     });
 });
-
 function ArchivedCardDeletionHarness({ empty = false }: { empty?: boolean }) {
     const [outcome, setOutcome] = useState('');
     const archivedCard = {
@@ -324,8 +335,7 @@ function VersionedAuthoringHarness({
     onAction: ReturnType<typeof vi.fn>;
     onSave: ReturnType<typeof vi.fn>;
 }) {
-    const [proposal, setProposal] = useState(versionedInitialProposal);
-
+    const [successor, setSuccessor] = useState(false);
     async function handleAction(
         action: Parameters<
             NonNullable<
@@ -334,18 +344,24 @@ function VersionedAuthoringHarness({
         >[0],
     ) {
         onAction(action);
-        if (action.kind === 'generate') setProposal(versionedSuccessorProposal);
+        if (action.kind === 'generate') setSuccessor(true);
     }
-
     return (
         <DictionaryCardForm
             ai={{
                 available: true,
                 format: 'card-authoring:v2',
-                job: authoringReviewJob,
+                job: {
+                    ...authoringReviewJob,
+                    id: successor
+                        ? authoringSuccessorJob.id
+                        : authoringReviewJob.id,
+                },
                 onAction: handleAction,
                 pending: false,
-                proposal,
+                proposal: successor
+                    ? versionedSuccessorProposal
+                    : versionedInitialProposal,
             }}
             card={{
                 ...card,
@@ -363,6 +379,48 @@ function VersionedAuthoringHarness({
             pending={false}
         />
     );
+}
+
+function renderGeneratedForm(
+    proposal: NonNullable<
+        NonNullable<ComponentProps<typeof DictionaryCardForm>['ai']>['proposal']
+    >,
+    options: Partial<ComponentProps<typeof DictionaryCardForm>> = {},
+) {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const onAction = vi.fn().mockResolvedValue(undefined);
+    const props: ComponentProps<typeof DictionaryCardForm> = {
+        ai: {
+            available: true,
+            format: 'card-authoring:v3',
+            job: authoringReviewJob,
+            onAction,
+            pending: false,
+            proposal: { translationContext: null, ...proposal },
+        },
+        card: { ...card, values: { ...card.values, source: proposal.source } },
+        dictionary,
+        languages,
+        onCancel: vi.fn(),
+        onSave,
+        pending: false,
+        ...options,
+    };
+    const view = render(<DictionaryCardForm {...props} />);
+    function rerender(ui: Parameters<typeof view.rerender>[0]) {
+        view.rerender(
+            <I18nProvider locale='en' messages={en}>
+                {ui}
+            </I18nProvider>,
+        );
+    }
+    return {
+        ...view,
+        rerender,
+        onSave,
+        onAction,
+        props,
+    };
 }
 
 function GeneratingFieldHarness({
@@ -482,7 +540,7 @@ describe('dictionary settings and card authoring', () => {
         expect(context).toBeRequired();
         expect(screen.getByText(/Enter a context or turn off/)).toBeVisible();
         expect(
-            screen.getByRole('button', { name: 'Save card' }),
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         ).toBeDisabled();
         expect(
             screen.getByRole('button', { name: 'Generate all' }),
@@ -494,7 +552,9 @@ describe('dictionary settings and card authoring', () => {
             'medium',
         );
         await user.type(screen.getByLabelText(/^Translation/), 'medio');
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        );
 
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -532,7 +592,9 @@ describe('dictionary settings and card authoring', () => {
         );
         expect(screen.queryByLabelText(/Card context/)).not.toBeInTheDocument();
         expect(screen.getByText('Museum terminology')).toBeVisible();
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        );
 
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({ translationContext: null }),
@@ -618,7 +680,9 @@ describe('dictionary settings and card authoring', () => {
         );
 
         await waitFor(() =>
-            expect(screen.getByTestId('ai-review-translation')).toBeVisible(),
+            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+                'banque',
+            ),
         );
         expect(
             screen.queryByText(/source phrase or translation context changed/i),
@@ -633,7 +697,7 @@ describe('dictionary settings and card authoring', () => {
 
         await user.click(
             screen.getByRole('button', {
-                name: 'Generate Translation with AI',
+                name: /^(Generate Translation with AI|Regenerate Translation)$/,
             }),
         );
         expect(screen.getByLabelText(/^Source word or phrase \(/)).toHaveValue(
@@ -655,7 +719,7 @@ describe('dictionary settings and card authoring', () => {
         render(<GeneratingFieldHarness format='card-authoring:v1' />);
         await user.click(
             screen.getByRole('button', {
-                name: 'Generate Translation with AI',
+                name: /^(Generate Translation with AI|Regenerate Translation)$/,
             }),
         );
         expect(screen.getByTestId('ai-progress-translation')).toBeVisible();
@@ -677,56 +741,28 @@ describe('dictionary settings and card authoring', () => {
         render(
             <VersionedAuthoringHarness onAction={onAction} onSave={onSave} />,
         );
-
-        await user.click(
-            screen.getByRole('button', {
-                name: 'Accept Context example suggestion',
-            }),
+        await screen.findByText('Version 2 of 2');
+        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
+            'The room is medium-sized.',
         );
         await user.click(
             screen.getByRole('button', {
-                name: 'Accept Example translation suggestion',
+                name: 'Regenerate Context example',
             }),
         );
-        expect(screen.getByText('Version 2 of 2')).toBeVisible();
-
-        await user.click(
-            screen.getByRole('button', {
-                name: 'Generate Context example with AI',
-            }),
-        );
-
         expect(onAction).toHaveBeenCalledWith(
             expect.objectContaining({
                 scope: { field: 'example', kind: 'field' },
                 successor: true,
             }),
         );
-        expect(await screen.findByText('Version 3 of 3')).toBeVisible();
-        expect(screen.getByTestId('ai-review-example')).toHaveTextContent(
-            'They chose a medium suitcase.',
-        );
-        expect(
-            screen.getByTestId('ai-review-exampleTranslation'),
-        ).toHaveTextContent('Eligieron una maleta mediana.');
-
-        await user.click(
-            screen.getByRole('button', {
-                name: 'Accept Context example suggestion',
-            }),
-        );
-        await user.click(
-            screen.getByRole('button', {
-                name: 'Accept Example translation suggestion',
-            }),
-        );
+        await screen.findByText('Version 3 of 3');
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'They chose a medium suitcase.',
         );
         expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
             'Eligieron una maleta mediana.',
         );
-
         await user.click(
             screen.getByRole('button', { name: 'Previous form version' }),
         );
@@ -734,16 +770,15 @@ describe('dictionary settings and card authoring', () => {
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'The room is medium-sized.',
         );
-        expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
-            'La habitación es mediana.',
-        );
+        expect(onSave).not.toHaveBeenCalled();
         expect(
             screen.getByRole('button', {
-                name: 'Generate Context example with AI',
+                name: 'Regenerate Context example',
             }),
         ).toBeDisabled();
-
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        );
         expect(onSave).toHaveBeenLastCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({
@@ -751,25 +786,12 @@ describe('dictionary settings and card authoring', () => {
                     exampleTranslation: 'La habitación es mediana.',
                 }),
             }),
-            expect.arrayContaining([
-                {
-                    field: 'example',
-                    suggestionId: '48000000-0000-4000-8000-000000000001',
-                },
-                {
-                    field: 'exampleTranslation',
-                    suggestionId: '48000000-0000-4000-8000-000000000002',
-                },
-            ]),
+            [],
         );
-
         await user.click(
             screen.getByRole('button', { name: 'Next form version' }),
         );
         expect(screen.getByText('Version 3 of 3')).toBeVisible();
-        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
-            'They chose a medium suitcase.',
-        );
         expect(
             screen.getByRole('button', { name: 'Next form version' }),
         ).toBeDisabled();
@@ -819,6 +841,7 @@ describe('dictionary settings and card authoring', () => {
                     ai={{
                         available: true,
                         format: 'card-authoring:v3',
+                        job: proposal ? authoringReviewJob : null,
                         onAction: handleAction,
                         pending: false,
                         proposal,
@@ -840,7 +863,7 @@ describe('dictionary settings and card authoring', () => {
         expect(screen.queryByText(/Version 1 of/)).not.toBeInTheDocument();
 
         await user.click(
-            screen.getByRole('button', { name: 'Generate Source with AI' }),
+            screen.getByRole('button', { name: 'Regenerate Source' }),
         );
 
         expect(onAction).toHaveBeenCalledWith(
@@ -850,7 +873,7 @@ describe('dictionary settings and card authoring', () => {
             }),
         );
         expect(await screen.findByText('Version 2 of 2')).toBeVisible();
-        expect(screen.getByTestId('ai-review-source')).toHaveTextContent(
+        expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
             'le but',
         );
 
@@ -949,7 +972,7 @@ describe('dictionary settings and card authoring', () => {
                 values: {
                     ...card.values,
                     source: 'medium',
-                    translation: '',
+                    translation: 'manual translation',
                 },
             };
             function ExpiringForm() {
@@ -982,17 +1005,7 @@ describe('dictionary settings and card authoring', () => {
                 );
             }
             render(<ExpiringForm />);
-            if (retained) {
-                await user.click(
-                    screen.getByRole('button', {
-                        name: 'Reject Translation suggestion',
-                    }),
-                );
-            }
-            await user.type(
-                screen.getByLabelText(/Translation \(/),
-                'manual translation',
-            );
+            expect(screen.getByLabelText(/Translation \(/)).toBeDisabled();
             expect(screen.getByRole('status')).toHaveTextContent(/Generating/);
             await user.click(
                 screen.getByRole('button', { name: 'Expire generation' }),
@@ -1010,11 +1023,13 @@ describe('dictionary settings and card authoring', () => {
                 screen.getByDisplayValue('manual translation'),
             ).toBeInTheDocument();
             const generate = screen.getByRole('button', {
-                name: retained ? 'Regenerate all fields' : 'Generate all',
+                name: 'Regenerate all fields',
             });
             expect(generate).toBeEnabled();
             expect(screen.queryByText('medio')).not.toBeInTheDocument();
-            await user.click(screen.getByRole('button', { name: 'Save card' }));
+            await user.click(
+                screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+            );
             expect(onSave).toHaveBeenCalledWith(
                 expect.objectContaining({
                     values: expect.objectContaining({
@@ -1091,82 +1106,63 @@ describe('dictionary settings and card authoring', () => {
         expect(onDirtyChange).toHaveBeenLastCalledWith(false);
     });
 
-    it('expands retained choices and keeps regeneration scoped to the field', async () => {
-        const user = userEvent.setup();
-        render(
-            <DictionaryCardForm
-                ai={{
-                    available: true,
-                    job: authoringReviewJob,
-                    onAction: vi.fn().mockResolvedValue(undefined),
-                    pending: false,
-                    proposal: {
-                        ...authoringProposal,
-                        suggestions: Array.from({ length: 3 }, (_, index) => ({
-                            ...authoringProposal.suggestions[0]!,
-                            id: `choice-${index}`,
-                            value: `translation choice ${index + 1}`,
-                        })),
-                    },
-                }}
-                card={{
-                    ...card,
-                    values: { ...card.values, source: 'medium' },
-                }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={vi.fn().mockResolvedValue(undefined)}
-                pending={false}
-            />,
+    it('applies the latest choice and exposes only whole-form history', async () => {
+        const { onAction } = renderGeneratedForm({
+            source: 'medium',
+            suggestions: Array.from({ length: 3 }, (_, index) => ({
+                field: 'translation',
+                id: `choice-${index}`,
+                value: `translation choice ${index + 1}`,
+            })),
+        });
+        await waitFor(() =>
+            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+                'translation choice 3',
+            ),
         );
-        expect(screen.getByText('translation choice 3')).toBeInTheDocument();
-        expect(screen.getByText('translation choice 1')).not.toBeVisible();
+        expect(screen.queryByText(/Previous AI options/)).toBeNull();
         expect(
-            screen.getAllByRole('button', {
-                name: 'Generate Translation with AI',
+            screen.queryByRole('button', { name: /Accept|Reject/ }),
+        ).toBeNull();
+        await userEvent.setup().click(
+            screen.getByRole('button', {
+                name: 'Regenerate Translation',
             }),
-        ).toHaveLength(1);
-        await user.click(screen.getByText('Previous AI options (2)'));
-        expect(screen.getByText('translation choice 1')).toBeInTheDocument();
+        );
+        expect(onAction).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: { kind: 'field', field: 'translation' },
+            }),
+        );
     });
 
-    it('blocks Save while a successor is active but keeps proposal review available', async () => {
-        render(
-            <DictionaryCardForm
-                ai={{
-                    available: true,
-                    job: authoringSuccessorJob,
-                    onAction: vi.fn().mockResolvedValue(undefined),
-                    pending: false,
-                    proposal: authoringProposal,
-                    successorActive: true,
-                }}
-                card={{
-                    ...card,
-                    values: { ...card.values, source: 'medium' },
-                }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={vi.fn().mockResolvedValue(undefined)}
-                pending={false}
-            />,
-        );
+    it('blocks editing, Save, navigation and AI while a successor runs', async () => {
+        renderGeneratedForm(authoringProposal, {
+            ai: {
+                available: true,
+                job: authoringSuccessorJob,
+                onAction: vi.fn().mockResolvedValue(undefined),
+                pending: false,
+                proposal: authoringProposal,
+                successorActive: true,
+            },
+        });
         expect(
-            screen.getByRole('button', { name: 'Save card' }),
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         ).toBeDisabled();
         expect(
-            screen.getByRole('button', {
-                name: 'Accept Translation suggestion',
-            }),
-        ).toBeEnabled();
+            screen.getByRole('textbox', { name: /Source word or phrase/ }),
+        ).toBeDisabled();
+        expect(
+            screen.queryByRole('button', { name: /Accept|Reject/ }),
+        ).toBeNull();
         expect(
             screen.getByRole('button', {
-                name: 'Generate Translation with AI',
+                name: 'Regenerate Translation',
             }),
         ).toBeDisabled();
     });
+
     it('retains a payload-scoped idempotency key after an ambiguous attempt', () => {
         const first = retainCardAuthoringIdempotencyAttempt(
             null,
@@ -1189,38 +1185,26 @@ describe('dictionary settings and card authoring', () => {
         ).toEqual({ fingerprint: 'changed-payload', key: 'second-key' });
     });
 
-    it('generates from source only and applies AI suggestions atomically', async () => {
+    it('generates from Source only and fills the latest translation without explicit acceptance', async () => {
         const user = userEvent.setup();
         const onAction = vi.fn().mockResolvedValue(undefined);
         const onSave = vi.fn().mockResolvedValue(undefined);
-        const proposal = {
-            source: 'medium',
-            suggestions: [
-                {
-                    field: 'translation' as const,
-                    id: '40000000-0000-4000-8000-000000000001',
-                    value: 'medio',
-                },
-                {
-                    field: 'translation' as const,
-                    id: '40000000-0000-4000-8000-000000000002',
-                    value: 'entorno',
-                },
-            ],
+        const props = {
+            dictionary,
+            languages,
+            onCancel: vi.fn(),
+            onSave,
+            pending: false,
         };
-        const { unmount } = render(
+        const form = render(
             <DictionaryCardForm
+                {...props}
                 ai={{
                     available: true,
                     onAction,
                     pending: false,
                     proposal: null,
                 }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={onSave}
-                pending={false}
             />,
         );
         expect(
@@ -1238,473 +1222,214 @@ describe('dictionary settings and card authoring', () => {
                 successor: false,
             }),
         );
-
-        unmount();
-        render(
-            <DictionaryCardForm
-                ai={{ available: true, onAction, pending: false, proposal }}
-                card={{
-                    ...card,
-                    values: {
-                        ...card.values,
-                        source: 'medium',
-                        translation: '',
-                    },
-                }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={onSave}
-                pending={false}
-            />,
+        form.rerender(
+            <I18nProvider locale='en' messages={en}>
+                <DictionaryCardForm
+                    {...props}
+                    ai={{
+                        available: true,
+                        onAction,
+                        pending: false,
+                        format: 'card-authoring:v3',
+                        job: authoringReviewJob,
+                        proposal: {
+                            ...authoringProposal,
+                            translationContext: null,
+                        },
+                    }}
+                />
+            </I18nProvider>,
         );
-        expect(screen.getByTestId('ai-review-translation')).toHaveTextContent(
-            'entorno',
+        await waitFor(() =>
+            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+                'medio',
+            ),
         );
+        expect(screen.queryByText(/Version 2 of/)).toBeNull();
+        expect(onSave).not.toHaveBeenCalled();
+        expect(
+            screen.queryByRole('button', { name: /Accept|Reject/ }),
+        ).toBeNull();
         await user.click(
-            within(screen.getByTestId('ai-review-translation')).getAllByRole(
-                'button',
-                {
-                    name: 'Accept Translation suggestion',
-                },
-            )[0]!,
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
-        await user.click(
-            screen.getByRole('button', {
-                name: 'Generate Translation with AI',
-            }),
-        );
-        expect(onAction).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                discardedSuggestionIds: [],
-                scope: { field: 'translation', kind: 'field' },
-                successor: true,
-            }),
-        );
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
-                values: expect.objectContaining({ translation: 'entorno' }),
+                values: expect.objectContaining({ translation: 'medio' }),
             }),
             [
                 {
                     field: 'translation',
-                    suggestionId: '40000000-0000-4000-8000-000000000002',
+                    suggestionId: authoringProposal.suggestions[0]!.id,
                 },
             ],
+            { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
         );
         await user.clear(screen.getByLabelText(/^Translation \(/));
         await user.type(
             screen.getByLabelText(/^Translation \(/),
-            'traducción manual',
+            'manual translation',
         );
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
-        expect(onSave).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                values: expect.objectContaining({
-                    translation: 'traducción manual',
-                }),
-            }),
-            [],
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+        expect(onSave.mock.calls.at(-1)![1]).toEqual([]);
     });
 
-    it('accepts the latest available suggestion for every field', async () => {
-        const user = userEvent.setup();
-        const onSave = vi.fn().mockResolvedValue(undefined);
-        const proposal = {
+    it('fills latest enabled suggestions while preserving disabled stored content', async () => {
+        const { onSave } = renderGeneratedForm({
             source: 'medium',
             suggestions: [
+                { field: 'translation', id: 'translation-old', value: 'medio' },
                 {
-                    field: 'translation' as const,
-                    id: '41000000-0000-4000-8000-000000000001',
-                    value: 'medio',
-                },
-                {
-                    field: 'translation' as const,
-                    id: '41000000-0000-4000-8000-000000000002',
+                    field: 'translation',
+                    id: 'translation-new',
                     value: 'entorno',
                 },
                 {
-                    field: 'example' as const,
-                    id: '41000000-0000-4000-8000-000000000003',
-                    value: 'A medium-sized room.',
-                },
-                {
-                    field: 'example' as const,
-                    id: '41000000-0000-4000-8000-000000000004',
+                    field: 'example',
+                    id: 'example-new',
                     value: 'A second example.',
                 },
                 {
-                    field: 'exampleTranslation' as const,
-                    id: '41000000-0000-4000-8000-000000000005',
-                    value: 'Una habitación mediana.',
+                    field: 'exampleTranslation',
+                    id: 'example-translation-new',
+                    value: 'Un segundo ejemplo.',
                 },
                 {
-                    field: 'definition' as const,
-                    id: '41000000-0000-4000-8000-000000000006',
-                    value: 'Disabled field content',
+                    field: 'definition',
+                    id: 'disabled',
+                    value: 'Disabled suggestion',
                 },
             ],
-        };
-
-        render(
-            <DictionaryCardForm
-                ai={{
-                    available: true,
-                    onAction: vi.fn().mockResolvedValue(undefined),
-                    pending: false,
-                    proposal,
-                }}
-                card={{
-                    ...card,
-                    values: {
-                        ...card.values,
-                        source: 'medium',
-                        translation: '',
-                    },
-                }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={onSave}
-                pending={false}
-            />,
+        });
+        await waitFor(() =>
+            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+                'entorno',
+            ),
         );
-
-        expect(screen.getByText('Choices: 5 · Fields: 3')).toBeInTheDocument();
-        const translationReview = screen.getByTestId('ai-review-translation');
-        await user.click(
-            within(translationReview).getByText('Previous AI options (1)'),
-        );
-        await user.click(
-            within(translationReview).getAllByRole('button', {
-                name: 'Accept Translation suggestion',
-            })[1]!,
-        );
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
-
-        await user.click(screen.getByRole('button', { name: 'Accept all' }));
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'A second example.',
         );
         expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
-            'Una habitación mediana.',
+            'Un segundo ejemplo.',
         );
-        expect(
-            screen.getByRole('button', { name: 'Accept all' }),
-        ).toBeDisabled();
-
-        await user.click(screen.getByRole('button', { name: 'Reject all' }));
-        expect(
-            screen.queryByRole('button', { name: 'Reject all' }),
-        ).not.toBeInTheDocument();
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('entorno');
-        expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
-            'A second example.',
+        await userEvent
+            .setup()
+            .click(
+                screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+            );
+        expect(onSave.mock.calls[0]![0].values.definition).toBe(
+            card.values.definition,
         );
-
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
-        expect(onSave).toHaveBeenCalledWith(
-            expect.objectContaining({
-                values: expect.objectContaining({
-                    example: 'A second example.',
-                    exampleTranslation: 'Una habitación mediana.',
-                    translation: 'entorno',
-                }),
-            }),
-            [],
-        );
+        expect(onSave.mock.calls[0]![1]).toEqual([
+            { field: 'translation', suggestionId: 'translation-new' },
+            { field: 'example', suggestionId: 'example-new' },
+            {
+                field: 'exampleTranslation',
+                suggestionId: 'example-translation-new',
+            },
+        ]);
     });
 
-    it('reviews a normalized Source before dependent results and rejects them together', async () => {
-        const user = userEvent.setup();
-        const proposal = {
+    it('applies normalized Source and compatible dependent results atomically with provenance', async () => {
+        const sourceId = '44000000-0000-4000-8000-000000000001';
+        const translationId = '44000000-0000-4000-8000-000000000002';
+        const { onSave } = renderGeneratedForm({
             source: 'alarmer',
-            sourceResult: {
-                kind: 'suggested' as const,
-                suggestionId: '43000000-0000-4000-8000-000000000001',
-            },
+            sourceResult: { kind: 'suggested', suggestionId: sourceId },
             sourceSuggestions: [
-                {
-                    field: 'source' as const,
-                    id: '43000000-0000-4000-8000-000000000001',
-                    value: "s'alarmer",
-                },
+                { field: 'source', id: sourceId, value: "s'alarmer" },
             ],
             suggestions: [
                 {
                     basisSource: "s'alarmer",
-                    field: 'translation' as const,
-                    id: '43000000-0000-4000-8000-000000000002',
+                    field: 'translation',
+                    id: translationId,
                     value: 'to become alarmed',
                 },
             ],
-        };
-
-        render(
-            <DictionaryCardForm
-                ai={{
-                    available: true,
-                    onAction: vi.fn().mockResolvedValue(undefined),
-                    pending: false,
-                    proposal,
-                }}
-                card={{
-                    ...card,
-                    values: { ...card.values, source: 'alarmer' },
-                }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={vi.fn().mockResolvedValue(undefined)}
-                pending={false}
-            />,
-        );
-
-        expect(
-            screen.queryByRole('textbox', { name: /Source word or phrase/ }),
-        ).toBeNull();
-        expect(screen.getByTestId('ai-review-source')).toHaveTextContent(
-            "s'alarmer",
-        );
-        expect(screen.getByText('Review Source first')).toBeVisible();
-        expect(
-            screen.getByText(
-                'Other AI suggestions were generated from the suggested Source. Accept or reject Source before using or regenerating them. Rejecting Source also removes its dependent suggestions.',
-            ),
-        ).toBeVisible();
-        expect(
-            within(screen.getByTestId('ai-review-translation')).getByRole(
-                'button',
-                { name: 'Accept Translation suggestion' },
-            ),
-        ).toBeDisabled();
-
-        await user.click(
-            within(screen.getByTestId('ai-review-source')).getByRole('button', {
-                name: 'Reject Source suggestion',
-            }),
-        );
-
-        expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
-            'alarmer',
-        );
-        expect(screen.queryByTestId('ai-review-source')).toBeNull();
-        expect(screen.queryByTestId('ai-review-translation')).toBeNull();
-        expect(screen.queryByText('Review Source first')).toBeNull();
-    });
-
-    it('accepts Source first, unlocks dependent results, and saves their provenance', async () => {
-        const user = userEvent.setup();
-        const onSave = vi.fn().mockResolvedValue(undefined);
-        const sourceId = '44000000-0000-4000-8000-000000000001';
-        const translationId = '44000000-0000-4000-8000-000000000002';
-        render(
-            <DictionaryCardForm
-                ai={{
-                    available: true,
-                    onAction: vi.fn().mockResolvedValue(undefined),
-                    pending: false,
-                    proposal: {
-                        source: 'alarmer',
-                        sourceResult: {
-                            kind: 'suggested',
-                            suggestionId: sourceId,
-                        },
-                        sourceSuggestions: [
-                            {
-                                field: 'source',
-                                id: sourceId,
-                                value: "s'alarmer",
-                            },
-                        ],
-                        suggestions: [
-                            {
-                                basisSource: "s'alarmer",
-                                field: 'translation',
-                                id: translationId,
-                                value: 'to become alarmed',
-                            },
-                        ],
-                    },
-                }}
-                card={{
-                    ...card,
-                    values: { ...card.values, source: 'alarmer' },
-                }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={onSave}
-                pending={false}
-            />,
-        );
-
-        await user.click(
-            within(screen.getByTestId('ai-review-source')).getByRole('button', {
-                name: 'Accept Source suggestion',
-            }),
-        );
-        expect(screen.queryByText('Review Source first')).toBeNull();
-        expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
-            "s'alarmer",
-        );
-        const translationReview = screen.getByTestId('ai-review-translation');
-        const acceptTranslation = within(translationReview).getByRole(
-            'button',
-            { name: 'Accept Translation suggestion' },
-        );
-        expect(acceptTranslation).toBeEnabled();
-        await user.click(acceptTranslation);
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
-
-        expect(onSave).toHaveBeenCalledWith(
-            expect.objectContaining({
-                values: expect.objectContaining({ source: "s'alarmer" }),
-            }),
-            [
-                { field: 'source', suggestionId: sourceId },
-                { field: 'translation', suggestionId: translationId },
-            ],
-        );
-    });
-
-    it('labels review as a group and clears AI provenance after a manual Source edit', async () => {
-        const user = userEvent.setup();
-        const onSave = vi.fn().mockResolvedValue(undefined);
-        const sourceId = '45000000-0000-4000-8000-000000000001';
-        render(
-            <DictionaryCardForm
-                ai={{
-                    available: true,
-                    onAction: vi.fn().mockResolvedValue(undefined),
-                    pending: false,
-                    proposal: {
-                        source: 'alarmer',
-                        sourceResult: {
-                            kind: 'suggested',
-                            suggestionId: sourceId,
-                        },
-                        sourceSuggestions: [
-                            {
-                                field: 'source',
-                                id: sourceId,
-                                value: "s'alarmer",
-                            },
-                        ],
-                        suggestions: [
-                            {
-                                basisSource: "s'alarmer",
-                                field: 'translation',
-                                id: '45000000-0000-4000-8000-000000000002',
-                                value: 'to become alarmed',
-                            },
-                        ],
-                    },
-                }}
-                card={{
-                    ...card,
-                    values: { ...card.values, source: 'alarmer' },
-                }}
-                dictionary={dictionary}
-                languages={languages}
-                onCancel={vi.fn()}
-                onSave={onSave}
-                pending={false}
-            />,
-        );
-
-        const sourceReview = screen.getByRole('group', {
-            name: /Source word or phrase/,
         });
-        expect(sourceReview).not.toHaveAttribute('required');
-        expect(sourceReview).toHaveAttribute('aria-labelledby');
-        await user.click(
-            within(sourceReview).getByRole('button', {
-                name: 'Accept Source suggestion',
-            }),
+        await waitFor(() =>
+            expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
+                "s'alarmer",
+            ),
         );
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+            'to become alarmed',
+        );
+        expect(screen.queryByText('Review Source first')).toBeNull();
+        expect(screen.queryByTestId('ai-review-source')).toBeNull();
+        await userEvent
+            .setup()
+            .click(
+                screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+            );
+        expect(onSave.mock.calls[0]![1]).toEqual([
+            { field: 'source', suggestionId: sourceId },
+            { field: 'translation', suggestionId: translationId },
+        ]);
+    });
+
+    it('clears Source and dependent provenance after a manual Source edit', async () => {
+        const sourceId = '45000000-0000-4000-8000-000000000001';
+        const { onSave } = renderGeneratedForm({
+            source: 'alarmer',
+            sourceResult: { kind: 'suggested', suggestionId: sourceId },
+            sourceSuggestions: [
+                { field: 'source', id: sourceId, value: "s'alarmer" },
+            ],
+            suggestions: [
+                {
+                    basisSource: "s'alarmer",
+                    field: 'translation',
+                    id: 'dependent',
+                    value: 'to become alarmed',
+                },
+            ],
+        });
+        await waitFor(() =>
+            expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
+                "s'alarmer",
+            ),
+        );
+        const user = userEvent.setup();
         await user.type(
             screen.getByRole('textbox', { name: /Source word or phrase/ }),
             ' manually changed',
         );
-
-        expect(screen.queryByTestId('ai-review-translation')).toBeNull();
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
-        expect(onSave).toHaveBeenCalledWith(expect.any(Object), []);
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        );
+        expect(onSave.mock.calls[0]![1]).toEqual([]);
     });
 
-    it('preserves accepted Source provenance when a successor rebases its history', async () => {
-        const user = userEvent.setup();
-        const onSave = vi.fn().mockResolvedValue(undefined);
-        const sourceId = '46000000-0000-4000-8000-000000000001';
-        const startingCard = {
-            ...card,
-            values: { ...card.values, source: 'alarmer' },
-        };
-
-        function RebasedProposal() {
-            const [rebased, setRebased] = useState(false);
-            return (
-                <>
-                    <button onClick={() => setRebased(true)}>
-                        Rebase proposal
-                    </button>
-                    <DictionaryCardForm
-                        ai={{
-                            available: true,
-                            onAction: vi.fn().mockResolvedValue(undefined),
-                            pending: false,
-                            proposal: {
-                                source: 'alarmer',
-                                sourceResult: rebased
-                                    ? { kind: 'unchanged' }
-                                    : {
-                                          kind: 'suggested',
-                                          suggestionId: sourceId,
-                                      },
-                                sourceSuggestions: [
-                                    {
-                                        field: 'source',
-                                        id: sourceId,
-                                        value: "s'alarmer",
-                                    },
-                                ],
-                                suggestions: [],
-                            },
-                        }}
-                        card={startingCard}
-                        dictionary={dictionary}
-                        languages={languages}
-                        onCancel={vi.fn()}
-                        onSave={onSave}
-                        pending={false}
-                    />
-                </>
-            );
-        }
-
-        render(<RebasedProposal />);
-        await user.click(
-            within(screen.getByTestId('ai-review-source')).getByRole('button', {
-                name: 'Accept Source suggestion',
-            }),
+    it('does not reapply a completed job when polling returns a different proposal object', async () => {
+        const form = renderGeneratedForm(authoringProposal);
+        await waitFor(() =>
+            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+                'medio',
+            ),
         );
-        await user.click(
-            screen.getByRole('button', { name: 'Rebase proposal' }),
+        await userEvent
+            .setup()
+            .type(screen.getByLabelText(/^Translation \(/), ' manual');
+        form.rerender(
+            <DictionaryCardForm
+                {...form.props}
+                ai={{
+                    ...form.props.ai!,
+                    proposal: {
+                        ...authoringProposal,
+                        translationContext: null,
+                    },
+                }}
+            />,
         );
-        expect(screen.queryByText(/Previous AI options/)).toBeNull();
-        expect(
-            screen.queryByText(/source phrase changed/i),
-        ).not.toBeInTheDocument();
-        expect(screen.getByText('Source already looks correct.')).toBeVisible();
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
-        expect(onSave).toHaveBeenCalledWith(expect.any(Object), [
-            { field: 'source', suggestionId: sourceId },
-        ]);
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+            'medio manual',
+        );
+        expect(screen.getByText('Version 2 of 2')).toBeVisible();
     });
 
     it('generates a single initial field and keeps Source unchanged feedback inline', async () => {
@@ -1731,7 +1456,7 @@ describe('dictionary settings and card authoring', () => {
         );
         await user.click(
             screen.getByRole('button', {
-                name: 'Generate Translation with AI',
+                name: /^(Generate Translation with AI|Regenerate Translation)$/,
             }),
         );
         expect(onAction).toHaveBeenCalledWith(
@@ -1772,74 +1497,41 @@ describe('dictionary settings and card authoring', () => {
         ).toHaveValue('medium');
     });
 
-    it.each([
-        ['stale', 'another source', undefined],
-        ['active', 'medium', authoringSuccessorJob],
-    ] as const)(
-        'keeps bulk acceptance disabled for a %s proposal while discard remains safe',
-        async (_state, proposalSource, job) => {
-            const user = userEvent.setup();
-            render(
-                <DictionaryCardForm
-                    ai={{
+    it.each(['stale', 'active'] as const)(
+        'does not apply a %s proposal or expose review controls',
+        async (state) => {
+            renderGeneratedForm(
+                {
+                    source: state === 'stale' ? 'another source' : 'medium',
+                    suggestions: authoringProposal.suggestions,
+                },
+                {
+                    card: {
+                        ...card,
+                        values: { ...card.values, source: 'medium' },
+                    },
+                    ai: {
                         available: true,
-                        ...(job ? { job } : {}),
+                        job:
+                            state === 'active'
+                                ? authoringSuccessorJob
+                                : authoringReviewJob,
                         onAction: vi.fn().mockResolvedValue(undefined),
                         pending: false,
                         proposal: {
-                            source: proposalSource,
-                            suggestions: [
-                                {
-                                    field: 'translation',
-                                    id: '42000000-0000-4000-8000-000000000001',
-                                    value: 'medio',
-                                },
-                            ],
+                            source:
+                                state === 'stale' ? 'another source' : 'medium',
+                            suggestions: authoringProposal.suggestions,
                         },
-                    }}
-                    {...(job
-                        ? {
-                              card: {
-                                  ...card,
-                                  values: {
-                                      ...card.values,
-                                      source: 'medium',
-                                  },
-                              },
-                          }
-                        : {})}
-                    dictionary={dictionary}
-                    languages={languages}
-                    onCancel={vi.fn()}
-                    onSave={vi.fn().mockResolvedValue(undefined)}
-                    pending={false}
-                />,
+                    },
+                },
             );
-            if (!job) {
-                await user.type(
-                    screen.getByLabelText(/Source word or phrase/),
-                    'medium',
-                );
-            }
-
-            if (_state === 'stale') {
-                expect(
-                    screen.queryByText('Choices: 1 · Fields: 1'),
-                ).not.toBeInTheDocument();
-                expect(
-                    screen.queryByTestId('ai-review-translation'),
-                ).not.toBeInTheDocument();
-            } else {
-                expect(
-                    screen.getByText('Choices: 1 · Fields: 1'),
-                ).toBeInTheDocument();
-                expect(
-                    screen.getByRole('button', { name: 'Accept all' }),
-                ).toBeDisabled();
-                expect(
-                    screen.getByRole('button', { name: 'Reject all' }),
-                ).toBeEnabled();
-            }
+            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+                card.values.translation,
+            );
+            expect(
+                screen.queryByRole('button', { name: /Accept|Reject/ }),
+            ).toBeNull();
         },
     );
 
@@ -1869,7 +1561,9 @@ describe('dictionary settings and card authoring', () => {
             expect(input).toHaveAttribute('maxlength', '400');
             fireEvent.change(input, { target: { value: '😀'.repeat(200) } });
             expect(input).toHaveValue('😀'.repeat(200));
-            await user.click(screen.getByRole('button', { name: 'Save card' }));
+            await user.click(
+                screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+            );
             expect(onSave).toHaveBeenLastCalledWith(
                 expect.objectContaining({
                     values: expect.objectContaining({
@@ -1905,7 +1599,9 @@ describe('dictionary settings and card authoring', () => {
         expect(translation).toHaveValue('x'.repeat(201));
         expect(translation).toHaveAttribute('aria-invalid', 'true');
         expect(screen.getByText('Use at most 200 characters.')).toBeVisible();
-        const save = screen.getByRole('button', { name: 'Save card' });
+        const save = screen.getByRole('button', {
+            name: /^(Save|Create) card$/,
+        });
         expect(save).toBeDisabled();
         fireEvent.submit(save.closest('form')!);
         expect(onSave).not.toHaveBeenCalled();
@@ -1928,7 +1624,9 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        );
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({ transcription }),
@@ -1987,7 +1685,9 @@ describe('dictionary settings and card authoring', () => {
             screen.getByText(/AI suggestions are unavailable/i),
         ).toBeVisible();
         await user.type(screen.getByLabelText(/^Translation \(/), 'manual');
-        expect(screen.getByRole('button', { name: 'Save card' })).toBeEnabled();
+        expect(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        ).toBeEnabled();
         unavailable.unmount();
 
         const onAction = vi.fn().mockResolvedValue(undefined);
@@ -2034,12 +1734,10 @@ describe('dictionary settings and card authoring', () => {
             screen.getByRole('button', { name: 'Cancel generation' }),
         );
         expect(onAction).toHaveBeenCalledWith({ kind: 'cancel' });
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
-            'editable',
-        );
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('');
     });
 
-    it('keeps previous-source suggestions visible but prevents their use', async () => {
+    it('invalidates generated provenance after the source changes and allows regeneration', async () => {
         const user = userEvent.setup();
         render(
             <DictionaryCardForm
@@ -2076,7 +1774,7 @@ describe('dictionary settings and card authoring', () => {
             screen.queryByTestId('ai-review-translation'),
         ).not.toBeInTheDocument();
         expect(
-            screen.getByRole('button', { name: 'Generate all' }),
+            screen.getByRole('button', { name: 'Regenerate all fields' }),
         ).toBeEnabled();
     });
     it('previews draft overrides without replacing server authority', () => {
@@ -2224,7 +1922,9 @@ describe('dictionary settings and card authoring', () => {
         expect(
             screen.getByRole('textbox', { name: /Context example/ }),
         ).toHaveValue('A retained example');
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        );
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({
@@ -2262,7 +1962,9 @@ describe('dictionary settings and card authoring', () => {
             screen.getByRole('textbox', { name: /Translation/ }),
             'medio artístico',
         );
-        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        await user.click(
+            screen.getByRole('button', { name: /^(Save|Create) card$/ }),
+        );
         expect(onSave).toHaveBeenCalled();
     });
 
@@ -2315,8 +2017,12 @@ describe('dictionary settings and card authoring', () => {
             />,
         );
 
-        const cancel = screen.getByRole('button', { name: 'Cancel' });
-        const save = screen.getByRole('button', { name: 'Save card' });
+        const cancel = screen.getByRole('button', {
+            name: /^(Cancel|Close|Discard draft)$/,
+        });
+        const save = screen.getByRole('button', {
+            name: /^(Save|Create) card$/,
+        });
         expect(cancel).toBeDisabled();
         expect(save).toBeDisabled();
         await user.click(cancel);
@@ -2469,5 +2175,594 @@ describe('dictionary settings and card authoring', () => {
         expect(openReview).toBeEnabled();
         await user.click(openReview);
         expect(onGenerate).toHaveBeenCalledWith(card);
+    });
+});
+
+describe('auto-accepted card generation regression state', () => {
+    const startingCard = {
+        ...card,
+        values: { ...card.values, source: 'medium' },
+    };
+    const proposal = { ...authoringProposal, translationContext: null };
+    function propsFor(
+        options: Partial<ComponentProps<typeof DictionaryCardForm>> = {},
+    ): ComponentProps<typeof DictionaryCardForm> {
+        return {
+            dictionary,
+            languages,
+            card: startingCard,
+            pending: false,
+            onSave: vi.fn().mockResolvedValue(undefined),
+            onCancel: vi.fn(),
+            ai: {
+                available: true,
+                format: 'card-authoring:v3',
+                onAction: vi.fn().mockResolvedValue(undefined),
+                pending: false,
+                job: authoringReviewJob,
+                proposal,
+                proposalJobId: authoringReviewJob.id,
+            },
+            ...options,
+        };
+    }
+    function useDraftAndSave(props: ComponentProps<typeof DictionaryCardForm>) {
+        const draft = useCardDraft(props);
+        return { ...draft, ...useAuthoringAutoSave(props, draft) };
+    }
+
+    it('preserves Source-only new-card history after editing Source and starting a fresh job', async () => {
+        const initial = propsFor({
+            card: undefined,
+            ai: { ...propsFor().ai!, job: null, proposal: null },
+        });
+        const hook = renderHook(useCardDraft, { initialProps: initial });
+        act(() => hook.result.current.setValue('source', 'medium'));
+        const firstAI = {
+            ...propsFor().ai!,
+            proposal: {
+                source: 'medium',
+                sourceResult: { kind: 'unchanged' as const },
+                suggestions: [],
+                translationContext: null,
+            },
+        };
+        hook.rerender({ ...initial, ai: firstAI });
+        await waitFor(() =>
+            expect(hook.result.current.activeVersion.generation?.jobId).toBe(
+                authoringReviewJob.id,
+            ),
+        );
+        expect(hook.result.current.versionCount).toBe(1);
+        act(() => hook.result.current.setValue('source', 'changed source'));
+        hook.rerender({
+            ...initial,
+            ai: {
+                ...firstAI,
+                job: { ...authoringReviewJob, id: authoringSuccessorJob.id },
+                proposalJobId: authoringSuccessorJob.id,
+                proposal: { ...firstAI.proposal, source: 'changed source' },
+            },
+        });
+        await waitFor(() => expect(hook.result.current.versionCount).toBe(2));
+        expect(hook.result.current.activeVersionIndex).toBe(1);
+        act(() => hook.result.current.setActiveVersion(0));
+        expect(hook.result.current.activeVersion.generation?.jobId).toBe(
+            authoringReviewJob.id,
+        );
+        expect(hook.result.current.draft.values.translation).toBe('');
+    });
+
+    it('reports unchanged when autosave returns an explicit no-op outcome', async () => {
+        const onAutoSave = vi.fn().mockResolvedValue({
+            card: startingCard,
+            dictionaryVersion: 1,
+            unchanged: true,
+        });
+        const initial = propsFor({
+            onAutoSave,
+            ai: {
+                ...propsFor().ai!,
+                proposal: {
+                    source: 'medium',
+                    sourceResult: { kind: 'unchanged' },
+                    suggestions: [],
+                    translationContext: null,
+                },
+            },
+        });
+        const hook = renderHook(useDraftAndSave, { initialProps: initial });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('unchanged'),
+        );
+        expect(onAutoSave).toHaveBeenCalledOnce();
+        expect(hook.result.current.autoSaveLocked).toBe(false);
+        expect(hook.result.current.dirty).toBe(false);
+        act(() =>
+            hook.result.current.setValue('translation', 'new manual edit'),
+        );
+        expect(hook.result.current.dirty).toBe(true);
+        expect(hook.result.current.autoSaveStatus).toBe('idle');
+        expect(onAutoSave).toHaveBeenCalledOnce();
+    });
+
+    it('preserves remaining AI provenance when explicitly saving a corrected invalid latest form', async () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const onAutoSave = vi.fn();
+        const initial = propsFor({
+            onSave,
+            onAutoSave,
+            ai: {
+                ...propsFor().ai!,
+                proposal: {
+                    source: 'medium',
+                    translationContext: null,
+                    suggestions: [
+                        {
+                            field: 'translation',
+                            id: 'invalid-translation',
+                            value: 'x'.repeat(201),
+                        },
+                        {
+                            field: 'example',
+                            id: 'valid-example',
+                            value: 'AI example stays',
+                        },
+                    ],
+                },
+            },
+        });
+        render(<DictionaryCardForm {...initial} />);
+        await waitFor(() =>
+            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+                'x'.repeat(201),
+            ),
+        );
+        expect(onAutoSave).not.toHaveBeenCalled();
+        const user = userEvent.setup();
+        await user.clear(screen.getByLabelText(/^Translation \(/));
+        await user.type(
+            screen.getByLabelText(/^Translation \(/),
+            'corrected translation',
+        );
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({
+                    translation: 'corrected translation',
+                    example: 'AI example stays',
+                }),
+            }),
+            [{ field: 'example', suggestionId: 'valid-example' }],
+            { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
+        );
+    });
+
+    it('uses fresh saved-card revisions for consecutive auto-saves without resetting history', async () => {
+        let cardVersion = 1;
+        const onAutoSave = vi.fn().mockImplementation(async (draft) => ({
+            card: {
+                ...startingCard,
+                values: draft.values,
+                version: ++cardVersion,
+            },
+            dictionaryVersion: cardVersion,
+        }));
+        const initial = propsFor({ onAutoSave });
+        const hook = renderHook(useDraftAndSave, { initialProps: initial });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('saved'),
+        );
+        hook.rerender({
+            ...initial,
+            card: {
+                ...startingCard,
+                values: { ...startingCard.values, translation: 'medio' },
+                version: 2,
+            },
+            ai: {
+                ...initial.ai!,
+                job: { ...authoringReviewJob, id: authoringSuccessorJob.id },
+                proposalJobId: authoringSuccessorJob.id,
+                proposal: {
+                    ...proposal,
+                    suggestions: [
+                        {
+                            ...proposal.suggestions[0]!,
+                            id: 'new-choice',
+                            value: 'medio',
+                        },
+                    ],
+                },
+            },
+        });
+        await waitFor(() => expect(onAutoSave).toHaveBeenCalledTimes(2));
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('saved'),
+        );
+        expect(hook.result.current.versionCount).toBe(3);
+        expect(onAutoSave.mock.calls[1]![2]).toEqual({
+            jobId: authoringSuccessorJob.id,
+            format: 'card-authoring:v3',
+        });
+        expect(onAutoSave.mock.calls[1]![1]).toEqual([
+            { field: 'translation', suggestionId: 'new-choice' },
+        ]);
+        expect(hook.result.current.dirty).toBe(false);
+    });
+
+    it('keeps unsaved new-card history and Create uses the displayed snapshot generation', async () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const initial = propsFor({
+            card: undefined,
+            onSave,
+            ai: { ...propsFor().ai!, job: null, proposal: null },
+        });
+        const view = render(<DictionaryCardForm {...initial} />);
+        const user = userEvent.setup();
+        await user.type(
+            screen.getByLabelText(/Source word or phrase/),
+            'medium',
+        );
+        await user.type(
+            screen.getByLabelText(/^Translation \(/),
+            'prior translation',
+        );
+        function update(ai: ComponentProps<typeof DictionaryCardForm>['ai']) {
+            view.rerender(
+                <I18nProvider locale='en' messages={en}>
+                    <DictionaryCardForm {...initial} ai={ai} />
+                </I18nProvider>,
+            );
+        }
+        update(propsFor().ai);
+        await screen.findByText('Version 2 of 2');
+        update({
+            ...propsFor().ai!,
+            job: { ...authoringReviewJob, id: authoringSuccessorJob.id },
+            proposalJobId: authoringSuccessorJob.id,
+            proposal: {
+                ...proposal,
+                suggestions: [
+                    {
+                        field: 'translation',
+                        id: 'second-choice',
+                        value: 'second result',
+                    },
+                ],
+            },
+        });
+        await screen.findByText('Version 3 of 3');
+        expect(onSave).not.toHaveBeenCalled();
+        await user.click(
+            screen.getByRole('button', { name: 'Previous form version' }),
+        );
+        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
+        await user.click(screen.getByRole('button', { name: 'Create card' }));
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({ translation: 'medio' }),
+            }),
+            [
+                {
+                    field: 'translation',
+                    suggestionId: proposal.suggestions[0]!.id,
+                },
+            ],
+            { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
+        );
+    });
+
+    it.each([
+        ['Source alone', null, null, 1],
+        ['whitespace Translation', '  ', null, 1],
+        ['Translation', 'manual', null, 2],
+        ['disabled Definition', null, 'manual definition', 2],
+    ] as const)(
+        'preserves the first new version only for substantive content: %s',
+        async (_name, translation, definition, count) => {
+            const initial = propsFor({
+                card: undefined,
+                ai: { ...propsFor().ai!, job: null, proposal: null },
+            });
+            const hook = renderHook(useCardDraft, { initialProps: initial });
+            act(() => {
+                hook.result.current.setValue('source', 'medium');
+                if (translation !== null)
+                    hook.result.current.setValue('translation', translation);
+                if (definition !== null)
+                    hook.result.current.setValue('definition', definition);
+            });
+            hook.rerender({ ...initial, ai: propsFor().ai });
+            await waitFor(() =>
+                expect(hook.result.current.draft.values.translation).toBe(
+                    'medio',
+                ),
+            );
+            expect(hook.result.current.versionCount).toBe(count);
+        },
+    );
+
+    it('does not append versions for failed or cancelled jobs and ignores old retained proposals', async () => {
+        const initial = propsFor();
+        const hook = renderHook(useCardDraft, { initialProps: initial });
+        await waitFor(() => expect(hook.result.current.versionCount).toBe(2));
+        for (const state of [
+            'running',
+            'failed',
+            'cancelled',
+            'review',
+        ] as const) {
+            hook.rerender({
+                ...initial,
+                ai: {
+                    ...initial.ai!,
+                    job: {
+                        ...authoringReviewJob,
+                        id: authoringSuccessorJob.id,
+                        state,
+                    },
+                    proposalJobId: authoringReviewJob.id,
+                },
+            });
+            expect(hook.result.current.versionCount).toBe(2);
+        }
+        hook.rerender({
+            ...initial,
+            ai: {
+                ...initial.ai!,
+                job: { ...authoringReviewJob, id: authoringSuccessorJob.id },
+                proposalJobId: authoringSuccessorJob.id,
+            },
+        });
+        await waitFor(() => expect(hook.result.current.versionCount).toBe(3));
+    });
+
+    it('applies only fresh compatible choices and preserves unaffected manual fields and context', () => {
+        const initial = createDraftVersion(
+            { ...startingCard, translationContext: 'manual context' },
+            {
+                source: 'medium',
+                suggestions: [
+                    { field: 'example', id: 'old', value: 'old example' },
+                ],
+            },
+        );
+        initial.draft.values.example = 'manually edited example';
+        const applied = applyAuthoringResult(
+            initial,
+            {
+                source: 'medium',
+                sourceResult: { kind: 'suggested', suggestionId: 'source' },
+                sourceSuggestions: [
+                    { field: 'source', id: 'source', value: 'a medium' },
+                ],
+                suggestions: [
+                    { field: 'example', id: 'old', value: 'old example' },
+                    {
+                        field: 'translation',
+                        id: 'incompatible',
+                        basisSource: 'medium',
+                        value: 'wrong basis',
+                    },
+                    {
+                        field: 'translation',
+                        id: 'translation',
+                        basisSource: 'a medium',
+                        value: 'un medio',
+                    },
+                    {
+                        field: 'definition',
+                        id: 'disabled',
+                        value: 'disabled replacement',
+                    },
+                ],
+            },
+            card.effectiveSettings,
+            { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
+        );
+        expect(applied.draft.values).toEqual({
+            ...initial.draft.values,
+            source: 'a medium',
+            translation: 'un medio',
+        });
+        expect(applied.draft.translationContext).toBe('manual context');
+        expect(applied.selectedSuggestions).toEqual({
+            source: 'source',
+            translation: 'translation',
+        });
+        expect(initial.draft.values.source).toBe('medium');
+    });
+
+    it('auto-saves the full form and preserves local history after canonical version refresh', async () => {
+        const onAutoSave = vi.fn().mockImplementation(async (draft) => ({
+            card: { ...startingCard, values: draft.values, version: 2 },
+            dictionaryVersion: 2,
+        }));
+        const initial = propsFor({
+            onAutoSave,
+            ai: { ...propsFor().ai!, job: null, proposal: null },
+        });
+        const hook = renderHook(useDraftAndSave, { initialProps: initial });
+        act(() =>
+            hook.result.current.setValue('example', 'prior manual draft'),
+        );
+        hook.rerender({ ...initial, ai: propsFor().ai });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('saved'),
+        );
+        expect(onAutoSave).toHaveBeenCalledOnce();
+        expect(onAutoSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                values: expect.objectContaining({
+                    translation: 'medio',
+                    example: 'prior manual draft',
+                }),
+            }),
+            [
+                {
+                    field: 'translation',
+                    suggestionId: authoringProposal.suggestions[0]!.id,
+                },
+            ],
+            { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
+        );
+        hook.rerender({
+            ...initial,
+            ai: propsFor().ai,
+            card: {
+                ...startingCard,
+                values: {
+                    ...startingCard.values,
+                    translation: 'medio',
+                    example: 'prior manual draft',
+                },
+                version: 2,
+            },
+        });
+        expect(hook.result.current.versionCount).toBe(2);
+        expect(hook.result.current.dirty).toBe(false);
+        act(() => hook.result.current.setActiveVersion(0));
+        expect(hook.result.current.dirty).toBe(true);
+        expect(onAutoSave).toHaveBeenCalledOnce();
+    });
+
+    it('freezes an ambiguous autosave candidate and retries precisely the same provenance and payload', async () => {
+        const onAutoSave = vi
+            .fn()
+            .mockRejectedValueOnce(
+                Object.assign(new Error('ambiguous'), { freezeDraft: true }),
+            )
+            .mockImplementationOnce(async (draft) => ({
+                card: { ...startingCard, values: draft.values, version: 2 },
+                dictionaryVersion: 2,
+            }));
+        const hook = renderHook(useDraftAndSave, {
+            initialProps: propsFor({ onAutoSave }),
+        });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('failed'),
+        );
+        expect(hook.result.current.autoSaveLocked).toBe(true);
+        act(() => hook.result.current.retryAutoSave());
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('saved'),
+        );
+        expect(onAutoSave.mock.calls[1]).toEqual(onAutoSave.mock.calls[0]);
+        expect(hook.result.current.autoSaveLocked).toBe(false);
+    });
+
+    it('reports saved-but-refresh-failed distinctly and keeps the retry candidate stable', async () => {
+        const onAutoSave = vi.fn().mockRejectedValue(
+            Object.assign(new Error('refresh unavailable'), {
+                saved: true,
+                freezeDraft: true,
+            }),
+        );
+        const hook = renderHook(useDraftAndSave, {
+            initialProps: propsFor({ onAutoSave }),
+        });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('refreshFailed'),
+        );
+        expect(hook.result.current.autoSaveLocked).toBe(true);
+        act(() => hook.result.current.retryAutoSave());
+        await waitFor(() => expect(onAutoSave).toHaveBeenCalledTimes(2));
+        expect(onAutoSave.mock.calls[1]).toEqual(onAutoSave.mock.calls[0]);
+    });
+
+    it('freezes accepted-candidate refresh conflicts and requires reload instead of resubmitting', async () => {
+        const onAutoSave = vi.fn().mockRejectedValue(
+            Object.assign(
+                new Error('accepted version changed before refresh'),
+                {
+                    saved: true,
+                    freezeDraft: true,
+                    reloadRequired: true,
+                },
+            ),
+        );
+        const hook = renderHook(useDraftAndSave, {
+            initialProps: propsFor({ onAutoSave }),
+        });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('conflict'),
+        );
+        expect(hook.result.current.autoSaveLocked).toBe(true);
+        expect(hook.result.current.draft.values.translation).toBe('medio');
+        act(() => hook.result.current.retryAutoSave());
+        expect(onAutoSave).toHaveBeenCalledOnce();
+        expect(hook.result.current.autoSaveStatus).toBe('conflict');
+        expect(hook.result.current.autoSaveLocked).toBe(true);
+    });
+
+    it('retains an invalid generated form for explicit correction without attempting persistence', async () => {
+        const onAutoSave = vi.fn();
+        const initial = propsFor({ onAutoSave });
+        const hook = renderHook(useDraftAndSave, {
+            initialProps: {
+                ...initial,
+                ai: {
+                    ...initial.ai!,
+                    proposal: {
+                        source: 'medium',
+                        translationContext: null,
+                        suggestions: [
+                            {
+                                field: 'translation',
+                                id: 'invalid',
+                                value: 'x'.repeat(201),
+                            },
+                        ],
+                    },
+                },
+            },
+        });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('invalid'),
+        );
+        expect(onAutoSave).not.toHaveBeenCalled();
+        expect(hook.result.current.draft.values.translation).toHaveLength(201);
+        expect(hook.result.current.autoSaveLocked).toBe(false);
+    });
+
+    it('does not mark a new editor session saved from a late previous-card completion', async () => {
+        let finish!: (response: {
+            card: DictionaryCard;
+            dictionaryVersion: number;
+        }) => void;
+        const onAutoSave = vi.fn().mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    finish = resolve;
+                }),
+        );
+        const initial = propsFor({ onAutoSave });
+        const hook = renderHook(useDraftAndSave, { initialProps: initial });
+        await waitFor(() =>
+            expect(hook.result.current.autoSaveStatus).toBe('saving'),
+        );
+        hook.rerender({
+            ...initial,
+            card: {
+                ...startingCard,
+                id: 'different-card',
+                values: { ...startingCard.values, source: 'different' },
+            },
+            ai: { ...initial.ai!, job: null, proposal: null },
+        });
+        await act(async () =>
+            finish({
+                card: {
+                    ...startingCard,
+                    values: { ...startingCard.values, translation: 'medio' },
+                    version: 2,
+                },
+                dictionaryVersion: 2,
+            }),
+        );
+        expect(hook.result.current.autoSaveStatus).toBe('idle');
+        expect(hook.result.current.draft.values.source).toBe('different');
+        expect(hook.result.current.versionCount).toBe(1);
     });
 });

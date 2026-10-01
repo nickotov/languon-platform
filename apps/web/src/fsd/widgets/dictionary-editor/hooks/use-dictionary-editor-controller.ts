@@ -6,6 +6,7 @@ import { useBatchJob } from './use-batch-job';
 import { useBatchMutation } from './use-batch-mutation';
 import { useCardLifecycle } from './use-card-lifecycle';
 import { useCardMutation } from './use-card-mutation';
+import { useCardAutoSave } from './use-card-auto-save';
 import { useDictionaryMutations } from './use-dictionary-mutations';
 import { useDocumentJob } from './use-document-job';
 import { useDocumentMutation } from './use-document-mutation';
@@ -54,7 +55,8 @@ export function useDictionaryEditorController(
         cardDeletion,
         ...useDictionaryMutations(context),
         ...useCardMutation({ ...context, ...cleanup }),
-        ...useAuthoringMutation(context),
+        ...useCardAutoSave({ ...context, ...cleanup }),
+        ...useAuthoringMutation({ ...context, ...cleanup }),
         ...useCardLifecycle(context),
         ...useGenerationMutation(context),
         ...useBatchMutation(context),

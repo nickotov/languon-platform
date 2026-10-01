@@ -687,7 +687,7 @@ export const en = {
     'dictionary.conflict.reload': 'Reload current version',
     'dictionary.authoring.aiSection': 'AI assistance',
     'dictionary.authoring.generate': 'Generate all',
-    'dictionary.authoring.generateField': 'AI',
+    'dictionary.authoring.generateField': 'Generate',
     'dictionary.authoring.generateFieldNamed': 'Generate {field} with AI',
     'dictionary.authoring.generatingField': 'Generating {field}…',
     'dictionary.authoring.aiSuggestion': 'AI suggestion',
@@ -708,8 +708,23 @@ export const en = {
     'dictionary.authoring.exampleRequired':
         'Enter an Example before generating its translation.',
     'dictionary.authoring.sourceUnchanged': 'Source already looks correct.',
+    'dictionary.card.ai.savedRefreshFailed':
+        'Saved, but the updated card could not be refreshed. Retry to reload it.',
+    'dictionary.authoring.retryRefresh': 'Retry refresh',
+    'dictionary.authoring.noChanges': 'No changes to save.',
     'dictionary.authoring.generateHelp':
-        'Enter a Source first. Suggestions appear under each field for you to review — nothing is filled in or saved until you accept a choice and press Save card. Translation does not need to be filled in first.',
+        'Enter a Source first. AI fills fields automatically and saves the complete form for existing cards. New cards require Create.',
+    'dictionary.card.create': 'Create card',
+    'dictionary.card.close': 'Close',
+    'dictionary.authoring.autoSaving': 'Saving generated content…',
+    'dictionary.authoring.autoSaved': 'Generated content saved.',
+    'dictionary.authoring.autoSaveFailed':
+        'Automatic save could not finish. Retry saving without generating again.',
+    'dictionary.authoring.retrySave': 'Retry save',
+    'dictionary.authoring.candidateInvalid':
+        'Generated content is not saved. Correct the required or invalid fields, then save.',
+    'dictionary.authoring.createRequired':
+        'Generated content is not saved yet. Select Create card to keep it.',
     'dictionary.authoring.regenerateAll': 'Regenerate all fields',
     'dictionary.authoring.progress': 'AI suggestion progress',
     'dictionary.authoring.stage.queued': 'Waiting to generate suggestions…',
@@ -723,10 +738,10 @@ export const en = {
         'The source phrase or translation context changed. These suggestions no longer match this card and cannot be used.',
     'dictionary.authoring.suggestions': 'AI suggestions',
     'dictionary.authoring.suggestionsFor': 'AI suggestions for {field}',
-    'dictionary.authoring.regenerateField': 'Regenerate field',
+    'dictionary.authoring.regenerateField': 'Regenerate',
     'dictionary.authoring.regenerateFieldNamed': 'Regenerate {field}',
     'dictionary.authoring.limitReached':
-        'Discard a suggestion before generating another.',
+        'Generation limit reached. Create this draft or close it and start a new draft to generate again.',
     'dictionary.authoring.accept': 'Accept',
     'dictionary.authoring.accepted': 'Accepted',
     'dictionary.authoring.acceptNamed': 'Accept {field} suggestion',

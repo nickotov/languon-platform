@@ -13,6 +13,7 @@ export function createAuthoringViews(
         generationCapabilities: controller.queries.generationCapabilities,
         authoringJob: controller.jobs.authoringJob,
         cardMutation: controller.mutations.cardMutation,
+        cardAutoSave: controller.mutations.cardAutoSave,
         cardAuthoringAction: controller.mutations.cardAuthoringAction,
         requestCloseCardDraft: controller.draftActions.requestCloseCardDraft,
         current: workspace.current,

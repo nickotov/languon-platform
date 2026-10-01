@@ -7,6 +7,7 @@ export function AuthoringInput({
     'data-validation': dataValidation,
     id,
     direction,
+    disabled,
     inputLimit,
     language,
     multiline,
@@ -19,6 +20,7 @@ export function AuthoringInput({
     'data-validation'?: 'success';
     id?: string;
     direction: 'ltr' | 'rtl';
+    disabled: boolean;
     inputLimit: number;
     language: string;
     multiline: boolean;
@@ -33,6 +35,7 @@ export function AuthoringInput({
                 aria-invalid={ariaInvalid}
                 data-validation={dataValidation}
                 id={id}
+                disabled={disabled}
                 rows={2}
                 dir={direction}
                 lang={language}
@@ -49,6 +52,7 @@ export function AuthoringInput({
             aria-invalid={ariaInvalid}
             data-validation={dataValidation}
             id={id}
+            disabled={disabled}
             dir={direction}
             lang={language}
             maxLength={inputLimit}

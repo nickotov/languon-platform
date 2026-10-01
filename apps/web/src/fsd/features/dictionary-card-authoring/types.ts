@@ -4,6 +4,7 @@ import type {
     DictionaryCardOverrides,
     DictionaryCardValues,
     DictionaryCardAuthoringGenerationJob,
+    DictionaryCardResponse,
     OwnedDictionary,
 } from '@languon/contracts';
 import type { languageLabel } from '@/fsd/entities/dictionary';
@@ -35,6 +36,11 @@ export interface DictionaryCardDraft {
     values: DictionaryCardValues;
 }
 
+export type DictionaryCardAuthoringGeneration = {
+    jobId: string;
+    format: 'card-authoring:v1' | 'card-authoring:v2' | 'card-authoring:v3';
+};
+
 export type DictionaryCardAuthoringAction =
     | { kind: 'cancel' }
     | {
@@ -59,6 +65,7 @@ export interface DictionaryCardAuthoringAI {
     onAction(action: DictionaryCardAuthoringAction): Promise<void>;
     pending: boolean;
     proposal?: DictionaryCardAuthoringProposal | null;
+    proposalJobId?: string;
     successorActive?: boolean;
 }
 
@@ -76,7 +83,13 @@ export type DictionaryCardFormProps = {
     onSave(
         draft: DictionaryCardDraft,
         selectedSuggestions: DictionaryCardAuthoringSelectedSuggestion[],
+        generation?: DictionaryCardAuthoringGeneration,
     ): Promise<void>;
+    onAutoSave?(
+        draft: DictionaryCardDraft,
+        selectedSuggestions: DictionaryCardAuthoringSelectedSuggestion[],
+        generation: DictionaryCardAuthoringGeneration,
+    ): Promise<DictionaryCardResponse & { unchanged?: boolean }>;
     pending: boolean;
     showHeading?: boolean;
 };
@@ -99,19 +112,10 @@ export type AuthoringFieldSuggestions = {
         | undefined;
     active: boolean;
     canGenerate: boolean;
-    stale: boolean;
-    hiddenSuggestionIds: ReadonlySet<string>;
-    reviewedSuggestionIds: ReadonlySet<string>;
-    selectedSuggestions: Partial<Record<DictionaryCardAuthoringField, string>>;
+    locked: boolean;
     generatingScope:
         | { kind: 'all' }
         | { kind: 'field'; field: DictionaryCardAuthoringField }
         | null;
-    acceptSuggestion(
-        field: DictionaryCardAuthoringField,
-        id: string,
-        value: string,
-    ): void;
-    discardSuggestion(field: DictionaryCardAuthoringField, id: string): void;
     generateField(field: DictionaryCardAuthoringField): void;
 };

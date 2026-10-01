@@ -1,5 +1,4 @@
 import {
-    DictionaryApiError,
     dictionaryErrorMessage,
     languageLabel,
 } from '@/fsd/entities/dictionary';
@@ -11,6 +10,7 @@ import { BottomSheet } from '@/fsd/shared/ui';
 import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
 import styles from './editor-card-sheet.module.css';
+import { cardSaveFeedback } from '../../lib/card-save-feedback';
 
 type EditorCardSheetModel = Pick<
     EditorViewFields,
@@ -22,6 +22,7 @@ type EditorCardSheetModel = Pick<
     | 'generationCapabilities'
     | 'authoringJob'
     | 'cardMutation'
+    | 'cardAutoSave'
     | 'cardAuthoringAction'
     | 'requestCloseCardDraft'
     | 'current'
@@ -38,12 +39,24 @@ type AuthoringActionHandler = NonNullable<
 export function shouldAcceptAuthoringProposal(
     hasReview: boolean,
     selectedSuggestionCount: number,
+    isNewCard = true,
+    hasGeneration = false,
 ) {
-    return hasReview && selectedSuggestionCount > 0;
+    return (
+        (hasGeneration || (isNewCard && hasReview)) &&
+        selectedSuggestionCount > 0
+    );
 }
 
-function buildAiValue(
-    model: EditorCardSheetModel,
+export function buildAiValue(
+    model: Pick<
+        EditorCardSheetModel,
+        | 'authoringJob'
+        | 'authoringReviewJob'
+        | 'cardAuthoringAction'
+        | 'generationCapabilities'
+        | 't'
+    >,
     onAction: AuthoringActionHandler,
 ): DictionaryCardFormProps['ai'] {
     const { authoringJob, authoringReviewJob, cardAuthoringAction } = model;
@@ -73,6 +86,7 @@ function buildAiValue(
         onAction,
         pending: cardAuthoringAction.isPending,
         proposal: authoringReviewJob?.proposal ?? null,
+        ...(authoringReviewJob ? { proposalJobId: authoringReviewJob.id } : {}),
         successorActive: hasRunningSuccessor,
     };
 }
@@ -86,6 +100,7 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         authoringReviewJob,
         authoringJob,
         cardMutation,
+        cardAutoSave,
         cardAuthoringAction,
         requestCloseCardDraft,
         current,
@@ -105,7 +120,9 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         styles.editorSheet ?? '';
 
     const dismissibleValue: ComponentProps<typeof BottomSheet>['dismissible'] =
-        !cardMutation.isPending && !cardAuthoringAction.isPending;
+        !cardMutation.isPending &&
+        !cardAuthoringAction.isPending &&
+        !cardAutoSave.isPending;
 
     const titleValue: ComponentProps<typeof BottomSheet>['title'] = isNewCard
         ? t('dictionary.card.createTitle')
@@ -128,25 +145,27 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         .filter((candidate) => isNewCard || candidate.id !== editing.id)
         .map((candidate) => candidate.values.source);
 
+    const saveError = cardAutoSave.error ?? cardMutation.error;
+    const saveFeedback = cardSaveFeedback(saveError, t);
     const errorValue: ComponentProps<typeof DictionaryCardForm>['error'] =
-        cardMutation.error
-            ? dictionaryErrorMessage(cardMutation.error, t)
-            : null;
+        saveFeedback.message;
 
     const handleReloadConflict: ComponentProps<
         typeof DictionaryCardForm
-    >['onReloadConflict'] =
-        cardMutation.error instanceof DictionaryApiError &&
-        cardMutation.error.detail.code === 'version_conflict'
-            ? reloadAfterConflict
-            : undefined;
+    >['onReloadConflict'] = saveFeedback.conflict
+        ? reloadAfterConflict
+        : undefined;
 
     const handleSave: ComponentProps<
         typeof DictionaryCardForm
-    >['onSave'] = async (draft, selectedSuggestions) => {
+    >['onSave'] = async (draft, selectedSuggestions, generation) => {
         if (
-            authoringReviewJob &&
-            shouldAcceptAuthoringProposal(true, selectedSuggestions.length)
+            shouldAcceptAuthoringProposal(
+                Boolean(authoringReviewJob),
+                selectedSuggestions.length,
+                isNewCard,
+                Boolean(generation),
+            )
         ) {
             if (hasRunningSuccessor) {
                 throw new Error('Card authoring successor is active');
@@ -156,6 +175,7 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
                 draft,
                 kind: 'accept',
                 selectedSuggestions,
+                ...(generation ? { generation } : {}),
             });
             return;
         }
@@ -179,12 +199,16 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         locale,
     );
     const description = `${current.name} · ${sourceLanguage} → ${targetLanguage}`;
-    const closeLabel = t('common.cancel');
+    const closeLabel = t(isNewCard ? 'common.cancel' : 'dictionary.card.close');
 
     const pendingValue: ComponentProps<typeof DictionaryCardForm>['pending'] =
         cardMutation.isPending ||
         (cardAuthoringAction.isPending &&
             cardAuthoringAction.variables?.kind === 'accept');
+    const handleAutoSave: NonNullable<
+        DictionaryCardFormProps['onAutoSave']
+    > = async (draft, selectedSuggestions, generation) =>
+        cardAutoSave.mutateAsync({ draft, selectedSuggestions, generation });
 
     return (
         <BottomSheet
@@ -209,6 +233,7 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
                 onDirtyChange={setCardDraftDirty}
                 onReloadConflict={handleReloadConflict}
                 onSave={handleSave}
+                onAutoSave={handleAutoSave}
                 pending={pendingValue}
                 showHeading={false}
             />

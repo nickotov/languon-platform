@@ -11,6 +11,7 @@ import styles from '../dictionary-card-form/dictionary-card-form.module.css';
 
 export function CardFieldOverrides({
     dictionary,
+    disabled = false,
     languages,
     effective,
     overrides,
@@ -18,6 +19,7 @@ export function CardFieldOverrides({
     replaceOverrides,
 }: {
     dictionary: OwnedDictionary;
+    disabled?: boolean;
     languages: readonly LanguageCatalogEntry[];
     effective: AuthoringFieldContent['effective'];
     overrides: DictionaryCardOverrides;
@@ -108,6 +110,7 @@ export function CardFieldOverrides({
                     <Badge tone={tone}>{status}</Badge>
                 </div>
                 <Switch
+                    disabled={disabled}
                     size='sm'
                     label={t('dictionary.override.toggle')}
                     aria-label={t('dictionary.override.toggle')}
@@ -118,12 +121,14 @@ export function CardFieldOverrides({
                 {overriding ? (
                     <div className={styles.overrideFields}>
                         <Switch
+                            disabled={disabled}
                             size='sm'
                             label={t('dictionary.field.transcription')}
                             checked={effective.transcriptionEnabled}
                             onCheckedChange={toggleTranscription}
                         />
                         <Switch
+                            disabled={disabled}
                             size='sm'
                             label={t('dictionary.field.definition')}
                             checked={effective.definitionEnabled}
@@ -131,6 +136,7 @@ export function CardFieldOverrides({
                         />
                         {effective.definitionEnabled ? (
                             <RadioGroup
+                                disabled={disabled}
                                 size='sm'
                                 orientation='horizontal'
                                 label={t(
@@ -144,6 +150,7 @@ export function CardFieldOverrides({
                             </RadioGroup>
                         ) : null}
                         <Switch
+                            disabled={disabled}
                             size='sm'
                             label={t('dictionary.field.example')}
                             checked={effective.exampleEnabled}
@@ -152,6 +159,7 @@ export function CardFieldOverrides({
                         {effective.exampleEnabled ? (
                             <>
                                 <RadioGroup
+                                    disabled={disabled}
                                     size='sm'
                                     orientation='horizontal'
                                     label={t(
@@ -164,6 +172,7 @@ export function CardFieldOverrides({
                                     <Radio value='target'>{targetName}</Radio>
                                 </RadioGroup>
                                 <Switch
+                                    disabled={disabled}
                                     size='sm'
                                     label={t(
                                         'dictionary.field.exampleTranslation',

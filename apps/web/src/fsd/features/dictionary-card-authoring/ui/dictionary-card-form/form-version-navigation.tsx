@@ -5,15 +5,24 @@ import styles from './dictionary-card-form.module.css';
 
 export function FormVersionNavigation({
     current,
+    disabled = false,
     onChange,
     total,
 }: {
     current: number;
+    disabled?: boolean;
     onChange(index: number): void;
     total: number;
 }) {
     const { t } = useI18n();
     if (total < 2) return null;
+
+    function previousVersion() {
+        onChange(current - 1);
+    }
+    function nextVersion() {
+        onChange(current + 1);
+    }
 
     return (
         <nav
@@ -22,9 +31,9 @@ export function FormVersionNavigation({
         >
             <IconButton
                 className={styles.versionButton}
-                disabled={current === 0}
+                disabled={disabled || current === 0}
                 label={t('dictionary.authoring.previousVersion')}
-                onClick={() => onChange(current - 1)}
+                onClick={previousVersion}
                 size='compact'
                 variant='ghost'
             >
@@ -38,9 +47,9 @@ export function FormVersionNavigation({
             </span>
             <IconButton
                 className={styles.versionButton}
-                disabled={current === total - 1}
+                disabled={disabled || current === total - 1}
                 label={t('dictionary.authoring.nextVersion')}
-                onClick={() => onChange(current + 1)}
+                onClick={nextVersion}
                 size='compact'
                 variant='ghost'
             >

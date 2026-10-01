@@ -105,6 +105,116 @@ run('card-authoring generation persistence', () => {
 
     afterAll(async () => client.end());
 
+    it.each([true, false])(
+        'latest advanced rewrite lookup ignores newer inline authoring jobs (hasRewrite=%s)',
+        async (hasRewrite) => {
+            const dictionary = await dictionaryStore.createDictionary({
+                context: context(),
+                fingerprint: fingerprint('L'),
+                idempotencyKey: `latest-rewrite-dictionary-${randomUUID()}`,
+                ownerId,
+                request: {
+                    description: null,
+                    name: 'Advanced and inline generation',
+                    sourceLanguage: 'en',
+                    targetLanguage: 'fr',
+                },
+            });
+            const draft = {
+                translationContext: null,
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    source: 'hello',
+                    transcription: null,
+                    translation: 'bonjour',
+                },
+            };
+            const created = await dictionaryStore.createCard({
+                context: context(1),
+                dictionaryId: dictionary.id,
+                ownerId,
+                request: {
+                    ...draft,
+                    expectedDictionaryVersion: dictionary.version,
+                    expectedSettingsVersion: dictionary.settings.version,
+                },
+            });
+            const versionInput = {
+                dictionaryId: dictionary.id,
+                expectedDictionaryVersion: created.dictionaryVersion,
+                expectedSettingsVersion: dictionary.settings.version,
+                ownerId,
+            };
+            let rewriteId: string | null = null;
+            if (hasRewrite) {
+                const rewrite = await generationStore.enqueue({
+                    ...versionInput,
+                    cardId: created.card.id,
+                    context: context(2),
+                    expectedCardVersion: created.card.version,
+                    fingerprint: fingerprint('M'),
+                    idempotencyKey: `latest-rewrite-${randomUUID()}`,
+                    instruction: null,
+                });
+                rewriteId = rewrite.id;
+                await generationStore.cancel({
+                    context: context(3),
+                    jobId: rewrite.id,
+                    ownerId,
+                });
+            }
+            const inline = await generationStore.enqueueCardAuthoring({
+                ...versionInput,
+                context: context(4),
+                draft: {
+                    ...draft,
+                    values: {
+                        definition: draft.values.definition,
+                        example: draft.values.example,
+                        exampleTranslation: draft.values.exampleTranslation,
+                        transcription: draft.values.transcription,
+                        translation: draft.values.translation,
+                    },
+                },
+                fingerprint: fingerprint('N'),
+                format: 'card-authoring:v3',
+                idempotencyKey: `latest-inline-${randomUUID()}`,
+                scope: { kind: 'field', field: 'translation' },
+                source: draft.values.source,
+                target: {
+                    cardId: created.card.id,
+                    expectedCardVersion: created.card.version,
+                    kind: 'update',
+                },
+            });
+            const lookup = {
+                cardId: created.card.id,
+                context: context(5),
+                dictionaryId: dictionary.id,
+                ownerId,
+            };
+            const latest = await generationStore.latestForCard(lookup);
+            if (hasRewrite) {
+                expect(latest).toMatchObject({
+                    id: rewriteId,
+                    kind: 'single-card',
+                });
+                expect(latest?.id).not.toBe(inline.id);
+            } else {
+                expect(latest).toBeNull();
+            }
+            await expect(
+                generationStore.latestForCard({
+                    ...lookup,
+                    ownerId: randomUUID(),
+                }),
+            ).resolves.toBeNull();
+        },
+    );
+
     it('pins the active AI revision at admission and replays the original job after a default switch', async () => {
         const creditedStore = new DrizzleDictionaryGenerationStore(
             database,
@@ -1499,6 +1609,182 @@ run('card-authoring generation persistence', () => {
             state: 'accepted',
             target: { kind: 'update', cardId: card.id },
         });
+    });
+
+    it('preserves AI provenance when a rejected existing-card candidate is corrected and explicitly accepted', async () => {
+        const dictionary = await dictionaryStore.createDictionary({
+            context: context(),
+            fingerprint: fingerprint('R'),
+            idempotencyKey: `corrected-ai-dictionary-${randomUUID()}`,
+            ownerId,
+            request: {
+                description: null,
+                name: 'Corrected AI draft',
+                sourceLanguage: 'en',
+                targetLanguage: 'fr',
+            },
+        });
+        const values = {
+            definition: null,
+            example: null,
+            exampleTranslation: null,
+            source: 'helo',
+            transcription: null,
+            translation: 'bonjour',
+        };
+        const created = await dictionaryStore.createCard({
+            context: context(1),
+            dictionaryId: dictionary.id,
+            ownerId,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                overrides,
+                translationContext: null,
+                values,
+            },
+        });
+        expect(created.card.authorship).toBe('human');
+        const job = await generationStore.enqueueCardAuthoring({
+            context: context(2),
+            dictionaryId: dictionary.id,
+            draft: {
+                overrides,
+                translationContext: null,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: values.translation,
+                },
+            },
+            expectedDictionaryVersion: created.dictionaryVersion,
+            expectedSettingsVersion: dictionary.settings.version,
+            fingerprint: fingerprint('S'),
+            format: 'card-authoring:v3',
+            idempotencyKey: `corrected-ai-update-${randomUUID()}`,
+            ownerId,
+            scope: { kind: 'field', field: 'source' },
+            source: values.source,
+            target: {
+                kind: 'update',
+                cardId: created.card.id,
+                expectedCardVersion: created.card.version,
+            },
+        });
+        const claim = await generationStore.claim({
+            context: context(3),
+            globalConcurrency: 2,
+            leaseDurationMs: 1_000,
+            ownerConcurrency: 1,
+            supportedFormats: ['card-authoring:v3'],
+            workerId: 'corrected-ai-worker',
+        });
+        if (!claim) throw new Error('Expected authoring claim');
+        await generationStore.complete({
+            context: context(4),
+            fencingToken: claim.fencingToken,
+            jobId: job.id,
+            leaseDeadline: claim.leaseDeadline,
+            proposal: {
+                sourceResult: { kind: 'suggested', value: 'hello' },
+                suggestions: [],
+            },
+            providerUsage: { inputTokens: 2, outputTokens: 1 },
+            reviewExpiresAt: instant(60_000),
+            workerId: claim.workerId,
+        });
+        const review = await generationStore.read({
+            context: context(5),
+            jobId: job.id,
+            ownerId,
+        });
+        if (
+            review.kind !== 'card-authoring' ||
+            review.format !== 'card-authoring:v3' ||
+            review.state !== 'review'
+        ) {
+            throw new Error('Expected v3 review');
+        }
+        const source = review.proposal.sourceSuggestions[0]!;
+        const acceptance = {
+            acceptanceFingerprint: fingerprint('T'),
+            candidate: {
+                overrides,
+                translationContext: null,
+                values: {
+                    ...values,
+                    source: source.value,
+                    translation: 'salut (manually corrected)',
+                },
+            },
+            context: context(7),
+            jobId: job.id,
+            ownerId,
+            selectedSuggestions: [
+                { field: 'source' as const, suggestionId: source.id },
+            ],
+        };
+        await expect(
+            generationStore.acceptCardAuthoring({
+                ...acceptance,
+                context: context(6),
+                candidate: {
+                    ...acceptance.candidate,
+                    values: {
+                        ...acceptance.candidate.values,
+                        source: 'invalid source basis',
+                    },
+                },
+            }),
+        ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+        const [unchanged] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.id, created.card.id));
+        expect(unchanged).toMatchObject({
+            authorship: 'human',
+            source: values.source,
+            version: created.card.version,
+        });
+        await expect(
+            generationStore.read({
+                context: context(6),
+                jobId: job.id,
+                ownerId,
+            }),
+        ).resolves.toMatchObject({ state: 'review' });
+        const accepted = await generationStore.acceptCardAuthoring(acceptance);
+        expect(accepted).toMatchObject({
+            job: { id: job.id, state: 'accepted' },
+            outcome: {
+                cardId: created.card.id,
+                cardVersion: created.card.version + 1,
+            },
+        });
+        const [persisted] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.id, created.card.id));
+        expect(persisted).toMatchObject({
+            authorship: 'mixed',
+            source: source.value,
+            translation: acceptance.candidate.values.translation,
+            version: created.card.version + 1,
+        });
+        const revisions = await database
+            .select()
+            .from(dictionaryCardRevisionsTable)
+            .where(eq(dictionaryCardRevisionsTable.cardId, created.card.id));
+        expect(revisions).toHaveLength(2);
+        expect(revisions).toContainEqual(
+            expect.objectContaining({
+                acceptedGenerationJobId: job.id,
+                authorship: 'mixed',
+                mutationKind: 'ai_proposal_accept',
+            }),
+        );
     });
 
     it('persists v3 inherited and overridden context through review, acceptance, and stale conflict', async () => {

@@ -680,7 +680,7 @@ export const ru = {
     'dictionary.conflict.reload': 'Загрузить текущую версию',
     'dictionary.authoring.aiSection': 'Помощь ИИ',
     'dictionary.authoring.generate': 'Создать всё',
-    'dictionary.authoring.generateField': 'ИИ',
+    'dictionary.authoring.generateField': 'Создать',
     'dictionary.authoring.generateFieldNamed':
         'Создать поле «{field}» с помощью ИИ',
     'dictionary.authoring.generatingField': 'Создаём поле «{field}»…',
@@ -704,8 +704,23 @@ export const ru = {
     'dictionary.authoring.exampleRequired':
         'Введите пример, прежде чем создавать его перевод.',
     'dictionary.authoring.sourceUnchanged': 'Исходный текст уже корректен.',
+    'dictionary.card.ai.savedRefreshFailed':
+        'Сохранено, но обновлённую карточку не удалось загрузить. Повторите попытку загрузки.',
+    'dictionary.authoring.retryRefresh': 'Повторить загрузку',
+    'dictionary.authoring.noChanges': 'Нет изменений для сохранения.',
     'dictionary.authoring.generateHelp':
-        'Сначала введите исходный текст. Варианты появятся под каждым полем для проверки — ничего не заполнится и не сохранится, пока вы не примете вариант и не нажмёте «Сохранить карточку». Перевод заранее заполнять не нужно.',
+        'Сначала введите исходный текст. ИИ автоматически заполнит поля и сохранит всю форму существующей карточки. Новую карточку нужно создать явно.',
+    'dictionary.card.create': 'Создать карточку',
+    'dictionary.card.close': 'Закрыть',
+    'dictionary.authoring.autoSaving': 'Сохраняем созданный контент…',
+    'dictionary.authoring.autoSaved': 'Созданный контент сохранён.',
+    'dictionary.authoring.autoSaveFailed':
+        'Автосохранение не завершилось. Повторите сохранение без новой генерации.',
+    'dictionary.authoring.retrySave': 'Повторить сохранение',
+    'dictionary.authoring.candidateInvalid':
+        'Созданный контент не сохранён. Исправьте обязательные или некорректные поля и сохраните.',
+    'dictionary.authoring.createRequired':
+        'Созданный контент ещё не сохранён. Нажмите «Создать карточку», чтобы сохранить его.',
     'dictionary.authoring.regenerateAll': 'Пересоздать все поля',
     'dictionary.authoring.progress': 'Прогресс создания предложений',
     'dictionary.authoring.stage.queued': 'Ожидание создания предложений…',
@@ -719,10 +734,10 @@ export const ru = {
         'Исходная фраза или контекст перевода изменились. Эти предложения больше не подходят карточке и недоступны.',
     'dictionary.authoring.suggestions': 'Предложения ИИ',
     'dictionary.authoring.suggestionsFor': 'Предложения ИИ для поля «{field}»',
-    'dictionary.authoring.regenerateField': 'Пересоздать поле',
+    'dictionary.authoring.regenerateField': 'Пересоздать',
     'dictionary.authoring.regenerateFieldNamed': 'Пересоздать поле «{field}»',
     'dictionary.authoring.limitReached':
-        'Удалите одно предложение, прежде чем создавать новое.',
+        'Достигнут лимит генерации. Создайте эту карточку или закройте черновик и начните новый для дальнейшей генерации.',
     'dictionary.authoring.accept': 'Принять',
     'dictionary.authoring.accepted': 'Принято',
     'dictionary.authoring.acceptNamed':

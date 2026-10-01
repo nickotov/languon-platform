@@ -14,6 +14,7 @@ import { AuthoringAiAssistance } from '../authoring-ai-assistance/authoring-ai-a
 import { CardFieldOverrides } from '../card-field-overrides/card-field-overrides';
 import { CardTranslationContext } from '../card-translation-context/card-translation-context';
 import { FormVersionNavigation } from './form-version-navigation';
+import { AutoSaveFeedback } from './auto-save-feedback';
 import styles from './dictionary-card-form.module.css';
 
 export type {
@@ -37,7 +38,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         showHeading = true,
     } = props;
     const authoring = useCardAuthoring(props);
-    const { effective, active, stale, duplicate } = authoring;
+    const { effective, active, duplicate, locked } = authoring;
     const className = [styles.card, embedded ? styles.embedded : '']
         .filter(Boolean)
         .join(' ');
@@ -45,14 +46,19 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         ? t('dictionary.card.editTitle')
         : t('dictionary.card.createTitle');
     const cancelLabel = card
-        ? t('common.cancel')
+        ? t('dictionary.card.close')
         : t('dictionary.card.discardDraft');
+    const saveLabel = card
+        ? t('dictionary.card.save')
+        : t('dictionary.card.create');
     const saveDisabled =
-        active ||
+        locked || !authoring.validValues || !authoring.validTranslationContext;
+    const closeDisabled = Boolean(
+        pending ||
         ai?.pending ||
-        ai?.successorActive ||
-        !authoring.validValues ||
-        !authoring.validTranslationContext;
+        active ||
+        authoring.autoSaveStatus === 'saving',
+    );
     const displayedAi = ai
         ? { ...ai, proposal: authoring.proposal }
         : undefined;
@@ -73,12 +79,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         active,
         canGenerate:
             authoring.isLatestVersion && authoring.validTranslationContext,
-        stale,
-        hiddenSuggestionIds: authoring.hiddenSuggestionIds,
-        reviewedSuggestionIds: authoring.reviewedSuggestionIds,
-        selectedSuggestions: authoring.selectedSuggestions,
-        acceptSuggestion: authoring.acceptSuggestion,
-        discardSuggestion: authoring.discardSuggestion,
+        locked,
         generatingScope: authoring.generatingScope,
         generateField: authoring.generateField,
     };
@@ -90,6 +91,10 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
     if (effective.exampleEnabled) optionalFields.push('example');
     if (effective.exampleTranslationEnabled)
         optionalFields.push('exampleTranslation');
+    const generatedFields = ['translation', ...optionalFields] as const;
+    const hasContent = generatedFields.some((field) =>
+        Boolean(authoring.draft.values[field]?.trim()),
+    );
 
     function renderField(field: DictionaryCardAuthoringField) {
         return (
@@ -123,22 +128,10 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                         content={fieldContent}
                         suggestions={fieldSuggestions}
                     />
-                    {authoring.sourceReviewRequired ? (
-                        <InlineAlert
-                            title={t('dictionary.authoring.sourceReviewTitle')}
-                            tone='warning'
-                        >
-                            {t('dictionary.authoring.sourceReviewDescription')}
-                        </InlineAlert>
-                    ) : null}
                     <CardTranslationContext
                         cardContext={authoring.draft.translationContext}
                         dictionaryContext={dictionary.translationContext}
-                        disabled={
-                            active ||
-                            pending ||
-                            Boolean(ai?.pending || ai?.successorActive)
-                        }
+                        disabled={locked}
                         onChange={authoring.setTranslationContext}
                     />
                     {duplicate ? (
@@ -146,47 +139,24 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             {t('dictionary.card.duplicateWarning')}
                         </InlineAlert>
                     ) : null}
+                    {authoring.stale ? (
+                        <InlineAlert tone='warning'>
+                            {t('dictionary.authoring.stale')}
+                        </InlineAlert>
+                    ) : null}
                     {displayedAi ? (
                         <AuthoringAiAssistance
                             ai={displayedAi}
                             active={active}
-                            stale={stale}
+                            locked={locked}
+                            hasContent={hasContent}
                             validSource={authoring.validSource}
                             canGenerate={
                                 authoring.isLatestVersion &&
                                 authoring.validTranslationContext
                             }
                             generateAll={authoring.generateAll}
-                            acceptAllSuggestions={
-                                authoring.acceptAllSuggestions
-                            }
-                            availableSuggestionCount={
-                                authoring.availableSuggestionCount
-                            }
-                            availableSuggestionFieldCount={
-                                authoring.availableSuggestionFieldCount
-                            }
-                            bulkAcceptSuggestionCount={
-                                authoring.bulkAcceptSuggestionCount
-                            }
-                            discardAllSuggestions={
-                                authoring.discardAllSuggestions
-                            }
                         />
-                    ) : null}
-                    {stale ? (
-                        <InlineAlert tone='warning'>
-                            {t('dictionary.authoring.stale')}
-                            <Button
-                                onClick={authoring.generateAll}
-                                disabled={active || !authoring.isLatestVersion}
-                                size='compact'
-                                variant='secondary'
-                                type='button'
-                            >
-                                {t('dictionary.authoring.regenerateAll')}
-                            </Button>
-                        </InlineAlert>
                     ) : null}
                     <AuthoringField
                         field='translation'
@@ -208,6 +178,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                     ) : null}
                     <CardFieldOverrides
                         dictionary={dictionary}
+                        disabled={locked}
                         languages={languages}
                         effective={effective}
                         overrides={authoring.draft.overrides}
@@ -230,6 +201,12 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                     ) : null}
                 </div>
                 <div className={styles.footer}>
+                    <AutoSaveFeedback
+                        existing={Boolean(card)}
+                        hasGeneratedContent={Boolean(authoring.proposal)}
+                        onRetry={authoring.retryAutoSave}
+                        status={authoring.autoSaveStatus}
+                    />
                     {active ? (
                         <p className={styles.saveHint}>
                             {t('dictionary.authoring.savingPaused')}
@@ -238,12 +215,13 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                     <div className={styles.footerRow}>
                         <FormVersionNavigation
                             current={authoring.activeVersionIndex}
+                            disabled={locked}
                             onChange={authoring.setActiveVersion}
                             total={authoring.versionCount}
                         />
                         <div className={styles.actions}>
                             <Button
-                                disabled={pending || ai?.pending}
+                                disabled={closeDisabled}
                                 onClick={onCancel}
                                 type='button'
                                 variant='ghost'
@@ -256,7 +234,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                                 loading={pending}
                                 type='submit'
                             >
-                                {t('dictionary.card.save')}
+                                {saveLabel}
                             </Button>
                         </div>
                     </div>

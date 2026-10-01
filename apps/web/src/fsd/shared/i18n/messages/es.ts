@@ -629,7 +629,7 @@ export const es = {
     'dictionary.conflict.reload': 'Recargar versión actual',
     'dictionary.authoring.aiSection': 'Sugerencias de IA',
     'dictionary.authoring.generate': 'Generar todo',
-    'dictionary.authoring.generateField': 'IA',
+    'dictionary.authoring.generateField': 'Generar',
     'dictionary.authoring.generateFieldNamed': 'Generar {field} con IA',
     'dictionary.authoring.generatingField': 'Generando {field}…',
     'dictionary.authoring.aiSuggestion': 'Sugerencia de IA',
@@ -652,8 +652,23 @@ export const es = {
     'dictionary.authoring.exampleRequired':
         'Escribe un ejemplo antes de generar su traducción.',
     'dictionary.authoring.sourceUnchanged': 'La Fuente ya parece correcta.',
+    'dictionary.card.ai.savedRefreshFailed':
+        'Guardada, pero no se pudo actualizar la tarjeta. Reintenta para recargarla.',
+    'dictionary.authoring.retryRefresh': 'Reintentar actualización',
+    'dictionary.authoring.noChanges': 'No hay cambios que guardar.',
     'dictionary.authoring.generateHelp':
-        'La IA propone valores debajo de cada campo. Nada se aplica hasta que lo aceptes.',
+        'Escribe primero la Fuente. La IA rellena los campos y guarda todo el formulario de las tarjetas existentes. Las nuevas tarjetas requieren Crear.',
+    'dictionary.card.create': 'Crear tarjeta',
+    'dictionary.card.close': 'Cerrar',
+    'dictionary.authoring.autoSaving': 'Guardando el contenido generado…',
+    'dictionary.authoring.autoSaved': 'Contenido generado guardado.',
+    'dictionary.authoring.autoSaveFailed':
+        'No se pudo completar el guardado automático. Reintenta sin generar de nuevo.',
+    'dictionary.authoring.retrySave': 'Reintentar guardado',
+    'dictionary.authoring.candidateInvalid':
+        'El contenido generado no está guardado. Corrige los campos obligatorios o no válidos y guarda.',
+    'dictionary.authoring.createRequired':
+        'El contenido generado aún no está guardado. Selecciona Crear tarjeta para conservarlo.',
     'dictionary.authoring.regenerateAll': 'Regenerar todos los campos',
     'dictionary.authoring.progress': 'Progreso de sugerencias de IA',
     'dictionary.authoring.stage.queued': 'Esperando para generar sugerencias…',
@@ -667,10 +682,10 @@ export const es = {
         'La frase de origen o el contexto de traducción cambió. Estas sugerencias ya no corresponden a la tarjeta y no se pueden usar.',
     'dictionary.authoring.suggestions': 'Sugerencias de IA',
     'dictionary.authoring.suggestionsFor': 'Sugerencias de IA para {field}',
-    'dictionary.authoring.regenerateField': 'Regenerar campo',
+    'dictionary.authoring.regenerateField': 'Regenerar',
     'dictionary.authoring.regenerateFieldNamed': 'Regenerar {field}',
     'dictionary.authoring.limitReached':
-        'Descarta una sugerencia antes de generar otra.',
+        'Límite de generación alcanzado. Crea esta tarjeta o cierra el borrador y empieza uno nuevo para volver a generar.',
     'dictionary.authoring.accept': 'Aceptar',
     'dictionary.authoring.accepted': 'Aceptada',
     'dictionary.authoring.acceptNamed': 'Aceptar sugerencia de {field}',

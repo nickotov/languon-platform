@@ -1,4 +1,4 @@
-import { CheckCheck, Info, RefreshCw, Sparkles, X } from 'lucide-react';
+import { Info, RefreshCw, Sparkles } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import type { DictionaryCardAuthoringAI } from '../../types';
@@ -19,27 +19,19 @@ function authoringStageKey(job: DictionaryCardAuthoringAI['job']) {
 export function AuthoringAiAssistance({
     ai,
     active,
-    stale,
+    locked,
+    hasContent,
     validSource,
     canGenerate,
     generateAll,
-    acceptAllSuggestions,
-    availableSuggestionCount,
-    availableSuggestionFieldCount,
-    bulkAcceptSuggestionCount,
-    discardAllSuggestions,
 }: {
     ai: DictionaryCardAuthoringAI;
     active: boolean;
-    stale: boolean;
+    locked: boolean;
+    hasContent: boolean;
     validSource: boolean;
     canGenerate: boolean;
     generateAll(): void;
-    acceptAllSuggestions(): void;
-    availableSuggestionCount: number;
-    availableSuggestionFieldCount: number;
-    bulkAcceptSuggestionCount: number;
-    discardAllSuggestions(): void;
 }) {
     const { t } = useI18n();
     const legacyReview =
@@ -48,22 +40,17 @@ export function AuthoringAiAssistance({
         !validSource ||
         !ai.available ||
         !canGenerate ||
-        active ||
+        locked ||
         ai.pending ||
         legacyReview;
-    const regenerateDisabled = disabled || stale;
     const loading = ai.pending && !active;
     const job = ai.job;
-    const showRegenerate = Boolean(ai.proposal);
     const hasJob = job !== null && job !== undefined;
     const isActiveJob = active && hasJob;
     const isSourceMissing = !validSource;
     const isUnavailable = !ai.available;
     const isExpired = job?.state === 'expired';
     const hasError = Boolean(ai.error);
-    const hasAvailableSuggestions = availableSuggestionCount > 0;
-    const acceptAllDisabled =
-        stale || active || ai.pending || bulkAcceptSuggestionCount === 0;
     const stageKey = authoringStageKey(job);
     const labels = {
         aiSection: t('dictionary.authoring.aiSection'),
@@ -74,17 +61,14 @@ export function AuthoringAiAssistance({
         sourceRequired: t('dictionary.authoring.sourceRequired'),
         stage: t(stageKey),
         unavailable: t('dictionary.authoring.unavailable'),
-        acceptAll: t('dictionary.authoring.acceptAll'),
-        discardAll: t('dictionary.authoring.discardAll'),
-        reviewSuggestions: t('dictionary.authoring.reviewSuggestions'),
-        reviewSummary: t('dictionary.authoring.reviewSummary', {
-            count: availableSuggestionCount,
-            fieldCount: availableSuggestionFieldCount,
-        }),
     };
     const cancelLabel = job?.cancellationRequested
         ? t('dictionary.authoring.cancelling')
         : t('dictionary.authoring.cancel');
+    const actionLabel = hasContent ? labels.regenerateAll : labels.generate;
+    const regenerationIcon = hasContent ? (
+        <RefreshCw aria-hidden size={16} />
+    ) : undefined;
 
     function cancelGeneration() {
         void ai.onAction({ kind: 'cancel' }).catch(() => undefined);
@@ -98,20 +82,6 @@ export function AuthoringAiAssistance({
                     {labels.aiSection}
                 </strong>
                 <div className={styles.aiButtons}>
-                    {showRegenerate && (
-                        <Button
-                            disabled={regenerateDisabled}
-                            onClick={generateAll}
-                            type='button'
-                            size='compact'
-                            variant='secondary'
-                            leadingIcon={
-                                <RefreshCw aria-hidden='true' size={16} />
-                            }
-                        >
-                            {labels.regenerateAll}
-                        </Button>
-                    )}
                     <Button
                         className={styles.primaryAction}
                         disabled={disabled}
@@ -120,8 +90,9 @@ export function AuthoringAiAssistance({
                         type='button'
                         size='compact'
                         leadingIcon={<Sparkles aria-hidden='true' size={16} />}
+                        trailingIcon={regenerationIcon}
                     >
-                        {labels.generate}
+                        {actionLabel}
                     </Button>
                 </div>
             </div>
@@ -155,36 +126,6 @@ export function AuthoringAiAssistance({
                 <InlineAlert tone='warning'>{labels.expired}</InlineAlert>
             )}
             {hasError && <InlineAlert tone='danger'>{ai.error}</InlineAlert>}
-            {hasAvailableSuggestions ? (
-                <div className={styles.bulkReview}>
-                    <div>
-                        <strong>{labels.reviewSuggestions}</strong>
-                        <small>{labels.reviewSummary}</small>
-                    </div>
-                    <div className={styles.bulkActions}>
-                        <Button
-                            disabled={acceptAllDisabled}
-                            leadingIcon={
-                                <CheckCheck aria-hidden='true' size={16} />
-                            }
-                            onClick={acceptAllSuggestions}
-                            size='compact'
-                            type='button'
-                        >
-                            {labels.acceptAll}
-                        </Button>
-                        <Button
-                            leadingIcon={<X aria-hidden='true' size={16} />}
-                            onClick={discardAllSuggestions}
-                            size='compact'
-                            type='button'
-                            variant='secondary'
-                        >
-                            {labels.discardAll}
-                        </Button>
-                    </div>
-                </div>
-            ) : null}
         </section>
     );
 }

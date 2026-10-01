@@ -3,12 +3,16 @@ import {
     type DictionaryCardAuthoringAction,
     type DictionaryCardAuthoringSelectedSuggestion,
     type DictionaryCardDraft,
+    type DictionaryCardAuthoringGeneration,
     retainCardAuthoringIdempotencyAttempt,
 } from '@/fsd/features/dictionary-card-authoring';
 import { useMutation } from '@tanstack/react-query';
 
 import type { useEditorQueries } from './use-editor-queries';
 import type { useEditorState } from './use-editor-state';
+import { cardAuthoringAcceptance } from '../lib/card-authoring-acceptance';
+import type { useAuthoringCleanup } from './use-authoring-cleanup';
+import { regenerateCardAuthoring } from '../api/regenerate-card-authoring';
 
 export function useAuthoringMutation({
     t,
@@ -24,6 +28,10 @@ export function useAuthoringMutation({
     requestWithSession,
     cards,
     editing,
+    editingSession,
+    queueCardAuthoringCleanup,
+    authoringCleanup,
+    flushCardAuthoringCleanup,
 }: Pick<
     ReturnType<typeof useEditorState>,
     | 't'
@@ -38,8 +46,15 @@ export function useAuthoringMutation({
     | 'dictionaryId'
     | 'requestWithSession'
     | 'editing'
+    | 'editingSession'
 > &
-    Pick<ReturnType<typeof useEditorQueries>, 'cards'>) {
+    Pick<ReturnType<typeof useEditorQueries>, 'cards'> &
+    Pick<
+        ReturnType<typeof useAuthoringCleanup>,
+        | 'queueCardAuthoringCleanup'
+        | 'authoringCleanup'
+        | 'flushCardAuthoringCleanup'
+    >) {
     const cardAuthoringAction = useMutation({
         mutationFn: async (
             action:
@@ -48,6 +63,7 @@ export function useAuthoringMutation({
                       draft: DictionaryCardDraft;
                       kind: 'accept';
                       selectedSuggestions: DictionaryCardAuthoringSelectedSuggestion[];
+                      generation?: DictionaryCardAuthoringGeneration;
                   },
         ) => {
             const versions = cards.data?.pages[0];
@@ -60,62 +76,25 @@ export function useAuthoringMutation({
                 );
             }
             if (action.kind === 'accept') {
-                if (!authoringReviewJob)
+                const generation =
+                    action.generation ??
+                    (authoringReviewJob
+                        ? {
+                              jobId: authoringReviewJob.id,
+                              format: authoringReviewJob.format,
+                          }
+                        : undefined);
+                if (!generation)
                     throw new Error('Card authoring proposal unavailable');
-                if (authoringReviewJob.format === 'card-authoring:v1') {
-                    const legacyCandidate = {
-                        overrides: action.draft.overrides,
-                        values: action.draft.values,
-                    };
-                    const selectedSuggestions =
-                        action.selectedSuggestions.filter(
-                            (
-                                selection,
-                            ): selection is DictionaryCardAuthoringSelectedSuggestion & {
-                                field: Exclude<
-                                    DictionaryCardAuthoringSelectedSuggestion['field'],
-                                    'source'
-                                >;
-                            } => selection.field !== 'source',
-                        );
-                    return requestWithSession((token) =>
-                        dictionaryApi.acceptGenerationJob(
-                            token,
-                            authoringReviewJob.id,
-                            {
-                                candidate: legacyCandidate,
-                                format: 'card-authoring:v1',
-                                selectedSuggestions,
-                            },
-                        ),
-                    );
-                }
-                if (authoringReviewJob.format === 'card-authoring:v2') {
-                    const legacyCandidate = {
-                        overrides: action.draft.overrides,
-                        values: action.draft.values,
-                    };
-                    return requestWithSession((token) =>
-                        dictionaryApi.acceptGenerationJob(
-                            token,
-                            authoringReviewJob.id,
-                            {
-                                candidate: legacyCandidate,
-                                format: 'card-authoring:v2',
-                                selectedSuggestions: action.selectedSuggestions,
-                            },
-                        ),
-                    );
-                }
                 return requestWithSession((token) =>
                     dictionaryApi.acceptGenerationJob(
                         token,
-                        authoringReviewJob.id,
-                        {
-                            candidate: action.draft,
-                            format: 'card-authoring:v3',
-                            selectedSuggestions: action.selectedSuggestions,
-                        },
+                        generation.jobId,
+                        cardAuthoringAcceptance(
+                            action.draft,
+                            action.selectedSuggestions,
+                            generation,
+                        ),
                     ),
                 );
             }
@@ -163,68 +142,14 @@ export function useAuthoringMutation({
                 if (action.successor) {
                     if (!authoringReviewJob)
                         throw new Error('Card authoring proposal unavailable');
-                    if (authoringReviewJob.format === 'card-authoring:v1') {
-                        const scope = (() => {
-                            if (action.scope.kind === 'all') {
-                                return action.scope;
-                            }
-                            if (action.scope.field === 'source') {
-                                throw new Error(
-                                    'Source generation requires card-authoring:v2',
-                                );
-                            }
-                            return {
-                                field: action.scope.field,
-                                kind: 'field' as const,
-                            };
-                        })();
-                        const legacyDraft = {
-                            overrides: bodyDraft.overrides,
-                            values: bodyDraft.values,
-                        };
-                        return dictionaryApi.regenerateCardAuthoringGeneration(
-                            token,
-                            authoringReviewJob.id,
-                            {
-                                ...base,
-                                draft: legacyDraft,
-                                discardedSuggestionIds:
-                                    action.discardedSuggestionIds,
-                                format: 'card-authoring:v1',
-                                scope,
-                            },
-                            attempt.key,
-                        );
-                    }
-                    if (authoringReviewJob.format === 'card-authoring:v2') {
-                        const legacyDraft = {
-                            overrides: bodyDraft.overrides,
-                            values: bodyDraft.values,
-                        };
-                        return dictionaryApi.regenerateCardAuthoringGeneration(
-                            token,
-                            authoringReviewJob.id,
-                            {
-                                ...base,
-                                draft: legacyDraft,
-                                discardedSuggestionIds:
-                                    action.discardedSuggestionIds,
-                                format: 'card-authoring:v2',
-                                scope: action.scope,
-                            },
-                            attempt.key,
-                        );
-                    }
-                    return dictionaryApi.regenerateCardAuthoringGeneration(
+                    return regenerateCardAuthoring(
                         token,
-                        authoringReviewJob.id,
                         {
-                            ...base,
-                            discardedSuggestionIds:
-                                action.discardedSuggestionIds,
-                            format: 'card-authoring:v3',
-                            scope: action.scope,
+                            jobId: authoringReviewJob.id,
+                            format: authoringReviewJob.format,
                         },
+                        base,
+                        action,
                         attempt.key,
                     );
                 }
@@ -251,9 +176,28 @@ export function useAuthoringMutation({
             authoringAttempt.current = null;
             return response;
         },
-        onSuccess: async (response) => {
+        onMutate: () => ({ session: editingSession.current }),
+        onError: (_error, _action, attempt) => {
+            if (attempt?.session !== editingSession.current)
+                cardAuthoringAction.reset();
+        },
+        onSuccess: async (response, _action, attempt) => {
             if (response.job.kind !== 'card-authoring') return;
+            if (attempt?.session !== editingSession.current) {
+                if (
+                    response.job.state === 'queued' ||
+                    response.job.state === 'running'
+                ) {
+                    authoringCleanup.current.cancelJobIds.add(response.job.id);
+                } else if (response.job.state === 'review') {
+                    authoringCleanup.current.discardJobIds.add(response.job.id);
+                }
+                void flushCardAuthoringCleanup();
+                return;
+            }
             if (response.job.state === 'accepted') {
+                await queueCardAuthoringCleanup();
+                if (attempt.session !== editingSession.current) return;
                 setEditing(null);
                 setAuthoringJobId(null);
                 setAuthoringReviewJob(null);

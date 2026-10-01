@@ -2,13 +2,14 @@
 feature: dictionary-platform
 title: Dictionary Platform
 status: current
-last_verified: 2026-09-30
+last_verified: 2026-10-01
 surfaces:
     - browser
     - api
 source_paths:
     - .agent/features/021-dictionary-platform/**
     - .agent/features/031-inline-ai-field-generation/**
+    - .agent/improvements/inline-ai-auto-accept.md
     - apps/backend/drizzle/**
     - apps/backend/src/app.ts
     - apps/backend/src/index.ts
@@ -62,9 +63,10 @@ authenticated owner creates and manages a private dictionary, configures
 inherited card fields, authors cards, archives and restores content, and deliberately creates an unlisted
 capability link. An anonymous reader can use that complete link without seeing
 owner data, then sign in and make an independent private fork. An owner can also
-create a card from only a source phrase by reviewing AI values in place of each
-enabled input. The same inline assistance is available while editing a saved
-card, including Source normalization. The separate whole-card AI rewrite with a
+create a card from only a source phrase with automatically applied inline AI
+values followed by explicit Create. The same assistance is available while
+editing a saved card, including Source normalization and automatic full-form
+saving without closing the editor. The separate whole-card AI rewrite with a
 custom instruction remains available for advanced review and explicit stale-card
 recovery. Pasted terms can enter a
 persistent batch proposal, where valid rows are reviewed and selected while
@@ -157,7 +159,7 @@ shared, staging, or production database.
    **Context example**, and **Example translation**, then save and close settings.
    Select the floating **Add card** action and expect a centered desktop dialog or mobile bottom
    sheet. Add source, translation, definition, example, and translated example,
-   then save. Expect the overlay to close and the card to inherit those settings
+   then select **Create card**. Expect the overlay to close and the card to inherit those settings
    and display each value with the correct language metadata.
    Dictionary settings also expose optional **Translation context**. Save a
    bounded multiline value and expect it to persist after reopening settings.
@@ -209,74 +211,70 @@ silently overwrite or replay a stale edit.
 
 1. In an editable dictionary, select **Add card** and enter a valid Source that
    could be normalized, such as a misspelling, an inflected verb, or a noun that
-   conventionally needs an article. Every rendered field exposes a nearby AI
-   action. Generate Source alone and expect durable queued, generating, and
-   validating progress to replace only the Source input. No other field is
-   generated. For an isolated count noun in a language with grammatical gender,
-   expect the normalized value to expose gender through its natural article, or
-   a compact gender marker when the article is unavailable or ambiguous; for
+   conventionally needs an article. Empty fields expose **Generate** with an AI
+   symbol; populated fields expose **Regenerate**, with a field-specific
+   accessible label. Generate Source alone and expect queued, generating, and
+   validating progress for Source only, then an automatically filled editable
+   input. For an isolated count noun in a language with grammatical gender,
+   expect the normalized value to expose gender through its natural article or
+   a compact gender marker when an article is unavailable or ambiguous; for
    example, French `but` becomes `le but` and `parasol` becomes `le parasol`.
-   Resolve ambiguous spellings using the configured Source language rather than
-   another language’s common meaning. A bare noun that omits this required gender
-   signal is not treated as already canonical. Other already canonical Sources
-   report that they are unchanged and keep their input available.
-2. Review a proposed Source in the input's place. **Accept** restores an editable
-   Source input containing the canonical value. **Reject** restores the exact
-   previous draft value. Generate Translation and expect one coherent request to
-   regenerate Translation plus every enabled non-Source field; progress and review
-   replace each affected input while Source stays unchanged. Generate Context
-   example and expect Example translation to regenerate with it when enabled. Use
-   **Try another** to retain distinct previous options behind **Previous AI
-   options** rather than showing second manual inputs.
-3. Select **Generate all**, or **Regenerate all fields** after a proposal
-   exists, to normalize Source and generate every enabled field from that
-   normalized basis. This action is available for a populated saved card without
-   requiring a manual field edit, including after adding or changing card
-   context. If the provider repeats a current or earlier non-Source value, treat
-   that field as unchanged while keeping every novel field from the same
-   response reviewable; one stable value must not fail the whole generation.
-   Dependent suggestions remain unavailable until a changed Source is accepted.
-   A prominent **Review Source first** notice explains that the other suggestions
-   use the proposed Source and that the owner must accept or reject Source before
-   using or regenerating them. Rejecting Source restores the previous Source and
-   clears suggestions based on the rejected value. **Accept all** accepts Source
-   first and then compatible fields; **Reject all** restores every affected
-   input.
-   Example translation cannot be generated until Example contains text.
-4. The first generation of any field on a persisted card keeps the exact
-   pre-generation form as local version 1 and opens the AI review as version 2.
-   Every later successful **Try another**, field regeneration, or **Regenerate all
-   fields** action keeps the preceding complete form as a local version and opens
-   the new version. Use the previous/next arrows and version counter in the footer
-   to switch the whole draft and its review state without another request. Saving
-   uses the displayed version. Generation controls are disabled on a historical
-   version until the newest version is selected. Regenerating Context example
-   displays its newly generated Example translation in the same new version.
-   Generation uses the current effective translation context. Changing a card
-   override after suggestions arrive invalidates those choices; explicitly
-   regenerate before accepting AI values based on the new meaning.
-5. Edit any accepted field manually, accept at least one AI value, and select
-   **Save card**. Expect one atomic card with **Human + AI** authorship. A draft
-   saved without accepting an AI suggestion follows the normal manual path and
-   remains **Human**; unaccepted and rejected suggestions are never persisted as
-   card values.
-6. Open **Edit** for a saved card. Generate and accept one field inline, then save.
-   Expect one atomic update and **Human + AI** authorship. The card action
-   **Rewrite full card with AI** remains available as the separate advanced flow
-   with custom instructions, reload-safe review, and stale-card recovery.
-7. Change Source manually after suggestions arrive. Expect incompatible
-   selections and provenance to clear while visible draft values remain. Generate
-   again from the new Source before accepting dependent values.
-8. If AI authoring is unavailable, the form says so and remains fully usable for
-   manual editing. A provider, network, cancellation, admission, or version
-   failure retains the open draft and already loaded suggestions and never shows
-   raw provider detail.
+   Resolve ambiguous spellings using the configured Source language. Already
+   canonical Sources report that they are unchanged.
+2. Generate Translation and expect one coherent request for Translation plus
+   every enabled non-Source field. Generate Context example and expect its
+   enabled Example translation to regenerate too. Example translation cannot be
+   generated until Example contains text. One bulk action shows **Generate all**
+   when enabled non-Source fields are empty, otherwise **Regenerate all fields**.
+   Whole-form generation normalizes Source before applying compatible dependent
+   results atomically. There are no inline Accept, Reject, Accept all, Reject all,
+   Try another, or previous field-option controls.
+3. A new card still requires explicit **Create card**. Successful generation
+   fills the form without creating a dictionary card. If only Source contained
+   text before the first result, it remains local version 1. If any other content
+   field had a non-whitespace value, preserve the initial form as version 1 and
+   open version 2. Context and field overrides are included in snapshots, but do
+   not count toward this first-version rule. Each subsequent successful request
+   appends a version, even if it returns identical content; failure and
+   cancellation append none.
+4. Open **Edit** for a saved card. Its first successful generation preserves the
+   complete pre-generation form as version 1 and opens version 2. Automatically
+   save the complete visible form, including prior manual edits, context and
+   field settings, then show saved feedback while keeping the editor open.
+   Subsequent generations use the latest persisted optimistic versions and
+   retain local history. While generating or saving, inputs, context/settings,
+   version navigation, Save/Create, and other AI actions are disabled.
+   **Cancel generation** remains available during generation.
+5. Use previous/next footer arrows to preview complete versions without a write.
+   Generation is disabled on historical versions. Explicit **Save card** restores
+   the displayed saved-card snapshot, and **Create card** creates the displayed
+   new-card snapshot with its own AI provenance. History exists only in the
+   current editor session and disappears on close/reload; it is not persisted
+   revision history. Results saved with selected AI values use server-computed
+   **Human + AI** authorship; manual-only creation remains **Human**.
+6. Change Source or translation context manually after generation. Visible draft
+   values remain, but incompatible AI provenance clears; regenerate against the
+   new meaning before using that AI provenance. Manual edits after an automatic
+   save require explicit Save or another successful generation. **Close** on an
+   existing card never reverses automatic saves, but subsequent unsaved changes
+   require confirmation. Closing a new non-empty draft still requires discard
+   confirmation. The separate **Rewrite full card with AI** action retains its
+   custom instruction, explicit review, reload safety, and stale-card recovery.
+7. Failures and cancellation preserve prior content. Invalid generated complete
+   forms remain visible and unsaved with correction feedback. Automatic-save
+   failure offers retry without generating again. An uncertain acceptance freezes
+   the candidate and retries only the same job/payload; if saving succeeded but
+   canonical refresh failed, feedback says saved/refresh failed and retry reloads
+   rather than submitting again. Conflicts preserve the draft and require explicit
+   reload instead of silently overwriting. An unchanged Source-only result without
+   selected suggestions uses ordinary saving only when valid manual changes need
+   persistence; otherwise it avoids a meaningless write. If AI is unavailable,
+   manual editing remains available and no raw provider detail is exposed.
 
-At 320 px and 200% text, bulk and per-field Generate, Accept, Reject, Try another,
-Previous AI options, and form-version controls stack without horizontal page
-overflow. Status and the current version are announced politely, keyboard focus
-follows field order, and suggested values retain their resolved language and
-writing direction.
+At 320 px and 200% text, field/bulk generation and version controls stack without
+horizontal page overflow. Progress, saving, saved, and version status are announced
+politely. Controls remain keyboard reachable and generated values retain their
+resolved language and writing direction.
 
 ### Unlisted reading and independent fork
 
@@ -494,17 +492,18 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
   editable mixed-language fields, stale acceptance rejection, reload/compare,
   regeneration from current versions, and atomic acceptance with server-owned
   authorship.
-- `inline-ai-card-authoring-preserves-field-choices` proves context-aware Source
-  normalization, visible Source-first dependency guidance, and independent field
-  generation in Add Card, stale-context recovery, replacement review, rejection
-  without draft loss, retained alternatives, whole-form version navigation,
-  coherent whole-set acceptance, responsive layout, and one mixed-authorship
-  atomic save through the real web/API/worker/PostgreSQL stack.
+- `inline-ai-card-authoring-preserves-field-choices` proves context-aware automatic
+  Source application, dependent field generation, no inline review controls,
+  explicit Create, both new-draft first-version rules, historical navigation with
+  generation disabled, Create from the displayed historical snapshot's proposal,
+  responsive layout, and mixed authorship through the real web/API/worker/
+  PostgreSQL stack.
 - `saved-card-inline-ai-authoring-preserves-advanced-rewrite` proves a populated
-  saved card can add context and generate all fields without a manual field edit,
-  preserve the original form as version 1, switch back to the version 2 review,
-  restore rejected values, persist an accepted edit with mixed authorship, and
-  retain access to the separate advanced whole-card rewrite.
+  saved card automatically persists the complete form including unrelated manual
+  edits and context, remains open across generations using current versions,
+  retains the original form and result history, previews history without changing
+  persisted values, explicitly restores the displayed version, survives reload
+  without session history, and retains the separate advanced whole-card rewrite.
 - `batch-generation-review-commits-selected-cards` proves server-owned line
   parsing, deterministic chunked generation, persisted review restoration,
   row-level failure/duplicate handling, candidate editing and selection, and one
@@ -543,10 +542,13 @@ test layers where their failure conditions are deterministic.
   failure preserves an already loaded proposal;
   missing, cancelled, discarded, expired, and failed jobs never expose redacted
   original or proposal content.
-- Source-only generation never changes a card automatically. Dependent values
-  based on a proposed Source cannot be accepted before that Source, and rejecting
-  it removes those dependent values. Example translation generation remains
-  unavailable without an Example.
+- Inline Source-only generation fills new drafts without creating them and saves
+  complete valid existing forms automatically. Source and dependent values apply
+  atomically; Example translation generation remains unavailable without Example.
+  Invalid complete forms remain unsaved with correction feedback. Save retries
+  preserve the same candidate and job; successful acceptance with failed refresh
+  retries readback, not a new write. Historical navigation never persists; explicit
+  Save/Create uses the displayed snapshot. Cancellation/failure appends no version.
 - A generation accept conflicts if its dictionary, settings, or card snapshot is
   stale. Reload compares current content but never retries acceptance
   automatically. Identical accepted retries return the stored result identity;

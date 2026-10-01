@@ -13,6 +13,7 @@ export function deriveEditorWorkspace(
         lifecycle,
         share,
         cardMutation,
+        cardAutoSave,
         cardLifecycleMutation,
         reorder,
         generationAction,
@@ -48,6 +49,7 @@ export function deriveEditorWorkspace(
         updateSettings.reset();
         lifecycle.reset();
         cardMutation.reset();
+        cardAutoSave.reset();
         cardLifecycleMutation.reset();
         reorder.reset();
         share.reset();
