@@ -1,0 +1,18 @@
+.fields {
+    animation: reveal 200ms ease-out;
+}
+@keyframes reveal {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .fields {
+        animation: none;
+    }
+}

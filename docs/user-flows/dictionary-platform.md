@@ -41,6 +41,7 @@ e2e_scenarios:
     - document-generation-cleans-original-and-commits-final-review
     - quizlet-import-and-export-round-trip
 related_features:
+    - flashcard-training-web
     - dictionary-permanent-deletion
     - dictionary-pronunciation-audio
     - inline-ai-card-authoring

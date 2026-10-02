@@ -11,3 +11,5 @@ pnpm-lock.yaml
 apps/mobile/.expo
 apps/backend/drizzle/meta
 apps/*/next-env.d.ts
+# Immutable provider export; DESIGN.md records its original content hash.
+.agent/features/033-flashcard-training-backend/designs/flashcard-training/v001/source-export.json

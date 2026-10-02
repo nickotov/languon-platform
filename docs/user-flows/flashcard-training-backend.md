@@ -14,6 +14,7 @@ source_paths:
     - apps/backend/src/config/environment.ts
     - apps/backend/src/app.ts
 related_features:
+    - flashcard-training-web
     - dictionary-platform
     - profile-account-controls
 e2e_command: flashcard-training-backend

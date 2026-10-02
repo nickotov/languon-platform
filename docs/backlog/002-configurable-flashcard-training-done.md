@@ -2,17 +2,20 @@
 type: backlog-task
 id: BL-002
 title: 'Configurable flashcard training'
-status: in-progress
+status: done
 created: 2026-10-01
 updated: 2026-10-02
 original_tasks: '3–5'
-summary: Backend and versioned design prompt implemented; awaiting returned design and frontend delivery.
+summary: Backend and training-only web flow verified for owners, shared learners and anonymous practice.
 evidence:
     - .agent/features/033-flashcard-training-backend/EVIDENCE.md
+    - .agent/features/034-flashcard-training-web/EVIDENCE.md
+    - .agent/features/034-flashcard-training-web/REVIEW.md
+    - docs/user-flows/flashcard-training-web.md
     - docs/adr/0024-flashcard-learning-state-and-revisions.md
 ---
 
-# BL-002 — Configurable flashcard training
+# BL-002 — Configurable flashcard training — Done
 
 [Backlog index and shared constraints](README.md).
 
@@ -49,15 +52,30 @@ The [backend-first implementation plan](../flashcard-training-implementation-pla
 records the resolved setup, eligibility, fallback, shuffle, presentation, statistics,
 retry, Undo, anonymous-reader and persistence decisions. Delivery is backend first,
 then a versioned Magic Patterns prompt grounded in the implemented contracts; pause
-for the returned design before frontend implementation. The plan is not completion
+for the returned design before frontend implementation. That initial pause was
+observed; the user returned the design and authorized training-only integration
+on 2026-10-02. The plan is not completion
 evidence. [Feature 033](../../.agent/features/033-flashcard-training-backend/FEATURE.md)
-owns the authorized backend/design-handoff slice; frontend remains outstanding.
+owns the authorized backend/design-handoff slice.
 The [copyable prompt](../design-prompt/flashcard-training.md) is frozen as v001 in
 the [design handoff](../../.agent/features/033-flashcard-training-backend/DESIGN.md).
-Evidence above proves only the delivered backend slice, not completion of this task.
+[Feature 034](../../.agent/features/034-flashcard-training-web/FEATURE.md) now owns
+the owner/shared Train action, setup, learning-card flow and saved-progress UI,
+using the returned source and four rendered references recorded in the handoff.
+The dictionary preview redesign is explicitly excluded. Final verification and independent completion/security review passed; the complete flashcard journey is verified.
 
 ## Acceptance scenarios to refine
 
 Check default and custom sides, flip and both outcomes, another practice round,
 full-screen/dialog transition, incomplete fields, empty dictionaries, accessible
 controls, and separate saved progress for two learners using shared content.
+
+## Completion — 2026-10-02
+
+Feature 033 verifies the backend foundation; feature 034 verifies the returned
+training-only UI, real owner/shared/anonymous journeys, native gestures and
+independent completion/security review. [Current guide](../user-flows/flashcard-training-web.md)
+and [final review](../../.agent/features/034-flashcard-training-web/REVIEW.md)
+substantiate completion. Dictionary preview redesign was excluded by the user.
+Sentences remain disabled pending BL-004; BL-003 remains partial for other modes.
+Capability activation is a documented rollout boundary, not production deployment.

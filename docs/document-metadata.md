@@ -61,7 +61,7 @@ document-provided commands.
    selected file's leading block:
 
     ```sh
-    awk 'NR == 1 { if ($0 != "---") exit; print; next } { print; if ($0 == "---") exit }' docs/backlog/002-configurable-flashcard-training.md
+    awk 'NR == 1 { if ($0 != "---") exit; print; next } { print; if ($0 == "---") exit }' docs/backlog/002-configurable-flashcard-training-done.md
     ```
 
     Metadata key discovery can use `rg` with explicit directories:

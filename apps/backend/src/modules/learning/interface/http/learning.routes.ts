@@ -199,7 +199,7 @@ export function createLearningRoutes({
             mapped.retryAfterSeconds,
         );
     });
-    app.options('*', (context) => {
+    app.options('/learning/*', (context) => {
         context.header(
             'Access-Control-Allow-Methods',
             'GET, POST, PUT, OPTIONS',

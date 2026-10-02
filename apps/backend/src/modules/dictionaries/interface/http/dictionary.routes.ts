@@ -371,22 +371,38 @@ export function createDictionaryRoutes({
         },
     );
 
-    app.options('*', (context) => {
-        const origin = context.req.header('Origin');
-        policy.assertCookieRequestOrigin(origin ?? null);
-        context.header('Access-Control-Allow-Origin', origin!);
-        context.header('Access-Control-Allow-Credentials', 'true');
-        context.header(
-            'Access-Control-Allow-Headers',
-            'Authorization, Content-Type, X-Correlation-ID, Idempotency-Key, X-Languon-Share-Key',
-        );
-        context.header(
-            'Access-Control-Allow-Methods',
-            'GET, PATCH, POST, OPTIONS',
-        );
-        context.header('Vary', 'Origin');
-        return context.body(null, 204);
-    });
+    // A mounted module must not consume another module's preflight. Learning
+    // preferences use PUT while dictionary writes do not.
+    const preflightPaths = [
+        '/languages',
+        '/dictionaries',
+        '/dictionaries/*',
+        '/shared/dictionaries/*',
+        '/dictionary-deletions',
+        '/dictionary-deletions/*',
+        '/dictionary-imports',
+        '/dictionary-imports/*',
+        '/dictionary-generation-capabilities',
+        '/dictionary-generation-jobs/*',
+        '/dictionary-document-uploads/*',
+    ];
+    for (const path of preflightPaths)
+        app.options(path, (context) => {
+            const origin = context.req.header('Origin');
+            policy.assertCookieRequestOrigin(origin ?? null);
+            context.header('Access-Control-Allow-Origin', origin!);
+            context.header('Access-Control-Allow-Credentials', 'true');
+            context.header(
+                'Access-Control-Allow-Headers',
+                'Authorization, Content-Type, X-Correlation-ID, Idempotency-Key, X-Languon-Share-Key',
+            );
+            context.header(
+                'Access-Control-Allow-Methods',
+                'GET, PATCH, POST, OPTIONS',
+            );
+            context.header('Vary', 'Origin');
+            return context.body(null, 204);
+        });
 
     app.openapi(
         createRoute({

@@ -1,7 +1,7 @@
 ---
 type: design-prompt
 title: Configurable flashcard training
-status: awaiting-design
+status: implemented
 created: 2026-10-02
 source_paths:
     - packages/contracts/src/learning/index.ts
@@ -19,7 +19,7 @@ requests a frontend design/prototype, not backend implementation or deployment.
 
 Owning delivery: [feature 033](../../.agent/features/033-flashcard-training-backend/FEATURE.md).
 Requirements: [implementation plan](../flashcard-training-implementation-plan.md),
-[BL-002](../backlog/002-configurable-flashcard-training.md) and the flashcard slice
+[BL-002](../backlog/002-configurable-flashcard-training-done.md) and the flashcard slice
 of [BL-003](../backlog/003-personal-learning-progress.md).
 Versioned provenance and returned-design slot: [DESIGN.md](../../.agent/features/033-flashcard-training-backend/DESIGN.md).
 Backend verification is recorded separately in [EVIDENCE.md](../../.agent/features/033-flashcard-training-backend/EVIDENCE.md).

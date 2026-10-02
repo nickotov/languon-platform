@@ -6,9 +6,10 @@ status: in-progress
 created: 2026-10-01
 updated: 2026-10-02
 original_tasks: '6 and 10'
-summary: Flashcard backend foundation implemented; frontend use and other exercise modes remain outstanding.
+summary: Flashcard persistence verified and frontend progress implemented under feature 034; other exercise modes remain outstanding.
 evidence:
     - .agent/features/033-flashcard-training-backend/EVIDENCE.md
+    - .agent/features/034-flashcard-training-web/EVIDENCE.md
     - docs/adr/0024-flashcard-learning-state-and-revisions.md
 ---
 
@@ -47,7 +48,13 @@ retention, archive, access and deletion behavior. Its backend delivery implement
 only this task's flashcard foundation, not progress for all future exercise types.
 Planning is not implementation evidence. [Feature 033](../../.agent/features/033-flashcard-training-backend/FEATURE.md)
 owns the authorized flashcard backend slice; other exercise modes remain outstanding.
-Linked evidence proves only this flashcard foundation, not completion of this task.
+[Feature 034](../../.agent/features/034-flashcard-training-web/FEATURE.md) implements
+the flashcard frontend's personal saved totals, acknowledged rating/retry/Undo,
+independent shared-learner progress and session-only anonymous behavior.
+Its evidence and review own current frontend verification. Linked evidence covers
+only the flashcard scope, not completion of this task; progress for sentences,
+grammar and manually created exercises remains outstanding. Keep BL-003 in
+progress after completing flashcards.
 
 Progress metrics and aggregation, what counts as a learning-relevant content
 change, exercise editing/version changes, settings changes, archive/restore,

@@ -18,10 +18,12 @@ import {
     dictionaryApi,
     DictionaryApiError,
     languageForRole,
+    languageDirection,
     languageLabel,
 } from '@/fsd/entities/dictionary';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
+import { TrainingLauncher } from '@/fsd/features/flashcard-training';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     Badge,
@@ -46,6 +48,7 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
     const queryClient = useQueryClient();
     const { requestWithSession } = useAuth();
     const sessionStatus = useSessionStore((state) => state.status);
+    const learnerId = useSessionStore((state) => state.user?.id);
     const [capability, setCapability] = useState<{
         key: string;
         revision: number;
@@ -142,6 +145,18 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
     const returnTo = `/shared/dictionaries/${shareId}`;
     const signInQuery = new URLSearchParams({ returnTo }).toString();
     const signInHref = `/login?${signInQuery}#${shareKey}`;
+    const trainingTarget = { kind: 'shared' as const, shareId, shareKey };
+    const trainingIdentity = `${learnerId ?? 'anonymous'}:shared:${shareId}:${capability?.revision ?? 0}`;
+    const sourceLanguage = {
+        code: dictionary.sourceLanguage,
+        name: languageLabel(catalog, dictionary.sourceLanguage, locale),
+        direction: languageDirection(catalog, dictionary.sourceLanguage),
+    };
+    const targetLanguage = {
+        code: dictionary.targetLanguage,
+        name: languageLabel(catalog, dictionary.targetLanguage, locale),
+        direction: languageDirection(catalog, dictionary.targetLanguage),
+    };
 
     return (
         <main className={styles.main}>
@@ -175,6 +190,16 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
                     })}
                 </p>
                 <Badge tone='warning'>{t('dictionary.public.noIndex')}</Badge>
+                <TrainingLauncher
+                    activeCount={dictionary.activeCardCount}
+                    dictionaryTitle={dictionary.name}
+                    identity={trainingIdentity}
+                    requestWithSession={requestWithSession}
+                    signedIn={sessionStatus === 'authenticated'}
+                    sourceLanguage={sourceLanguage}
+                    target={trainingTarget}
+                    targetLanguage={targetLanguage}
+                />
             </header>
 
             <Card className={styles.forkCard}>

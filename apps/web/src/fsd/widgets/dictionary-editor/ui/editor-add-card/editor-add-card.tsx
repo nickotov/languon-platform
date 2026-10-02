@@ -1,7 +1,6 @@
 import { Button } from '@/fsd/shared/ui';
 import { Plus } from 'lucide-react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor/dictionary-editor.module.css';
 
 export function EditorAddCard({
     model,
@@ -12,7 +11,7 @@ export function EditorAddCard({
 
     return (
         <Button
-            className={styles.addCard}
+            className='shadow-elev-lg'
             leadingIcon={<Plus size={20} aria-hidden />}
             disabled={cardMutation.isPending}
             onClick={openCardDraft}

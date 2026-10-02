@@ -143,6 +143,7 @@ export default defineConfig({
                 AUTH_WEBAUTHN_RP_ID: webUrl.hostname,
                 BACKEND_PORT: backendPort,
                 DATABASE_URL: databaseUrl,
+                LEARNING_FLASHCARDS_ENABLED: 'true',
                 DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
                 DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
@@ -230,7 +231,7 @@ export default defineConfig({
         {
             command: `pnpm exec next dev --turbopack -p ${webPort} -H 127.0.0.1`,
             env: {
-                AUTH_E2E_DIST_DIR: '.next-e2e',
+                AUTH_E2E_DIST_DIR: process.env.AUTH_E2E_DIST_DIR ?? '.next-e2e',
                 NEXT_PUBLIC_API_URL: backendOrigin,
             },
             reuseExistingServer,

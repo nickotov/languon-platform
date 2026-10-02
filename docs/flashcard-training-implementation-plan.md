@@ -1,34 +1,42 @@
 ---
 type: implementation-plan
 title: Backend-first configurable flashcard training
-status: backend-complete-awaiting-design
+status: implemented
 created: 2026-10-02
 updated: 2026-10-02
 backlog_tasks:
     - BL-002
     - BL-003
 source_paths:
+    - apps/backend/src/modules/learning
     - apps/backend/src/modules/dictionaries
     - apps/backend/src/modules/users
     - packages/contracts/src
     - apps/web/src/fsd/widgets/dictionary-editor
     - apps/web/src/fsd/pages/shared-dictionary
+    - apps/web/src/fsd/features/flashcard-training
+evidence:
+    - .agent/features/033-flashcard-training-backend/EVIDENCE.md
+    - .agent/features/034-flashcard-training-web/EVIDENCE.md
 ---
 
 # Backend-first configurable flashcard training
 
-Related backlog: [BL-002](backlog/002-configurable-flashcard-training.md)
+Related backlog: [BL-002](backlog/002-configurable-flashcard-training-done.md)
 and the flashcard-specific foundation of
 [BL-003](backlog/003-personal-learning-progress.md).
 Delivery checkpoint: [planning record](../.agent/improvements/flashcard-delivery-plan.md).
 Implemented backend proof: [feature evidence](../.agent/features/033-flashcard-training-backend/EVIDENCE.md)
 and [ADR-0024](adr/0024-flashcard-learning-state-and-revisions.md).
-Next handoff: [copyable Magic Patterns prompt](design-prompt/flashcard-training.md)
+Design provenance: [copyable Magic Patterns prompt](design-prompt/flashcard-training.md)
 and its [versioned design record](../.agent/features/033-flashcard-training-backend/DESIGN.md).
+Frontend continuation: [feature 034](../.agent/features/034-flashcard-training-web/FEATURE.md),
+[ExecPlan](../.agent/features/034-flashcard-training-web/EXEC_PLAN.md) and
+[verification evidence](../.agent/features/034-flashcard-training-web/EVIDENCE.md).
 
 ## Delivery agreement and gates
 
-The user requested two parts on 2026-10-02:
+The initial delivery agreement on 2026-10-02 requested two parts:
 
 1. Implement and verify the backend.
 2. Use the implemented backend and existing frontend code to produce a copyable
@@ -45,6 +53,14 @@ Create a backend-scoped feature workspace and branch
 according to the feature workflow; link its specification, execution plan,
 evidence and review here. This document is a product/technical planning baseline,
 not implementation evidence or an accepted ADR.
+
+The user subsequently returned the Magic Patterns design on 2026-10-02 and
+requested implementation of its training-related UI and session-start action
+only. Feature 034 continues the authorized delivery using selected provider v2
+artifact `db684c8f-e7a1-4f6c-804f-e0fd6a8da2d4`. The versioned design record retains
+the immutable source export and four supplied rendered references. Dictionary
+preview/editor redesign, prototype shell/designer and mock adapters remain out
+of scope. The original stop was observed; it is no longer the current checkpoint.
 
 Backend delivery may complete its scoped feature, but BL-002 remains incomplete
 until its frontend journey is implemented and verified. BL-003 remains incomplete
@@ -155,19 +171,20 @@ Owner prefix: `/learning/dictionaries/:dictionaryId`.
 Shared prefix: `/learning/shared-dictionaries/:shareId`, using the existing
 dedicated share-key header and live capability semantics.
 
-| Operation                                           | Contract                                                                                                                                                            |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /learning/capabilities`                        | Feature availability.                                                                                                                                               |
-| `GET {prefix}/entries`                              | Active source/translation previews; search, cursor, maximum 25 per page.                                                                                            |
-| `GET/PUT {prefix}/flashcards/preferences`           | Signed-in only; optimistic concurrency.                                                                                                                             |
-| `POST {prefix}/flashcards/prepare`                  | All/manual scope and field configuration; unique manual IDs capped at 10,000; ordered eligible ID manifest and skipped/fallback counts, not full entry content.     |
-| `POST {prefix}/flashcards/items`                    | Maximum 25 requested IDs plus configuration; projected plain-text sides, language/direction, requested versus fallback field, learning version and unavailable IDs. |
-| `GET {prefix}/flashcards/progress`                  | Signed-in current totals over active entries.                                                                                                                       |
-| `POST {prefix}/flashcards/attempts`                 | Client operation UUID, session UUID, entry ID, expected learning version, round, rating and configuration keys; acknowledged attempt/progress response.             |
-| `POST {prefix}/flashcards/attempts/:attemptId/undo` | Idempotent undo request with operation ID and conflict handling.                                                                                                    |
+| Operation                                           | Contract                                                                                                                                                               |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /learning/capabilities`                        | Feature availability.                                                                                                                                                  |
+| `GET {prefix}/entries`                              | Active source/translation previews; search, cursor, maximum 25 per page.                                                                                               |
+| `GET/PUT {prefix}/flashcards/preferences`           | Signed-in only; optimistic concurrency.                                                                                                                                |
+| `POST {prefix}/flashcards/prepare`                  | All/manual scope and field configuration; unique manual IDs capped at 10,000; ordered eligible ID manifest and skipped/fallback counts, not full entry content.        |
+| `POST {prefix}/flashcards/items`                    | Maximum 25 requested IDs plus configuration; projected plain-text sides, language/direction, requested versus fallback field, learning version and unavailable IDs.    |
+| `GET {prefix}/flashcards/progress`                  | Signed-in current totals over active entries.                                                                                                                          |
+| `POST {prefix}/flashcards/attempts`                 | Client operation UUID, session UUID, entry ID, expected learning version, round, rating and configuration keys; acknowledged attempt response; totals read separately. |
+| `POST {prefix}/flashcards/attempts/:attemptId/undo` | Idempotent undo request with operation ID and conflict handling.                                                                                                       |
 
-These paths are planned, not yet available. Final DTO/error shapes must be derived
-from implemented contracts before writing the design prompt. Validate boundaries
+These paths were delivered and verified by feature 033; the actual exported
+contracts are authoritative for DTO/error shapes. Feature 034 consumes those
+endpoints rather than substituting the prototype's mock adapter. Validate boundaries
 with strict Zod schemas, export inferred types, and update OpenAPI consistently.
 Reject empty/duplicate side selections, oversized batches and invalid manual IDs.
 Provide stable error distinctions for stale content, unavailable access, preference
@@ -218,7 +235,9 @@ must operate independently of UI activation. Activate only when every serving AP
 card writer, account-purge worker and supported rollback floor implements revision
 and cleanup rules. Do not allow old writers to preserve stale Known results.
 Use the existing singleton migration process and forward-compatible additive rollout;
-no destructive down-migration. Keep the frontend disabled while awaiting design.
+no destructive down-migration. The design has now returned; the capability stays
+disabled by default. Feature 034 enables it only in disposable verification
+processes, not production rollout.
 
 Required backend evidence:
 
@@ -243,7 +262,7 @@ Required backend evidence:
 Record exact commands, tested patch/environment, results and gaps in the feature
 evidence record. Compilation alone does not complete backend delivery.
 
-## Part 2 — Design prompt and deliberate stop
+## Part 2 — Design prompt and deliberate stop (completed handoff)
 
 Only after backend contracts and behavior are verified:
 
@@ -299,16 +318,47 @@ reload changed entries before another rating. Closing/reloading discards queue
 and undo context, not acknowledged results. Authentication/share-key changes clear
 and end the session. Never silently import anonymous progress after login.
 
-The eventual frontend requires component/state tests, mapped owner/shared/anonymous
+Frontend delivery requires component/state tests, mapped owner/shared/anonymous
 journeys, and real browser evidence at mobile/tablet/desktop, 200% zoom and long/RTL
 content, covering fullscreen fallback, keyboard/touch, retries and access/content
-changes. Those checks are deferred, not waived, by this backend-first boundary.
+changes. Those checks were deferred, not waived, by the backend-first boundary;
+feature 034 now owns their execution and evidence.
 
-## Resume checkpoint
+## Checkpoint history and current continuation
+
+### Backend handoff — 2026-10-02
 
 Initial source base was `b7f4fe7`; authorization was received on 2026-10-02.
 Backend and code-grounded v001 prompt are implemented and verified in feature 033.
 The backend capability remains disabled by default; no frontend was implemented.
-Stop awaiting the user's returned design. Resume from feature evidence, DESIGN.md
+At this checkpoint work stopped awaiting the user's returned design. Resume from feature evidence, DESIGN.md
 and the selected returned-design revision, not conversation memory. Preserve the
 confirmed product decisions unless implementation reveals a real contradiction.
+
+### Returned design and frontend implementation — 2026-10-02
+
+The user supplied [the Magic Patterns design](https://www.magicpatterns.com/c/1ezcc3hob8mnnnku9w26tl)
+and four reference screenshots. Its selected training-only source and rendered
+references are captured in [DESIGN.md](../.agent/features/033-flashcard-training-backend/DESIGN.md).
+Feature 034 implements real capability-aware owner/shared Train actions,
+configurable setup, fullscreen/overlay/dialog learning cards, acknowledged
+ratings/retry/Undo, and round/session/saved-progress results. Existing dictionary
+previews remain unchanged; no prototype mock API or production dependency is
+introduced. Compact labelled mobile ratings preserve non-drag accessibility
+where the prototype hides desktop side controls.
+
+Continue from feature 034's ExecPlan, evidence and review records for outstanding
+verification, remediation and completion. This plan records implementation scope
+and chronology; it does not claim completed runtime fidelity or final review.
+BL-002 remains in progress until its full journey is verified. BL-003 remains in
+progress because sentence/grammar/manual-exercise progress is outside this slice.
+
+## Verified frontend completion — 2026-10-02
+
+Feature 034 completed the selected training-only design. Its evidence/review and
+current web user-flow guide establish implementation; BL-002 is Done, BL-003 stays
+in progress for other modes. Dictionary previews were not redesigned. The default
+capability remains disabled pending intentional activation; Cards appears after
+enabling the local backend flag and restarting it. Full browser-chrome zoom is
+not claimed: final accessibility evidence documents CSS content scaling and
+separate equivalent-viewport controls, reduced motion and native touch.

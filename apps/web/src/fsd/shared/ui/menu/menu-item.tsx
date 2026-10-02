@@ -25,15 +25,20 @@ export function MenuItemButton({
 
     function select() {
         item.onSelect();
-        onClose();
+        if (item.closeOnSelect !== false) onClose();
     }
 
     function move(event: KeyboardEvent<HTMLButtonElement>) {
         onMove(event, index);
     }
 
+    const accessibleLabel = item.hint
+        ? `${item.label} ${item.hint}`
+        : undefined;
+
     return (
         <button
+            aria-label={accessibleLabel}
             data-tone={item.tone}
             disabled={item.disabled}
             onClick={select}
@@ -49,6 +54,7 @@ export function MenuItemButton({
                 </span>
             ) : null}
             {item.label}
+            {item.hint && <span className={styles.hint}> {item.hint}</span>}
         </button>
     );
 }

@@ -1,3 +1,5 @@
+import { trainingEn } from './training';
+
 export const profileFeatureMessages = {
     'dictionary.authoring.sourceLabel': 'Source word or phrase',
     'dictionary.authoring.sourceActionName': 'Source',
@@ -283,6 +285,7 @@ export const profileFeatureMessages = {
 } as const;
 
 export const en = {
+    ...trainingEn,
     'dictionary.audio.playField': 'Play {field}',
     'dictionary.audio.stopField': 'Stop {field}',
     'dictionary.audio.play': 'Play',

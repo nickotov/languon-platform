@@ -33,6 +33,30 @@ function application() {
 }
 
 describe('dictionary HTTP routes', () => {
+    it('leaves learning preference preflight to its owning router', async () => {
+        const app = application();
+        app.options('/learning/*', (context) => {
+            context.header(
+                'Access-Control-Allow-Methods',
+                'GET, POST, PUT, OPTIONS',
+            );
+            return context.body(null, 204);
+        });
+        const response = await app.request(
+            '/learning/dictionaries/test/flashcards/preferences',
+            {
+                method: 'OPTIONS',
+                headers: {
+                    Origin: 'http://localhost:3333',
+                    'Access-Control-Request-Method': 'PUT',
+                },
+            },
+        );
+        expect(response.status).toBe(204);
+        expect(response.headers.get('access-control-allow-methods')).toContain(
+            'PUT',
+        );
+    });
     it('maps recent-auth deletion failures to the established transport error', () => {
         const mapped = mapDictionaryHttpError(
             new RecentAuthenticationRequiredError(),

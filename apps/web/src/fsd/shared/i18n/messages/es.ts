@@ -1,6 +1,8 @@
 import { profileFeatureMessages, type Messages } from './en';
+import { trainingEs } from './training';
 
 export const es = {
+    ...trainingEs,
     'dictionary.audio.playField': 'Escuchar {field}',
     'dictionary.audio.stopField': 'Detener {field}',
     'dictionary.audio.play': 'Escuchar',

@@ -29,6 +29,21 @@ const jsonHeaders = {
 };
 
 describe('learning HTTP routes', () => {
+    it('leaves unrelated preflight to its owning router', async () => {
+        const { app } = application();
+        app.options('/users/*', (context) => {
+            context.header('Access-Control-Allow-Methods', 'PATCH');
+            return context.body(null, 204);
+        });
+        const response = await app.request('/users/me/profile', {
+            method: 'OPTIONS',
+            headers: { Origin: 'http://localhost:3333' },
+        });
+        expect(response.status).toBe(204);
+        expect(response.headers.get('access-control-allow-methods')).toBe(
+            'PATCH',
+        );
+    });
     it.each([prefix, sharedPrefix])(
         'distinguishes an unavailable entry from lost dictionary access for %s',
         async (routePrefix) => {

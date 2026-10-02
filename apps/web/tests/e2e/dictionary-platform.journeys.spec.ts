@@ -122,8 +122,13 @@ async function createDictionary(page: Page, name: string): Promise<void> {
     await page.getByLabel('Translate from').selectOption('en');
     await page.getByLabel('Translate to').selectOption('es');
     await page.getByRole('button', { name: 'Create dictionary' }).click();
-    await expect(page.getByRole('heading', { name })).toBeVisible();
-    await expect(page.getByText('Private', { exact: true })).toBeVisible();
+    const dictionaryHeading = page.getByRole('heading', { name });
+    await expect(dictionaryHeading).toBeVisible();
+    await expect(
+        dictionaryHeading
+            .locator('xpath=ancestor::header')
+            .getByText('Private', { exact: true }),
+    ).toBeVisible();
 }
 
 async function addPopulatedCard(

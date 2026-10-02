@@ -83,12 +83,15 @@
 }
 
 .addCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     position: fixed;
     bottom: 24px;
     inset-inline-start: 50%;
     transform: translateX(-50%);
     z-index: 40;
-    box-shadow: var(--elevation-lg);
+    max-width: calc(100vw - 32px);
 }
 
 .statusTabs {

@@ -1,6 +1,9 @@
 'use client';
 
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
+import { languageDirection, languageLabel } from '@/fsd/entities/dictionary';
+import { useSessionStore } from '@/fsd/entities/session';
+import { TrainingLauncher } from '@/fsd/features/flashcard-training';
 import { LoadingState } from '@/fsd/shared/ui';
 
 import { useDictionaryEditorController } from '../../hooks/use-dictionary-editor-controller';
@@ -33,6 +36,8 @@ export function DictionaryEditor({
         dictionaryId,
         requestWithSession,
     );
+    const learnerId = useSessionStore((state) => state.user?.id);
+    const sessionStatus = useSessionStore((state) => state.status);
 
     const { dictionary, languages, cards } = model.queries;
     const { t, href } = model.state;
@@ -57,6 +62,29 @@ export function DictionaryEditor({
     const view = createEditorView(model);
 
     const { active } = view;
+    const current = dictionary.data.dictionary;
+    const catalog = languages.data.languages;
+    const target = { kind: 'owner' as const, dictionaryId };
+    const sourceLanguage = {
+        code: current.sourceLanguage,
+        name: languageLabel(
+            catalog,
+            current.sourceLanguage,
+            model.state.locale,
+        ),
+        direction: languageDirection(catalog, current.sourceLanguage),
+    };
+    const targetLanguage = {
+        code: current.targetLanguage,
+        name: languageLabel(
+            catalog,
+            current.targetLanguage,
+            model.state.locale,
+        ),
+        direction: languageDirection(catalog, current.targetLanguage),
+    };
+    const trainingIdentity = `${learnerId ?? 'anonymous'}:owner:${dictionaryId}`;
+    const signedIn = sessionStatus === 'authenticated';
 
     return (
         <main id='dictionary-content' tabIndex={-1} className={styles.main}>
@@ -64,9 +92,25 @@ export function DictionaryEditor({
             <EditorFeedback model={view.workspace.feedback} />
             <EditorToolbar model={view.workspace.toolbar} />
             <EditorCards model={view.workspace.cards} />
+            <div className={styles.addCard}>
+                <TrainingLauncher
+                    activeCount={current.activeCardCount}
+                    archived={!active}
+                    dictionaryTitle={current.name}
+                    identity={trainingIdentity}
+                    placement='top'
+                    requestWithSession={requestWithSession}
+                    signedIn={signedIn}
+                    sourceLanguage={sourceLanguage}
+                    target={target}
+                    targetLanguage={targetLanguage}
+                />
+                {active ? (
+                    <EditorAddCard model={view.workspace.addCard} />
+                ) : null}
+            </div>
             {active ? (
                 <>
-                    <EditorAddCard model={view.workspace.addCard} />
                     <EditorDiscardDialog model={view.authoring.discardDialog} />
                     <EditorSettingsSheet model={view.authoring.settingsSheet} />
                     <EditorSharingSheet model={view.authoring.sharingSheet} />

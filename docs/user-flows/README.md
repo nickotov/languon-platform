@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Flashcard Training Web](./flashcard-training-web.md) — training setup, learning
+  sessions, Undo and independent personal progress; existing previews unchanged.
+
 - [Web Dev Command Panel](./web-dev-panel.md) — reviewed command selection,
   portable quick-access layouts, isolated logs, lifecycle control, and
   synchronized multi-tab state.

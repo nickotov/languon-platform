@@ -1,6 +1,8 @@
 import { profileFeatureMessages, type Messages } from './en';
+import { trainingRu } from './training';
 
 export const ru = {
+    ...trainingRu,
     ...profileFeatureMessages,
     'dictionary.authoring.sourceActionName': 'Исходный текст',
     'dictionary.authoring.sourceLabel': 'Исходное слово или фраза',
