@@ -22,6 +22,7 @@ e2e_scenarios:
     - owner-deletes-selected-and-all-archived-cards
     - stale-or-busy-deletion-preserves-content
 related_features:
+    - flashcard-training-backend
     - dictionary-platform
     - dictionary-pronunciation-audio
     - ai-credit-wallet

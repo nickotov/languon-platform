@@ -1148,6 +1148,7 @@ run('card-authoring generation persistence', () => {
             .where(eq(dictionaryCardsTable.id, accepted.outcome.cardId));
         expect(card).toMatchObject({
             authorship: 'mixed',
+            learningVersion: 1,
             source: 'hello',
             translation: 'coucou',
         });
@@ -1244,6 +1245,11 @@ run('card-authoring generation persistence', () => {
         ).resolves.toMatchObject({
             outcome: { cardId: existingCard.card.id, cardVersion: 2 },
         });
+        const [learnableSingle] = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.id, existingCard.card.id));
+        expect(learnableSingle?.learningVersion).toBe(2);
         const [acceptedSingleProposal] = await database
             .select()
             .from(dictionaryGenerationProposalsTable)
@@ -1596,6 +1602,7 @@ run('card-authoring generation persistence', () => {
             .where(eq(dictionaryCardsTable.id, card.id));
         expect(persisted).toMatchObject({
             source: 'the atelier',
+            learningVersion: persistedBefore!.learningVersion + 1,
             sortKey: persistedBefore!.sortKey,
             version: card.version + 1,
         });

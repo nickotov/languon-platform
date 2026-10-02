@@ -1,3 +1,8 @@
+---
+type: index
+title: User-flow testing guides
+---
+
 # User-flow testing guides
 
 These guides let a developer verify a completed feature from a local environment
@@ -29,6 +34,8 @@ evidence with a repeatable manual/browser/API/device recipe.
   owner playback, on-demand generation and cached audio.
 - [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
   card authoring, lifecycle recovery, unlisted reading, and private forks.
+- [Flashcard training backend](./flashcard-training-backend.md) — bounded card
+  preparation, learner-specific ratings/preferences, replay, Undo and live access.
 - [Dictionary Permanent Deletion](./dictionary-permanent-deletion.md) —
   irreversible single, selected, and all-archived dictionary and card cleanup.
 - [Admin User Management](./admin-user-management.md) — owner authentication,

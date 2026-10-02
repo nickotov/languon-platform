@@ -1,4 +1,11 @@
-import { appendFileSync, cpSync, mkdtempSync, rmSync } from 'node:fs';
+import {
+    appendFileSync,
+    cpSync,
+    mkdtempSync,
+    readFileSync,
+    rmSync,
+    writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -102,6 +109,9 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             'dictionary_generation_provider_usage_archive',
             'dictionary_idempotency_keys',
             'dictionary_settings',
+            'flashcard_attempts',
+            'flashcard_entry_progress',
+            'flashcard_preferences',
             'password_credentials',
             'user_emails',
             'users',
@@ -426,7 +436,63 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
       from languon_migrations.history
     `;
 
-        expect(history[0]?.count).toBe('37');
+        expect(history[0]?.count).toBe('41');
+    });
+
+    it('upgrades pre-learning vocabulary additively with initial learning versions', async () => {
+        const temporaryDirectory = mkdtempSync(
+            join(tmpdir(), 'languon-learning-upgrade-'),
+        );
+        const copiedMigrations = join(temporaryDirectory, 'drizzle');
+        try {
+            cpSync(getMigrationsFolder(), copiedMigrations, {
+                recursive: true,
+            });
+            const journalPath = join(copiedMigrations, 'meta', '_journal.json');
+            const journal = JSON.parse(readFileSync(journalPath, 'utf8')) as {
+                entries: { idx: number }[];
+            };
+            journal.entries = journal.entries.filter((entry) => entry.idx < 37);
+            // Only the temporary fixture journal is reduced; checked-in generated
+            // migrations remain immutable and are then applied unchanged.
+            writeFileSync(journalPath, JSON.stringify(journal));
+            await runPostgresMigrations({
+                client,
+                migrationsFolder: copiedMigrations,
+                purpose: grantDisposableMigrationPurpose(),
+            });
+            const ownerId = '11111111-1111-4111-8111-111111111111';
+            const dictionaryId = '22222222-2222-4222-8222-222222222222';
+            const entryId = '33333333-3333-4333-8333-333333333333';
+            await client`insert into users (id,status) values (${ownerId},'active')`;
+            await client`insert into dictionaries (id,owner_id,name,source_language_tag,target_language_tag) values (${dictionaryId},${ownerId},'Upgrade fixture','en','es')`;
+            await client`insert into dictionary_settings (dictionary_id) values (${dictionaryId})`;
+            await client`insert into dictionary_cards (id,dictionary_id,source,normalized_source,translation,sort_key,authorship) values (${entryId},${dictionaryId},'hello','hello','hola',1024,'human')`;
+            await migrateTestDatabase(client);
+            const [entry] = await client<
+                {
+                    source: string;
+                    translation: string;
+                    learning_version: number;
+                    version: number;
+                }[]
+            >`
+                select source,translation,learning_version,version from dictionary_cards where id=${entryId}`;
+            expect(entry).toEqual({
+                source: 'hello',
+                translation: 'hola',
+                learning_version: 1,
+                version: 1,
+            });
+            const [state] = await client<{ count: number }[]>`
+                select ((select count(*) from flashcard_attempts)+(select count(*) from flashcard_entry_progress)+(select count(*) from flashcard_preferences))::int as count`;
+            expect(state?.count).toBe(0);
+            await expect(
+                client`update dictionary_cards set learning_version=0 where id=${entryId}`,
+            ).rejects.toMatchObject({ code: '23514' });
+        } finally {
+            rmSync(temporaryDirectory, { force: true, recursive: true });
+        }
     });
 
     it('serializes simultaneous migration runners with the advisory lock', async () => {
@@ -447,7 +513,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
         from languon_migrations.history
       `;
 
-            expect(history[0]?.count).toBe('37');
+            expect(history[0]?.count).toBe('41');
         } finally {
             await secondClient.end();
         }

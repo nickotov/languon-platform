@@ -1,3 +1,8 @@
+---
+type: index
+title: Design prompts
+---
+
 # Design prompts
 
 Copyable Magic Patterns prompts and source-grounded UI checklists generated with
@@ -9,6 +14,7 @@ requirement IDs for design review and later frontend verification.
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | [Authenticated app shell and sidebar](./authenticated-app-shell-sidebar.md) | Reusable authenticated navigation across dictionaries and profile, including desktop rail and mobile drawer  | Implemented selected v001                            |
 | [Dictionary and AI cards](./dictionary-ai-cards.md)                         | Dictionary library/settings, manual cards, inline AI authoring, saved-card AI review and pronunciation audio | Draft: supply Magic Patterns design-system reference |
+| [Flashcard training](./flashcard-training.md)                               | Configurable cards, fullscreen/dialog practice, personal learning progress and retry/undo states             | Awaiting design; frontend not implemented            |
 
 Every saved brief also has a [versioned handoff](../../.agent/DESIGN_HANDOFF.md)
 with a frozen prompt, generated-design URL slot, approval history and selected

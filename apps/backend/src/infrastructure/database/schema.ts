@@ -129,6 +129,9 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
 
 export const databaseSchema = {
+    flashcardPreferences: flashcardPreferencesTable,
+    flashcardAttempts: flashcardAttemptsTable,
+    flashcardEntryProgress: flashcardEntryProgressTable,
     aiCreditAccounts: aiCreditAccountsTable,
     aiCreditAdminRemovalAllocations: aiCreditAdminRemovalAllocationsTable,
     aiCreditAdminRemovals: aiCreditAdminRemovalsTable,
@@ -169,3 +172,14 @@ export const databaseSchema = {
     userEmails: userEmailsTable,
     users: usersTable,
 };
+
+export {
+    flashcardPreferencesTable,
+    flashcardAttemptsTable,
+    flashcardEntryProgressTable,
+} from '../../modules/learning/infrastructure/persistence/drizzle/schema';
+import {
+    flashcardPreferencesTable,
+    flashcardAttemptsTable,
+    flashcardEntryProgressTable,
+} from '../../modules/learning/infrastructure/persistence/drizzle/schema';

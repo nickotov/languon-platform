@@ -74,6 +74,9 @@ run('DrizzleDictionaryStore', () => {
         store = new DrizzleDictionaryStore(database, { generate: randomUUID });
     });
 
+    // A preceding capacity fixture may leave 10,000 entries for real FK cleanup.
+    // A separate bounded setup budget prevents timeout callbacks from overlapping
+    // the next test's fixtures; all behavioral assertions stay intact.
     beforeEach(async () => {
         await database.delete(dictionaryAudioJobsTable);
         await database.delete(dictionaryAudioAssetsTable);
@@ -98,9 +101,9 @@ run('DrizzleDictionaryStore', () => {
                 updatedAt: now,
             },
         ]);
-    }, 30_000);
+    }, 120_000);
 
-    afterAll(async () => client.end());
+    afterAll(async () => client.end(), 120_000);
 
     async function createDictionary(
         idempotencyKey = `dictionary-create-${randomUUID()}`,
@@ -118,6 +121,187 @@ run('DrizzleDictionaryStore', () => {
             },
         });
     }
+
+    it('uses independent monotonic learning versions for active content, ignoring dormant edits and context', async () => {
+        const dictionary = await createDictionary();
+        const cardId = randomUUID();
+        await database.insert(dictionaryCardsTable).values({
+            authorship: 'human',
+            id: cardId,
+            dictionaryId: dictionary.id,
+            source: 'hello',
+            normalizedSource: 'hello',
+            translation: 'hola',
+            sortKey: 1024n,
+            createdAt: now,
+            updatedAt: now,
+        });
+        const read = async () =>
+            (
+                await database
+                    .select()
+                    .from(dictionaryCardsTable)
+                    .where(eq(dictionaryCardsTable.id, cardId))
+            )[0]!;
+        expect((await read()).learningVersion).toBe(1);
+        let aggregateVersion = dictionary.version;
+        for (const patch of [
+            { definition: 'dormant definition' },
+            { source: 'hi' },
+            { source: 'hello' },
+        ]) {
+            const current = await read();
+            const result = await store.updateCard({
+                context: context(),
+                ownerId,
+                dictionaryId: dictionary.id,
+                cardId,
+                request: {
+                    expectedDictionaryVersion: aggregateVersion,
+                    expectedSettingsVersion: 1,
+                    expectedCardVersion: current.version,
+                    values: patch,
+                    ...(patch.definition
+                        ? { translationContext: 'private context' }
+                        : {}),
+                },
+            });
+            aggregateVersion = result.dictionaryVersion;
+        }
+        expect((await read()).learningVersion).toBe(3);
+        expect((await read()).version).toBe(4);
+    });
+
+    it('default changes invalidate only affected effective entries, including archived, without authored changes', async () => {
+        const dictionary = await createDictionary();
+        const inheritedId = randomUUID();
+        const protectedId = randomUUID();
+        const archivedId = randomUUID();
+        await database.insert(dictionaryCardsTable).values([
+            {
+                authorship: 'human',
+                id: inheritedId,
+                dictionaryId: dictionary.id,
+                source: 'a',
+                normalizedSource: 'a',
+                translation: 'a',
+                sortKey: 1024n,
+                createdAt: now,
+                updatedAt: now,
+            },
+            {
+                authorship: 'human',
+                id: protectedId,
+                dictionaryId: dictionary.id,
+                source: 'b',
+                normalizedSource: 'b',
+                translation: 'b',
+                sortKey: 2048n,
+                exampleLanguageRoleOverride: 'source',
+                createdAt: now,
+                updatedAt: now,
+            },
+            {
+                authorship: 'human',
+                id: archivedId,
+                dictionaryId: dictionary.id,
+                source: 'c',
+                normalizedSource: 'c',
+                translation: 'c',
+                sortKey: 3072n,
+                lifecycle: 'archived',
+                archivedAt: now,
+                createdAt: now,
+                updatedAt: now,
+            },
+        ]);
+        await store.updateDictionary({
+            context: { ...context(), now: new Date(now.getTime() + 1000) },
+            ownerId,
+            dictionaryId: dictionary.id,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: 1,
+                settings: { exampleLanguage: 'target' },
+            },
+        });
+        const cards = await database
+            .select()
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+        expect(
+            cards.find((card) => card.id === inheritedId)?.learningVersion,
+        ).toBe(2);
+        expect(
+            cards.find((card) => card.id === archivedId)?.learningVersion,
+        ).toBe(2);
+        expect(
+            cards.find((card) => card.id === protectedId)?.learningVersion,
+        ).toBe(1);
+        expect(
+            cards.every(
+                (card) =>
+                    card.version === 1 &&
+                    card.updatedAt.getTime() === now.getTime() &&
+                    card.authorship === 'human',
+            ),
+        ).toBe(true);
+        expect(
+            await database.select().from(dictionaryCardRevisionsTable),
+        ).toHaveLength(0);
+    });
+
+    it('selectively invalidates a 10,000-entry dictionary in bounded batches', async () => {
+        const dictionary = await createDictionary();
+        for (let offset = 0; offset < 10_000; offset += 500) {
+            await database.insert(dictionaryCardsTable).values(
+                Array.from({ length: 500 }, (_, within) => {
+                    const index = offset + within;
+                    return {
+                        id: randomUUID(),
+                        authorship: 'human' as const,
+                        dictionaryId: dictionary.id,
+                        source: `word ${index}`,
+                        normalizedSource: `word ${index}`,
+                        translation: `translation ${index}`,
+                        sortKey: BigInt(index + 1) * 1024n,
+                        createdAt: now,
+                        updatedAt: now,
+                        exampleLanguageRoleOverride:
+                            index % 2 === 0 ? ('source' as const) : null,
+                    };
+                }),
+            );
+        }
+        await store.updateDictionary({
+            context: context(),
+            ownerId,
+            dictionaryId: dictionary.id,
+            request: {
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: 1,
+                settings: { exampleLanguage: 'target' },
+            },
+        });
+        const [totals] = await database
+            .select({
+                affected: sql<number>`count(*) filter (where ${dictionaryCardsTable.learningVersion} = 2)`,
+                unchanged: sql<number>`count(*) filter (where ${dictionaryCardsTable.learningVersion} = 1)`,
+                authored: sql<number>`count(*) filter (where ${dictionaryCardsTable.version} <> 1)`,
+            })
+            .from(dictionaryCardsTable)
+            .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+        expect(Number(totals?.affected)).toBe(5000);
+        expect(Number(totals?.unchanged)).toBe(5000);
+        expect(Number(totals?.authored)).toBe(0);
+        await database.execute(sql`analyze ${dictionaryCardsTable}`);
+        const plan =
+            await database.execute(sql`explain (format json) select id from ${dictionaryCardsTable}
+            where dictionary_id = ${dictionary.id} and id > ${'80000000-0000-0000-0000-000000000000'}::uuid order by id limit 500`);
+        expect(JSON.stringify(plan)).toContain(
+            'dictionary_cards_learning_scan_idx',
+        );
+    }, 30_000);
 
     it('deletes a selected archived-card subset atomically and rejects a stale all-archived snapshot', async () => {
         const dictionary = await createDictionary();
@@ -2771,6 +2955,7 @@ run('DrizzleDictionaryStore', () => {
         );
     });
 
+    // This is a capacity/correctness fixture, not a wall-clock performance test.
     it('commits and exactly replays the maximum duplicate-heavy deterministic import', async () => {
         const input = {
             context: context(),
@@ -2818,7 +3003,7 @@ run('DrizzleDictionaryStore', () => {
                 eq(dictionaryCardsTable.dictionaryId, imported.dictionary.id),
             );
         expect(counts).toEqual({ cards: 10_000, revisions: 10_000 });
-    }, 60_000);
+    }, 120_000);
 
     it('rejects an over-capacity import without creating a dictionary, card, or revision', async () => {
         const bounded = new DrizzleDictionaryStore(

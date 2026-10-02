@@ -1,0 +1,2 @@
+CREATE INDEX "flashcard_progress_dictionary_entry_idx" ON "flashcard_entry_progress" USING btree ("dictionary_id","entry_id");--> statement-breakpoint
+CREATE INDEX "flashcard_progress_latest_attempt_idx" ON "flashcard_entry_progress" USING btree ("latest_attempt_id");

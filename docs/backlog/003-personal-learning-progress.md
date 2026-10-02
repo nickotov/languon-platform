@@ -2,11 +2,14 @@
 type: backlog-task
 id: BL-003
 title: 'Personal learning progress'
-status: pending
+status: in-progress
 created: 2026-10-01
 updated: 2026-10-02
 original_tasks: '6 and 10'
-evidence: []
+summary: Flashcard backend foundation implemented; frontend use and other exercise modes remain outstanding.
+evidence:
+    - .agent/features/033-flashcard-training-backend/EVIDENCE.md
+    - docs/adr/0024-flashcard-learning-state-and-revisions.md
 ---
 
 # BL-003 — Personal learning progress
@@ -37,6 +40,14 @@ historical attempts, and must not merge independent dictionaries merely because
 their words match.
 
 ## Resolve before implementation
+
+The [flashcard implementation plan](../flashcard-training-implementation-plan.md)
+resolves the flashcard-specific progress, revision invalidation, concurrency, Undo,
+retention, archive, access and deletion behavior. Its backend delivery implements
+only this task's flashcard foundation, not progress for all future exercise types.
+Planning is not implementation evidence. [Feature 033](../../.agent/features/033-flashcard-training-backend/FEATURE.md)
+owns the authorized flashcard backend slice; other exercise modes remain outstanding.
+Linked evidence proves only this flashcard foundation, not completion of this task.
 
 Progress metrics and aggregation, what counts as a learning-relevant content
 change, exercise editing/version changes, settings changes, archive/restore,

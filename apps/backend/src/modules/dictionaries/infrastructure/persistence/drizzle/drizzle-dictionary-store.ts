@@ -67,6 +67,7 @@ import {
     type DictionarySettings,
 } from '../../../domain/settings';
 import { resolveCardMutationAuthorship } from '../../../domain/authorship';
+import { hasLearningContentChanged } from '../../../domain/learning-content';
 import {
     normalizeTranslationContext,
     resolveTranslationContext,
@@ -934,6 +935,75 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                     next,
                     previous: settingsFromRow(current.settings),
                 });
+                // Dictionary locking serializes all content writers. Include
+                // archived entries, so restoring one cannot revive stale progress.
+                let learningCursor: string | undefined;
+                while (true) {
+                    abort(input.context);
+                    const cards = await tx
+                        .select()
+                        .from(dictionaryCardsTable)
+                        .where(
+                            and(
+                                eq(
+                                    dictionaryCardsTable.dictionaryId,
+                                    input.dictionaryId,
+                                ),
+                                learningCursor
+                                    ? gt(
+                                          dictionaryCardsTable.id,
+                                          learningCursor,
+                                      )
+                                    : undefined,
+                            ),
+                        )
+                        .orderBy(asc(dictionaryCardsTable.id))
+                        .limit(500);
+                    if (cards.length === 0) break;
+                    const affectedIds = cards
+                        .filter((card) =>
+                            hasLearningContentChanged({
+                                previous: {
+                                    values: cardValues(card),
+                                    settings: resolveCardSettings({
+                                        dictionary: settingsFromRow(
+                                            current.settings,
+                                        ),
+                                        overrides: overridesFromRow(card),
+                                    }),
+                                },
+                                next: {
+                                    values: cardValues(card),
+                                    settings: resolveCardSettings({
+                                        dictionary: next,
+                                        overrides: overridesFromRow(card),
+                                    }),
+                                },
+                            }),
+                        )
+                        .map((card) => card.id);
+                    if (affectedIds.length > 0) {
+                        abort(input.context);
+                        await tx
+                            .update(dictionaryCardsTable)
+                            .set({
+                                learningVersion: sql`${dictionaryCardsTable.learningVersion} + 1`,
+                            })
+                            .where(
+                                and(
+                                    eq(
+                                        dictionaryCardsTable.dictionaryId,
+                                        input.dictionaryId,
+                                    ),
+                                    inArray(
+                                        dictionaryCardsTable.id,
+                                        affectedIds,
+                                    ),
+                                ),
+                            );
+                    }
+                    learningCursor = cards[cards.length - 1]!.id;
+                }
                 const settingsPatch: Partial<
                     typeof dictionarySettingsTable.$inferInsert
                 > = {
@@ -1343,6 +1413,30 @@ export class DrizzleDictionaryStore implements DictionaryStore {
                     ),
                     authorship,
                     normalizedSource: normalizedSource(values.source),
+                    learningVersion:
+                        row.learningVersion +
+                        Number(
+                            hasLearningContentChanged({
+                                previous: {
+                                    values: cardValues(row),
+                                    settings: resolveCardSettings({
+                                        dictionary: settingsFromRow(
+                                            current.settings,
+                                        ),
+                                        overrides: overridesFromRow(row),
+                                    }),
+                                },
+                                next: {
+                                    values,
+                                    settings: resolveCardSettings({
+                                        dictionary: settingsFromRow(
+                                            current.settings,
+                                        ),
+                                        overrides,
+                                    }),
+                                },
+                            }),
+                        ),
                     updatedAt: input.context.now,
                     version: row.version + 1,
                 })

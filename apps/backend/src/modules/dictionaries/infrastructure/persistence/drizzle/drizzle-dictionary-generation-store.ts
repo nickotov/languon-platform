@@ -105,6 +105,7 @@ import {
     type DictionaryGenerationInputPayload,
 } from '../../../domain/generation';
 import { resolveTranslationContext } from '../../../domain/translation-context';
+import { hasLearningContentChanged } from '../../../domain/learning-content';
 import {
     assertDictionaryOwnerCapacity,
     dictionaryLimits,
@@ -2569,6 +2570,32 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         transcriptionNotationOverride:
                             candidateOverrides.transcriptionNotation,
                         translation: candidateValues.translation,
+                        learningVersion:
+                            current.card.learningVersion +
+                            Number(
+                                hasLearningContentChanged({
+                                    previous: {
+                                        values: values(current.card),
+                                        settings: resolveCardSettings({
+                                            dictionary: domainSettings(
+                                                current.settings,
+                                            ),
+                                            overrides: domainOverrides(
+                                                wireOverrides(current.card),
+                                            ),
+                                        }),
+                                    },
+                                    next: {
+                                        values: candidateValues,
+                                        settings: resolveCardSettings({
+                                            dictionary: domainSettings(
+                                                current.settings,
+                                            ),
+                                            overrides: candidateOverrides,
+                                        }),
+                                    },
+                                }),
+                            ),
                         updatedAt: input.context.now,
                         version: current.card.version + 1,
                     })
@@ -3010,6 +3037,32 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                       .set({
                           ...cardValues,
                           createdAt: targetCard.createdAt,
+                          learningVersion:
+                              targetCard.learningVersion +
+                              Number(
+                                  hasLearningContentChanged({
+                                      previous: {
+                                          values: values(targetCard),
+                                          settings: resolveCardSettings({
+                                              dictionary: domainSettings(
+                                                  current.settings,
+                                              ),
+                                              overrides: domainOverrides(
+                                                  wireOverrides(targetCard),
+                                              ),
+                                          }),
+                                      },
+                                      next: {
+                                          values: candidateValues,
+                                          settings: resolveCardSettings({
+                                              dictionary: domainSettings(
+                                                  current.settings,
+                                              ),
+                                              overrides: candidateOverrides,
+                                          }),
+                                      },
+                                  }),
+                              ),
                           version: targetCard.version + 1,
                       })
                       .where(

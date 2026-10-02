@@ -1,0 +1,2 @@
+CREATE INDEX "flashcard_attempts_dictionary_entry_idx" ON "flashcard_attempts" USING btree ("dictionary_id","entry_id");--> statement-breakpoint
+CREATE INDEX "flashcard_preferences_dictionary_idx" ON "flashcard_preferences" USING btree ("dictionary_id");

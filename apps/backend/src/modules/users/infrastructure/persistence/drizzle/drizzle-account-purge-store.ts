@@ -37,6 +37,11 @@ import type {
     ClaimedAccountPurge,
 } from '../../../application/ports/account-purge-store';
 import { accountDeletionRequestsTable } from './account-deletion-schema';
+import {
+    flashcardAttemptsTable,
+    flashcardEntryProgressTable,
+    flashcardPreferencesTable,
+} from '../../../../learning/infrastructure/persistence/drizzle/schema';
 import { userEmailsTable, usersTable } from './schema';
 
 type AccountPurgeDatabase = PostgresJsDatabase<typeof databaseSchema>;
@@ -359,6 +364,18 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                 input.userId,
             );
+
+            // Purged users retain tombstones. Remove learning on foreign dictionaries
+            // explicitly; owned-dictionary and user deletion cascades cannot cover it.
+            await tx
+                .delete(flashcardEntryProgressTable)
+                .where(eq(flashcardEntryProgressTable.learnerId, input.userId));
+            await tx
+                .delete(flashcardAttemptsTable)
+                .where(eq(flashcardAttemptsTable.learnerId, input.userId));
+            await tx
+                .delete(flashcardPreferencesTable)
+                .where(eq(flashcardPreferencesTable.learnerId, input.userId));
             await tx
                 .delete(dictionaryIdempotencyKeysTable)
                 .where(

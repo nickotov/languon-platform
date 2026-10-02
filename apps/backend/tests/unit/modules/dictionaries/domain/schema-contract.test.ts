@@ -15,6 +15,14 @@ import {
 } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 describe('dictionary M1 relational schema contract', () => {
+    it('keeps learning epochs internal, positive and initialized independently of authored versions', () => {
+        const config = getTableConfig(dictionaryCardsTable);
+        expect(dictionaryCardsTable.learningVersion.default).toBe(1);
+        expect(dictionaryCardsTable.learningVersion.notNull).toBe(true);
+        expect(config.checks.map((constraint) => constraint.name)).toContain(
+            'dictionary_cards_learning_version_positive',
+        );
+    });
     it('keeps current cards typed and relational with no JSON source of truth', () => {
         const config = getTableConfig(dictionaryCardsTable);
         const columns = config.columns;

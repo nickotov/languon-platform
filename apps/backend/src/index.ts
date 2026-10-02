@@ -10,6 +10,7 @@ import { createGracefulShutdown } from './infrastructure/server/graceful-shutdow
 import { createAdministrationComposition } from './modules/administration/infrastructure/administration-composition';
 import { createAuthenticationComposition } from './modules/authentication/infrastructure/authentication-composition';
 import { createDictionaryComposition } from './modules/dictionaries/infrastructure/dictionary-composition';
+import { createLearningComposition } from './modules/learning/infrastructure/learning-composition';
 import { createDictionaryAudioAdapters } from './modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
 import { dictionaryAudioBudget } from './modules/dictionaries/infrastructure/audio/dictionary-audio-budget';
 import { loadDictionaryAudioEnvironment } from './modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
@@ -132,7 +133,14 @@ const dictionaries = createDictionaryComposition({
         : {}),
 });
 let shuttingDown = false;
+const learning = createLearningComposition({
+    ...authentication.productDependencies,
+    dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
+    enabled: environment.LEARNING_FLASHCARDS_ENABLED,
+    policy: authentication.options.policy,
+});
 const app = createApp({
+    learning: learning.routes,
     administration,
     authentication: authentication.options,
     userProfiles: {

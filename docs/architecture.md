@@ -1,3 +1,11 @@
+---
+type: architecture
+title: Languon architecture
+source_paths:
+    - apps/backend/src/modules
+    - packages/contracts/src
+---
+
 # Architecture
 
 ## System boundaries
@@ -171,6 +179,18 @@ or abandoned-input cleanup. Product storage credentials and lifecycle are
 separate from database backups. [ADR-0012](./adr/0012-dictionary-worker-and-document-ingestion.md)
 and the [operations design](./operations/dictionary-jobs-and-documents.md) define
 the execution and trust boundaries.
+
+## Flashcard learning backend
+
+The backend `learning` module owns personal flashcard preferences, content-free
+attempts and one current result per learner/entry; public contracts live under
+`packages/contracts/src/learning`. Dictionaries retain content and live access.
+An infrastructure transaction participant rechecks authority and monotonic learning
+revisions atomically with progress operations. Effective learning changes invalidate
+results without fabricating authored revisions. Permanent content deletion cascades
+learning rows; learner account purge explicitly removes foreign-dictionary rows.
+See [ADR-0024](adr/0024-flashcard-learning-state-and-revisions.md). The backend
+capability defaults disabled; frontend training awaits the design handoff.
 
 ## Release and deployment
 

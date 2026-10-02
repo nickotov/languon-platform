@@ -1,0 +1,1 @@
+CREATE INDEX "dictionary_cards_learning_scan_idx" ON "dictionary_cards" USING btree ("dictionary_id","id");

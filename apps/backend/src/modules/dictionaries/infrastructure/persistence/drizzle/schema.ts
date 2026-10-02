@@ -304,6 +304,7 @@ export const dictionaryCardsTable = pgTable(
             .default('active')
             .notNull(),
         normalizedSource: text('normalized_source').notNull(),
+        learningVersion: integer('learning_version').default(1).notNull(),
         sortKey: bigint('sort_key', { mode: 'bigint' }).notNull(),
         source: text('source').notNull(),
         transcription: text('transcription'),
@@ -344,6 +345,10 @@ export const dictionaryCardsTable = pgTable(
         check('dictionary_cards_sort_key_positive', sql`${table.sortKey} > 0`),
         check('dictionary_cards_version_positive', sql`${table.version} > 0`),
         check(
+            'dictionary_cards_learning_version_positive',
+            sql`${table.learningVersion} > 0`,
+        ),
+        check(
             'dictionary_cards_archive_state',
             sql`(${table.lifecycle} = 'archived') = (${table.archivedAt} is not null) and (${table.archivedAt} is null or ${table.archivedAt} >= ${table.createdAt})`,
         ),
@@ -358,6 +363,10 @@ export const dictionaryCardsTable = pgTable(
         index('dictionary_cards_active_order_idx')
             .on(table.dictionaryId, table.sortKey, table.id)
             .where(sql`${table.lifecycle} = 'active'`),
+        index('dictionary_cards_learning_scan_idx').on(
+            table.dictionaryId,
+            table.id,
+        ),
         index('dictionary_cards_lifecycle_order_idx').on(
             table.dictionaryId,
             table.lifecycle,

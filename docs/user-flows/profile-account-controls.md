@@ -28,6 +28,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-handle-security-and-removal
 related_features:
+    - flashcard-training-backend
     - user-authentication
     - magic-profile-page
     - admin-user-management
