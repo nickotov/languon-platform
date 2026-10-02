@@ -1,8 +1,14 @@
-# ADR-0006: Web internationalization strategy
+---
+type: adr
+id: ADR-0006
+title: 'Web internationalization strategy'
+status: superseded
+date: 2026-08-14
+supersedes: 'None'
+superseded_by: ADR-0007
+---
 
-Status: Superseded by ADR-0007
-Date: 2026-08-14
-Supersedes: None
+# ADR-0006: Web internationalization strategy
 
 ## Context
 

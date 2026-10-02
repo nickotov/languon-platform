@@ -1,8 +1,13 @@
-# ADR-0007: Web request locale strategy
+---
+type: adr
+id: ADR-0007
+title: 'Web request locale strategy'
+status: accepted
+date: 2026-08-14
+supersedes: 'ADR-0006'
+---
 
-Status: Accepted
-Date: 2026-08-14
-Supersedes: ADR-0006
+# ADR-0007: Web request locale strategy
 
 ## Context
 

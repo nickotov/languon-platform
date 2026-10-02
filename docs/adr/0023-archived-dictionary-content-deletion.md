@@ -1,8 +1,13 @@
-# ADR-0023: Archived dictionary content deletion
+---
+type: adr
+id: ADR-0023
+title: 'Archived dictionary content deletion'
+status: accepted
+date: 2026-09-26
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-09-26
-Supersedes: None
+# ADR-0023: Archived dictionary content deletion
 
 ## Context
 

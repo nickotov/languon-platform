@@ -1,8 +1,14 @@
-# ADR-0018: Account deletion and restore boundary
+---
+type: adr
+id: ADR-0018
+title: 'Account deletion and restore boundary'
+status: superseded
+date: 2026-09-15
+supersedes: 'None'
+superseded_by: ADR-0019
+---
 
-Status: Superseded by ADR-0019
-Date: 2026-09-15
-Supersedes: None
+# ADR-0018: Account deletion and restore boundary
 
 ## Context
 

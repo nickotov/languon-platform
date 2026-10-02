@@ -60,6 +60,8 @@ Before an independent completion review or lightweight handoff:
 - Confirm public exports/callers and contracts where changed; inspect the final
   diff for accidental scope, secrets, generated output, and temporary artifacts.
 - Complete affected documentation and guide checks. Verify commands exist.
+- For backlog work, reconcile the task and index using the synchronization rule
+  below; a partial delivery must not imply the whole backlog task is Done.
 - Apply `$testing` evidence validity rules to the final patch. Reuse valid
   results; rerun checks invalidated by source, configuration, test, or environment
   changes. Do not skip required layers to reduce cost.
@@ -93,6 +95,54 @@ Finish when acceptance and required verification are complete and no unresolved
 critical/high or material security findings remain; resolve relevant medium
 findings or explicitly justify their disposition. Update the active record and
 follow root Git policy. Report actual verification gaps, not invented success.
+
+## Backlog synchronization
+
+Apply this automatically when delivery is tied to a task in `docs/backlog/`,
+including a request identified by its BL ID, filename or matching task scope.
+Select it through the [compact index](../docs/backlog/INDEX.md), inspect its
+frontmatter, then read the task file and relevant
+[shared context](../docs/backlog/README.md) in full during scope discovery;
+record the BL ID and task path in the active correction/improvement/feature record.
+Backlog descriptions do not waive root classification or feature authorization.
+
+1. During delivery, keep frontmatter `status` and delivery-record link current.
+   If only part is delivered, describe completed and remaining scope and retain
+   a non-terminal filename/status. Planning, a passing partial check, a blocker,
+   or a completed delivery milestone alone does not complete the whole task.
+2. After the entire agreed task is implemented, verified and meets the applicable
+   Definition of Done, rename `NNN-slug.md` to `NNN-slug-done.md`, append “— Done”
+   to its heading, set frontmatter `status: done`, and update `updated`.
+   Keep the frontmatter `title` as the stable task name without the suffix.
+   Add existing evidence paths to frontmatter `evidence` and explain them in the
+   body. Link existing documents
+   substantiating implementation: the completed delivery/evidence record, current
+   verified guide, or an implementation ADR when it actually supplies evidence.
+   A proposed design/plan or architectural constraint alone is not proof. If no
+   separate evidence document exists, state that explicitly rather than inventing
+   one; preserve all evidence required by the delivery workflow.
+3. For an explicit user skip request or previously recorded approved scope
+   decision, rename to `NNN-slug-skipped.md`, append “— Skipped” to its heading,
+   set frontmatter `status: skipped`, update `updated`, and record `skip_reason`
+   and `skip_decision` with detail/history in the body (a decision reference or the
+   explicit user instruction when no document exists). Do not infer permission to
+   skip from difficulty, unavailable services, failure, deferral or partial delivery.
+4. Update the index status/link and all affected repository links in the same
+   change. Keep the numeric ID, slug, original task references and requirements;
+   do not create duplicate terminal files or renumber unrelated tasks. On agreed
+   reactivation, remove the terminal suffix/status and preserve previous evidence
+   and skip/completion decisions in the task's history.
+5. Before handoff, check filename/heading/frontmatter/index agreement, evidence/decision
+   links and inbound references. Report the backlog disposition in the final
+   handoff. A Done update follows final verification/review, not anticipated success.
+
+Completion condition: every affected backlog task has one canonical numbered
+file, accurate disposition, required evidence/decision references, and resolving
+index/inbound links. No separate reminder or commit/push authorization is implied.
+
+Frontmatter is authoritative; the compact index mirrors it. Non-terminal statuses
+are `pending`, `in-progress` and `blocked`; use the
+[metadata contract](../docs/document-metadata.md#specialized-schemas).
 
 ## Durable state ownership
 

@@ -283,8 +283,10 @@ See [architecture](./docs/architecture.md),
 [release and deployment operations](./docs/operations/README.md),
 [user-flow testing guides](./docs/user-flows/README.md), and
 [agentic development](./docs/agentic-development.md) for details.
-The [product feature backlog](./docs/backlog.md) records agreed future requirements,
-implementation context, and open decisions for task-by-task delivery.
+The [product backlog](./docs/backlog/INDEX.md) indexes numbered task documents,
+implementation context, open decisions and evidence. Completed tasks use `-done`
+filenames; explicitly skipped tasks use `-skipped`. Agents synchronize these
+statuses and links automatically as part of backlog delivery.
 For a detailed walkthrough with Mermaid diagrams, agent responsibilities,
 feature/correction/improvement and bug-fix flows, review loops, design fidelity,
 and copyable prompts, read the

@@ -1,8 +1,13 @@
-# ADR-0002: Drizzle schema and migration strategy
+---
+type: adr
+id: ADR-0002
+title: 'Drizzle schema and migration strategy'
+status: accepted
+date: 2026-08-12
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-08-12
-Supersedes: None
+# ADR-0002: Drizzle schema and migration strategy
 
 ## Context
 

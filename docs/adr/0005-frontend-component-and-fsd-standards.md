@@ -1,9 +1,14 @@
-# ADR-0005: Frontend component and FSD standards
+---
+type: adr
+id: ADR-0005
+title: 'Frontend component and FSD standards'
+status: accepted
+date: 2026-08-14
+supersedes: 'None'
+superseded_in_part_by: 'ADR-0010 for the `apps/admin` framework and structure'
+---
 
-Status: Accepted
-Date: 2026-08-14
-Supersedes: None
-Superseded in part by: ADR-0010 for the `apps/admin` framework and structure
+# ADR-0005: Frontend component and FSD standards
 
 ## Context
 

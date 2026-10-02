@@ -4,6 +4,11 @@ Status: Complete
 Created: 2026-10-01
 Updated: 2026-10-01
 
+The original monolithic backlog has since moved to the
+[numbered backlog index](../../docs/backlog/README.md); see the
+[migration record](backlog-task-files.md). Paths and commands below describe
+the historical delivery, not the current backlog location.
+
 ## Routing decision
 
 - Intended outcome: save the clarified future product backlog for task-by-task delivery.

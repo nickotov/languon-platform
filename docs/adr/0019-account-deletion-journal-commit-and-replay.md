@@ -1,8 +1,13 @@
-# ADR-0019: Account deletion journal commit and replay safety
+---
+type: adr
+id: ADR-0019
+title: 'Account deletion journal commit and replay safety'
+status: accepted
+date: 2026-09-15
+supersedes: 'ADR-0018'
+---
 
-Status: Accepted
-Date: 2026-09-15
-Supersedes: ADR-0018
+# ADR-0019: Account deletion journal commit and replay safety
 
 ## Context
 

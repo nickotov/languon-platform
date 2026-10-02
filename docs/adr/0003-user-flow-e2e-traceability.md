@@ -1,9 +1,15 @@
-# ADR-0003: User-flow E2E traceability
+---
+type: adr
+id: ADR-0003
+title: 'User-flow E2E traceability'
+status: superseded
+date: 2026-08-13
+supersedes: 'None'
+superseded_by: ADR-0004
+superseded_by_reference: '[ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)'
+---
 
-Status: Superseded by ADR-0004
-Date: 2026-08-13
-Supersedes: None
-Superseded by: [ADR-0004](./0004-user-flow-e2e-traceability-hardening.md)
+# ADR-0003: User-flow E2E traceability
 
 ## Context
 

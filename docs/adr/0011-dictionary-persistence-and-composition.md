@@ -1,8 +1,13 @@
-# ADR-0011: Dictionary persistence and composition
+---
+type: adr
+id: ADR-0011
+title: 'Dictionary persistence and composition'
+status: accepted
+date: 2026-08-21
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-08-21
-Supersedes: None
+# ADR-0011: Dictionary persistence and composition
 
 ## Context
 

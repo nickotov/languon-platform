@@ -1,8 +1,13 @@
-# ADR-0014: Web dev panel local quick-access sections
+---
+type: adr
+id: ADR-0014
+title: 'Web dev panel local quick-access sections'
+status: accepted
+date: 2026-08-22
+supersedes: 'ADR-0013'
+---
 
-Status: Accepted
-Date: 2026-08-22
-Supersedes: ADR-0013
+# ADR-0014: Web dev panel local quick-access sections
 
 ## Context
 

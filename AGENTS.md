@@ -27,6 +27,20 @@ Repository files are authoritative over conversation memory. Read, in order:
 4. Relevant accepted ADRs and architecture documentation.
 5. Affected source, analogous implementations, and focused tests.
 
+When work implements, completes, skips or reactivates a task from `docs/backlog/`,
+read [the compact backlog index](docs/backlog/INDEX.md), then the selected task
+and applicable shared context, and apply
+[backlog synchronization](.agent/DELIVERY.md#backlog-synchronization) automatically
+before handoff. This bookkeeping does not expand implementation or Git authority.
+
+When creating or substantively updating `docs/` Markdown, follow
+[documentation metadata](docs/document-metadata.md). During document discovery,
+read a compact index and initially read only candidate frontmatter, not full
+candidate files. If metadata is absent or insufficient, search headings/body
+to resolve relevance. Then read selected requirements, relevant accepted ADRs and
+applicable instructions/guides in full before planning, implementation or review.
+Metadata-only discovery never overrides the source-of-truth order above.
+
 For visual or shared-UI work, inspect the runtime design tokens, shared UI
 primitives, stories, and comparable screens before changing styles. Treat
 `design/DESIGN_SYSTEM.md` and visual artifacts under `design/` as optional

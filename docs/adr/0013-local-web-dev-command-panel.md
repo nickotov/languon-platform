@@ -1,8 +1,14 @@
-# ADR-0013: Local web dev command panel
+---
+type: adr
+id: ADR-0013
+title: 'Local web dev command panel'
+status: superseded
+date: 2026-08-22
+supersedes: 'None'
+superseded_by: ADR-0014
+---
 
-Status: Superseded by ADR-0014
-Date: 2026-08-22
-Supersedes: None
+# ADR-0013: Local web dev command panel
 
 ## Context
 

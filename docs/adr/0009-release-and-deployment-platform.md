@@ -1,8 +1,13 @@
-# ADR-0009: Release and deployment platform
+---
+type: adr
+id: ADR-0009
+title: 'Release and deployment platform'
+status: accepted
+date: 2026-08-18
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-08-18
-Supersedes: None
+# ADR-0009: Release and deployment platform
 
 ## Context
 

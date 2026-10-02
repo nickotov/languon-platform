@@ -1,8 +1,13 @@
-# ADR-0001: User authentication and session strategy
+---
+type: adr
+id: ADR-0001
+title: 'User authentication and session strategy'
+status: accepted
+date: 2026-08-12
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-08-12
-Supersedes: None
+# ADR-0001: User authentication and session strategy
 
 ## Context
 

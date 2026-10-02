@@ -1,8 +1,13 @@
-# ADR-0022: AI credit ledger and generation settlement
+---
+type: adr
+id: ADR-0022
+title: 'AI credit ledger and generation settlement'
+status: accepted
+date: 2026-09-25
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-09-25
-Supersedes: None
+# ADR-0022: AI credit ledger and generation settlement
 
 ## Context
 

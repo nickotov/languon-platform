@@ -1,8 +1,13 @@
-# ADR-0020: Dictionary pronunciation audio
+---
+type: adr
+id: ADR-0020
+title: 'Dictionary pronunciation audio'
+status: accepted
+date: 2026-09-21
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-09-21
-Supersedes: None
+# ADR-0020: Dictionary pronunciation audio
 
 ## Context
 

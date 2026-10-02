@@ -1,8 +1,14 @@
-# ADR-0015: Figma Make visual-design trial
+---
+type: adr
+id: ADR-0015
+title: 'Figma Make visual-design trial'
+status: superseded
+date: 2026-08-23
+supersedes: 'None'
+superseded_by: ADR-0016
+---
 
-Status: Superseded by ADR-0016
-Date: 2026-08-23
-Supersedes: None
+# ADR-0015: Figma Make visual-design trial
 
 ## Context
 

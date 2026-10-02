@@ -1,8 +1,13 @@
-# ADR-0021: Dictionary AI provider routing
+---
+type: adr
+id: ADR-0021
+title: 'Dictionary AI provider routing'
+status: accepted
+date: 2026-09-23
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-09-23
-Supersedes: None
+# ADR-0021: Dictionary AI provider routing
 
 ## Context
 

@@ -1,8 +1,13 @@
-# ADR-0012: Dictionary worker and document ingestion
+---
+type: adr
+id: ADR-0012
+title: 'Dictionary worker and document ingestion'
+status: accepted
+date: 2026-08-21
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-08-21
-Supersedes: None
+# ADR-0012: Dictionary worker and document ingestion
 
 ## Context
 

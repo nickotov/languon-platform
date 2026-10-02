@@ -1,8 +1,13 @@
-# ADR-0004: User-flow E2E traceability hardening
+---
+type: adr
+id: ADR-0004
+title: 'User-flow E2E traceability hardening'
+status: accepted
+date: 2026-08-13
+supersedes: '[ADR-0003](./0003-user-flow-e2e-traceability.md)'
+---
 
-Status: Accepted
-Date: 2026-08-13
-Supersedes: [ADR-0003](./0003-user-flow-e2e-traceability.md)
+# ADR-0004: User-flow E2E traceability hardening
 
 ## Context
 

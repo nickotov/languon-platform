@@ -1,8 +1,14 @@
-# ADR-0008: Web UI kit and design-source authority
+---
+type: adr
+id: ADR-0008
+title: 'Web UI kit and design-source authority'
+status: superseded
+date: 2026-08-17
+supersedes: 'None'
+superseded_by: ADR-0016
+---
 
-Status: Superseded by ADR-0016
-Date: 2026-08-17
-Supersedes: None
+# ADR-0008: Web UI kit and design-source authority
 
 ## Context
 

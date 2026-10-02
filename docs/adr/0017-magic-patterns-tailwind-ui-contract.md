@@ -1,8 +1,13 @@
-# ADR-0017: Magic Patterns Tailwind UI contract
+---
+type: adr
+id: ADR-0017
+title: 'Magic Patterns Tailwind UI contract'
+status: accepted
+date: 2026-09-14
+supersedes: 'None'
+---
 
-Status: Accepted
-Date: 2026-09-14
-Supersedes: None
+# ADR-0017: Magic Patterns Tailwind UI contract
 
 ## Context
 

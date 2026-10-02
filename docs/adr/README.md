@@ -1,3 +1,8 @@
+---
+type: index
+title: Architecture Decision Records
+---
+
 # Architecture Decision Records
 
 Architecture Decision Records (ADRs) preserve the reasoning behind durable
@@ -41,6 +46,12 @@ constraints, while feature-local decisions belong in the feature's
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.
 
+Each record's YAML frontmatter is authoritative for its metadata; this index
+mirrors lifecycle status for readers. Inspect candidate metadata first, then
+read relevant decisions and their superseded records in full before making an
+architectural choice. Metadata is not a substitute for decision scope or rationale.
+See [documentation metadata](../document-metadata.md#specialized-schemas).
+
 ## Naming
 
 Copy [`template.md`](./template.md) to the next unused number:
@@ -59,6 +70,12 @@ or superseded decision.
 - `Rejected` — considered but not selected.
 - `Deprecated` — still present but discouraged or awaiting retirement.
 - `Superseded by ADR-NNNN` — replaced by a newer ADR.
+
+Frontmatter uses lowercase `proposed`, `accepted`, `rejected`, `deprecated`
+or `superseded`; full replacement is recorded in `superseded_by`. Preserve
+partial supersession scope in descriptive relationship fields without changing
+an otherwise accepted record to superseded. Move metadata only; keep original
+decision dates and accepted decision/rationale text unchanged.
 
 ## Lifecycle
 

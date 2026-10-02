@@ -1,8 +1,13 @@
-# ADR-0016: Runtime UI kit authority
+---
+type: adr
+id: ADR-0016
+title: 'Runtime UI kit authority'
+status: accepted
+date: 2026-08-25
+supersedes: 'ADR-0008 and ADR-0015; supersedes ADR-0010 in part for visual-source authority'
+---
 
-Status: Accepted
-Date: 2026-08-25
-Supersedes: ADR-0008 and ADR-0015; supersedes ADR-0010 in part for visual-source authority
+# ADR-0016: Runtime UI kit authority
 
 ## Context
 

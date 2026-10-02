@@ -1,9 +1,14 @@
-# ADR-0010: Admin application and authorization
+---
+type: adr
+id: ADR-0010
+title: 'Admin application and authorization'
+status: accepted
+date: 2026-08-20
+supersedes: 'The `apps/admin` framework and FSD portions of ADR-0005'
+superseded_in_part_by: 'ADR-0016 for visual-source authority'
+---
 
-Status: Accepted
-Date: 2026-08-20
-Supersedes: The `apps/admin` framework and FSD portions of ADR-0005
-Superseded in part by: ADR-0016 for visual-source authority
+# ADR-0010: Admin application and authorization
 
 ## Context
 

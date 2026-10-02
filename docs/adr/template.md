@@ -1,8 +1,13 @@
-# ADR-NNNN: Decision title
+---
+type: adr
+id: ADR-NNNN
+title: 'Decision title'
+status: proposed
+date: YYYY-MM-DD
+supersedes: 'None'
+---
 
-Status: Proposed
-Date: YYYY-MM-DD
-Supersedes: None
+# ADR-NNNN: Decision title
 
 ## Context
 
