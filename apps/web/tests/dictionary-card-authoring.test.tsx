@@ -2060,6 +2060,71 @@ describe('dictionary settings and card authoring', () => {
         ).not.toBeInTheDocument();
     });
 
+    it('keeps a lone enabled example editable without dropping dormant translation', async () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const exampleOnlyDictionary = {
+            ...dictionary,
+            settings: {
+                ...dictionary.settings,
+                values: {
+                    ...dictionary.settings.values,
+                    exampleTranslationEnabled: false,
+                },
+            },
+        };
+        render(
+            <DictionaryCardForm
+                card={card}
+                dictionary={exampleOnlyDictionary}
+                languages={languages}
+                onCancel={vi.fn()}
+                onSave={onSave}
+                pending={false}
+            />,
+        );
+        expect(screen.queryByLabelText(/^Example translation \(/)).toBeNull();
+        const user = userEvent.setup();
+        const example = screen.getByLabelText(/^Context example \(/);
+        await user.clear(example);
+        await user.type(example, 'A revised example.');
+        await user.click(screen.getByRole('button', { name: 'Save card' }));
+        expect(onSave.mock.calls[0]![0].values).toMatchObject({
+            example: 'A revised example.',
+            exampleTranslation: card.values.exampleTranslation,
+        });
+    });
+
+    it.each(['example', 'exampleTranslation'] as const)(
+        'renders a lone populated %s with its own language and label',
+        (field) => {
+            const other =
+                field === 'example' ? 'exampleTranslation' : 'example';
+            render(
+                <DictionaryCardList
+                    cards={[
+                        { ...card, values: { ...card.values, [other]: null } },
+                    ]}
+                    dictionary={dictionary}
+                    languages={languages}
+                    lifecycle='active'
+                    onEdit={vi.fn()}
+                    onLifecycle={vi.fn()}
+                    onMove={vi.fn()}
+                    pending={false}
+                />,
+            );
+            expect(screen.getByText(card.values[field]!)).toHaveAttribute(
+                'lang',
+                field === 'example' ? 'en' : 'es',
+            );
+            expect(screen.queryByText(card.values[other]!)).toBeNull();
+            expect(screen.getByText(card.values[field]!)).toHaveAttribute(
+                'dir',
+                'ltr',
+            );
+        },
+    );
+
     it('deletes a selected archived card after explicit acknowledgement', async () => {
         const remove = vi
             .spyOn(dictionaryApi, 'deleteDictionaryCards')

@@ -137,3 +137,58 @@ export const Default: Story = {
 export const FilteredReorderDisabled: Story = {
     args: { ...Default.args, reorderEnabled: false },
 };
+
+export const DesktopColumns: Story = {
+    args: Default.args,
+    decorators: [
+        (Story) => (
+            <div style={{ maxWidth: 880, width: '100%' }}>
+                <Story />
+            </div>
+        ),
+    ],
+};
+
+export const Compact320: Story = {
+    args: Default.args,
+    decorators: [
+        (Story) => (
+            <div style={{ maxWidth: 320, width: '100%' }}>
+                <Story />
+            </div>
+        ),
+    ],
+};
+
+export const LongArchivedColumns: Story = {
+    ...DesktopColumns,
+    args: {
+        ...Default.args,
+        lifecycle: 'archived',
+        cards: [
+            {
+                ...card,
+                lifecycle: 'archived',
+                archivedAt: '2026-10-01T10:00:00.000Z',
+                values: {
+                    ...card.values,
+                    source: 'term'.repeat(50),
+                    translation: 'palabra'.repeat(28),
+                    example: 'An unbroken example: ' + 'word'.repeat(100),
+                    exampleTranslation:
+                        'Una traducción larga: ' + 'palabra'.repeat(70),
+                },
+            },
+        ],
+    },
+};
+
+export const ExampleWithoutTranslation: Story = {
+    ...DesktopColumns,
+    args: {
+        ...Default.args,
+        cards: [
+            { ...card, values: { ...card.values, exampleTranslation: null } },
+        ],
+    },
+};

@@ -91,6 +91,12 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
     if (effective.exampleEnabled) optionalFields.push('example');
     if (effective.exampleTranslationEnabled)
         optionalFields.push('exampleTranslation');
+    const fullWidthFields = optionalFields.filter(
+        (field) => field !== 'example' && field !== 'exampleTranslation',
+    );
+    const exampleFields = optionalFields.filter(
+        (field) => field === 'example' || field === 'exampleTranslation',
+    );
     const generatedFields = ['translation', ...optionalFields] as const;
     const hasContent = generatedFields.some((field) =>
         Boolean(authoring.draft.values[field]?.trim()),
@@ -121,13 +127,10 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
             ) : null}
             <form className={styles.form} onSubmit={authoring.handleSubmit}>
                 <div className={styles.body}>
-                    <AuthoringField
-                        field='source'
-                        dictionary={dictionary}
-                        languages={languages}
-                        content={fieldContent}
-                        suggestions={fieldSuggestions}
-                    />
+                    <div className={styles.wordPair}>
+                        {renderField('source')}
+                        {renderField('translation')}
+                    </div>
                     <CardTranslationContext
                         cardContext={authoring.draft.translationContext}
                         dictionaryContext={dictionary.translationContext}
@@ -158,13 +161,6 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             generateAll={authoring.generateAll}
                         />
                     ) : null}
-                    <AuthoringField
-                        field='translation'
-                        dictionary={dictionary}
-                        languages={languages}
-                        content={fieldContent}
-                        suggestions={fieldSuggestions}
-                    />
                     {optionalFields.length ? (
                         <div className={styles.optionalFields}>
                             <p className={styles.optionalHeading}>
@@ -173,7 +169,12 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                                     {t('dictionary.authoring.mayStayEmpty')}
                                 </Badge>
                             </p>
-                            {optionalFields.map(renderField)}
+                            {fullWidthFields.map(renderField)}
+                            {exampleFields.length ? (
+                                <div className={styles.wordPair}>
+                                    {exampleFields.map(renderField)}
+                                </div>
+                            ) : null}
                         </div>
                     ) : null}
                     <CardFieldOverrides

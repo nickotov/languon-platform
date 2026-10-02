@@ -144,6 +144,52 @@ export const AutoFilledInputs320: Story = {
 
 export const AutoFilledInputsDesktop: Story = {
     args: AutoFilledInputs320.args,
+    decorators: [
+        (Story) => (
+            <div style={{ maxWidth: 880, width: '100%' }}>
+                <Story />
+            </div>
+        ),
+    ],
+};
+
+export const LongMixedDirectionColumns: Story = {
+    ...AutoFilledInputsDesktop,
+    args: {
+        ...AutoFilledInputsDesktop.args,
+        dictionary: {
+            ...dictionary,
+            sourceLanguage: 'ar',
+            targetLanguage: 'en',
+        },
+        card: {
+            ...generatedStoryCard(dictionary),
+            values: {
+                ...generatedStoryCard(dictionary).values,
+                source: 'مصطلح'.repeat(40),
+                translation: 'term'.repeat(50),
+                example: 'مثال طويل '.repeat(80),
+                exampleTranslation: 'A long translated example. '.repeat(40),
+            },
+        },
+    },
+};
+
+export const ExampleWithoutTranslation: Story = {
+    ...AutoFilledInputsDesktop,
+    args: {
+        ...AutoFilledInputsDesktop.args,
+        dictionary: {
+            ...dictionary,
+            settings: {
+                ...dictionary.settings,
+                values: {
+                    ...dictionary.settings.values,
+                    exampleTranslationEnabled: false,
+                },
+            },
+        },
+    },
 };
 
 export const AutomaticSaving: Story = {

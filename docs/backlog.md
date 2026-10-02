@@ -55,15 +55,20 @@ prohibit temporary interaction state during a practice session.
 
 ## BL-001 — Streamlined dictionary editing
 
-Status: Backlog
+Status: Implemented
 Original tasks: 1–2
 
 Detailed plan for original task 1:
 [AI auto-accept and regeneration controls](inline-ai-auto-accept-plan.md).
 Original task 1 is implemented and verified; see the
 [delivery record](../.agent/improvements/inline-ai-auto-accept.md).
-Task 2 (responsive columns) remains separate and unimplemented, so BL-001 remains
-in Backlog until that work is delivered.
+Original task 2 is also implemented and verified; see the
+[responsive columns delivery record](../.agent/improvements/dictionary-word-pair-columns.md).
+The Add/Edit pair uses equal columns at viewport >=768 px and content >=36 rem;
+owner lists use columns at container >=40 rem. Narrow layouts remain stacked,
+and the desktop editor is capped at 880 px.
+Example and Example Translation follow the same equal-column responsive layout;
+a single enabled form example or single populated list example uses full width.
 
 ### Confirmed requirements
 
@@ -120,14 +125,13 @@ Saving must preserve existing ownership checks, optimistic dictionary/settings/c
 conflict checks, server-computed authorship, provenance, and retry-safe mutations.
 Invalid or failed generation must not become a successful saved change.
 
-### Remaining preparation
+### Delivery notes
 
-- Task 1 is delivered; preserve coherent Source application, full-form saving,
-  version/provenance handling, cancellation, conflicts, and retry-safe recovery
-  when delivering the remaining responsive layout work.
-- Exact responsive presentation and breakpoints, using existing runtime UI patterns.
+Both original tasks are delivered. Responsive layout preserves coherent Source
+application, full-form saving, version/provenance handling, cancellation,
+conflicts, and retry-safe recovery. Public sharing remains unchanged.
 
-### Acceptance scenarios to refine
+### Verified acceptance scenarios
 
 Generate an empty field; regenerate a populated field; generate all; observe a
 second version on an existing entry; return to previous content; verify immediate

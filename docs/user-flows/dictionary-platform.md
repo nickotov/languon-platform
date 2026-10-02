@@ -10,6 +10,7 @@ source_paths:
     - .agent/features/021-dictionary-platform/**
     - .agent/features/031-inline-ai-field-generation/**
     - .agent/improvements/inline-ai-auto-accept.md
+    - .agent/improvements/dictionary-word-pair-columns.md
     - apps/backend/drizzle/**
     - apps/backend/src/app.ts
     - apps/backend/src/index.ts
@@ -201,6 +202,25 @@ Word-pair import remains in the workspace menu. Card-specific overrides use an
 opt-in switch followed by field switches and language radio groups. Ordinary edits
 retain dormant values and existing transcription notation overrides.
 Library and card **Active** / **Archived** buttons filter the visible results.
+
+In Add and Edit, Source and Translation are the first adjacent fields. At a
+viewport of at least 768 px and form content width of at least 36 rem, they use
+equal columns; otherwise Source appears above Translation. The desktop dialog
+is capped at 880 px. Context, AI assistance, optional content, and settings follow
+the word pair. Context example and Example translation use equal columns at the
+same form threshold and stack below it; when only one is enabled, it fills the
+row. Definition and Transcription remain full width. Each field keeps its label,
+language, direction, and generation control; keyboard order follows Source then
+Translation.
+
+Active and archived owner cards use equal Source/Translation columns when their
+list container is at least 40 rem wide, and stack them in narrower containers.
+Example and Example translation use the same list threshold when both have
+visible values; one visible example fills the row. Definition, Transcription,
+and metadata remain full width below the words, and card actions remain
+reachable. Check 1280 px, 768 px, and 320 px viewports, then 200% text: forms and
+cards reflow without horizontal page overflow, including 200-character unbroken
+draft values. The anonymous shared dictionary presentation remains unchanged.
 
 The source/target pair becomes locked after the first card, including when every
 card is archived. Disabled optional fields preserve dormant values. Version
@@ -482,8 +502,11 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
   dictionary-context persistence, inherited preview, card override removal,
   inherited optional fields, card editing, card archive/restore, dictionary
   archive/restore, in-library settings without route navigation, authenticated
-  shell navigation and compact responsive access, and owner-only recovery through
-  the real web/API/database stack.
+  shell navigation and compact responsive access, equal word-pair geometry in
+  Add/Edit and active/archived owner cards at wide/tablet widths, narrow and 200%
+  text stacking for word and example pairs, full-width single enabled form and
+  single populated list example, long draft containment, keyboard field order,
+  and preserved language/direction through the real web/API/database stack.
 - `anonymous-reader-forks-unlisted-dictionary` proves explicit publication,
   anonymous capability reading, fragment-only secret transport through signup,
   and an authenticated independent private fork.

@@ -105,7 +105,7 @@ export function OptionalFields({
     return (
         <dl className={styles.fields}>
             {rows.map((field) => (
-                <div key={field.key}>
+                <div data-field={field.key} key={field.key}>
                     <dt>{field.label}</dt>
                     <dd>
                         <span

@@ -1,7 +1,13 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import {
+    expect,
+    test,
+    type Locator,
+    type Page,
+    type TestInfo,
+} from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:9ef55194a69ad754
+// @user-flow-revision dictionary-platform sha256:b91834a1f50d7cf0
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -123,6 +129,7 @@ async function createDictionary(page: Page, name: string): Promise<void> {
 async function addPopulatedCard(
     page: Page,
     translationContext?: string,
+    verifyResponsiveLayout = false,
 ): Promise<void> {
     const settings = await openDictionarySettings(page);
     if (translationContext) {
@@ -141,6 +148,18 @@ async function addPopulatedCard(
         .click();
 
     await page.getByRole('button', { name: 'Add card' }).click();
+    if (verifyResponsiveLayout) {
+        const editor = page.getByRole('dialog', { name: 'Add card' });
+        await expectEditorWordPair(editor, 'columns');
+        const bounds = await editor.boundingBox();
+        expect(bounds!.width).toBeGreaterThan(800);
+        expect(bounds!.width).toBeLessThanOrEqual(880);
+        await page.setViewportSize({ width: 768, height: 900 });
+        await expectEditorWordPair(editor, 'columns');
+        await page.setViewportSize({ width: 320, height: 900 });
+        await expectEditorWordPair(editor, 'stacked');
+        await page.setViewportSize({ width: 1280, height: 900 });
+    }
     await page.getByLabel(/^Source word or phrase \(/).fill('work of art');
     await page.getByLabel(/^Translation \(/).fill('obra de arte');
     await page
@@ -208,6 +227,171 @@ async function chooseCardAction(
     await card.getByRole('menuitem', { name: action }).click();
 }
 
+async function expectWordPairGeometry(
+    source: Locator,
+    translation: Locator,
+    layout: 'columns' | 'stacked',
+) {
+    await expect(source).toBeVisible();
+    await expect(translation).toBeVisible();
+    await expect
+        .poll(async () => {
+            const [first, second] = await Promise.all([
+                source.boundingBox(),
+                translation.boundingBox(),
+            ]);
+            if (!first || !second) return false;
+            const equalWidth = Math.abs(first.width - second.width) <= 1;
+            return layout === 'columns'
+                ? equalWidth &&
+                      Math.abs(first.y - second.y) <= 1 &&
+                      second.x >= first.x + first.width
+                : equalWidth &&
+                      Math.abs(first.x - second.x) <= 1 &&
+                      second.y >= first.y + first.height;
+        }, `Source and Translation should render as equal ${layout}`)
+        .toBe(true);
+}
+
+async function expectEditorWordPair(
+    editor: Locator,
+    layout: 'columns' | 'stacked',
+) {
+    const source = editor.getByRole('textbox', {
+        name: /^Source word or phrase \(/,
+    });
+    const translation = editor.getByRole('textbox', {
+        name: /^Translation \(/,
+    });
+    // Field labels/actions may wrap independently; align the complete fields.
+    // Input adds nested spans, so find the nearest Field containing a label row.
+    const sourceField = source.locator('xpath=ancestor::div[div/label][1]');
+    const translationField = translation.locator(
+        'xpath=ancestor::div[div/label][1]',
+    );
+    await expectWordPairGeometry(sourceField, translationField, layout);
+    await expect(source).toHaveAttribute('lang', 'en');
+    await expect(translation).toHaveAttribute('lang', 'es');
+    await expect(source).toHaveAttribute('dir', 'ltr');
+    await expect(translation).toHaveAttribute('dir', 'ltr');
+    const definition = editor.getByRole('textbox', {
+        name: /^Definition \(/,
+    });
+    const [translationBounds, definitionBounds] = await Promise.all([
+        translation.boundingBox(),
+        definition.boundingBox(),
+    ]);
+    expect(definitionBounds!.y).toBeGreaterThanOrEqual(
+        translationBounds!.y + translationBounds!.height,
+    );
+    expect(definitionBounds!.width).toBeGreaterThanOrEqual(
+        translationBounds!.width,
+    );
+    const example = editor.getByRole('textbox', {
+        name: /^Context example \(/,
+    });
+    const exampleTranslation = editor.getByRole('textbox', {
+        name: /^Example translation \(/,
+    });
+    await expectWordPairGeometry(
+        example.locator('xpath=ancestor::div[div/label][1]'),
+        exampleTranslation.locator('xpath=ancestor::div[div/label][1]'),
+        layout,
+    );
+    await expect(example).toHaveAttribute('lang', 'en');
+    await expect(exampleTranslation).toHaveAttribute('lang', 'es');
+    await expect(example).toHaveAttribute('dir', 'ltr');
+    await expect(exampleTranslation).toHaveAttribute('dir', 'ltr');
+}
+
+async function expectOwnerWordPair(
+    page: Page,
+    translation: string,
+    layout: 'columns' | 'stacked',
+    singleExample = false,
+    audioExpected = true,
+) {
+    const card = page.getByRole('listitem').filter({ hasText: 'work of art' });
+    const sourceWord = card.locator('strong[lang="en"]');
+    const translatedWord = card.locator('strong[lang="es"]');
+    await expect(translatedWord).toHaveText(translation);
+    await expectWordPairGeometry(sourceWord, translatedWord, layout);
+    await expect(sourceWord).toHaveAttribute('dir', 'ltr');
+    await expect(translatedWord).toHaveAttribute('dir', 'ltr');
+    const actions = card.getByRole('button', { name: /Card actions, card/ });
+    await expect(actions).toBeVisible();
+    const [sourceBounds, translationBounds, definitionBounds] =
+        await Promise.all([
+            sourceWord.boundingBox(),
+            translatedWord.boundingBox(),
+            card
+                .getByText('An object made for artistic expression.', {
+                    exact: true,
+                })
+                .boundingBox(),
+        ]);
+    expect(definitionBounds!.y).toBeGreaterThanOrEqual(
+        Math.max(
+            sourceBounds!.y + sourceBounds!.height,
+            translationBounds!.y + translationBounds!.height,
+        ),
+    );
+    const example = card.locator('dl > div[data-field="example"]');
+    const exampleTranslation = card.locator(
+        'dl > div[data-field="exampleTranslation"]',
+    );
+    if (singleExample) {
+        await expect(exampleTranslation).toHaveCount(0);
+        const [exampleBounds, definitionRowBounds] = await Promise.all([
+            example.boundingBox(),
+            card.locator('dl > div[data-field="definition"]').boundingBox(),
+        ]);
+        expect(
+            Math.abs(exampleBounds!.width - definitionRowBounds!.width),
+        ).toBeLessThanOrEqual(1);
+    } else {
+        await expectWordPairGeometry(example, exampleTranslation, layout);
+        await expect(
+            exampleTranslation.locator('dd > span:first-child'),
+        ).toHaveAttribute('lang', 'es');
+    }
+    await expect(example.locator('dd > span:first-child')).toHaveAttribute(
+        'lang',
+        'en',
+    );
+    for (const row of singleExample
+        ? [example]
+        : [example, exampleTranslation]) {
+        const audioButtons = row.getByRole('button');
+        if (!audioExpected) {
+            await expect(audioButtons).toHaveCount(0);
+            continue;
+        }
+        await expect(audioButtons.first()).toBeVisible();
+        await expect
+            .poll(async () => {
+                const rowBounds = await row.boundingBox();
+                const buttonBounds = await Promise.all(
+                    (await audioButtons.all()).map((button) =>
+                        button.boundingBox(),
+                    ),
+                );
+                if (!rowBounds || buttonBounds.some((bounds) => !bounds))
+                    return false;
+                return buttonBounds.every(
+                    (bounds) =>
+                        bounds!.x >= rowBounds.x - 1 &&
+                        bounds!.y >= rowBounds.y - 1 &&
+                        bounds!.x + bounds!.width <=
+                            rowBounds.x + rowBounds.width + 1 &&
+                        bounds!.y + bounds!.height <=
+                            rowBounds.y + rowBounds.height + 1,
+                );
+            }, 'example audio controls should fit completely inside their row')
+            .toBe(true);
+    }
+}
+
 test.describe('dictionary platform journeys', () => {
     // @user-flow dictionary-platform/owner-creates-edits-and-restores-dictionary
     test('owner creates, edits, archives, and restores dictionary content', async ({
@@ -242,12 +426,17 @@ test.describe('dictionary platform journeys', () => {
         await createDictionary(page, name);
         const translationContext =
             'Visual arts, galleries, and professional studio practice.';
-        await addPopulatedCard(page, translationContext);
+        await addPopulatedCard(page, translationContext, true);
+        await expectOwnerWordPair(page, 'obra de arte', 'columns');
+        await page.setViewportSize({ width: 768, height: 900 });
+        await expectOwnerWordPair(page, 'obra de arte', 'columns');
         await page.setViewportSize({ width: 320, height: 900 });
+        await expectOwnerWordPair(page, 'obra de arte', 'stacked');
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
         const addCard = page.getByRole('button', { name: 'Add card' });
+        await expectOwnerWordPair(page, 'obra de arte', 'stacked');
         await addCard.focus();
         await page.keyboard.press('Tab');
         await page.keyboard.press('Shift+Tab');
@@ -267,6 +456,7 @@ test.describe('dictionary platform journeys', () => {
         await addCard.click();
         const compactEditor = page.getByRole('dialog', { name: 'Add card' });
         await expect(compactEditor).toBeVisible();
+        await expectEditorWordPair(compactEditor, 'stacked');
         expect(
             await page.evaluate(
                 () =>
@@ -277,6 +467,28 @@ test.describe('dictionary platform journeys', () => {
         const draftSource = compactEditor.getByLabel(
             /^Source word or phrase \(/,
         );
+        const draftTranslation = compactEditor.getByLabel(/^Translation \(/);
+        await draftSource.fill('s'.repeat(200));
+        await draftTranslation.fill('t'.repeat(200));
+        await expectEditorWordPair(compactEditor, 'stacked');
+        for (const input of [draftSource, draftTranslation]) {
+            const inputBounds = await input.boundingBox();
+            expect(inputBounds!.x).toBeGreaterThanOrEqual(0);
+            expect(inputBounds!.x + inputBounds!.width).toBeLessThanOrEqual(
+                320,
+            );
+        }
+        await draftSource.focus();
+        await page.keyboard.press('Tab');
+        await expect(
+            compactEditor.getByRole('button', {
+                name: 'Regenerate Translation',
+                exact: true,
+            }),
+        ).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(draftTranslation).toBeFocused();
+        await draftTranslation.fill('');
         await draftSource.fill('temporary draft');
         await page.keyboard.press('Escape');
         const discardDraft = page.getByRole('dialog', {
@@ -322,9 +534,70 @@ test.describe('dictionary platform journeys', () => {
         });
         await page.setViewportSize({ width: 1280, height: 720 });
 
+        // One enabled example field fills the row; dormant values stay intact.
+        const singleExampleSettings = await openDictionarySettings(page);
+        await singleExampleSettings.getByLabel('Example translation').uncheck();
+        await singleExampleSettings
+            .getByRole('button', { name: 'Save settings' })
+            .click();
+        await singleExampleSettings
+            .getByRole('button', { name: 'Cancel', exact: true })
+            .first()
+            .click();
+        await addCard.click();
+        const singleExampleEditor = page.getByRole('dialog', {
+            name: 'Add card',
+        });
+        const singleExampleField = singleExampleEditor
+            .getByRole('textbox', { name: /^Context example \(/ })
+            .locator('xpath=ancestor::div[div/label][1]');
+        const singleDefinitionField = singleExampleEditor
+            .getByRole('textbox', { name: /^Definition \(/ })
+            .locator('xpath=ancestor::div[div/label][1]');
+        await expect(
+            singleExampleEditor.getByRole('textbox', {
+                name: /^Example translation \(/,
+            }),
+        ).toHaveCount(0);
+        const [singleExampleBounds, singleDefinitionBounds] = await Promise.all(
+            [
+                singleExampleField.boundingBox(),
+                singleDefinitionField.boundingBox(),
+            ],
+        );
+        expect(
+            Math.abs(
+                singleExampleBounds!.width - singleDefinitionBounds!.width,
+            ),
+        ).toBeLessThanOrEqual(1);
+        await singleExampleEditor
+            .getByRole('button', { name: 'Discard draft' })
+            .last()
+            .click();
+        const pairedExampleSettings = await openDictionarySettings(page);
+        await pairedExampleSettings.getByLabel('Example translation').check();
+        await pairedExampleSettings
+            .getByRole('button', { name: 'Save settings' })
+            .click();
+        await pairedExampleSettings
+            .getByRole('button', { name: 'Cancel', exact: true })
+            .first()
+            .click();
+
         await chooseCardAction(page, 'work of art', 'Edit');
         let cardEditor = page.getByRole('dialog', { name: 'Edit card' });
         await expect(cardEditor).toBeVisible();
+        await expectEditorWordPair(cardEditor, 'columns');
+        await page.setViewportSize({ width: 768, height: 900 });
+        await expectEditorWordPair(cardEditor, 'columns');
+        await page.evaluate(() => {
+            document.documentElement.style.fontSize = '200%';
+        });
+        await expectEditorWordPair(cardEditor, 'stacked');
+        await page.evaluate(() => {
+            document.documentElement.style.fontSize = '';
+        });
+        await page.setViewportSize({ width: 1280, height: 720 });
         await expect(
             cardEditor.getByText(translationContext, { exact: true }),
         ).toBeVisible();
@@ -333,6 +606,7 @@ test.describe('dictionary platform journeys', () => {
             .getByRole('textbox', { name: /Card context/ })
             .fill('Insurance appraisal of valuable artworks.');
         await cardEditor.getByLabel(/^Translation \(/).fill('pieza de arte');
+        await cardEditor.getByLabel(/^Example translation \(/).fill('');
         let releaseCardSave: (() => void) | undefined;
         const cardSaveGate = new Promise<void>((resolve) => {
             releaseCardSave = resolve;
@@ -360,6 +634,7 @@ test.describe('dictionary platform journeys', () => {
             page.getByText('pieza de arte', { exact: true }),
         ).toBeVisible();
         await page.unroute(cardRoute);
+        await expectOwnerWordPair(page, 'pieza de arte', 'columns', true);
 
         await chooseCardAction(page, 'work of art', 'Edit');
         cardEditor = page.getByRole('dialog', { name: 'Edit card' });
@@ -373,6 +648,9 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             cardEditor.getByText(translationContext, { exact: true }),
         ).toBeVisible();
+        await cardEditor
+            .getByLabel(/^Example translation \(/)
+            .fill('La galería adquirió la obra de arte.');
         await cardEditor.getByRole('button', { name: 'Save card' }).click();
 
         await chooseCardAction(page, 'work of art', 'Edit');
@@ -394,6 +672,22 @@ test.describe('dictionary platform journeys', () => {
             .getByRole('group', { name: 'Card status' })
             .getByRole('button', { name: 'Archived', exact: true })
             .click();
+        await expectOwnerWordPair(
+            page,
+            'pieza de arte',
+            'columns',
+            false,
+            false,
+        );
+        await page.setViewportSize({ width: 320, height: 900 });
+        await expectOwnerWordPair(
+            page,
+            'pieza de arte',
+            'stacked',
+            false,
+            false,
+        );
+        await page.setViewportSize({ width: 1280, height: 720 });
         await chooseCardAction(page, 'work of art', 'Restore');
         await expect(page.getByText('Card restored.')).toBeVisible();
 
