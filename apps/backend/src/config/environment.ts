@@ -109,7 +109,7 @@ const RawEnvironmentSchema = z
         DICTIONARY_HMAC_SECRET: DictionarySecretSchema,
         LEARNING_FLASHCARDS_ENABLED: z
             .enum(['true', 'false'])
-            .default('false')
+            .default('true')
             .transform((value) => value === 'true'),
         DICTIONARY_DOCUMENT_OCR_MODE: z
             .enum(['deterministic', 'unavailable'])

@@ -46,6 +46,33 @@ function values(
 }
 
 describe('loadEnvironment authentication settings', () => {
+    it.each(['development', 'test', 'staging', 'production'] as const)(
+        'enables flashcards by default in %s',
+        (appEnvironment) => {
+            expect(
+                loadEnvironment(values(appEnvironment))
+                    .LEARNING_FLASHCARDS_ENABLED,
+            ).toBe(true);
+        },
+    );
+
+    it('keeps an explicit flashcard off switch and rejects invalid values', () => {
+        for (const enabled of ['true', 'false']) {
+            expect(
+                loadEnvironment(
+                    values('development', {
+                        LEARNING_FLASHCARDS_ENABLED: enabled,
+                    }),
+                ).LEARNING_FLASHCARDS_ENABLED,
+            ).toBe(enabled === 'true');
+        }
+        expect(() =>
+            loadEnvironment(
+                values('development', { LEARNING_FLASHCARDS_ENABLED: 'yes' }),
+            ),
+        ).toThrow();
+    });
+
     it.each([
         ['development', 2 * 24 * 60 * 60, true],
         ['test', 2 * 24 * 60 * 60, true],

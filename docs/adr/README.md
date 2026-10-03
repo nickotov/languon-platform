@@ -43,6 +43,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0022](./0022-ai-credit-ledger-and-generation-settlement.md) | AI credit ledger and generation settlement | Accepted               |
 | [ADR-0023](./0023-archived-dictionary-content-deletion.md)       | Archived dictionary content deletion       | Accepted               |
 | [ADR-0024](./0024-flashcard-learning-state-and-revisions.md)     | Flashcard learning state and revisions     | Accepted               |
+| [ADR-0025](./0025-flashcard-capability-enabled-by-default.md)    | Flashcard capability enabled by default    | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

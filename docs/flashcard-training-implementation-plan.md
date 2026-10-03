@@ -230,14 +230,16 @@ the prepared manifest, with an injectable random source for later tests.
 
 ### 6. Rollout and verification
 
-Use `LEARNING_FLASHCARDS_ENABLED`, initially false. Learning revisions and cleanup
+Use `LEARNING_FLASHCARDS_ENABLED`, enabled by default under
+[ADR-0025](adr/0025-flashcard-capability-enabled-by-default.md). Explicit false is
+the optional off switch. Learning revisions and cleanup
 must operate independently of UI activation. Activate only when every serving API,
 card writer, account-purge worker and supported rollback floor implements revision
 and cleanup rules. Do not allow old writers to preserve stale Known results.
 Use the existing singleton migration process and forward-compatible additive rollout;
-no destructive down-migration. The design has now returned; the capability stays
-disabled by default. Feature 034 enables it only in disposable verification
-processes, not production rollout.
+no destructive down-migration. The design and web flow are implemented in feature 034. ADR-0025 supersedes
+the default-off checkpoint at the user's request. This changes the startup
+default, not schema/writer/purge prerequisites or deployment authorization.
 
 Required backend evidence:
 

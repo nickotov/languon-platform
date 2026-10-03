@@ -189,8 +189,10 @@ An infrastructure transaction participant rechecks authority and monotonic learn
 revisions atomically with progress operations. Effective learning changes invalidate
 results without fabricating authored revisions. Permanent content deletion cascades
 learning rows; learner account purge explicitly removes foreign-dictionary rows.
-See [ADR-0024](adr/0024-flashcard-learning-state-and-revisions.md). The backend
-capability defaults disabled; frontend training awaits the design handoff.
+See [ADR-0024](adr/0024-flashcard-learning-state-and-revisions.md).
+The web training launcher and Cards flow are implemented. The backend capability
+defaults enabled under [ADR-0025](adr/0025-flashcard-capability-enabled-by-default.md),
+with explicit false retained as an off switch.
 
 ## Release and deployment
 

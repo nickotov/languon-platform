@@ -50,9 +50,10 @@ recorded in the feature evidence; this API guide does not claim frontend proof.
 
 Use the root README's reviewed local commands: `pnpm dev:infra`,
 `pnpm db:migrate`, and `pnpm dev:backend`. Node24, workspace dependencies,
-PostgreSQL and Redis must be available. Set `LEARNING_FLASHCARDS_ENABLED=true`
-only in an ignored local environment file for manual verification; the shipped
-default is false. Restart the backend after changing configuration. No model,
+PostgreSQL and Redis must be available. Cards is enabled by default under
+[ADR-0025](../adr/0025-flashcard-capability-enabled-by-default.md). An explicit
+`LEARNING_FLASHCARDS_ENABLED=false` disables training without deleting progress.
+Restart the backend after changing environment configuration. No model,
 AI credit policy, provider credential or dictionary worker is required for card
 practice. Card edits and account purge still use their normal existing flows.
 

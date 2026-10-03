@@ -5,6 +5,7 @@ title: Flashcard learning state and revisions
 status: accepted
 date: 2026-10-02
 supersedes: None
+superseded_in_part_by: ADR-0025
 ---
 
 # ADR-0024: Flashcard learning state and revisions

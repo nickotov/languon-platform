@@ -43,8 +43,11 @@ independent progress.
 Use the [authentication setup](user-authentication.md) and existing singleton
 migrations. All card writers/purge workers must support
 [ADR-0024](../adr/0024-flashcard-learning-state-and-revisions.md) before activation.
-Set `LEARNING_FLASHCARDS_ENABLED=true` only in the intended local backend process
-and restart it; checked-in default stays false. Production activation is excluded.
+Cards is enabled by default. Set `LEARNING_FLASHCARDS_ENABLED=false` explicitly
+to disable training, and restart the backend after environment changes.
+[ADR-0025](../adr/0025-flashcard-capability-enabled-by-default.md) replaces the
+earlier default-off policy; compatible migrations/writers/purge remain required.
+Production deployment is excluded.
 
 Automated journeys require `AUTH_E2E_WEB_ORIGIN`, `AUTH_E2E_BACKEND_ORIGIN`,
 `AUTH_E2E_DATABASE_URL` and `AUTH_E2E_REDIS_URL`: explicit unused credential-free
