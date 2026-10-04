@@ -167,6 +167,7 @@ export function DictionaryCardRow({
                         items={items}
                         label={menuLabel}
                         trigger={<MoreHorizontal aria-hidden size={16} />}
+                        triggerClassName={styles.menuTrigger}
                     />
                 </div>
                 <OptionalFields

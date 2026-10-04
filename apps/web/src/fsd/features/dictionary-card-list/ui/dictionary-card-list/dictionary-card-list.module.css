@@ -31,18 +31,15 @@
 }
 @container dictionary-cards (min-width: 40rem) {
     .pair {
-        gap: 16px;
+        gap: 16px 24px;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         position: relative;
     }
-    .pair::after {
-        border-inline-start: 1px solid var(--border-default);
-        content: '';
-        inset-block: 0;
-        inset-inline-start: 50%;
-        pointer-events: none;
-        position: absolute;
-    }
+}
+.menuTrigger {
+    position: absolute;
+    top: -4px;
+    right: -8px;
 }
 .pairValue {
     display: flex;
@@ -59,12 +56,12 @@
     font-size: 16px;
     line-height: 24px;
     font-weight: 400;
+    padding-right: 28px;
 }
 .fields {
     overflow: hidden;
     border: 1px solid var(--border-default);
     border-radius: 12px;
-    background: var(--background-subtle);
     margin: 12px 0 0;
 }
 .fieldRow {
@@ -84,7 +81,6 @@
         grid-column: 1;
     }
     :where(.pairedExamples) .exampleTranslationRow {
-        border-inline-start: 1px solid var(--border-default);
         border-top: 0;
         grid-column: 2;
     }
