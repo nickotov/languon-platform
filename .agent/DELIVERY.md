@@ -5,6 +5,52 @@ Read this once when implementing a correction, improvement, or feature. Root
 policy. Flow skills select the record and scope; this file owns the common
 execution sequence. Read specialist skills only for affected surfaces.
 
+## Small-fix fast path
+
+Use this execution default for bounded corrections and focused improvements
+with established behavior and no root feature boundary. It is not a new flow,
+a time limit, or permission to omit required evidence.
+
+1. **Bound discovery.** Read applicable instructions and selected requirements
+   in full, but discover candidate documents through metadata/indexes first.
+   Start with the active record, affected source, and nearby tests. Follow a
+   historical feature/design record only when it supplies a relevant active
+   requirement or unresolved decision. Do not replay completed milestones.
+   Read required skills once per uninterrupted context; follow only applicable
+   references. Keep tool output bounded and retain running-command handles.
+2. **Keep one short plan.** Reuse the same outcome's record; state the observable
+   fix, exclusions, risks, and smallest adequate checks. Do not create separate
+   milestones or artifacts for a one-pass repair.
+3. **Verify narrowly while iterating.** Reproduce the defect and run its focused
+   regression checks first. After the patch stabilizes, run required affected
+   static checks and broader tests only for identified regression risks or an
+   applicable workflow requirement. Apply `$testing` evidence-validity rules;
+   do not repeat unchanged checks just to produce fresh green output.
+4. **Minimize runtime setup.** Reuse a reviewed, safe local application when it
+   can prove the behavior with fake data. Prefer established fixture helpers to
+   ad hoc account/API setup. No database implementation change means no automatic
+   database verification; a required integration/E2E journey may still need
+   disposable infrastructure. Do not replace that journey with a mock. For
+   isolated presentation behavior, an existing rendered story/fixture can
+   suffice only when it exercises the real affected component and interactions.
+5. **Use one adequate browser proof.** Select the smallest applicable states and
+   viewports. `$browser-verification` owns when a durable real-browser test
+   satisfies runtime evidence without a second exploratory session. A simple
+   label fix need not become a full journey or browser matrix.
+6. **Review by risk, not task size.** Apply root independent-review and specialist
+   triggers. Async transitions, cancellation, and save races may warrant review
+   even for a visually small fix; a copy or isolated style correction normally
+   does not. Bound assignments to the scoped diff and relevant invariants.
+
+If a small fix grows into substantial setup, repeated failed attempts, or roughly
+10–15 minutes of unresolved investigation, reassess the cause and verification
+plan before broadening work. Tell the user what made it larger and the revised
+scope when material. This is a complexity checkpoint, not a deadline or blocker:
+continue safe authorized work, and request authority only at a root boundary.
+
+Exit: the final scoped patch has valid evidence for its acceptance criteria;
+extra setup, checks, or review have an explicit risk or requirement justification.
+
 ## 1. Establish the outcome and risk
 
 Inspect applicable instructions, current Git state, the active record, relevant

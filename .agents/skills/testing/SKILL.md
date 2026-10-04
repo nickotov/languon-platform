@@ -40,6 +40,15 @@ markers do not justify promoting exhaustive lower-layer cases into E2E.
 
 ## Execute
 
+For bounded corrections and focused improvements, apply the
+[small-fix fast path](../../../.agent/DELIVERY.md#small-fix-fast-path).
+Choose test files/cases by affected behavior rather than automatically running
+the whole workspace or repository suite. Keep required static checks and
+risk-triggered layers; widen the selection for affected callers, shared
+primitives/contracts, configuration changes, or unresolved regression risk.
+Use `$browser-verification` to decide whether valid durable browser-test evidence
+already covers runtime verification before preparing a second browser session.
+
 For a bug, reproduce the failure with an automated regression test before fixing
 it when reasonably possible. For deterministic business logic, prefer a failing
 test first. API changes should begin with a contract or integration test when

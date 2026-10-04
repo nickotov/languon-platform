@@ -210,6 +210,10 @@ procedure and artifact responsibilities; flow skills own only their differences.
 
 ### Corrections
 
+For small existing-behavior fixes, use the
+[small-fix fast path](.agent/DELIVERY.md#small-fix-fast-path) to bound discovery,
+setup, and verification. It does not change classification or safety gates.
+
 Use `$correction-development` and one plan based on
 `.agent/templates/CORRECTION.md`. Keep plan, progress, evidence, review
 decisions, and remaining risks in that document. Corrections run on the current

@@ -7,6 +7,26 @@ description: Verify Languon web or admin behavior with the project-pinned agent-
 
 ## Prepare
 
+### Select runtime evidence before launching a session
+
+ADR-0016 requires real browser/device evidence, not two browser tools for the
+same acceptance criterion. A project-maintained, repeatable Playwright test
+running the real local application can satisfy that requirement without an
+additional `agent-browser` session when its valid final-patch evidence covers
+the exact changed behavior, relevant rendered states/viewports, and applicable
+accessibility checks, with console errors and unexpected failed requests
+checked through its assertions or inspected run artifacts. Record the coverage
+and any gaps in the active delivery record. A passing interaction assertion
+alone does not prove appearance or supplied-design fidelity.
+
+If that evidence leaves a gap, use the safe wrapper only for the missing
+observations. Existing rendered stories/fixtures can prove isolated UI behavior
+when they use the real affected component; they cannot prove an unexercised
+backend integration. Keep mapped E2E and user-flow obligations intact. Do not
+write ad hoc Playwright scripts to avoid wrapper restrictions, switch tools
+because the wrapper is unavailable, or claim a DOM/unit test is real-browser
+evidence. All exploratory sessions still follow the procedure below.
+
 Read the active correction or improvement outcome, or feature acceptance criteria, and identify
 the smallest set of journeys, roles, data states, and viewports needed. Start the
 relevant infrastructure and application with documented commands. Use
