@@ -11,10 +11,10 @@
 }
 
 .eyebrow,
-.inputForm h3,
-.inputForm p,
-.reviewHeader h3,
-.reviewHeader p,
+.inputTitle,
+.inputDescription,
+.reviewTitle,
+.reviewDescription,
 .inputTerm {
     margin: 0;
 }
@@ -27,8 +27,8 @@
     text-transform: uppercase;
 }
 
-.inputForm > div:first-child,
-.reviewHeader > div {
+.inputIntro,
+.reviewIntro {
     display: grid;
     gap: var(--sys-space-2);
 }
@@ -51,7 +51,7 @@
     gap: var(--sys-space-3);
 }
 
-.progressCard p,
+.progressDescription,
 .feedback,
 .inputTerm {
     color: var(--sys-color-text-secondary);
@@ -63,16 +63,16 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.inputTerm span {
+.inputValue {
     color: var(--sys-color-text-primary);
 }
 
-.feedback summary {
+.feedbackSummary {
     cursor: pointer;
     font-weight: 600;
 }
 
-.feedback ul {
+.feedbackList {
     display: grid;
     gap: var(--sys-space-2);
     margin-bottom: 0;
@@ -96,8 +96,8 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .actions > button,
-    .reviewActions > button {
+    .actionButton,
+    .reviewButton {
         width: 100%;
     }
 }

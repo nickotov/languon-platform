@@ -6,7 +6,7 @@
     padding: 16px;
     width: 100%;
 }
-.root header {
+.header {
     align-items: center;
     display: flex;
     gap: 12px;
@@ -44,12 +44,12 @@
 .prompt {
     margin-top: 16px;
 }
-.prompt p {
+.instruction {
     color: var(--text-secondary);
     font-size: 14px;
     margin: 0;
 }
-.prompt h3 {
+.question {
     color: var(--text-primary);
     font-size: clamp(20px, 4vw, 24px);
     line-height: 1.4;
@@ -77,7 +77,7 @@
     min-height: 44px;
     padding: 8px 16px;
 }
-.audio svg {
+.audioIcon {
     color: var(--primary-default);
     height: 20px;
     width: 20px;
@@ -110,8 +110,7 @@
     background: var(--state-hint-bg);
     color: var(--warning-default);
 }
-.error svg,
-.hint svg {
+.messageIcon {
     flex: none;
     height: 16px;
     margin-top: 2px;
@@ -142,45 +141,45 @@
 .option:disabled {
     cursor: not-allowed;
 }
-.option > span {
+.optionCopy {
     min-width: 0;
 }
-.option > span > span {
+.optionLine {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.option > span > span:first-child {
+.optionLabel {
     font-size: 16px;
     font-weight: 500;
 }
-.option > span > span + span {
+.optionHint {
     color: var(--text-tertiary);
     font-size: 14px;
     margin-top: 2px;
 }
-.option > svg {
+.optionIcon {
     flex: none;
     height: 20px;
     width: 20px;
 }
-.option.selected {
+.selected {
     background: var(--state-selected-bg);
     border-color: var(--primary-default);
 }
-.option.correct {
+.correct {
     background: var(--success-subtle);
     border-color: var(--state-correct);
 }
-.option.correct > svg {
+:where(.correct) .optionIcon {
     color: var(--state-correct);
 }
-.option.incorrect {
+.incorrect {
     background: var(--danger-subtle);
     border-color: var(--state-incorrect);
 }
-.option.incorrect > svg {
+:where(.incorrect) .optionIcon {
     color: var(--state-incorrect);
 }
 .feedback {
@@ -197,7 +196,7 @@
     background: var(--danger-subtle);
     color: var(--danger-default);
 }
-.root footer {
+.footer {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
@@ -212,7 +211,7 @@
     font-size: 14px;
     gap: 8px;
 }
-.loadingLabel svg {
+.loadingIcon {
     animation: spin 0.7s linear infinite;
     height: 16px;
     width: 16px;
@@ -222,13 +221,13 @@
     gap: 12px;
     margin-top: 16px;
 }
-.skeleton span {
+.skeletonLine {
     animation: pulse 1.5s infinite;
     background: var(--background-subtle);
     border-radius: var(--radius-md);
     height: 44px;
 }
-.skeleton span:first-child {
+.skeletonLine:first-child {
     height: 20px;
     width: 75%;
 }

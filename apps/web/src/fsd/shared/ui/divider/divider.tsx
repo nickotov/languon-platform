@@ -21,9 +21,9 @@ export function Divider({
             className={[styles.labelled, className].filter(Boolean).join(' ')}
             role='separator'
         >
-            <span aria-hidden='true' />
-            <small>{children}</small>
-            <span aria-hidden='true' />
+            <span className={styles.line} aria-hidden='true' />
+            <small className={styles.label}>{children}</small>
+            <span className={styles.line} aria-hidden='true' />
         </div>
     );
 }

@@ -1,8 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-
-import { AuthShell, ForgotPasswordForm } from '@/fsd/features/auth';
+import {
+    AuthFooterLink,
+    AuthShell,
+    ForgotPasswordForm,
+} from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 
 export function ForgotPasswordPage() {
@@ -11,7 +13,11 @@ export function ForgotPasswordPage() {
         <AuthShell
             description={t('forgot.intro')}
             eyebrow={t('forgot.eyebrow')}
-            footer={<Link href={href('/login')}>{t('forgot.back')}</Link>}
+            footer={
+                <AuthFooterLink href={href('/login')}>
+                    {t('forgot.back')}
+                </AuthFooterLink>
+            }
             title={t('forgot.title')}
         >
             <ForgotPasswordForm />

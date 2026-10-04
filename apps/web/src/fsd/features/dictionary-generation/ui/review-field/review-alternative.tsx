@@ -23,7 +23,11 @@ export function ReviewAlternative({
 
     return (
         <li className={styles.alternative}>
-            <span dir={direction} lang={language}>
+            <span
+                className={styles.alternativeValue}
+                dir={direction}
+                lang={language}
+            >
                 {value}
             </span>
             <Button

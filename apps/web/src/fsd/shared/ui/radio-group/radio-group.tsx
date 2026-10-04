@@ -82,7 +82,9 @@ export function RadioGroup({
             className={[styles.group, className].filter(Boolean).join(' ')}
             disabled={disabled}
         >
-            {label || legend ? <legend>{label ?? legend}</legend> : null}
+            {label || legend ? (
+                <legend className={styles.legend}>{label ?? legend}</legend>
+            ) : null}
             {description ? (
                 <p className={styles.groupDescription}>{description}</p>
             ) : null}
@@ -160,6 +162,7 @@ export function Radio({
                 .join(' ')}
         >
             <input
+                className={styles.input}
                 {...props}
                 checked={controlledChecked}
                 defaultChecked={
@@ -175,7 +178,7 @@ export function Radio({
                 value={value}
             />
             <span aria-hidden='true' className={styles.dot}>
-                <span />
+                <span className={styles.dotFill} />
             </span>
             <span className={styles.copy}>
                 <span className={styles.label}>{children}</span>

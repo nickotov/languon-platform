@@ -19,7 +19,7 @@
     border-radius: var(--radius-sm);
     padding: 24px;
 }
-.root header {
+.header {
     margin-bottom: 24px;
 }
 .eyebrow {
@@ -30,9 +30,8 @@
     margin: 0 0 8px;
     text-transform: uppercase;
 }
-.root h2,
-.root h3,
-.root h4 {
+.title,
+:where(.body) :where(h2, h3, h4) {
     color: var(--text-primary);
     font-size: clamp(24px, 4vw, 30px);
     letter-spacing: -0.025em;
@@ -50,26 +49,26 @@
     font-size: 17px;
     line-height: 1.88;
 }
-.body > * {
+.body > :where(*) {
     margin-block: 0 16px;
 }
-.body :is(a, strong, h3) {
+.body :where(a, strong, h3) {
     color: var(--text-primary);
 }
-.body a {
+.body :where(a) {
     text-decoration: underline;
     text-underline-offset: 4px;
 }
-.body :is(ul, ol) {
+.body :where(ul, ol) {
     padding-left: 24px;
 }
-.body blockquote {
+.body :where(blockquote) {
     border-left: 2px solid var(--border-strong);
     font-style: italic;
     margin-left: 0;
     padding-left: 16px;
 }
-.body code {
+.body :where(code) {
     background: var(--background-subtle);
     border-radius: var(--radius-xs);
     padding: 2px 6px;

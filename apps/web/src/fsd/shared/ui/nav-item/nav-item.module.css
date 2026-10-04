@@ -26,7 +26,7 @@
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
-.root > svg {
+.icon {
     color: var(--text-tertiary);
     flex: none;
     height: 16px;
@@ -36,10 +36,10 @@
     background: var(--background-subtle);
     color: var(--text-primary);
 }
-.active > svg {
+:where(.active) .icon {
     color: var(--text-primary);
 }
-.vertical.active:before {
+.vertical:where(.active):before {
     background: var(--text-primary);
     border-radius: var(--radius-full);
     content: '';
@@ -48,7 +48,7 @@
     position: absolute;
     width: 2px;
 }
-.horizontal.active:after {
+.horizontal:where(.active):after {
     background: var(--text-primary);
     border-radius: var(--radius-full);
     bottom: -1px;
@@ -83,7 +83,7 @@
     padding: 2px 6px;
     text-align: center;
 }
-.active .badge {
+:where(.active) .badge {
     background: var(--text-primary);
     color: var(--background-surface);
 }

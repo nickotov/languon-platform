@@ -73,14 +73,14 @@ export function ExerciseCard({
                 className={[styles.root, className].filter(Boolean).join(' ')}
             >
                 <div className={styles.loadingLabel}>
-                    <Loader2Icon />
+                    <Loader2Icon className={styles.loadingIcon} />
                     Loading exercise…
                 </div>
                 <div className={styles.skeleton}>
-                    <span />
-                    <span />
-                    <span />
-                    <span />
+                    <span className={styles.skeletonLine} />
+                    <span className={styles.skeletonLine} />
+                    <span className={styles.skeletonLine} />
+                    <span className={styles.skeletonLine} />
                 </div>
             </section>
         );
@@ -89,7 +89,7 @@ export function ExerciseCard({
             aria-labelledby={`${id}-question`}
             className={[styles.root, className].filter(Boolean).join(' ')}
         >
-            <header>
+            <header className={styles.header}>
                 <span className={[styles.kind, styles[kind]].join(' ')}>
                     {labels[kind]}
                 </span>
@@ -98,8 +98,12 @@ export function ExerciseCard({
                 ) : null}
             </header>
             <div className={styles.prompt}>
-                {instruction ? <p>{instruction}</p> : null}
-                <h3 id={`${id}-question`}>{question}</h3>
+                {instruction ? (
+                    <p className={styles.instruction}>{instruction}</p>
+                ) : null}
+                <h3 className={styles.question} id={`${id}-question`}>
+                    {question}
+                </h3>
             </div>
             {imageUrl ? (
                 <img src={imageUrl} alt={imageAlt} className={styles.image} />
@@ -110,13 +114,19 @@ export function ExerciseCard({
                     onClick={onPlayAudio}
                     className={styles.audio}
                 >
-                    <Volume2Icon aria-hidden='true' />
+                    <Volume2Icon
+                        className={styles.audioIcon}
+                        aria-hidden='true'
+                    />
                     {audioLabel}
                 </button>
             ) : null}
             {status === 'error' ? (
                 <div role='alert' className={styles.error}>
-                    <AlertCircleIcon aria-hidden='true' />
+                    <AlertCircleIcon
+                        className={styles.messageIcon}
+                        aria-hidden='true'
+                    />
                     {errorMessage}
                 </div>
             ) : null}
@@ -146,16 +156,36 @@ export function ExerciseCard({
                             onClick={() => onSelectOption?.(option.id)}
                             className={[styles.option, styles[state]].join(' ')}
                         >
-                            <span>
-                                <span>{option.label}</span>
+                            <span className={styles.optionCopy}>
+                                <span
+                                    className={[
+                                        styles.optionLine,
+                                        styles.optionLabel,
+                                    ].join(' ')}
+                                >
+                                    {option.label}
+                                </span>
                                 {option.hint ? (
-                                    <span>{option.hint}</span>
+                                    <span
+                                        className={[
+                                            styles.optionLine,
+                                            styles.optionHint,
+                                        ].join(' ')}
+                                    >
+                                        {option.hint}
+                                    </span>
                                 ) : null}
                             </span>
                             {correct ? (
-                                <CheckIcon aria-label='Correct answer' />
+                                <CheckIcon
+                                    className={styles.optionIcon}
+                                    aria-label='Correct answer'
+                                />
                             ) : incorrect ? (
-                                <XIcon aria-label='Incorrect answer' />
+                                <XIcon
+                                    className={styles.optionIcon}
+                                    aria-label='Incorrect answer'
+                                />
                             ) : null}
                         </button>
                     );
@@ -163,7 +193,10 @@ export function ExerciseCard({
             </div>
             {hint && !revealed ? (
                 <div className={styles.hint}>
-                    <LightbulbIcon aria-hidden='true' />
+                    <LightbulbIcon
+                        className={styles.messageIcon}
+                        aria-hidden='true'
+                    />
                     {hint}
                 </div>
             ) : null}
@@ -180,7 +213,9 @@ export function ExerciseCard({
                     {feedback}
                 </p>
             ) : null}
-            {footer ? <footer>{footer}</footer> : null}
+            {footer ? (
+                <footer className={styles.footer}>{footer}</footer>
+            ) : null}
         </section>
     );
 }

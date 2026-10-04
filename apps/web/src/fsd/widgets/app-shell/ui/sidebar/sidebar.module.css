@@ -53,7 +53,7 @@
     min-height: 44px;
     position: relative;
 }
-.railItem + .railItem {
+.railItem + :where(.railItem) {
     margin-top: 4px;
 }
 .railMarker {
@@ -87,7 +87,7 @@
 .groupActive:focus-visible,
 .navLink:focus-visible,
 .navLinkActive:focus-visible,
-.status button:focus-visible {
+.statusButton:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
@@ -123,8 +123,7 @@
 .groupActive {
     font-weight: 600;
 }
-.groupButton > span,
-.groupActive > span {
+.groupLabel {
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -186,18 +185,18 @@
     display: block;
     min-width: 0;
 }
-.navCopy strong,
-.navCopy span {
+.navTitle,
+.navDescription {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.navCopy strong {
+.navTitle {
     font-size: 13px;
     font-weight: inherit;
 }
-.navCopy span {
+.navDescription {
     color: var(--text-secondary);
     font-size: 11px;
     margin-top: 1px;
@@ -205,13 +204,13 @@
 .status {
     padding: 10px;
 }
-.status p {
+.statusText {
     color: var(--text-secondary);
     font-size: 13px;
     line-height: 1.45;
     margin: 0;
 }
-.status button {
+.statusButton {
     align-items: center;
     background: transparent;
     border: 0;
@@ -232,7 +231,7 @@
     gap: 2px;
     padding: 2px 0;
 }
-.loading > span {
+.loadingItem {
     display: grid;
     gap: 5px;
     min-height: 44px;

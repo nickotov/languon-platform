@@ -94,7 +94,9 @@ export function DictionaryLibrary({
         <main id='dictionary-content' tabIndex={-1} className={styles.main}>
             <header className={styles.header}>
                 <div>
-                    <h1>{t('dictionary.library.title')}</h1>
+                    <h1 className={styles.title}>
+                        {t('dictionary.library.title')}
+                    </h1>
                     <p className={styles.subtitle}>
                         {t('dictionary.library.subtitle')}
                     </p>
@@ -116,6 +118,7 @@ export function DictionaryLibrary({
                     role='group'
                 >
                     <button
+                        className={styles.segment}
                         aria-pressed={activeSelected}
                         onClick={state.selectActive}
                         type='button'
@@ -123,6 +126,7 @@ export function DictionaryLibrary({
                         {t('dictionary.lifecycle.active')}
                     </button>
                     <button
+                        className={styles.segment}
                         id='archived-dictionaries-filter'
                         aria-pressed={archivedSelected}
                         onClick={state.selectArchived}

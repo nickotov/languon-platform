@@ -38,12 +38,14 @@ export function LessonContentBlock({
                 .join(' ')}
         >
             {eyebrow || title || summary ? (
-                <header>
+                <header className={styles.header}>
                     <>
                         {eyebrow ? (
                             <p className={styles.eyebrow}>{eyebrow}</p>
                         ) : null}
-                        {title ? <Heading>{title}</Heading> : null}
+                        {title ? (
+                            <Heading className={styles.title}>{title}</Heading>
+                        ) : null}
                         {summary ? (
                             <p className={styles.summary}>{summary}</p>
                         ) : null}

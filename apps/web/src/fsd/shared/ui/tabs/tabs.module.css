@@ -39,23 +39,23 @@
     font-size: 16px;
     padding: 10px 16px;
 }
-.fullWidth .tab {
+:where(.fullWidth) .tab {
     flex: 1;
 }
-.underline .tab {
+:where(.underline) .tab {
     border-bottom: 2px solid transparent;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     margin-bottom: -1px;
 }
-.underline .active {
+:where(.underline) .active {
     border-color: var(--neutral-900);
     color: var(--neutral-900);
 }
-.segmented .tab {
+:where(.segmented) .tab {
     border-radius: var(--radius-sm);
     color: var(--neutral-600);
 }
-.segmented .active {
+:where(.segmented) .active {
     background: var(--background-surface);
     box-shadow: var(--elevation-sm);
     color: var(--neutral-900);
@@ -83,7 +83,7 @@
     min-width: 20px;
     padding: 2px 6px;
 }
-.active .badge {
+:where(.active) .badge {
     background: var(--neutral-900);
     color: white;
 }

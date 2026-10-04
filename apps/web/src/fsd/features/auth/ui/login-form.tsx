@@ -129,6 +129,7 @@ export function LoginForm({
             {capabilities?.passkeys.authentication ? (
                 <div className={styles.alternative}>
                     <Button
+                        className={styles.alternativeButton}
                         disabled={
                             pending !== null ||
                             sessionStatus === 'bootstrapping' ||
@@ -174,12 +175,16 @@ export function LoginForm({
                 />
                 {capabilities?.email.passwordRecovery ? (
                     <div className={styles.endRow}>
-                        <Link href={href('/forgot-password')}>
+                        <Link
+                            className={styles.authLink}
+                            href={href('/forgot-password')}
+                        >
                             {t('login.forgotPassword')}
                         </Link>
                     </div>
                 ) : null}
                 <Button
+                    className={styles.formButton}
                     disabled={
                         pending !== null ||
                         sessionStatus === 'bootstrapping' ||

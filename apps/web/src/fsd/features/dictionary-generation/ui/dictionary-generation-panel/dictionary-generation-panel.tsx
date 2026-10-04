@@ -53,6 +53,10 @@ export function DictionaryGenerationPanel(props: GenerationReviewProps) {
 
     return (
         <BottomSheet
+            headerClassName={styles.dialogHeader}
+            titleClassName={styles.dialogTitle}
+            bodyClassName={styles.dialogBody}
+            footerClassName={styles.dialogFooter}
             className={dialogClassName}
             closeLabel={closeLabel}
             description={description}
@@ -76,6 +80,8 @@ export function DictionaryGenerationPanel(props: GenerationReviewProps) {
                     onReload={state.handleReload}
                 />
                 <Textarea
+                    className={styles.textarea}
+                    labelClassName={styles.textareaLabel}
                     description={instructionHint}
                     disabled={state.instructionDisabled}
                     label={instructionLabel}
@@ -91,7 +97,10 @@ export function DictionaryGenerationPanel(props: GenerationReviewProps) {
                         className={styles.progress}
                         role='status'
                     >
-                        {busyLabel} <span>{unchangedLabel}</span>
+                        {busyLabel}{' '}
+                        <span className={styles.progressDetail}>
+                            {unchangedLabel}
+                        </span>
                     </div>
                 ) : null}
                 {state.ready && state.candidate && job ? (

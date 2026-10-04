@@ -47,14 +47,18 @@ export function ReviewCurrentCard({
     return (
         <section className={styles.proposalField}>
             <header className={styles.fieldHeader}>
-                <h3>{title}</h3>
+                <h3 className={styles.fieldTitle}>{title}</h3>
                 <Badge tone='warning'>{version}</Badge>
             </header>
             <dl className={styles.currentValues}>
                 {fields.map((field) => (
                     <div key={field.field}>
-                        <dt>{field.label}</dt>
-                        <dd dir={field.direction} lang={field.language}>
+                        <dt className={styles.currentLabel}>{field.label}</dt>
+                        <dd
+                            className={styles.currentValue}
+                            dir={field.direction}
+                            lang={field.language}
+                        >
                             {field.value}
                         </dd>
                     </div>

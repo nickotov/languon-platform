@@ -53,35 +53,50 @@ export function AuthShell({
                 <div className={styles.storyContent}>
                     <p className={styles.storyTitle}>{t('auth.storyTitle')}</p>
                     <ul className={styles.benefits}>
-                        <li>
+                        <li className={styles.benefit}>
                             <span className={styles.benefitIcon}>
-                                <Sparkles aria-hidden='true' />
+                                <Sparkles
+                                    aria-hidden='true'
+                                    className={styles.benefitGraphic}
+                                />
                             </span>
                             <span>
-                                <strong>{t('auth.storyBenefitLevel')}</strong>
-                                <small>{t('auth.storyBenefitLevelBody')}</small>
+                                <strong className={styles.benefitTitle}>
+                                    {t('auth.storyBenefitLevel')}
+                                </strong>
+                                <small className={styles.benefitDescription}>
+                                    {t('auth.storyBenefitLevelBody')}
+                                </small>
                             </span>
                         </li>
-                        <li>
+                        <li className={styles.benefit}>
                             <span className={styles.benefitIcon}>
-                                <BookOpen aria-hidden='true' />
+                                <BookOpen
+                                    aria-hidden='true'
+                                    className={styles.benefitGraphic}
+                                />
                             </span>
                             <span>
-                                <strong>{t('auth.storyBenefitContext')}</strong>
-                                <small>
+                                <strong className={styles.benefitTitle}>
+                                    {t('auth.storyBenefitContext')}
+                                </strong>
+                                <small className={styles.benefitDescription}>
                                     {t('auth.storyBenefitContextBody')}
                                 </small>
                             </span>
                         </li>
-                        <li>
+                        <li className={styles.benefit}>
                             <span className={styles.benefitIcon}>
-                                <LineChart aria-hidden='true' />
+                                <LineChart
+                                    aria-hidden='true'
+                                    className={styles.benefitGraphic}
+                                />
                             </span>
                             <span>
-                                <strong>
+                                <strong className={styles.benefitTitle}>
                                     {t('auth.storyBenefitProgress')}
                                 </strong>
-                                <small>
+                                <small className={styles.benefitDescription}>
                                     {t('auth.storyBenefitProgressBody')}
                                 </small>
                             </span>
@@ -139,6 +154,20 @@ export function FormMessage({
     );
 }
 
+export function AuthFooterLink({
+    children,
+    href,
+}: {
+    children: ReactNode;
+    href: string;
+}) {
+    return (
+        <Link className={styles.footerLink} href={href}>
+            {children}
+        </Link>
+    );
+}
+
 export function AuthLinks({
     mode,
     returnTo,
@@ -161,6 +190,7 @@ export function AuthLinks({
                 ? `${t('auth.newToLanguon')} `
                 : `${t('auth.alreadyAccount')} `}
             <Link
+                className={styles.authLink}
                 href={href(
                     preserveCapabilityReturnFragment(target, destination),
                 )}

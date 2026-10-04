@@ -10,7 +10,7 @@
     font-weight: 500;
     white-space: nowrap;
 }
-.root > svg {
+.icon {
     flex: none;
 }
 .overdue {
@@ -30,7 +30,7 @@
     gap: 4px;
     padding: 2px 8px;
 }
-.sm > svg {
+:where(.sm) .icon {
     height: 12px;
     width: 12px;
 }
@@ -39,7 +39,7 @@
     gap: 6px;
     padding: 4px 10px;
 }
-.md > svg {
+:where(.md) .icon {
     height: 16px;
     width: 16px;
 }

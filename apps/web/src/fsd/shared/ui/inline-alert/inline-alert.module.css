@@ -73,10 +73,10 @@
 .body {
     color: var(--alert-body);
 }
-.title + .body {
+:where(.title) + .body {
     margin-top: 4px;
 }
-.body p {
+.body :where(p) {
     margin: 0;
 }
 .actions {

@@ -7,7 +7,7 @@
     max-width: 880px;
 }
 
-.editorSheet > div:nth-child(2) {
+.editorBody {
     display: flex;
     min-height: 0;
     overflow: hidden;
@@ -24,12 +24,12 @@
         width: 100%;
     }
 
-    .editorSheet > header {
+    .editorHeader {
         border-bottom: 1px solid var(--border-default);
         padding: 16px;
     }
 
-    .editorSheet > header h2 {
+    .editorTitle {
         font-size: 16px;
         line-height: 24px;
     }

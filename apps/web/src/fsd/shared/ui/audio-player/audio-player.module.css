@@ -8,7 +8,7 @@
     padding: 10px 12px;
     width: 100%;
 }
-.root.sm {
+.root:where(.sm) {
     gap: 8px;
     padding: 6px 8px;
 }
@@ -16,7 +16,7 @@
     opacity: 0.6;
 }
 .play,
-.controls button {
+.controlButton {
     align-items: center;
     border: 0;
     display: flex;
@@ -30,24 +30,26 @@
     height: 40px;
     width: 40px;
 }
-.sm .play {
+:where(.sm) .play {
     height: 32px;
     width: 32px;
 }
-.play svg {
+.playIcon {
     height: 20px;
     width: 20px;
 }
-.sm .play svg {
+:where(.sm) .playIcon {
     height: 16px;
     width: 16px;
 }
-.root button:disabled {
+.play:disabled,
+.controlButton:disabled {
     cursor: not-allowed;
     opacity: 0.4;
 }
-.root button:focus-visible,
-.track input:focus-visible {
+.play:focus-visible,
+.controlButton:focus-visible,
+.seek:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
@@ -64,7 +66,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.sm .label {
+:where(.sm) .label {
     font-size: 12px;
 }
 .timeline {
@@ -72,7 +74,7 @@
     display: flex;
     gap: 8px;
 }
-.timeline > span {
+.time {
     color: var(--text-tertiary);
     font-family: var(--sys-font-mono);
     font-size: 12px;
@@ -86,13 +88,13 @@
     position: relative;
     width: 100%;
 }
-.track > span {
+.progress {
     background: var(--text-primary);
     border-radius: inherit;
     height: 100%;
     position: absolute;
 }
-.track input {
+.seek {
     appearance: none;
     background: transparent;
     cursor: pointer;
@@ -101,7 +103,7 @@
     position: absolute;
     width: 100%;
 }
-.track input::-webkit-slider-thumb {
+.seek::-webkit-slider-thumb {
     appearance: none;
     background: var(--text-primary);
     border-radius: 50%;
@@ -112,7 +114,7 @@
     display: flex;
     gap: 4px;
 }
-.controls button {
+.controlButton {
     background: transparent;
     border-radius: var(--radius-full);
     color: var(--text-secondary);
@@ -122,15 +124,15 @@
     min-width: 36px;
     padding-inline: 8px;
 }
-.controls button:hover:not(:disabled) {
+.controlButton:hover:not(:disabled) {
     background: var(--background-subtle);
     color: var(--text-primary);
 }
-.controls svg {
+.controlIcon {
     height: 16px;
     width: 16px;
 }
-.controls .speedActive {
+.speedActive {
     background: var(--text-primary);
     color: var(--background-surface);
 }
@@ -148,7 +150,7 @@
     }
 }
 @media (max-width: 420px) {
-    .timeline > span {
+    .time {
         display: none;
     }
 }

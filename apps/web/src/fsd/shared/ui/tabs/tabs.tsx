@@ -25,6 +25,7 @@ export type TabsProps = {
     'aria-label'?: string;
     children?: (activeValue: string) => ReactNode;
     className?: string;
+    listClassName?: string | undefined;
     defaultValue?: string;
     fullWidth?: boolean;
     items: TabItem[];
@@ -39,6 +40,7 @@ export function Tabs({
     'aria-label': ariaLabel,
     children,
     className,
+    listClassName,
     defaultValue,
     fullWidth = false,
     items,
@@ -98,6 +100,7 @@ export function Tabs({
                 aria-label={ariaLabel ?? label ?? 'Tabs'}
                 className={[
                     styles.list,
+                    listClassName,
                     styles[variant],
                     fullWidth ? styles.fullWidth : undefined,
                 ]

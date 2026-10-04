@@ -25,16 +25,27 @@ export function LockedContentState({
     const body = (
         <div className={styles.body}>
             <span className={styles.icon}>
-                <LockIcon aria-hidden='true' />
+                <LockIcon className={styles.lockIcon} aria-hidden='true' />
             </span>
-            {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
+            {eyebrow ? (
+                <p className={[styles.description, styles.eyebrow].join(' ')}>
+                    {eyebrow}
+                </p>
+            ) : null}
             <div>
-                <h3>{title}</h3>
-                <p>{description}</p>
+                <h3 className={styles.title}>{title}</h3>
+                <p className={styles.description}>{description}</p>
             </div>
             {actionLabel ? (
-                <button type='button' onClick={onAction}>
-                    <SparklesIcon aria-hidden='true' />
+                <button
+                    className={styles.action}
+                    type='button'
+                    onClick={onAction}
+                >
+                    <SparklesIcon
+                        className={styles.actionIcon}
+                        aria-hidden='true'
+                    />
                     {actionLabel}
                 </button>
             ) : null}

@@ -54,7 +54,7 @@ export function NavItem({
                 .filter(Boolean)
                 .join(' ')}
         >
-            {Icon ? <Icon aria-hidden='true' /> : null}
+            {Icon ? <Icon className={styles.icon} aria-hidden='true' /> : null}
             {!collapsed ? <span className={styles.label}>{label}</span> : null}
             {!collapsed && badge != null ? (
                 <span className={styles.badge}>{badge}</span>

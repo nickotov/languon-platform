@@ -8,8 +8,8 @@ type StateProps = {
 export function EmptyState({ action, children, title }: StateProps) {
     return (
         <section className={styles.state}>
-            <h2>{title}</h2>
-            {children ? <p>{children}</p> : null}
+            <h2 className={styles.title}>{title}</h2>
+            {children ? <p className={styles.description}>{children}</p> : null}
             {action}
         </section>
     );
@@ -20,8 +20,8 @@ export function ErrorState({ action, children, title }: StateProps) {
             className={[styles.state, styles.error].join(' ')}
             role='alert'
         >
-            <h2>{title}</h2>
-            {children ? <p>{children}</p> : null}
+            <h2 className={styles.title}>{title}</h2>
+            {children ? <p className={styles.description}>{children}</p> : null}
             {action}
         </section>
     );

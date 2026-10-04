@@ -3,11 +3,11 @@
     gap: var(--sys-space-4);
     padding: var(--sys-space-5);
 }
-.card h2,
-.card p {
+.title,
+.paragraph {
     margin: 0;
 }
-.card h2 {
+.title {
     font-family: var(--sys-font-display);
 }
 .capability {

@@ -55,7 +55,7 @@
 }
 
 @media (max-width: 420px) {
-    .brand span:last-child {
+    .wordmark {
         display: none;
     }
     .handle {

@@ -16,16 +16,16 @@
     display: grid;
     gap: 12px;
 }
-.section + .section {
+:where(.section) + .section {
     border-top: 1px solid var(--border-default);
     padding-top: 16px;
 }
-.section h3 {
+.sectionTitle {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
 }
-.section p {
+.sectionDescription {
     margin: 0;
     font-size: 14px;
 }
@@ -67,7 +67,7 @@
     padding: 16px 24px;
     flex-shrink: 0;
 }
-.footer p {
+.footerDescription {
     margin: 0;
     font-size: 12px;
     color: var(--text-secondary);
@@ -86,14 +86,10 @@
 }
 
 /* Keep the supplied dialog's row-based textarea geometry local to this feature. */
-.form textarea {
+.textarea {
     border-radius: 6px;
     line-height: 20px;
     min-height: 0;
-}
-.form label:has(+ textarea),
-.form label:has(+ span textarea) {
-    line-height: 14px;
 }
 
 @media (max-width: 767px) {

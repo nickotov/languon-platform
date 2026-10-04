@@ -207,12 +207,21 @@ export function DictionaryBatchGenerationPanel({
 
             {!job ? (
                 <form className={styles.inputForm} onSubmit={submitInput}>
-                    <div>
-                        <p className={styles.eyebrow}>
+                    <div className={styles.inputIntro}>
+                        <p
+                            className={[
+                                styles.eyebrow,
+                                styles.inputDescription,
+                            ].join(' ')}
+                        >
                             {t('dictionary.batch.eyebrow')}
                         </p>
-                        <h3>{t('dictionary.batch.inputTitle')}</h3>
-                        <p>{t('dictionary.batch.inputHelp')}</p>
+                        <h3 className={styles.inputTitle}>
+                            {t('dictionary.batch.inputTitle')}
+                        </h3>
+                        <p className={styles.inputDescription}>
+                            {t('dictionary.batch.inputHelp')}
+                        </p>
                     </div>
                     <Field
                         hint={t('dictionary.batch.termsHelp')}
@@ -254,6 +263,7 @@ export function DictionaryBatchGenerationPanel({
                     </Field>
                     <div className={styles.actions}>
                         <Button
+                            className={styles.actionButton}
                             disabled={!available || text.trim() === ''}
                             loading={pendingAction}
                             type='submit'
@@ -269,7 +279,9 @@ export function DictionaryBatchGenerationPanel({
                     <strong>
                         {t(`dictionary.generation.stage.${job.progress.stage}`)}
                     </strong>
-                    <p>{t('dictionary.batch.persistenceHelp')}</p>
+                    <p className={styles.progressDescription}>
+                        {t('dictionary.batch.persistenceHelp')}
+                    </p>
                     <Progress
                         label={t('dictionary.batch.progressLabel')}
                         value={job.progress.percent}
@@ -291,9 +303,11 @@ export function DictionaryBatchGenerationPanel({
             {job?.state === 'review' && job.proposal ? (
                 <div className={styles.review}>
                     <header className={styles.reviewHeader}>
-                        <div>
-                            <h3>{t('dictionary.batch.reviewTitle')}</h3>
-                            <p>
+                        <div className={styles.reviewIntro}>
+                            <h3 className={styles.reviewTitle}>
+                                {t('dictionary.batch.reviewTitle')}
+                            </h3>
+                            <p className={styles.reviewDescription}>
                                 {t('dictionary.batch.reviewHelp', {
                                     count: selectedDrafts.length,
                                 })}
@@ -356,7 +370,10 @@ export function DictionaryBatchGenerationPanel({
                             aria-labelledby={`batch-failures-${job.id}`}
                             className={styles.failures}
                         >
-                            <h3 id={`batch-failures-${job.id}`}>
+                            <h3
+                                className={styles.failuresTitle}
+                                id={`batch-failures-${job.id}`}
+                            >
                                 {t('dictionary.batch.failuresTitle')}
                             </h3>
                             <div className={styles.failureList}>
@@ -406,6 +423,7 @@ export function DictionaryBatchGenerationPanel({
                                             </Checkbox>
                                         ) : (
                                             <strong
+                                                className={styles.failureInput}
                                                 dir={languageDirection(
                                                     languages,
                                                     dictionary.sourceLanguage,
@@ -415,7 +433,9 @@ export function DictionaryBatchGenerationPanel({
                                                 {failure.input}
                                             </strong>
                                         )}
-                                        <span>{failure.message}</span>
+                                        <span className={styles.failureMessage}>
+                                            {failure.message}
+                                        </span>
                                         {job.proposal?.warnings
                                             .filter(
                                                 (warning) =>
@@ -458,6 +478,7 @@ export function DictionaryBatchGenerationPanel({
 
                     <div className={styles.reviewActions}>
                         <Button
+                            className={styles.reviewButton}
                             disabled={pendingAction}
                             onClick={() => void run(onDiscard)}
                             type='button'
@@ -466,6 +487,7 @@ export function DictionaryBatchGenerationPanel({
                             {t('dictionary.batch.discard')}
                         </Button>
                         <Button
+                            className={styles.reviewButton}
                             disabled={
                                 conflict ||
                                 selectedDrafts.length === 0 ||
@@ -600,6 +622,7 @@ function CandidateRow({
             <p className={styles.inputTerm}>
                 {t('dictionary.batch.inputTerm')}{' '}
                 <span
+                    className={styles.inputValue}
                     dir={languageDirection(
                         languages,
                         dictionary.sourceLanguage,
@@ -668,8 +691,10 @@ function CandidateRow({
             </div>
             {proposalRow?.fieldFeedback.length ? (
                 <details className={styles.feedback}>
-                    <summary>{t('dictionary.batch.feedback')}</summary>
-                    <ul>
+                    <summary className={styles.feedbackSummary}>
+                        {t('dictionary.batch.feedback')}
+                    </summary>
+                    <ul className={styles.feedbackList}>
                         {proposalRow.fieldFeedback.map((feedback) => (
                             <li key={feedback.field}>
                                 <strong>

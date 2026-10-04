@@ -24,7 +24,9 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
         <form className={styles.form} onSubmit={state.submitForm}>
             <div className={styles.content}>
                 <section className={styles.section}>
-                    <h3>{t('dictionary.settings.basics')}</h3>
+                    <h3 className={styles.sectionTitle}>
+                        {t('dictionary.settings.basics')}
+                    </h3>
                     <Field
                         label={t('dictionary.field.name')}
                         hint={nameCount}
@@ -42,6 +44,7 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                         optionalLabel={t('dictionary.field.optional')}
                     >
                         <Textarea
+                            className={styles.textarea}
                             maxLength={2000}
                             rows={3}
                             showCount
@@ -51,7 +54,9 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                     </Field>
                 </section>
                 <section className={styles.section}>
-                    <h3>{t('dictionary.context.settingsTitle')}</h3>
+                    <h3 className={styles.sectionTitle}>
+                        {t('dictionary.context.settingsTitle')}
+                    </h3>
                     <Field
                         error={translationContextError}
                         label={t('dictionary.context.label')}
@@ -59,6 +64,7 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                         optionalLabel={t('dictionary.field.optional')}
                     >
                         <Textarea
+                            className={styles.textarea}
                             maxLength={2000}
                             rows={4}
                             onChange={state.changeTranslationContext}
@@ -83,7 +89,9 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                 ) : null}
             </div>
             <footer className={styles.footer}>
-                <p>{t('dictionary.settings.saveHelp')}</p>
+                <p className={styles.footerDescription}>
+                    {t('dictionary.settings.saveHelp')}
+                </p>
                 <div className={styles.actions}>
                     <Button
                         disabled={pending}

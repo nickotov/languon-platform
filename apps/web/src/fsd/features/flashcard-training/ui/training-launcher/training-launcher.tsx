@@ -31,6 +31,7 @@ export interface TrainingLauncherProps {
     activeCount: number;
     archived?: boolean;
     className?: string;
+    triggerClassName?: string | undefined;
     placement?: 'top' | 'bottom';
 }
 interface Running {
@@ -58,6 +59,7 @@ function Launcher({
     activeCount,
     archived = false,
     className,
+    triggerClassName,
     placement = 'bottom',
 }: TrainingLauncherProps) {
     const { t } = useI18n();
@@ -143,6 +145,7 @@ function Launcher({
     return (
         <div ref={rootRef} className={className}>
             <Menu
+                triggerClassName={triggerClassName}
                 label={t('training.train')}
                 trigger={trigger}
                 items={items}

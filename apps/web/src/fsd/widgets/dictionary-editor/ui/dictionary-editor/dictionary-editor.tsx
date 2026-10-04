@@ -94,6 +94,7 @@ export function DictionaryEditor({
             <EditorCards model={view.workspace.cards} />
             <div className={styles.addCard}>
                 <TrainingLauncher
+                    triggerClassName={styles.trainButton}
                     activeCount={current.activeCardCount}
                     archived={!active}
                     dictionaryTitle={current.name}

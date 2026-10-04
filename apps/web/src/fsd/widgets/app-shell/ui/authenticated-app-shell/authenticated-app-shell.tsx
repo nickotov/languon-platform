@@ -81,7 +81,9 @@ export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
                     />
                 </span>
                 <span aria-hidden className={styles.mobileDivider} />
-                <p title={pageTitle}>{pageTitle}</p>
+                <p className={styles.mobileTitle} title={pageTitle}>
+                    {pageTitle}
+                </p>
             </header>
             <MobileDrawer navigation={navigation} shell={shell} />
             <div className={styles.content} id='main-content' tabIndex={-1}>

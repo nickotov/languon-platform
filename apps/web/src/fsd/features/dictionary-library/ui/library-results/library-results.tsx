@@ -107,8 +107,8 @@ export function LibraryResults({ state }: { state: LibraryResultsProps }) {
                         <BookPlus aria-hidden size={24} />
                     </span>
                 ) : null}
-                <h2>{emptyTitle}</h2>
-                <p>{emptyHelp}</p>
+                <h2 className={styles.emptyTitle}>{emptyTitle}</h2>
+                <p className={styles.emptyHelp}>{emptyHelp}</p>
                 {firstDictionary ? (
                     <Button
                         leadingIcon={<Plus aria-hidden size={16} />}

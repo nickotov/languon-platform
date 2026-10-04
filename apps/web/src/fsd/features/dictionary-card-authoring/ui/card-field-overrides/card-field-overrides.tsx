@@ -104,8 +104,12 @@ export function CardFieldOverrides({
             <section className={styles.overridePanel}>
                 <div className={styles.overrideHeading}>
                     <div>
-                        <p>{t('dictionary.override.title')}</p>
-                        <small>{t('dictionary.override.description')}</small>
+                        <p className={styles.overrideTitle}>
+                            {t('dictionary.override.title')}
+                        </p>
+                        <small className={styles.overrideDescription}>
+                            {t('dictionary.override.description')}
+                        </small>
                     </div>
                     <Badge tone={tone}>{status}</Badge>
                 </div>

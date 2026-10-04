@@ -61,9 +61,9 @@
     justify-content: center;
     width: 28px;
 }
-.selected .shortcut,
-.correct .shortcut,
-.incorrect .shortcut {
+:where(.selected) .shortcut,
+:where(.correct) .shortcut,
+:where(.incorrect) .shortcut {
     background: var(--tone);
     border-color: var(--tone);
     color: var(--text-on-primary);
@@ -73,17 +73,17 @@
     flex: 1;
     min-width: 0;
 }
-.copy > span {
+.copyLine {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.copy > span:first-child {
+.label {
     font-size: 16px;
     font-weight: 500;
 }
-.copy > span + span {
+.hint {
     color: var(--text-tertiary);
     font-size: 14px;
     margin-top: 2px;
@@ -95,13 +95,13 @@
     flex: none;
     gap: 6px;
 }
-.status > span {
+.statusLabel {
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
 }
-.status svg {
+.statusIcon {
     height: 20px;
     width: 20px;
 }

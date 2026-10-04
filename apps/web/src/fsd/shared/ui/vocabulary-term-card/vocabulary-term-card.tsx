@@ -54,8 +54,12 @@ export function VocabularyTermCard({
             <div className={styles.top}>
                 <div className={styles.copy}>
                     <div className={styles.termRow}>
-                        <h3>{term}</h3>
-                        {pronunciation ? <span>{pronunciation}</span> : null}
+                        <h3 className={styles.term}>{term}</h3>
+                        {pronunciation ? (
+                            <span className={styles.pronunciation}>
+                                {pronunciation}
+                            </span>
+                        ) : null}
                         {partOfSpeech ? (
                             <span className={styles.part}>
                                 {labels[partOfSpeech]}
@@ -64,7 +68,10 @@ export function VocabularyTermCard({
                     </div>
                     {hideTranslation ? (
                         <p className={styles.hidden}>
-                            <EyeOffIcon aria-hidden='true' />
+                            <EyeOffIcon
+                                className={styles.hiddenIcon}
+                                aria-hidden='true'
+                            />
                             Translation hidden
                         </p>
                     ) : (
@@ -75,6 +82,7 @@ export function VocabularyTermCard({
                     <div className={styles.actions}>
                         {onPlayAudio ? (
                             <button
+                                className={styles.actionButton}
                                 type='button'
                                 onClick={(event) => {
                                     event.stopPropagation();
@@ -82,11 +90,15 @@ export function VocabularyTermCard({
                                 }}
                                 aria-label={`Play pronunciation of ${term}`}
                             >
-                                <Volume2Icon aria-hidden='true' />
+                                <Volume2Icon
+                                    className={styles.actionIcon}
+                                    aria-hidden='true'
+                                />
                             </button>
                         ) : null}
                         {onToggleSave ? (
                             <button
+                                className={styles.actionButton}
                                 type='button'
                                 onClick={(event) => {
                                     event.stopPropagation();
@@ -100,7 +112,12 @@ export function VocabularyTermCard({
                                 }
                             >
                                 <StarIcon
-                                    className={saved ? styles.saved : ''}
+                                    className={[
+                                        styles.actionIcon,
+                                        saved ? styles.saved : '',
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')}
                                     aria-hidden='true'
                                 />
                             </button>
@@ -110,9 +127,11 @@ export function VocabularyTermCard({
             </div>
             {example ? (
                 <div className={styles.example}>
-                    <p>{example}</p>
+                    <p className={styles.exampleText}>{example}</p>
                     {exampleTranslation && !hideTranslation ? (
-                        <p>{exampleTranslation}</p>
+                        <p className={styles.exampleText}>
+                            {exampleTranslation}
+                        </p>
                     ) : null}
                 </div>
             ) : null}

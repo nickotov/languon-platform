@@ -42,8 +42,8 @@ export function EditorSummary({
             <Breadcrumb items={breadcrumb} />
             <header className={styles.header}>
                 <div className={styles.summaryContent}>
-                    <div>
-                        <h1>{current.name}</h1>
+                    <div className={styles.summaryCopy}>
+                        <h1 className={styles.title}>{current.name}</h1>
                         <div className={styles.metadata}>
                             <span>
                                 {source} → {target}

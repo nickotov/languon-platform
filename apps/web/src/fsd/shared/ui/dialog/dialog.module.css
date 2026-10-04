@@ -36,14 +36,14 @@
     flex: 1;
     min-width: 0;
 }
-.heading h2 {
+.title {
     color: var(--neutral-900);
     font-size: 18px;
     font-weight: 600;
     line-height: 24px;
     margin: 0;
 }
-.heading p {
+.description {
     color: var(--neutral-500);
     font-size: 14px;
     line-height: 20px;

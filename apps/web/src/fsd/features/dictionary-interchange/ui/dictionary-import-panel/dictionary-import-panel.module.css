@@ -14,24 +14,16 @@
     gap: var(--spacing-8);
 }
 
-.intro p,
-.intro h3,
-.previewHeading p,
-.previewHeading h4,
-.enrichment p,
-.failures h4 {
+.paragraph,
+.heading {
     margin: 0;
 }
 
-.intro p,
-.previewHeading p,
-.enrichment p {
+.paragraph {
     color: var(--text-secondary);
 }
 
-.intro h3,
-.previewHeading h4,
-.failures h4 {
+.heading {
     color: var(--text-primary);
     font-size: 16px;
     font-weight: 600;
@@ -45,7 +37,7 @@
     text-transform: uppercase;
 }
 
-.form .fileInput {
+.fileInput {
     background: var(--background-subtle);
     padding: var(--spacing-12);
     font-size: 14px;
@@ -97,22 +89,22 @@
     line-height: 1.5;
 }
 
-.row > span[aria-hidden='true'] {
+.rowArrow {
     color: var(--text-tertiary);
 }
 
-.failures ul {
+.failureList {
     display: grid;
     gap: var(--spacing-8);
     margin: 0;
     padding-inline-start: var(--spacing-20);
 }
 
-.row > label {
+.rowSelection {
     grid-column: 1 / -1;
 }
 
-.row > span:not([aria-hidden='true']) {
+.rowValue {
     min-width: 0;
     overflow-wrap: anywhere;
 }
@@ -123,7 +115,7 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .row > span[aria-hidden='true'] {
+    .rowArrow {
         transform: rotate(90deg);
         justify-self: start;
     }

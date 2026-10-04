@@ -26,16 +26,16 @@
     max-width: 85%;
     padding: 10px 16px;
 }
-.bubble p {
+.message {
     margin: 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
-.bubble.error {
+.error {
     background: var(--danger-subtle);
     border-color: var(--danger-200);
 }
-.bubble.sending {
+.sending {
     opacity: 0.7;
 }
 .translation {
@@ -54,14 +54,14 @@
     gap: 6px;
     padding-right: 4px;
 }
-.meta > svg {
+.statusIcon {
     height: 14px;
     width: 14px;
 }
 .errorIcon {
     color: var(--danger-default) !important;
 }
-.meta button {
+.retry {
     align-items: center;
     background: transparent;
     border: 0;
@@ -73,13 +73,13 @@
     gap: 4px;
     padding: 2px 6px;
 }
-.meta button:hover {
+.retry:hover {
     background: var(--danger-subtle);
 }
-.meta button:focus-visible {
+.retry:focus-visible {
     outline: 2px solid var(--border-focus);
 }
-.meta button svg {
+.retryIcon {
     height: 12px;
     width: 12px;
 }

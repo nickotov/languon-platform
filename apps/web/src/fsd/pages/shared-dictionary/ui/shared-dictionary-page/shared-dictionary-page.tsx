@@ -160,11 +160,11 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
 
     return (
         <main className={styles.main}>
-            <header className={styles.header}>
+            <header>
                 <p className={styles.eyebrow}>
                     {t('dictionary.public.eyebrow')}
                 </p>
-                <h1>{dictionary.name}</h1>
+                <h1 className={styles.title}>{dictionary.name}</h1>
                 {dictionary.description ? (
                     <p>{dictionary.description}</p>
                 ) : null}
@@ -203,7 +203,9 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
             </header>
 
             <Card className={styles.forkCard}>
-                <h2>{t('dictionary.public.forkTitle')}</h2>
+                <h2 className={styles.forkTitle}>
+                    {t('dictionary.public.forkTitle')}
+                </h2>
                 <p>{t('dictionary.public.forkHelp')}</p>
                 {sessionStatus === 'authenticated' ? (
                     <Button
@@ -332,13 +334,17 @@ function PublicCard({
         <Card className={styles.card}>
             <div className={styles.pair}>
                 <strong
+                    className={styles.pairValue}
                     dir={direction(dictionary.sourceLanguage)}
                     lang={dictionary.sourceLanguage}
                 >
                     {card.values.source}
                 </strong>
-                <span aria-hidden='true'>→</span>
+                <span aria-hidden='true' className={styles.pairArrow}>
+                    →
+                </span>
                 <strong
+                    className={styles.pairValue}
                     dir={direction(dictionary.targetLanguage)}
                     lang={dictionary.targetLanguage}
                 >
@@ -346,11 +352,15 @@ function PublicCard({
                 </strong>
             </div>
             {optional.length ? (
-                <dl>
+                <dl className={styles.fields}>
                     {optional.map((field) => (
                         <div key={field.key}>
-                            <dt>{field.label}</dt>
-                            <dd dir={direction(field.lang)} lang={field.lang}>
+                            <dt className={styles.fieldLabel}>{field.label}</dt>
+                            <dd
+                                className={styles.fieldValue}
+                                dir={direction(field.lang)}
+                                lang={field.lang}
+                            >
                                 {field.value}
                             </dd>
                         </div>

@@ -64,6 +64,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
         <label className={rootClassName} htmlFor={switchId}>
             <span className={styles.control}>
                 <input
+                    className={styles.input}
                     {...props}
                     aria-describedby={accessibleDescription}
                     disabled={disabled}

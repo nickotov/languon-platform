@@ -95,7 +95,9 @@ export function DictionariesNavigation({
                         }
                         size={20}
                     />
-                    <span>{t('home.dictionaries')}</span>
+                    <span className={styles.groupLabel}>
+                        {t('home.dictionaries')}
+                    </span>
                     <ChevronDown
                         aria-hidden
                         className={
@@ -136,8 +138,11 @@ export function DictionariesNavigation({
                             />
                         ) : navigation.loadError ? (
                             <li className={styles.status} role='alert'>
-                                <p>{t('shell.dictionaryLoadFailed')}</p>
+                                <p className={styles.statusText}>
+                                    {t('shell.dictionaryLoadFailed')}
+                                </p>
                                 <button
+                                    className={styles.statusButton}
                                     onClick={navigation.retryLoad}
                                     type='button'
                                 >
@@ -147,8 +152,14 @@ export function DictionariesNavigation({
                             </li>
                         ) : navigation.list.length === 0 ? (
                             <li className={styles.status}>
-                                <p>{t('shell.noDictionaries')}</p>
-                                <button onClick={openCreate} type='button'>
+                                <p className={styles.statusText}>
+                                    {t('shell.noDictionaries')}
+                                </p>
+                                <button
+                                    className={styles.statusButton}
+                                    onClick={openCreate}
+                                    type='button'
+                                >
                                     <Plus aria-hidden size={14} />
                                     {t('dictionary.create.title')}
                                 </button>

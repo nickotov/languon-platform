@@ -14,7 +14,7 @@
     flex: none;
     position: relative;
 }
-.control input {
+.input {
     appearance: none;
     background: var(--background-surface);
     border: 1px solid var(--neutral-300);
@@ -24,37 +24,37 @@
         background-color var(--duration-fast),
         border-color var(--duration-fast);
 }
-.sm input,
-.sm .mark {
+:where(.sm) .input,
+:where(.sm) .mark {
     border-radius: 4px;
     height: 16px;
     width: 16px;
 }
-.md input,
-.md .mark {
+:where(.md) .input,
+:where(.md) .mark {
     border-radius: 6px;
     height: 20px;
     width: 20px;
 }
-.lg input,
-.lg .mark {
+:where(.lg) .input,
+:where(.lg) .mark {
     border-radius: 6px;
     height: 24px;
     width: 24px;
 }
-.control input:hover:not(:disabled) {
+.input:hover:not(:disabled) {
     border-color: var(--neutral-400);
 }
-.control input:checked,
-.control input:indeterminate {
+.input:checked,
+.input:indeterminate {
     background: var(--primary-default);
     border-color: var(--primary-default);
 }
-.control input:focus-visible {
+.input:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
-.control input:disabled {
+.input:disabled {
     background: var(--background-subtle);
     border-color: var(--neutral-200);
     cursor: not-allowed;
@@ -71,8 +71,8 @@
     pointer-events: none;
     position: absolute;
 }
-.control input:checked + .mark,
-.control input:indeterminate + .mark {
+:where(.input:checked) + .mark,
+:where(.input:indeterminate) + .mark {
     opacity: 1;
 }
 .copy {
@@ -86,7 +86,7 @@
     font-weight: 500;
     line-height: 20px;
 }
-.lg + .copy .label {
+:where(.lg + .copy) .label {
     font-size: 16px;
 }
 .description {
@@ -99,11 +99,12 @@
     font-size: 14px;
     margin: 0;
 }
-.root:has(input:disabled) .label,
-.root:has(input:disabled) .description {
+:where(.root:has(.input:disabled)) .label,
+:where(.root:has(.input:disabled)) .description {
     color: var(--text-disabled);
     cursor: not-allowed;
 }
-.root:has(input[aria-invalid='true']) input {
+.input[aria-invalid='true'],
+.input[aria-invalid='true']:hover:not(:disabled) {
     border-color: var(--danger-default);
 }

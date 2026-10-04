@@ -57,8 +57,8 @@ export function DictionarySharing({
 
     return (
         <Card className={styles.card}>
-            <h2>{t('dictionary.share.title')}</h2>
-            <p>{t('dictionary.share.help')}</p>
+            <h2 className={styles.title}>{t('dictionary.share.title')}</h2>
+            <p className={styles.paragraph}>{t('dictionary.share.help')}</p>
             <InlineAlert
                 tone={dictionary.visibility === 'unlisted' ? 'warning' : 'info'}
             >
@@ -68,7 +68,9 @@ export function DictionarySharing({
             </InlineAlert>
             {capability ? (
                 <div className={styles.capability}>
-                    <p>{t('dictionary.share.once')}</p>
+                    <p className={styles.paragraph}>
+                        {t('dictionary.share.once')}
+                    </p>
                     <Button
                         onClick={() => void copy()}
                         type='button'
@@ -78,7 +80,10 @@ export function DictionarySharing({
                     </Button>
                 </div>
             ) : null}
-            <p aria-live='polite' className={styles.outcome}>
+            <p
+                aria-live='polite'
+                className={[styles.paragraph, styles.outcome].join(' ')}
+            >
                 {outcome}
             </p>
             <div className={styles.actions}>

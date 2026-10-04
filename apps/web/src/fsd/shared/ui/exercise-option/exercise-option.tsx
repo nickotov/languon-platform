@@ -56,12 +56,20 @@ export function ExerciseOption({
                 </span>
             ) : null}
             <span className={styles.copy}>
-                <span>{label}</span>
-                {hint ? <span>{hint}</span> : null}
+                <span className={[styles.copyLine, styles.label].join(' ')}>
+                    {label}
+                </span>
+                {hint ? (
+                    <span className={[styles.copyLine, styles.hint].join(' ')}>
+                        {hint}
+                    </span>
+                ) : null}
             </span>
             <span className={styles.status}>
-                {labels[state] ? <span>{labels[state]}</span> : null}
-                <Icon aria-hidden='true' />
+                {labels[state] ? (
+                    <span className={styles.statusLabel}>{labels[state]}</span>
+                ) : null}
+                <Icon className={styles.statusIcon} aria-hidden='true' />
             </span>
         </button>
     );

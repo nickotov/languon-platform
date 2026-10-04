@@ -70,6 +70,7 @@ export function ForgotPasswordForm() {
                     />
                 </Field>
                 <Button
+                    className={styles.formButton}
                     disabled={pending || !capabilities}
                     loading={pending}
                     size='large'

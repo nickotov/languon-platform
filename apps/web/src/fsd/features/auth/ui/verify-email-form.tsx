@@ -150,6 +150,7 @@ export function VerifyEmailForm({
                     />
                 </Field>
                 <Button
+                    className={styles.formButton}
                     disabled={
                         pending !== null ||
                         sessionStatus === 'bootstrapping' ||

@@ -138,13 +138,17 @@ export function DictionaryImportPanel({
     return (
         <section className={styles.section}>
             <div className={styles.intro}>
-                <p className={styles.eyebrow}>
+                <p className={[styles.paragraph, styles.eyebrow].join(' ')}>
                     {t('dictionary.interchange.importEyebrow')}
                 </p>
                 {showHeading ? (
-                    <h3>{t('dictionary.interchange.importTitle')}</h3>
+                    <h3 className={styles.heading}>
+                        {t('dictionary.interchange.importTitle')}
+                    </h3>
                 ) : null}
-                <p>{t('dictionary.interchange.importHelp')}</p>
+                <p className={styles.paragraph}>
+                    {t('dictionary.interchange.importHelp')}
+                </p>
             </div>
             {error ? <InlineAlert tone='danger'>{error}</InlineAlert> : null}
             {fileError ? (
@@ -260,8 +264,10 @@ export function DictionaryImportPanel({
             {visiblePreview ? (
                 <div className={styles.preview}>
                     <div aria-live='polite' className={styles.previewHeading}>
-                        <h4>{t('dictionary.interchange.previewTitle')}</h4>
-                        <p>
+                        <h4 className={styles.heading}>
+                            {t('dictionary.interchange.previewTitle')}
+                        </h4>
+                        <p className={styles.paragraph}>
                             {t('dictionary.interchange.summary', {
                                 failures: visiblePreview.summary.failureRows,
                                 ready: visiblePreview.summary.readyRows,
@@ -298,6 +304,7 @@ export function DictionaryImportPanel({
                             >
                                 {canUseAi ? (
                                     <Checkbox
+                                        className={styles.rowSelection}
                                         checked={selected.has(row.rowIndex)}
                                         onChange={(event) => {
                                             const checked =
@@ -320,6 +327,7 @@ export function DictionaryImportPanel({
                                     </Checkbox>
                                 ) : null}
                                 <span
+                                    className={styles.rowValue}
                                     dir={languageDirection(
                                         languages,
                                         sourceLanguage,
@@ -328,8 +336,14 @@ export function DictionaryImportPanel({
                                 >
                                     {row.source}
                                 </span>
-                                <span aria-hidden='true'>→</span>
                                 <span
+                                    aria-hidden='true'
+                                    className={styles.rowArrow}
+                                >
+                                    →
+                                </span>
+                                <span
+                                    className={styles.rowValue}
                                     dir={languageDirection(
                                         languages,
                                         targetLanguage,
@@ -343,8 +357,10 @@ export function DictionaryImportPanel({
                     </div>
                     {visiblePreview.failures.length ? (
                         <div className={styles.failures}>
-                            <h4>{t('dictionary.interchange.failures')}</h4>
-                            <ul>
+                            <h4 className={styles.heading}>
+                                {t('dictionary.interchange.failures')}
+                            </h4>
+                            <ul className={styles.failureList}>
                                 {visiblePreview.failures.map((failure) => (
                                     <li
                                         key={`${failure.rowIndex}:${failure.code}`}
@@ -372,14 +388,18 @@ export function DictionaryImportPanel({
                             {t('dictionary.interchange.enrich')}
                         </Switch>
                         {!aiAvailable ? (
-                            <p>{t('dictionary.interchange.aiUnavailable')}</p>
+                            <p className={styles.paragraph}>
+                                {t('dictionary.interchange.aiUnavailable')}
+                            </p>
                         ) : !optionalFieldsEnabled ? (
-                            <p>
+                            <p className={styles.paragraph}>
                                 {t('dictionary.interchange.aiNoOptionalFields')}
                             </p>
                         ) : null}
                         {canUseAi && visiblePreview.summary.readyRows > 100 ? (
-                            <p>{t('dictionary.interchange.aiLimit')}</p>
+                            <p className={styles.paragraph}>
+                                {t('dictionary.interchange.aiLimit')}
+                            </p>
                         ) : null}
                     </div>
                     {useAi ? (

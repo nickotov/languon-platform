@@ -46,7 +46,7 @@
     height: 20px;
     width: 1px;
 }
-.mobileTopBar p {
+.mobileTitle {
     flex: 1;
     font-size: 14px;
     font-weight: 600;

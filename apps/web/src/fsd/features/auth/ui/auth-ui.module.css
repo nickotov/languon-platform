@@ -30,16 +30,16 @@
     margin: 40px 0 0;
     padding: 0;
 }
-.benefits li {
+.benefit {
     display: flex;
     gap: 16px;
 }
-.benefits strong {
+.benefitTitle {
     display: block;
     font-size: 16px;
     font-weight: 500;
 }
-.benefits small {
+.benefitDescription {
     display: block;
     margin-top: 4px;
     color: var(--text-secondary);
@@ -57,7 +57,7 @@
     justify-content: center;
     margin-top: 4px;
 }
-.benefitIcon svg {
+.benefitGraphic {
     height: 20px;
     width: 20px;
 }
@@ -117,7 +117,7 @@
     display: grid;
     gap: 16px;
 }
-.form > button {
+.formButton {
     width: 100%;
 }
 .row,
@@ -133,14 +133,12 @@
     justify-content: flex-end;
     margin-top: -8px;
 }
-.endRow a,
-.switch a {
+.authLink {
     color: var(--primary-default);
     font-weight: 500;
     text-underline-offset: 4px;
 }
-.endRow a:hover,
-.switch a:hover {
+.authLink:hover {
     color: var(--primary-hover);
 }
 .switch {
@@ -154,12 +152,12 @@
     font-size: 14px;
     text-align: center;
 }
-.authFooter a {
+.footerLink {
     color: var(--primary-default);
     font-weight: 500;
     text-underline-offset: 4px;
 }
-.authFooter a:hover {
+.footerLink:hover {
     color: var(--primary-hover);
 }
 .alternative {
@@ -170,7 +168,7 @@
     gap: 12px;
     text-align: center;
 }
-.alternative button {
+.alternativeButton {
     width: 100%;
 }
 .fieldGroup {
@@ -186,7 +184,7 @@
     display: block;
     position: relative;
 }
-.password input {
+.passwordInput {
     padding-left: 40px;
     padding-right: 48px;
 }
@@ -224,11 +222,11 @@
     color: var(--text-disabled);
     cursor: not-allowed;
 }
-.passwordToggle svg {
+.passwordToggleIcon {
     height: 20px;
     width: 20px;
 }
-.fieldGroup small {
+.fieldHint {
     color: var(--text-tertiary);
     font-size: 12px;
     line-height: 1.5;

@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react';
 import { Input, Textarea } from '@/fsd/shared/ui';
+import styles from '../dictionary-card-form/dictionary-card-form.module.css';
 
 export function AuthoringInput({
     'aria-describedby': ariaDescribedBy,
@@ -31,6 +32,7 @@ export function AuthoringInput({
     if (multiline) {
         return (
             <Textarea
+                className={styles.textarea}
                 aria-describedby={ariaDescribedBy}
                 aria-invalid={ariaInvalid}
                 data-validation={dataValidation}

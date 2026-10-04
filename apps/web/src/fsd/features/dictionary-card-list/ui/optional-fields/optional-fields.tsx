@@ -96,18 +96,44 @@ export function OptionalFields({
             field.key === 'example' || field.key === 'exampleTranslation'
                 ? renderAudio?.(card, field.key)
                 : null;
-        const className =
-            field.key === 'transcription' ? styles.transcription : undefined;
-        return { ...field, label, direction, audio, className };
+        const className = [
+            styles.fieldText,
+            field.key === 'transcription' ? styles.transcription : '',
+        ]
+            .filter(Boolean)
+            .join(' ');
+        const rowClassName = [
+            styles.fieldRow,
+            field.key === 'example' ? styles.exampleRow : '',
+            field.key === 'exampleTranslation'
+                ? styles.exampleTranslationRow
+                : '',
+        ]
+            .filter(Boolean)
+            .join(' ');
+        return { ...field, label, direction, audio, className, rowClassName };
     });
+    const pairedExamples =
+        fields.some((field) => field.key === 'example') &&
+        fields.some((field) => field.key === 'exampleTranslation');
+    const fieldsClassName = [
+        styles.fields,
+        pairedExamples ? styles.pairedExamples : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
 
     if (!fields.length) return null;
     return (
-        <dl className={styles.fields}>
+        <dl className={fieldsClassName}>
             {rows.map((field) => (
-                <div data-field={field.key} key={field.key}>
-                    <dt>{field.label}</dt>
-                    <dd>
+                <div
+                    className={field.rowClassName}
+                    data-field={field.key}
+                    key={field.key}
+                >
+                    <dt className={styles.fieldLabel}>{field.label}</dt>
+                    <dd className={styles.fieldValue}>
                         <span
                             className={field.className}
                             dir={field.direction}
@@ -115,7 +141,11 @@ export function OptionalFields({
                         >
                             {field.value}
                         </span>
-                        {field.audio}
+                        {field.audio ? (
+                            <span className={styles.fieldAudio}>
+                                {field.audio}
+                            </span>
+                        ) : null}
                     </dd>
                 </div>
             ))}

@@ -32,8 +32,10 @@ export function NavigationLink({
             ) : null}
             {icon}
             <span className={styles.navCopy}>
-                <strong>{label}</strong>
-                {description ? <span>{description}</span> : null}
+                <strong className={styles.navTitle}>{label}</strong>
+                {description ? (
+                    <span className={styles.navDescription}>{description}</span>
+                ) : null}
             </span>
         </Link>
     );
@@ -43,7 +45,7 @@ export function NavigationLoading({ label }: { label: string }) {
     return (
         <li aria-label={label} aria-live='polite' className={styles.loading}>
             {[72, 58, 80].map((width) => (
-                <span aria-hidden key={width}>
+                <span aria-hidden className={styles.loadingItem} key={width}>
                     <Skeleton height={10} width={`${width}%`} />
                     <Skeleton height={8} width={`${width - 24}%`} />
                 </span>

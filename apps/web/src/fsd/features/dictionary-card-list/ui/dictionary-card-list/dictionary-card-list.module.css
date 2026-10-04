@@ -25,8 +25,8 @@
     gap: 2px;
     grid-template-columns: minmax(0, 1fr);
 }
-.pair strong,
-.pair strong > span {
+.pairValue,
+.pairText {
     min-width: 0;
 }
 @container dictionary-cards (min-width: 40rem) {
@@ -44,7 +44,7 @@
         position: absolute;
     }
 }
-.pair strong {
+.pairValue {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -54,7 +54,7 @@
     font-weight: 600;
     overflow-wrap: anywhere;
 }
-.pair strong + strong {
+.translation {
     color: var(--text-secondary);
     font-size: 16px;
     line-height: 24px;
@@ -67,43 +67,40 @@
     background: var(--background-subtle);
     margin: 12px 0 0;
 }
-.fields > div {
+.fieldRow {
     grid-column: 1 / -1;
     min-width: 0;
     padding: 8px 12px;
 }
-.fields > div + div {
+.fieldRow:not(:first-child) {
     border-top: 1px solid var(--border-default);
 }
 @container dictionary-cards (min-width: 40rem) {
-    .fields:has(> [data-field='example']):has(
-            > [data-field='exampleTranslation']
-        ) {
+    .pairedExamples {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .fields:has(> [data-field='exampleTranslation']) > [data-field='example'] {
+    :where(.pairedExamples) .exampleRow {
         grid-column: 1;
     }
-    .fields:has(> [data-field='example']) > [data-field='exampleTranslation'] {
+    :where(.pairedExamples) .exampleTranslationRow {
         border-inline-start: 1px solid var(--border-default);
         border-top: 0;
         grid-column: 2;
     }
-    .fields
-        > [data-field='example']:not(:first-child)
-        + [data-field='exampleTranslation'] {
+    :where(.pairedExamples .exampleRow:not(:first-child))
+        + .exampleTranslationRow {
         border-top: 1px solid var(--border-default);
     }
 }
-.fields dt {
+.fieldLabel {
     color: var(--text-tertiary);
     font-size: 11px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
-.fields dd {
+.fieldValue {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -112,12 +109,13 @@
     margin: 2px 0 0;
     font-size: 14px;
 }
-.fields dd > span:first-child {
+.fieldText {
     flex: 1 1 0;
     min-width: 0;
     overflow-wrap: anywhere;
 }
-.fields dd > span + span {
+.fieldAudio {
+    display: inline-flex;
     max-width: 100%;
     flex-shrink: 0;
 }

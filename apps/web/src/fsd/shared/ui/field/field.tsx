@@ -24,6 +24,7 @@ export function Field({
     hint,
     label,
     labelAction,
+    labelClassName,
     optionalLabel,
     required,
     success,
@@ -34,6 +35,7 @@ export function Field({
     hint?: string | undefined;
     label: ReactNode;
     labelAction?: ReactNode;
+    labelClassName?: string | undefined;
     optionalLabel?: string | undefined;
     required?: boolean | undefined;
     success?: string | undefined;
@@ -66,7 +68,9 @@ export function Field({
             <div className={styles.labelRow}>
                 {control ? (
                     <label
-                        className={styles.label}
+                        className={[styles.label, labelClassName]
+                            .filter(Boolean)
+                            .join(' ')}
                         data-required={required || undefined}
                         htmlFor={controlId}
                         id={labelId}
@@ -81,7 +85,9 @@ export function Field({
                     </label>
                 ) : (
                     <div
-                        className={styles.label}
+                        className={[styles.label, labelClassName]
+                            .filter(Boolean)
+                            .join(' ')}
                         data-required={required || undefined}
                         id={labelId}
                     >

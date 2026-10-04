@@ -21,6 +21,7 @@ export function ThemeSwitcher() {
         <label className={styles.field}>
             <span className={styles.label}>{t('theme.label')}</span>
             <Select
+                className={styles.select}
                 aria-label={t('theme.label')}
                 onChange={change}
                 value={preference}

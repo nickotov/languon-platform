@@ -201,12 +201,21 @@ export function DictionaryDocumentGenerationPanel({
 
             {!job ? (
                 <form className={styles.inputForm} onSubmit={submit}>
-                    <div>
-                        <p className={styles.eyebrow}>
+                    <div className={styles.inputIntro}>
+                        <p
+                            className={[
+                                styles.eyebrow,
+                                styles.inputDescription,
+                            ].join(' ')}
+                        >
                             {t('dictionary.document.eyebrow')}
                         </p>
-                        <h3>{t('dictionary.document.inputTitle')}</h3>
-                        <p>{t('dictionary.document.inputHelp')}</p>
+                        <h3 className={styles.inputTitle}>
+                            {t('dictionary.document.inputTitle')}
+                        </h3>
+                        <p className={styles.inputDescription}>
+                            {t('dictionary.document.inputHelp')}
+                        </p>
                     </div>
                     <Field
                         hint={t('dictionary.document.fileHelp')}
@@ -252,6 +261,7 @@ export function DictionaryDocumentGenerationPanel({
                     </InlineAlert>
                     <div className={styles.actions}>
                         <Button
+                            className={styles.actionButton}
                             disabled={!file || pendingAction || !available}
                             loading={pendingAction}
                             type='submit'
@@ -268,7 +278,9 @@ export function DictionaryDocumentGenerationPanel({
                     <strong>
                         {t(`dictionary.document.stage.${job.progress.stage}`)}
                     </strong>
-                    <p>{t('dictionary.document.persistenceHelp')}</p>
+                    <p className={styles.progressDescription}>
+                        {t('dictionary.document.persistenceHelp')}
+                    </p>
                     <Progress
                         label={t('dictionary.document.progressLabel')}
                         value={job.progress.percent}
@@ -290,9 +302,13 @@ export function DictionaryDocumentGenerationPanel({
             {job?.state === 'review' && job.proposal ? (
                 <div className={styles.review}>
                     <header className={styles.reviewHeader}>
-                        <div>
-                            <h3>{t('dictionary.document.reviewTitle')}</h3>
-                            <p>{t('dictionary.document.reviewHelp')}</p>
+                        <div className={styles.reviewIntro}>
+                            <h3 className={styles.reviewTitle}>
+                                {t('dictionary.document.reviewTitle')}
+                            </h3>
+                            <p className={styles.reviewDescription}>
+                                {t('dictionary.document.reviewHelp')}
+                            </p>
                         </div>
                         <Badge tone='info'>
                             {t('dictionary.document.selectedCount', {
@@ -411,6 +427,7 @@ export function DictionaryDocumentGenerationPanel({
                     ) : null}
                     <div className={styles.reviewActions}>
                         <Button
+                            className={styles.reviewButton}
                             disabled={pendingAction}
                             onClick={() => void run(onDiscard)}
                             type='button'
@@ -419,6 +436,7 @@ export function DictionaryDocumentGenerationPanel({
                             {t('dictionary.document.discard')}
                         </Button>
                         <Button
+                            className={styles.reviewButton}
                             disabled={
                                 pendingAction ||
                                 selectedDrafts.length === 0 ||
@@ -538,6 +556,7 @@ function CandidateRow({
             <p className={styles.inputTerm}>
                 {t('dictionary.document.extractedTerm')}{' '}
                 <span
+                    className={styles.inputValue}
                     dir={languageDirection(
                         languages,
                         dictionary.sourceLanguage,
@@ -592,8 +611,10 @@ function CandidateRow({
             </div>
             {proposalRow?.fieldFeedback.length ? (
                 <details className={styles.feedback}>
-                    <summary>{t('dictionary.document.feedback')}</summary>
-                    <ul>
+                    <summary className={styles.feedbackSummary}>
+                        {t('dictionary.document.feedback')}
+                    </summary>
+                    <ul className={styles.feedbackList}>
                         {proposalRow.fieldFeedback.map((feedback) => (
                             <li key={feedback.field}>
                                 <strong>

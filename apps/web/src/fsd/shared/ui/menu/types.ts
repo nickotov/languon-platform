@@ -17,7 +17,7 @@ export type MenuProps = {
     items: MenuItem[];
     label: string;
     trigger: ReactNode;
-    triggerClassName?: string;
+    triggerClassName?: string | undefined;
     menuClassName?: string;
     placement?: 'top-end' | 'bottom-end';
     variant?: 'default' | 'secondary';

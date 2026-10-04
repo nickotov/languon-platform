@@ -12,11 +12,13 @@ export function CardTranslationContext({
     dictionaryContext,
     disabled,
     onChange,
+    textareaClassName,
 }: {
     cardContext: string | null;
     dictionaryContext: string | null;
     disabled: boolean;
     onChange(value: string | null): void;
+    textareaClassName?: string | undefined;
 }) {
     const { t } = useI18n();
     const enabled = cardContext !== null;
@@ -51,8 +53,10 @@ export function CardTranslationContext({
             />
             {dictionaryContext && !cardContext ? (
                 <div className={styles.inherited}>
-                    <span>{t('dictionary.context.inherited')}</span>
-                    <p>{dictionaryContext}</p>
+                    <span className={styles.inheritedLabel}>
+                        {t('dictionary.context.inherited')}
+                    </span>
+                    <p className={styles.inheritedValue}>{dictionaryContext}</p>
                 </div>
             ) : null}
             {enabled ? (
@@ -63,6 +67,7 @@ export function CardTranslationContext({
                     required
                 >
                     <Textarea
+                        className={textareaClassName}
                         disabled={disabled}
                         maxLength={2000}
                         onChange={handleContextChange}

@@ -38,6 +38,7 @@ export function MenuItemButton({
 
     return (
         <button
+            className={styles.item}
             aria-label={accessibleLabel}
             data-tone={item.tone}
             disabled={item.disabled}

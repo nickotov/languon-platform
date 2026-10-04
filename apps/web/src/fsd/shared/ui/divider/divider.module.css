@@ -10,11 +10,11 @@
     gap: 12px;
     width: 100%;
 }
-.labelled span {
+.line {
     border-top: 1px solid var(--border-default);
     flex: 1;
 }
-.labelled small {
+.label {
     color: var(--text-tertiary);
     font-size: 12px;
     font-weight: 500;

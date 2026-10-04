@@ -66,6 +66,9 @@ export function EditorSettingsSheet({
 
     return (
         <BottomSheet
+            bodyClassName={styles.settingsBody}
+            headerClassName={styles.settingsHeader}
+            titleClassName={styles.settingsTitle}
             open={settingsOpen}
             size='large'
             description={description}

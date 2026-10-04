@@ -77,7 +77,7 @@ export function AuthoringAiAssistance({
     return (
         <section aria-label={labels.aiSection} className={styles.aiControls}>
             <div className={styles.aiActionRow}>
-                <strong>
+                <strong className={styles.aiTitle}>
                     <Sparkles aria-hidden='true' size={16} />
                     {labels.aiSection}
                 </strong>

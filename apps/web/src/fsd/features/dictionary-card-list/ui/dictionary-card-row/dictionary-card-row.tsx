@@ -142,17 +142,23 @@ export function DictionaryCardRow({
                     ) : null}
                     <div className={styles.pair}>
                         <strong
+                            className={styles.pairValue}
                             dir={sourceDirection}
                             lang={dictionary.sourceLanguage}
                         >
-                            <span>{card.values.source}</span>
+                            <span className={styles.pairText}>
+                                {card.values.source}
+                            </span>
                             {sourceAudio}
                         </strong>
                         <strong
+                            className={`${styles.pairValue} ${styles.translation}`}
                             dir={targetDirection}
                             lang={dictionary.targetLanguage}
                         >
-                            <span>{card.values.translation}</span>
+                            <span className={styles.pairText}>
+                                {card.values.translation}
+                            </span>
                             {translationAudio}
                         </strong>
                     </div>

@@ -1,8 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-
-import { AuthShell, ResetPasswordForm } from '@/fsd/features/auth';
+import {
+    AuthFooterLink,
+    AuthShell,
+    ResetPasswordForm,
+} from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 
 export function ResetPasswordPage({ flowId }: { flowId?: string | undefined }) {
@@ -13,11 +15,13 @@ export function ResetPasswordPage({ flowId }: { flowId?: string | undefined }) {
             eyebrow={t('reset.eyebrow')}
             footer={
                 flowId ? (
-                    <Link href={href('/login')}>{t('forgot.back')}</Link>
+                    <AuthFooterLink href={href('/login')}>
+                        {t('forgot.back')}
+                    </AuthFooterLink>
                 ) : (
-                    <Link href={href('/forgot-password')}>
+                    <AuthFooterLink href={href('/forgot-password')}>
                         {t('reset.requestNew')}
-                    </Link>
+                    </AuthFooterLink>
                 )
             }
             title={t('reset.title')}

@@ -212,6 +212,9 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
 
     return (
         <BottomSheet
+            bodyClassName={styles.editorBody}
+            headerClassName={styles.editorHeader}
+            titleClassName={styles.editorTitle}
             className={classNameValue}
             closeLabel={closeLabel}
             dismissible={dismissibleValue}

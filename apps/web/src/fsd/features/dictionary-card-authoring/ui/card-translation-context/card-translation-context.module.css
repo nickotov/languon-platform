@@ -16,13 +16,13 @@
     padding-inline-start: 12px;
 }
 
-.inherited span {
+.inheritedLabel {
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
 }
 
-.inherited p {
+.inheritedValue {
     color: var(--text-primary);
     font-size: 14px;
     line-height: 1.45;

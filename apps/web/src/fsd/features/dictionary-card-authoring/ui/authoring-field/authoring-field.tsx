@@ -23,12 +23,14 @@ import { isFieldAffectedByGeneration } from '../../lib/affected-generation-field
 import styles from '../dictionary-card-form/dictionary-card-form.module.css';
 
 export function AuthoringField({
+    className,
     field,
     dictionary,
     languages,
     content,
     suggestions,
 }: {
+    className?: string | undefined;
     field: DictionaryCardAuthoringField;
     dictionary: OwnedDictionary;
     languages: readonly LanguageCatalogEntry[];
@@ -167,7 +169,7 @@ export function AuthoringField({
     }
 
     return (
-        <div>
+        <div className={className}>
             <Field
                 control={!isGenerating}
                 error={error}

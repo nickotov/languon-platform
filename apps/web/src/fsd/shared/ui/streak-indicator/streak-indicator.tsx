@@ -52,8 +52,8 @@ export function StreakIndicator({
                 role='status'
                 aria-label='Loading streak'
             >
-                <span />
-                <span />
+                <span className={styles.skeleton} />
+                <span className={styles.skeleton} />
             </span>
         );
     const has = count > 0;
@@ -72,11 +72,11 @@ export function StreakIndicator({
             ].join(' ')}
         >
             {has ? (
-                <FlameIcon aria-hidden='true' />
+                <FlameIcon className={styles.valueIcon} aria-hidden='true' />
             ) : (
-                <MinusIcon aria-hidden='true' />
+                <MinusIcon className={styles.valueIcon} aria-hidden='true' />
             )}
-            <span>{label}</span>
+            <span className={styles.valueLabel}>{label}</span>
         </span>
     );
     if (variant === 'inline')
@@ -105,13 +105,15 @@ export function StreakIndicator({
         >
             <div className={styles.cardTop}>
                 <div>
-                    <h3>Study streak</h3>
+                    <h3 className={styles.title}>Study streak</h3>
                     <span className={styles.sr}>{sr}</span>
                     <span aria-hidden='true'>{value}</span>
                 </div>
                 {week ? <WeekTrack week={week} showLabels /> : null}
             </div>
-            {description ? <p>{description}</p> : null}
+            {description ? (
+                <p className={styles.description}>{description}</p>
+            ) : null}
         </section>
     );
 }

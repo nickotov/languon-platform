@@ -74,8 +74,11 @@ export function ReviewField({
     return (
         <section aria-label={sectionLabel} className={styles.proposalField}>
             <header className={styles.fieldHeader}>
-                <h3>
-                    {title} <span>({languageName})</span>
+                <h3 className={styles.fieldTitle}>
+                    {title}{' '}
+                    <span className={styles.fieldLanguage}>
+                        ({languageName})
+                    </span>
                 </h3>
                 {isSource ? (
                     <Badge size='sm' tone='warning'>
@@ -90,12 +93,25 @@ export function ReviewField({
             ) : null}
             <div className={styles.fieldComparison}>
                 <div className={styles.savedValue}>
-                    <p className={styles.savedLabel}>{savedLabel}</p>
-                    <p dir={savedDirection} lang={savedLanguage}>
+                    <p
+                        className={[
+                            styles.savedParagraph,
+                            styles.savedLabel,
+                        ].join(' ')}
+                    >
+                        {savedLabel}
+                    </p>
+                    <p
+                        className={styles.savedParagraph}
+                        dir={savedDirection}
+                        lang={savedLanguage}
+                    >
                         {savedValue}
                     </p>
                 </div>
                 <Textarea
+                    className={styles.textarea}
+                    labelClassName={styles.textareaLabel}
                     aria-required={required}
                     dir={direction}
                     lang={language}
@@ -108,8 +124,10 @@ export function ReviewField({
             </div>
             {alternatives.length ? (
                 <div className={styles.alternatives}>
-                    <p>{alternativesLabel}</p>
-                    <ul>
+                    <p className={styles.alternativesLabel}>
+                        {alternativesLabel}
+                    </p>
+                    <ul className={styles.alternativesList}>
                         {alternatives.map((alternative) => (
                             <ReviewAlternative
                                 key={alternative}

@@ -5,11 +5,11 @@
     max-width: 920px;
     padding: clamp(var(--sys-space-4), 5vw, 64px);
 }
-.header h1,
-.forkCard h2 {
+.title,
+.forkTitle {
     font-family: var(--sys-font-display);
 }
-.header h1 {
+.title {
     margin: var(--sys-space-2) 0;
 }
 .eyebrow {
@@ -35,26 +35,26 @@
     gap: var(--sys-space-3);
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
-.pair strong,
-.card dd {
+.pairValue,
+.fieldValue {
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
-.card dl {
+.fields {
     display: grid;
     gap: var(--sys-space-2);
 }
-.card dt {
+.fieldLabel {
     color: var(--sys-color-text-secondary);
 }
-.card dd {
+.fieldValue {
     margin: 0;
 }
 @media (max-width: 420px) {
     .pair {
         grid-template-columns: 1fr;
     }
-    .pair span {
+    .pairArrow {
         display: none;
     }
 }

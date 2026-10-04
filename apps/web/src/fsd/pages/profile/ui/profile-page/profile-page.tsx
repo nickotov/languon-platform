@@ -82,8 +82,10 @@ export function ProfilePage() {
                             aria-hidden='true'
                             className={styles.emptyIcon}
                         />
-                        <h1>{t('profile.deleteScheduledTitle')}</h1>
-                        <p>
+                        <h1 className={styles.signedOutTitle}>
+                            {t('profile.deleteScheduledTitle')}
+                        </h1>
+                        <p className={styles.signedOutDescription}>
                             {t('profile.deleteScheduledDescription', {
                                 date: new Intl.DateTimeFormat(undefined, {
                                     dateStyle: 'long',
@@ -100,8 +102,12 @@ export function ProfilePage() {
                         aria-hidden='true'
                         className={styles.emptyIcon}
                     />
-                    <h1>{t('profile.signInTitle')}</h1>
-                    <p>{t('profile.signInDescription')}</p>
+                    <h1 className={styles.signedOutTitle}>
+                        {t('profile.signInTitle')}
+                    </h1>
+                    <p className={styles.signedOutDescription}>
+                        {t('profile.signInDescription')}
+                    </p>
                     <ButtonLink
                         href={href(
                             activeTab === 'account'
@@ -164,11 +170,7 @@ function AuthenticatedProfile({
             value: 'account',
         },
         {
-            content: (
-                <SecurityTab
-                    email={user.primaryEmail}
-                />
-            ),
+            content: <SecurityTab email={user.primaryEmail} />,
             icon: <ShieldCheck />,
             label: t('profile.tab.security'),
             value: 'security',
@@ -195,8 +197,10 @@ function AuthenticatedProfile({
     return (
         <main className={styles.main}>
             <div className={styles.intro}>
-                <h1>{t('profile.title')}</h1>
-                <p>{t('profile.description')}</p>
+                <h1 className={styles.introTitle}>{t('profile.title')}</h1>
+                <p className={styles.introDescription}>
+                    {t('profile.description')}
+                </p>
             </div>
 
             <Card className={styles.summary} padding='none' variant='outlined'>
@@ -204,23 +208,33 @@ function AuthenticatedProfile({
                     <Avatar name={user.handle ?? user.primaryEmail} size='lg' />
                     <div className={styles.identityText}>
                         <div className={styles.identityTitle}>
-                            <h2>
+                            <h2 className={styles.identityHeading}>
                                 {user.handle
                                     ? `@${user.handle}`
                                     : t('profile.account')}
                             </h2>
                         </div>
-                        <p>{user.primaryEmail}</p>
+                        <p className={styles.identityEmail}>
+                            {user.primaryEmail}
+                        </p>
                     </div>
                 </div>
                 <dl className={styles.summaryFacts}>
-                    <div>
-                        <dt>{t('profile.plan')}</dt>
-                        <dd>{t('profile.notAvailable')}</dd>
+                    <div className={styles.summaryFact}>
+                        <dt className={styles.summaryLabel}>
+                            {t('profile.plan')}
+                        </dt>
+                        <dd className={styles.summaryValue}>
+                            {t('profile.notAvailable')}
+                        </dd>
                     </div>
-                    <div>
-                        <dt>{t('profile.creditsLeft')}</dt>
-                        <dd>{t('profile.notAvailable')}</dd>
+                    <div className={styles.summaryFact}>
+                        <dt className={styles.summaryLabel}>
+                            {t('profile.creditsLeft')}
+                        </dt>
+                        <dd className={styles.summaryValue}>
+                            {t('profile.notAvailable')}
+                        </dd>
                     </div>
                 </dl>
             </Card>
@@ -228,6 +242,7 @@ function AuthenticatedProfile({
             <Tabs
                 aria-label={t('profile.sections')}
                 className={styles.tabs!}
+                listClassName={styles.tabList}
                 items={tabs}
                 onValueChange={(value) => {
                     if (!isProfileTab(value)) return;
@@ -268,20 +283,51 @@ function AccountTab({
             >
                 <div className={styles.photoRow}>
                     <Avatar size='lg' />
-                    <div>
-                        <Button leadingIcon={<ImageUp size={16} />} onClick={() => onComingSoon(t('profile.photo'))}
-                            size='compact' variant='secondary'>{t('profile.changePhoto')}</Button>
-                        <p className={styles.muted}>{t('profile.photoComingSoon')}</p>
+                    <div className={styles.photoCopy}>
+                        <Button
+                            leadingIcon={<ImageUp size={16} />}
+                            onClick={() => onComingSoon(t('profile.photo'))}
+                            size='compact'
+                            variant='secondary'
+                        >
+                            {t('profile.changePhoto')}
+                        </Button>
+                        <p className={styles.muted}>
+                            {t('profile.photoComingSoon')}
+                        </p>
                     </div>
                 </div>
                 <div className={styles.profileGrid}>
-                    <Input disabled label={t('profile.fullName')} placeholder={t('profile.comingSoon')} />
+                    <Input
+                        disabled
+                        label={t('profile.fullName')}
+                        placeholder={t('profile.comingSoon')}
+                    />
                     <LanguageSwitcher form />
-                    <Select disabled label={t('profile.learningLanguage')} options={[{ label: t('profile.comingSoon'), value: '' }]} value='' />
-                    <Select disabled label={t('profile.timeZone')} options={[{ label: t('profile.comingSoon'), value: '' }]} value='' />
+                    <Select
+                        disabled
+                        label={t('profile.learningLanguage')}
+                        options={[
+                            { label: t('profile.comingSoon'), value: '' },
+                        ]}
+                        value=''
+                    />
+                    <Select
+                        disabled
+                        label={t('profile.timeZone')}
+                        options={[
+                            { label: t('profile.comingSoon'), value: '' },
+                        ]}
+                        value=''
+                    />
                 </div>
-                <AccountHandleSettings requestWithSession={requestWithSession} />
-                <p className={styles.muted}>{t('profile.otherDetailsComingSoon')}</p>
+                <AccountHandleSettings
+                    className={styles.handleForm}
+                    requestWithSession={requestWithSession}
+                />
+                <p className={styles.muted}>
+                    {t('profile.otherDetailsComingSoon')}
+                </p>
             </SettingsSection>
             <SettingsSection
                 description={t('profile.dataDescription')}
@@ -289,7 +335,7 @@ function AccountTab({
             >
                 <ActionRow
                     description={t('profile.exportDescription')}
-                    icon={<Download />}
+                    icon={<Download className={styles.glyph} />}
                     label={t('profile.exportTitle')}
                     onClick={() => onComingSoon(t('profile.exportTitle'))}
                     button={t('profile.requestExport')}
@@ -303,10 +349,11 @@ function AccountTab({
                 <ActionRow
                     danger
                     description={t('profile.deleteConfirmDescription')}
-                    icon={<Trash2 />}
+                    icon={<Trash2 className={styles.glyph} />}
                     label={t('profile.deleteAccount')}
                     children={
                         <AccountDeletionAction
+                            className={styles.rowAction}
                             onScheduled={onScheduled}
                             requestWithSession={requestWithSession}
                         />
@@ -317,9 +364,7 @@ function AccountTab({
     );
 }
 
-function SecurityTab({
-    email,
-}: { email: string }) {
+function SecurityTab({ email }: { email: string }) {
     const { t } = useI18n();
     const requestEmailChange = () =>
         showToast({
@@ -335,12 +380,18 @@ function SecurityTab({
             >
                 <ActionRow
                     description={email}
-                    icon={<Mail />}
+                    icon={<Mail className={styles.glyph} />}
                     label={t('profile.primaryEmail')}
-                    children={<Badge size='sm' tone='success'>{t('profile.verified')}</Badge>}
+                    children={
+                        <Badge size='sm' tone='success'>
+                            {t('profile.verified')}
+                        </Badge>
+                    }
                 />
                 <div className={styles.emailChange}>
-                    <p className={styles.muted}>
+                    <p
+                        className={`${styles.muted} ${styles.emailChangeDescription}`}
+                    >
                         {t('profile.emailChangeComingSoon')}
                     </p>
                     <Button
@@ -371,21 +422,21 @@ function BillingTab({ onComingSoon }: ComingSoonProps) {
     return (
         <div className={styles.sections}>
             <EmptySettings
-                icon={<CreditCard />}
+                icon={<CreditCard className={styles.glyph} />}
                 title={t('profile.subscriptionTitle')}
                 description={t('profile.subscriptionEmpty')}
                 button={t('profile.comparePlans')}
                 onClick={() => onComingSoon(t('profile.subscriptionTitle'))}
             />
             <EmptySettings
-                icon={<WalletCards />}
+                icon={<WalletCards className={styles.glyph} />}
                 title={t('profile.paymentTitle')}
                 description={t('profile.paymentEmpty')}
                 button={t('profile.addPayment')}
                 onClick={() => onComingSoon(t('profile.paymentTitle'))}
             />
             <EmptySettings
-                icon={<Coins />}
+                icon={<Coins className={styles.glyph} />}
                 title={t('profile.extraCreditsTitle')}
                 description={t('profile.extraCreditsEmpty')}
                 button={t('profile.buyCredits')}
@@ -400,19 +451,19 @@ function CreditsTab({ onComingSoon }: ComingSoonProps) {
     return (
         <div className={styles.sections}>
             <EmptySettings
-                icon={<Coins />}
+                icon={<Coins className={styles.glyph} />}
                 title={t('profile.balanceTitle')}
                 description={t('profile.balanceEmpty')}
                 button={t('profile.buyCredits')}
                 onClick={() => onComingSoon(t('profile.balanceTitle'))}
             />
             <EmptySettings
-                icon={<WalletCards />}
+                icon={<WalletCards className={styles.glyph} />}
                 title={t('profile.usageTitle')}
                 description={t('profile.usageEmpty')}
             />
             <EmptySettings
-                icon={<Download />}
+                icon={<Download className={styles.glyph} />}
                 title={t('profile.historyTitle')}
                 description={t('profile.historyEmpty')}
             />
@@ -440,8 +491,16 @@ function SettingsSection({
             variant='outlined'
         >
             <header className={styles.sectionHeader}>
-                <h2>{title}</h2>
-                <p>{description}</p>
+                <h2
+                    className={
+                        danger
+                            ? `${styles.sectionTitle} ${styles.dangerTitle}`
+                            : styles.sectionTitle
+                    }
+                >
+                    {title}
+                </h2>
+                <p className={styles.sectionDescription}>{description}</p>
             </header>
             <div className={styles.sectionBody}>{children}</div>
         </Card>
@@ -471,12 +530,13 @@ function ActionRow({
                 {icon}
             </span>
             <div className={styles.rowCopy}>
-                <h3>{label}</h3>
-                <p>{description}</p>
+                <h3 className={styles.rowTitle}>{label}</h3>
+                <p className={styles.rowDescription}>{description}</p>
             </div>
             {children ??
                 (button && onClick ? (
                     <Button
+                        className={styles.rowAction}
                         onClick={onClick}
                         size='compact'
                         variant={danger ? 'danger' : 'secondary'}
@@ -508,14 +568,15 @@ function EmptySettings({
                 <span aria-hidden='true' className={styles.emptyIcon}>
                     {icon}
                 </span>
-                <div>
+                <div className={styles.emptyCopy}>
                     <Badge size='sm' tone='info'>
                         {t('profile.comingSoon')}
                     </Badge>
-                    <p>{description}</p>
+                    <p className={styles.emptyDescription}>{description}</p>
                 </div>
                 {button && onClick ? (
                     <Button
+                        className={styles.emptyAction}
                         onClick={onClick}
                         size='compact'
                         variant='secondary'

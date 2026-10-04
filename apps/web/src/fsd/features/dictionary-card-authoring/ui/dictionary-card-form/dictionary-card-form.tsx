@@ -103,8 +103,15 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
     );
 
     function renderField(field: DictionaryCardAuthoringField) {
+        const paired =
+            field === 'source' ||
+            field === 'translation' ||
+            field === 'example' ||
+            field === 'exampleTranslation';
+        const fieldClassName = paired ? styles.wordPairField : undefined;
         return (
             <AuthoringField
+                className={fieldClassName}
                 key={field}
                 field={field}
                 dictionary={dictionary}
@@ -122,7 +129,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         <Card className={className}>
             {showHeading ? (
                 <header className={styles.header}>
-                    <h2>{title}</h2>
+                    <h2 className={styles.title}>{title}</h2>
                 </header>
             ) : null}
             <form className={styles.form} onSubmit={authoring.handleSubmit}>
@@ -132,6 +139,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                         {renderField('translation')}
                     </div>
                     <CardTranslationContext
+                        textareaClassName={styles.textarea}
                         cardContext={authoring.draft.translationContext}
                         dictionaryContext={dictionary.translationContext}
                         disabled={locked}
@@ -165,7 +173,10 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                         <div className={styles.optionalFields}>
                             <p className={styles.optionalHeading}>
                                 {t('dictionary.authoring.optionalContent')}
-                                <Badge size='sm'>
+                                <Badge
+                                    className={styles.optionalBadge}
+                                    size='sm'
+                                >
                                     {t('dictionary.authoring.mayStayEmpty')}
                                 </Badge>
                             </p>

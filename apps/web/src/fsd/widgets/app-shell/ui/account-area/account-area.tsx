@@ -60,8 +60,12 @@ export function AccountArea({
             {rail ? null : (
                 <>
                     <span className={styles.identity}>
-                        <strong>{handle}</strong>
-                        <span>{email || t('profile.learner')}</span>
+                        <strong className={styles.identityHandle}>
+                            {handle}
+                        </strong>
+                        <span className={styles.identityDescription}>
+                            {email || t('profile.learner')}
+                        </span>
                     </span>
                     <ChevronUp aria-hidden size={16} />
                 </>
@@ -150,7 +154,9 @@ function AccountMenuContent({
             <div className={styles.divider} />
             <LanguageSwitcher form />
             <fieldset className={styles.themeFieldset}>
-                <legend>{t('theme.label')}</legend>
+                <legend className={styles.themeLegend}>
+                    {t('theme.label')}
+                </legend>
                 <div className={styles.themeOptions}>
                     <ThemeOption
                         checked={preference === 'system'}
@@ -206,7 +212,7 @@ function ThemeOption({
             type='button'
         >
             {icon}
-            <span>{label}</span>
+            <span className={styles.themeLabel}>{label}</span>
         </button>
     );
 }

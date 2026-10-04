@@ -152,6 +152,7 @@ export function LibraryCreateDialog({
                     optionalLabel={labels.optional}
                 >
                     <Textarea
+                        className={styles.textarea}
                         disabled={state.create.isPending}
                         maxLength={2000}
                         name='description'

@@ -52,17 +52,22 @@ export function EditorEmptyCards({
                     <Sparkles size={24} aria-hidden />
                 </span>
             ) : null}
-            <h2>{title}</h2>
-            {help ? <p>{help}</p> : null}
+            <h2 className={styles.emptyTitle}>{title}</h2>
+            {help ? <p className={styles.emptyHelp}>{help}</p> : null}
             {canAdd ? (
                 <Button
+                    className={styles.emptyAction}
                     leadingIcon={<Plus size={16} aria-hidden />}
                     onClick={openCardDraft}
                 >
                     {t('dictionary.editor.addFirstCard')}
                 </Button>
             ) : query ? (
-                <Button variant='secondary' onClick={clearSearch}>
+                <Button
+                    className={styles.emptyAction}
+                    variant='secondary'
+                    onClick={clearSearch}
+                >
                     {t('dictionary.editor.clearSearch')}
                 </Button>
             ) : null}

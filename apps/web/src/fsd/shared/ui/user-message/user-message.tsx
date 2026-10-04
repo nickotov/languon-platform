@@ -47,21 +47,39 @@ export function UserMessage({
                     .filter(Boolean)
                     .join(' ')}
             >
-                <p>{children ?? text}</p>
+                <p className={styles.message}>{children ?? text}</p>
                 {translation ? (
-                    <p className={styles.translation}>{translation}</p>
+                    <p
+                        className={[styles.message, styles.translation].join(
+                            ' ',
+                        )}
+                    >
+                        {translation}
+                    </p>
                 ) : null}
             </div>
             <div className={styles.meta}>
                 {timestamp ? <span>{timestamp}</span> : null}
                 <Icon
-                    className={status === 'error' ? styles.errorIcon : ''}
+                    className={[
+                        styles.statusIcon,
+                        status === 'error' ? styles.errorIcon : '',
+                    ]
+                        .filter(Boolean)
+                        .join(' ')}
                     aria-hidden='true'
                 />
                 <span className={styles.sr}>{labels[status]}</span>
                 {status === 'error' && onRetry ? (
-                    <button type='button' onClick={onRetry}>
-                        <RefreshCwIcon aria-hidden='true' />
+                    <button
+                        className={styles.retry}
+                        type='button'
+                        onClick={onRetry}
+                    >
+                        <RefreshCwIcon
+                            className={styles.retryIcon}
+                            aria-hidden='true'
+                        />
                         Retry
                     </button>
                 ) : null}

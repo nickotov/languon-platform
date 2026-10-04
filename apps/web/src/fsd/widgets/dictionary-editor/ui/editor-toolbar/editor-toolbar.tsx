@@ -47,6 +47,7 @@ export function EditorToolbar({
                 className={styles.statusTabs}
             >
                 <button
+                    className={styles.statusTab}
                     type='button'
                     aria-pressed={activeSelected}
                     onClick={showActive}
@@ -57,6 +58,7 @@ export function EditorToolbar({
                     </span>
                 </button>
                 <button
+                    className={styles.statusTab}
                     id='archived-cards-filter'
                     type='button'
                     aria-pressed={archivedSelected}
@@ -66,6 +68,7 @@ export function EditorToolbar({
                 </button>
             </div>
             <Input
+                wrapperClassName={styles.search}
                 type='search'
                 size='sm'
                 aria-label={searchLabel}

@@ -18,7 +18,7 @@ export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
     leadingIcon?: ReactNode;
     size?: InputSize;
     trailingIcon?: ReactNode;
-    wrapperClassName?: string;
+    wrapperClassName?: string | undefined;
 };
 
 const normalizeSize = (

@@ -22,7 +22,7 @@ export function SiteHeader() {
         <header className={styles.header}>
             <div className={styles.inner}>
                 <Logo
-                    className={styles.brand}
+                    wordmarkClassName={styles.wordmark}
                     href={homeHref}
                     label={homeLabel}
                 />

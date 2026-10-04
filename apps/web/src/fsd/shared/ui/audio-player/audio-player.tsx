@@ -136,13 +136,15 @@ export function AudioPlayer({
                 className={styles.play}
             >
                 {status === 'loading' ? (
-                    <LoaderIcon className={styles.spin} />
+                    <LoaderIcon
+                        className={[styles.playIcon, styles.spin].join(' ')}
+                    />
                 ) : status === 'error' ? (
-                    <AlertCircleIcon />
+                    <AlertCircleIcon className={styles.playIcon} />
                 ) : playing ? (
-                    <PauseIcon />
+                    <PauseIcon className={styles.playIcon} />
                 ) : (
-                    <PlayIcon />
+                    <PlayIcon className={styles.playIcon} />
                 )}
             </button>
             <div className={styles.main}>
@@ -154,8 +156,12 @@ export function AudioPlayer({
                 ) : (
                     <div className={styles.timeline}>
                         <div className={styles.track}>
-                            <span style={{ width: `${progress}%` }} />
+                            <span
+                                className={styles.progress}
+                                style={{ width: `${progress}%` }}
+                            />
                             <input
+                                className={styles.seek}
                                 type='range'
                                 min={0}
                                 max={duration || 0}
@@ -172,7 +178,7 @@ export function AudioPlayer({
                                 }}
                             />
                         </div>
-                        <span>
+                        <span className={styles.time}>
                             {formatTime(current)} / {formatTime(duration)}
                         </span>
                     </div>
@@ -181,6 +187,7 @@ export function AudioPlayer({
             <div className={styles.controls}>
                 <button
                     type='button'
+                    className={styles.controlButton}
                     onClick={replay}
                     disabled={!interactive}
                     aria-label={
@@ -189,14 +196,19 @@ export function AudioPlayer({
                             : 'Replay from start'
                     }
                 >
-                    <RotateCcwIcon />
+                    <RotateCcwIcon className={styles.controlIcon} />
                 </button>
                 <button
                     type='button'
                     onClick={cycle}
                     disabled={!interactive}
                     aria-label={`Playback speed: ${speed}x. Change speed`}
-                    className={speed !== 1 ? styles.speedActive : ''}
+                    className={[
+                        styles.controlButton,
+                        speed !== 1 ? styles.speedActive : '',
+                    ]
+                        .filter(Boolean)
+                        .join(' ')}
                 >
                     {speed}×
                 </button>

@@ -1,8 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-
-import { AuthShell, VerifyEmailForm } from '@/fsd/features/auth';
+import {
+    AuthFooterLink,
+    AuthShell,
+    VerifyEmailForm,
+} from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
 import { safeReturnPath } from '@/fsd/shared/lib/return-path';
@@ -24,11 +26,13 @@ export function VerifyEmailPage(props: {
             eyebrow={t('verify.eyebrow')}
             footer={
                 props.flowId ? (
-                    <Link href={href(signInTarget)}>
+                    <AuthFooterLink href={href(signInTarget)}>
                         {t('auth.returnToSignIn')}
-                    </Link>
+                    </AuthFooterLink>
                 ) : (
-                    <Link href={href('/signup')}>{t('verify.startAgain')}</Link>
+                    <AuthFooterLink href={href('/signup')}>
+                        {t('verify.startAgain')}
+                    </AuthFooterLink>
                 )
             }
             title={t('verify.title')}

@@ -14,6 +14,7 @@ export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
     description?: string;
     error?: string;
     label?: string;
+    labelClassName?: string | undefined;
     resize?: TextareaResize;
     showCount?: boolean;
     wrapperClassName?: string;
@@ -29,6 +30,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             error,
             id,
             label,
+            labelClassName,
             maxLength,
             onChange,
             required,
@@ -58,7 +60,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
                     .join(' ')}
             >
                 {label ? (
-                    <label className={styles.label} htmlFor={fieldId}>
+                    <label
+                        className={[styles.label, labelClassName]
+                            .filter(Boolean)
+                            .join(' ')}
+                        htmlFor={fieldId}
+                    >
                         {label}
                         {required ? (
                             <span

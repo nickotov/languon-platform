@@ -57,7 +57,10 @@ export function Breadcrumb({
                                 onClick={() => setExpanded(true)}
                                 className={styles.ellipsis}
                             >
-                                <MoreHorizontalIcon aria-hidden='true' />
+                                <MoreHorizontalIcon
+                                    className={styles.ellipsisIcon}
+                                    aria-hidden='true'
+                                />
                             </button>
                         ) : (
                             <>
@@ -85,6 +88,7 @@ export function Breadcrumb({
                                     </span>
                                 ) : (
                                     <a
+                                        className={styles.link}
                                         href={entry.item.href ?? '#'}
                                         onClick={entry.item.onClick}
                                     >

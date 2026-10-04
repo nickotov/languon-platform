@@ -16,6 +16,10 @@ export type DialogSize = 'large' | 'lg' | 'md' | 'medium' | 'sm' | 'small';
 export type DialogProps = {
     children?: ReactNode;
     className?: string;
+    bodyClassName?: string | undefined;
+    headerClassName?: string | undefined;
+    titleClassName?: string | undefined;
+    footerClassName?: string | undefined;
     closeLabel?: string;
     description?: ReactNode;
     dismissible?: boolean;
@@ -50,6 +54,10 @@ const normalizeSize = (size: DialogSize) =>
 export function Dialog({
     children,
     className,
+    bodyClassName,
+    headerClassName,
+    titleClassName,
+    footerClassName,
     closeLabel = 'Close dialog',
     description,
     dismissible = true,
@@ -112,11 +120,29 @@ export function Dialog({
                 role={role}
             >
                 {showHeader && (title || description || showCloseButton) ? (
-                    <header className={styles.header}>
+                    <header
+                        className={[styles.header, headerClassName]
+                            .filter(Boolean)
+                            .join(' ')}
+                    >
                         <div className={styles.heading}>
-                            {title ? <h2 id={titleId}>{title}</h2> : null}
+                            {title ? (
+                                <h2
+                                    className={[styles.title, titleClassName]
+                                        .filter(Boolean)
+                                        .join(' ')}
+                                    id={titleId}
+                                >
+                                    {title}
+                                </h2>
+                            ) : null}
                             {description ? (
-                                <p id={descriptionId}>{description}</p>
+                                <p
+                                    className={styles.description}
+                                    id={descriptionId}
+                                >
+                                    {description}
+                                </p>
                             ) : null}
                         </div>
                         {showCloseButton ? (
@@ -133,12 +159,24 @@ export function Dialog({
                     </header>
                 ) : null}
                 {children ? (
-                    <div className={styles.body}>{children}</div>
+                    <div
+                        className={[styles.body, bodyClassName]
+                            .filter(Boolean)
+                            .join(' ')}
+                    >
+                        {children}
+                    </div>
                 ) : (
                     <div className={styles.spacer} />
                 )}
                 {footer ? (
-                    <footer className={styles.footer}>{footer}</footer>
+                    <footer
+                        className={[styles.footer, footerClassName]
+                            .filter(Boolean)
+                            .join(' ')}
+                    >
+                        {footer}
+                    </footer>
                 ) : null}
             </dialog>
         </DialogContext.Provider>

@@ -138,10 +138,17 @@ export function LibraryDictionaryRow({
                             onChange={toggleSelection}
                         />
                     ) : null}
-                    <h2 dir='auto' title={dictionary.name}>
+                    <h2
+                        className={styles.cardTitle}
+                        dir='auto'
+                        title={dictionary.name}
+                    >
                         {archived ? (
                             <button
-                                className={styles.openLink}
+                                className={[
+                                    styles.openLink,
+                                    styles.openButton,
+                                ].join(' ')}
                                 disabled={disabled}
                                 onClick={changeLifecycle}
                                 type='button'

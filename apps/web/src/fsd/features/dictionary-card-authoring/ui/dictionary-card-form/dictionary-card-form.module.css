@@ -12,7 +12,7 @@
     flex: 1;
     min-height: 0;
 }
-.header h2 {
+.title {
     font-family: var(--font-heading);
     margin: 0;
 }
@@ -37,22 +37,22 @@
     grid-template-columns: minmax(0, 1fr);
     min-width: 0;
 }
-.wordPair > div {
+.wordPairField {
     min-width: 0;
 }
 @media (min-width: 768px) {
     @container card-authoring (min-width: 36rem) {
-        .wordPair:has(> div:nth-child(2)) {
+        .wordPair:has(> :where(.wordPairField:nth-child(2))) {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 }
-.embedded .form {
+:where(.embedded) .form {
     margin-top: 0;
     flex: 1;
     overflow: hidden;
 }
-.embedded .body {
+:where(.embedded) .body {
     padding: 20px 24px;
 }
 .fieldCount {
@@ -89,7 +89,7 @@
     margin: 0;
     text-transform: uppercase;
 }
-.optionalHeading > span {
+.optionalBadge {
     border-radius: 6px;
     letter-spacing: normal;
 }
@@ -114,7 +114,7 @@
     display: grid;
     gap: 10px;
 }
-.inlineSuggestion > p {
+.inlineSuggestionValue {
     font-size: 14px;
     margin: 0;
     overflow-wrap: anywhere;
@@ -127,7 +127,7 @@
     gap: 8px;
     justify-content: space-between;
 }
-.inlineSuggestionHeading span {
+.inlineSuggestionLabel {
     align-items: center;
     color: var(--text-secondary);
     display: inline-flex;
@@ -137,7 +137,7 @@
     letter-spacing: 0.025em;
     text-transform: uppercase;
 }
-.inlineSuggestionHeading small,
+.inlineSuggestionDetail,
 .suggestionDependency {
     color: var(--text-secondary);
     font-size: 12px;
@@ -152,17 +152,17 @@
 .previousSuggestions {
     margin-top: 8px;
 }
-.previousSuggestions summary {
+.previousSummary {
     color: var(--text-secondary);
     cursor: pointer;
     font-size: 12px;
     font-weight: 500;
     width: fit-content;
 }
-.previousSuggestions[open] summary {
+:where(.previousSuggestions[open]) .previousSummary {
     margin-bottom: 8px;
 }
-.suggestionHeading strong {
+.suggestionTitle {
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 500;
@@ -172,7 +172,7 @@
     font-weight: 400;
     white-space: nowrap;
 }
-.suggestions > small {
+.suggestionHelp {
     color: var(--text-secondary);
 }
 .suggestionList {
@@ -194,18 +194,18 @@
     min-width: 0;
     padding: 10px;
 }
-.suggestion[data-selected] {
+.suggestion:where([data-selected]) {
     border-color: var(--success-default);
 }
 .suggestionContent {
     flex: 1 1 180px;
     min-width: 0;
 }
-.suggestionContent small {
+.suggestionLabel {
     color: var(--text-tertiary);
     font-size: 12px;
 }
-.suggestionContent p {
+.suggestionValue {
     font-size: 14px;
     font-style: italic;
     margin: 2px 0 0;
@@ -217,7 +217,7 @@
     gap: 8px;
     justify-content: flex-start;
 }
-.suggestions > button {
+.suggestionButton {
     justify-self: start;
 }
 .overrideDivider {
@@ -232,12 +232,12 @@
     gap: 12px;
     padding: 12px;
 }
-.overrideHeading p {
+.overrideTitle {
     font-size: 14px;
     font-weight: 500;
     margin: 0;
 }
-.overrideHeading small {
+.overrideDescription {
     color: var(--text-secondary);
     display: block;
     font-size: 12px;
@@ -280,20 +280,20 @@
     flex: 1;
     justify-content: flex-end;
 }
-.embedded .footer {
+:where(.embedded) .footer {
     padding: 16px 24px;
 }
-.form .primaryAction:disabled {
+.primaryAction:disabled {
     background: var(--primary-default);
     border-color: transparent;
     color: var(--text-on-primary);
     opacity: 0.5;
 }
 @media (max-width: 767px) {
-    .embedded .body {
+    :where(.embedded) .body {
         padding: 16px;
     }
-    .embedded .footer {
+    :where(.embedded) .footer {
         padding: 12px 16px;
     }
     .footerRow {
@@ -325,7 +325,7 @@
     gap: 6px;
     margin-top: 6px;
 }
-.suggestionHeading strong {
+.suggestionTitle {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -338,14 +338,10 @@
 }
 
 /* Keep the supplied dialog's row-based textarea geometry local to this feature. */
-.form textarea {
+.textarea {
     border-radius: 6px;
     line-height: 20px;
     min-height: 0;
-}
-.form label:has(+ textarea),
-.form label:has(+ span textarea) {
-    line-height: 14px;
 }
 
 .fieldCount,

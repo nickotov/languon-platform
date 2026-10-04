@@ -45,7 +45,7 @@ export function GrammarCallout({
                 {(eyebrow ?? label) ? (
                     <p className={styles.eyebrow}>{eyebrow ?? label}</p>
                 ) : null}
-                {title ? <h3>{title}</h3> : null}
+                {title ? <h3 className={styles.title}>{title}</h3> : null}
                 <div className={styles.body}>{children}</div>
             </div>
         </aside>

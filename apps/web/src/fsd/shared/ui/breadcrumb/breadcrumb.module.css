@@ -16,7 +16,7 @@
     gap: 6px;
     min-width: 0;
 }
-.list a,
+.link,
 .ellipsis {
     border-radius: var(--radius-xs);
     color: var(--text-secondary);
@@ -24,14 +24,14 @@
         color var(--duration-fast) var(--easing-standard),
         background var(--duration-fast) var(--easing-standard);
 }
-.list a {
+.link {
     max-width: 256px;
     overflow: hidden;
     padding: 2px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.list a:hover {
+.link:hover {
     color: var(--text-primary);
     text-decoration: underline;
 }
@@ -49,13 +49,14 @@
     background: var(--background-subtle);
     color: var(--text-primary);
 }
-.list :is(a, .ellipsis):focus-visible {
+.link:focus-visible,
+.ellipsis:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
 .separator,
 .icon,
-.ellipsis svg {
+.ellipsisIcon {
     flex: none;
     height: 16px;
     width: 16px;

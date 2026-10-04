@@ -1,14 +1,48 @@
-.handleForm { align-items: flex-start; display: flex; flex-wrap: wrap; gap: 16px; }
-.handleForm > span { flex: 1 1 240px; }
-.handleForm > button { margin-top: 25px; }
-.confirmForm { display: grid; gap: 16px; }
-.deletionDialog[open] { max-height: calc(100dvh - 16px); }
-.warningList { list-style: disc; margin: 4px 0 0; padding-left: 20px; }
-.warningList li + li { margin-top: 4px; }
-.confirmFooter { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+.handleForm {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.handleField {
+    flex: 1 1 240px;
+}
+.handleSubmit {
+    margin-top: 25px;
+}
+.confirmForm {
+    display: grid;
+    gap: 16px;
+}
+.deletionDialog[open] {
+    max-height: calc(100dvh - 16px);
+}
+.warningList {
+    list-style: disc;
+    margin: 4px 0 0;
+    padding-left: 20px;
+}
+.warningItem + :where(.warningItem) {
+    margin-top: 4px;
+}
+.confirmFooter {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-end;
+}
 @media (max-width: 520px) {
-    .handleForm > button { margin-top: 0; }
-    .confirmForm { gap: 12px; }
-    .deletionDialog[open] > div { padding-block: 12px; }
-    .lossAlert { padding: 12px; }
+    .handleSubmit {
+        margin-top: 0;
+    }
+    .confirmForm {
+        gap: 12px;
+    }
+    .deletionBody {
+        padding-block: 12px;
+    }
+    .lossAlert {
+        padding: 12px;
+    }
 }

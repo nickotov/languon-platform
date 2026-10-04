@@ -78,6 +78,7 @@ export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
                     name='newPassword'
                 />
                 <Button
+                    className={styles.formButton}
                     disabled={pending || !flowId}
                     loading={pending}
                     size='large'

@@ -45,13 +45,15 @@ export function AiTutorMessage({
                 <img className={styles.avatar} src={avatarUrl} alt='' />
             ) : (
                 <span className={styles.avatarFallback} aria-hidden='true'>
-                    <GraduationCapIcon />
+                    <GraduationCapIcon className={styles.avatarIcon} />
                 </span>
             )}
             <div className={styles.column}>
                 <div className={styles.meta}>
-                    <span>{tutorName}</span>
-                    {timestamp ? <time>{timestamp}</time> : null}
+                    <span className={styles.tutorName}>{tutorName}</span>
+                    {timestamp ? (
+                        <time className={styles.timestamp}>{timestamp}</time>
+                    ) : null}
                 </div>
                 <div
                     className={[styles.bubble, error ? styles.error : '']
@@ -63,13 +65,16 @@ export function AiTutorMessage({
                             <span className={styles.sr}>
                                 {tutorName} is typing
                             </span>
-                            <i />
-                            <i />
-                            <i />
+                            <i className={styles.typingDot} />
+                            <i className={styles.typingDot} />
+                            <i className={styles.typingDot} />
                         </span>
                     ) : error ? (
                         <p className={styles.errorBody}>
-                            <AlertCircleIcon aria-hidden='true' />
+                            <AlertCircleIcon
+                                className={styles.errorIcon}
+                                aria-hidden='true'
+                            />
                             {message ??
                                 "Couldn't reach your tutor. Check your connection and try again."}
                         </p>
@@ -82,7 +87,7 @@ export function AiTutorMessage({
                 </div>
                 {error && onRetry ? (
                     <Action onClick={onRetry} tone='danger'>
-                        <RotateCcwIcon />
+                        <RotateCcwIcon className={styles.actionIcon} />
                         Try again
                     </Action>
                 ) : null}
@@ -90,7 +95,7 @@ export function AiTutorMessage({
                     <div className={styles.actions}>
                         {onPlayAudio ? (
                             <Action onClick={onPlayAudio}>
-                                <Volume2Icon />
+                                <Volume2Icon className={styles.actionIcon} />
                                 Listen
                             </Action>
                         ) : null}
@@ -99,7 +104,7 @@ export function AiTutorMessage({
                                 onClick={onToggleTranslation}
                                 pressed={translationVisible}
                             >
-                                <LanguagesIcon />
+                                <LanguagesIcon className={styles.actionIcon} />
                                 {translationVisible
                                     ? 'Hide translation'
                                     : 'Show translation'}

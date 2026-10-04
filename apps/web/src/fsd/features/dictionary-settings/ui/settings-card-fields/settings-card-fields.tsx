@@ -51,8 +51,14 @@ export function SettingsCardFields({
     return (
         <section className={styles.section}>
             <div>
-                <h3>{t('dictionary.settings.cardFields')}</h3>
-                <p className={styles.hint}>
+                <h3 className={styles.sectionTitle}>
+                    {t('dictionary.settings.cardFields')}
+                </h3>
+                <p
+                    className={[styles.hint, styles.sectionDescription].join(
+                        ' ',
+                    )}
+                >
                     {t('dictionary.settings.inactiveHelp')}
                 </p>
             </div>

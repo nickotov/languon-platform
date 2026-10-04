@@ -27,7 +27,9 @@ export function SettingsLanguagePair({
     return (
         <section className={styles.section}>
             <div className={styles.sectionHeading}>
-                <h3>{t('dictionary.settings.languagePair')}</h3>
+                <h3 className={styles.sectionTitle}>
+                    {t('dictionary.settings.languagePair')}
+                </h3>
                 {state.pairLocked ? (
                     <Badge size='sm' icon={<Lock aria-hidden size={14} />}>
                         {t('dictionary.settings.locked')}
@@ -36,8 +38,13 @@ export function SettingsLanguagePair({
             </div>
             {state.pairLocked ? (
                 <>
-                    <p>{pair}</p>
-                    <p className={styles.hint}>
+                    <p className={styles.sectionDescription}>{pair}</p>
+                    <p
+                        className={[
+                            styles.hint,
+                            styles.sectionDescription,
+                        ].join(' ')}
+                    >
                         {t('dictionary.settings.pairLocked')}
                     </p>
                 </>
@@ -65,7 +72,12 @@ export function SettingsLanguagePair({
                             />
                         </Field>
                     </div>
-                    <p className={styles.hint}>
+                    <p
+                        className={[
+                            styles.hint,
+                            styles.sectionDescription,
+                        ].join(' ')}
+                    >
                         {t('dictionary.settings.pairEditable')}
                     </p>
                 </>

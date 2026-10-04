@@ -16,7 +16,7 @@
 .header {
     align-items: flex-start;
 }
-.header h1 {
+.title {
     font-size: 30px;
     font-weight: 600;
     letter-spacing: -0.025em;
@@ -46,7 +46,7 @@
     border-radius: 12px;
     background: var(--background-subtle);
 }
-.segments button {
+.segment {
     min-height: 36px;
     padding: 6px 12px;
     border: 1px solid transparent;
@@ -57,13 +57,13 @@
     font-weight: 500;
     cursor: pointer;
 }
-.segments button[aria-pressed='true'] {
+.segment:where([aria-pressed='true']) {
     background: var(--primary-default);
     border-color: var(--primary-default);
     color: var(--text-on-primary);
     font-weight: 600;
 }
-.segments button:focus-visible,
+.segment:focus-visible,
 .openLink:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 3px;
@@ -107,7 +107,7 @@
     justify-content: center;
     width: 40px;
 }
-.dictionaryCard h2 {
+.cardTitle {
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
@@ -264,12 +264,12 @@
     gap: 12px;
     text-align: center;
 }
-.firstDictionary h2 {
+:where(.firstDictionary) .emptyTitle {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
 }
-.firstDictionary p {
+:where(.firstDictionary) .emptyHelp {
     max-width: 448px;
     margin: 0;
     font-size: 14px;
@@ -285,12 +285,12 @@
     background: var(--primary-subtle);
     color: var(--primary-default);
 }
-.emptyResults h2 {
+:where(.emptyResults) .emptyTitle {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
 }
-.emptyResults p {
+:where(.emptyResults) .emptyHelp {
     margin: 4px 0 0;
     font-size: 14px;
     color: var(--text-secondary);
@@ -302,7 +302,7 @@
     margin-top: 12px;
 }
 
-button.openLink {
+.openButton {
     border: 0;
     background: transparent;
     padding: 0;

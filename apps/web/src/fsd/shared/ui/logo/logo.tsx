@@ -5,6 +5,7 @@ import styles from './logo.module.css';
 
 type LogoProps = {
     className?: string | undefined;
+    wordmarkClassName?: string | undefined;
     href?: string;
     label?: string;
     monogram?: boolean;
@@ -13,6 +14,7 @@ type LogoProps = {
 
 export function Logo({
     className,
+    wordmarkClassName,
     href,
     label = 'Languon',
     monogram = false,
@@ -23,7 +25,15 @@ export function Logo({
             <span aria-hidden='true' className={styles.mark}>
                 L
             </span>
-            {monogram ? null : <span className={styles.wordmark}>Languon</span>}
+            {monogram ? null : (
+                <span
+                    className={[styles.wordmark, wordmarkClassName]
+                        .filter(Boolean)
+                        .join(' ')}
+                >
+                    Languon
+                </span>
+            )}
             {suffix}
         </>
     );

@@ -19,20 +19,20 @@
 .value {
     gap: 6px;
 }
-.value svg {
+.valueIcon {
     height: 16px;
     width: 16px;
 }
-.value span {
+.valueLabel {
     font-size: 14px;
     font-variant-numeric: tabular-nums;
     font-weight: 500;
 }
-.value.sm svg {
+:where(.value.sm) .valueIcon {
     height: 14px;
     width: 14px;
 }
-.value.sm span {
+:where(.value.sm) .valueLabel {
     font-size: 12px;
 }
 .hot {
@@ -51,7 +51,7 @@
     gap: 8px;
     padding: 6px 12px;
 }
-.pill.sm {
+.pill:where(.sm) {
     padding: 4px 10px;
 }
 .week {
@@ -88,7 +88,7 @@
     gap: 16px;
     justify-content: space-between;
 }
-.card h3 {
+.title {
     color: var(--text-tertiary);
     font-size: 12px;
     font-weight: 500;
@@ -96,7 +96,7 @@
     margin: 0 0 6px;
     text-transform: uppercase;
 }
-.card p {
+.description {
     color: var(--text-tertiary);
     font-size: 12px;
     line-height: 1.625;
@@ -105,14 +105,14 @@
 .loading {
     gap: 8px;
 }
-.loading span {
+.skeleton {
     animation: pulse 1.5s infinite;
     background: var(--border-default);
     border-radius: var(--radius-full);
     height: 14px;
     width: 64px;
 }
-.loading span:first-child {
+.skeleton:first-child {
     width: 16px;
 }
 @keyframes pulse {

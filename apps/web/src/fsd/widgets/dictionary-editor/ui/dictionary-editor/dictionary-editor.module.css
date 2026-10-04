@@ -23,11 +23,11 @@
     gap: 16px;
 }
 
-.summaryContent > :first-child {
+.summaryCopy {
     min-width: 0;
 }
 
-.header h1 {
+.title {
     margin: 0;
     color: var(--text-primary);
     font-size: 24px;
@@ -73,7 +73,7 @@
     gap: 12px;
 }
 
-.filters > :last-child {
+.search {
     min-width: 0;
 }
 
@@ -94,7 +94,7 @@
     max-width: calc(100vw - 32px);
 }
 
-.addCard button[aria-haspopup='menu'] {
+.trainButton {
     height: 52px;
     font-size: 16px;
     padding-inline: 24px;
@@ -110,7 +110,7 @@
     background: var(--background-subtle);
 }
 
-.statusTabs button {
+.statusTab {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -125,7 +125,7 @@
     cursor: pointer;
 }
 
-.statusTabs button[aria-pressed='true'] {
+.statusTab[aria-pressed='true'] {
     background: var(--primary-default);
     color: var(--text-on-primary);
     box-shadow: var(--elevation-sm);
@@ -140,7 +140,7 @@
     line-height: 16px;
 }
 
-.statusTabs button:focus-visible {
+.statusTab:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
@@ -163,7 +163,7 @@
         align-items: center;
         justify-content: space-between;
     }
-    .filters > :last-child {
+    .search {
         max-width: 320px;
     }
 }
@@ -179,7 +179,7 @@
     }
 }
 
-.settingsSheet > div:nth-child(2) {
+.settingsBody {
     display: flex;
     min-height: 0;
     overflow: hidden;
@@ -204,12 +204,12 @@
     }
 }
 
-.statusTabs button[aria-pressed='true'] {
+.statusTab[aria-pressed='true'] {
     border-color: var(--primary-default);
     font-weight: 600;
 }
 
-.statusTabs button[aria-pressed='true'] .tabCount {
+:where(.statusTab[aria-pressed='true']) .tabCount {
     color: var(--primary-default);
 }
 
@@ -227,27 +227,25 @@
     gap: 12px;
     text-align: center;
 }
-.emptyCards h2,
-.noMatches h2 {
+.emptyTitle {
     margin: 0;
     font-size: 18px;
     line-height: 28px;
     font-weight: 600;
 }
-.emptyCards p,
-.noMatches p {
+.emptyHelp {
     max-width: 448px;
     margin: 0;
     font-size: 14px;
     color: var(--text-secondary);
 }
-.noMatches h2 {
+:where(.noMatches) .emptyTitle {
     font-size: 16px;
 }
-.noMatches p {
+:where(.noMatches) .emptyHelp {
     margin-top: 4px;
 }
-.noMatches button {
+:where(.noMatches) .emptyAction {
     margin-top: 12px;
 }
 .emptyIcon {
@@ -284,11 +282,11 @@
 }
 
 @media (max-width: 767px) {
-    .settingsSheet > header {
+    .settingsHeader {
         border-bottom: 1px solid var(--border-default);
         padding: 16px;
     }
-    .settingsSheet > header h2 {
+    .settingsTitle {
         font-size: 16px;
         line-height: 24px;
     }

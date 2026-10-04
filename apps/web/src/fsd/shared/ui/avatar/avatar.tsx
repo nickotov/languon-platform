@@ -43,6 +43,7 @@ export function Avatar({
         >
             {showImage ? (
                 <img
+                    className={styles.image}
                     src={src}
                     alt={name ? `${name}'s avatar` : 'User avatar'}
                     onError={() => setFailed(true)}
@@ -50,7 +51,7 @@ export function Avatar({
             ) : fallback ? (
                 <span aria-hidden='true'>{fallback}</span>
             ) : (
-                <UserIcon aria-hidden='true' />
+                <UserIcon className={styles.fallbackIcon} aria-hidden='true' />
             )}
         </span>
     );

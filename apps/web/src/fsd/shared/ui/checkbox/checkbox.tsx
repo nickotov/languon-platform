@@ -58,6 +58,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                 <div className={styles.row}>
                     <span className={[styles.control, styles[size]].join(' ')}>
                         <input
+                            className={styles.input}
                             {...props}
                             aria-checked={
                                 indeterminate ? 'mixed' : props['aria-checked']

@@ -29,6 +29,7 @@ export function PasswordField({
             <span className={styles.password}>
                 <Lock aria-hidden='true' className={styles.leadingIcon} />
                 <Input
+                    className={styles.passwordInput}
                     aria-describedby={
                         autoComplete === 'new-password' ? hintId : undefined
                     }
@@ -50,14 +51,22 @@ export function PasswordField({
                     type='button'
                 >
                     {visible ? (
-                        <EyeOff aria-hidden='true' />
+                        <EyeOff
+                            aria-hidden='true'
+                            className={styles.passwordToggleIcon}
+                        />
                     ) : (
-                        <Eye aria-hidden='true' />
+                        <Eye
+                            aria-hidden='true'
+                            className={styles.passwordToggleIcon}
+                        />
                     )}
                 </button>
             </span>
             {autoComplete === 'new-password' ? (
-                <small id={hintId}>{t('password.hint')}</small>
+                <small className={styles.fieldHint} id={hintId}>
+                    {t('password.hint')}
+                </small>
             ) : null}
         </div>
     );

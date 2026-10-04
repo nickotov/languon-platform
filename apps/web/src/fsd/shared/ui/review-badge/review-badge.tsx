@@ -34,7 +34,9 @@ export function ReviewBadge({
     const { Icon, label: defaultLabel } = data[status];
     const content = (
         <>
-            {!hideIcon ? <Icon aria-hidden='true' /> : null}
+            {!hideIcon ? (
+                <Icon className={styles.icon} aria-hidden='true' />
+            ) : null}
             <span>{label ?? defaultLabel}</span>
             {typeof count === 'number' ? (
                 <span className={styles.count}>{count}</span>

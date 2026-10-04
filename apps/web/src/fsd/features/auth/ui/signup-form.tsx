@@ -96,6 +96,7 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
                     name='password'
                 />
                 <Button
+                    className={styles.formButton}
                     disabled={
                         pending ||
                         !capabilities ||
