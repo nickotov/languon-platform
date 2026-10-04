@@ -15,7 +15,7 @@ import {
     fieldLanguage,
     originalFieldLanguage,
 } from '../../lib/review-fields';
-import styles from '../dictionary-generation-panel/dictionary-generation-panel.module.css';
+import styles from '../dictionary-generation-panel-common.module.css';
 import { ReviewAlternative } from './review-alternative';
 
 export function ReviewField({
@@ -32,35 +32,54 @@ export function ReviewField({
     onChange(field: DictionaryGenerationField, value: string): void;
 }) {
     const { locale, t } = useI18n();
+
     const snapshot = job.originalSnapshot!;
+
     const feedback = job.proposal?.fieldFeedback.find(
         (entry) => entry.field === field,
     );
+
     const value = candidate.values[field] ?? '';
+
     const savedValue =
         snapshot.values[field] || t('dictionary.generation.empty');
+
     const language = fieldLanguage(field, candidate.overrides, job);
+
     const direction = languageDirection(languages, language);
+
     const savedLanguage = originalFieldLanguage(
         field,
         job,
         snapshot.effectiveSettings,
     );
+
     const savedDirection = languageDirection(languages, savedLanguage);
 
     const title = fieldLabel(field, t);
+
     const languageName = languageLabel(languages, language, locale);
+
     const sectionLabel = `${title} (${languageName})`;
+
     const proposedLabel = t('dictionary.generation.replacement');
+
     const savedLabel = t('dictionary.generation.original');
+
     const reasonLabel = t('dictionary.generation.reason');
+
     const sourceWarning = t('dictionary.generation.sourceMayChange');
+
     const alternatives = feedback?.alternatives ?? [];
+
     const alternativesLabel = t('dictionary.generation.alternativesCount', {
         count: alternatives.length,
     });
+
     const required = field === 'source' || field === 'translation';
+
     const isSource = field === 'source';
+
     const maxLength = required ? 400 : 4000;
 
     function handleChange(event: ChangeEvent<HTMLTextAreaElement>) {

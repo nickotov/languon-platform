@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { VocabularyTermCard } from './vocabulary-term-card';
+
 export default {
     title: 'UI/Vocabulary term card',
     component: VocabularyTermCard,
 } satisfies Meta<typeof VocabularyTermCard>;
+
 export const Default: StoryObj<typeof VocabularyTermCard> = {
     args: {
         term: 'la casa',
@@ -17,6 +19,7 @@ export const Default: StoryObj<typeof VocabularyTermCard> = {
         onToggleSave: () => {},
     },
 };
+
 export const Flashcard: StoryObj<typeof VocabularyTermCard> = {
     args: {
         term: 'rápidamente',

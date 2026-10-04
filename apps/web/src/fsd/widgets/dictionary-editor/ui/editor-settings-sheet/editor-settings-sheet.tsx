@@ -6,7 +6,7 @@ import { DictionarySettingsForm } from '@/fsd/features/dictionary-settings';
 import { BottomSheet } from '@/fsd/shared/ui';
 import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor/dictionary-editor.module.css';
+import styles from '../dictionary-editor-common.module.css';
 
 export function EditorSettingsSheet({
     model,
@@ -56,12 +56,15 @@ export function EditorSettingsSheet({
         current.sourceLanguage,
         locale,
     );
+
     const targetLanguage = languageLabel(
         catalog,
         current.targetLanguage,
         locale,
     );
+
     const description = `${current.name} · ${sourceLanguage} → ${targetLanguage}`;
+
     const dismissible = !updateSettings.isPending;
 
     return (

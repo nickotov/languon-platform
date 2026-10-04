@@ -41,6 +41,7 @@ const languages = [
         tag: 'es',
     },
 ] as LanguageCatalogEntry[];
+
 const dictionary = {
     activeCardCount: 12,
     archivedAt: null,
@@ -85,7 +86,9 @@ const meta = {
     ],
     title: 'Dictionary/Card form',
 } satisfies Meta<typeof DictionaryCardForm>;
+
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 function noStoryAction() {}
@@ -203,6 +206,7 @@ export const AutomaticSaving: Story = {
         />
     ),
 };
+
 export const AutomaticallySaved: Story = {
     args: NewCard.args,
     render: () => (
@@ -214,6 +218,7 @@ export const AutomaticallySaved: Story = {
         />
     ),
 };
+
 export const AutomaticSaveFailed: Story = {
     args: NewCard.args,
     render: () => (
@@ -225,6 +230,7 @@ export const AutomaticSaveFailed: Story = {
         />
     ),
 };
+
 export const InvalidGeneratedCandidate: Story = {
     args: NewCard.args,
     render: () => (

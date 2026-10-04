@@ -1,5 +1,6 @@
 import { EyeOffIcon, StarIcon, Volume2Icon } from 'lucide-react';
 import styles from './vocabulary-term-card.module.css';
+
 export type PartOfSpeech =
     | 'noun'
     | 'verb'
@@ -10,6 +11,7 @@ export type PartOfSpeech =
     | 'conjunction'
     | 'interjection'
     | 'phrase';
+
 export interface VocabularyTermCardProps {
     term: string;
     translation: string;
@@ -24,6 +26,7 @@ export interface VocabularyTermCardProps {
     onClick?: () => void;
     className?: string;
 }
+
 const labels: Record<PartOfSpeech, string> = {
     noun: 'noun',
     verb: 'verb',
@@ -35,6 +38,7 @@ const labels: Record<PartOfSpeech, string> = {
     interjection: 'interj.',
     phrase: 'phrase',
 };
+
 export function VocabularyTermCard({
     term,
     translation,
@@ -86,6 +90,7 @@ export function VocabularyTermCard({
                                 type='button'
                                 onClick={(event) => {
                                     event.stopPropagation();
+
                                     onPlayAudio();
                                 }}
                                 aria-label={`Play pronunciation of ${term}`}
@@ -102,6 +107,7 @@ export function VocabularyTermCard({
                                 type='button'
                                 onClick={(event) => {
                                     event.stopPropagation();
+
                                     onToggleSave();
                                 }}
                                 aria-pressed={saved}
@@ -137,14 +143,20 @@ export function VocabularyTermCard({
             ) : null}
         </>
     );
+
     const cn = [styles.root, onClick ? styles.interactive : '', className]
         .filter(Boolean)
         .join(' ');
-    return onClick ? (
-        <button type='button' onClick={onClick} className={cn}>
-            {content}
-        </button>
-    ) : (
+
+    if (onClick) {
+        return (
+            <button type='button' onClick={onClick} className={cn}>
+                {content}
+            </button>
+        );
+    }
+
+    return (
         <article aria-label={term} className={cn}>
             {content}
         </article>

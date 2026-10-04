@@ -7,7 +7,7 @@ import { Trash2 } from 'lucide-react';
 import type { DictionaryCardListProps } from '../../types';
 import { DictionaryCardRow } from '../dictionary-card-row/dictionary-card-row';
 import { CardDeletionDialog } from '../card-deletion-dialog/card-deletion-dialog';
-import styles from './dictionary-card-list.module.css';
+import styles from '../dictionary-card-list-common.module.css';
 
 export function DictionaryCardList(props: DictionaryCardListProps) {
     const {
@@ -23,6 +23,7 @@ export function DictionaryCardList(props: DictionaryCardListProps) {
         renderAudio,
         deletion,
     } = props;
+
     const { t } = useI18n();
 
     function renderCard(card: DictionaryCard, index: number) {
@@ -53,6 +54,7 @@ export function DictionaryCardList(props: DictionaryCardListProps) {
         Boolean(deletion) &&
         cards.length > 0 &&
         cards.every((card) => deletion!.selected.has(card.id));
+
     const someLoadedSelected =
         Boolean(deletion) &&
         cards.some((card) => deletion!.selected.has(card.id));

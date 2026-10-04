@@ -12,7 +12,7 @@ import {
 } from '@/fsd/shared/ui';
 import type { DictionaryCardDeletionController } from '../../hooks/use-dictionary-card-deletion';
 import type { ChangeEvent } from 'react';
-import styles from '../dictionary-card-list/dictionary-card-list.module.css';
+import styles from '../dictionary-card-list-common.module.css';
 
 export function CardDeletionDialog({
     deletion,
@@ -20,26 +20,43 @@ export function CardDeletionDialog({
     deletion: DictionaryCardDeletionController;
 }) {
     const { t } = useI18n();
+
     const target = deletion.deletion;
+
     if (!target) return null;
+
     const count = target.kind === 'all' ? target.count : target.cards.length;
+
     const singleCard =
         target.kind === 'selected' && target.cards.length === 1
             ? target.cards[0]
             : null;
+
     const error = deletion.remove.error;
+
     const conflict =
         error instanceof DictionaryApiError &&
         (error.detail.code === 'version_conflict' ||
             error.detail.code === 'idempotency_conflict');
+
     const busy =
         error instanceof DictionaryApiError &&
         error.detail.code === 'deletion_busy';
-    const message = busy
-        ? t('dictionary.deletion.busy')
-        : error
-          ? dictionaryErrorMessage(error, t)
-          : null;
+
+    function resolveMessage() {
+        if (busy) {
+            return t('dictionary.deletion.busy');
+        }
+
+        if (error) {
+            return dictionaryErrorMessage(error, t);
+        }
+
+        return null;
+    }
+
+    const message = resolveMessage();
+
     const pending = deletion.remove.isPending;
 
     function submitDeletion() {

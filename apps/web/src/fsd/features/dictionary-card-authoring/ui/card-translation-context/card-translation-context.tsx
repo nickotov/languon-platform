@@ -21,13 +21,19 @@ export function CardTranslationContext({
     textareaClassName?: string | undefined;
 }) {
     const { t } = useI18n();
+
     const enabled = cardContext !== null;
+
     const hasExistingContext = Boolean(dictionaryContext || cardContext);
+
     const switchLabel = hasExistingContext
         ? t('dictionary.context.update')
         : t('dictionary.context.set');
+
     const contextLength = cardContext === null ? 0 : [...cardContext].length;
+
     let validationError: string | undefined;
+
     if (enabled && !cardContext.trim()) {
         validationError = t('dictionary.context.cardRequired');
     } else if (contextLength > 1000) {

@@ -32,6 +32,7 @@ export function PracticeSession({
     onClose(): void;
 }) {
     const { t } = useI18n();
+
     const session = usePracticeSession({
         api,
         sessionId,
@@ -40,14 +41,23 @@ export function PracticeSession({
         entryIds: payload.entryIds,
         signedIn,
     });
+
     const { state } = session;
+
     const display = useTrainingDisplay(fullscreenRequest);
+
     const [endOpen, setEndOpen] = useState(false);
+
     const dialogRef = useRef<HTMLDialogElement>(null);
+
     const dialogMode = display.mode === 'dialog';
+
     const title = t('training.practiceTitle', { name: dictionaryTitle });
+
     const total = state.queue.length;
+
     let subtitle = t('training.paused');
+
     if (state.phase === 'card')
         subtitle = t('training.roundCard', {
             round: state.round,
@@ -57,8 +67,11 @@ export function PracticeSession({
     else if (state.phase === 'results')
         subtitle = t('training.roundResults', { round: state.round });
     else if (state.phase === 'loading') subtitle = t('training.preparing');
+
     const className = `${styles.frame} ${dialogMode ? styles.dialog : ''}`;
+
     let announcement = '';
+
     if (state.announcement === 'showingBack') announcement = t('training.back');
     else if (state.announcement === 'showingFront')
         announcement = t('training.front');
@@ -75,12 +88,18 @@ export function PracticeSession({
 
     useEffect(() => {
         const dialog = dialogRef.current;
+
         if (!dialog) return;
+
         dialog.showModal();
+
         const previous = document.body.style.overflow;
+
         document.body.style.overflow = 'hidden';
+
         return () => {
             dialog.close();
+
             document.body.style.overflow = previous;
         };
     }, []);
@@ -88,18 +107,25 @@ export function PracticeSession({
     function handleEnd() {
         setEndOpen(true);
     }
+
     function handleKeep() {
         setEndOpen(false);
     }
+
     function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
         event.preventDefault();
+
         if (endOpen) return;
+
         if (display.mode === 'overlay') display.toDialog();
         else if (dialogMode) handleEnd();
     }
+
     function handleKey(event: KeyboardEvent<HTMLDialogElement>) {
         if (endOpen || event.defaultPrevented) return;
+
         const target = event.target as HTMLElement;
+
         if (
             target.closest(
                 'input, textarea, select, [contenteditable="true"]',
@@ -111,17 +137,21 @@ export function PracticeSession({
             window.getSelection()?.toString()
         )
             return;
+
         if (event.key === 'ArrowLeft') {
             event.preventDefault();
+
             session.rate('again');
         } else if (event.key === 'ArrowRight') {
             event.preventDefault();
+
             session.rate('known');
         } else if (
             (event.key === 'Enter' || event.key === ' ') &&
             !target.closest('button, a, [role="menuitem"]')
         ) {
             event.preventDefault();
+
             session.flip();
         }
     }

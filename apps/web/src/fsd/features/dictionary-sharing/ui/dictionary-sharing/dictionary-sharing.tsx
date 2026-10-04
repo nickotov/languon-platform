@@ -20,35 +20,46 @@ export function DictionarySharing({
     pending: boolean;
 }) {
     const { t } = useI18n();
+
     const [capability, setCapability] = useState<{
         shareId: string;
         shareKey: string;
     } | null>(null);
+
     const [outcome, setOutcome] = useState('');
 
     async function rotate() {
         try {
             const next = await onRotate();
+
             setCapability(next);
+
             setOutcome(t('dictionary.share.rotated'));
         } catch {
             // The owning mutation renders the recoverable error state.
         }
     }
+
     async function copy() {
         if (!capability) return;
+
         const url = `${window.location.origin}/shared/dictionaries/${capability.shareId}#${capability.shareKey}`;
+
         try {
             await navigator.clipboard.writeText(url);
+
             setOutcome(t('dictionary.share.copied'));
         } catch {
             setOutcome(t('dictionary.share.copyFailed'));
         }
     }
+
     async function revoke() {
         try {
             await onRevoke();
+
             setCapability(null);
+
             setOutcome(t('dictionary.share.revoked'));
         } catch {
             // The owning mutation renders the recoverable error state.

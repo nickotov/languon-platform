@@ -56,27 +56,37 @@ export function EditorSecondaryActions({
 
     function openImport() {
         setInterchangePreview(null);
+
         interchangePreviewAction.reset();
+
         interchangeImportAction.reset();
+
         setInterchangeOpen('import');
     }
 
     function openExport() {
         interchangeExportAction.reset();
+
         setInterchangeOpen('export');
     }
 
     function openBatch() {
         setBatchGenerationJobId(null);
+
         setBatchGenerationOpen(true);
+
         syncBatchGenerationUrl(null);
+
         batchGenerationAction.reset();
     }
 
     function openDocument() {
         setDocumentGenerationJobId(null);
+
         setDocumentGenerationOpen(true);
+
         syncDocumentGenerationUrl(null);
+
         documentGenerationAction.reset();
     }
 

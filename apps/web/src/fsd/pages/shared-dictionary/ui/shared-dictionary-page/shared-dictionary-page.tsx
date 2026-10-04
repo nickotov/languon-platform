@@ -44,21 +44,30 @@ function readFragmentKey(): string {
 
 export function SharedDictionaryPage({ shareId }: { shareId: string }) {
     const { href, locale, t } = useI18n();
+
     const router = useRouter();
+
     const queryClient = useQueryClient();
+
     const { requestWithSession } = useAuth();
+
     const sessionStatus = useSessionStore((state) => state.status);
+
     const learnerId = useSessionStore((state) => state.user?.id);
+
     const [capability, setCapability] = useState<{
         key: string;
         revision: number;
     } | null>(null);
+
     const shareKey = capability?.key ?? null;
+
     const sharedQueryKey = [
         'shared-dictionary',
         shareId,
         capability?.revision ?? 0,
     ] as const;
+
     const forkIdempotencyKey = useRef(crypto.randomUUID());
 
     useEffect(() => {
@@ -67,8 +76,11 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
                 key: readFragmentKey(),
                 revision: (current?.revision ?? 0) + 1,
             }));
+
         update();
+
         window.addEventListener('hashchange', update);
+
         return () => window.removeEventListener('hashchange', update);
     }, []);
 
@@ -91,11 +103,13 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
         staleTime: 0,
         gcTime: 0,
     });
+
     const languages = useQuery({
         queryKey: ['dictionary-languages'],
         queryFn: ({ signal }) => dictionaryApi.listLanguages(signal),
         staleTime: Infinity,
     });
+
     const fork = useMutation({
         mutationFn: () =>
             requestWithSession((token) =>
@@ -122,7 +136,9 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
             </main>
         );
     }
+
     const unavailable = !shareKey || languages.isError || !shared.data;
+
     if (unavailable) {
         return (
             <main className={styles.main}>
@@ -139,19 +155,29 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
             </main>
         );
     }
+
     const dictionary = shared.data.pages[0]!.dictionary;
+
     const cards = shared.data.pages.flatMap((page) => page.dictionary.cards);
+
     const catalog = languages.data.languages;
+
     const returnTo = `/shared/dictionaries/${shareId}`;
+
     const signInQuery = new URLSearchParams({ returnTo }).toString();
+
     const signInHref = `/login?${signInQuery}#${shareKey}`;
+
     const trainingTarget = { kind: 'shared' as const, shareId, shareKey };
+
     const trainingIdentity = `${learnerId ?? 'anonymous'}:shared:${shareId}:${capability?.revision ?? 0}`;
+
     const sourceLanguage = {
         code: dictionary.sourceLanguage,
         name: languageLabel(catalog, dictionary.sourceLanguage, locale),
         direction: languageDirection(catalog, dictionary.sourceLanguage),
     };
+
     const targetLanguage = {
         code: dictionary.targetLanguage,
         name: languageLabel(catalog, dictionary.targetLanguage, locale),
@@ -280,56 +306,72 @@ function PublicCard({
     languages: readonly LanguageCatalogEntry[];
 }) {
     const { t } = useI18n();
+
     const direction = (language: string) =>
         languages.find((candidate) => candidate.tag === language)?.direction ??
         'ltr';
-    const optional = [
-        card.effectiveSettings.transcriptionEnabled && card.values.transcription
-            ? {
-                  key: 'transcription',
-                  label: t('dictionary.field.transcription'),
-                  lang: dictionary.sourceLanguage,
-                  value: card.values.transcription,
-              }
-            : null,
-        card.effectiveSettings.definitionEnabled && card.values.definition
-            ? {
-                  key: 'definition',
-                  label: t('dictionary.field.definition'),
-                  lang: languageForRole(
-                      card.effectiveSettings.definitionLanguage,
-                      dictionary.sourceLanguage,
-                      dictionary.targetLanguage,
-                  ),
-                  value: card.values.definition,
-              }
-            : null,
-        card.effectiveSettings.exampleEnabled && card.values.example
-            ? {
-                  key: 'example',
-                  label: t('dictionary.field.example'),
-                  lang: languageForRole(
-                      card.effectiveSettings.exampleLanguage,
-                      dictionary.sourceLanguage,
-                      dictionary.targetLanguage,
-                  ),
-                  value: card.values.example,
-              }
-            : null,
+
+    const optional: {
+        key: string;
+        label: string;
+        lang: string;
+        value: string;
+    }[] = [];
+
+    if (
+        card.effectiveSettings.transcriptionEnabled &&
+        card.values.transcription
+    ) {
+        optional.push({
+            key: 'transcription',
+            label: t('dictionary.field.transcription'),
+            lang: dictionary.sourceLanguage,
+            value: card.values.transcription,
+        });
+    }
+
+    if (card.effectiveSettings.definitionEnabled && card.values.definition) {
+        optional.push({
+            key: 'definition',
+            label: t('dictionary.field.definition'),
+            lang: languageForRole(
+                card.effectiveSettings.definitionLanguage,
+                dictionary.sourceLanguage,
+                dictionary.targetLanguage,
+            ),
+            value: card.values.definition,
+        });
+    }
+
+    if (card.effectiveSettings.exampleEnabled && card.values.example) {
+        optional.push({
+            key: 'example',
+            label: t('dictionary.field.example'),
+            lang: languageForRole(
+                card.effectiveSettings.exampleLanguage,
+                dictionary.sourceLanguage,
+                dictionary.targetLanguage,
+            ),
+            value: card.values.example,
+        });
+    }
+
+    if (
         card.effectiveSettings.exampleTranslationEnabled &&
         card.values.exampleTranslation
-            ? {
-                  key: 'exampleTranslation',
-                  label: t('dictionary.field.exampleTranslation'),
-                  lang: languageForRole(
-                      card.effectiveSettings.exampleTranslationLanguage,
-                      dictionary.sourceLanguage,
-                      dictionary.targetLanguage,
-                  ),
-                  value: card.values.exampleTranslation,
-              }
-            : null,
-    ].filter((value): value is NonNullable<typeof value> => value !== null);
+    ) {
+        optional.push({
+            key: 'exampleTranslation',
+            label: t('dictionary.field.exampleTranslation'),
+            lang: languageForRole(
+                card.effectiveSettings.exampleTranslationLanguage,
+                dictionary.sourceLanguage,
+                dictionary.targetLanguage,
+            ),
+            value: card.values.exampleTranslation,
+        });
+    }
+
     return (
         <Card className={styles.card}>
             <div className={styles.pair}>

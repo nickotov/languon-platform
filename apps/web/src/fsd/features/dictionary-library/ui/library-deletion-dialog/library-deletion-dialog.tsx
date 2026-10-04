@@ -12,33 +12,50 @@ import {
 } from '@/fsd/shared/ui';
 import type { LibraryState } from '../../hooks/use-dictionary-library';
 import type { ChangeEvent } from 'react';
-import styles from '../dictionary-library/dictionary-library.module.css';
+import styles from '../dictionary-library-common.module.css';
 
 export function LibraryDeletionDialog({ state }: { state: LibraryState }) {
     const { t } = useI18n();
+
     const deletion = state.deletion;
+
     if (!deletion) return null;
 
     const count =
         deletion.kind === 'all' ? deletion.count : deletion.targets.length;
+
     const single = deletion.kind === 'selected' && count === 1;
+
     const phrase = single
         ? deletion.targets[0]!.name
         : t('dictionary.deletion.dictionaryPhrase', { count });
+
     const pending = state.deleteDictionaries.isPending;
+
     const error = state.deleteDictionaries.error;
+
     const conflict =
         error instanceof DictionaryApiError &&
         (error.detail.code === 'version_conflict' ||
             error.detail.code === 'idempotency_conflict');
+
     const busy =
         error instanceof DictionaryApiError &&
         error.detail.code === 'deletion_busy';
-    const errorMessage = busy
-        ? t('dictionary.deletion.busy')
-        : error
-          ? dictionaryErrorMessage(error, t)
-          : null;
+
+    function resolveErrorMessage() {
+        if (busy) {
+            return t('dictionary.deletion.busy');
+        }
+
+        if (error) {
+            return dictionaryErrorMessage(error, t);
+        }
+
+        return null;
+    }
+
+    const errorMessage = resolveErrorMessage();
 
     function submitDeletion() {
         state.deleteDictionaries.mutate();

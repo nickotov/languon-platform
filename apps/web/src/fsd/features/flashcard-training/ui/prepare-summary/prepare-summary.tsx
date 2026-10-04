@@ -5,6 +5,7 @@ import type { useFlashcardSetup } from '../../hooks/use-flashcard-setup';
 import { RetryButton } from '../retry-button/retry-button';
 
 type Prepare = ReturnType<typeof useFlashcardSetup>['prepare'];
+
 export function PrepareSummary({
     prepare,
     onRetry,
@@ -15,8 +16,10 @@ export function PrepareSummary({
     blocked?: string | undefined;
 }) {
     const { t } = useI18n();
+
     if (blocked)
         return <p className='text-sm text-text-secondary'>{blocked}</p>;
+
     if (prepare.status === 'error')
         return (
             <InlineAlert
@@ -29,6 +32,7 @@ export function PrepareSummary({
                 {t('training.errorHelp')}
             </InlineAlert>
         );
+
     if (prepare.status !== 'ready' || !prepare.result)
         return (
             <div
@@ -40,7 +44,9 @@ export function PrepareSummary({
                 <Skeleton height={72} variant='rect' />
             </div>
         );
+
     const result = prepare.result;
+
     const stats = [
         {
             label: t('training.eligible'),
@@ -61,6 +67,7 @@ export function PrepareSummary({
             note: t('training.entryCount'),
         },
     ];
+
     return (
         <div className='flex flex-col gap-3'>
             <dl aria-live='polite' className='grid grid-cols-3 gap-2 sm:gap-3'>

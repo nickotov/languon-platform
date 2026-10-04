@@ -29,43 +29,59 @@ export function LoginForm({
     returnTo?: string | undefined;
 }) {
     const { href, t } = useI18n();
+
     const router = useRouter();
+
     const { authenticate, capabilities } = useAuth();
+
     const [error, setError] = useLocaleSensitiveState<string | null>(null);
+
     const [pending, setPending] = useState<'passkey' | 'password' | null>(null);
+
     const [passkeySupported, setPasskeySupported] = useState(false);
+
     const sessionStatus = useSessionStore((state) => state.status);
+
     const destination = safeReturnPath(returnTo);
 
     useEffect(() => setPasskeySupported(supportsPasskeys()), []);
 
     async function submitPassword(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         if (sessionStatus === 'bootstrapping') return;
+
         setError(null);
+
         const data = new FormData(event.currentTarget);
+
         const parsed = PasswordLoginRequestSchema.safeParse({
             email: data.get('email'),
             password: data.get('password'),
         });
+
         if (!parsed.success) {
             setError(t('login.invalid'));
+
             return;
         }
 
         setPending('password');
+
         try {
             const response = await authenticate(
                 () => authApi.passwordLogin(parsed.data),
                 (result) =>
                     result.status === 'authenticated' ? result : undefined,
             );
+
             if (response.status === 'email_verification_required') {
                 const query = new URLSearchParams({
                     flowId: response.verification.flowId,
                     resendAvailableAt: response.verification.resendAvailableAt,
                     returnTo: destination,
                 });
+
                 router.push(
                     href(
                         preserveCapabilityReturnFragment(
@@ -74,8 +90,10 @@ export function LoginForm({
                         ),
                     ),
                 );
+
                 return;
             }
+
             router.replace(
                 href(
                     preserveCapabilityReturnFragment(destination, destination),
@@ -90,14 +108,19 @@ export function LoginForm({
 
     async function submitPasskey() {
         if (sessionStatus === 'bootstrapping') return;
+
         setError(null);
+
         setPending('passkey');
+
         try {
             await authenticate(
                 async () => {
                     const ceremony =
                         await authApi.passkeyAuthenticationOptions();
+
                     const credential = await getPasskey(ceremony.options);
+
                     return authApi.verifyPasskeyAuthentication({
                         credential,
                         flowId: ceremony.flowId,
@@ -105,6 +128,7 @@ export function LoginForm({
                 },
                 (result) => result,
             );
+
             router.replace(
                 href(
                     preserveCapabilityReturnFragment(destination, destination),

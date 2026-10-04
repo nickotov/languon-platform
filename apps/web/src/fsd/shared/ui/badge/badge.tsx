@@ -3,6 +3,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import styles from './badge.module.css';
 
 export type BadgeTone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
+
 export type BadgeSize = 'md' | 'sm';
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
@@ -22,6 +23,24 @@ export function Badge({
     withDot = false,
     ...props
 }: BadgeProps) {
+    function resolveBadgeContent() {
+        if (withDot) {
+            return <span aria-hidden='true' className={styles.dot} />;
+        }
+
+        if (icon) {
+            return (
+                <span aria-hidden='true' className={styles.icon}>
+                    {icon}
+                </span>
+            );
+        }
+
+        return null;
+    }
+
+    const resolvedBadgeContent = resolveBadgeContent();
+
     return (
         <span
             {...props}
@@ -29,13 +48,7 @@ export function Badge({
                 .filter(Boolean)
                 .join(' ')}
         >
-            {withDot ? (
-                <span aria-hidden='true' className={styles.dot} />
-            ) : icon ? (
-                <span aria-hidden='true' className={styles.icon}>
-                    {icon}
-                </span>
-            ) : null}
+            {resolvedBadgeContent}
             {children}
         </span>
     );

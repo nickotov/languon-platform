@@ -1,10 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Select } from './select';
+
 const meta = { component: Select, title: 'UI/Select' } satisfies Meta<
     typeof Select
 >;
+
 export default meta;
+
 type Story = StoryObj<typeof meta>;
+
 export const Default: Story = {
     args: {
         children: (
@@ -16,6 +20,7 @@ export const Default: Story = {
         'aria-label': 'Language',
     },
 };
+
 export const Disabled: Story = {
     args: {
         children: <option>Русский · Russian</option>,

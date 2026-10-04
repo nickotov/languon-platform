@@ -1,4 +1,5 @@
 'use client';
+
 import {
     AlertCircleIcon,
     LoaderIcon,
@@ -8,7 +9,9 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './audio-player.module.css';
+
 export type AudioPlayerSize = 'sm' | 'md';
+
 export type AudioPlayerProps = {
     src: string;
     label?: string;
@@ -24,12 +27,17 @@ export type AudioPlayerProps = {
     onEnded?: () => void;
     onSpeedChange?: (speed: number) => void;
 };
+
 type Status = 'loading' | 'ready' | 'error';
+
 export function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+
     const total = Math.floor(seconds);
+
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
+
 export function AudioPlayer({
     src,
     label,
@@ -46,47 +54,95 @@ export function AudioPlayer({
     onSpeedChange,
 }: AudioPlayerProps) {
     const audioRef = useRef<HTMLAudioElement>(null);
+
     const [status, setStatus] = useState<Status>('loading');
+
     const [playing, setPlaying] = useState(false);
+
     const [current, setCurrent] = useState(0);
+
     const [duration, setDuration] = useState(0);
+
     const [speed, setSpeed] = useState(defaultSpeed ?? speeds[0] ?? 1);
+
     const interactive = status === 'ready' && !disabled;
+
     const progress = useMemo(
         () => (duration ? Math.min(100, (current / duration) * 100) : 0),
         [current, duration],
     );
+
     useEffect(() => {
         setStatus('loading');
+
         setPlaying(false);
+
         setCurrent(0);
+
         setDuration(0);
     }, [src]);
+
     useEffect(() => {
         if (audioRef.current) audioRef.current.playbackRate = speed;
     }, [speed, status]);
+
     const toggle = useCallback(() => {
         const a = audioRef.current;
+
         if (!a || !interactive) return;
+
         if (a.paused) void a.play().catch(() => setStatus('error'));
         else a.pause();
     }, [interactive]);
+
     const replay = useCallback(() => {
         const a = audioRef.current;
+
         if (!a || !interactive) return;
+
         const next = replaySeconds
             ? Math.max(0, a.currentTime - replaySeconds)
             : 0;
+
         a.currentTime = next;
+
         setCurrent(next);
+
         if (a.paused) void a.play().catch(() => setStatus('error'));
     }, [interactive, replaySeconds]);
+
     const cycle = () => {
         if (!interactive || !speeds.length) return;
+
         const next = speeds[(speeds.indexOf(speed) + 1) % speeds.length] ?? 1;
+
         setSpeed(next);
+
         onSpeedChange?.(next);
     };
+
+    function resolveAudioPlayerContent() {
+        if (status === 'loading') {
+            return (
+                <LoaderIcon
+                    className={[styles.playIcon, styles.spin].join(' ')}
+                />
+            );
+        }
+
+        if (status === 'error') {
+            return <AlertCircleIcon className={styles.playIcon} />;
+        }
+
+        if (playing) {
+            return <PauseIcon className={styles.playIcon} />;
+        }
+
+        return <PlayIcon className={styles.playIcon} />;
+    }
+
+    const resolvedAudioPlayerContent = resolveAudioPlayerContent();
+
     return (
         <section
             aria-label={label ? `Audio: ${label}` : 'Audio player'}
@@ -106,8 +162,11 @@ export function AudioPlayer({
                 autoPlay={autoPlay}
                 onLoadedMetadata={(event) => {
                     const a = event.currentTarget;
+
                     setDuration(Number.isFinite(a.duration) ? a.duration : 0);
+
                     a.playbackRate = speed;
+
                     setStatus('ready');
                 }}
                 onTimeUpdate={(event) =>
@@ -115,15 +174,19 @@ export function AudioPlayer({
                 }
                 onPlay={() => {
                     setPlaying(true);
+
                     onPlay?.();
                 }}
                 onPause={() => {
                     setPlaying(false);
+
                     onPause?.();
                 }}
                 onEnded={() => {
                     setPlaying(false);
+
                     setCurrent(0);
+
                     onEnded?.();
                 }}
                 onError={() => setStatus('error')}
@@ -135,17 +198,7 @@ export function AudioPlayer({
                 aria-label={playing ? 'Pause' : 'Play'}
                 className={styles.play}
             >
-                {status === 'loading' ? (
-                    <LoaderIcon
-                        className={[styles.playIcon, styles.spin].join(' ')}
-                    />
-                ) : status === 'error' ? (
-                    <AlertCircleIcon className={styles.playIcon} />
-                ) : playing ? (
-                    <PauseIcon className={styles.playIcon} />
-                ) : (
-                    <PlayIcon className={styles.playIcon} />
-                )}
+                {resolvedAudioPlayerContent}
             </button>
             <div className={styles.main}>
                 {label ? <p className={styles.label}>{label}</p> : null}
@@ -172,8 +225,10 @@ export function AudioPlayer({
                                 aria-valuetext={`${formatTime(current)} of ${formatTime(duration)}`}
                                 onChange={(event) => {
                                     const value = Number(event.target.value);
+
                                     if (audioRef.current)
                                         audioRef.current.currentTime = value;
+
                                     setCurrent(value);
                                 }}
                             />

@@ -44,6 +44,7 @@ export function EditorImportSheet({
 
     const handleClose: ComponentProps<typeof BottomSheet>['onClose'] = () => {
         setInterchangeOpen(null);
+
         setInterchangePreview(null);
     };
 
@@ -55,12 +56,20 @@ export function EditorImportSheet({
     >['aiAvailable'] =
         generationCapabilities.data?.importPairsGeneration.available === true;
 
+    function resolveErrorValue() {
+        if (interchangePreviewAction.error) {
+            return dictionaryErrorMessage(interchangePreviewAction.error, t);
+        }
+
+        if (interchangeImportAction.error) {
+            return dictionaryErrorMessage(interchangeImportAction.error, t);
+        }
+
+        return null;
+    }
+
     const errorValue: ComponentProps<typeof DictionaryImportPanel>['error'] =
-        interchangePreviewAction.error
-            ? dictionaryErrorMessage(interchangePreviewAction.error, t)
-            : interchangeImportAction.error
-              ? dictionaryErrorMessage(interchangeImportAction.error, t)
-              : null;
+        resolveErrorValue();
 
     const handleCommit: ComponentProps<
         typeof DictionaryImportPanel

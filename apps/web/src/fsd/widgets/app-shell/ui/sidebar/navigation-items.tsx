@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { Skeleton } from '@/fsd/shared/ui';
 
-import styles from './sidebar.module.css';
+import styles from './sidebar-common.module.css';
 
 export function NavigationLink({
     active,

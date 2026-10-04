@@ -24,14 +24,23 @@ export function SessionHeader({
     onEnd(): void;
 }) {
     const { t } = useI18n();
+
     const title = t('training.practiceTitle', { name: dictionaryTitle });
+
     const modeLabel = t(dialogMode ? 'training.fullscreen' : 'training.dialog');
-    const modeIcon = dialogMode ? (
-        <Maximize2 className='h-4 w-4' />
-    ) : (
-        <Minimize2 className='h-4 w-4' />
-    );
+
+    function resolveModeIcon() {
+        if (dialogMode) {
+            return <Maximize2 className='h-4 w-4' />;
+        }
+
+        return <Minimize2 className='h-4 w-4' />;
+    }
+
+    const modeIcon = resolveModeIcon();
+
     const onMode = dialogMode ? onFullscreen : onDialog;
+
     return (
         <header className='shrink-0 border-b border-border-default bg-background-surface px-4 pb-3 pt-4 md:px-6'>
             <div className='flex flex-wrap items-center gap-x-3 gap-y-2'>

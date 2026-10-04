@@ -15,11 +15,14 @@ export function VerifyEmailPage(props: {
     returnTo?: string | undefined;
 }) {
     const { href, t } = useI18n();
+
     const destination = safeReturnPath(props.returnTo);
+
     const signInTarget = preserveCapabilityReturnFragment(
         `/login?${new URLSearchParams({ returnTo: destination }).toString()}`,
         destination,
     );
+
     return (
         <AuthShell
             description={t('verify.intro')}

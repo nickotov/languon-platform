@@ -6,7 +6,9 @@ import {
     Volume2Icon,
 } from 'lucide-react';
 import styles from './ai-tutor-message.module.css';
+
 export type AiTutorMessageStatus = 'idle' | 'typing' | 'error';
+
 export interface AiTutorMessageProps {
     message?: string;
     tutorName?: string;
@@ -20,6 +22,7 @@ export interface AiTutorMessageProps {
     onRetry?: () => void;
     className?: string;
 }
+
 export function AiTutorMessage({
     message,
     tutorName = 'Tutor',
@@ -35,6 +38,37 @@ export function AiTutorMessage({
 }: AiTutorMessageProps) {
     const error = status === 'error',
         typing = status === 'typing';
+
+    function resolveAiTutorMessageContent() {
+        if (typing) {
+            return (
+                <span className={styles.typing} role='status'>
+                    <span className={styles.sr}>{tutorName} is typing</span>
+                    <i className={styles.typingDot} />
+                    <i className={styles.typingDot} />
+                    <i className={styles.typingDot} />
+                </span>
+            );
+        }
+
+        if (error) {
+            return (
+                <p className={styles.errorBody}>
+                    <AlertCircleIcon
+                        className={styles.errorIcon}
+                        aria-hidden='true'
+                    />
+                    {message ??
+                        "Couldn't reach your tutor. Check your connection and try again."}
+                </p>
+            );
+        }
+
+        return <p className={styles.message}>{message}</p>;
+    }
+
+    const resolvedAiTutorMessageContent = resolveAiTutorMessageContent();
+
     return (
         <article
             aria-label={`Message from ${tutorName}`}
@@ -60,27 +94,7 @@ export function AiTutorMessage({
                         .filter(Boolean)
                         .join(' ')}
                 >
-                    {typing ? (
-                        <span className={styles.typing} role='status'>
-                            <span className={styles.sr}>
-                                {tutorName} is typing
-                            </span>
-                            <i className={styles.typingDot} />
-                            <i className={styles.typingDot} />
-                            <i className={styles.typingDot} />
-                        </span>
-                    ) : error ? (
-                        <p className={styles.errorBody}>
-                            <AlertCircleIcon
-                                className={styles.errorIcon}
-                                aria-hidden='true'
-                            />
-                            {message ??
-                                "Couldn't reach your tutor. Check your connection and try again."}
-                        </p>
-                    ) : (
-                        <p className={styles.message}>{message}</p>
-                    )}
+                    {resolvedAiTutorMessageContent}
                     {!typing && !error && translationVisible && translation ? (
                         <p className={styles.translation}>{translation}</p>
                     ) : null}
@@ -116,6 +130,7 @@ export function AiTutorMessage({
         </article>
     );
 }
+
 function Action({
     children,
     onClick,

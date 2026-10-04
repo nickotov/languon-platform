@@ -34,8 +34,10 @@ export function AuthoringAiAssistance({
     generateAll(): void;
 }) {
     const { t } = useI18n();
+
     const legacyReview =
         ai.format === 'card-authoring:v1' && Boolean(ai.proposal);
+
     const disabled =
         !validSource ||
         !ai.available ||
@@ -43,15 +45,25 @@ export function AuthoringAiAssistance({
         locked ||
         ai.pending ||
         legacyReview;
+
     const loading = ai.pending && !active;
+
     const job = ai.job;
+
     const hasJob = job !== null && job !== undefined;
+
     const isActiveJob = active && hasJob;
+
     const isSourceMissing = !validSource;
+
     const isUnavailable = !ai.available;
+
     const isExpired = job?.state === 'expired';
+
     const hasError = Boolean(ai.error);
+
     const stageKey = authoringStageKey(job);
+
     const labels = {
         aiSection: t('dictionary.authoring.aiSection'),
         expired: t('dictionary.authoring.expired'),
@@ -62,10 +74,19 @@ export function AuthoringAiAssistance({
         stage: t(stageKey),
         unavailable: t('dictionary.authoring.unavailable'),
     };
-    const cancelLabel = job?.cancellationRequested
-        ? t('dictionary.authoring.cancelling')
-        : t('dictionary.authoring.cancel');
+
+    function resolveCancelLabel() {
+        if (job?.cancellationRequested) {
+            return t('dictionary.authoring.cancelling');
+        }
+
+        return t('dictionary.authoring.cancel');
+    }
+
+    const cancelLabel = resolveCancelLabel();
+
     const actionLabel = hasContent ? labels.regenerateAll : labels.generate;
+
     const regenerationIcon = hasContent ? (
         <RefreshCw aria-hidden size={16} />
     ) : undefined;

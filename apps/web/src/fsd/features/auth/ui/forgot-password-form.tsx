@@ -17,25 +17,35 @@ import styles from './auth-ui.module.css';
 
 export function ForgotPasswordForm() {
     const { href, t } = useI18n();
+
     const router = useRouter();
+
     const { capabilities } = useAuth();
+
     const [error, setError] = useLocaleSensitiveState<string | null>(null);
+
     const [pending, setPending] = useState(false);
 
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         setError(null);
+
         const parsed = ForgotPasswordRequestSchema.safeParse({
             email: new FormData(event.currentTarget).get('email'),
         });
+
         if (!parsed.success) {
             setError(t('forgot.invalidEmail'));
+
             return;
         }
 
         setPending(true);
+
         try {
             const response = await authApi.forgotPassword(parsed.data);
+
             router.push(
                 href(
                     `/reset-password?flowId=${encodeURIComponent(response.recovery.flowId)}`,

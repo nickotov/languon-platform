@@ -19,8 +19,11 @@ export type TabItem = {
     label: ReactNode;
     value?: string;
 };
+
 export type TabsVariant = 'segmented' | 'underline';
+
 export type TabsSize = 'md' | 'sm';
+
 export type TabsProps = {
     'aria-label'?: string;
     children?: (activeValue: string) => ReactNode;
@@ -58,42 +61,69 @@ export function Tabs({
             })),
         [items],
     );
+
     const firstEnabled = normalized.find((item) => !item.disabled)?.value ?? '';
+
     const [internalValue, setInternalValue] = useState(
         defaultValue ?? firstEnabled,
     );
+
     const activeValue = value ?? internalValue;
+
     const rootId = useId();
+
     const refs = useRef<Record<string, HTMLButtonElement | null>>({});
+
     const enabled = normalized
         .filter((item) => !item.disabled)
         .map((item) => item.value);
+
     const select = (next: string) => {
         if (value === undefined) setInternalValue(next);
+
         onValueChange?.(next);
     };
+
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         if (
             !['ArrowLeft', 'ArrowRight', 'End', 'Home'].includes(event.key) ||
             enabled.length === 0
         )
             return;
+
         event.preventDefault();
+
         const current = Math.max(0, enabled.indexOf(activeValue));
-        const next =
-            event.key === 'Home'
-                ? 0
-                : event.key === 'End'
-                  ? enabled.length - 1
-                  : event.key === 'ArrowRight'
-                    ? (current + 1) % enabled.length
-                    : (current - 1 + enabled.length) % enabled.length;
+
+        function resolveNext() {
+            if (event.key === 'Home') {
+                return 0 as const;
+            }
+
+            if (event.key === 'End') {
+                return enabled.length - 1;
+            }
+
+            if (event.key === 'ArrowRight') {
+                return (current + 1) % enabled.length;
+            }
+
+            return (current - 1 + enabled.length) % enabled.length;
+        }
+
+        const next = resolveNext();
+
         const nextValue = enabled[next];
+
         if (!nextValue) return;
+
         select(nextValue);
+
         refs.current[nextValue]?.focus();
     };
+
     const activeItem = normalized.find((item) => item.value === activeValue);
+
     return (
         <div className={[styles.root, className].filter(Boolean).join(' ')}>
             <div
@@ -111,6 +141,7 @@ export function Tabs({
             >
                 {normalized.map((item) => {
                     const active = item.value === activeValue;
+
                     return (
                         <button
                             aria-controls={`${rootId}-panel-${item.value}`}

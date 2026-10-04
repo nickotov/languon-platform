@@ -1,7 +1,7 @@
 import { type KeyboardEvent, useCallback } from 'react';
 
 import type { MenuItem } from './types';
-import styles from './menu.module.css';
+import styles from './menu-common.module.css';
 
 export function MenuItemButton({
     item,
@@ -25,6 +25,7 @@ export function MenuItemButton({
 
     function select() {
         item.onSelect();
+
         if (item.closeOnSelect !== false) onClose();
     }
 

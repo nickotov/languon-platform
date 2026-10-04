@@ -33,6 +33,7 @@ const languages = [
         tag: 'ar',
     },
 ] as LanguageCatalogEntry[];
+
 const values = {
     definition: 'A difference between similar ideas.',
     example: 'The curator draws a distinction between the periods.',
@@ -41,6 +42,7 @@ const values = {
     transcription: null,
     translation: 'تمييز',
 };
+
 const overrides = {
     definitionEnabled: null,
     definitionLanguage: null,
@@ -51,6 +53,7 @@ const overrides = {
     transcriptionEnabled: null,
     transcriptionNotation: null,
 } as const;
+
 const effectiveSettings = {
     definitionEnabled: true,
     definitionLanguage: 'source',
@@ -62,6 +65,7 @@ const effectiveSettings = {
     transcriptionEnabled: false,
     transcriptionNotation: 'ipa',
 } as const;
+
 const dictionary = {
     activeCardCount: 1,
     archivedAt: null,
@@ -94,6 +98,7 @@ const dictionary = {
     version: 3,
     visibility: 'private',
 } satisfies OwnedDictionary;
+
 const card = {
     archivedAt: null,
     authorship: 'human',
@@ -110,6 +115,7 @@ const card = {
     values,
     version: 4,
 } satisfies DictionaryCard;
+
 const baseJob = {
     cancellationRequested: false,
     cardId: card.id,
@@ -138,6 +144,7 @@ const baseJob = {
     targetLanguage: 'ar',
     updatedAt: '2026-08-21T10:02:00.000Z',
 } satisfies DictionarySingleCardGenerationJob;
+
 const reviewJob = {
     ...baseJob,
     expiresAt: '2026-08-28T10:02:00.000Z',
@@ -170,7 +177,9 @@ const meta = {
     ],
     title: 'Dictionary/Generation review',
 } satisfies Meta<typeof DictionaryGenerationPanel>;
+
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 const actions = {

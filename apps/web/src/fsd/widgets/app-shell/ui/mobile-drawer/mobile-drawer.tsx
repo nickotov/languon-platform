@@ -17,19 +17,26 @@ export function MobileDrawer({
     shell: AppShellState;
 }) {
     const { t } = useI18n();
+
     const dialogRef = useRef<HTMLDialogElement>(null);
 
     useEffect(() => {
         const dialog = dialogRef.current;
+
         if (!dialog) return;
+
         if (shell.drawerOpen && !dialog.open) dialog.showModal();
+
         if (!shell.drawerOpen && dialog.open) dialog.close();
     }, [shell.drawerOpen]);
 
     useEffect(() => {
         if (!shell.drawerOpen) return;
+
         const previousOverflow = document.body.style.overflow;
+
         document.body.style.overflow = 'hidden';
+
         return () => {
             document.body.style.overflow = previousOverflow;
         };
@@ -42,6 +49,7 @@ export function MobileDrawer({
             id='mobile-navigation-drawer'
             onCancel={(event) => {
                 event.preventDefault();
+
                 shell.closeDrawer();
             }}
             onClick={(event) => {

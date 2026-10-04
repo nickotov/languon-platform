@@ -20,7 +20,7 @@ import {
     limitCardFieldValue,
 } from '../../lib/card-field-limits';
 import { isFieldAffectedByGeneration } from '../../lib/affected-generation-fields';
-import styles from '../dictionary-card-form/dictionary-card-form.module.css';
+import styles from '../dictionary-card-form-common.module.css';
 
 export function AuthoringField({
     className,
@@ -38,58 +38,103 @@ export function AuthoringField({
     suggestions: AuthoringFieldSuggestions;
 }) {
     const { locale, t } = useI18n();
+
     const { effective, values, setValue } = content;
+
     const { ai } = suggestions;
-    const role =
-        field === 'translation'
-            ? 'target'
-            : field === 'definition'
-              ? effective.definitionLanguage
-              : field === 'example'
-                ? effective.exampleLanguage
-                : field === 'exampleTranslation'
-                  ? effective.exampleTranslationLanguage
-                  : 'source';
+
+    function resolveRole() {
+        if (field === 'translation') {
+            return 'target' as const;
+        }
+
+        if (field === 'definition') {
+            return effective.definitionLanguage;
+        }
+
+        if (field === 'example') {
+            return effective.exampleLanguage;
+        }
+
+        if (field === 'exampleTranslation') {
+            return effective.exampleTranslationLanguage;
+        }
+
+        return 'source' as const;
+    }
+
+    const role = resolveRole();
 
     const language = languageForRole(
         role,
         dictionary.sourceLanguage,
         dictionary.targetLanguage,
     );
+
     const direction = languageDirection(languages, language);
+
     const languageName = languageLabel(languages, language, locale);
-    const notation =
-        effective.transcriptionNotation === 'custom'
-            ? effective.transcriptionCustomLabel ||
-              t('dictionary.notation.custom')
-            : t(`dictionary.notation.${effective.transcriptionNotation}`);
-    const fieldName =
-        field === 'source'
-            ? t('dictionary.authoring.sourceLabel')
-            : t(`dictionary.field.${field}`);
+
+    function resolveNotation() {
+        if (effective.transcriptionNotation === 'custom') {
+            return (
+                effective.transcriptionCustomLabel ||
+                t('dictionary.notation.custom')
+            );
+        }
+
+        return t(`dictionary.notation.${effective.transcriptionNotation}`);
+    }
+
+    const notation = resolveNotation();
+
+    function resolveFieldName() {
+        if (field === 'source') {
+            return t('dictionary.authoring.sourceLabel');
+        }
+
+        return t(`dictionary.field.${field}`);
+    }
+
+    const fieldName = resolveFieldName();
+
     const actionFieldName =
         field === 'source'
             ? t('dictionary.authoring.sourceActionName')
             : fieldName;
-    const label =
-        field === 'transcription'
-            ? `${t('dictionary.field.transcription')} (${notation})`
-            : `${fieldName} (${languageName})`;
+
+    function resolveLabel() {
+        if (field === 'transcription') {
+            return `${t('dictionary.field.transcription')} (${notation})`;
+        }
+
+        return `${fieldName} (${languageName})`;
+    }
+
+    const label = resolveLabel();
 
     const value = values[field] ?? '';
+
     const maxLength = cardFieldLimit(field);
+
     const inputLimit = maxLength * 2;
+
     const length = Array.from(value).length;
+
     const error =
         length > maxLength
             ? t('dictionary.card.tooLong', { count: maxLength })
             : '';
+
     const multiline =
         field === 'definition' ||
         field === 'example' ||
         field === 'exampleTranslation';
+
     const required = field === 'source' || field === 'translation';
+
     const count = `${length} / ${maxLength}`;
+
     const isGenerating =
         suggestions.active &&
         isFieldAffectedByGeneration(
@@ -98,8 +143,10 @@ export function AuthoringField({
             effective,
             ai?.format,
         );
+
     const exampleMissing =
         field === 'exampleTranslation' && !values.example?.trim();
+
     const generationDisabled =
         !ai?.available ||
         !suggestions.canGenerate ||
@@ -108,26 +155,40 @@ export function AuthoringField({
         Boolean(ai?.pending) ||
         (Boolean(ai?.proposal) && ai?.format === 'card-authoring:v1') ||
         exampleMissing;
+
     const generatedSourceUnchanged =
         field === 'source' &&
         ai?.proposal?.source === values.source.trim() &&
         ai.proposal.sourceResult?.kind === 'unchanged';
+
     const fieldHint = exampleMissing
         ? t('dictionary.authoring.exampleRequired')
         : undefined;
+
     const hasValue = Boolean(value.trim());
-    const actionKey = hasValue
-        ? 'dictionary.authoring.regenerateFieldNamed'
-        : 'dictionary.authoring.generateFieldNamed';
+
+    function resolveActionKey() {
+        if (hasValue) {
+            return 'dictionary.authoring.regenerateFieldNamed' as const;
+        }
+
+        return 'dictionary.authoring.generateFieldNamed' as const;
+    }
+
+    const actionKey = resolveActionKey();
+
     const generateLabel = t(actionKey, {
         field: actionFieldName,
     });
+
     const actionLabel = hasValue
         ? t('dictionary.authoring.regenerateField')
         : t('dictionary.authoring.generateField');
+
     const regenerationIcon = hasValue ? (
         <RefreshCw aria-hidden size={14} />
     ) : undefined;
+
     const sourceSuccess = generatedSourceUnchanged
         ? t('dictionary.authoring.sourceUnchanged')
         : undefined;
@@ -136,6 +197,7 @@ export function AuthoringField({
         event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) {
         const next = limitCardFieldValue(field, event.currentTarget.value);
+
         setValue(field, required ? next : next || null);
     }
 
@@ -157,6 +219,7 @@ export function AuthoringField({
     );
 
     let control = input;
+
     if (isGenerating) {
         control = (
             <FieldProgress

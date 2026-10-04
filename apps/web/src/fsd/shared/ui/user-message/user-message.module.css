@@ -8,6 +8,7 @@
     position: absolute;
     width: 1px;
 }
+
 .root {
     align-items: flex-end;
     display: flex;
@@ -15,6 +16,7 @@
     gap: 4px;
     width: 100%;
 }
+
 .bubble {
     background: var(--user-message-bg);
     border: 1px solid var(--border-default);
@@ -26,18 +28,22 @@
     max-width: 85%;
     padding: 10px 16px;
 }
+
 .message {
     margin: 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
+
 .error {
     background: var(--danger-subtle);
     border-color: var(--danger-200);
 }
+
 .sending {
     opacity: 0.7;
 }
+
 .translation {
     border-top: 1px solid var(--border-default);
     color: var(--text-tertiary);
@@ -46,6 +52,7 @@
     margin-top: 6px !important;
     padding-top: 6px;
 }
+
 .meta {
     align-items: center;
     color: var(--text-tertiary);
@@ -54,13 +61,16 @@
     gap: 6px;
     padding-right: 4px;
 }
+
 .statusIcon {
     height: 14px;
     width: 14px;
 }
+
 .errorIcon {
     color: var(--danger-default) !important;
 }
+
 .retry {
     align-items: center;
     background: transparent;
@@ -73,16 +83,20 @@
     gap: 4px;
     padding: 2px 6px;
 }
+
 .retry:hover {
     background: var(--danger-subtle);
 }
+
 .retry:focus-visible {
     outline: 2px solid var(--border-focus);
 }
+
 .retryIcon {
     height: 12px;
     width: 12px;
 }
+
 @media (min-width: 640px) {
     .bubble {
         max-width: 70%;

@@ -1,14 +1,17 @@
 .root {
     width: 100%;
 }
+
 .list {
     display: flex;
     gap: 4px;
 }
+
 .underline {
     align-items: flex-end;
     border-bottom: 1px solid var(--neutral-200);
 }
+
 .segmented {
     align-items: center;
     background: var(--neutral-100);
@@ -16,9 +19,11 @@
     display: inline-flex;
     padding: 4px;
 }
+
 .fullWidth {
     width: 100%;
 }
+
 .tab {
     align-items: center;
     background: transparent;
@@ -31,50 +36,62 @@
     justify-content: center;
     white-space: nowrap;
 }
+
 .sm {
     font-size: 14px;
     padding: 6px 12px;
 }
+
 .md {
     font-size: 16px;
     padding: 10px 16px;
 }
+
 :where(.fullWidth) .tab {
     flex: 1;
 }
+
 :where(.underline) .tab {
     border-bottom: 2px solid transparent;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     margin-bottom: -1px;
 }
+
 :where(.underline) .active {
     border-color: var(--neutral-900);
     color: var(--neutral-900);
 }
+
 :where(.segmented) .tab {
     border-radius: var(--radius-sm);
     color: var(--neutral-600);
 }
+
 :where(.segmented) .active {
     background: var(--background-surface);
     box-shadow: var(--elevation-sm);
     color: var(--neutral-900);
 }
+
 .tab:hover:not(:disabled) {
     color: var(--neutral-900);
 }
+
 .tab:focus-visible,
 .panel:focus-visible {
     outline: 2px solid var(--neutral-900);
     outline-offset: 2px;
 }
+
 .tab:disabled {
     cursor: not-allowed;
     opacity: 0.4;
 }
+
 .icon {
     display: inline-flex;
 }
+
 .badge {
     background: var(--neutral-200);
     border-radius: 999px;
@@ -83,10 +100,12 @@
     min-width: 20px;
     padding: 2px 6px;
 }
+
 :where(.active) .badge {
     background: var(--neutral-900);
     color: white;
 }
+
 .panel {
     margin-top: 16px;
 }

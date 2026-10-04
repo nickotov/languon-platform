@@ -1,6 +1,7 @@
 .root {
     display: inline-flex;
 }
+
 .tooltip {
     background: var(--background-surface-dark);
     border: 0;
@@ -16,6 +17,7 @@
     z-index: 50;
     box-shadow: var(--elevation-md);
 }
+
 .arrow {
     background: var(--background-surface-dark);
     height: 8px;

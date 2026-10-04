@@ -1,5 +1,6 @@
 import type { HTMLAttributes } from 'react';
 import styles from './text.module.css';
+
 export function Text({
     className,
     ...props

@@ -81,12 +81,15 @@ const meta = {
 } satisfies Meta<typeof DictionaryImportPanel>;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const Input: Story = {};
+
 export const MobileInput: Story = {
     parameters: { viewport: { defaultViewport: 'mobile1' } },
 };
+
 export const UnavailableAi: Story = {
     args: { aiAvailable: false },
 };

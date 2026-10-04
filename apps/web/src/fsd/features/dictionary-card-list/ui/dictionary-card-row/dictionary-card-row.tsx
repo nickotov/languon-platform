@@ -14,9 +14,10 @@ import {
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Badge, Card, Checkbox, Menu } from '@/fsd/shared/ui';
+import type { ReactNode } from 'react';
 import type { DictionaryCardRowProps } from '../../types';
 import { OptionalFields } from '../optional-fields/optional-fields';
-import styles from '../dictionary-card-list/dictionary-card-list.module.css';
+import styles from '../dictionary-card-list-common.module.css';
 
 export function DictionaryCardRow({
     card,
@@ -33,52 +34,77 @@ export function DictionaryCardRow({
     deletion,
 }: DictionaryCardRowProps) {
     const { t } = useI18n();
+
     const sourceDirection = languageDirection(
         languages,
         dictionary.sourceLanguage,
     );
+
     const targetDirection = languageDirection(
         languages,
         dictionary.targetLanguage,
     );
+
     const sourceAudio = renderAudio?.(card, 'source');
+
     const translationAudio = renderAudio?.(card, 'translation');
+
     const hasOverrides = Object.values(card.overrides ?? {}).some(
         (value) => value !== null && value !== 'inherit',
     );
+
     const inheritanceLabel = t(
         hasOverrides
             ? 'dictionary.cards.overrides'
             : 'dictionary.cards.defaults',
     );
+
     const authorshipLabel = t(authorshipMessageKey(card.authorship));
-    const authorshipIcon =
-        card.authorship === 'human' ? (
-            <User aria-hidden size={14} />
-        ) : card.authorship === 'ai-generated' ? (
-            <Sparkles aria-hidden size={14} />
-        ) : (
-            <Users aria-hidden size={14} />
-        );
-    const authorshipTone = card.authorship === 'human' ? 'neutral' : 'info';
-    const inheritanceTone = hasOverrides ? 'warning' : 'neutral';
+
+    let authorshipIcon: ReactNode = <Users aria-hidden size={14} />;
+
+    let authorshipTone: 'neutral' | 'info' = 'info';
+
+    let inheritanceTone: 'warning' | 'neutral' = 'neutral';
+
+    if (card.authorship === 'human') {
+        authorshipIcon = <User aria-hidden size={14} />;
+
+        authorshipTone = 'neutral';
+    } else if (card.authorship === 'ai-generated') {
+        authorshipIcon = <Sparkles aria-hidden size={14} />;
+    }
+
+    if (hasOverrides) {
+        inheritanceTone = 'warning';
+    }
+
+    const showTranscription =
+        card.effectiveSettings.transcriptionEnabled &&
+        Boolean(card.values.transcription);
 
     const menuLabel = t('dictionary.cards.actions', { position: index + 1 });
+
     const editingDisabled = pending || lifecycle === 'archived';
+
     const archived = lifecycle === 'archived';
 
     function edit() {
         onEdit(card);
     }
+
     function generate() {
         onGenerate?.(card);
     }
+
     function changeLifecycle() {
         onLifecycle(card);
     }
+
     function toggleSelection() {
         deletion?.toggle(card.id);
     }
+
     function deleteCard() {
         deletion?.openSelected(card);
     }
@@ -90,41 +116,48 @@ export function DictionaryCardRow({
             onSelect: edit,
             icon: <Pencil size={16} />,
         },
-        ...(onGenerate
-            ? [
-                  {
-                      disabled: editingDisabled,
-                      label: t(
-                          generationAvailable
-                              ? 'dictionary.cards.regenerate'
-                              : 'dictionary.generation.openReview',
-                      ),
-                      onSelect: generate,
-                      icon: <Sparkles size={16} />,
-                  },
-              ]
-            : []),
-        {
-            disabled: pending,
-            label: t(
-                archived
-                    ? 'dictionary.cards.restore'
-                    : 'dictionary.cards.archive',
-            ),
-            onSelect: changeLifecycle,
-            icon: archived ? <RotateCcw size={16} /> : <Archive size={16} />,
-        },
-        ...(archived && deletion
-            ? [
-                  {
-                      disabled: pending || deletion.remove.isPending,
-                      label: t('dictionary.deletion.deletePermanently'),
-                      onSelect: deleteCard,
-                      icon: <Trash2 size={16} />,
-                  },
-              ]
-            : []),
     ];
+
+    if (onGenerate) {
+        let generateLabel = t('dictionary.generation.openReview');
+
+        if (generationAvailable) {
+            generateLabel = t('dictionary.cards.regenerate');
+        }
+
+        items.push({
+            disabled: editingDisabled,
+            label: generateLabel,
+            onSelect: generate,
+            icon: <Sparkles size={16} />,
+        });
+    }
+
+    let lifecycleLabel = t('dictionary.cards.archive');
+
+    let lifecycleIcon = <Archive size={16} />;
+
+    if (archived) {
+        lifecycleLabel = t('dictionary.cards.restore');
+
+        lifecycleIcon = <RotateCcw size={16} />;
+    }
+
+    items.push({
+        disabled: pending,
+        label: lifecycleLabel,
+        onSelect: changeLifecycle,
+        icon: lifecycleIcon,
+    });
+
+    if (archived && deletion) {
+        items.push({
+            disabled: pending || deletion.remove.isPending,
+            label: t('dictionary.deletion.deletePermanently'),
+            onSelect: deleteCard,
+            icon: <Trash2 size={16} />,
+        });
+    }
 
     return (
         <li>
@@ -141,16 +174,27 @@ export function DictionaryCardRow({
                         />
                     ) : null}
                     <div className={styles.pair}>
-                        <strong
-                            className={styles.pairValue}
+                        <div
+                            className={styles.source}
                             dir={sourceDirection}
                             lang={dictionary.sourceLanguage}
                         >
-                            <span className={styles.pairText}>
-                                {card.values.source}
-                            </span>
-                            {sourceAudio}
-                        </strong>
+                            <strong
+                                className={styles.pairValue}
+                                dir={sourceDirection}
+                                lang={dictionary.sourceLanguage}
+                            >
+                                <span className={styles.pairText}>
+                                    {card.values.source}
+                                </span>
+                                {sourceAudio}
+                            </strong>
+                            {showTranscription && (
+                                <span className={styles.transcription}>
+                                    ({card.values.transcription})
+                                </span>
+                            )}
+                        </div>
                         <strong
                             className={`${styles.pairValue} ${styles.translation}`}
                             dir={targetDirection}

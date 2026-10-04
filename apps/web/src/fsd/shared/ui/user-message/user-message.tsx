@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import styles from './user-message.module.css';
+
 export type UserMessageStatus = 'sending' | 'sent' | 'error';
+
 export interface UserMessageProps {
     children?: ReactNode;
     text?: string;
@@ -16,7 +18,9 @@ export interface UserMessageProps {
     onRetry?: () => void;
     className?: string;
 }
+
 const labels = { sending: 'Sending', sent: 'Sent', error: 'Not delivered' };
+
 export function UserMessage({
     children,
     text,
@@ -26,12 +30,20 @@ export function UserMessage({
     onRetry,
     className,
 }: UserMessageProps) {
-    const Icon =
-        status === 'sending'
-            ? ClockIcon
-            : status === 'sent'
-              ? CheckIcon
-              : AlertCircleIcon;
+    function resolveIcon() {
+        if (status === 'sending') {
+            return ClockIcon;
+        }
+
+        if (status === 'sent') {
+            return CheckIcon;
+        }
+
+        return AlertCircleIcon;
+    }
+
+    const Icon = resolveIcon();
+
     return (
         <div
             role='listitem'

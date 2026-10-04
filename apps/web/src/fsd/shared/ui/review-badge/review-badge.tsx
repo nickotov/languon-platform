@@ -5,8 +5,11 @@ import {
     ClockIcon,
 } from 'lucide-react';
 import styles from './review-badge.module.css';
+
 export type ReviewBadgeStatus = 'due' | 'overdue' | 'upcoming' | 'mastered';
+
 export type ReviewBadgeSize = 'sm' | 'md';
+
 export interface ReviewBadgeProps {
     status?: ReviewBadgeStatus;
     label?: string;
@@ -16,12 +19,14 @@ export interface ReviewBadgeProps {
     onClick?: () => void;
     className?: string;
 }
+
 const data = {
     due: { label: 'Due for review', Icon: ClockIcon },
     overdue: { label: 'Overdue', Icon: AlertCircleIcon },
     upcoming: { label: 'Upcoming', Icon: CalendarClockIcon },
     mastered: { label: 'Mastered', Icon: CheckCircle2Icon },
 };
+
 export function ReviewBadge({
     status = 'due',
     label,
@@ -32,6 +37,7 @@ export function ReviewBadge({
     className,
 }: ReviewBadgeProps) {
     const { Icon, label: defaultLabel } = data[status];
+
     const content = (
         <>
             {!hideIcon ? (
@@ -43,6 +49,7 @@ export function ReviewBadge({
             ) : null}
         </>
     );
+
     const cn = [
         styles.root,
         styles[status],
@@ -52,11 +59,14 @@ export function ReviewBadge({
     ]
         .filter(Boolean)
         .join(' ');
-    return onClick ? (
-        <button type='button' onClick={onClick} className={cn}>
-            {content}
-        </button>
-    ) : (
-        <span className={cn}>{content}</span>
-    );
+
+    if (onClick) {
+        return (
+            <button type='button' onClick={onClick} className={cn}>
+                {content}
+            </button>
+        );
+    }
+
+    return <span className={cn}>{content}</span>;
 }

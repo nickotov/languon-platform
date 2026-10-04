@@ -8,6 +8,7 @@ export function LoginPage(props: {
     returnTo?: string | undefined;
 }) {
     const { t } = useI18n();
+
     return (
         <AuthShell
             description={t('login.intro')}

@@ -8,11 +8,13 @@ import type { GenerationReviewProps } from '../../model/generation-review';
 import { ReviewFields } from '../review-field/review-fields';
 import { ReviewFooter } from '../review-footer/review-footer';
 import { ReviewStatus } from '../review-status/review-status';
-import styles from './dictionary-generation-panel.module.css';
+import styles from '../dictionary-generation-panel-common.module.css';
 
 export function DictionaryGenerationPanel(props: GenerationReviewProps) {
     const { t } = useI18n();
+
     const state = useGenerationReview(props);
+
     const {
         available,
         card,
@@ -27,21 +29,37 @@ export function DictionaryGenerationPanel(props: GenerationReviewProps) {
     } = props;
 
     const dialogClassName = styles.dialog ?? '';
+
     const title = t('dictionary.generation.title');
+
     const closeLabel = t('dictionary.generation.close');
+
     const instructionLabel = t('dictionary.generation.instruction');
+
     const instructionHint = t('dictionary.generation.instructionHint');
+
     const source = card?.values.source ?? job?.originalSnapshot?.values.source;
+
     const description = source
         ? `${source} · ${dictionary.name}`
         : dictionary.name;
-    const busyLabel =
-        job?.state === 'queued'
-            ? t('dictionary.generation.phase.queued')
-            : t('dictionary.generation.phase.running');
+
+    function resolveBusyLabel() {
+        if (job?.state === 'queued') {
+            return t('dictionary.generation.phase.queued');
+        }
+
+        return t('dictionary.generation.phase.running');
+    }
+
+    const busyLabel = resolveBusyLabel();
+
     const unchangedLabel = t('dictionary.generation.progressUnchanged');
+
     const cancellationRequested = job?.cancellationRequested ?? false;
+
     const dismissible = !pendingAction;
+
     const footer = (
         <ReviewFooter
             cancellationRequested={cancellationRequested}

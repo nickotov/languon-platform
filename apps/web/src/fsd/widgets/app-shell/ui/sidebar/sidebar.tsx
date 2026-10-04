@@ -10,7 +10,7 @@ import type { AppShellState } from '../../hooks/use-app-shell-state';
 import type { NavigationVariant } from '../../types';
 import { AccountArea } from '../account-area/account-area';
 import { DictionariesNavigation } from './dictionaries-navigation';
-import styles from './sidebar.module.css';
+import styles from './sidebar-common.module.css';
 
 type Props = {
     navigation: DictionaryNavigationState;
@@ -28,8 +28,41 @@ export function Sidebar({
     variant,
 }: Props) {
     const { href, t } = useI18n();
+
     const rail = variant === 'rail';
+
     const drawer = variant === 'drawer';
+
+    function resolveSidebarContent() {
+        if (rail) {
+            return null;
+        }
+
+        if (drawer) {
+            return (
+                <IconButton
+                    className={styles.touchButton}
+                    icon={<X />}
+                    label={t('shell.closeNavigation')}
+                    onClick={onClose}
+                    showTooltip={false}
+                    variant='ghost'
+                />
+            );
+        }
+
+        return (
+            <IconButton
+                icon={<PanelLeftClose />}
+                label={t('shell.collapseSidebar')}
+                onClick={shell.toggleRail}
+                tooltipPlacement='bottom'
+                variant='ghost'
+            />
+        );
+    }
+
+    const resolvedSidebarContent = resolveSidebarContent();
 
     return (
         <div className={styles.sidebarContent}>
@@ -39,24 +72,7 @@ export function Sidebar({
                     label={t('auth.brandHome')}
                     monogram={rail}
                 />
-                {rail ? null : drawer ? (
-                    <IconButton
-                        className={styles.touchButton}
-                        icon={<X />}
-                        label={t('shell.closeNavigation')}
-                        onClick={onClose}
-                        showTooltip={false}
-                        variant='ghost'
-                    />
-                ) : (
-                    <IconButton
-                        icon={<PanelLeftClose />}
-                        label={t('shell.collapseSidebar')}
-                        onClick={shell.toggleRail}
-                        tooltipPlacement='bottom'
-                        variant='ghost'
-                    />
-                )}
+                {resolvedSidebarContent}
             </div>
             <nav
                 aria-label={t('shell.mainNavigation')}

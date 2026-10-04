@@ -26,31 +26,58 @@ export function PracticeContent({
     contentClassName: string;
 }) {
     const { t } = useI18n();
+
     const { state } = session;
+
     const cardPhase = state.phase === 'card';
+
     const classes = `mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 pt-6 md:px-6 md:pt-8 ${contentClassName} ${cardPhase ? 'h-full' : 'min-h-full'}`;
+
     const blocked = Boolean(
         state.pending || state.conflict || !session.currentItem,
     );
-    const saving =
-        state.pending?.kind === 'rate' && state.pending.status === 'saving'
-            ? state.pending.rating
-            : undefined;
+
+    function resolveSaving() {
+        if (
+            state.pending?.kind === 'rate' &&
+            state.pending.status === 'saving'
+        ) {
+            return state.pending.rating;
+        }
+
+        return undefined;
+    }
+
+    const saving = resolveSaving();
+
     const position = `${state.index + 1} / ${state.queue.length}`;
-    const undo =
-        state.lastAck && !state.pending ? (
-            <Button
-                variant='ghost'
-                leadingIcon={<Undo2 className='h-4 w-4' />}
-                onClick={session.undo}
-            >
-                {t('training.undo')}
-            </Button>
-        ) : state.pending?.kind === 'undo' ? (
-            <Button variant='ghost' loading disabled>
-                {t('training.undoing')}
-            </Button>
-        ) : null;
+
+    function resolveUndo() {
+        if (state.lastAck && !state.pending) {
+            return (
+                <Button
+                    variant='ghost'
+                    leadingIcon={<Undo2 className='h-4 w-4' />}
+                    onClick={session.undo}
+                >
+                    {t('training.undo')}
+                </Button>
+            );
+        }
+
+        if (state.pending?.kind === 'undo') {
+            return (
+                <Button variant='ghost' loading disabled>
+                    {t('training.undoing')}
+                </Button>
+            );
+        }
+
+        return null;
+    }
+
+    const undo = resolveUndo();
+
     const flipDisabled = Boolean(state.pending);
 
     return (
@@ -200,9 +227,11 @@ function SkipNotice({
     onDismiss(index: number): void;
 }) {
     const { t } = useI18n();
+
     function dismiss() {
         onDismiss(index);
     }
+
     return (
         <InlineAlert
             title={t('training.cardSkipped')}
@@ -216,6 +245,7 @@ function SkipNotice({
 
 function CardSkeleton() {
     const { t } = useI18n();
+
     return (
         <div className='flex flex-col gap-3'>
             <div className='rounded-3xl border border-border-default bg-background-surface p-6 shadow-elevation-sm'>

@@ -23,7 +23,7 @@ import { EditorSettingsSheet } from '../editor-settings-sheet/editor-settings-sh
 import { EditorSharingSheet } from '../editor-sharing-sheet/editor-sharing-sheet';
 import { EditorSummary } from '../editor-summary/editor-summary';
 import { EditorToolbar } from '../editor-toolbar/editor-toolbar';
-import styles from './dictionary-editor.module.css';
+import styles from '../dictionary-editor-common.module.css';
 
 export function DictionaryEditor({
     dictionaryId,
@@ -36,11 +36,15 @@ export function DictionaryEditor({
         dictionaryId,
         requestWithSession,
     );
+
     const learnerId = useSessionStore((state) => state.user?.id);
+
     const sessionStatus = useSessionStore((state) => state.status);
 
     const { dictionary, languages, cards } = model.queries;
+
     const { t, href } = model.state;
+
     const loadErrorModel = { dictionary, languages, cards, t, href };
 
     const loadError =
@@ -62,9 +66,13 @@ export function DictionaryEditor({
     const view = createEditorView(model);
 
     const { active } = view;
+
     const current = dictionary.data.dictionary;
+
     const catalog = languages.data.languages;
+
     const target = { kind: 'owner' as const, dictionaryId };
+
     const sourceLanguage = {
         code: current.sourceLanguage,
         name: languageLabel(
@@ -74,6 +82,7 @@ export function DictionaryEditor({
         ),
         direction: languageDirection(catalog, current.sourceLanguage),
     };
+
     const targetLanguage = {
         code: current.targetLanguage,
         name: languageLabel(
@@ -83,7 +92,9 @@ export function DictionaryEditor({
         ),
         direction: languageDirection(catalog, current.targetLanguage),
     };
+
     const trainingIdentity = `${learnerId ?? 'anonymous'}:owner:${dictionaryId}`;
+
     const signedIn = sessionStatus === 'authenticated';
 
     return (

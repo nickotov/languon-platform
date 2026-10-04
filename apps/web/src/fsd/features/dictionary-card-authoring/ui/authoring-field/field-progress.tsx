@@ -1,5 +1,5 @@
 import { Spinner } from '@/fsd/shared/ui';
-import styles from '../dictionary-card-form/dictionary-card-form.module.css';
+import styles from '../dictionary-card-form-common.module.css';
 
 export function FieldProgress({
     'aria-describedby': ariaDescribedBy,

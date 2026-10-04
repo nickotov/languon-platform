@@ -17,19 +17,24 @@ export function AuthenticatedDictionaryBoundary({
     returnTo: string;
 }) {
     const { href } = useI18n();
+
     const router = useRouter();
+
     const status = useSessionStore((state) => state.status);
 
     useEffect(() => {
         if (status !== 'signed-out') return;
+
         router.replace(
             href(`/login?${new URLSearchParams({ returnTo }).toString()}`),
         );
     }, [href, returnTo, router, status]);
 
-    return status === 'authenticated' ? (
-        children
-    ) : (
+    if (status === 'authenticated') {
+        return children;
+    }
+
+    return (
         <main>
             <LoadingState>{loadingMessage}</LoadingState>
         </main>

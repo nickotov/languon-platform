@@ -1,6 +1,7 @@
 .root {
     display: inline-flex;
 }
+
 .trigger {
     background: transparent;
     border: 0;
@@ -9,6 +10,7 @@
     font: inherit;
     min-height: 44px;
 }
+
 .content {
     background: var(--background-surface);
     border: 1px solid var(--neutral-200);
@@ -21,6 +23,7 @@
     padding: 6px;
     z-index: 50;
 }
+
 .arrow {
     background: var(--background-surface);
     border: solid var(--neutral-200);
@@ -32,6 +35,7 @@
     transform: rotate(45deg);
     width: 8px;
 }
+
 .header {
     color: var(--neutral-500);
     font-size: 11px;
@@ -40,6 +44,7 @@
     padding: 4px 10px 6px;
     text-transform: uppercase;
 }
+
 .item {
     align-items: center;
     background: transparent;
@@ -57,26 +62,32 @@
     transition: background-color var(--duration-fast);
     width: 100%;
 }
+
 .item:hover:not(:disabled) {
     background: var(--neutral-100);
 }
+
 .item:focus-visible {
     outline: 2px solid var(--neutral-900);
     outline-offset: 1px;
 }
+
 .item:disabled {
     opacity: 0.5;
     pointer-events: none;
 }
+
 .selected {
     color: var(--neutral-900);
     font-weight: 500;
 }
+
 .itemLabel {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .separator {
     background: var(--neutral-200);
     height: 1px;

@@ -9,6 +9,7 @@ import {
 import styles from './switch.module.css';
 
 export type SwitchSize = 'lg' | 'md' | 'sm';
+
 export type SwitchProps = Omit<
     InputHTMLAttributes<HTMLInputElement>,
     'size' | 'type'
@@ -36,16 +37,25 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     ref,
 ) {
     const generatedId = useId();
+
     const switchId = id ?? `switch-${generatedId}`;
+
     const descriptionId = description ? `${switchId}-description` : undefined;
+
     const visibleLabel = label ?? children;
+
     const hasVisibleLabel = Boolean(visibleLabel);
+
     const hasDescription = Boolean(description);
+
     const hasCopy = hasVisibleLabel || hasDescription;
+
     const describedBy = [props['aria-describedby'], descriptionId]
         .filter(Boolean)
         .join(' ');
+
     const accessibleDescription = describedBy || undefined;
+
     const rootClassName = [
         styles.root,
         styles[size],
@@ -57,6 +67,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
 
     function handleChange(event: ChangeEvent<HTMLInputElement>) {
         onChange?.(event);
+
         onCheckedChange?.(event.currentTarget.checked);
     }
 

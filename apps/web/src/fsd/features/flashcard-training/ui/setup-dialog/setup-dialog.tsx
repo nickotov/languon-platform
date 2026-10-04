@@ -44,18 +44,29 @@ export function SetupDialog({
     signedIn: boolean;
 }) {
     const { t } = useI18n();
+
     const setup = useFlashcardSetup({ open, signedIn, activeCount, api });
+
     const scopeId = useId();
+
     const summaryId = useId();
+
     const scopeDisabled = setup.starting || activeCount === 0;
+
     const orderValue = setup.shuffle ? 'shuffle' : 'dictionary';
+
     const description = `${dictionaryTitle} · ${sourceLanguage.name} → ${targetLanguage.name}`;
+
     const allLabel = t('training.all', { count: activeCount });
+
     const startLabel = t(
         setup.starting ? 'training.preparing' : 'training.start',
     );
+
     const remembered = t(signedIn ? 'training.remember' : 'training.signIn');
+
     let blocked: string | undefined;
+
     if (!activeCount) blocked = t('training.emptyHelp');
     else if (setup.frontError || setup.backError)
         blocked = t('training.chooseField');
@@ -64,24 +75,33 @@ export function SetupDialog({
     function handleClose() {
         if (!setup.starting) onClose();
     }
+
     async function handleStart() {
         if (!setup.canStart) return;
+
         const fullscreen = requestTrainingFullscreen();
+
         const payload = await setup.start();
+
         if (!payload) {
             void fullscreen.then((granted) => {
                 if (granted) exitTrainingFullscreen();
             });
+
             return;
         }
+
         onStart(payload, fullscreen);
     }
+
     function handleOrder(value: string) {
         setup.setShuffle(value === 'shuffle');
     }
+
     function handleScope(value: string) {
         setup.setScopeType(value === 'manual' ? 'manual' : 'all');
     }
+
     const footer = (
         <DialogActions align='between' className='flex-wrap gap-2'>
             <Button

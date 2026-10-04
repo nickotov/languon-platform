@@ -14,28 +14,51 @@ export function ConflictNotice({
     onDismiss(): void;
 }) {
     const { t } = useI18n();
-    const title = t(
-        kind === 'content'
-            ? 'training.contentConflict'
-            : kind === 'operation'
-              ? 'training.operationConflict'
-              : 'training.undoConflict',
-    );
-    const body = t(
-        kind === 'content'
-            ? 'training.contentConflictHelp'
-            : kind === 'operation'
-              ? 'training.operationConflictHelp'
-              : 'training.undoConflictHelp',
-    );
+
+    function resolveTitle() {
+        if (kind === 'content') {
+            return 'training.contentConflict' as const;
+        }
+
+        if (kind === 'operation') {
+            return 'training.operationConflict' as const;
+        }
+
+        return 'training.undoConflict' as const;
+    }
+
+    const title = t(resolveTitle());
+
+    function resolveBody() {
+        if (kind === 'content') {
+            return 'training.contentConflictHelp' as const;
+        }
+
+        if (kind === 'operation') {
+            return 'training.operationConflictHelp' as const;
+        }
+
+        return 'training.undoConflictHelp' as const;
+    }
+
+    const body = t(resolveBody());
+
     const action = kind === 'content' ? onReload : onDismiss;
-    const label = t(
-        kind === 'content'
-            ? 'training.loadUpdated'
-            : kind === 'operation'
-              ? 'training.rateAgain'
-              : 'training.ok',
-    );
+
+    function resolveLabel() {
+        if (kind === 'content') {
+            return 'training.loadUpdated' as const;
+        }
+
+        if (kind === 'operation') {
+            return 'training.rateAgain' as const;
+        }
+
+        return 'training.ok' as const;
+    }
+
+    const label = t(resolveLabel());
+
     return (
         <InlineAlert
             tone='warning'

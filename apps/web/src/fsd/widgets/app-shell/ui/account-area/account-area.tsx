@@ -39,11 +39,17 @@ export function AccountArea({
     variant,
 }: Props) {
     const { t } = useI18n();
+
     const user = useSessionStore((state) => state.user);
+
     const rail = variant === 'rail';
+
     const drawer = variant === 'drawer';
+
     const handle = user?.handle ? `@${user.handle}` : t('profile.account');
+
     const email = user?.primaryEmail ?? '';
+
     const label = `${t('shell.accountMenu')}, ${handle}`;
 
     const trigger = (
@@ -110,16 +116,21 @@ function AccountMenuContent({
     popover?: boolean;
 }) {
     const { href, t } = useI18n();
+
     const { signOutHere } = useAuth();
+
     const { preference, setPreference } = useTheme();
+
     const [signOutPending, setSignOutPending] = useState(false);
 
     async function signOut() {
         setSignOutPending(true);
+
         try {
             await signOutHere();
         } catch {
             setSignOutPending(false);
+
             showToast({
                 content: t('shell.signOutFailed'),
                 dismissLabel: t('profile.dismiss'),
@@ -130,6 +141,7 @@ function AccountMenuContent({
 
     function selectTheme(next: ThemePreference) {
         setPreference(next);
+
         document.cookie = `${themeCookieName}=${next}; Max-Age=31536000; Path=/; SameSite=Lax`;
     }
 

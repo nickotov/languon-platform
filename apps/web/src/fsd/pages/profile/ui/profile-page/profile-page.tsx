@@ -46,6 +46,7 @@ type ProfileTab = 'account' | 'billing' | 'credits' | 'security';
 
 export function ProfilePageFallback() {
     const { t } = useI18n();
+
     return (
         <main className={styles.centered}>
             <LoadingState>{t('profile.loading')}</LoadingState>
@@ -55,13 +56,19 @@ export function ProfilePageFallback() {
 
 export function ProfilePage() {
     const { href, t } = useI18n();
+
     const searchParams = useSearchParams();
+
     const requestedTab = searchParams.get('tab');
+
     const activeTab: ProfileTab = isProfileTab(requestedTab)
         ? requestedTab
         : 'account';
+
     const status = useSessionStore((state) => state.status);
+
     const user = useSessionStore((state) => state.user);
+
     const [deletionReceipt, setDeletionReceipt] =
         useState<AccountDeletionScheduleResponse | null>(null);
 
@@ -95,6 +102,7 @@ export function ProfilePage() {
                     </Card>
                 </main>
             );
+
         return (
             <main className={styles.centered}>
                 <Card className={styles.signedOut} variant='outlined'>
@@ -141,8 +149,11 @@ function AuthenticatedProfile({
     user: AuthUser;
 }) {
     const { href, t } = useI18n();
+
     const router = useRouter();
+
     const searchParams = useSearchParams();
+
     const { clearLocalSession, requestWithSession } = useAuth();
 
     const comingSoon = (area: string) => {
@@ -160,6 +171,7 @@ function AuthenticatedProfile({
                     onComingSoon={comingSoon}
                     onScheduled={(receipt) => {
                         onScheduled(receipt);
+
                         clearLocalSession();
                     }}
                     requestWithSession={requestWithSession}
@@ -246,12 +258,16 @@ function AuthenticatedProfile({
                 items={tabs}
                 onValueChange={(value) => {
                     if (!isProfileTab(value)) return;
+
                     const nextParams = new URLSearchParams(
                         searchParams.toString(),
                     );
+
                     if (value === 'account') nextParams.delete('tab');
                     else nextParams.set('tab', value);
+
                     const query = nextParams.toString();
+
                     router.replace(
                         href(`/profile${query ? `?${query}` : ''}`),
                         { scroll: false },
@@ -275,6 +291,7 @@ function AccountTab({
     ): Promise<T>;
 }) {
     const { t } = useI18n();
+
     return (
         <div className={styles.sections}>
             <SettingsSection
@@ -366,12 +383,14 @@ function AccountTab({
 
 function SecurityTab({ email }: { email: string }) {
     const { t } = useI18n();
+
     const requestEmailChange = () =>
         showToast({
             content: t('profile.emailChangeNotSent'),
             dismissLabel: t('profile.dismiss'),
             tone: 'info',
         });
+
     return (
         <div className={styles.sections}>
             <SettingsSection
@@ -419,6 +438,7 @@ function isProfileTab(value: string | null): value is ProfileTab {
 
 function BillingTab({ onComingSoon }: ComingSoonProps) {
     const { t } = useI18n();
+
     return (
         <div className={styles.sections}>
             <EmptySettings
@@ -448,6 +468,7 @@ function BillingTab({ onComingSoon }: ComingSoonProps) {
 
 function CreditsTab({ onComingSoon }: ComingSoonProps) {
     const { t } = useI18n();
+
     return (
         <div className={styles.sections}>
             <EmptySettings
@@ -562,6 +583,7 @@ function EmptySettings({
     title: string;
 }) {
     const { t } = useI18n();
+
     return (
         <SettingsSection description={description} title={title}>
             <div className={styles.emptyBlock}>

@@ -3,7 +3,7 @@ import { Button, InlineAlert } from '@/fsd/shared/ui';
 
 import { terminalStateMessageKey } from '../../lib/review-fields';
 import type { GenerationReviewProps } from '../../model/generation-review';
-import styles from '../dictionary-generation-panel/dictionary-generation-panel.module.css';
+import styles from '../dictionary-generation-panel-common.module.css';
 import { ReviewCurrentCard } from './review-current-card';
 
 export function ReviewStatus({
@@ -26,22 +26,39 @@ export function ReviewStatus({
     | 'languages'
 > & { onReload(): void }) {
     const { t } = useI18n();
+
     const retained = job?.state === 'review';
+
     const savedTitle = t('dictionary.generation.savedUnchangedTitle');
+
     const savedBody = t('dictionary.generation.savedUnchangedBody');
+
     const retainedTitle = t('dictionary.generation.retainedTitle');
+
     const retainedBody = t('dictionary.generation.retainedBody');
+
     const pausedTitle = t('dictionary.generation.pausedTitle');
+
     const pausedBody = t('dictionary.generation.pausedBody');
+
     const conflictTitle = t('dictionary.generation.conflictTitle');
+
     const conflictBody = t('dictionary.generation.conflictHelp');
+
     const reloadLabel = t('dictionary.generation.reloadCompare');
+
     const unavailableLabel = t('dictionary.generation.error.unavailable');
+
     const failureLabel = t('dictionary.generation.state.failed');
+
     const warningLabel = t('dictionary.generation.warnings');
+
     const warnings = job?.proposal?.warnings ?? [];
+
     const terminalKey = job ? terminalStateMessageKey(job.state) : undefined;
+
     const terminalLabel = terminalKey ? t(terminalKey) : null;
+
     const terminalTone = job?.state === 'accepted' ? 'success' : 'info';
 
     return (

@@ -120,6 +120,13 @@ remove useful spacing, or move the same monolith into a controller hook to pass.
   styles are intentionally shared, move them to a deliberately named shared or
   common CSS module at the nearest valid slice boundary and make each consumer
   import that module explicitly.
+- Separate distinct CSS rule blocks with a blank line, including adjacent rules
+  inside media/container queries. Keep declarations within a rule together.
+- Replace nested ternaries and multi-line conditional derivations of objects,
+  arrays, icons, labels, or state with explicit `if` branches, early returns, or
+  a named typed helper. Build conditional menu/field arrays with `push` in `if`
+  blocks. Keep only short, immediately readable binary ternaries. Add memoization
+  only under the identity/expense rules below.
 - Separate independent derivation groups, hook calls, handlers, and the render
   return with blank lines. Keep tightly related declarations together; do not
   insert a blank line mechanically between every declaration. Run the formatter
@@ -131,6 +138,12 @@ remove useful spacing, or move the same monolith into a controller hook to pass.
   decision or make it clear from the consumer; cheap fallback expressions and
   ordinary DOM handlers do not need blanket memoization. Keep dependencies
   complete and avoid stale closures.
+
+For a requested app-wide audit, enumerate component and stylesheet files and
+inspect them one after another in a deterministic order. Record inspected paths
+and dispositions in the active delivery record; a formatter run alone does not
+prove style ownership or conditional readability. Include stories and route/provider
+compositions when they contain affected patterns.
 
 Before handoff, inspect touched components/hooks for file size, responsibility
 boundaries, inline event callbacks, computed JSX props, logical spacing, and

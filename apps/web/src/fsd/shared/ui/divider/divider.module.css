@@ -4,16 +4,19 @@
     margin: 16px 0;
     width: 100%;
 }
+
 .labelled {
     align-items: center;
     display: flex;
     gap: 12px;
     width: 100%;
 }
+
 .line {
     border-top: 1px solid var(--border-default);
     flex: 1;
 }
+
 .label {
     color: var(--text-tertiary);
     font-size: 12px;

@@ -10,7 +10,7 @@ import {
     languageLabel,
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import styles from '../dictionary-card-list/dictionary-card-list.module.css';
+import styles from '../dictionary-card-list-common.module.css';
 
 export function OptionalFields({
     card,
@@ -29,93 +29,92 @@ export function OptionalFields({
         | undefined;
 }) {
     const { locale, t } = useI18n();
-    const notation =
-        card.effectiveSettings.transcriptionNotation === 'custom'
-            ? card.effectiveSettings.transcriptionCustomLabel ||
-              t('dictionary.notation.custom')
-            : t(
-                  `dictionary.notation.${card.effectiveSettings.transcriptionNotation}`,
-              );
-    const transcriptionLabel = `${t('dictionary.field.transcription')} (${notation})`;
 
-    const fields = [
-        card.effectiveSettings.transcriptionEnabled && card.values.transcription
-            ? {
-                  key: 'transcription',
-                  label: transcriptionLabel,
-                  lang: dictionary.sourceLanguage,
-                  value: card.values.transcription,
-              }
-            : null,
-        card.effectiveSettings.definitionEnabled && card.values.definition
-            ? {
-                  key: 'definition',
-                  label: t('dictionary.field.definition'),
-                  lang: languageForRole(
-                      card.effectiveSettings.definitionLanguage,
-                      dictionary.sourceLanguage,
-                      dictionary.targetLanguage,
-                  ),
-                  value: card.values.definition,
-              }
-            : null,
-        card.effectiveSettings.exampleEnabled && card.values.example
-            ? {
-                  key: 'example',
-                  label: t('dictionary.field.example'),
-                  lang: languageForRole(
-                      card.effectiveSettings.exampleLanguage,
-                      dictionary.sourceLanguage,
-                      dictionary.targetLanguage,
-                  ),
-                  value: card.values.example,
-              }
-            : null,
+    const fields: {
+        key: 'definition' | 'example' | 'exampleTranslation';
+        label: string;
+        lang: string;
+        value: string;
+    }[] = [];
+
+    if (card.effectiveSettings.definitionEnabled && card.values.definition) {
+        fields.push({
+            key: 'definition',
+            label: t('dictionary.field.definition'),
+            lang: languageForRole(
+                card.effectiveSettings.definitionLanguage,
+                dictionary.sourceLanguage,
+                dictionary.targetLanguage,
+            ),
+            value: card.values.definition,
+        });
+    }
+
+    if (card.effectiveSettings.exampleEnabled && card.values.example) {
+        fields.push({
+            key: 'example',
+            label: t('dictionary.field.example'),
+            lang: languageForRole(
+                card.effectiveSettings.exampleLanguage,
+                dictionary.sourceLanguage,
+                dictionary.targetLanguage,
+            ),
+            value: card.values.example,
+        });
+    }
+
+    if (
         card.effectiveSettings.exampleTranslationEnabled &&
         card.values.exampleTranslation
-            ? {
-                  key: 'exampleTranslation',
-                  label: t('dictionary.field.exampleTranslation'),
-                  lang: languageForRole(
-                      card.effectiveSettings.exampleTranslationLanguage,
-                      dictionary.sourceLanguage,
-                      dictionary.targetLanguage,
-                  ),
-                  value: card.values.exampleTranslation,
-              }
-            : null,
-    ].filter((value): value is NonNullable<typeof value> => value !== null);
+    ) {
+        fields.push({
+            key: 'exampleTranslation',
+            label: t('dictionary.field.exampleTranslation'),
+            lang: languageForRole(
+                card.effectiveSettings.exampleTranslationLanguage,
+                dictionary.sourceLanguage,
+                dictionary.targetLanguage,
+            ),
+            value: card.values.exampleTranslation,
+        });
+    }
+
     const rows = fields.map((field) => {
         const language = languageLabel(languages, field.lang, locale);
-        const label =
-            field.key === 'transcription'
-                ? field.label
-                : `${field.label} · ${language}`;
+
+        const label = `${field.label} · ${language}`;
+
         const direction = languageDirection(languages, field.lang);
-        const audio =
-            field.key === 'example' || field.key === 'exampleTranslation'
-                ? renderAudio?.(card, field.key)
-                : null;
-        const className = [
-            styles.fieldText,
-            field.key === 'transcription' ? styles.transcription : '',
-        ]
-            .filter(Boolean)
-            .join(' ');
-        const rowClassName = [
-            styles.fieldRow,
-            field.key === 'example' ? styles.exampleRow : '',
-            field.key === 'exampleTranslation'
-                ? styles.exampleTranslationRow
-                : '',
-        ]
-            .filter(Boolean)
-            .join(' ');
-        return { ...field, label, direction, audio, className, rowClassName };
+
+        let audio: ReactNode = null;
+
+        const classes = [styles.fieldRow];
+
+        if (field.key === 'example') {
+            classes.push(styles.exampleRow);
+
+            audio = renderAudio?.(card, field.key);
+        }
+
+        if (field.key === 'exampleTranslation') {
+            classes.push(styles.exampleTranslationRow);
+
+            audio = renderAudio?.(card, field.key);
+        }
+
+        return {
+            ...field,
+            label,
+            direction,
+            audio,
+            rowClassName: classes.join(' '),
+        };
     });
+
     const pairedExamples =
         fields.some((field) => field.key === 'example') &&
         fields.some((field) => field.key === 'exampleTranslation');
+
     const fieldsClassName = [
         styles.fields,
         pairedExamples ? styles.pairedExamples : '',
@@ -124,6 +123,7 @@ export function OptionalFields({
         .join(' ');
 
     if (!fields.length) return null;
+
     return (
         <dl className={fieldsClassName}>
             {rows.map((field) => (
@@ -135,7 +135,7 @@ export function OptionalFields({
                     <dt className={styles.fieldLabel}>{field.label}</dt>
                     <dd className={styles.fieldValue}>
                         <span
-                            className={field.className}
+                            className={styles.fieldText}
                             dir={field.direction}
                             lang={field.lang}
                         >

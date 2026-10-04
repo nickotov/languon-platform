@@ -10,9 +10,11 @@
     background: var(--background-canvas);
     overflow: hidden;
 }
+
 .frame::backdrop {
     background: var(--overlay);
 }
+
 .dialog {
     width: calc(100% - 2rem);
     max-width: 56rem;
@@ -22,6 +24,7 @@
     background: var(--background-elevated);
     box-shadow: var(--elevation-lg);
 }
+
 .content {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }

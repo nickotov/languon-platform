@@ -10,101 +10,124 @@
         background-color var(--duration-fast),
         color var(--duration-fast);
 }
+
 .sm,
 .compact,
 .small {
     height: 32px;
     width: 32px;
 }
+
 .md,
 .default,
 .medium {
     height: 40px;
     width: 40px;
 }
+
 .lg,
 .large {
     height: 48px;
     width: 48px;
 }
+
 .rounded {
     border-radius: 999px;
 }
+
 .primary {
     background: var(--neutral-900);
     color: var(--neutral-50);
 }
+
 .primary:hover:not(:disabled) {
     background: var(--neutral-800);
 }
+
 .secondary {
     background: var(--neutral-100);
     color: var(--neutral-900);
 }
+
 .secondary:hover:not(:disabled) {
     background: var(--neutral-200);
 }
+
 .outline {
     background: var(--background-surface);
     border: 1px solid var(--neutral-300);
     color: var(--neutral-900);
 }
+
 .outline:hover:not(:disabled) {
     background: var(--neutral-50);
 }
+
 .ghost {
     background: transparent;
     color: var(--neutral-600);
 }
+
 .ghost:hover:not(:disabled) {
     background: var(--neutral-100);
     color: var(--neutral-900);
 }
+
 .danger {
     background: var(--danger-600);
     color: white;
 }
+
 .danger:hover:not(:disabled) {
     background: var(--danger-700);
 }
+
 .button:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 2px;
 }
+
 .button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
+
 .icon {
     align-items: center;
     display: inline-flex;
 }
+
 :where(.sm .icon) :where(svg),
 :where(.sm) .spinner {
     height: 16px;
     width: 16px;
 }
+
 :where(.md .icon) :where(svg),
 :where(.md) .spinner {
     height: 20px;
     width: 20px;
 }
+
 :where(.lg .icon) :where(svg),
 :where(.lg) .spinner {
     height: 24px;
     width: 24px;
 }
+
 .spinner {
     animation: spin 0.7s linear infinite;
     border: 2px solid currentColor;
     border-radius: 50%;
     border-right-color: transparent;
 }
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
     }
 }
+
 @media (prefers-reduced-motion: reduce) {
     .spinner {
         animation: none;

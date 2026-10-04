@@ -1,7 +1,9 @@
 import styles from './progress.module.css';
 
 export type ProgressSize = 'lg' | 'md' | 'sm';
+
 export type ProgressTone = 'danger' | 'default' | 'success' | 'warning';
+
 export type ProgressProps = {
     ariaLabel?: string;
     className?: string;
@@ -13,8 +15,11 @@ export type ProgressProps = {
     tone?: ProgressTone;
     value: number;
 };
+
 export type ProgressBarSize = ProgressSize;
+
 export type ProgressBarTone = ProgressTone;
+
 export type ProgressBarProps = ProgressProps;
 
 export function Progress({
@@ -29,11 +34,14 @@ export function Progress({
     value,
 }: ProgressProps) {
     const safeMax = max > 0 ? max : 100;
+
     const clamped = Math.min(
         Math.max(Number.isFinite(value) ? value : 0, 0),
         safeMax,
     );
+
     const percent = (clamped / safeMax) * 100;
+
     return (
         <div className={[styles.root, className].filter(Boolean).join(' ')}>
             {label || showValue ? (

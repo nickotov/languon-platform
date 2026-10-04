@@ -3,7 +3,9 @@ import type { CSSProperties, HTMLAttributes } from 'react';
 import styles from './skeleton.module.css';
 
 export type SkeletonVariant = 'circle' | 'rect' | 'text';
+
 export type SkeletonAnimation = 'none' | 'pulse' | 'shimmer';
+
 export type SkeletonProps = HTMLAttributes<HTMLDivElement> & {
     animation?: SkeletonAnimation;
     height?: number | string;
@@ -26,6 +28,7 @@ export function Skeleton({
 }: SkeletonProps) {
     const resolvedHeight =
         height ?? (variant === 'text' ? '0.875rem' : undefined);
+
     const blockStyle = (
         blockWidth: number | string | undefined,
     ): CSSProperties => ({
@@ -33,6 +36,7 @@ export function Skeleton({
         width: blockWidth,
         ...style,
     });
+
     if (variant === 'text' && lines > 1) {
         return (
             <div
@@ -60,6 +64,7 @@ export function Skeleton({
             </div>
         );
     }
+
     return (
         <div
             {...props}

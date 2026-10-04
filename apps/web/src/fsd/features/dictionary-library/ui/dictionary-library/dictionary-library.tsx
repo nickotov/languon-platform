@@ -19,35 +19,54 @@ import type { DictionaryLibraryProps } from '../../types';
 import { LibraryCreateDialog } from '../library-create-dialog/library-create-dialog';
 import { LibraryDeletionDialog } from '../library-deletion-dialog/library-deletion-dialog';
 import { LibraryResults } from '../library-results/library-results';
-import styles from './dictionary-library.module.css';
+import styles from '../dictionary-library-common.module.css';
 
 export function DictionaryLibrary({
     onOpenSettings,
     requestWithSession,
 }: DictionaryLibraryProps) {
     const { t } = useI18n();
+
     const state = useDictionaryLibrary(requestWithSession);
+
     const activeSelected = state.lifecycle === 'active';
+
     const archivedSelected = state.lifecycle === 'archived';
+
     const searchClass = styles.search ?? '';
+
     const error = state.lifecycleMutation.error;
+
     const errorMessage = error ? dictionaryErrorMessage(error, t) : null;
+
     const conflict =
         error instanceof DictionaryApiError &&
         error.detail.code === 'version_conflict';
-    const conflictAction = conflict ? (
-        <Button onClick={state.reloadConflict} type='button'>
-            {t('dictionary.conflict.reload')}
-        </Button>
-    ) : undefined;
+
+    function resolveConflictAction() {
+        if (conflict) {
+            return (
+                <Button onClick={state.reloadConflict} type='button'>
+                    {t('dictionary.conflict.reload')}
+                </Button>
+            );
+        }
+
+        return undefined;
+    }
+
+    const conflictAction = resolveConflictAction();
+
     const loadMoreLabel = t(
         state.dictionaries.isFetchNextPageError
             ? 'dictionary.library.retryLoadMore'
             : 'dictionary.library.loadMore',
     );
+
     const allLoadedSelected =
         state.list.length > 0 &&
         state.list.every((entry) => state.selected.has(entry.id));
+
     const someLoadedSelected = state.list.some((entry) =>
         state.selected.has(entry.id),
     );
@@ -75,6 +94,7 @@ export function DictionaryLibrary({
         openSelectedDeletion: state.openSelectedDeletion,
         openSettings: onOpenSettings,
     };
+
     const createView = {
         catalog: state.catalog,
         createOpen: state.createOpen,

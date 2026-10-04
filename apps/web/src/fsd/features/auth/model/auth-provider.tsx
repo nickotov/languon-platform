@@ -42,15 +42,19 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
 const coordinator = new RefreshCoordinator();
+
 const REFRESH_REQUEST_TIMEOUT_MS = 10_000;
 
 async function refreshWithDeadline(): Promise<AuthenticationSuccessResponse> {
     const controller = new AbortController();
+
     const timer = setTimeout(
         () => controller.abort(),
         REFRESH_REQUEST_TIMEOUT_MS,
     );
+
     try {
         return await authApi.refresh(controller.signal);
     } finally {
@@ -60,6 +64,7 @@ async function refreshWithDeadline(): Promise<AuthenticationSuccessResponse> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const { t } = useI18n();
+
     const [queryClient] = useState(
         () =>
             new QueryClient({
@@ -68,14 +73,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 },
             }),
     );
+
     const authenticate = useSessionStore((state) => state.authenticate);
+
     const signOut = useSessionStore((state) => state.signOut);
+
     const [capabilities, setCapabilities] =
         useState<AuthCapabilitiesResponse | null>(null);
+
     const [capabilitiesFailed, setCapabilitiesFailed] = useState(false);
+
     const capabilitiesError = capabilitiesFailed
         ? t('auth.capabilitiesUnavailable')
         : null;
+
     const bootstrapped = useRef(false);
 
     useEffect(
@@ -94,18 +105,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshCapabilities = useCallback(async () => {
         setCapabilitiesFailed(false);
+
         try {
             setCapabilities(await authApi.capabilities());
         } catch {
             setCapabilities(null);
+
             setCapabilitiesFailed(true);
         }
     }, []);
 
     useEffect(() => {
         if (bootstrapped.current) return;
+
         bootstrapped.current = true;
+
         void refreshSession();
+
         void refreshCapabilities();
     }, [refreshCapabilities, refreshSession]);
 
@@ -133,7 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             operation: (accessToken: string) => Promise<T>,
         ): Promise<T> => {
             let token = currentAccessToken();
+
             if (!token) token = (await refreshSession())?.accessToken ?? null;
+
             if (!token) {
                 throw new AuthApiError(401, {
                     code: 'authentication_required',
@@ -146,8 +164,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return await operation(token);
             } catch (error) {
                 if (!isAuthenticationRequiredError(error)) throw error;
+
                 const refreshed = await refreshSession();
+
                 if (!refreshed) throw error;
+
                 return operation(refreshed.accessToken);
             }
         },
@@ -164,7 +185,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signOutEverywhere = useCallback(async () => {
         let token = currentAccessToken();
+
         if (!token) token = (await refreshSession())?.accessToken ?? null;
+
         if (!token) {
             throw new AuthApiError(401, {
                 code: 'authentication_required',
@@ -172,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 message: 'Please sign in to continue.',
             });
         }
+
         await coordinator.signOut(() =>
             authApi.logoutAll(token).then(() => undefined),
         );
@@ -215,6 +239,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextValue {
     const context = useContext(AuthContext);
+
     if (!context) throw new Error('useAuth must be used within AuthProvider');
+
     return context;
 }

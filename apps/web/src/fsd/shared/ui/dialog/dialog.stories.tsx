@@ -5,6 +5,7 @@ import { Button } from '../button/button';
 import { AlertDialog, BottomSheet, Dialog } from './dialog';
 
 const meta = { title: 'UI/Dialog' } satisfies Meta;
+
 export default meta;
 
 function DialogExample({
@@ -13,12 +14,21 @@ function DialogExample({
     kind?: 'alert' | 'dialog' | 'sheet';
 }) {
     const [open, setOpen] = useState(false);
-    const Component =
-        kind === 'alert'
-            ? AlertDialog
-            : kind === 'sheet'
-              ? BottomSheet
-              : Dialog;
+
+    function resolveComponent() {
+        if (kind === 'alert') {
+            return AlertDialog;
+        }
+
+        if (kind === 'sheet') {
+            return BottomSheet;
+        }
+
+        return Dialog;
+    }
+
+    const Component = resolveComponent();
+
     const props = {
         children: (
             <Button onClick={() => setOpen(false)} variant='danger'>
@@ -41,9 +51,11 @@ function DialogExample({
 }
 
 export const Default: StoryObj = { render: () => <DialogExample /> };
+
 export const UrgentDecision: StoryObj = {
     render: () => <DialogExample kind='alert' />,
 };
+
 export const CompactBottomSheet: StoryObj = {
     render: () => <DialogExample kind='sheet' />,
 };

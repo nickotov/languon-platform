@@ -28,6 +28,7 @@ const languages = [
         tag: 'es',
     },
 ] as LanguageCatalogEntry[];
+
 const dictionary = {
     activeCardCount: 1,
     archivedAt: null,
@@ -72,7 +73,9 @@ const meta = {
     ],
     title: 'Dictionary/Settings form',
 } satisfies Meta<typeof DictionarySettingsForm>;
+
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const PairLocked: Story = {

@@ -15,18 +15,26 @@ export function RetryButton({
     disabled?: boolean;
 }) {
     const { t } = useI18n();
+
     const [now, setNow] = useState(Date.now);
+
     const deadline = retryAt ?? error?.retryAt;
+
     useEffect(() => {
         if (!deadline) return;
+
         const timer = setInterval(() => setNow(Date.now()), 250);
+
         return () => clearInterval(timer);
     }, [deadline]);
+
     const remaining = Math.max(0, Math.ceil(((deadline ?? 0) - now) / 1000));
+
     const label =
         remaining > 0
             ? t('training.retryIn', { seconds: remaining })
             : t('training.retry');
+
     return (
         <Button
             variant='secondary'

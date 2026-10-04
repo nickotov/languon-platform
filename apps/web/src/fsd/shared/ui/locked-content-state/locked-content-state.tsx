@@ -1,7 +1,9 @@
 import { LockIcon, SparklesIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import styles from './locked-content-state.module.css';
+
 export type LockedContentStateVariant = 'overlay' | 'placeholder';
+
 export interface LockedContentStateProps {
     title?: string;
     description?: string;
@@ -12,6 +14,7 @@ export interface LockedContentStateProps {
     children?: ReactNode;
     className?: string;
 }
+
 export function LockedContentState({
     title = 'Lesson locked',
     description = 'Finish the previous lesson to unlock this one.',
@@ -51,19 +54,24 @@ export function LockedContentState({
             ) : null}
         </div>
     );
-    return variant === 'overlay' ? (
-        <section
-            aria-label={title}
-            className={[styles.root, styles.overlay, className]
-                .filter(Boolean)
-                .join(' ')}
-        >
-            <div aria-hidden='true' className={styles.preview}>
-                {children}
-            </div>
-            <div className={styles.scrim}>{body}</div>
-        </section>
-    ) : (
+
+    if (variant === 'overlay') {
+        return (
+            <section
+                aria-label={title}
+                className={[styles.root, styles.overlay, className]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                <div aria-hidden='true' className={styles.preview}>
+                    {children}
+                </div>
+                <div className={styles.scrim}>{body}</div>
+            </section>
+        );
+    }
+
+    return (
         <section
             aria-label={title}
             className={[styles.root, styles.placeholder, className]

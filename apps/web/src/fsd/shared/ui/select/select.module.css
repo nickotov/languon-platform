@@ -3,19 +3,23 @@
     flex-direction: column;
     gap: 6px;
 }
+
 .fullWidth {
     width: 100%;
 }
+
 .label {
     color: var(--text-primary);
     font-size: 14px;
     font-weight: 500;
     line-height: 20px;
 }
+
 .control {
     display: block;
     position: relative;
 }
+
 .select {
     appearance: none;
     background: var(--background-surface);
@@ -29,35 +33,43 @@
         box-shadow var(--duration-fast);
     width: 100%;
 }
+
 .sm {
     font-size: 14px;
     min-height: 32px;
 }
+
 .md {
     font-size: 14px;
     min-height: 40px;
 }
+
 .lg {
     font-size: 16px;
     min-height: 48px;
 }
+
 .select:hover:not(:disabled) {
     border-color: var(--border-strong);
 }
+
 .select:focus {
     border-color: var(--border-focus);
     box-shadow: 0 0 0 3px var(--primary-subtle);
     outline: none;
 }
+
 .select[aria-invalid='true'] {
     border-color: var(--danger-default);
 }
+
 .select:disabled {
     background: var(--background-subtle);
     border-color: var(--border-default);
     color: var(--text-disabled);
     cursor: not-allowed;
 }
+
 .indicator {
     color: var(--text-tertiary);
     font-size: 18px;
@@ -67,6 +79,7 @@
     top: 50%;
     transform: translateY(-55%);
 }
+
 .spinner {
     animation: spin 0.7s linear infinite;
     border: 2px solid var(--neutral-300);
@@ -75,22 +88,27 @@
     height: 16px;
     width: 16px;
 }
+
 .hint,
 .error {
     font-size: 12px;
     line-height: 16px;
 }
+
 .hint {
     color: var(--text-tertiary);
 }
+
 .error {
     color: var(--danger-default);
 }
+
 @keyframes spin {
     to {
         transform: translateY(-50%) rotate(360deg);
     }
 }
+
 @media (prefers-reduced-motion: reduce) {
     .spinner {
         animation: none;

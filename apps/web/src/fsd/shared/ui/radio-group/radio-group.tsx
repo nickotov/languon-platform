@@ -11,7 +11,9 @@ import {
 import styles from './radio-group.module.css';
 
 export type RadioSize = 'md' | 'sm';
+
 export type RadioVariant = 'card' | 'default';
+
 type Context = {
     disabled: boolean;
     invalid: boolean;
@@ -21,12 +23,15 @@ type Context = {
     value: string | undefined;
     variant: RadioVariant;
 };
+
 const RadioContext = createContext<Context | null>(null);
+
 export type RadioOption = {
     disabled?: boolean;
     label: ReactNode;
     value: string;
 };
+
 export type RadioGroupProps = {
     children?: ReactNode;
     className?: string;
@@ -63,7 +68,9 @@ export function RadioGroup({
     variant = 'default',
 }: RadioGroupProps) {
     const generatedName = useId();
+
     const groupName = name ?? generatedName;
+
     const actualChildren =
         children ??
         options?.map((option) => (
@@ -76,6 +83,7 @@ export function RadioGroup({
                 {option.label}
             </Radio>
         ));
+
     return (
         <fieldset
             aria-invalid={error ? true : undefined}
@@ -127,6 +135,7 @@ export type RadioProps = Omit<
     value: string;
     variant?: RadioVariant;
 };
+
 export function Radio({
     addon,
     checked,
@@ -143,11 +152,16 @@ export function Radio({
     ...props
 }: RadioProps) {
     const group = useContext(RadioContext);
+
     const resolvedSize = size ?? group?.size ?? 'md';
+
     const resolvedVariant = variant ?? group?.variant ?? 'default';
+
     const isDisabled = Boolean(disabled || group?.disabled);
+
     const controlledChecked =
         group?.value !== undefined ? group.value === value : checked;
+
     return (
         <label
             className={[
@@ -172,6 +186,7 @@ export function Radio({
                 name={group?.name ?? name}
                 onChange={() => {
                     group?.onChange?.(value);
+
                     if (!group) onChange?.(value);
                 }}
                 type='radio'

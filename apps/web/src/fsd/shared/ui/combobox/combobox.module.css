@@ -1,6 +1,7 @@
 .root {
     position: relative;
 }
+
 .input {
     background: var(--sys-color-surface-default);
     border: 1px solid var(--sys-color-border-control);
@@ -10,6 +11,7 @@
     padding: 0 var(--sys-space-3);
     width: 100%;
 }
+
 .listbox {
     background: var(--sys-color-surface-raised);
     border: 1px solid var(--sys-color-border-control);
@@ -24,19 +26,23 @@
     top: calc(100% + var(--sys-space-1));
     z-index: 30;
 }
+
 .option,
 .message {
     border-radius: var(--sys-radius-sm);
     min-height: 44px;
     padding: 11px var(--sys-space-3);
 }
+
 .option {
     cursor: pointer;
 }
+
 .option[aria-selected='true'] {
     background: var(--sys-color-action-primary-soft);
     color: var(--sys-color-action-on-primary-soft);
 }
+
 .message {
     color: var(--sys-color-text-secondary);
 }

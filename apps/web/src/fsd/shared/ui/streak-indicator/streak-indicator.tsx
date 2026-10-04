@@ -1,7 +1,10 @@
 import { FlameIcon, MinusIcon } from 'lucide-react';
 import styles from './streak-indicator.module.css';
+
 export type StreakIndicatorVariant = 'inline' | 'pill' | 'card';
+
 export type StreakIndicatorSize = 'sm' | 'md';
+
 export interface StreakIndicatorProps {
     count: number;
     week?: boolean[];
@@ -12,7 +15,9 @@ export interface StreakIndicatorProps {
     loading?: boolean;
     className?: string;
 }
+
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
 function WeekTrack({
     week,
     showLabels = false,
@@ -33,6 +38,7 @@ function WeekTrack({
         </span>
     );
 }
+
 export function StreakIndicator({
     count,
     week,
@@ -56,20 +62,42 @@ export function StreakIndicator({
                 <span className={styles.skeleton} />
             </span>
         );
+
     const has = count > 0;
+
     const label = has
         ? `${count} day${count === 1 ? '' : 's'}`
         : 'No streak yet';
-    const sr = has
-        ? `Current study streak: ${label}${activeToday ? '' : ', not yet studied today'}`
-        : 'No study streak yet';
+
+    function resolveSr() {
+        if (has) {
+            return `Current study streak: ${label}${activeToday ? '' : ', not yet studied today'}`;
+        }
+
+        return 'No study streak yet' as const;
+    }
+
+    const sr = resolveSr();
+
+    function resolveClassName() {
+        if (!has) {
+            return styles.empty;
+        }
+
+        if (activeToday) {
+            return styles.hot;
+        }
+
+        return styles.pending;
+    }
+
+    const resolvedClassName = resolveClassName();
+
     const value = (
         <span
-            className={[
-                styles.value,
-                styles[size],
-                !has ? styles.empty : activeToday ? styles.hot : styles.pending,
-            ].join(' ')}
+            className={[styles.value, styles[size], resolvedClassName].join(
+                ' ',
+            )}
         >
             {has ? (
                 <FlameIcon className={styles.valueIcon} aria-hidden='true' />
@@ -79,6 +107,7 @@ export function StreakIndicator({
             <span className={styles.valueLabel}>{label}</span>
         </span>
     );
+
     if (variant === 'inline')
         return (
             <span className={className}>
@@ -86,6 +115,7 @@ export function StreakIndicator({
                 <span aria-hidden='true'>{value}</span>
             </span>
         );
+
     if (variant === 'pill')
         return (
             <span
@@ -98,6 +128,7 @@ export function StreakIndicator({
                 {week ? <WeekTrack week={week} /> : null}
             </span>
         );
+
     return (
         <section
             aria-label='Study streak'

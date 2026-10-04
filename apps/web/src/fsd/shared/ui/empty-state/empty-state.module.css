@@ -4,13 +4,16 @@
     padding: var(--sys-space-6);
     text-align: center;
 }
+
 .title {
     font-family: var(--sys-font-display);
     margin: 0;
 }
+
 .description {
     color: var(--sys-color-text-secondary);
 }
+
 .error {
     border: 1px solid var(--sys-color-danger);
 }

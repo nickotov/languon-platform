@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import styles from './grammar-callout.module.css';
+
 export type GrammarCalloutVariant = 'rule' | 'tip' | 'warning' | 'example';
+
 export interface GrammarCalloutProps {
     title?: string;
     children: ReactNode;
@@ -15,12 +17,14 @@ export interface GrammarCalloutProps {
     hideIcon?: boolean;
     className?: string;
 }
+
 const data = {
     rule: { Icon: BookOpenIcon, label: 'Grammar rule' },
     tip: { Icon: LightbulbIcon, label: 'Tip' },
     warning: { Icon: AlertTriangleIcon, label: 'Common mistake' },
     example: { Icon: SparklesIcon, label: 'Example' },
 };
+
 export function GrammarCallout({
     title,
     children,
@@ -30,6 +34,7 @@ export function GrammarCallout({
     className,
 }: GrammarCalloutProps) {
     const { Icon, label } = data[variant];
+
     return (
         <aside
             role='note'

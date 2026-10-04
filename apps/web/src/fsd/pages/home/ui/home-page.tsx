@@ -6,6 +6,7 @@ import styles from './home-page.module.css';
 
 export function HomePage() {
     const { t } = useI18n();
+
     return (
         <main className={styles.main}>
             <section className={styles.content}>

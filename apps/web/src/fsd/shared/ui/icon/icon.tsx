@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import styles from './icon.module.css';
+
 export function Icon({
     children,
     label,

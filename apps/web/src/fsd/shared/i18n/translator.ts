@@ -8,7 +8,8 @@ export function createTranslator(messages: Messages): Translate {
         // A live client can receive an older or incomplete serialized catalog
         // during development. Never turn a missing key into blank safety copy
         // or a render-time exception while the page bundle updates.
-        const message = typeof messages[key] === 'string' ? messages[key] : en[key];
+        const message =
+            typeof messages[key] === 'string' ? messages[key] : en[key];
         if (!values) return message;
 
         return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/g, (token, name) =>

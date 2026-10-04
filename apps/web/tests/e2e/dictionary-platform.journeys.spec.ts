@@ -7,7 +7,7 @@ import {
 } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:b91834a1f50d7cf0
+// @user-flow-revision dictionary-platform sha256:88cffdee38a7d5a1
 
 const password = 'E2e!Dictionary-password-2026';
 const backendPort = new URL(
@@ -142,6 +142,9 @@ async function addPopulatedCard(
             .getByLabel('Dictionary context')
             .fill(translationContext);
     }
+    if (verifyResponsiveLayout) {
+        await settings.getByLabel('Transcription').check();
+    }
     await settings.getByLabel('Definition').check();
     await settings.getByLabel('Context example').check();
     await settings.getByLabel('Example translation').check();
@@ -176,6 +179,9 @@ async function addPopulatedCard(
     await page
         .getByLabel(/^Example translation \(/)
         .fill('La galería adquirió la obra de arte.');
+    if (verifyResponsiveLayout) {
+        await page.getByLabel(/^Transcription \(/).fill('wɜːk əv ɑːt');
+    }
     await page.getByRole('button', { name: 'Create card' }).click();
     await expect(page.getByText('work of art', { exact: true })).toBeVisible();
     const lockedSettings = await openDictionarySettings(page);
@@ -321,8 +327,34 @@ async function expectOwnerWordPair(
     const translatedWord = card.locator('strong[lang="es"]');
     await expect(translatedWord).toHaveText(translation);
     await expectWordPairGeometry(sourceWord, translatedWord, layout);
+    if (layout === 'columns') {
+        const [sourceText, translatedText] = await Promise.all([
+            sourceWord.locator('span').first().boundingBox(),
+            translatedWord.locator('span').first().boundingBox(),
+        ]);
+        expect(Math.abs(sourceText!.y - translatedText!.y)).toBeLessThan(2);
+    }
     await expect(sourceWord).toHaveAttribute('dir', 'ltr');
     await expect(translatedWord).toHaveAttribute('dir', 'ltr');
+    const transcription = card.getByText('(wɜːk əv ɑːt)', { exact: true });
+    await expect(transcription).toBeVisible();
+    await expect(card.locator('[data-field="transcription"]')).toHaveCount(0);
+    const [sourceTextBounds, transcriptionBounds] = await Promise.all([
+        sourceWord.boundingBox(),
+        transcription.boundingBox(),
+    ]);
+    expect(transcriptionBounds!.y).toBeGreaterThanOrEqual(
+        sourceTextBounds!.y + sourceTextBounds!.height,
+    );
+    const fontSizes = await Promise.all([
+        sourceWord.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+        ),
+        transcription.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+        ),
+    ]);
+    expect(fontSizes[1]).toBeLessThan(fontSizes[0]!);
     const actions = card.getByRole('button', { name: /Card actions, card/ });
     await expect(actions).toBeVisible();
     const [sourceBounds, translationBounds, definitionBounds] =
@@ -433,10 +465,26 @@ test.describe('dictionary platform journeys', () => {
             'Visual arts, galleries, and professional studio practice.';
         await addPopulatedCard(page, translationContext, true);
         await expectOwnerWordPair(page, 'obra de arte', 'columns');
+        const desktopScreenshot = testInfo.outputPath(
+            'transcription-desktop.png',
+        );
+        await page.screenshot({ path: desktopScreenshot });
+        await testInfo.attach('transcription-desktop', {
+            path: desktopScreenshot,
+            contentType: 'image/png',
+        });
         await page.setViewportSize({ width: 768, height: 900 });
         await expectOwnerWordPair(page, 'obra de arte', 'columns');
         await page.setViewportSize({ width: 320, height: 900 });
         await expectOwnerWordPair(page, 'obra de arte', 'stacked');
+        const narrowScreenshot = testInfo.outputPath(
+            'transcription-narrow.png',
+        );
+        await page.screenshot({ path: narrowScreenshot });
+        await testInfo.attach('transcription-narrow', {
+            path: narrowScreenshot,
+            contentType: 'image/png',
+        });
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
@@ -545,10 +593,16 @@ test.describe('dictionary platform journeys', () => {
         await singleExampleSettings
             .getByRole('button', { name: 'Save settings' })
             .click();
+        await expect(
+            singleExampleSettings.getByText('Dictionary settings saved.', {
+                exact: true,
+            }),
+        ).toBeVisible();
         await singleExampleSettings
             .getByRole('button', { name: 'Cancel', exact: true })
             .first()
             .click();
+        await expect(singleExampleSettings).not.toBeVisible();
         await addCard.click();
         const singleExampleEditor = page.getByRole('dialog', {
             name: 'Add card',
@@ -584,11 +638,17 @@ test.describe('dictionary platform journeys', () => {
         await pairedExampleSettings
             .getByRole('button', { name: 'Save settings' })
             .click();
+        await expect(
+            pairedExampleSettings.getByText('Dictionary settings saved.', {
+                exact: true,
+            }),
+        ).toBeVisible();
         await pairedExampleSettings
             .getByRole('button', { name: 'Cancel', exact: true })
             .first()
             .click();
 
+        await expect(pairedExampleSettings).not.toBeVisible();
         await chooseCardAction(page, 'work of art', 'Edit');
         let cardEditor = page.getByRole('dialog', { name: 'Edit card' });
         await expect(cardEditor).toBeVisible();

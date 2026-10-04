@@ -28,30 +28,45 @@ export function AccountDeletionAction({
     ): Promise<T>;
 }) {
     const { t } = useI18n();
+
     const [open, setOpen] = useState(false);
+
     const [confirmation, setConfirmation] = useState('');
+
     const [acknowledged, setAcknowledged] = useState(false);
+
     const [pending, setPending] = useState(false);
+
     const [error, setError] = useState<string | null>(null);
 
     function close() {
         if (!pending) {
             setOpen(false);
+
             setConfirmation('');
+
             setAcknowledged(false);
+
             setError(null);
         }
     }
+
     async function schedule(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         if (confirmation !== 'DELETE' || !acknowledged || pending) return;
+
         setPending(true);
+
         setError(null);
+
         try {
             const receipt = await requestWithSession((token) =>
                 authApi.scheduleAccountDeletion(token),
             );
+
             onScheduled(receipt);
+
             setOpen(false);
         } catch (caught) {
             if (caught instanceof AuthApiError) {

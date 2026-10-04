@@ -3,11 +3,13 @@
     display: flex;
     gap: var(--sys-space-2);
 }
+
 .label {
     color: var(--sys-color-text-secondary);
     font-size: 12px;
     font-weight: 700;
 }
+
 .select {
     min-width: 108px;
 }

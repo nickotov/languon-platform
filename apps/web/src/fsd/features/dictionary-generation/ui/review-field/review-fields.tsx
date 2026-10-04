@@ -6,7 +6,7 @@ import type {
 } from '@languon/contracts';
 
 import { FIELD_KEYS } from '../../lib/review-fields';
-import styles from '../dictionary-generation-panel/dictionary-generation-panel.module.css';
+import styles from '../dictionary-generation-panel-common.module.css';
 import { ReviewField } from './review-field';
 
 export function ReviewFields({
@@ -21,11 +21,14 @@ export function ReviewFields({
     onChange(field: DictionaryGenerationField, value: string): void;
 }) {
     const settings = job.originalSnapshot!.effectiveSettings;
+
     const overrides = candidate.overrides;
+
     const exampleEnabled = enabled(
         overrides.exampleEnabled,
         settings.exampleEnabled,
     );
+
     const visible = {
         source: true,
         translation: true,
@@ -45,6 +48,7 @@ export function ReviewFields({
                 settings.exampleTranslationEnabled,
             ),
     };
+
     const fields = FIELD_KEYS.filter((field) => visible[field]);
 
     return (

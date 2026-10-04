@@ -4,7 +4,7 @@ import {
 } from '@/fsd/entities/dictionary';
 import { Button, ButtonLink, ErrorState } from '@/fsd/shared/ui';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor/dictionary-editor.module.css';
+import styles from '../dictionary-editor-common.module.css';
 
 export function EditorLoadError({
     model,
@@ -34,19 +34,29 @@ export function EditorLoadError({
 
     function reload() {
         void dictionary.refetch();
+
         void languages.refetch();
+
         void cards.refetch();
     }
 
-    const action = missing ? (
-        <ButtonLink href={libraryHref}>
-            {t('dictionary.backToLibrary')}
-        </ButtonLink>
-    ) : (
-        <Button type='button' onClick={reload}>
-            {t('common.retry')}
-        </Button>
-    );
+    function resolveAction() {
+        if (missing) {
+            return (
+                <ButtonLink href={libraryHref}>
+                    {t('dictionary.backToLibrary')}
+                </ButtonLink>
+            );
+        }
+
+        return (
+            <Button type='button' onClick={reload}>
+                {t('common.retry')}
+            </Button>
+        );
+    }
+
+    const action = resolveAction();
 
     return (
         <main id='dictionary-content' tabIndex={-1} className={styles.main}>

@@ -1,6 +1,6 @@
 import type { ChangeEvent } from 'react';
 import { Input, Textarea } from '@/fsd/shared/ui';
-import styles from '../dictionary-card-form/dictionary-card-form.module.css';
+import styles from '../dictionary-card-form-common.module.css';
 
 export function AuthoringInput({
     'aria-describedby': ariaDescribedBy,

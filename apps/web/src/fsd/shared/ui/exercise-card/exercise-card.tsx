@@ -8,9 +8,12 @@ import {
 } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import styles from './exercise-card.module.css';
+
 export type ExerciseKind = 'vocabulary' | 'grammar' | 'listening' | 'reading';
+
 export type ExerciseStatus =
     'idle' | 'loading' | 'error' | 'correct' | 'incorrect';
+
 export interface ExerciseOption {
     id: string;
     label: string;
@@ -18,6 +21,7 @@ export interface ExerciseOption {
     isCorrect?: boolean;
     disabled?: boolean;
 }
+
 export interface ExerciseCardProps {
     question: string;
     instruction?: string;
@@ -37,12 +41,14 @@ export interface ExerciseCardProps {
     footer?: ReactNode;
     className?: string;
 }
+
 const labels = {
     vocabulary: 'Vocabulary',
     grammar: 'Grammar',
     listening: 'Listening',
     reading: 'Reading',
 };
+
 export function ExerciseCard({
     question,
     instruction,
@@ -63,8 +69,11 @@ export function ExerciseCard({
     className,
 }: ExerciseCardProps) {
     const id = useId();
+
     const revealed = status === 'correct' || status === 'incorrect';
+
     const locked = revealed || status === 'loading' || status === 'error';
+
     if (status === 'loading')
         return (
             <section
@@ -84,6 +93,7 @@ export function ExerciseCard({
                 </div>
             </section>
         );
+
     return (
         <section
             aria-labelledby={`${id}-question`}
@@ -136,16 +146,52 @@ export function ExerciseCard({
                 className={styles.options}
             >
                 {options.map((option) => {
+                    function resolveState() {
+                        if (correct) {
+                            return 'correct' as const;
+                        }
+
+                        if (incorrect) {
+                            return 'incorrect' as const;
+                        }
+
+                        if (selected) {
+                            return 'selected' as const;
+                        }
+
+                        return 'default' as const;
+                    }
+
                     const selected = option.id === selectedOptionId,
                         correct = revealed && option.isCorrect,
                         incorrect = revealed && selected && !option.isCorrect,
-                        state = correct
-                            ? 'correct'
-                            : incorrect
-                              ? 'incorrect'
-                              : selected
-                                ? 'selected'
-                                : 'default';
+                        state = resolveState();
+
+                    function resolveExerciseCardContent() {
+                        if (correct) {
+                            return (
+                                <CheckIcon
+                                    className={styles.optionIcon}
+                                    aria-label='Correct answer'
+                                />
+                            );
+                        }
+
+                        if (incorrect) {
+                            return (
+                                <XIcon
+                                    className={styles.optionIcon}
+                                    aria-label='Incorrect answer'
+                                />
+                            );
+                        }
+
+                        return null;
+                    }
+
+                    const resolvedExerciseCardContent =
+                        resolveExerciseCardContent();
+
                     return (
                         <button
                             key={option.id}
@@ -176,17 +222,7 @@ export function ExerciseCard({
                                     </span>
                                 ) : null}
                             </span>
-                            {correct ? (
-                                <CheckIcon
-                                    className={styles.optionIcon}
-                                    aria-label='Correct answer'
-                                />
-                            ) : incorrect ? (
-                                <XIcon
-                                    className={styles.optionIcon}
-                                    aria-label='Incorrect answer'
-                                />
-                            ) : null}
+                            {resolvedExerciseCardContent}
                         </button>
                     );
                 })}

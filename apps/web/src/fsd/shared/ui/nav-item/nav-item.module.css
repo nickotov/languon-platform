@@ -15,30 +15,37 @@
         background var(--duration-fast),
         color var(--duration-fast);
 }
+
 .vertical {
     width: 100%;
 }
+
 .root:hover {
     background: var(--background-subtle);
     color: var(--text-primary);
 }
+
 .root:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
+
 .icon {
     color: var(--text-tertiary);
     flex: none;
     height: 16px;
     width: 16px;
 }
+
 .active {
     background: var(--background-subtle);
     color: var(--text-primary);
 }
+
 :where(.active) .icon {
     color: var(--text-primary);
 }
+
 .vertical:where(.active):before {
     background: var(--text-primary);
     border-radius: var(--radius-full);
@@ -48,6 +55,7 @@
     position: absolute;
     width: 2px;
 }
+
 .horizontal:where(.active):after {
     background: var(--text-primary);
     border-radius: var(--radius-full);
@@ -57,23 +65,28 @@
     inset-inline: 12px;
     position: absolute;
 }
+
 .disabled {
     color: var(--text-disabled);
     cursor: not-allowed;
 }
+
 .disabled:hover {
     background: transparent;
     color: var(--text-disabled);
 }
+
 .collapsed {
     justify-content: center;
     padding-inline: 8px;
 }
+
 .label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .badge {
     background: var(--background-subtle);
     border-radius: var(--radius-full);
@@ -83,6 +96,7 @@
     padding: 2px 6px;
     text-align: center;
 }
+
 :where(.active) .badge {
     background: var(--text-primary);
     color: var(--background-surface);

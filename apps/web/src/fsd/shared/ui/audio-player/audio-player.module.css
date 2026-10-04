@@ -8,13 +8,16 @@
     padding: 10px 12px;
     width: 100%;
 }
+
 .root:where(.sm) {
     gap: 8px;
     padding: 6px 8px;
 }
+
 .disabled {
     opacity: 0.6;
 }
+
 .play,
 .controlButton {
     align-items: center;
@@ -23,6 +26,7 @@
     flex: none;
     justify-content: center;
 }
+
 .play {
     background: var(--text-primary);
     border-radius: 50%;
@@ -30,33 +34,40 @@
     height: 40px;
     width: 40px;
 }
+
 :where(.sm) .play {
     height: 32px;
     width: 32px;
 }
+
 .playIcon {
     height: 20px;
     width: 20px;
 }
+
 :where(.sm) .playIcon {
     height: 16px;
     width: 16px;
 }
+
 .play:disabled,
 .controlButton:disabled {
     cursor: not-allowed;
     opacity: 0.4;
 }
+
 .play:focus-visible,
 .controlButton:focus-visible,
 .seek:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
+
 .main {
     flex: 1;
     min-width: 0;
 }
+
 .label {
     color: var(--text-primary);
     font-size: 14px;
@@ -66,14 +77,17 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 :where(.sm) .label {
     font-size: 12px;
 }
+
 .timeline {
     align-items: center;
     display: flex;
     gap: 8px;
 }
+
 .time {
     color: var(--text-tertiary);
     font-family: var(--sys-font-mono);
@@ -81,6 +95,7 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
+
 .track {
     background: var(--border-default);
     border-radius: var(--radius-full);
@@ -88,12 +103,14 @@
     position: relative;
     width: 100%;
 }
+
 .progress {
     background: var(--text-primary);
     border-radius: inherit;
     height: 100%;
     position: absolute;
 }
+
 .seek {
     appearance: none;
     background: transparent;
@@ -103,6 +120,7 @@
     position: absolute;
     width: 100%;
 }
+
 .seek::-webkit-slider-thumb {
     appearance: none;
     background: var(--text-primary);
@@ -110,10 +128,12 @@
     height: 12px;
     width: 12px;
 }
+
 .controls {
     display: flex;
     gap: 4px;
 }
+
 .controlButton {
     background: transparent;
     border-radius: var(--radius-full);
@@ -124,31 +144,38 @@
     min-width: 36px;
     padding-inline: 8px;
 }
+
 .controlButton:hover:not(:disabled) {
     background: var(--background-subtle);
     color: var(--text-primary);
 }
+
 .controlIcon {
     height: 16px;
     width: 16px;
 }
+
 .speedActive {
     background: var(--text-primary);
     color: var(--background-surface);
 }
+
 .error {
     color: var(--danger-default);
     font-size: 12px;
     margin: 0;
 }
+
 .spin {
     animation: spin 0.7s linear infinite;
 }
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
     }
 }
+
 @media (max-width: 420px) {
     .time {
         display: none;

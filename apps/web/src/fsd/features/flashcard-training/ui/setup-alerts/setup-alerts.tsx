@@ -16,25 +16,31 @@ export function SetupAlerts({
     onStart(): void;
 }) {
     const { t } = useI18n();
+
     let conflictSummary = '';
+
     if (setup.conflict) {
         const front = orderFields(setup.conflict.configuration.front)
             .map((field) => t(`training.field.${field}`))
             .join(', ');
+
         const back = orderFields(setup.conflict.configuration.back)
             .map((field) => t(`training.field.${field}`))
             .join(', ');
+
         const order = t(
             setup.conflict.shuffle
                 ? 'training.shuffle'
                 : 'training.dictionaryOrder',
         );
+
         conflictSummary = t('training.prefsConflictHelp', {
             front,
             back,
             order,
         });
     }
+
     return (
         <>
             {activeCount === 0 && (

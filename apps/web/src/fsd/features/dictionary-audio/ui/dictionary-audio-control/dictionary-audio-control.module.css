@@ -7,6 +7,7 @@
     font-weight: 400;
     white-space: normal;
 }
+
 .status {
     color: var(--sys-color-text-secondary);
     font-size: 0.875rem;

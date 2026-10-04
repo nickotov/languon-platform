@@ -17,5 +17,6 @@ export default async function Page({
     searchParams: Promise<{ flowId?: string | string[] }>;
 }) {
     const { flowId } = await searchParams;
+
     return <ResetPasswordPage flowId={single(flowId)} />;
 }

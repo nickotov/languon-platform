@@ -3,8 +3,11 @@ import { createElement, type HTMLAttributes, type ReactNode } from 'react';
 import styles from './card.module.css';
 
 export type CardVariant = 'elevated' | 'outlined' | 'subtle';
+
 export type CardPadding = 'lg' | 'md' | 'none' | 'sm';
+
 export type CardElement = 'article' | 'div' | 'li' | 'section';
+
 export type CardProps = HTMLAttributes<HTMLElement> & {
     as?: CardElement;
     interactive?: boolean;
@@ -39,6 +42,7 @@ export function Card({
 export type CardSectionProps = HTMLAttributes<HTMLDivElement> & {
     children?: ReactNode;
 };
+
 export function CardHeader({ className, ...props }: CardSectionProps) {
     return (
         <div
@@ -47,6 +51,7 @@ export function CardHeader({ className, ...props }: CardSectionProps) {
         />
     );
 }
+
 export function CardTitle({
     className,
     ...props
@@ -58,6 +63,7 @@ export function CardTitle({
         />
     );
 }
+
 export function CardDescription({
     className,
     ...props
@@ -71,6 +77,7 @@ export function CardDescription({
         />
     );
 }
+
 export function CardContent({ className, ...props }: CardSectionProps) {
     return (
         <div
@@ -79,6 +86,7 @@ export function CardContent({ className, ...props }: CardSectionProps) {
         />
     );
 }
+
 export function CardFooter({ className, ...props }: CardSectionProps) {
     return (
         <div

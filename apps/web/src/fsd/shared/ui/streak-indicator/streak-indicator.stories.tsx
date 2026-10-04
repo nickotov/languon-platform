@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { StreakIndicator } from './streak-indicator';
+
 const week = [true, true, false, true, true, true, true];
+
 export default {
     title: 'UI/Streak indicator',
     component: StreakIndicator,
 } satisfies Meta<typeof StreakIndicator>;
+
 export const States: StoryObj<typeof StreakIndicator> = {
     render: () => (
         <div style={{ display: 'grid', gap: 16 }}>

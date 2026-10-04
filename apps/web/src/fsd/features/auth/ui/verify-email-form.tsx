@@ -26,40 +26,60 @@ export function VerifyEmailForm({
     returnTo?: string | undefined;
 }) {
     const { href, t } = useI18n();
+
     const router = useRouter();
+
     const { authenticate, capabilities } = useAuth();
+
     const [activeFlowId, setActiveFlowId] = useState(flowId ?? '');
+
     const [error, setError] = useLocaleSensitiveState<string | null>(null);
+
     const [message, setMessage] = useLocaleSensitiveState<string | null>(null);
+
     const [pending, setPending] = useState<'resend' | 'verify' | null>(null);
+
     const [nextResendAt, setNextResendAt] = useState(() =>
         resendAvailableAt ? Date.parse(resendAvailableAt) : 0,
     );
+
     const [now, setNow] = useState(() => Date.now());
+
     const sessionStatus = useSessionStore((state) => state.status);
 
     useEffect(() => {
         const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+
         return () => window.clearInterval(timer);
     }, []);
 
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         if (sessionStatus === 'bootstrapping') return;
+
         setError(null);
+
         setMessage(null);
+
         if (!activeFlowId) {
             setError(t('verify.incompleteFull'));
+
             return;
         }
+
         const code = new FormData(event.currentTarget).get('code');
+
         const parsed = VerificationCodeSchema.safeParse(code);
+
         if (!parsed.success) {
             setError(t('verify.invalidCode'));
+
             return;
         }
 
         setPending('verify');
+
         try {
             await authenticate(
                 () =>
@@ -69,7 +89,9 @@ export function VerifyEmailForm({
                     }),
                 (result) => result,
             );
+
             const destination = safeReturnPath(returnTo);
+
             router.replace(
                 href(
                     preserveCapabilityReturnFragment(destination, destination),
@@ -84,24 +106,34 @@ export function VerifyEmailForm({
 
     async function resend() {
         if (sessionStatus === 'bootstrapping') return;
+
         if (!activeFlowId) return;
+
         setError(null);
+
         setMessage(null);
+
         setPending('resend');
+
         try {
             const response = await authApi.resendVerification({
                 flowId: activeFlowId,
             });
+
             setActiveFlowId(response.verification.flowId);
+
             setNextResendAt(
                 Date.parse(response.verification.resendAvailableAt),
             );
+
             const query = new URLSearchParams({
                 flowId: response.verification.flowId,
                 resendAvailableAt: response.verification.resendAvailableAt,
                 returnTo: safeReturnPath(returnTo),
             });
+
             const destination = safeReturnPath(returnTo);
+
             router.replace(
                 href(
                     preserveCapabilityReturnFragment(
@@ -110,6 +142,7 @@ export function VerifyEmailForm({
                     ),
                 ),
             );
+
             setMessage(t('verify.resent'));
         } catch (caught) {
             setError(localizedAuthError(caught, t));
@@ -123,6 +156,21 @@ export function VerifyEmailForm({
     }
 
     const waitSeconds = Math.max(0, Math.ceil((nextResendAt - now) / 1_000));
+
+    function resolveVerifyEmailFormContent() {
+        if (pending === 'resend') {
+            return t('verify.sending');
+        }
+
+        if (waitSeconds > 0) {
+            return t('verify.resendIn', { seconds: waitSeconds });
+        }
+
+        return t('verify.resend');
+    }
+
+    const resolvedVerifyEmailFormContent = resolveVerifyEmailFormContent();
+
     return (
         <>
             {!activeFlowId ? (
@@ -177,11 +225,7 @@ export function VerifyEmailForm({
                 type='button'
                 variant='secondary'
             >
-                {pending === 'resend'
-                    ? t('verify.sending')
-                    : waitSeconds > 0
-                      ? t('verify.resendIn', { seconds: waitSeconds })
-                      : t('verify.resend')}
+                {resolvedVerifyEmailFormContent}
             </Button>
         </>
     );

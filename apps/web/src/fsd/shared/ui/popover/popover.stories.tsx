@@ -1,9 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Popover } from './popover';
+
 const meta = { component: Popover, title: 'UI/Popover' } satisfies Meta<
     typeof Popover
 >;
+
 export default meta;
+
 export const Default: StoryObj<typeof meta> = {
     args: {
         children: (
@@ -16,6 +19,7 @@ export const Default: StoryObj<typeof meta> = {
         trigger: 'Practice info',
     },
 };
+
 export const ViewportCollision: StoryObj<typeof meta> = {
     args: {
         children: (

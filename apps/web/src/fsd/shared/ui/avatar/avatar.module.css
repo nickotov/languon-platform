@@ -10,26 +10,31 @@
     justify-content: center;
     overflow: hidden;
 }
+
 .image {
     height: 100%;
     object-fit: cover;
     width: 100%;
 }
+
 .fallbackIcon {
     height: 60%;
     width: 60%;
     color: var(--text-tertiary);
 }
+
 .sm {
     height: 32px;
     width: 32px;
     font-size: 12px;
 }
+
 .md {
     height: 40px;
     width: 40px;
     font-size: 14px;
 }
+
 .lg {
     height: 56px;
     width: 56px;

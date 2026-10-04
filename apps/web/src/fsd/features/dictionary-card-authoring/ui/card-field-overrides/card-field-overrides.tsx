@@ -7,7 +7,7 @@ import type {
     LanguageCatalogEntry,
 } from '@languon/contracts';
 import type { AuthoringFieldContent } from '../../types';
-import styles from '../dictionary-card-form/dictionary-card-form.module.css';
+import styles from '../dictionary-card-form-common.module.css';
 
 export function CardFieldOverrides({
     dictionary,
@@ -30,16 +30,21 @@ export function CardFieldOverrides({
     replaceOverrides(overrides: DictionaryCardOverrides): void;
 }) {
     const { locale, t } = useI18n();
+
     const overriding = Object.values(overrides).some((value) => value !== null);
+
     const tone = overriding ? 'warning' : 'neutral';
+
     const status = overriding
         ? t('dictionary.override.overridden')
         : t('dictionary.override.inherited');
+
     const sourceName = languageLabel(
         languages,
         dictionary.sourceLanguage,
         locale,
     );
+
     const targetName = languageLabel(
         languages,
         dictionary.targetLanguage,
@@ -48,52 +53,59 @@ export function CardFieldOverrides({
 
     function toggleOverride(checked: boolean) {
         const settings = dictionary.settings.values;
+
+        function resolveEnabled(
+            enabled: boolean,
+        ): 'enabled' | 'disabled' | null {
+            if (!checked) {
+                return null;
+            }
+
+            if (enabled) {
+                return 'enabled';
+            }
+
+            return 'disabled';
+        }
+
         replaceOverrides({
-            transcriptionEnabled: checked
-                ? settings.transcriptionEnabled
-                    ? 'enabled'
-                    : 'disabled'
-                : null,
-            definitionEnabled: checked
-                ? settings.definitionEnabled
-                    ? 'enabled'
-                    : 'disabled'
-                : null,
-            exampleEnabled: checked
-                ? settings.exampleEnabled
-                    ? 'enabled'
-                    : 'disabled'
-                : null,
-            exampleTranslationEnabled: checked
-                ? settings.exampleTranslationEnabled
-                    ? 'enabled'
-                    : 'disabled'
-                : null,
+            transcriptionEnabled: resolveEnabled(settings.transcriptionEnabled),
+            definitionEnabled: resolveEnabled(settings.definitionEnabled),
+            exampleEnabled: resolveEnabled(settings.exampleEnabled),
+            exampleTranslationEnabled: resolveEnabled(
+                settings.exampleTranslationEnabled,
+            ),
             definitionLanguage: checked ? settings.definitionLanguage : null,
             exampleLanguage: checked ? settings.exampleLanguage : null,
             transcriptionNotation: null,
             transcriptionCustomLabel: null,
         });
     }
+
     function toggleTranscription(checked: boolean) {
         setOverride('transcriptionEnabled', checked ? 'enabled' : 'disabled');
     }
+
     function toggleDefinition(checked: boolean) {
         setOverride('definitionEnabled', checked ? 'enabled' : 'disabled');
     }
+
     function toggleExample(checked: boolean) {
         setOverride('exampleEnabled', checked ? 'enabled' : 'disabled');
     }
+
     function toggleExampleTranslation(checked: boolean) {
         setOverride(
             'exampleTranslationEnabled',
             checked ? 'enabled' : 'disabled',
         );
     }
+
     function changeDefinitionLanguage(value: string) {
         if (value === 'source' || value === 'target')
             setOverride('definitionLanguage', value);
     }
+
     function changeExampleLanguage(value: string) {
         if (value === 'source' || value === 'target')
             setOverride('exampleLanguage', value);

@@ -4,10 +4,12 @@
     background: var(--background-canvas);
     min-height: 100dvh;
 }
+
 .railShell {
     --app-sidebar-center-offset: 36px;
     --app-sidebar-width: var(--size-nav-rail-width);
 }
+
 .desktopSidebar {
     background: var(--background-surface);
     border-inline-end: 1px solid var(--border-default);
@@ -18,10 +20,12 @@
     width: var(--app-sidebar-width);
     z-index: 40;
 }
+
 .content {
     min-width: 0;
     outline: none;
 }
+
 .mobileTopBar {
     align-items: center;
     background: var(--background-surface);
@@ -34,18 +38,22 @@
     top: 0;
     z-index: 30;
 }
+
 .mobileMenuButton {
     height: 44px;
     width: 44px;
 }
+
 .mobileLogo {
     flex: none;
 }
+
 .mobileDivider {
     background: var(--border-default);
     height: 20px;
     width: 1px;
 }
+
 .mobileTitle {
     flex: 1;
     font-size: 14px;
@@ -56,6 +64,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .skipLink {
     background: var(--background-surface);
     border: 2px solid var(--border-focus);
@@ -68,22 +77,27 @@
     transform: translateY(-160%);
     z-index: 100;
 }
+
 .skipLink:focus {
     transform: translateY(0);
 }
+
 @media (min-width: 1024px) {
     .desktopSidebar {
         display: block;
     }
+
     .mobileTopBar {
         display: none;
     }
+
     .content {
         padding-inline-start: var(--app-sidebar-width);
         transition: padding-inline-start var(--duration-normal)
             var(--easing-standard);
     }
 }
+
 @media (prefers-reduced-motion: reduce) {
     .content {
         transition: none;

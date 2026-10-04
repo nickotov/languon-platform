@@ -8,7 +8,7 @@ import type {
     LanguageCatalogEntry,
 } from '@languon/contracts';
 import { LibraryDictionaryRow } from '../library-dictionary-row/library-dictionary-row';
-import styles from '../dictionary-library/dictionary-library.module.css';
+import styles from '../dictionary-library-common.module.css';
 
 export type LibraryResultsProps = {
     catalog: readonly LanguageCatalogEntry[];
@@ -35,27 +35,39 @@ export type LibraryResultsProps = {
 
 export function LibraryResults({ state }: { state: LibraryResultsProps }) {
     const { t } = useI18n();
+
     const alternate = t(
         state.lifecycle === 'active'
             ? 'dictionary.lifecycle.archived'
             : 'dictionary.lifecycle.active',
     );
-    const emptyTitle = t(
-        state.search
-            ? 'dictionary.library.noResults'
-            : state.lifecycle === 'archived'
-              ? 'dictionary.library.noArchived'
-              : 'dictionary.library.empty',
-    );
+
+    function resolveEmptyTitle() {
+        if (state.search) {
+            return 'dictionary.library.noResults' as const;
+        }
+
+        if (state.lifecycle === 'archived') {
+            return 'dictionary.library.noArchived' as const;
+        }
+
+        return 'dictionary.library.empty' as const;
+    }
+
+    const emptyTitle = t(resolveEmptyTitle());
+
     const emptyHelp = t(
         state.search
             ? 'dictionary.library.noResultsHelp'
             : 'dictionary.library.emptyHelp',
     );
+
     const firstDictionary = !state.search && state.lifecycle === 'active';
+
     const emptyClass = firstDictionary
         ? styles.firstDictionary
         : styles.emptyResults;
+
     const error = state.loadError
         ? dictionaryErrorMessage(state.loadError, t)
         : null;

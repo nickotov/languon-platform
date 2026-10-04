@@ -41,10 +41,14 @@ type PopoverContextValue = {
     setPosition(placement: Placement, sideOffset: number): void;
     triggerRef: MutableRefObject<HTMLElement | null>;
 };
+
 const PopoverContext = createContext<PopoverContextValue | null>(null);
+
 const usePopover = () => {
     const context = useContext(PopoverContext);
+
     if (!context) throw new Error('Popover parts must be used within Popover');
+
     return context;
 };
 
@@ -54,6 +58,7 @@ export type PopoverRootProps = {
     onOpenChange?: (open: boolean) => void;
     open?: boolean;
 };
+
 export type LegacyPopoverProps = {
     children: ReactNode;
     label: string;
@@ -63,6 +68,7 @@ export type LegacyPopoverProps = {
 
 export function Popover(props: PopoverRootProps | LegacyPopoverProps) {
     if ('trigger' in props) return <LegacyPopover {...props} />;
+
     return <PopoverRoot {...props} />;
 }
 
@@ -73,10 +79,15 @@ function LegacyPopover({
     trigger,
 }: LegacyPopoverProps) {
     const id = useId();
+
     const triggerRef = useRef<HTMLButtonElement | null>(null);
+
     const panelRef = useRef<HTMLDivElement | null>(null);
+
     const [nativePopover, setNativePopover] = useState(false);
+
     const [open, setOpen] = useState(false);
+
     const { floatingStyles, refs } = useFloating({
         middleware: [offset(8), flip({ padding: 16 }), shift({ padding: 16 })],
         open,
@@ -84,6 +95,7 @@ function LegacyPopover({
         strategy: 'fixed',
         whileElementsMounted: open ? autoUpdate : undefined,
     });
+
     useEffect(() => {
         setNativePopover(
             Boolean(
@@ -93,19 +105,28 @@ function LegacyPopover({
             ),
         );
     }, []);
+
     useEffect(() => {
         const panel = panelRef.current;
+
         if (!panel) return;
+
         const sync = (event: Event) => {
             const nextOpen = (event as ToggleEvent).newState === 'open';
+
             setOpen(nextOpen);
+
             if (nextOpen) panel.focus();
         };
+
         panel.addEventListener('toggle', sync);
+
         return () => panel.removeEventListener('toggle', sync);
     }, []);
+
     useEffect(() => {
         if (!open || nativePopover) return;
+
         const dismiss = (event: PointerEvent) => {
             if (
                 !panelRef.current?.contains(event.target as Node) &&
@@ -113,25 +134,36 @@ function LegacyPopover({
             )
                 setOpen(false);
         };
+
         document.addEventListener('pointerdown', dismiss);
+
         return () => document.removeEventListener('pointerdown', dismiss);
     }, [nativePopover, open]);
+
     useEffect(() => {
         if (open && !nativePopover) panelRef.current?.focus();
     }, [nativePopover, open]);
+
     const setPanel = (node: HTMLDivElement | null) => {
         panelRef.current = node;
+
         refs.setFloating(node);
     };
+
     const setTrigger = (node: HTMLButtonElement | null) => {
         triggerRef.current = node;
+
         refs.setReference(node);
     };
+
     const hide = (restoreFocus = false) => {
         if (nativePopover) panelRef.current?.hidePopover();
+
         setOpen(false);
+
         if (restoreFocus) triggerRef.current?.focus();
     };
+
     return (
         <span className={styles.root}>
             <button
@@ -167,6 +199,7 @@ function LegacyPopover({
                 onKeyDown={(event) => {
                     if (event.key === 'Escape') {
                         event.preventDefault();
+
                         hide(true);
                     }
                 }}
@@ -189,12 +222,19 @@ function PopoverRoot({
     open: controlledOpen,
 }: PopoverRootProps) {
     const [internalOpen, setInternalOpen] = useState(defaultOpen);
+
     const [placement, setPlacement] = useState<Placement>('bottom');
+
     const [sideOffset, setSideOffset] = useState(8);
+
     const open = controlledOpen ?? internalOpen;
+
     const triggerRef = useRef<HTMLElement | null>(null);
+
     const contentRef = useRef<HTMLDivElement | null>(null);
+
     const contentId = useId();
+
     const { floatingStyles, refs } = useFloating({
         middleware: [
             offset(sideOffset),
@@ -206,24 +246,32 @@ function PopoverRoot({
         strategy: 'fixed',
         whileElementsMounted: open ? autoUpdate : undefined,
     });
+
     const setOpen = useCallback(
         (next: boolean) => {
             if (controlledOpen === undefined) setInternalOpen(next);
+
             onOpenChange?.(next);
         },
         [controlledOpen, onOpenChange],
     );
+
     const setPosition = useCallback(
         (nextPlacement: Placement, nextOffset: number) => {
             setPlacement(nextPlacement);
+
             setSideOffset(nextOffset);
         },
         [],
     );
+
     useEffect(() => {
         refs.setReference(triggerRef.current);
+
         refs.setFloating(contentRef.current);
+
         if (!open) return;
+
         const dismiss = (event: PointerEvent) => {
             if (
                 !contentRef.current?.contains(event.target as Node) &&
@@ -231,19 +279,26 @@ function PopoverRoot({
             )
                 setOpen(false);
         };
+
         const escape = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 setOpen(false);
+
                 triggerRef.current?.focus();
             }
         };
+
         document.addEventListener('pointerdown', dismiss);
+
         document.addEventListener('keydown', escape);
+
         return () => {
             document.removeEventListener('pointerdown', dismiss);
+
             document.removeEventListener('keydown', escape);
         };
     }, [open, refs, setOpen]);
+
     return (
         <PopoverContext.Provider
             value={{
@@ -269,13 +324,16 @@ type TriggerChildProps = {
     onClick?: (event: SyntheticEvent) => void;
     ref?: Ref<HTMLElement>;
 };
+
 export type PopoverTriggerProps = ButtonHTMLAttributes<HTMLButtonElement> & {
     asChild?: boolean;
 };
+
 const assignRef = <T,>(ref: Ref<T> | undefined, value: T | null) => {
     if (typeof ref === 'function') ref(value);
     else if (ref) ref.current = value;
 };
+
 const composeHandlers =
     <E extends SyntheticEvent>(
         childHandler: ((event: E) => void) | undefined,
@@ -283,6 +341,7 @@ const composeHandlers =
     ) =>
     (event: E) => {
         childHandler?.(event);
+
         if (!event.defaultPrevented) ownHandler(event);
     };
 
@@ -294,10 +353,13 @@ export const PopoverTrigger = forwardRef<
     forwardedRef,
 ) {
     const context = usePopover();
+
     if (asChild && isValidElement(children)) {
         const child = children as ReactElement<TriggerChildProps>;
+
         const triggerClick = onClick as unknown as
             ((event: SyntheticEvent) => void) | undefined;
+
         return cloneElement(child, {
             ...props,
             'aria-controls': context.contentId,
@@ -314,11 +376,14 @@ export const PopoverTrigger = forwardRef<
             ),
             ref: (node) => {
                 context.triggerRef.current = node;
+
                 assignRef(child.props.ref, node);
+
                 assignRef(forwardedRef as Ref<HTMLElement>, node);
             },
         });
     }
+
     return (
         <button
             {...props}
@@ -331,6 +396,7 @@ export const PopoverTrigger = forwardRef<
             )}
             ref={(node) => {
                 context.triggerRef.current = node;
+
                 assignRef(forwardedRef, node);
             }}
             type={props.type ?? 'button'}
@@ -343,22 +409,27 @@ export const PopoverTrigger = forwardRef<
 export type PopoverAnchorProps = HTMLAttributes<HTMLElement> & {
     asChild?: boolean;
 };
+
 export const PopoverAnchor = forwardRef<HTMLElement, PopoverAnchorProps>(
     function PopoverAnchor(
         { asChild = false, children, className, ...props },
         forwardedRef,
     ) {
         const context = usePopover();
+
         const setRef = (node: HTMLElement | null) => {
             context.triggerRef.current = node;
+
             if (typeof forwardedRef === 'function') forwardedRef(node);
             else if (forwardedRef) forwardedRef.current = node;
         };
+
         if (asChild && isValidElement(children)) {
             const child = children as ReactElement<{
                 className?: string;
                 ref?: Ref<HTMLElement>;
             }>;
+
             return cloneElement(child, {
                 ...props,
                 className: [child.props.className, className]
@@ -366,10 +437,12 @@ export const PopoverAnchor = forwardRef<HTMLElement, PopoverAnchorProps>(
                     .join(' '),
                 ref: (node) => {
                     assignRef(child.props.ref, node);
+
                     setRef(node);
                 },
             });
         }
+
         return (
             <span {...props} className={className} ref={setRef}>
                 {children}
@@ -379,12 +452,14 @@ export const PopoverAnchor = forwardRef<HTMLElement, PopoverAnchorProps>(
 );
 
 type PopoverSide = 'bottom' | 'left' | 'right' | 'top';
+
 export type PopoverContentProps = HTMLAttributes<HTMLDivElement> & {
     align?: 'center' | 'end' | 'start';
     showArrow?: boolean;
     side?: PopoverSide;
     sideOffset?: number;
 };
+
 export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
     function PopoverContent(
         {
@@ -399,16 +474,22 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
         forwardedRef,
     ) {
         const context = usePopover();
+
         const { setPosition } = context;
+
         const [mounted, setMounted] = useState(false);
+
         useEffect(() => {
             setMounted(true);
+
             setPosition(
                 (side + (align === 'center' ? '' : '-' + align)) as Placement,
                 sideOffset,
             );
         }, [align, setPosition, side, sideOffset]);
+
         if (!mounted || !context.open) return null;
+
         return createPortal(
             <div
                 {...props}
@@ -418,6 +499,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                 id={context.contentId}
                 ref={(node) => {
                     context.contentRef.current = node;
+
                     if (typeof forwardedRef === 'function') forwardedRef(node);
                     else if (forwardedRef) forwardedRef.current = node;
                 }}
@@ -445,10 +527,13 @@ export function PopoverHeader({
         />
     );
 }
+
 export type PopoverHeaderProps = HTMLAttributes<HTMLDivElement>;
+
 export type PopoverItemProps = ButtonHTMLAttributes<HTMLButtonElement> & {
     selected?: boolean;
 };
+
 export const PopoverItem = forwardRef<HTMLButtonElement, PopoverItemProps>(
     function PopoverItem(
         { children, className, selected = false, ...props },
@@ -475,7 +560,9 @@ export const PopoverItem = forwardRef<HTMLButtonElement, PopoverItemProps>(
         );
     },
 );
+
 export type PopoverSeparatorProps = HTMLAttributes<HTMLDivElement>;
+
 export function PopoverSeparator({
     className,
     ...props
@@ -488,18 +575,23 @@ export function PopoverSeparator({
         />
     );
 }
+
 export type PopoverCloseProps = ButtonHTMLAttributes<HTMLButtonElement> & {
     asChild?: boolean;
 };
+
 export const PopoverClose = forwardRef<HTMLButtonElement, PopoverCloseProps>(
     function PopoverClose(
         { asChild = false, children, className, onClick, ...props },
         forwardedRef,
     ) {
         const context = usePopover();
+
         const close = () => context.setOpen(false);
+
         if (asChild && isValidElement(children)) {
             const child = children as ReactElement<TriggerChildProps>;
+
             return cloneElement(child, {
                 ...props,
                 className: [child.props.className, className]
@@ -511,10 +603,12 @@ export const PopoverClose = forwardRef<HTMLButtonElement, PopoverCloseProps>(
                 ),
                 ref: (node) => {
                     assignRef(child.props.ref, node);
+
                     assignRef(forwardedRef as Ref<HTMLElement>, node);
                 },
             } as Partial<TriggerChildProps>);
         }
+
         return (
             <button
                 {...props}

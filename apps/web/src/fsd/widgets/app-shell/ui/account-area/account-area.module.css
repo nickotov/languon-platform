@@ -3,6 +3,7 @@
     flex: none;
     padding: 12px;
 }
+
 .trigger,
 .railTrigger {
     align-items: center;
@@ -13,6 +14,7 @@
     display: flex;
     font: inherit;
 }
+
 .trigger {
     border-radius: var(--radius-md);
     gap: 12px;
@@ -21,6 +23,7 @@
     text-align: start;
     width: 100%;
 }
+
 .railTrigger {
     border-radius: var(--radius-full);
     height: 44px;
@@ -28,12 +31,14 @@
     margin: 0 auto;
     width: 44px;
 }
+
 .trigger:hover,
 .railTrigger:hover,
 .trigger[aria-expanded='true'],
 .railTrigger[aria-expanded='true'] {
     background: var(--background-subtle);
 }
+
 .trigger:focus-visible,
 .railTrigger:focus-visible,
 .menuRow:focus-visible,
@@ -41,11 +46,13 @@
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
+
 .identity {
     display: block;
     flex: 1;
     min-width: 0;
 }
+
 .identityHandle,
 .identityDescription {
     display: block;
@@ -53,31 +60,37 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .identityHandle {
     font-size: 14px;
     font-weight: 600;
 }
+
 .identityDescription {
     color: var(--text-secondary);
     font-size: 12px;
     margin-top: 2px;
 }
+
 .popover {
     max-width: min(272px, calc(100vw - 24px));
     padding: 0;
     width: 272px;
 }
+
 .inlineMenu {
     background: var(--background-elevated);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
     margin-top: 8px;
 }
+
 .menuContent {
     display: grid;
     gap: 8px;
     padding: 8px;
 }
+
 .menuRow {
     align-items: center;
     background: transparent;
@@ -96,28 +109,34 @@
     text-decoration: none;
     width: 100%;
 }
+
 .menuRow:hover:not(:disabled) {
     background: var(--background-subtle);
 }
+
 .menuRow:disabled {
     color: var(--text-disabled);
     cursor: wait;
 }
+
 .divider {
     background: var(--border-default);
     height: 1px;
 }
+
 .themeFieldset {
     border: 0;
     margin: 0;
     padding: 0;
 }
+
 .themeLegend {
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
     margin-bottom: 6px;
 }
+
 .themeOptions {
     background: var(--background-subtle);
     border-radius: var(--radius-md);
@@ -126,6 +145,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     padding: 4px;
 }
+
 .themeOption {
     align-items: center;
     background: transparent;
@@ -143,10 +163,12 @@
     min-width: 0;
     padding: 4px 2px;
 }
+
 .themeLabel {
     max-width: 100%;
     overflow-wrap: anywhere;
 }
+
 .themeOption[aria-pressed='true'] {
     background: var(--background-surface);
     border-color: var(--border-strong);

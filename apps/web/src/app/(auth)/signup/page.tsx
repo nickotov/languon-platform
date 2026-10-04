@@ -17,5 +17,6 @@ export default async function Page({
     searchParams: Promise<{ returnTo?: string | string[] }>;
 }) {
     const { returnTo } = await searchParams;
+
     return <SignupPage returnTo={single(returnTo)} />;
 }

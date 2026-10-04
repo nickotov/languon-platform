@@ -14,67 +14,82 @@
         color var(--duration-fast) var(--easing-standard);
     white-space: nowrap;
 }
+
 .fullWidth {
     width: 100%;
 }
+
 .compact,
 .small {
     height: 36px;
     padding-inline: 12px;
     font-size: 14px;
 }
+
 .default,
 .medium {
     height: 44px;
     padding-inline: 16px;
     font-size: 14px;
 }
+
 .large {
     height: 52px;
     padding-inline: 24px;
     font-size: 16px;
 }
+
 .button:disabled {
     background: var(--background-subtle);
     border-color: var(--border-default);
     color: var(--text-disabled);
     cursor: not-allowed;
 }
+
 .primary {
     background: var(--primary-default);
     color: var(--text-on-primary);
 }
+
 .primary:hover:not(:disabled) {
     background: var(--primary-hover);
 }
+
 .primary:active:not(:disabled) {
     background: var(--primary-pressed);
 }
+
 .secondary {
     background: var(--background-surface);
     border-color: var(--border-default);
     color: var(--text-primary);
 }
+
 .secondary:hover:not(:disabled) {
     background: var(--background-subtle);
     border-color: var(--border-strong);
 }
+
 .ghost,
 .quiet {
     background: transparent;
     color: var(--text-primary);
 }
+
 .ghost:hover:not(:disabled),
 .quiet:hover:not(:disabled) {
     background: var(--background-subtle);
 }
+
 .danger {
     background: var(--danger-default);
     color: var(--text-on-danger);
 }
+
 .danger:hover:not(:disabled) {
     filter: brightness(0.92);
 }
+
 .spinner {
     animation: spin 0.7s linear infinite;
     border: 2px solid currentColor;
@@ -83,6 +98,7 @@
     height: 16px;
     width: 16px;
 }
+
 @keyframes spin {
     to {
         transform: rotate(360deg);

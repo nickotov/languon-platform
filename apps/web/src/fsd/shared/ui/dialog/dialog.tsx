@@ -13,6 +13,7 @@ import {
 import styles from './dialog.module.css';
 
 export type DialogSize = 'large' | 'lg' | 'md' | 'medium' | 'sm' | 'small';
+
 export type DialogProps = {
     children?: ReactNode;
     className?: string;
@@ -37,19 +38,30 @@ export type DialogProps = {
 };
 
 const DialogContext = createContext<{ onClose(): void } | null>(null);
+
 export function useDialog() {
     const context = useContext(DialogContext);
+
     if (!context) throw new Error('useDialog must be used within a Dialog');
+
     return context;
 }
-const normalizeSize = (size: DialogSize) =>
-    size === 'small'
-        ? 'sm'
-        : size === 'large'
-          ? 'lg'
-          : size === 'medium'
-            ? 'md'
-            : size;
+
+const normalizeSize = (size: DialogSize) => {
+    if (size === 'small') {
+        return 'sm';
+    }
+
+    if (size === 'large') {
+        return 'lg';
+    }
+
+    if (size === 'medium') {
+        return 'md';
+    }
+
+    return size;
+};
 
 export function Dialog({
     children,
@@ -74,14 +86,20 @@ export function Dialog({
     variant = 'dialog',
 }: DialogProps) {
     const ref = useRef<HTMLDialogElement>(null);
+
     const titleId = useId();
+
     const descriptionId = useId();
+
     const canDismissWithEscape = dismissible && dismissOnEscape;
 
     useEffect(() => {
         const dialog = ref.current;
+
         if (!dialog) return;
+
         if (open && !dialog.open) dialog.showModal();
+
         if (!open && dialog.open) dialog.close();
     }, [open]);
 
@@ -103,6 +121,7 @@ export function Dialog({
                     .join(' ')}
                 onCancel={(event) => {
                     event.preventDefault();
+
                     if (canDismissWithEscape) onClose();
                 }}
                 onClick={(event) => {
@@ -205,6 +224,7 @@ export function DialogActions({
 export function AlertDialog(props: Omit<DialogProps, 'role'>) {
     return <Dialog {...props} role='alertdialog' />;
 }
+
 export function BottomSheet(
     props: Omit<DialogProps, 'closeLabel' | 'variant'> & { closeLabel: string },
 ) {

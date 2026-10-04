@@ -16,6 +16,7 @@ export interface TrainingLanguage {
     name: string;
     direction: 'ltr' | 'rtl';
 }
+
 export function ManualSelection({
     api,
     selectedIds,
@@ -36,22 +37,34 @@ export function ManualSelection({
     disabled: boolean;
 }) {
     const { t } = useI18n();
+
     const selection = useManualSelection(api);
+
     const pageIds = selection.entries.map((entry) => entry.entryId);
+
     const all =
         pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+
     const mixed = !all && pageIds.some((id) => selectedIds.has(id));
+
     const selectedLabel = t('training.selected', { count: selectedIds.size });
+
     const pageLabel = t('training.page', { count: selection.page });
+
     const selectLabel = t('training.selectPage', { count: pageIds.length });
+
     const emptyLabel = t('training.noMatch', { query: selection.query });
+
     const previousDisabled =
         disabled || selection.page <= 1 || selection.status === 'loading';
+
     const nextDisabled =
         disabled || !selection.nextCursor || selection.status === 'loading';
+
     function handleSearch(event: ChangeEvent<HTMLInputElement>) {
         selection.setSearch(event.target.value);
     }
+
     function handlePage() {
         onSetMany(pageIds, !all);
     }
@@ -175,6 +188,7 @@ function SelectionRow({
     function handleChange() {
         onToggle(entry.entryId);
     }
+
     const label = (
         <span className='grid min-w-0 grid-cols-2 gap-3'>
             <span
@@ -193,6 +207,7 @@ function SelectionRow({
             </span>
         </span>
     );
+
     return (
         <li className='min-w-0 px-3 py-1'>
             <Checkbox checked={checked} onChange={handleChange} label={label} />

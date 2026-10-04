@@ -9,9 +9,11 @@
     padding: 16px;
     width: 100%;
 }
+
 .alert:focus {
     outline: none;
 }
+
 .info {
     background: var(--info-50);
     border-color: var(--info-200);
@@ -19,6 +21,7 @@
     --alert-body: var(--info-800);
     --alert-icon: var(--info-600);
 }
+
 .success {
     background: var(--success-50);
     border-color: var(--success-200);
@@ -26,6 +29,7 @@
     --alert-body: var(--success-800);
     --alert-icon: var(--success-600);
 }
+
 .warning {
     background: var(--warning-50);
     border-color: var(--warning-200);
@@ -33,6 +37,7 @@
     --alert-body: var(--warning-800);
     --alert-icon: var(--warning-600);
 }
+
 .error {
     background: var(--danger-50);
     border-color: var(--danger-200);
@@ -40,6 +45,7 @@
     --alert-body: var(--danger-800);
     --alert-icon: var(--danger-600);
 }
+
 .tip {
     background: var(--neutral-50);
     border-color: var(--neutral-200);
@@ -47,6 +53,7 @@
     --alert-body: var(--neutral-700);
     --alert-icon: var(--neutral-600);
 }
+
 .icon {
     align-items: center;
     border: 1.5px solid currentColor;
@@ -61,24 +68,30 @@
     margin-top: 2px;
     width: 20px;
 }
+
 .content {
     flex: 1;
     min-width: 0;
 }
+
 .title {
     color: var(--alert-strong);
     font-weight: 600;
     margin: 0;
 }
+
 .body {
     color: var(--alert-body);
 }
+
 :where(.title) + .body {
     margin-top: 4px;
 }
+
 .body :where(p) {
     margin: 0;
 }
+
 .actions {
     align-items: center;
     display: flex;
@@ -86,6 +99,7 @@
     gap: 12px;
     margin-top: 12px;
 }
+
 .dismiss {
     background: transparent;
     border: 0;
@@ -98,9 +112,11 @@
     margin: -4px;
     padding: 4px;
 }
+
 .dismiss:hover {
     background: rgb(0 0 0 / 5%);
 }
+
 .dismiss:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 1px;

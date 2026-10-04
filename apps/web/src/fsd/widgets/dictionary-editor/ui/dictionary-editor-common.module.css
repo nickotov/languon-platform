@@ -158,11 +158,13 @@
     .header {
         padding: 16px;
     }
+
     .filters {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
     }
+
     .search {
         max-width: 320px;
     }
@@ -193,11 +195,13 @@
         padding: 40px 48px 136px;
         width: 100%;
     }
+
     .summaryContent {
         flex-direction: row;
         align-items: flex-start;
         justify-content: space-between;
     }
+
     .addCard {
         bottom: 32px;
         inset-inline-start: calc(50% + var(--app-sidebar-center-offset, 0px));
@@ -220,6 +224,7 @@
     border-radius: var(--radius-lg);
     background: var(--background-surface);
 }
+
 .emptyCards {
     display: flex;
     flex-direction: column;
@@ -227,27 +232,33 @@
     gap: 12px;
     text-align: center;
 }
+
 .emptyTitle {
     margin: 0;
     font-size: 18px;
     line-height: 28px;
     font-weight: 600;
 }
+
 .emptyHelp {
     max-width: 448px;
     margin: 0;
     font-size: 14px;
     color: var(--text-secondary);
 }
+
 :where(.noMatches) .emptyTitle {
     font-size: 16px;
 }
+
 :where(.noMatches) .emptyHelp {
     margin-top: 4px;
 }
+
 :where(.noMatches) .emptyAction {
     margin-top: 12px;
 }
+
 .emptyIcon {
     display: grid;
     place-items: center;
@@ -277,6 +288,7 @@
     background: var(--background-surface);
     color: var(--text-primary);
 }
+
 .settingsAction:hover:not(:disabled) {
     background: var(--background-subtle);
 }
@@ -286,10 +298,12 @@
         border-bottom: 1px solid var(--border-default);
         padding: 16px;
     }
+
     .settingsTitle {
         font-size: 16px;
         line-height: 24px;
     }
+
     .settingsSheet::backdrop {
         backdrop-filter: none;
     }

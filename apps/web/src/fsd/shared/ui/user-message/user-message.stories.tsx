@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { UserMessage } from './user-message';
+
 export default {
     title: 'UI/User message',
     component: UserMessage,
 } satisfies Meta<typeof UserMessage>;
+
 export const States: StoryObj<typeof UserMessage> = {
     render: () => (
         <div role='list' style={{ display: 'grid', gap: 16, maxWidth: 576 }}>

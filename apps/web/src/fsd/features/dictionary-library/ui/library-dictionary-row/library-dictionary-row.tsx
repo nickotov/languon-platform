@@ -17,7 +17,7 @@ import type {
     DictionaryLifecycle,
     LanguageCatalogEntry,
 } from '@languon/contracts';
-import styles from '../dictionary-library/dictionary-library.module.css';
+import styles from '../dictionary-library-common.module.css';
 
 type Props = {
     dictionary: DictionarySummary;
@@ -45,27 +45,43 @@ export function LibraryDictionaryRow({
     onOpenSettings,
 }: Props) {
     const { href, locale, t } = useI18n();
+
     const path = href(`/dictionaries/${dictionary.id}`);
+
     const source = languageLabel(catalog, dictionary.sourceLanguage, locale);
+
     const target = languageLabel(catalog, dictionary.targetLanguage, locale);
+
     const pair = `${source} → ${target}`;
+
     const count = t('dictionary.library.cardCount', {
         count: dictionary.activeCardCount,
     });
+
     const updated = t('dictionary.library.updated', {
         date: new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
             new Date(dictionary.updatedAt),
         ),
     });
+
     const privateDictionary = dictionary.visibility === 'private';
-    const visibilityIcon = privateDictionary ? (
-        <Lock aria-hidden size={14} />
-    ) : (
-        <LinkIcon aria-hidden size={14} />
-    );
+
+    function resolveVisibilityIcon() {
+        if (privateDictionary) {
+            return <Lock aria-hidden size={14} />;
+        }
+
+        return <LinkIcon aria-hidden size={14} />;
+    }
+
+    const visibilityIcon = resolveVisibilityIcon();
+
     const visibilityTone = privateDictionary ? 'neutral' : 'warning';
+
     const visibilityLabel = t(`dictionary.visibility.${dictionary.visibility}`);
+
     const archived = dictionary.lifecycle === 'archived';
+
     const actionsLabel = t('dictionary.library.actions', {
         name: dictionary.name,
     });
@@ -73,6 +89,7 @@ export function LibraryDictionaryRow({
     function openSettings() {
         onOpenSettings(dictionary);
     }
+
     function changeLifecycle() {
         onChangeLifecycle({
             id: dictionary.id,
@@ -80,9 +97,11 @@ export function LibraryDictionaryRow({
             version: dictionary.version,
         });
     }
+
     function deleteDictionary() {
         onDelete(dictionary);
     }
+
     function toggleSelection() {
         onToggleSelected(dictionary.id);
     }
@@ -94,27 +113,33 @@ export function LibraryDictionaryRow({
             onSelect: openSettings,
             icon: <Settings size={16} />,
         },
-        ...(archived
-            ? [
-                  {
-                      label: t('dictionary.deletion.deletePermanently'),
-                      disabled,
-                      onSelect: deleteDictionary,
-                      icon: <Trash2 size={16} />,
-                  },
-              ]
-            : []),
-        {
-            label: t(
-                archived
-                    ? 'dictionary.library.restore'
-                    : 'dictionary.library.archive',
-            ),
-            disabled,
-            onSelect: changeLifecycle,
-            icon: archived ? <RotateCcw size={16} /> : <Archive size={16} />,
-        },
     ];
+
+    if (archived) {
+        items.push({
+            label: t('dictionary.deletion.deletePermanently'),
+            disabled,
+            onSelect: deleteDictionary,
+            icon: <Trash2 size={16} />,
+        });
+    }
+
+    let lifecycleLabel = t('dictionary.library.archive');
+
+    let lifecycleIcon = <Archive size={16} />;
+
+    if (archived) {
+        lifecycleLabel = t('dictionary.library.restore');
+
+        lifecycleIcon = <RotateCcw size={16} />;
+    }
+
+    items.push({
+        label: lifecycleLabel,
+        disabled,
+        onSelect: changeLifecycle,
+        icon: lifecycleIcon,
+    });
 
     return (
         <li>

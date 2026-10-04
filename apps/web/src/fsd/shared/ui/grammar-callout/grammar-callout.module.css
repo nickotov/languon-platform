@@ -12,21 +12,25 @@
     position: relative;
     width: 100%;
 }
+
 .tip {
     --tone: var(--success-default);
     --tone-bg: var(--success-subtle);
     --tone-border: var(--success-200);
 }
+
 .warning {
     --tone: var(--warning-default);
     --tone-bg: var(--warning-subtle);
     --tone-border: var(--warning-200);
 }
+
 .example {
     --tone: var(--info-default);
     --tone-bg: var(--info-50);
     --tone-border: var(--info-200);
 }
+
 .accent {
     background: var(--tone);
     inset-block: 0;
@@ -34,6 +38,7 @@
     position: absolute;
     width: 4px;
 }
+
 .icon {
     color: var(--tone);
     flex: none;
@@ -41,10 +46,12 @@
     margin-top: 2px;
     width: 16px;
 }
+
 .content {
     flex: 1;
     min-width: 0;
 }
+
 .eyebrow {
     color: var(--tone);
     font-size: 11px;
@@ -53,11 +60,13 @@
     margin: 0;
     text-transform: uppercase;
 }
+
 .title {
     color: var(--text-primary);
     font-size: 14px;
     margin: 2px 0 0;
 }
+
 .body {
     color: var(--text-secondary);
     font-size: 14px;

@@ -8,6 +8,7 @@
     color: var(--text-primary);
     font-weight: 500;
 }
+
 .labelRow {
     align-items: center;
     display: flex;
@@ -15,11 +16,13 @@
     gap: 8px;
     justify-content: space-between;
 }
+
 .labelAction {
     align-items: center;
     display: flex;
     margin-inline-start: auto;
 }
+
 .label[data-required]::after {
     content: ' *';
 }
@@ -35,6 +38,7 @@
     color: var(--sys-color-danger);
     font-size: 14px;
 }
+
 .success {
     color: var(--sys-color-success);
     font-size: 14px;

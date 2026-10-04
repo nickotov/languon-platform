@@ -16,18 +16,31 @@ export function SessionStatus({
     onClose(): void;
 }) {
     const { t } = useI18n();
+
     const unavailable = state.phase === 'unavailable';
+
     const Icon = unavailable ? Lock : AlertTriangle;
+
     const title = t(unavailable ? 'training.accessLost' : 'training.error');
-    const body = t(
-        unavailable
-            ? 'training.accessLostHelp'
-            : state.error?.code === 'rate_limited'
-              ? 'training.rateLimited'
-              : 'training.network',
-    );
+
+    function resolveBody() {
+        if (unavailable) {
+            return 'training.accessLostHelp' as const;
+        }
+
+        if (state.error?.code === 'rate_limited') {
+            return 'training.rateLimited' as const;
+        }
+
+        return 'training.network' as const;
+    }
+
+    const body = t(resolveBody());
+
     const saved = t('training.savedBefore', { count: state.savedCount });
+
     const close = t(unavailable ? 'training.close' : 'training.endSession');
+
     return (
         <div
             role='alert'

@@ -44,7 +44,9 @@ export function EditorDocumentSheet({
 
     const handleClose: ComponentProps<typeof BottomSheet>['onClose'] = () => {
         setDocumentGenerationOpen(false);
+
         setDocumentGenerationJobId(null);
+
         syncDocumentGenerationUrl(null);
     };
 
@@ -56,9 +58,7 @@ export function EditorDocumentSheet({
     >['available'] =
         generationCapabilities.data?.documentTermsGeneration.available === true;
 
-    const conflictValue: ComponentProps<
-        typeof DictionaryDocumentGenerationPanel
-    >['conflict'] =
+    const conflictValue =
         (documentGenerationAction.error instanceof DictionaryApiError &&
             documentGenerationAction.error.detail.code ===
                 'version_conflict') ||
@@ -72,13 +72,19 @@ export function EditorDocumentSheet({
                 documentGenerationJob.data.job.targetLanguage !==
                     current.targetLanguage));
 
-    const errorValue: ComponentProps<
-        typeof DictionaryDocumentGenerationPanel
-    >['error'] = documentGenerationAction.error
-        ? dictionaryErrorMessage(documentGenerationAction.error, t)
-        : documentGenerationJob.error
-          ? dictionaryErrorMessage(documentGenerationJob.error, t)
-          : null;
+    function resolveErrorValue() {
+        if (documentGenerationAction.error) {
+            return dictionaryErrorMessage(documentGenerationAction.error, t);
+        }
+
+        if (documentGenerationJob.error) {
+            return dictionaryErrorMessage(documentGenerationJob.error, t);
+        }
+
+        return null;
+    }
+
+    const errorValue = resolveErrorValue();
 
     const nativeExtractionAvailableValue: ComponentProps<
         typeof DictionaryDocumentGenerationPanel
@@ -111,7 +117,9 @@ export function EditorDocumentSheet({
         typeof DictionaryDocumentGenerationPanel
     >['onClose'] = () => {
         setDocumentGenerationOpen(false);
+
         setDocumentGenerationJobId(null);
+
         syncDocumentGenerationUrl(null);
     };
 
@@ -127,6 +135,7 @@ export function EditorDocumentSheet({
         typeof DictionaryDocumentGenerationPanel
     >['onReloadConflict'] = async () => {
         documentGenerationAction.reset();
+
         await Promise.all([
             dictionary.refetch(),
             cards.refetch(),
@@ -152,24 +161,24 @@ export function EditorDocumentSheet({
         });
     };
 
-    return (
-        <BottomSheet
-            closeLabel={t('common.cancel')}
-            description={t('dictionary.document.sheetHelp')}
-            dismissible={!documentGenerationAction.isPending}
-            onClose={handleClose}
-            open={documentGenerationOpen}
-            size='large'
-            title={t('dictionary.document.title')}
-        >
-            {documentGenerationOpen &&
+    function resolveEditorDocumentSheetContent() {
+        if (
+            documentGenerationOpen &&
             documentGenerationJobId &&
-            documentGenerationJob.isPending ? (
+            documentGenerationJob.isPending
+        ) {
+            return (
                 <LoadingState>{t('dictionary.document.loading')}</LoadingState>
-            ) : documentGenerationOpen &&
-              documentGenerationJobId &&
-              documentGenerationJob.isError &&
-              !documentGenerationJob.data ? (
+            );
+        }
+
+        if (
+            documentGenerationOpen &&
+            documentGenerationJobId &&
+            documentGenerationJob.isError &&
+            !documentGenerationJob.data
+        ) {
+            return (
                 <ErrorState
                     action={
                         <Button onClick={handleClick} type='button'>
@@ -180,7 +189,11 @@ export function EditorDocumentSheet({
                 >
                     {dictionaryErrorMessage(documentGenerationJob.error, t)}
                 </ErrorState>
-            ) : documentGenerationOpen ? (
+            );
+        }
+
+        if (documentGenerationOpen) {
+            return (
                 <DictionaryDocumentGenerationPanel
                     available={availableValue}
                     conflict={conflictValue}
@@ -203,7 +216,26 @@ export function EditorDocumentSheet({
                     onStart={handleStart}
                     pendingAction={documentGenerationAction.isPending}
                 />
-            ) : null}
+            );
+        }
+
+        return null;
+    }
+
+    const resolvedEditorDocumentSheetContent =
+        resolveEditorDocumentSheetContent();
+
+    return (
+        <BottomSheet
+            closeLabel={t('common.cancel')}
+            description={t('dictionary.document.sheetHelp')}
+            dismissible={!documentGenerationAction.isPending}
+            onClose={handleClose}
+            open={documentGenerationOpen}
+            size='large'
+            title={t('dictionary.document.title')}
+        >
+            {resolvedEditorDocumentSheetContent}
         </BottomSheet>
     );
 }

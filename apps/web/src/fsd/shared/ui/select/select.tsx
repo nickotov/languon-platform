@@ -3,8 +3,11 @@ import { forwardRef, type SelectHTMLAttributes, useId } from 'react';
 import styles from './select.module.css';
 
 export type SelectOption = { disabled?: boolean; label: string; value: string };
+
 export type SelectOptionGroup = { label: string; options: SelectOption[] };
+
 export type SelectSize = 'lg' | 'md' | 'sm';
+
 export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
     containerClassName?: string;
     error?: string;
@@ -40,9 +43,35 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         ref,
     ) {
         const generatedId = useId();
+
         const selectId = id ?? `select-${generatedId}`;
+
         const hintId = hint && !error ? `${selectId}-hint` : undefined;
+
         const errorId = error ? `${selectId}-error` : undefined;
+
+        function resolveSelectContent() {
+            if (error) {
+                return (
+                    <span className={styles.error} id={errorId} role='alert'>
+                        {error}
+                    </span>
+                );
+            }
+
+            if (hint) {
+                return (
+                    <span className={styles.hint} id={hintId}>
+                        {hint}
+                    </span>
+                );
+            }
+
+            return null;
+        }
+
+        const resolvedSelectContent = resolveSelectContent();
+
         return (
             <span
                 className={[
@@ -115,15 +144,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                         {loading ? '' : '⌄'}
                     </span>
                 </span>
-                {error ? (
-                    <span className={styles.error} id={errorId} role='alert'>
-                        {error}
-                    </span>
-                ) : hint ? (
-                    <span className={styles.hint} id={hintId}>
-                        {hint}
-                    </span>
-                ) : null}
+                {resolvedSelectContent}
             </span>
         );
     },

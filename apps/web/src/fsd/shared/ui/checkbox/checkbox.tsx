@@ -12,6 +12,7 @@ import {
 import styles from './checkbox.module.css';
 
 export type CheckboxSize = 'lg' | 'md' | 'sm';
+
 export type CheckboxProps = Omit<
     InputHTMLAttributes<HTMLInputElement>,
     'size' | 'type'
@@ -41,16 +42,22 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         forwardedRef,
     ) {
         const generatedId = useId();
+
         const inputId = id ?? `checkbox-${generatedId}`;
+
         const descriptionId = description
             ? `${inputId}-description`
             : undefined;
+
         const errorId = error ? `${inputId}-error` : undefined;
+
         const inputRef = useRef<HTMLInputElement>(null);
+
         useImperativeHandle(
             forwardedRef,
             () => inputRef.current as HTMLInputElement,
         );
+
         const visibleLabel = label ?? children;
 
         return (
@@ -73,6 +80,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                             id={inputId}
                             ref={(node) => {
                                 inputRef.current = node;
+
                                 if (node) node.indeterminate = indeterminate;
                             }}
                             type='checkbox'

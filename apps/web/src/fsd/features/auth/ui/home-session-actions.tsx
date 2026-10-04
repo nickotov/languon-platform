@@ -8,8 +8,11 @@ import styles from './auth-ui.module.css';
 
 export function HomeSessionActions() {
     const { href, t } = useI18n();
+
     const status = useSessionStore((state) => state.status);
+
     const user = useSessionStore((state) => state.user);
+
     const { capabilities } = useAuth();
 
     if (status === 'bootstrapping') {

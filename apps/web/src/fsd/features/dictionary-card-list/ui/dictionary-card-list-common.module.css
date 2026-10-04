@@ -6,29 +6,36 @@
     margin: 0;
     padding: 0;
 }
+
 .card {
     padding: 16px;
     background: var(--background-surface);
     border-color: var(--border-default);
     box-shadow: none;
 }
+
 .topRow {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
 }
+
 .pair {
+    align-items: start;
     min-width: 0;
     flex: 1;
     display: grid;
     gap: 2px;
     grid-template-columns: minmax(0, 1fr);
 }
+
+.source,
 .pairValue,
 .pairText {
     min-width: 0;
 }
+
 @container dictionary-cards (min-width: 40rem) {
     .pair {
         gap: 16px 24px;
@@ -36,11 +43,13 @@
         position: relative;
     }
 }
+
 .menuTrigger {
     position: absolute;
     top: -4px;
     right: -8px;
 }
+
 .pairValue {
     display: flex;
     align-items: center;
@@ -51,6 +60,7 @@
     font-weight: 600;
     overflow-wrap: anywhere;
 }
+
 .translation {
     color: var(--text-secondary);
     font-size: 16px;
@@ -58,37 +68,45 @@
     font-weight: 400;
     padding-right: 28px;
 }
+
 .fields {
     overflow: hidden;
     border: 1px solid var(--border-default);
     border-radius: 12px;
     margin: 12px 0 0;
 }
+
 .fieldRow {
     grid-column: 1 / -1;
     min-width: 0;
     padding: 8px 12px;
 }
+
 .fieldRow:not(:first-child) {
     border-top: 1px solid var(--border-default);
 }
+
 @container dictionary-cards (min-width: 40rem) {
     .pairedExamples {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
     :where(.pairedExamples) .exampleRow {
         grid-column: 1;
     }
+
     :where(.pairedExamples) .exampleTranslationRow {
         border-top: 0;
         grid-column: 2;
     }
+
     :where(.pairedExamples .exampleRow:not(:first-child))
         + .exampleTranslationRow {
         border-top: 1px solid var(--border-default);
     }
 }
+
 .fieldLabel {
     color: var(--text-tertiary);
     font-size: 11px;
@@ -96,6 +114,7 @@
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
+
 .fieldValue {
     display: flex;
     align-items: center;
@@ -105,20 +124,29 @@
     margin: 2px 0 0;
     font-size: 14px;
 }
+
 .fieldText {
     flex: 1 1 0;
     min-width: 0;
     overflow-wrap: anywhere;
 }
+
 .fieldAudio {
     display: inline-flex;
     max-width: 100%;
     flex-shrink: 0;
 }
+
 .transcription {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
     font-family: var(--font-mono, monospace);
     color: var(--text-secondary);
 }
+
 .metadata {
     display: flex;
     flex-wrap: wrap;
@@ -126,6 +154,7 @@
     gap: 8px;
     margin-top: 12px;
 }
+
 .selectionToolbar {
     align-items: center;
     background: var(--background-subtle);
@@ -138,28 +167,34 @@
     margin-bottom: 12px;
     padding: 12px 16px;
 }
+
 .selectionCount {
     color: var(--text-secondary);
     font-size: 14px;
     margin-inline-end: auto;
 }
+
 .selectionActions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
+
 .deletionError {
     margin-top: 16px;
 }
+
 @media (max-width: 639px) {
     .card {
         padding: 12px;
     }
+
     .selectionToolbar,
     .selectionActions {
         align-items: stretch;
         flex-direction: column;
     }
+
     .selectionActions {
         width: 100%;
     }

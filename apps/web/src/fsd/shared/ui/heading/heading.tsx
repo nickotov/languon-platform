@@ -1,5 +1,6 @@
 import { createElement, type HTMLAttributes } from 'react';
 import styles from './heading.module.css';
+
 export function Heading({
     level = 2,
     ...props

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import styles from './avatar.module.css';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
+
 export interface AvatarProps {
     src?: string;
     name?: string;
@@ -15,7 +16,9 @@ export interface AvatarProps {
 
 export function getInitials(name?: string): string {
     const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
+
     if (!parts.length) return '';
+
     return (
         parts.length === 1
             ? parts[0]!.slice(0, 2)
@@ -31,8 +34,32 @@ export function Avatar({
     className,
 }: AvatarProps) {
     const [failed, setFailed] = useState(false);
+
     const showImage = Boolean(src) && !failed;
+
     const fallback = initials ?? getInitials(name);
+
+    function resolveAvatarContent() {
+        if (showImage) {
+            return (
+                <img
+                    className={styles.image}
+                    src={src}
+                    alt={name ? `${name}'s avatar` : 'User avatar'}
+                    onError={() => setFailed(true)}
+                />
+            );
+        }
+
+        if (fallback) {
+            return <span aria-hidden='true'>{fallback}</span>;
+        }
+
+        return <UserIcon className={styles.fallbackIcon} aria-hidden='true' />;
+    }
+
+    const resolvedAvatarContent = resolveAvatarContent();
+
     return (
         <span
             className={[styles.avatar, styles[size], className]
@@ -41,18 +68,7 @@ export function Avatar({
             role={showImage ? undefined : 'img'}
             aria-label={showImage ? undefined : name || 'User avatar'}
         >
-            {showImage ? (
-                <img
-                    className={styles.image}
-                    src={src}
-                    alt={name ? `${name}'s avatar` : 'User avatar'}
-                    onError={() => setFailed(true)}
-                />
-            ) : fallback ? (
-                <span aria-hidden='true'>{fallback}</span>
-            ) : (
-                <UserIcon className={styles.fallbackIcon} aria-hidden='true' />
-            )}
+            {resolvedAvatarContent}
         </span>
     );
 }

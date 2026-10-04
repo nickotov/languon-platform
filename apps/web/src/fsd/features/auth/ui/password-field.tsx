@@ -17,8 +17,11 @@ export function PasswordField({
     name: string;
 }) {
     const { t } = useI18n();
+
     const hintId = useId();
+
     const inputId = useId();
+
     const [visible, setVisible] = useState(false);
 
     return (

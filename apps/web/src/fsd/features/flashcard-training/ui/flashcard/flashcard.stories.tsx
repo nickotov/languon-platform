@@ -46,9 +46,13 @@ const meta = {
         },
     },
 } satisfies Meta<typeof Flashcard>;
+
 export default meta;
+
 export const Default: StoryObj<typeof meta> = {};
+
 export const Back: StoryObj<typeof meta> = { args: { face: 'back' } };
+
 export const MissingExampleAndRtl: StoryObj<typeof meta> = {
     args: {
         item: {

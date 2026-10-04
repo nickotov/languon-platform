@@ -47,11 +47,17 @@ export function SecuritySettings({
     embedded = false,
 }: { embedded?: boolean } = {}) {
     const { formatDate, href, t } = useI18n();
+
     const router = useRouter();
+
     const status = useSessionStore((state) => state.status);
+
     const user = useSessionStore((state) => state.user);
+
     const session = useSessionStore((state) => state.session);
+
     const queryClient = useQueryClient();
+
     const {
         acceptAuthentication,
         capabilities,
@@ -60,30 +66,46 @@ export function SecuritySettings({
         signOutEverywhere,
         signOutHere,
     } = useAuth();
+
     const [error, setError] = useLocaleSensitiveState<string | null>(null);
+
     const [message, setMessage] = useLocaleSensitiveState<string | null>(null);
+
     const [recentAuthenticationRequired, setRecentAuthenticationRequired] =
         useState(false);
+
     const [ceremonyPending, setCeremonyPending] = useState(false);
+
     const [passwordPending, setPasswordPending] = useState(false);
+
     const [logoutPending, setLogoutPending] = useState(false);
+
     const [passkeySupported, setPasskeySupported] = useState(false);
+
     const [passkeyError, setPasskeyError] = useLocaleSensitiveState<
         string | null
     >(null);
+
     const [passkeyRecentAuthAction, setPasskeyRecentAuthAction] = useState<
         'add' | 'rename' | 'revoke' | null
     >(null);
+
     const [renameTarget, setRenameTarget] = useState<PasskeyMetadata | null>(
         null,
     );
+
     const [renameDraft, setRenameDraft] = useState('');
+
     const [renamePending, setRenamePending] = useState(false);
+
     const [renameError, setRenameError] = useLocaleSensitiveState<
         string | null
     >(null);
+
     const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+
     const [revokePending, setRevokePending] = useState(false);
+
     const [revokeError, setRevokeError] = useLocaleSensitiveState<
         string | null
     >(null);
@@ -97,12 +119,14 @@ export function SecuritySettings({
     }, [href, router, status]);
 
     const passkeyQueryKey = ['auth', 'passkeys', user?.id] as const;
+
     const passkeyQuery = useQuery({
         enabled: status === 'authenticated' && Boolean(user),
         queryFn: () =>
             requestWithSession((token) => authApi.listPasskeys(token)),
         queryKey: passkeyQueryKey,
     });
+
     const passkeys = passkeyQuery.data?.passkeys ?? [];
 
     function updatePasskeys(
@@ -119,32 +143,45 @@ export function SecuritySettings({
             caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required',
         );
+
         setError(localizedAuthError(caught, t));
     }
 
     async function changePassword(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         setError(null);
+
         setRecentAuthenticationRequired(false);
+
         setMessage(null);
+
         const form = event.currentTarget;
+
         const data = new FormData(form);
+
         const parsed = ChangePasswordRequestSchema.safeParse({
             currentPassword: data.get('currentPassword'),
             newPassword: data.get('newPassword'),
         });
+
         if (!parsed.success) {
             setError(t('security.passwordsInvalid'));
+
             return;
         }
 
         setPasswordPending(true);
+
         try {
             const response = await requestWithSession((token) =>
                 authApi.changePassword(parsed.data, token),
             );
+
             acceptAuthentication(response);
+
             form.reset();
+
             setMessage(t('security.passwordChanged'));
         } catch (caught) {
             captureError(caught);
@@ -161,15 +198,21 @@ export function SecuritySettings({
             !passkeyQuery.isSuccess
         )
             return;
+
         setPasskeyError(null);
+
         setPasskeyRecentAuthAction(null);
+
         setMessage(null);
+
         // The registration contract requires a name. Never guess the device type;
         // assign an available generic name and let the owner rename it later.
         const existingNames = new Set(
             passkeys.map((passkey) => passkey.name.toLocaleLowerCase()),
         );
+
         let index = 1;
+
         while (
             existingNames.has(
                 t('security.defaultPasskeyName', {
@@ -178,24 +221,31 @@ export function SecuritySettings({
             )
         )
             index += 1;
+
         const name = t('security.defaultPasskeyName', { number: index });
 
         setCeremonyPending(true);
+
         try {
             const ceremony = await requestWithSession((token) =>
                 authApi.passkeyRegistrationOptions(token),
             );
+
             const credential = await createPasskey(ceremony.options);
+
             const response = await requestWithSession((token) =>
                 authApi.verifyPasskeyRegistration(
                     { credential, flowId: ceremony.flowId, name },
                     token,
                 ),
             );
+
             updatePasskeys((current) => [...current, response.passkey]);
+
             setMessage(t('security.passkeyAdded'));
         } catch (caught) {
             setPasskeyError(localizedAuthError(caught, t));
+
             if (
                 caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required'
@@ -208,15 +258,23 @@ export function SecuritySettings({
 
     async function renamePasskey(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         if (!renameTarget || renamePending) return;
+
         const parsed = PasskeyNameSchema.safeParse(renameDraft);
+
         if (!parsed.success) {
             setRenameError(t('security.passkeyNameInvalid'));
+
             return;
         }
+
         setRenameError(null);
+
         setPasskeyRecentAuthAction(null);
+
         setRenamePending(true);
+
         try {
             const response = await requestWithSession((token) =>
                 authApi.renamePasskey(
@@ -225,15 +283,19 @@ export function SecuritySettings({
                     token,
                 ),
             );
+
             updatePasskeys((current) =>
                 current.map((passkey) =>
                     passkey.id === renameTarget.id ? response.passkey : passkey,
                 ),
             );
+
             setRenameTarget(null);
+
             setMessage(t('security.passkeyRenamed'));
         } catch (caught) {
             setRenameError(localizedAuthError(caught, t));
+
             if (
                 caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required'
@@ -246,21 +308,30 @@ export function SecuritySettings({
 
     async function revokePasskey(passkeyId: string) {
         setError(null);
+
         setRecentAuthenticationRequired(false);
+
         setRevokeError(null);
+
         setPasskeyRecentAuthAction(null);
+
         setRevokePending(true);
+
         try {
             await requestWithSession((token) =>
                 authApi.revokePasskey(passkeyId, token),
             );
+
             updatePasskeys((current) =>
                 current.filter((passkey) => passkey.id !== passkeyId),
             );
+
             setConfirmRevoke(null);
+
             setMessage(t('security.passkeyRemoved'));
         } catch (caught) {
             setRevokeError(localizedAuthError(caught, t));
+
             if (
                 caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required'
@@ -273,10 +344,13 @@ export function SecuritySettings({
 
     async function logout(scope: 'all' | 'current') {
         setError(null);
+
         setLogoutPending(true);
+
         try {
             if (scope === 'all') await signOutEverywhere();
             else await signOutHere();
+
             router.replace(href('/login'));
         } catch (caught) {
             captureError(caught);
@@ -684,11 +758,14 @@ export function SecuritySettings({
                                 key={passkey.id}
                                 onRename={() => {
                                     setRenameTarget(passkey);
+
                                     setRenameDraft(passkey.name);
+
                                     setRenameError(null);
                                 }}
                                 onRevoke={() => {
                                     setRevokeError(null);
+
                                     setConfirmRevoke(passkey.id);
                                 }}
                                 passkey={passkey}
@@ -707,6 +784,7 @@ export function SecuritySettings({
                             disabled={renamePending}
                             onClick={() => {
                                 setRenameTarget(null);
+
                                 setRenameError(null);
                             }}
                             type='button'
@@ -727,6 +805,7 @@ export function SecuritySettings({
                 onClose={() => {
                     if (!renamePending) {
                         setRenameTarget(null);
+
                         setRenameError(null);
                     }
                 }}
@@ -773,6 +852,7 @@ export function SecuritySettings({
                             disabled={revokePending}
                             onClick={() => {
                                 setConfirmRevoke(null);
+
                                 setRevokeError(null);
                             }}
                             type='button'
@@ -800,6 +880,7 @@ export function SecuritySettings({
                 onClose={() => {
                     if (!revokePending) {
                         setConfirmRevoke(null);
+
                         setRevokeError(null);
                     }
                 }}
@@ -899,6 +980,7 @@ function PasskeyRow({
     passkey: PasskeyMetadata;
 }) {
     const { formatDate, t } = useI18n();
+
     return (
         <li className={embedded ? profileStyles.dataRow : styles.listItem}>
             {embedded ? (

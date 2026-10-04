@@ -5,6 +5,7 @@
     min-height: 0;
     width: 100%;
 }
+
 .content {
     display: grid;
     gap: 20px;
@@ -12,37 +13,45 @@
     overflow-y: auto;
     padding: 20px 24px;
 }
+
 .section {
     display: grid;
     gap: 12px;
 }
+
 :where(.section) + .section {
     border-top: 1px solid var(--border-default);
     padding-top: 16px;
 }
+
 .sectionTitle {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
 }
+
 .sectionDescription {
     margin: 0;
     font-size: 14px;
 }
+
 .sectionHeading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
+
 .twoColumns {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
 }
+
 .hint {
     color: var(--text-secondary);
 }
+
 .indented {
     display: grid;
     gap: 12px;
@@ -50,16 +59,19 @@
     border-inline-start: 1px solid var(--border-default);
     padding-inline-start: 16px;
 }
+
 .settingGroup {
     display: grid;
     gap: 12px;
     border-top: 1px solid var(--border-default);
     padding-top: 16px;
 }
+
 .transcriptionGroup {
     display: grid;
     gap: 12px;
 }
+
 .footer {
     display: grid;
     gap: 8px;
@@ -67,11 +79,13 @@
     padding: 16px 24px;
     flex-shrink: 0;
 }
+
 .footerDescription {
     margin: 0;
     font-size: 12px;
     color: var(--text-secondary);
 }
+
 .actions {
     display: flex;
     align-items: center;
@@ -79,6 +93,7 @@
     justify-content: space-between;
     gap: 8px;
 }
+
 @media (max-width: 639px) {
     .twoColumns {
         grid-template-columns: 1fr;

@@ -30,7 +30,9 @@ export function Flashcard({
     recoverSwipe?: boolean;
 }) {
     const { t } = useI18n();
+
     const itemKey = `${item.entryId}-${item.learningVersion}`;
+
     const drag = useCardInteraction({
         onFlip,
         onRate,
@@ -38,21 +40,32 @@ export function Flashcard({
         itemKey,
         recover: recoverSwipe,
     });
+
     const presentations = face === 'front' ? item.front : item.back;
+
     const faceLabel = t(`training.${face}`);
+
     const label = t('training.cardLabel', { face: faceLabel, position });
+
     const flipLabel = t(
         face === 'front' ? 'training.showBack' : 'training.showFront',
     );
+
     const dragging = drag.dx !== 0 && !drag.departing;
+
     const committed = drag.progress >= 1;
+
     const cardClass = `relative flex min-h-0 touch-pan-y select-text flex-col overflow-hidden rounded-3xl border bg-background-surface shadow-elevation-md ${committed ? 'border-border-focus' : 'border-border-default'} ${dragging ? '' : 'transition-[transform,opacity] duration-200 motion-reduce:transition-none'}`;
+
     const cardStyle = {
         transform: drag.transform,
         opacity: drag.departing ? 0 : 1,
     };
+
     const hintStyle = { width: `${drag.progress * 100}%` };
+
     const instruction = t(committed ? 'training.release' : 'training.drag');
+
     const containerClass = `relative flex max-h-full min-h-0 w-full flex-col ${styles.enter}`;
 
     return (
@@ -140,20 +153,27 @@ export function Flashcard({
 
 function CardField({ presentation }: { presentation: Presentation }) {
     const { t, locale } = useI18n();
+
     const isWord =
         presentation.field === 'source' || presentation.field === 'translation';
+
     let textClass = 'text-xl md:text-2xl';
+
     if (isWord) textClass = 'text-3xl font-semibold md:text-4xl';
     else if (presentation.field === 'transcription')
         textClass = 'text-lg text-text-secondary';
     else if (presentation.text.length > 160)
         textClass = 'text-base leading-relaxed md:text-lg';
+
     const textClasses = `mt-1 whitespace-pre-line break-words text-start text-text-primary ${textClass}`;
+
     const language =
         new Intl.DisplayNames([locale], { type: 'language' }).of(
             presentation.language,
         ) ?? presentation.language;
+
     const label = `${t(`training.field.${presentation.field}`)} · ${language}`;
+
     return (
         <div className='min-w-0'>
             <dt className='text-xs font-medium uppercase tracking-wide text-text-tertiary'>
@@ -190,8 +210,11 @@ function SwipeHint({
     side: 'left' | 'right';
 }) {
     const { t } = useI18n();
+
     const label = t(side === 'left' ? 'training.again' : 'training.known');
+
     const classes = `inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium ${visible ? 'opacity-100' : 'opacity-0'} ${committed ? 'border-primary-default bg-primary-default text-text-on-primary' : 'border-border-strong bg-background-elevated text-text-primary'}`;
+
     return (
         <span className={classes}>
             {side === 'left' && <ArrowLeft className='h-4 w-4' />}

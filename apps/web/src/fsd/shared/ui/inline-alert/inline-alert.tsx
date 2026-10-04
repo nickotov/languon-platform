@@ -4,6 +4,7 @@ import styles from './inline-alert.module.css';
 
 export type InlineAlertTone =
     'danger' | 'error' | 'info' | 'success' | 'tip' | 'warning';
+
 export type InlineAlertProps = HTMLAttributes<HTMLDivElement> & {
     actions?: ReactNode;
     dismissLabel?: string;
@@ -40,7 +41,9 @@ export const InlineAlert = forwardRef<HTMLDivElement, InlineAlertProps>(
         ref,
     ) {
         const visualTone = tone === 'danger' ? 'error' : tone;
+
         const urgent = visualTone === 'error';
+
         return (
             <div
                 {...props}

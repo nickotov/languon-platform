@@ -5,6 +5,7 @@ import { useI18n } from '@/fsd/shared/i18n';
 
 export function SignupPage({ returnTo }: { returnTo?: string | undefined }) {
     const { t } = useI18n();
+
     return (
         <AuthShell
             description={t('signup.intro')}

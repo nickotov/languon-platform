@@ -32,6 +32,7 @@ const languages = [
         tag: 'ar',
     },
 ] satisfies LanguageCatalogEntry[];
+
 const dictionary = {
     activeCardCount: 4,
     archivedAt: null,
@@ -64,6 +65,7 @@ const dictionary = {
     version: 2,
     visibility: 'private',
 } satisfies OwnedDictionary;
+
 const overrides = {
     definitionEnabled: null,
     definitionLanguage: null,
@@ -74,6 +76,7 @@ const overrides = {
     transcriptionEnabled: null,
     transcriptionNotation: null,
 } as const;
+
 const reviewJob = {
     cancellationRequested: false,
     completedAt: null,
@@ -144,9 +147,11 @@ const meta = {
 } satisfies Meta<typeof DictionaryDocumentGenerationPanel>;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const Input: Story = {};
+
 export const Processing: Story = {
     args: {
         job: {
@@ -158,11 +163,14 @@ export const Processing: Story = {
         },
     },
 };
+
 export const Review: Story = { args: { job: reviewJob } };
+
 export const MobileReview: Story = {
     args: { job: reviewJob },
     parameters: { viewport: { defaultViewport: 'mobile1' } },
 };
+
 export const UnavailableOcr: Story = {
     args: { nativeExtractionAvailable: true, ocrAvailable: false },
 };

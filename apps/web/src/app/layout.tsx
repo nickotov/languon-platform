@@ -16,6 +16,7 @@ import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
     const { t } = await getRequestI18n();
+
     return { description: t('meta.description'), title: 'Languon' };
 }
 

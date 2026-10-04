@@ -21,6 +21,7 @@ export default async function Page({
     }>;
 }) {
     const parameters = await searchParams;
+
     return (
         <VerifyEmailPage
             flowId={single(parameters.flowId)}

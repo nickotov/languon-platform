@@ -18,11 +18,15 @@ export function FieldGroup({
     disabled: boolean;
 }) {
     const { t } = useI18n();
+
     const errorId = useId();
+
     const ordered = orderFields(selected)
         .map((field) => t(`training.field.${field}`))
         .join(' · ');
+
     const summary = t('training.shownOrder', { fields: ordered });
+
     return (
         <fieldset
             disabled={disabled}
@@ -71,7 +75,9 @@ function FieldChoice({
     side: string;
 }) {
     const { t } = useI18n();
+
     const checked = selected.includes(field);
+
     function handleChange() {
         onChange(
             checked
@@ -79,6 +85,7 @@ function FieldChoice({
                 : [...selected, field],
         );
     }
+
     return (
         <Checkbox
             name={side}

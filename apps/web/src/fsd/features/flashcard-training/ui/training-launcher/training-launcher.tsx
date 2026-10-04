@@ -34,6 +34,7 @@ export interface TrainingLauncherProps {
     triggerClassName?: string | undefined;
     placement?: 'top' | 'bottom';
 }
+
 interface Running {
     id: string;
     payload: StartPayload;
@@ -41,11 +42,18 @@ interface Running {
 }
 
 export function TrainingLauncher(props: TrainingLauncherProps) {
-    const targetIdentity =
-        props.target.kind === 'owner'
-            ? `owner:${props.target.dictionaryId}`
-            : `shared:${props.target.shareId}:${props.target.shareKey}`;
+    function resolveTargetIdentity() {
+        if (props.target.kind === 'owner') {
+            return `owner:${props.target.dictionaryId}`;
+        }
+
+        return `shared:${props.target.shareId}:${props.target.shareKey}`;
+    }
+
+    const targetIdentity = resolveTargetIdentity();
+
     const key = `${props.identity}:${props.signedIn}:${targetIdentity}`;
+
     return <Launcher key={key} {...props} />;
 }
 
@@ -63,7 +71,9 @@ function Launcher({
     placement = 'bottom',
 }: TrainingLauncherProps) {
     const { t } = useI18n();
+
     const targetRef = useRef(target);
+
     const api = useMemo(
         () =>
             createLearningApi({
@@ -73,17 +83,25 @@ function Launcher({
             }),
         [signedIn, requestWithSession],
     );
+
     const capability = useTrainingCapabilities(api);
+
     const [setupOpen, setSetupOpen] = useState(false);
+
     const [running, setRunning] = useState<Running | null>(null);
+
     const rootRef = useRef<HTMLDivElement>(null);
+
     function openSetup() {
         setSetupOpen(true);
     }
+
     function closeSetup() {
         setSetupOpen(false);
+
         restoreFocus();
     }
+
     function restoreFocus() {
         requestAnimationFrame(() =>
             rootRef.current
@@ -91,34 +109,56 @@ function Launcher({
                 ?.focus(),
         );
     }
+
     function closeSession() {
         setRunning(null);
+
         restoreFocus();
     }
+
     function start(payload: StartPayload, fullscreen: Promise<boolean>) {
         setSetupOpen(false);
+
         setRunning({ id: crypto.randomUUID(), payload, fullscreen });
     }
+
     function ignore() {
         /* Disabled menu items never execute. */
     }
-    const cardsLabel =
-        capability.status === 'loading'
-            ? t('training.checking')
-            : capability.status === 'error'
-              ? t('training.unavailable')
-              : archived
-                ? t('training.archived')
-                : t('training.cards');
+
+    function resolveCardsLabel() {
+        if (capability.status === 'loading') {
+            return t('training.checking');
+        }
+
+        if (capability.status === 'error') {
+            return t('training.unavailable');
+        }
+
+        if (archived) {
+            return t('training.archived');
+        }
+
+        return t('training.cards');
+    }
+
+    const cardsLabel = resolveCardsLabel();
+
     const selectCards =
         capability.status === 'error' ? capability.retry : openSetup;
-    const cardsIcon =
-        capability.status === 'error' ? (
-            <RefreshCw className='h-4 w-4' />
-        ) : (
-            <Layers className='h-4 w-4' />
-        );
+
+    function resolveCardsIcon() {
+        if (capability.status === 'error') {
+            return <RefreshCw className='h-4 w-4' />;
+        }
+
+        return <Layers className='h-4 w-4' />;
+    }
+
+    const cardsIcon = resolveCardsIcon();
+
     const showCards = capability.status !== 'ready' || capability.enabled;
+
     const cardsItem = {
         label: cardsLabel,
         icon: cardsIcon,
@@ -126,6 +166,7 @@ function Launcher({
         disabled: capability.status === 'loading' || archived,
         closeOnSelect: capability.status !== 'error',
     };
+
     const items = [
         ...(showCards ? [cardsItem] : []),
         {
@@ -136,12 +177,14 @@ function Launcher({
             disabled: true,
         },
     ];
+
     const trigger = (
         <span className='inline-flex items-center gap-2'>
             <GraduationCap aria-hidden className='h-4 w-4' />
             {t('training.train')}
         </span>
     );
+
     return (
         <div ref={rootRef} className={className}>
             <Menu

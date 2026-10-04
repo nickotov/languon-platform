@@ -16,31 +16,45 @@ import styles from './auth-ui.module.css';
 
 export function ResetPasswordForm({ flowId }: { flowId?: string | undefined }) {
     const { href, t } = useI18n();
+
     const router = useRouter();
+
     const { clearLocalSession } = useAuth();
+
     const [error, setError] = useLocaleSensitiveState<string | null>(null);
+
     const [pending, setPending] = useState(false);
+
     const [complete, setComplete] = useState(false);
 
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         setError(null);
+
         const data = new FormData(event.currentTarget);
+
         const parsed = ResetPasswordRequestSchema.safeParse({
             code: data.get('code'),
             flowId,
             newPassword: data.get('newPassword'),
         });
+
         if (!parsed.success) {
             setError(t('reset.invalid'));
+
             return;
         }
 
         setPending(true);
+
         try {
             await authApi.resetPassword(parsed.data);
+
             clearLocalSession();
+
             setComplete(true);
+
             router.replace(href('/login?passwordReset=complete'));
         } catch (caught) {
             setError(localizedAuthError(caught, t));

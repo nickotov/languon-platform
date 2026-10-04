@@ -7,11 +7,13 @@
     height: 24px;
     width: 24px;
 }
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
     }
 }
+
 @media (prefers-reduced-motion: reduce) {
     .spinner {
         animation: none;

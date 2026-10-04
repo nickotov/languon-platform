@@ -77,11 +77,17 @@ export function Tooltip({
     withArrow = true,
 }: TooltipProps) {
     const id = useId();
+
     const arrowRef = useRef<HTMLSpanElement | null>(null);
+
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const [mounted, setMounted] = useState(false);
+
     const [open, setOpen] = useState(false);
+
     const visible = forcedOpen ?? open;
+
     const {
         floatingStyles,
         middlewareData,
@@ -100,10 +106,13 @@ export function Tooltip({
         strategy: 'fixed',
         whileElementsMounted: visible ? autoUpdate : undefined,
     });
+
     const isPointerControlled = forcedOpen !== undefined;
+
     const tooltipClassName = [styles.tooltip, className]
         .filter(Boolean)
         .join(' ');
+
     const tooltipArrowStyle = arrowStyle(
         resolvedPlacement,
         middlewareData.arrow?.x,
@@ -112,6 +121,7 @@ export function Tooltip({
 
     useEffect(() => {
         setMounted(true);
+
         return () => {
             if (timer.current) clearTimeout(timer.current);
         };
@@ -122,11 +132,14 @@ export function Tooltip({
 
         function dismissWithEscape(event: globalThis.KeyboardEvent) {
             if (event.key !== 'Escape') return;
+
             if (timer.current) clearTimeout(timer.current);
+
             setOpen(false);
         }
 
         document.addEventListener('keydown', dismissWithEscape);
+
         return () => document.removeEventListener('keydown', dismissWithEscape);
     }, [visible]);
 
@@ -136,43 +149,62 @@ export function Tooltip({
 
     function show() {
         if (timer.current) clearTimeout(timer.current);
+
         setOpen(true);
     }
 
     function showAfterDelay() {
         if (timer.current) clearTimeout(timer.current);
+
         timer.current = setTimeout(show, delay);
     }
 
     function hide() {
         if (timer.current) clearTimeout(timer.current);
+
         setOpen(false);
     }
 
     if (disabled || !content) return children;
 
-    const describedBy = visible
-        ? [children.props['aria-describedby'], id].filter(Boolean).join(' ')
-        : children.props['aria-describedby'];
+    function resolveDescribedBy() {
+        if (visible) {
+            return [children.props['aria-describedby'], id]
+                .filter(Boolean)
+                .join(' ');
+        }
+
+        return children.props['aria-describedby'];
+    }
+
+    const describedBy = resolveDescribedBy();
+
     const triggerProps: Partial<TriggerProps> = {
         onBlur(event: FocusEvent) {
             children.props.onBlur?.(event);
+
             hide();
         },
         onFocus(event: FocusEvent) {
             children.props.onFocus?.(event);
+
             show();
         },
         onKeyDown(event: KeyboardEvent) {
             children.props.onKeyDown?.(event);
+
             if (event.key === 'Escape') hide();
         },
     };
+
     if (describedBy) triggerProps['aria-describedby'] = describedBy;
+
     const trigger = cloneElement(children, triggerProps);
+
     const pointerEnterHandler = isPointerControlled
         ? undefined
         : showAfterDelay;
+
     const pointerLeaveHandler = isPointerControlled ? undefined : hide;
 
     return (

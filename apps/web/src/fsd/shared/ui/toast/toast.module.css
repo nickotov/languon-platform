@@ -7,6 +7,7 @@
     right: var(--sys-space-4);
     z-index: 30;
 }
+
 .toast {
     align-items: flex-start;
     background: var(--sys-color-surface-raised);
@@ -20,6 +21,7 @@
     padding: 16px 16px 16px 20px;
     position: relative;
 }
+
 .toast::before {
     align-self: stretch;
     background: var(--toast-accent, var(--sys-color-info));
@@ -27,21 +29,27 @@
     content: '';
     flex: 0 0 4px;
 }
+
 .info {
     --toast-accent: var(--sys-color-info);
 }
+
 .success {
     --toast-accent: var(--sys-color-success);
 }
+
 .warning {
     --toast-accent: var(--sys-color-warning);
 }
+
 .danger {
     --toast-accent: var(--sys-color-danger);
 }
+
 .loading {
     --toast-accent: var(--neutral-400);
 }
+
 .icon {
     align-items: center;
     border: 1.5px solid var(--toast-accent);
@@ -56,26 +64,31 @@
     margin-top: 2px;
     width: 20px;
 }
+
 .content {
     display: flex;
     flex: 1;
     flex-direction: column;
     min-width: 0;
 }
+
 .title {
     color: var(--neutral-900);
     font-size: 14px;
     line-height: 20px;
 }
+
 .description {
     color: var(--neutral-600);
     font-size: 14px;
     line-height: 20px;
     margin-top: 4px;
 }
+
 .action {
     display: inline-flex;
 }
+
 .dismiss {
     background: transparent;
     border: 0;
@@ -87,15 +100,18 @@
     margin: -4px;
     padding: 4px;
 }
+
 .dismiss:hover {
     background: var(--neutral-100);
     color: var(--neutral-700);
 }
+
 .dismiss:focus-visible,
 .actionButton:focus-visible {
     outline: 2px solid var(--neutral-900);
     outline-offset: 2px;
 }
+
 .actionButton {
     align-self: flex-start;
     background: transparent;
@@ -110,22 +126,27 @@
     text-decoration: underline;
     text-underline-offset: 2px;
 }
+
 .anchored {
     position: fixed;
     z-index: 50;
 }
+
 .top-left {
     left: 16px;
     top: 16px;
 }
+
 .top-right {
     right: 16px;
     top: 16px;
 }
+
 .bottom-left {
     bottom: 16px;
     left: 16px;
 }
+
 .bottom-right {
     bottom: 16px;
     right: 16px;

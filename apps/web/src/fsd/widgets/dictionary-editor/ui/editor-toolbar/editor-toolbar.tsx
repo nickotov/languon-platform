@@ -2,7 +2,7 @@ import { Input } from '@/fsd/shared/ui';
 import { Search } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor/dictionary-editor.module.css';
+import styles from '../dictionary-editor-common.module.css';
 
 export function EditorToolbar({
     model,

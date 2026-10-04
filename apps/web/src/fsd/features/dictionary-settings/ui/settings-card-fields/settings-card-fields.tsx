@@ -9,7 +9,7 @@ import { Switch } from '@/fsd/shared/ui';
 import type { SetSetting } from '../../types';
 import { SettingsTranscription } from '../settings-transcription/settings-transcription';
 import { SettingsLanguageField } from '../settings-language-field/settings-language-field';
-import styles from '../dictionary-settings-form/dictionary-settings-form.module.css';
+import styles from '../dictionary-settings-form-common.module.css';
 
 export function SettingsCardFields({
     dictionary,
@@ -23,26 +23,38 @@ export function SettingsCardFields({
     setSetting: SetSetting;
 }) {
     const { locale, t } = useI18n();
+
     const sourceLabel = languageLabel(
         languages,
         dictionary.sourceLanguage,
         locale,
     );
+
     const targetLabel = languageLabel(
         languages,
         dictionary.targetLanguage,
         locale,
     );
+
     const translationLanguage =
         settings.exampleLanguage === 'source' ? targetLabel : sourceLabel;
+
     const translationChecked =
         settings.exampleEnabled && settings.exampleTranslationEnabled;
+
     const translationDisabled = !settings.exampleEnabled;
-    const translationHelp = settings.exampleEnabled
-        ? t('dictionary.settings.exampleTranslationHelp', {
-              language: translationLanguage,
-          })
-        : t('dictionary.settings.exampleTranslationDisabled');
+
+    function resolveTranslationHelp() {
+        if (settings.exampleEnabled) {
+            return t('dictionary.settings.exampleTranslationHelp', {
+                language: translationLanguage,
+            });
+        }
+
+        return t('dictionary.settings.exampleTranslationDisabled');
+    }
+
+    const translationHelp = resolveTranslationHelp();
 
     function changeTranslation(checked: boolean) {
         setSetting('exampleTranslationEnabled', checked);

@@ -13,10 +13,14 @@ import { createStore } from 'zustand/vanilla';
 import styles from './toast.module.css';
 
 export type ToastId = number;
+
 export type ToastTone = 'danger' | 'info' | 'success' | 'warning';
+
 export type ToastVariant = 'error' | 'info' | 'loading' | 'success' | 'warning';
+
 export type ToastPosition =
     'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
+
 type ToastAction = { label: string; onClick(): void };
 
 function isToastAction(
@@ -30,6 +34,7 @@ function isToastAction(
         'onClick' in action,
     );
 }
+
 export type ToastInput = {
     action?: ReactNode;
     content: ReactNode;
@@ -37,6 +42,7 @@ export type ToastInput = {
     duration?: number | null;
     tone?: ToastTone;
 };
+
 export type ToastProps = {
     action?: ReactNode | ToastAction;
     anchored?: boolean;
@@ -55,6 +61,7 @@ export type ToastProps = {
 };
 
 type QueuedToast = ToastInput & { id: ToastId };
+
 type ToastState = {
     clear(): void;
     dismiss(id: ToastId): void;
@@ -63,6 +70,7 @@ type ToastState = {
 };
 
 let nextToastId = 0;
+
 const toastStore = createStore<ToastState>((set) => ({
     clear: () => set({ queue: [] }),
     dismiss: (id) =>
@@ -72,8 +80,11 @@ const toastStore = createStore<ToastState>((set) => ({
     queue: [],
     show: (toast) => {
         nextToastId += 1;
+
         const id = nextToastId;
+
         set((state) => ({ queue: [...state.queue, { ...toast, id }] }));
+
         return id;
     },
 }));
@@ -116,6 +127,7 @@ export function ToastHost({
 
 function HostedToast({ toast }: { toast: QueuedToast }) {
     const handleDismiss = useCallback(() => dismissToast(toast.id), [toast.id]);
+
     return (
         <Toast
             action={toast.action}
@@ -150,17 +162,32 @@ export function Toast({
     hosted = false,
 }: ToastProps & { hosted?: boolean }) {
     const controlled = open !== undefined;
+
     const [internalOpen, setInternalOpen] = useState(true);
+
     const visible = controlled ? open : internalOpen;
+
     const visualTone = variant === 'error' ? 'danger' : (variant ?? tone);
+
     const [paused, setPaused] = useState(false);
-    const effectiveDuration = action
-        ? null
-        : duration === undefined
-          ? 5_000
-          : duration;
+
+    function resolveEffectiveDuration() {
+        if (action) {
+            return null;
+        }
+
+        if (duration === undefined) {
+            return 5_000 as const;
+        }
+
+        return duration;
+    }
+
+    const effectiveDuration = resolveEffectiveDuration();
+
     const close = useCallback(() => {
         if (!controlled) setInternalOpen(false);
+
         onDismiss?.();
     }, [controlled, onDismiss]);
 
@@ -172,23 +199,111 @@ export function Toast({
             paused
         )
             return;
+
         const timer = setTimeout(close, effectiveDuration);
+
         return () => clearTimeout(timer);
     }, [close, effectiveDuration, paused, visible, visualTone]);
 
     if (!visible) return null;
+
     const actionConfig = isToastAction(action) ? action : null;
+
     const actionNode = actionConfig ? null : (action as ReactNode);
+
+    function resolveAriaLive() {
+        if (hosted) {
+            return undefined;
+        }
+
+        if (visualTone === 'danger') {
+            return 'assertive' as const;
+        }
+
+        return 'polite' as const;
+    }
+
+    function resolveRole() {
+        if (hosted) {
+            return undefined;
+        }
+
+        if (visualTone === 'danger') {
+            return 'alert' as const;
+        }
+
+        return 'status' as const;
+    }
+
+    function resolveToneSymbol() {
+        if (visualTone === 'success') {
+            return '✓' as const;
+        }
+
+        if (visualTone === 'warning') {
+            return '!' as const;
+        }
+
+        if (visualTone === 'danger') {
+            return '×' as const;
+        }
+
+        if (visualTone === 'loading') {
+            return '·' as const;
+        }
+
+        return 'i' as const;
+    }
+
+    function renderDescription() {
+        if (description) {
+            return <span className={styles.description}>{description}</span>;
+        }
+
+        if (children) {
+            return children;
+        }
+
+        return null;
+    }
+
+    function renderAction() {
+        if (actionConfig) {
+            return (
+                <button
+                    className={styles.actionButton}
+                    onClick={() => {
+                        actionConfig.onClick();
+
+                        close();
+                    }}
+                    type='button'
+                >
+                    {actionConfig.label}
+                </button>
+            );
+        }
+
+        if (actionNode) {
+            return <span className={styles.action}>{actionNode}</span>;
+        }
+
+        return null;
+    }
+
+    const resolvedAriaLive = resolveAriaLive();
+
+    const resolvedRole = resolveRole();
+
+    const resolvedToneSymbol = resolveToneSymbol();
+
+    const resolvedDescription = renderDescription();
+
+    const resolvedAction = renderAction();
 
     return (
         <div
-            aria-live={
-                hosted
-                    ? undefined
-                    : visualTone === 'danger'
-                      ? 'assertive'
-                      : 'polite'
-            }
+            aria-live={resolvedAriaLive}
             className={[
                 styles.toast,
                 styles[visualTone],
@@ -213,48 +328,17 @@ export function Toast({
             onMouseLeave={() => {
                 setPaused(false);
             }}
-            role={
-                hosted
-                    ? undefined
-                    : visualTone === 'danger'
-                      ? 'alert'
-                      : 'status'
-            }
+            role={resolvedRole}
         >
             <span aria-hidden='true' className={styles.icon}>
-                {visualTone === 'success'
-                    ? '✓'
-                    : visualTone === 'warning'
-                      ? '!'
-                      : visualTone === 'danger'
-                        ? '×'
-                        : visualTone === 'loading'
-                          ? '·'
-                          : 'i'}
+                {resolvedToneSymbol}
             </span>
             <span className={styles.content}>
                 {title ? (
                     <strong className={styles.title}>{title}</strong>
                 ) : null}
-                {description ? (
-                    <span className={styles.description}>{description}</span>
-                ) : children ? (
-                    children
-                ) : null}
-                {actionConfig ? (
-                    <button
-                        className={styles.actionButton}
-                        onClick={() => {
-                            actionConfig.onClick();
-                            close();
-                        }}
-                        type='button'
-                    >
-                        {actionConfig.label}
-                    </button>
-                ) : actionNode ? (
-                    <span className={styles.action}>{actionNode}</span>
-                ) : null}
+                {resolvedDescription}
+                {resolvedAction}
             </span>
             {(onDismiss || !controlled) && dismissible ? (
                 <button

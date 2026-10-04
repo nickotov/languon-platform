@@ -11,8 +11,11 @@ export function SetupCardSides({
     setup: ReturnType<typeof useFlashcardSetup>;
 }) {
     const { t } = useI18n();
+
     const id = useId();
+
     const disabled = setup.starting || setup.prefsStatus === 'loading';
+
     return (
         <section aria-labelledby={id} className='flex flex-col gap-3'>
             <div>

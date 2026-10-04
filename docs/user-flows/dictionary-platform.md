@@ -2,7 +2,7 @@
 feature: dictionary-platform
 title: Dictionary Platform
 status: current
-last_verified: 2026-10-01
+last_verified: 2026-10-04
 surfaces:
     - browser
     - api
@@ -217,7 +217,9 @@ Translation.
 Active and archived owner cards use equal Source/Translation columns when their
 list container is at least 40 rem wide, and stack them in narrower containers.
 Example and Example translation use the same list threshold when both have
-visible values; one visible example fills the row. Definition, Transcription,
+visible values; one visible example fills the row. Enabled, nonempty Transcription
+appears in parentheses beneath Source using smaller text, without a separate
+optional-field row. Disabled transcription values stay dormant. Definition
 and metadata remain full width below the words, and card actions remain
 reachable. Check 1280 px, 768 px, and 320 px viewports, then 200% text: forms and
 cards reflow without horizontal page overflow, including 200-character unbroken

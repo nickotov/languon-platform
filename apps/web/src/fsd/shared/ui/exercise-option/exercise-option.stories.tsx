@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { ExerciseOption } from './exercise-option';
+
 export default {
     title: 'UI/Exercise option',
     component: ExerciseOption,
 } satisfies Meta<typeof ExerciseOption>;
+
 export const States: StoryObj<typeof ExerciseOption> = {
     render: () => (
         <div

@@ -1,9 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Combobox } from './combobox';
+
 const meta = { component: Combobox, title: 'UI/Combobox' } satisfies Meta<
     typeof Combobox
 >;
+
 export default meta;
+
 export const Default: StoryObj<typeof meta> = {
     args: {
         'aria-label': 'Learning language',
@@ -13,6 +16,7 @@ export const Default: StoryObj<typeof meta> = {
         ],
     },
 };
+
 export const Empty: StoryObj<typeof meta> = {
     args: {
         'aria-label': 'Learning language',
@@ -21,6 +25,7 @@ export const Empty: StoryObj<typeof meta> = {
         options: [{ label: 'Spanish', value: 'Spanish' }],
     },
 };
+
 export const Loading: StoryObj<typeof meta> = {
     args: {
         'aria-label': 'Learning language',

@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 import styles from './lesson-content-block.module.css';
+
 export type LessonContentBlockMeasure = 'narrow' | 'default' | 'wide';
+
 export type LessonContentBlockAlign = 'left' | 'center';
+
 export interface LessonContentBlockProps {
     eyebrow?: string;
     title?: string;
@@ -13,6 +16,7 @@ export interface LessonContentBlockProps {
     className?: string;
     children?: ReactNode;
 }
+
 export function LessonContentBlock({
     eyebrow,
     title,
@@ -25,6 +29,7 @@ export function LessonContentBlock({
     children,
 }: LessonContentBlockProps) {
     const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
+
     return (
         <section
             className={[

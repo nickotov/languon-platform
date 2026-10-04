@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { IconButton } from '@/fsd/shared/ui';
-import styles from './dictionary-card-form.module.css';
+import styles from '../dictionary-card-form-common.module.css';
 
 export function FormVersionNavigation({
     current,
@@ -15,11 +15,13 @@ export function FormVersionNavigation({
     total: number;
 }) {
     const { t } = useI18n();
+
     if (total < 2) return null;
 
     function previousVersion() {
         onChange(current - 1);
     }
+
     function nextVersion() {
         onChange(current + 1);
     }

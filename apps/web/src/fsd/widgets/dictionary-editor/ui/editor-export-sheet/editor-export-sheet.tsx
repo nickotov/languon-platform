@@ -27,12 +27,23 @@ export function EditorExportSheet({
     const openValue: ComponentProps<typeof BottomSheet>['open'] =
         interchangeOpen === 'export';
 
+    function resolveErrorValue() {
+        if (interchangeExportAction.error) {
+            if (
+                interchangeExportAction.error instanceof
+                DictionaryExportSaveError
+            ) {
+                return t('dictionary.interchange.exportStreamingRequired');
+            }
+
+            return dictionaryErrorMessage(interchangeExportAction.error, t);
+        }
+
+        return null;
+    }
+
     const errorValue: ComponentProps<typeof DictionaryExportPanel>['error'] =
-        interchangeExportAction.error
-            ? interchangeExportAction.error instanceof DictionaryExportSaveError
-                ? t('dictionary.interchange.exportStreamingRequired')
-                : dictionaryErrorMessage(interchangeExportAction.error, t)
-            : null;
+        resolveErrorValue();
 
     const handleExport: ComponentProps<
         typeof DictionaryExportPanel

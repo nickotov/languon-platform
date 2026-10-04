@@ -1,12 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Input } from './input';
+
 const meta = { component: Input, title: 'UI/Input' } satisfies Meta<
     typeof Input
 >;
+
 export default meta;
+
 export const Default: StoryObj<typeof meta> = {
     args: { 'aria-label': 'Email', type: 'email' },
 };
+
 export const ReadOnly: StoryObj<typeof meta> = {
     args: {
         'aria-label': 'Email',
@@ -14,6 +18,7 @@ export const ReadOnly: StoryObj<typeof meta> = {
         value: 'learner@example.test',
     },
 };
+
 export const Invalid: StoryObj<typeof meta> = {
     args: {
         'aria-invalid': true,
@@ -22,6 +27,7 @@ export const Invalid: StoryObj<typeof meta> = {
         type: 'email',
     },
 };
+
 export const Disabled: StoryObj<typeof meta> = {
     args: {
         'aria-label': 'Email',
@@ -29,6 +35,7 @@ export const Disabled: StoryObj<typeof meta> = {
         disabled: true,
     },
 };
+
 export const ControlSizes: StoryObj<typeof meta> = {
     args: { 'aria-label': 'Email' },
     render: () => (
@@ -39,6 +46,7 @@ export const ControlSizes: StoryObj<typeof meta> = {
         </div>
     ),
 };
+
 export const NarrowMixedLanguage: StoryObj<typeof meta> = {
     args: {
         'aria-label': 'Word or phrase',

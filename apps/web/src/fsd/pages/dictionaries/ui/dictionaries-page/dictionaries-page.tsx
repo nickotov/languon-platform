@@ -10,8 +10,11 @@ import { LibrarySettingsSheet } from '../library-settings-sheet/library-settings
 
 export function DictionariesPage() {
     const { requestWithSession } = useAuth();
+
     const { t } = useI18n();
+
     const settings = useLibrarySettings(requestWithSession);
+
     return (
         <AuthenticatedDictionaryBoundary
             loadingMessage={t('dictionary.library.loading')}

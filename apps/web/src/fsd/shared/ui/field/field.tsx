@@ -41,13 +41,18 @@ export function Field({
     success?: string | undefined;
 }) {
     const generatedId = useId();
+
     const controlId = children.props.id ?? `${generatedId}-control`;
+
     const labelId = `${generatedId}-label`;
+
     const descriptionId =
         error || success || hint ? `${generatedId}-description` : undefined;
+
     const controlProps: ControlProps = control
         ? { id: controlId }
         : { 'aria-labelledby': labelId };
+
     if (descriptionId)
         controlProps['aria-describedby'] = [
             children.props['aria-describedby'],
@@ -55,13 +60,48 @@ export function Field({
         ]
             .filter(Boolean)
             .join(' ');
+
     if (control && error) controlProps['aria-invalid'] = true;
+
     if (control && success && !error)
         controlProps['data-validation'] = 'success';
+
     if (control && required) controlProps.required = true;
+
     const clonedControl = isValidElement(children)
         ? cloneElement(children, controlProps)
         : children;
+
+    function resolveFieldContent() {
+        if (error) {
+            return (
+                <span className={styles.error} id={descriptionId}>
+                    {error}
+                </span>
+            );
+        }
+
+        if (success) {
+            return (
+                <span className={styles.success} id={descriptionId}>
+                    <span aria-hidden='true'>✓ </span>
+                    {success}
+                </span>
+            );
+        }
+
+        if (hint) {
+            return (
+                <span className={styles.hint} id={descriptionId}>
+                    {hint}
+                </span>
+            );
+        }
+
+        return null;
+    }
+
+    const resolvedFieldContent = resolveFieldContent();
 
     return (
         <div className={styles.field}>
@@ -99,20 +139,7 @@ export function Field({
                 ) : null}
             </div>
             {clonedControl}
-            {error ? (
-                <span className={styles.error} id={descriptionId}>
-                    {error}
-                </span>
-            ) : success ? (
-                <span className={styles.success} id={descriptionId}>
-                    <span aria-hidden='true'>✓ </span>
-                    {success}
-                </span>
-            ) : hint ? (
-                <span className={styles.hint} id={descriptionId}>
-                    {hint}
-                </span>
-            ) : null}
+            {resolvedFieldContent}
         </div>
     );
 }

@@ -15,7 +15,9 @@ export function EndSessionDialog({
     onEnd(): void;
 }) {
     const { t } = useI18n();
+
     const body = t(signedIn ? 'training.endSaved' : 'training.endAnonymous');
+
     const footer = (
         <DialogActions className='flex-wrap gap-2'>
             <Button variant='secondary' onClick={onKeep}>
@@ -24,6 +26,7 @@ export function EndSessionDialog({
             <Button onClick={onEnd}>{t('training.endSession')}</Button>
         </DialogActions>
     );
+
     return (
         <Dialog
             open={open}

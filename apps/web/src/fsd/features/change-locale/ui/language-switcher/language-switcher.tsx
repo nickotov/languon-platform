@@ -13,16 +13,26 @@ import { Select } from '@/fsd/shared/ui';
 
 import styles from './language-switcher.module.css';
 
-export function LanguageSwitcher({ compact = false, form = false }: { compact?: boolean; form?: boolean }) {
+export function LanguageSwitcher({
+    compact = false,
+    form = false,
+}: {
+    compact?: boolean;
+    form?: boolean;
+}) {
     const router = useRouter();
+
     const { locale, t } = useI18n();
+
     const [pending, startTransition] = useTransition();
 
     function changeLanguage(event: ChangeEvent<HTMLSelectElement>) {
         const nextLocale = event.currentTarget.value;
+
         if (!isLocale(nextLocale) || nextLocale === locale) return;
 
         document.cookie = `${localeCookieName}=${nextLocale}; Max-Age=31536000; Path=/; SameSite=Lax`;
+
         startTransition(() => {
             router.refresh();
         });
@@ -33,13 +43,16 @@ export function LanguageSwitcher({ compact = false, form = false }: { compact?: 
         value: supportedLocale,
     }));
 
-    if (form) return <Select
-        disabled={pending}
-        label={t('profile.interfaceLanguage')}
-        onChange={changeLanguage}
-        options={choices}
-        value={locale}
-    />;
+    if (form)
+        return (
+            <Select
+                disabled={pending}
+                label={t('profile.interfaceLanguage')}
+                onChange={changeLanguage}
+                options={choices}
+                value={locale}
+            />
+        );
 
     return (
         <label
@@ -55,7 +68,11 @@ export function LanguageSwitcher({ compact = false, form = false }: { compact?: 
                 onChange={changeLanguage}
                 value={locale}
             >
-                {choices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+                {choices.map((choice) => (
+                    <option key={choice.value} value={choice.value}>
+                        {choice.label}
+                    </option>
+                ))}
             </Select>
         </label>
     );

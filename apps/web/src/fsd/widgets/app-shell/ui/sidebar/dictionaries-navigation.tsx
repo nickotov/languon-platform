@@ -12,7 +12,7 @@ import { IconButton } from '@/fsd/shared/ui';
 import type { AppShellState } from '../../hooks/use-app-shell-state';
 import type { NavigationVariant } from '../../types';
 import { NavigationLink, NavigationLoading } from './navigation-items';
-import styles from './sidebar.module.css';
+import styles from './sidebar-common.module.css';
 
 type Props = {
     navigation: DictionaryNavigationState;
@@ -28,14 +28,18 @@ export function DictionariesNavigation({
     variant,
 }: Props) {
     const pathname = usePathname();
+
     const { href, locale, t } = useI18n();
+
     const sectionActive = pathname.startsWith('/dictionaries');
+
     const activeId = pathname.startsWith('/dictionaries/')
         ? pathname.split('/')[2]
         : null;
 
     function openCreate() {
         if (variant === 'drawer') onNavigate?.();
+
         navigation.openCreate();
     }
 
@@ -70,7 +74,66 @@ export function DictionariesNavigation({
         );
 
     const panelId = `${variant}-dictionaries-navigation`;
+
     const headerActive = sectionActive && !shell.dictionariesOpen;
+
+    function resolveDictionariesNavigationContent() {
+        if (navigation.pending) {
+            return <NavigationLoading label={t('shell.loadingDictionaries')} />;
+        }
+
+        if (navigation.loadError) {
+            return (
+                <li className={styles.status} role='alert'>
+                    <p className={styles.statusText}>
+                        {t('shell.dictionaryLoadFailed')}
+                    </p>
+                    <button
+                        className={styles.statusButton}
+                        onClick={navigation.retryLoad}
+                        type='button'
+                    >
+                        <RotateCw aria-hidden size={14} />
+                        {t('common.retry')}
+                    </button>
+                </li>
+            );
+        }
+
+        if (navigation.list.length === 0) {
+            return (
+                <li className={styles.status}>
+                    <p className={styles.statusText}>
+                        {t('shell.noDictionaries')}
+                    </p>
+                    <button
+                        className={styles.statusButton}
+                        onClick={openCreate}
+                        type='button'
+                    >
+                        <Plus aria-hidden size={14} />
+                        {t('dictionary.create.title')}
+                    </button>
+                </li>
+            );
+        }
+
+        return navigation.list.map((dictionary) => (
+            <li key={dictionary.id}>
+                <NavigationLink
+                    active={activeId === dictionary.id}
+                    description={`${languageLabel(navigation.catalog, dictionary.sourceLanguage, locale)} → ${languageLabel(navigation.catalog, dictionary.targetLanguage, locale)}`}
+                    href={href(`/dictionaries/${dictionary.id}`)}
+                    label={dictionary.name}
+                    onNavigate={onNavigate}
+                />
+            </li>
+        ));
+    }
+
+    const resolvedDictionariesNavigationContent =
+        resolveDictionariesNavigationContent();
+
     return (
         <li>
             <div className={styles.groupHeader}>
@@ -132,53 +195,7 @@ export function DictionariesNavigation({
                                 onNavigate={onNavigate}
                             />
                         </li>
-                        {navigation.pending ? (
-                            <NavigationLoading
-                                label={t('shell.loadingDictionaries')}
-                            />
-                        ) : navigation.loadError ? (
-                            <li className={styles.status} role='alert'>
-                                <p className={styles.statusText}>
-                                    {t('shell.dictionaryLoadFailed')}
-                                </p>
-                                <button
-                                    className={styles.statusButton}
-                                    onClick={navigation.retryLoad}
-                                    type='button'
-                                >
-                                    <RotateCw aria-hidden size={14} />
-                                    {t('common.retry')}
-                                </button>
-                            </li>
-                        ) : navigation.list.length === 0 ? (
-                            <li className={styles.status}>
-                                <p className={styles.statusText}>
-                                    {t('shell.noDictionaries')}
-                                </p>
-                                <button
-                                    className={styles.statusButton}
-                                    onClick={openCreate}
-                                    type='button'
-                                >
-                                    <Plus aria-hidden size={14} />
-                                    {t('dictionary.create.title')}
-                                </button>
-                            </li>
-                        ) : (
-                            navigation.list.map((dictionary) => (
-                                <li key={dictionary.id}>
-                                    <NavigationLink
-                                        active={activeId === dictionary.id}
-                                        description={`${languageLabel(navigation.catalog, dictionary.sourceLanguage, locale)} → ${languageLabel(navigation.catalog, dictionary.targetLanguage, locale)}`}
-                                        href={href(
-                                            `/dictionaries/${dictionary.id}`,
-                                        )}
-                                        label={dictionary.name}
-                                        onNavigate={onNavigate}
-                                    />
-                                </li>
-                            ))
-                        )}
+                        {resolvedDictionariesNavigationContent}
                     </ul>
                 </div>
             ) : null}

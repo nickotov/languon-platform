@@ -7,10 +7,13 @@ import { Button, LoadingState } from '@/fsd/shared/ui';
 
 export function CapabilityState() {
     const { t } = useI18n();
+
     const { capabilities, capabilitiesError, refreshCapabilities } = useAuth();
+
     if (!capabilities && !capabilitiesError) {
         return <LoadingState>{t('auth.capabilitiesChecking')}</LoadingState>;
     }
+
     if (!capabilitiesError) return null;
 
     return (

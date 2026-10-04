@@ -19,30 +19,48 @@ import styles from './authenticated-app-shell.module.css';
 
 export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
     const pathname = usePathname();
+
     const { requestWithSession } = useAuth();
+
     const { href, t } = useI18n();
+
     const shell = useAppShellState();
+
     const navigation = useDictionaryNavigation(requestWithSession);
+
     const dictionaryId = pathname.startsWith('/dictionaries/')
         ? pathname.split('/')[2]
         : null;
+
     const currentDictionary = dictionaryId
         ? navigation.list.find((dictionary) => dictionary.id === dictionaryId)
         : null;
-    const pageTitle = pathname.startsWith('/profile')
-        ? t('profile.title')
-        : (currentDictionary?.name ?? t('dictionary.library.title'));
+
+    function resolvePageTitle() {
+        if (pathname.startsWith('/profile')) {
+            return t('profile.title');
+        }
+
+        return currentDictionary?.name ?? t('dictionary.library.title');
+    }
+
+    const pageTitle = resolvePageTitle();
+
     const shellClassName = shell.railCollapsed
         ? `${styles.shell} ${styles.railShell}`
         : styles.shell;
 
     useEffect(() => {
         const query = window.matchMedia('(min-width: 1024px)');
+
         const adaptToBreakpoint = () => {
             shell.setAccountOpen(false);
+
             if (query.matches) shell.setDrawerOpen(false);
         };
+
         query.addEventListener('change', adaptToBreakpoint);
+
         return () => query.removeEventListener('change', adaptToBreakpoint);
     }, [shell.setAccountOpen, shell.setDrawerOpen]);
 

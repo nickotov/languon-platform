@@ -32,6 +32,7 @@ const languages = [
         tag: 'ar',
     },
 ] satisfies LanguageCatalogEntry[];
+
 const settings = {
     definitionEnabled: true,
     definitionLanguage: 'source',
@@ -42,6 +43,7 @@ const settings = {
     transcriptionEnabled: false,
     transcriptionNotation: 'ipa',
 } as const;
+
 const overrides = {
     definitionEnabled: null,
     definitionLanguage: null,
@@ -52,6 +54,7 @@ const overrides = {
     transcriptionEnabled: null,
     transcriptionNotation: null,
 } as const;
+
 const dictionary = {
     activeCardCount: 12,
     archivedAt: null,
@@ -75,6 +78,7 @@ const dictionary = {
     version: 3,
     visibility: 'private',
 } satisfies OwnedDictionary;
+
 const candidate = {
     overrides,
     values: {
@@ -86,6 +90,7 @@ const candidate = {
         translation: 'تمييز',
     },
 };
+
 const reviewJob = {
     cancellationRequested: false,
     completedAt: null,
@@ -151,6 +156,7 @@ const reviewJob = {
     targetLanguage: 'ar',
     updatedAt: '2026-08-25T10:02:00.000Z',
 } satisfies DictionaryPastedTermsGenerationJob;
+
 const progressJob = {
     ...reviewJob,
     expiresAt: null,
@@ -158,6 +164,7 @@ const progressJob = {
     proposal: null,
     state: 'running',
 } satisfies DictionaryPastedTermsGenerationJob;
+
 const cleanReviewJob = {
     ...reviewJob,
     proposal: {
@@ -193,6 +200,7 @@ const meta = {
 } satisfies Meta<typeof DictionaryBatchGenerationPanel>;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const Input: Story = {};

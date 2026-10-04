@@ -2,6 +2,7 @@
     display: inline-block;
     position: relative;
 }
+
 .trigger {
     background: transparent;
     border: 0;
@@ -10,6 +11,7 @@
     font: inherit;
     min-height: 44px;
 }
+
 .menu {
     background: var(--sys-color-surface-raised);
     border: 1px solid var(--sys-color-border-subtle);
@@ -19,6 +21,7 @@
     padding: var(--sys-space-1);
     z-index: 20;
 }
+
 .item {
     background: transparent;
     border: 0;
@@ -28,12 +31,15 @@
     padding: 0 var(--sys-space-3);
     text-align: start;
 }
+
 .item:hover {
     background: var(--sys-color-action-primary-soft);
 }
+
 .item[data-tone='danger'] {
     color: var(--sys-color-danger);
 }
+
 .item[data-tone='danger']:hover {
     background: var(--sys-color-danger-soft);
 }
@@ -49,22 +55,27 @@
     padding: 0;
     width: 36px;
 }
+
 .iconOnly:hover:not(:disabled) {
     background: var(--background-subtle);
 }
+
 .iconOnly:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
+
 .iconOnly:disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
+
 .itemIcon {
     display: inline-flex;
     vertical-align: middle;
     margin-inline-end: 8px;
 }
+
 .secondary {
     align-items: center;
     background: var(--background-surface);
@@ -78,24 +89,30 @@
     min-height: 44px;
     padding-inline: 16px;
 }
+
 .secondary:hover:not(:disabled) {
     background: var(--background-subtle);
     border-color: var(--border-strong);
 }
+
 .trigger:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
+
 .trigger:disabled {
     color: var(--text-disabled);
     cursor: not-allowed;
 }
+
 .chevron {
     transition: transform var(--duration-fast) var(--easing-standard);
 }
+
 .chevron[data-open] {
     transform: rotate(180deg);
 }
+
 .heading {
     color: var(--text-tertiary);
     font-size: 12px;
@@ -103,23 +120,28 @@
     padding: 8px 12px;
     text-transform: uppercase;
 }
+
 .hint {
     color: var(--text-tertiary);
     font-size: 12px;
     margin-inline-start: auto;
     padding-inline-start: 12px;
 }
+
 .item:has(:where(.hint)) {
     align-items: center;
     display: flex;
 }
+
 .item:disabled {
     color: var(--text-disabled);
     cursor: not-allowed;
 }
+
 .item:disabled:hover {
     background: transparent;
 }
+
 @media (prefers-reduced-motion: reduce) {
     .chevron {
         transition: none;

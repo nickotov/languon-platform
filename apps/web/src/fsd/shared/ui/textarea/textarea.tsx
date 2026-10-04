@@ -10,6 +10,7 @@ import {
 import styles from './textarea.module.css';
 
 export type TextareaResize = 'both' | 'none' | 'vertical';
+
 export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
     description?: string;
     error?: string;
@@ -44,15 +45,44 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         ref,
     ) {
         const generatedId = useId();
+
         const fieldId = id ?? `textarea-${generatedId}`;
+
         const descriptionId =
             description && !error ? `${fieldId}-description` : undefined;
+
         const errorId = error ? `${fieldId}-error` : undefined;
+
         const controlled = value !== undefined;
+
         const [internalValue, setInternalValue] = useState(
             typeof defaultValue === 'string' ? defaultValue : '',
         );
+
         const currentValue = controlled ? String(value ?? '') : internalValue;
+
+        function resolveTextareaContent() {
+            if (error) {
+                return (
+                    <span className={styles.error} id={errorId} role='alert'>
+                        {error}
+                    </span>
+                );
+            }
+
+            if (description) {
+                return (
+                    <span className={styles.description} id={descriptionId}>
+                        {description}
+                    </span>
+                );
+            }
+
+            return null;
+        }
+
+        const resolvedTextareaContent = resolveTextareaContent();
+
         return (
             <span
                 className={[styles.root, wrapperClassName]
@@ -94,6 +124,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
                     maxLength={maxLength}
                     onChange={(event) => {
                         if (!controlled) setInternalValue(event.target.value);
+
                         onChange?.(event);
                     }}
                     ref={ref}
@@ -103,24 +134,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
                 />
                 {error || description || (showCount && maxLength) ? (
                     <span className={styles.meta}>
-                        <span>
-                            {error ? (
-                                <span
-                                    className={styles.error}
-                                    id={errorId}
-                                    role='alert'
-                                >
-                                    {error}
-                                </span>
-                            ) : description ? (
-                                <span
-                                    className={styles.description}
-                                    id={descriptionId}
-                                >
-                                    {description}
-                                </span>
-                            ) : null}
-                        </span>
+                        <span>{resolvedTextareaContent}</span>
                         {showCount && maxLength ? (
                             <span
                                 className={[

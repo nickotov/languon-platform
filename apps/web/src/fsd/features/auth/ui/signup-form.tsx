@@ -21,35 +21,50 @@ import styles from './auth-ui.module.css';
 
 export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
     const { href, t } = useI18n();
+
     const router = useRouter();
+
     const { capabilities } = useAuth();
+
     const [error, setError] = useLocaleSensitiveState<string | null>(null);
+
     const [pending, setPending] = useState(false);
+
     const sessionStatus = useSessionStore((state) => state.status);
 
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         if (sessionStatus === 'bootstrapping') return;
+
         setError(null);
+
         const form = new FormData(event.currentTarget);
+
         const parsed = SignUpRequestSchema.safeParse({
             email: form.get('email'),
             password: form.get('password'),
         });
+
         if (!parsed.success) {
             setError(t('signup.invalid'));
+
             return;
         }
 
         setPending(true);
+
         try {
             const response = await authApi.signUp(parsed.data);
+
             const query = new URLSearchParams({
                 flowId: response.verification.flowId,
                 resendAvailableAt: response.verification.resendAvailableAt,
                 returnTo: safeReturnPath(returnTo),
             });
+
             const destination = safeReturnPath(returnTo);
+
             router.push(
                 href(
                     preserveCapabilityReturnFragment(

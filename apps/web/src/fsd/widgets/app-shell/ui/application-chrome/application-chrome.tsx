@@ -10,8 +10,11 @@ import { AuthenticatedAppShell } from '../authenticated-app-shell/authenticated-
 
 function ownerAppRoute(pathname: string) {
     const segments = pathname.split('/').filter(Boolean);
+
     const first = segments[0];
+
     const route = first && isLocale(first) ? segments[1] : first;
+
     return route === 'dictionaries' || route === 'profile';
 }
 
@@ -23,6 +26,7 @@ export function ApplicationChrome({
     publicHeader: ReactNode;
 }) {
     const pathname = usePathname();
+
     const authenticated = useSessionStore(
         (state) => state.status === 'authenticated',
     );

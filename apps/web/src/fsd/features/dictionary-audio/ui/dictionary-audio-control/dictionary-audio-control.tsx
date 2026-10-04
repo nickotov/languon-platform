@@ -15,12 +15,41 @@ export function DictionaryAudioControl({
     playback: ReturnType<typeof useDictionaryAudio>;
 }) {
     const { locale, t } = useI18n();
+
     const selected =
         playback.state.selection?.card.id === card.id &&
         playback.state.selection.field === field;
+
     const phase = selected ? playback.state.phase : 'idle';
+
     const busy = phase === 'loading' || phase === 'playing';
+
     const label = t(`dictionary.field.${field}`);
+
+    function handlePlayback() {
+        if (busy) {
+            playback.stop();
+
+            return;
+        }
+
+        void playback.play({ card, field });
+    }
+
+    function renderPlaybackIcon() {
+        if (phase === 'loading') {
+            return <LoaderCircle size={15} aria-hidden='true' />;
+        }
+
+        if (busy) {
+            return <Square size={15} aria-hidden='true' />;
+        }
+
+        return <Volume2 size={15} aria-hidden='true' />;
+    }
+
+    const resolvedPlaybackIcon = renderPlaybackIcon();
+
     return (
         <span className={styles.control} dir='ltr' lang={locale}>
             <IconButton
@@ -31,17 +60,9 @@ export function DictionaryAudioControl({
                         : 'dictionary.audio.playField',
                     { field: label },
                 )}
-                onClick={() =>
-                    busy ? playback.stop() : void playback.play({ card, field })
-                }
+                onClick={handlePlayback}
             >
-                {phase === 'loading' ? (
-                    <LoaderCircle size={15} aria-hidden='true' />
-                ) : busy ? (
-                    <Square size={15} aria-hidden='true' />
-                ) : (
-                    <Volume2 size={15} aria-hidden='true' />
-                )}
+                {resolvedPlaybackIcon}
             </IconButton>
             {selected ? (
                 <>

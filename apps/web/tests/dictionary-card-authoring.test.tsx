@@ -2031,6 +2031,82 @@ describe('dictionary settings and card authoring', () => {
         expect(onSave).not.toHaveBeenCalled();
     });
 
+    it.each(['active', 'archived'] as const)(
+        'shows enabled transcription below Source in %s cards without a detail row',
+        (lifecycle) => {
+            const { container } = render(
+                <DictionaryCardList
+                    cards={[
+                        {
+                            ...card,
+                            lifecycle,
+                            effectiveSettings: {
+                                ...card.effectiveSettings,
+                                transcriptionEnabled: true,
+                            },
+                            values: {
+                                ...card.values,
+                                transcription: 'wɜːk əv ɑːt',
+                            },
+                        },
+                    ]}
+                    dictionary={dictionary}
+                    languages={languages}
+                    lifecycle={lifecycle}
+                    onEdit={vi.fn()}
+                    onLifecycle={vi.fn()}
+                    onMove={vi.fn()}
+                    pending={false}
+                />,
+            );
+            const transcription = screen.getByText('(wɜːk əv ɑːt)');
+            expect(transcription.parentElement).toHaveAttribute('lang', 'en');
+            expect(transcription.parentElement).toHaveAttribute('dir', 'ltr');
+            expect(transcription.previousElementSibling).toHaveTextContent(
+                card.values.source,
+            );
+            expect(
+                container.querySelector('[data-field="transcription"]'),
+            ).toBeNull();
+        },
+    );
+
+    it.each([
+        { enabled: false, transcription: 'dormant' },
+        { enabled: true, transcription: null },
+        { enabled: true, transcription: '' },
+    ])(
+        'omits transcription when disabled or empty: %j',
+        ({ enabled, transcription }) => {
+            const { container } = render(
+                <DictionaryCardList
+                    cards={[
+                        {
+                            ...card,
+                            effectiveSettings: {
+                                ...card.effectiveSettings,
+                                transcriptionEnabled: enabled,
+                            },
+                            values: { ...card.values, transcription },
+                        },
+                    ]}
+                    dictionary={dictionary}
+                    languages={languages}
+                    lifecycle='active'
+                    onEdit={vi.fn()}
+                    onLifecycle={vi.fn()}
+                    onMove={vi.fn()}
+                    pending={false}
+                />,
+            );
+            expect(screen.queryByText('(dormant)')).toBeNull();
+            expect(screen.queryByText('()')).toBeNull();
+            expect(
+                container.querySelector('[data-field="transcription"]'),
+            ).toBeNull();
+        },
+    );
+
     it('renders malicious card strings as inert text in responsive semantic DOM', async () => {
         const user = userEvent.setup();
         const { container } = render(

@@ -6,12 +6,14 @@
     padding: 16px;
     width: 100%;
 }
+
 .header {
     align-items: center;
     display: flex;
     gap: 12px;
     justify-content: space-between;
 }
+
 .kind {
     border-radius: var(--radius-full);
     font-size: 12px;
@@ -20,41 +22,50 @@
     padding: 4px 8px;
     text-transform: uppercase;
 }
+
 .vocabulary {
     background: var(--primary-subtle);
     color: var(--vocabulary-term);
 }
+
 .grammar {
     background: var(--info-50);
     color: var(--grammar-concept);
 }
+
 .listening {
     background: var(--success-subtle);
     color: var(--success-default);
 }
+
 .reading {
     background: var(--warning-subtle);
     color: var(--warning-default);
 }
+
 .progress {
     color: var(--text-tertiary);
     font-size: 12px;
     font-weight: 500;
 }
+
 .prompt {
     margin-top: 16px;
 }
+
 .instruction {
     color: var(--text-secondary);
     font-size: 14px;
     margin: 0;
 }
+
 .question {
     color: var(--text-primary);
     font-size: clamp(20px, 4vw, 24px);
     line-height: 1.4;
     margin: 4px 0 0;
 }
+
 .image {
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
@@ -63,6 +74,7 @@
     object-fit: cover;
     width: 100%;
 }
+
 .audio {
     align-items: center;
     background: var(--background-subtle);
@@ -77,20 +89,24 @@
     min-height: 44px;
     padding: 8px 16px;
 }
+
 .audioIcon {
     color: var(--primary-default);
     height: 20px;
     width: 20px;
 }
+
 .audio:hover {
     background: var(--background-surface);
     border-color: var(--border-strong);
 }
+
 .audio:focus-visible,
 .option:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
 }
+
 .error,
 .hint {
     align-items: flex-start;
@@ -101,26 +117,31 @@
     margin-top: 16px;
     padding: 12px;
 }
+
 .error {
     background: var(--danger-subtle);
     border: 1px solid var(--danger-200);
     color: var(--danger-default);
 }
+
 .hint {
     background: var(--state-hint-bg);
     color: var(--warning-default);
 }
+
 .messageIcon {
     flex: none;
     height: 16px;
     margin-top: 2px;
     width: 16px;
 }
+
 .options {
     display: grid;
     gap: 8px;
     margin-top: 16px;
 }
+
 .option {
     align-items: center;
     background: var(--background-surface);
@@ -134,68 +155,84 @@
     text-align: left;
     width: 100%;
 }
+
 .option:hover:not(:disabled) {
     background: var(--background-subtle);
     border-color: var(--border-strong);
 }
+
 .option:disabled {
     cursor: not-allowed;
 }
+
 .optionCopy {
     min-width: 0;
 }
+
 .optionLine {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .optionLabel {
     font-size: 16px;
     font-weight: 500;
 }
+
 .optionHint {
     color: var(--text-tertiary);
     font-size: 14px;
     margin-top: 2px;
 }
+
 .optionIcon {
     flex: none;
     height: 20px;
     width: 20px;
 }
+
 .selected {
     background: var(--state-selected-bg);
     border-color: var(--primary-default);
 }
+
 .correct {
     background: var(--success-subtle);
     border-color: var(--state-correct);
 }
+
 :where(.correct) .optionIcon {
     color: var(--state-correct);
 }
+
 .incorrect {
     background: var(--danger-subtle);
     border-color: var(--state-incorrect);
 }
+
 :where(.incorrect) .optionIcon {
     color: var(--state-incorrect);
 }
+
 .feedback {
     border-radius: var(--radius-md);
     font-size: 14px;
     margin: 16px 0 0;
     padding: 12px;
 }
+
 .feedbackCorrect {
     background: var(--success-subtle);
     color: var(--success-default);
 }
+
 .feedbackIncorrect {
     background: var(--danger-subtle);
     color: var(--danger-default);
 }
+
 .footer {
     align-items: center;
     display: flex;
@@ -204,6 +241,7 @@
     justify-content: flex-end;
     margin-top: 24px;
 }
+
 .loadingLabel {
     align-items: center;
     color: var(--text-tertiary);
@@ -211,40 +249,48 @@
     font-size: 14px;
     gap: 8px;
 }
+
 .loadingIcon {
     animation: spin 0.7s linear infinite;
     height: 16px;
     width: 16px;
 }
+
 .skeleton {
     display: grid;
     gap: 12px;
     margin-top: 16px;
 }
+
 .skeletonLine {
     animation: pulse 1.5s infinite;
     background: var(--background-subtle);
     border-radius: var(--radius-md);
     height: 44px;
 }
+
 .skeletonLine:first-child {
     height: 20px;
     width: 75%;
 }
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
     }
 }
+
 @keyframes pulse {
     50% {
         opacity: 0.45;
     }
 }
+
 @media (min-width: 640px) {
     .root {
         padding: 24px;
     }
+
     .image {
         height: 224px;
     }

@@ -1,12 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { IconButton } from './icon-button';
+
 const meta = { component: IconButton, title: 'UI/Icon button' } satisfies Meta<
     typeof IconButton
 >;
+
 export default meta;
+
 export const Close: StoryObj<typeof meta> = {
     args: { children: '×', label: 'Close' },
 };
+
 export const Sizes: StoryObj<typeof meta> = {
     args: { children: '×', label: 'Close' },
     render: () => (
@@ -23,9 +27,11 @@ export const Sizes: StoryObj<typeof meta> = {
         </div>
     ),
 };
+
 export const Disabled: StoryObj<typeof meta> = {
     args: { children: '×', disabled: true, label: 'Close' },
 };
+
 export const Pressed: StoryObj<typeof meta> = {
     args: { children: '×', label: 'Close (pressed)' },
     render: () => (

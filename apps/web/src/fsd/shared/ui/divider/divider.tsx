@@ -15,6 +15,7 @@ export function Divider({
                 className={[styles.rule, className].filter(Boolean).join(' ')}
             />
         );
+
     return (
         <div
             aria-orientation='horizontal'

@@ -22,7 +22,9 @@ const meta = {
 } satisfies Meta<typeof DictionaryExportPanel>;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const Ready: Story = {};
+
 export const Pending: Story = { args: { pending: true } };

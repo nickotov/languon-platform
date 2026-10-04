@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { GrammarCallout } from './grammar-callout';
+
 export default {
     title: 'UI/Grammar callout',
     component: GrammarCallout,
 } satisfies Meta<typeof GrammarCallout>;
+
 export const Variants: StoryObj<typeof GrammarCallout> = {
     render: () => (
         <div style={{ display: 'grid', gap: 12, maxWidth: 680 }}>

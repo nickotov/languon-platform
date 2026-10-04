@@ -6,16 +6,22 @@ import { useSettingsDraft } from '../../hooks/use-settings-draft';
 import type { SettingsFormProps } from '../../types';
 import { SettingsLanguagePair } from '../settings-language-pair/settings-language-pair';
 import { SettingsCardFields } from '../settings-card-fields/settings-card-fields';
-import styles from './dictionary-settings-form.module.css';
+import styles from '../dictionary-settings-form-common.module.css';
+
 export type { SaveDictionarySettings } from '../../types';
 
 export function DictionarySettingsForm(props: SettingsFormProps) {
     const { dictionary, languages, error, pending } = props;
+
     const { t } = useI18n();
+
     const state = useSettingsDraft(props);
+
     const nameCount = `${state.draft.name.length} / 120`;
+
     const translationContextTooLong =
         [...state.draft.translationContext].length > 1000;
+
     const translationContextError = translationContextTooLong
         ? t('dictionary.context.tooLong', { count: 1000 })
         : undefined;

@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { AiTutorMessage } from './ai-tutor-message';
+
 export default {
     title: 'UI/AI tutor message',
     component: AiTutorMessage,
 } satisfies Meta<typeof AiTutorMessage>;
+
 export const States: StoryObj<typeof AiTutorMessage> = {
     render: () => (
         <div style={{ display: 'grid', gap: 20 }}>

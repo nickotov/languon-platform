@@ -1,7 +1,7 @@
 import { dictionaryErrorMessage } from '@/fsd/entities/dictionary';
 import { Button, ErrorState, InlineAlert } from '@/fsd/shared/ui';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor/dictionary-editor.module.css';
+import styles from '../dictionary-editor-common.module.css';
 
 export function EditorFeedback({
     model,
@@ -39,9 +39,9 @@ export function EditorFeedback({
         void generationCapabilities.refetch();
     }
 
-    return (
-        <>
-            {conflict ? (
+    function resolveEditorFeedbackContent() {
+        if (conflict) {
+            return (
                 <ErrorState
                     title={conflictTitle}
                     action={
@@ -52,9 +52,21 @@ export function EditorFeedback({
                 >
                     {t('dictionary.conflict.help')}
                 </ErrorState>
-            ) : message ? (
-                <p role='alert'>{message}</p>
-            ) : null}
+            );
+        }
+
+        if (message) {
+            return <p role='alert'>{message}</p>;
+        }
+
+        return null;
+    }
+
+    const resolvedEditorFeedbackContent = resolveEditorFeedbackContent();
+
+    return (
+        <>
+            {resolvedEditorFeedbackContent}
             {outcome ? (
                 <p aria-live='polite' className={styles.outcome}>
                     {outcome}

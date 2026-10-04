@@ -15,7 +15,7 @@ import { CardFieldOverrides } from '../card-field-overrides/card-field-overrides
 import { CardTranslationContext } from '../card-translation-context/card-translation-context';
 import { FormVersionNavigation } from './form-version-navigation';
 import { AutoSaveFeedback } from './auto-save-feedback';
-import styles from './dictionary-card-form.module.css';
+import styles from '../dictionary-card-form-common.module.css';
 
 export type {
     DictionaryCardDraft,
@@ -25,6 +25,7 @@ export type {
 
 export function DictionaryCardForm(props: DictionaryCardFormProps) {
     const { t } = useI18n();
+
     const {
         card,
         dictionary,
@@ -37,45 +38,62 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         pending,
         showHeading = true,
     } = props;
+
     const authoring = useCardAuthoring(props);
+
     const { effective, active, duplicate, locked } = authoring;
+
     const className = [styles.card, embedded ? styles.embedded : '']
         .filter(Boolean)
         .join(' ');
+
     const title = card
         ? t('dictionary.card.editTitle')
         : t('dictionary.card.createTitle');
+
     const cancelLabel = card
         ? t('dictionary.card.close')
         : t('dictionary.card.discardDraft');
+
     const saveLabel = card
         ? t('dictionary.card.save')
         : t('dictionary.card.create');
+
     const saveDisabled =
         locked || !authoring.validValues || !authoring.validTranslationContext;
+
     const closeDisabled = Boolean(
         pending ||
         ai?.pending ||
         active ||
         authoring.autoSaveStatus === 'saving',
     );
+
     const displayedAi = ai
         ? { ...ai, proposal: authoring.proposal }
         : undefined;
+
     const fieldContent: AuthoringFieldContent = {
         effective,
         values: authoring.draft.values,
         setValue: authoring.setValue,
     };
+
+    function resolveFieldAi(): AuthoringFieldSuggestions['ai'] {
+        if (!displayedAi) {
+            return undefined;
+        }
+
+        return {
+            available: displayedAi.available,
+            format: displayedAi.format,
+            pending: displayedAi.pending,
+            proposal: displayedAi.proposal ?? null,
+        };
+    }
+
     const fieldSuggestions: AuthoringFieldSuggestions = {
-        ai: displayedAi
-            ? {
-                  available: displayedAi.available,
-                  format: displayedAi.format,
-                  pending: displayedAi.pending,
-                  proposal: displayedAi.proposal ?? null,
-              }
-            : undefined,
+        ai: resolveFieldAi(),
         active,
         canGenerate:
             authoring.isLatestVersion && authoring.validTranslationContext,
@@ -87,17 +105,24 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
     const optionalFields: DictionaryCardAuthoringField[] = [];
 
     if (effective.transcriptionEnabled) optionalFields.push('transcription');
+
     if (effective.definitionEnabled) optionalFields.push('definition');
+
     if (effective.exampleEnabled) optionalFields.push('example');
+
     if (effective.exampleTranslationEnabled)
         optionalFields.push('exampleTranslation');
+
     const fullWidthFields = optionalFields.filter(
         (field) => field !== 'example' && field !== 'exampleTranslation',
     );
+
     const exampleFields = optionalFields.filter(
         (field) => field === 'example' || field === 'exampleTranslation',
     );
+
     const generatedFields = ['translation', ...optionalFields] as const;
+
     const hasContent = generatedFields.some((field) =>
         Boolean(authoring.draft.values[field]?.trim()),
     );
@@ -108,7 +133,9 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
             field === 'translation' ||
             field === 'example' ||
             field === 'exampleTranslation';
+
         const fieldClassName = paired ? styles.wordPairField : undefined;
+
         return (
             <AuthoringField
                 className={fieldClassName}
@@ -121,6 +148,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
             />
         );
     }
+
     function reloadConflict() {
         void Promise.resolve(onReloadConflict?.()).catch(() => undefined);
     }

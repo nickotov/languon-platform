@@ -9,6 +9,7 @@ export type BreadcrumbItem = {
     href?: string;
     onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 };
+
 export type BreadcrumbProps = {
     items: BreadcrumbItem[];
     showHomeIcon?: boolean;
@@ -25,19 +26,30 @@ export function Breadcrumb({
     className,
 }: BreadcrumbProps) {
     const [expanded, setExpanded] = useState(false);
+
     if (!items.length) return null;
+
     const collapse =
         !expanded && maxVisibleItems > 2 && items.length > maxVisibleItems;
-    const entries: Array<{ item?: BreadcrumbItem; index?: number }> = collapse
-        ? [
-              { item: items[0]!, index: 0 },
-              {},
-              ...items.slice(-(maxVisibleItems - 2)).map((item, i) => ({
-                  item,
-                  index: items.length - (maxVisibleItems - 2) + i,
-              })),
-          ]
-        : items.map((item, index) => ({ item, index }));
+
+    function resolveEntries() {
+        if (collapse) {
+            return [
+                { item: items[0]!, index: 0 },
+                {},
+                ...items.slice(-(maxVisibleItems - 2)).map((item, i) => ({
+                    item,
+                    index: items.length - (maxVisibleItems - 2) + i,
+                })),
+            ];
+        }
+
+        return items.map((item, index) => ({ item, index }));
+    }
+
+    const entries: Array<{ item?: BreadcrumbItem; index?: number }> =
+        resolveEntries();
+
     return (
         <nav aria-label={ariaLabel} className={className}>
             <ol className={styles.list}>

@@ -11,6 +11,7 @@ import {
 } from './toast';
 
 const meta = { title: 'UI/Toast' } satisfies Meta;
+
 export default meta;
 
 export const Tones: StoryObj = {
@@ -30,6 +31,7 @@ export const Tones: StoryObj = {
 function HostExample({ queue = false }: { queue?: boolean }) {
     useEffect(() => {
         clearToasts();
+
         return clearToasts;
     }, []);
 
@@ -38,6 +40,7 @@ function HostExample({ queue = false }: { queue?: boolean }) {
             <Button
                 onClick={() => {
                     const count = queue ? 4 : 1;
+
                     for (let index = 1; index <= count; index += 1) {
                         showToast({
                             content: queue

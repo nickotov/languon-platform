@@ -2,9 +2,13 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Input } from '../input/input';
 import { Button } from '../button/button';
 import { Field } from './field';
+
 const meta = { title: 'UI/Field' } satisfies Meta;
+
 export default meta;
+
 type Story = StoryObj;
+
 export const Email: Story = {
     render: () => (
         <Field hint='We will only use this to sign you in.' label='Email'>
@@ -12,6 +16,7 @@ export const Email: Story = {
         </Field>
     ),
 };
+
 export const Error: Story = {
     render: () => (
         <Field error='Enter a valid email address.' label='Email'>
@@ -19,6 +24,7 @@ export const Error: Story = {
         </Field>
     ),
 };
+
 export const Success: Story = {
     render: () => (
         <Field label='Email' success='Email address verified.'>
@@ -26,6 +32,7 @@ export const Success: Story = {
         </Field>
     ),
 };
+
 export const WithLabelAction: Story = {
     render: () => (
         <Field

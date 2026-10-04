@@ -32,6 +32,7 @@ const languages = [
         tag: 'es',
     },
 ] as LanguageCatalogEntry[];
+
 const dictionary = {
     activeCardCount: 1,
     archivedAt: null,
@@ -64,6 +65,7 @@ const dictionary = {
     version: 1,
     visibility: 'private',
 } satisfies OwnedDictionary;
+
 const card = {
     archivedAt: null,
     authorship: 'mixed',
@@ -118,7 +120,9 @@ const meta = {
     ],
     title: 'Dictionary/Ordered card list',
 } satisfies Meta<typeof DictionaryCardList>;
+
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
@@ -189,6 +193,25 @@ export const ExampleWithoutTranslation: Story = {
         ...Default.args,
         cards: [
             { ...card, values: { ...card.values, exampleTranslation: null } },
+        ],
+    },
+};
+
+export const WithTranscription: Story = {
+    args: {
+        ...Default.args,
+        cards: [
+            {
+                ...card,
+                effectiveSettings: {
+                    ...card.effectiveSettings,
+                    transcriptionEnabled: true,
+                },
+                values: {
+                    ...card.values,
+                    transcription: 'tə drɔː ə dɪˈstɪŋkʃən',
+                },
+            },
         ],
     },
 };

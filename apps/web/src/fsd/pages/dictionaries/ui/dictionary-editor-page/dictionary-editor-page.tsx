@@ -12,7 +12,9 @@ export function DictionaryEditorPage({
     dictionaryId: string;
 }) {
     const { requestWithSession } = useAuth();
+
     const { t } = useI18n();
+
     return (
         <AuthenticatedDictionaryBoundary
             loadingMessage={t('dictionary.editor.loading')}

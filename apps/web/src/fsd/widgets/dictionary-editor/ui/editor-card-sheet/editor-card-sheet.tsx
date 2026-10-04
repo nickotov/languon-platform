@@ -32,6 +32,7 @@ type EditorCardSheetModel = Pick<
 >;
 
 type DictionaryCardFormProps = ComponentProps<typeof DictionaryCardForm>;
+
 type AuthoringActionHandler = NonNullable<
     DictionaryCardFormProps['ai']
 >['onAction'];
@@ -60,7 +61,9 @@ export function buildAiValue(
     onAction: AuthoringActionHandler,
 ): DictionaryCardFormProps['ai'] {
     const { authoringJob, authoringReviewJob, cardAuthoringAction } = model;
+
     const requestError = cardAuthoringAction.error ?? authoringJob.error;
+
     let error: string | null = null;
 
     if (requestError) {
@@ -108,9 +111,11 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         cardList,
         reloadAfterConflict,
     } = model;
+
     if (!editing) return null;
 
     const isNewCard = editing === 'new';
+
     const hasRunningSuccessor =
         Boolean(authoringReviewJob) &&
         (authoringJob.data?.state === 'queued' ||
@@ -146,7 +151,9 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         .map((candidate) => candidate.values.source);
 
     const saveError = cardAutoSave.error ?? cardMutation.error;
+
     const saveFeedback = cardSaveFeedback(saveError, t);
+
     const errorValue: ComponentProps<typeof DictionaryCardForm>['error'] =
         saveFeedback.message;
 
@@ -177,11 +184,13 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
                 selectedSuggestions,
                 ...(generation ? { generation } : {}),
             });
+
             return;
         }
 
         if (isNewCard) {
             await cardMutation.mutateAsync({ draft });
+
             return;
         }
 
@@ -193,18 +202,22 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         current.sourceLanguage,
         locale,
     );
+
     const targetLanguage = languageLabel(
         catalog,
         current.targetLanguage,
         locale,
     );
+
     const description = `${current.name} · ${sourceLanguage} → ${targetLanguage}`;
+
     const closeLabel = t(isNewCard ? 'common.cancel' : 'dictionary.card.close');
 
     const pendingValue: ComponentProps<typeof DictionaryCardForm>['pending'] =
         cardMutation.isPending ||
         (cardAuthoringAction.isPending &&
             cardAuthoringAction.variables?.kind === 'accept');
+
     const handleAutoSave: NonNullable<
         DictionaryCardFormProps['onAutoSave']
     > = async (draft, selectedSuggestions, generation) =>

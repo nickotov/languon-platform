@@ -8,8 +8,11 @@ import styles from './icon-button.module.css';
 
 export type IconButtonVariant =
     'danger' | 'ghost' | 'outline' | 'primary' | 'secondary';
+
 export type TooltipPlacement = 'bottom' | 'left' | 'right' | 'top';
+
 export type IconButtonSize = 'lg' | 'md' | 'sm';
+
 export type IconButtonProps = Omit<
     ButtonHTMLAttributes<HTMLButtonElement>,
     'children'
@@ -25,12 +28,17 @@ export type IconButtonProps = Omit<
     variant?: IconButtonVariant;
 };
 
-const normalizeSize = (size: IconButtonProps['size']) =>
-    size === 'compact' || size === 'small'
-        ? 'sm'
-        : size === 'large'
-          ? 'lg'
-          : 'md';
+const normalizeSize = (size: IconButtonProps['size']) => {
+    if (size === 'compact' || size === 'small') {
+        return 'sm';
+    }
+
+    if (size === 'large') {
+        return 'lg';
+    }
+
+    return 'md';
+};
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     function IconButton(
@@ -56,9 +64,13 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         ref,
     ) {
         const isDisabled = disabled || loading;
+
         const normalizedSize = normalizeSize(size);
+
         const ariaBusy = loading || undefined;
+
         const displayedIcon = icon ?? children;
+
         const buttonClassName = [
             styles.button,
             styles[normalizedSize],
@@ -69,6 +81,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         ]
             .filter(Boolean)
             .join(' ');
+
         const tooltipDisabled = !showTooltip || isDisabled;
 
         return (

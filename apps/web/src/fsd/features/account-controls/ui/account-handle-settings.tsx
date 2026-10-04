@@ -24,10 +24,15 @@ export function AccountHandleSettings({
     ): Promise<T>;
 }) {
     const { t } = useI18n();
+
     const handle = useSessionStore((state) => state.user?.handle ?? null);
+
     const updateUserHandle = useSessionStore((state) => state.updateUserHandle);
+
     const [draft, setDraft] = useState(handle ?? '');
+
     const [state, setState] = useState<'idle' | 'saving' | 'saved'>('idle');
+
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -36,22 +41,32 @@ export function AccountHandleSettings({
 
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         if (state === 'saving') return;
+
         const parsed = UpdateHandleRequestSchema.safeParse({ handle: draft });
+
         if (!parsed.success) {
             setError(t('profile.handleInvalid'));
+
             return;
         }
+
         setError(null);
+
         setState('saving');
+
         try {
             const response: UpdateHandleResponse = await requestWithSession(
                 (token) => authApi.updateHandle(parsed.data, token),
             );
+
             updateUserHandle(response.handle);
+
             setState('saved');
         } catch (caught) {
             setState('idle');
+
             setError(
                 caught instanceof AuthApiError && caught.status === 409
                     ? t('profile.handleConflict')
@@ -82,7 +97,9 @@ export function AccountHandleSettings({
                 maxLength={30}
                 onChange={(event) => {
                     setDraft(event.target.value);
+
                     setError(null);
+
                     setState('idle');
                 }}
                 placeholder={t('profile.handlePlaceholder')}

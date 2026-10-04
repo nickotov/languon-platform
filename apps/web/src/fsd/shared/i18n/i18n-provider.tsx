@@ -36,7 +36,9 @@ export function I18nProvider({
     messages: Messages;
 }) {
     const t = useMemo(() => createTranslator(messages), [messages]);
+
     const href = useCallback((path: string) => path, []);
+
     const formatDate = useCallback(
         (value: Date | number | string) =>
             new Intl.DateTimeFormat(locale, {
@@ -45,6 +47,7 @@ export function I18nProvider({
             }).format(typeof value === 'string' ? new Date(value) : value),
         [locale],
     );
+
     const context = useMemo(
         () => ({ formatDate, href, locale, t }),
         [formatDate, href, locale, t],
@@ -57,7 +60,9 @@ export function I18nProvider({
 
 export function useI18n(): I18nContextValue {
     const context = useContext(I18nContext);
+
     if (!context) throw new Error('useI18n must be used within I18nProvider');
+
     return context;
 }
 
@@ -65,8 +70,11 @@ export function useLocaleSensitiveState<State>(
     resetValue: State,
 ): [State, Dispatch<SetStateAction<State>>] {
     const { locale } = useI18n();
+
     const currentLocale = useRef(locale);
+
     currentLocale.current = locale;
+
     const [state, setState] = useState(resetValue);
 
     useEffect(() => setState(resetValue), [locale, resetValue]);
@@ -74,6 +82,7 @@ export function useLocaleSensitiveState<State>(
     const setLocaleState = useCallback<Dispatch<SetStateAction<State>>>(
         (value) => {
             if (currentLocale.current !== locale) return;
+
             setState(value);
         },
         [locale],

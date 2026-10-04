@@ -36,8 +36,11 @@ export function LibraryCreateDialog({
     state: LibraryCreateDialogProps;
 }) {
     const { locale, t } = useI18n();
+
     const formId = useId();
+
     const [name, setName] = useState('');
+
     const nameCount = `${name.length} / 120`;
 
     function changeName(event: ChangeEvent<HTMLInputElement>) {
@@ -48,11 +51,15 @@ export function LibraryCreateDialog({
         value: language.tag,
         label: languageLabel(state.catalog, language.tag, locale),
     }));
+
     const dismissible = !state.create.isPending;
+
     const error = state.create.error
         ? dictionaryErrorMessage(state.create.error, t)
         : null;
+
     const hasError = error !== null;
+
     const labels = {
         cancel: t('common.cancel'),
         catalogHint: t('dictionary.create.catalogHint'),

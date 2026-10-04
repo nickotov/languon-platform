@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { BookOpenIcon } from 'lucide-react';
 import { NavItem } from './nav-item';
+
 export default { title: 'UI/Nav item', component: NavItem } satisfies Meta<
     typeof NavItem
 >;
+
 export const States: StoryObj<typeof NavItem> = {
     render: () => (
         <nav style={{ display: 'grid', gap: 4, width: 240 }}>

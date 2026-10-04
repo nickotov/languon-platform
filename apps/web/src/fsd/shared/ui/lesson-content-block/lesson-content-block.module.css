@@ -1,27 +1,34 @@
 .root {
     width: 100%;
 }
+
 .narrow {
     max-width: 640px;
 }
+
 .default {
     max-width: 680px;
 }
+
 .wide {
     max-width: 720px;
 }
+
 .center {
     margin-inline: auto;
 }
+
 .bordered {
     background: var(--background-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
     padding: 24px;
 }
+
 .header {
     margin-bottom: 24px;
 }
+
 .eyebrow {
     color: var(--text-tertiary);
     font-size: 12px;
@@ -30,6 +37,7 @@
     margin: 0 0 8px;
     text-transform: uppercase;
 }
+
 .title,
 :where(.body) :where(h2, h3, h4) {
     color: var(--text-primary);
@@ -38,41 +46,50 @@
     line-height: 1.25;
     margin: 0;
 }
+
 .summary {
     color: var(--text-secondary);
     font-size: 16px;
     line-height: 1.625;
     margin: 12px 0 0;
 }
+
 .body {
     color: var(--text-secondary);
     font-size: 17px;
     line-height: 1.88;
 }
+
 .body > :where(*) {
     margin-block: 0 16px;
 }
+
 .body :where(a, strong, h3) {
     color: var(--text-primary);
 }
+
 .body :where(a) {
     text-decoration: underline;
     text-underline-offset: 4px;
 }
+
 .body :where(ul, ol) {
     padding-left: 24px;
 }
+
 .body :where(blockquote) {
     border-left: 2px solid var(--border-strong);
     font-style: italic;
     margin-left: 0;
     padding-left: 16px;
 }
+
 .body :where(code) {
     background: var(--background-subtle);
     border-radius: var(--radius-xs);
     padding: 2px 6px;
 }
+
 @media (min-width: 640px) {
     .bordered {
         padding: 32px;

@@ -20,6 +20,7 @@ export default async function Page({
     }>;
 }) {
     const parameters = await searchParams;
+
     return (
         <LoginPage
             passwordReset={single(parameters.passwordReset)}

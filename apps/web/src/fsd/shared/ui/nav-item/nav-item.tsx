@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import styles from './nav-item.module.css';
+
 export type NavItemOrientation = 'vertical' | 'horizontal';
+
 export interface NavItemProps extends Omit<
     AnchorHTMLAttributes<HTMLAnchorElement>,
     'children'
@@ -14,6 +16,7 @@ export interface NavItemProps extends Omit<
     orientation?: NavItemOrientation;
     collapsed?: boolean;
 }
+
 export function NavItem({
     label,
     icon: Icon,
@@ -39,8 +42,10 @@ export function NavItem({
             onClick={(event) => {
                 if (disabled) {
                     event.preventDefault();
+
                     return;
                 }
+
                 onClick?.(event);
             }}
             className={[

@@ -57,15 +57,25 @@ export function DictionaryImportPanel({
     showHeading?: boolean;
 }) {
     const { t } = useI18n();
+
     const [content, setContent] = useState('');
+
     const [delimiter, setDelimiter] = useState<'comma' | 'tab'>('tab');
+
     const [hasHeader, setHasHeader] = useState(false);
+
     const [sourceColumnIndex, setSourceColumnIndex] = useState(0);
+
     const [targetColumnIndex, setTargetColumnIndex] = useState(1);
+
     const [enrich, setEnrich] = useState(false);
+
     const [instruction, setInstruction] = useState('');
+
     const [selected, setSelected] = useState<Set<number>>(new Set());
+
     const [fileError, setFileError] = useState<string | null>(null);
+
     const [previewFingerprint, setPreviewFingerprint] = useState<string | null>(
         null,
     );
@@ -76,33 +86,46 @@ export function DictionaryImportPanel({
         sourceColumnIndex,
         targetColumnIndex,
     } as const;
+
     const request = { content, options, target };
+
     const requestFingerprint = JSON.stringify(request);
+
     const visiblePreview =
         previewFingerprint === requestFingerprint ? preview : null;
 
     useEffect(() => {
         if (!visiblePreview) {
             setSelected(new Set());
+
             return;
         }
+
         setSelected(new Set(visiblePreview.rows.map((row) => row.rowIndex)));
     }, [visiblePreview]);
+
     const canUseAi =
         aiAvailable &&
         optionalFieldsEnabled &&
         Boolean(visiblePreview) &&
         visiblePreview!.rows.length > 0;
+
     const useAi = enrich && canUseAi;
+
     const targetReady = target.kind !== 'new' || target.name.trim().length > 0;
 
     async function loadFile(event: ChangeEvent<HTMLInputElement>) {
         const file = event.currentTarget.files?.[0];
+
         if (!file) return;
+
         setFileError(null);
+
         try {
             setContent(await readDictionaryImportFile(file));
+
             if (file.name.toLowerCase().endsWith('.csv')) setDelimiter('comma');
+
             if (file.name.toLowerCase().endsWith('.tsv')) setDelimiter('tab');
         } catch (cause) {
             setFileError(
@@ -116,8 +139,10 @@ export function DictionaryImportPanel({
 
     async function submitPreview(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
         try {
             await onPreview(request);
+
             setPreviewFingerprint(requestFingerprint);
         } catch {
             // The owning mutation renders its localized error state.
@@ -125,15 +150,46 @@ export function DictionaryImportPanel({
     }
 
     function commit() {
-        const enrichment: ImportDictionaryRequest['enrichment'] = useAi
-            ? {
-                  instruction: instruction.trim() || null,
-                  mode: 'ai',
-                  selectedRowIndexes: [...selected].sort((a, b) => a - b),
-              }
-            : { mode: 'none' };
+        function resolveEnrichment(): ImportDictionaryRequest['enrichment'] {
+            if (useAi) {
+                return {
+                    instruction: instruction.trim() || null,
+                    mode: 'ai',
+                    selectedRowIndexes: [...selected].sort((a, b) => a - b),
+                };
+            }
+
+            return { mode: 'none' };
+        }
+
+        const enrichment: ImportDictionaryRequest['enrichment'] =
+            resolveEnrichment();
+
         void onCommit({ ...request, enrichment }).catch(() => undefined);
     }
+
+    function resolveDictionaryImportPanelContent() {
+        if (!aiAvailable) {
+            return (
+                <p className={styles.paragraph}>
+                    {t('dictionary.interchange.aiUnavailable')}
+                </p>
+            );
+        }
+
+        if (!optionalFieldsEnabled) {
+            return (
+                <p className={styles.paragraph}>
+                    {t('dictionary.interchange.aiNoOptionalFields')}
+                </p>
+            );
+        }
+
+        return null;
+    }
+
+    const resolvedDictionaryImportPanelContent =
+        resolveDictionaryImportPanelContent();
 
     return (
         <section className={styles.section}>
@@ -309,11 +365,14 @@ export function DictionaryImportPanel({
                                         onChange={(event) => {
                                             const checked =
                                                 event.currentTarget.checked;
+
                                             setSelected((current) => {
                                                 const next = new Set(current);
+
                                                 if (checked)
                                                     next.add(row.rowIndex);
                                                 else next.delete(row.rowIndex);
+
                                                 return next;
                                             });
                                         }}
@@ -387,15 +446,7 @@ export function DictionaryImportPanel({
                         >
                             {t('dictionary.interchange.enrich')}
                         </Switch>
-                        {!aiAvailable ? (
-                            <p className={styles.paragraph}>
-                                {t('dictionary.interchange.aiUnavailable')}
-                            </p>
-                        ) : !optionalFieldsEnabled ? (
-                            <p className={styles.paragraph}>
-                                {t('dictionary.interchange.aiNoOptionalFields')}
-                            </p>
-                        ) : null}
+                        {resolvedDictionaryImportPanelContent}
                         {canUseAi && visiblePreview.summary.readyRows > 100 ? (
                             <p className={styles.paragraph}>
                                 {t('dictionary.interchange.aiLimit')}

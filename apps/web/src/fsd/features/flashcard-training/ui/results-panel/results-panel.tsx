@@ -25,14 +25,21 @@ export function ResultsPanel({
     undo: ReactNode;
 }) {
     const { t } = useI18n();
+
     const { roundStats } = state;
+
     const percentage = roundStats.reviewed
         ? Math.round((roundStats.known / roundStats.reviewed) * 100)
         : 0;
+
     const values = Object.values(state.outcomes);
+
     const known = values.filter((rating) => rating === 'known').length;
+
     const again = values.filter((rating) => rating === 'again').length;
+
     const title = t('training.roundComplete', { round: state.round });
+
     const stats = t('training.sessionStats', {
         entries: values.length,
         known,
@@ -40,8 +47,11 @@ export function ResultsPanel({
         reviews: state.reviewEvents,
         rounds: state.roundsCompleted,
     });
+
     const againLabel = t('training.againCount', { count: again });
+
     const disabled = Boolean(state.pending || state.conflict);
+
     const againDisabled = disabled || again === 0;
 
     return (

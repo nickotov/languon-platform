@@ -8,6 +8,7 @@
     position: absolute;
     width: 1px;
 }
+
 .value,
 .pill,
 .week,
@@ -16,34 +17,43 @@
     align-items: center;
     display: inline-flex;
 }
+
 .value {
     gap: 6px;
 }
+
 .valueIcon {
     height: 16px;
     width: 16px;
 }
+
 .valueLabel {
     font-size: 14px;
     font-variant-numeric: tabular-nums;
     font-weight: 500;
 }
+
 :where(.value.sm) .valueIcon {
     height: 14px;
     width: 14px;
 }
+
 :where(.value.sm) .valueLabel {
     font-size: 12px;
 }
+
 .hot {
     color: var(--review-due);
 }
+
 .pending {
     color: var(--text-secondary);
 }
+
 .empty {
     color: var(--text-disabled);
 }
+
 .pill {
     background: var(--background-surface);
     border: 1px solid var(--border-default);
@@ -51,17 +61,21 @@
     gap: 8px;
     padding: 6px 12px;
 }
+
 .pill:where(.sm) {
     padding: 4px 10px;
 }
+
 .week {
     gap: 4px;
 }
+
 .day {
     align-items: center;
     flex-direction: column;
     gap: 4px;
 }
+
 .dot,
 .done {
     background: var(--border-default);
@@ -69,25 +83,30 @@
     height: 6px;
     width: 6px;
 }
+
 .done {
     background: var(--warning-500);
 }
+
 .dayLabel {
     color: var(--text-tertiary);
     font-size: 10px;
 }
+
 .card {
     background: var(--background-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
     padding: 16px;
 }
+
 .cardTop {
     align-items: flex-start;
     display: flex;
     gap: 16px;
     justify-content: space-between;
 }
+
 .title {
     color: var(--text-tertiary);
     font-size: 12px;
@@ -96,15 +115,18 @@
     margin: 0 0 6px;
     text-transform: uppercase;
 }
+
 .description {
     color: var(--text-tertiary);
     font-size: 12px;
     line-height: 1.625;
     margin: 12px 0 0;
 }
+
 .loading {
     gap: 8px;
 }
+
 .skeleton {
     animation: pulse 1.5s infinite;
     background: var(--border-default);
@@ -112,9 +134,11 @@
     height: 14px;
     width: 64px;
 }
+
 .skeleton:first-child {
     width: 16px;
 }
+
 @keyframes pulse {
     50% {
         opacity: 0.45;

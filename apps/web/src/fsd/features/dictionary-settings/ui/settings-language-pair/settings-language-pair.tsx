@@ -4,7 +4,7 @@ import { languageLabel } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Badge, Field, Select } from '@/fsd/shared/ui';
 import type { useSettingsDraft } from '../../hooks/use-settings-draft';
-import styles from '../dictionary-settings-form/dictionary-settings-form.module.css';
+import styles from '../dictionary-settings-form-common.module.css';
 
 export function SettingsLanguagePair({
     dictionary,
@@ -16,12 +16,16 @@ export function SettingsLanguagePair({
     state: ReturnType<typeof useSettingsDraft>;
 }) {
     const { locale, t } = useI18n();
+
     const options = languages.map((language) => ({
         value: language.tag,
         label: languageLabel(languages, language.tag, locale),
     }));
+
     const source = languageLabel(languages, dictionary.sourceLanguage, locale);
+
     const target = languageLabel(languages, dictionary.targetLanguage, locale);
+
     const pair = `${source} → ${target}`;
 
     return (

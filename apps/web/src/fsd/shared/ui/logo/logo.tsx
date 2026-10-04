@@ -37,13 +37,18 @@ export function Logo({
             {suffix}
         </>
     );
+
     const classes = [styles.logo, className].filter(Boolean).join(' ');
 
-    return href ? (
-        <Link aria-label={label} className={classes} href={href}>
-            {content}
-        </Link>
-    ) : (
+    if (href) {
+        return (
+            <Link aria-label={label} className={classes} href={href}>
+                {content}
+            </Link>
+        );
+    }
+
+    return (
         <span aria-label={label} className={classes} role='img'>
             {content}
         </span>

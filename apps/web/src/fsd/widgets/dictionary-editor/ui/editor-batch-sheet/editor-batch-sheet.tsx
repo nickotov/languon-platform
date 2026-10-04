@@ -44,7 +44,9 @@ export function EditorBatchSheet({
 
     const handleClose: ComponentProps<typeof BottomSheet>['onClose'] = () => {
         setBatchGenerationOpen(false);
+
         setBatchGenerationJobId(null);
+
         syncBatchGenerationUrl(null);
     };
 
@@ -56,9 +58,7 @@ export function EditorBatchSheet({
     >['available'] =
         generationCapabilities.data?.pastedTermsGeneration.available === true;
 
-    const conflictValue: ComponentProps<
-        typeof DictionaryBatchGenerationPanel
-    >['conflict'] =
+    const conflictValue =
         (batchGenerationAction.error instanceof DictionaryApiError &&
             batchGenerationAction.error.detail.code === 'version_conflict') ||
         (batchGenerationJob.data?.job != null &&
@@ -72,13 +72,19 @@ export function EditorBatchSheet({
                 batchGenerationJob.data.job.targetLanguage !==
                     current.targetLanguage));
 
-    const errorValue: ComponentProps<
-        typeof DictionaryBatchGenerationPanel
-    >['error'] = batchGenerationAction.error
-        ? dictionaryErrorMessage(batchGenerationAction.error, t)
-        : batchGenerationJob.error
-          ? dictionaryErrorMessage(batchGenerationJob.error, t)
-          : null;
+    function resolveErrorValue() {
+        if (batchGenerationAction.error) {
+            return dictionaryErrorMessage(batchGenerationAction.error, t);
+        }
+
+        if (batchGenerationJob.error) {
+            return dictionaryErrorMessage(batchGenerationJob.error, t);
+        }
+
+        return null;
+    }
+
+    const errorValue = resolveErrorValue();
 
     const handleAccept: ComponentProps<
         typeof DictionaryBatchGenerationPanel
@@ -101,7 +107,9 @@ export function EditorBatchSheet({
         typeof DictionaryBatchGenerationPanel
     >['onClose'] = () => {
         setBatchGenerationOpen(false);
+
         setBatchGenerationJobId(null);
+
         syncBatchGenerationUrl(null);
     };
 
@@ -117,6 +125,7 @@ export function EditorBatchSheet({
         typeof DictionaryBatchGenerationPanel
     >['onReloadConflict'] = async () => {
         batchGenerationAction.reset();
+
         await Promise.all([
             dictionary.refetch(),
             cards.refetch(),
@@ -142,24 +151,22 @@ export function EditorBatchSheet({
         });
     };
 
-    return (
-        <BottomSheet
-            closeLabel={t('common.cancel')}
-            description={t('dictionary.batch.sheetHelp')}
-            dismissible={!batchGenerationAction.isPending}
-            onClose={handleClose}
-            open={batchGenerationOpen}
-            size='large'
-            title={t('dictionary.batch.title')}
-        >
-            {batchGenerationOpen &&
+    function resolveEditorBatchSheetContent() {
+        if (
+            batchGenerationOpen &&
             batchGenerationJobId &&
-            batchGenerationJob.isPending ? (
-                <LoadingState>{t('dictionary.batch.loading')}</LoadingState>
-            ) : batchGenerationOpen &&
-              batchGenerationJobId &&
-              batchGenerationJob.isError &&
-              !batchGenerationJob.data ? (
+            batchGenerationJob.isPending
+        ) {
+            return <LoadingState>{t('dictionary.batch.loading')}</LoadingState>;
+        }
+
+        if (
+            batchGenerationOpen &&
+            batchGenerationJobId &&
+            batchGenerationJob.isError &&
+            !batchGenerationJob.data
+        ) {
+            return (
                 <ErrorState
                     action={
                         <Button onClick={handleClick} type='button'>
@@ -170,7 +177,11 @@ export function EditorBatchSheet({
                 >
                     {dictionaryErrorMessage(batchGenerationJob.error, t)}
                 </ErrorState>
-            ) : batchGenerationOpen ? (
+            );
+        }
+
+        if (batchGenerationOpen) {
+            return (
                 <DictionaryBatchGenerationPanel
                     available={availableValue}
                     conflict={conflictValue}
@@ -191,7 +202,25 @@ export function EditorBatchSheet({
                     onStart={handleStart}
                     pendingAction={batchGenerationAction.isPending}
                 />
-            ) : null}
+            );
+        }
+
+        return null;
+    }
+
+    const resolvedEditorBatchSheetContent = resolveEditorBatchSheetContent();
+
+    return (
+        <BottomSheet
+            closeLabel={t('common.cancel')}
+            description={t('dictionary.batch.sheetHelp')}
+            dismissible={!batchGenerationAction.isPending}
+            onClose={handleClose}
+            open={batchGenerationOpen}
+            size='large'
+            title={t('dictionary.batch.title')}
+        >
+            {resolvedEditorBatchSheetContent}
         </BottomSheet>
     );
 }

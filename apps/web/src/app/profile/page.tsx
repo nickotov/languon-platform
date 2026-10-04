@@ -9,5 +9,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-    return <Suspense fallback={<ProfilePageFallback />}><ProfilePage /></Suspense>;
+    return (
+        <Suspense fallback={<ProfilePageFallback />}>
+            <ProfilePage />
+        </Suspense>
+    );
 }

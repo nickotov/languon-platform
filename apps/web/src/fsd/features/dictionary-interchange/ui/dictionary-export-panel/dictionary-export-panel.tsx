@@ -17,6 +17,7 @@ export function DictionaryExportPanel({
     pending: boolean;
 }) {
     const { t } = useI18n();
+
     const formats: Array<{
         format: DictionaryExportFormat;
         help: string;
@@ -38,6 +39,7 @@ export function DictionaryExportPanel({
             label: t('dictionary.interchange.downloadLanguonCsv'),
         },
     ];
+
     return (
         <section className={styles.section}>
             <div>

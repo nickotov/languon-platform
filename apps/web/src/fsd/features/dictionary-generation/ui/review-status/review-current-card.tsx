@@ -13,7 +13,7 @@ import {
     fieldLabel,
     originalFieldLanguage,
 } from '../../lib/review-fields';
-import styles from '../dictionary-generation-panel/dictionary-generation-panel.module.css';
+import styles from '../dictionary-generation-panel-common.module.css';
 
 export function ReviewCurrentCard({
     card,
@@ -25,16 +25,20 @@ export function ReviewCurrentCard({
     languages: readonly LanguageCatalogEntry[];
 }) {
     const { locale, t } = useI18n();
+
     const title = t('dictionary.generation.current');
+
     const version = t('dictionary.generation.currentVersion', {
         version: card.version,
     });
+
     const fields = FIELD_KEYS.map((field) => {
         const language = originalFieldLanguage(
             field,
             dictionary,
             card.effectiveSettings,
         );
+
         return {
             field,
             language,

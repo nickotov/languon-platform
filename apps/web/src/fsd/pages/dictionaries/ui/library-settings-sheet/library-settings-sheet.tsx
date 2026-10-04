@@ -14,19 +14,32 @@ export function LibrarySettingsSheet({
     state: LibrarySettingsState;
 }) {
     const { locale, t } = useI18n();
+
     const catalog = state.languages.data?.languages ?? [];
+
     const current = state.dictionary.data?.dictionary;
+
     const summary = current ?? state.selected;
-    const description = summary
-        ? `${summary.name} · ${languageLabel(catalog, summary.sourceLanguage, locale)} → ${languageLabel(catalog, summary.targetLanguage, locale)}`
-        : undefined;
+
+    function resolveDescription() {
+        if (summary) {
+            return `${summary.name} · ${languageLabel(catalog, summary.sourceLanguage, locale)} → ${languageLabel(catalog, summary.targetLanguage, locale)}`;
+        }
+
+        return undefined;
+    }
+
+    const description = resolveDescription();
+
     const loadError = state.dictionary.error ?? state.languages.error;
+
     const updateError = state.update.error
         ? dictionaryErrorMessage(state.update.error, t)
         : null;
 
     function retry() {
         void state.dictionary.refetch();
+
         void state.languages.refetch();
     }
 
@@ -35,6 +48,43 @@ export function LibrarySettingsSheet({
     ): Promise<void> {
         await state.update.mutateAsync(values);
     }
+
+    function resolveLibrarySettingsSheetContent() {
+        if (loadError) {
+            return (
+                <ErrorState
+                    action={
+                        <Button onClick={retry} type='button'>
+                            {t('common.retry')}
+                        </Button>
+                    }
+                    title={t('dictionary.error.title')}
+                >
+                    {dictionaryErrorMessage(loadError, t)}
+                </ErrorState>
+            );
+        }
+
+        if (!current || state.languages.isPending) {
+            return (
+                <LoadingState>{t('dictionary.editor.loading')}</LoadingState>
+            );
+        }
+
+        return (
+            <DictionarySettingsForm
+                dictionary={current}
+                error={updateError}
+                languages={catalog}
+                onCancel={state.close}
+                onSave={save}
+                pending={state.update.isPending}
+            />
+        );
+    }
+
+    const resolvedLibrarySettingsSheetContent =
+        resolveLibrarySettingsSheetContent();
 
     return (
         <BottomSheet
@@ -46,29 +96,7 @@ export function LibrarySettingsSheet({
             size='large'
             title={t('dictionary.settings.title')}
         >
-            {loadError ? (
-                <ErrorState
-                    action={
-                        <Button onClick={retry} type='button'>
-                            {t('common.retry')}
-                        </Button>
-                    }
-                    title={t('dictionary.error.title')}
-                >
-                    {dictionaryErrorMessage(loadError, t)}
-                </ErrorState>
-            ) : !current || state.languages.isPending ? (
-                <LoadingState>{t('dictionary.editor.loading')}</LoadingState>
-            ) : (
-                <DictionarySettingsForm
-                    dictionary={current}
-                    error={updateError}
-                    languages={catalog}
-                    onCancel={state.close}
-                    onSave={save}
-                    pending={state.update.isPending}
-                />
-            )}
+            {resolvedLibrarySettingsSheetContent}
         </BottomSheet>
     );
 }

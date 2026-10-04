@@ -11,23 +11,28 @@
     border-bottom: 1px solid var(--border-default);
     padding: 20px 24px;
 }
+
 .panelHeading {
     font-size: 16px;
     font-weight: 600;
     margin: 0;
 }
+
 .panelDescription {
     color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.6;
     margin: 4px 0 0;
 }
+
 .panelBody {
     padding: 20px 24px;
 }
+
 .panelForm {
     padding: 0;
 }
+
 .headerLine {
     align-items: center;
     display: flex;
@@ -35,15 +40,18 @@
     gap: 16px;
     justify-content: space-between;
 }
+
 .headerCopy {
     flex: 1 1 240px;
 }
+
 .rowList,
 .passkeyList {
     list-style: none;
     margin: 0;
     padding: 0;
 }
+
 .dataRow {
     align-items: center;
     display: flex;
@@ -51,15 +59,19 @@
     min-width: 0;
     padding: 12px 0;
 }
+
 .dataRow + :where(.dataRow) {
     border-top: 1px solid var(--border-default);
 }
+
 .dataRow:first-child {
     padding-top: 0;
 }
+
 .dataRow:last-child {
     padding-bottom: 0;
 }
+
 .rowIcon {
     align-items: center;
     background: var(--background-subtle);
@@ -70,22 +82,26 @@
     height: 40px;
     justify-content: center;
 }
+
 .rowCopy {
     flex: 1 1 auto;
     min-width: 0;
 }
+
 .rowTitle,
 .rowName {
     font-size: 14px;
     font-weight: 600;
     margin: 0;
 }
+
 .rowTitle {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
+
 .rowDescription {
     color: var(--text-secondary);
     display: block;
@@ -94,9 +110,11 @@
     margin: 4px 0 0;
     overflow-wrap: anywhere;
 }
+
 .rowActions {
     margin-left: auto;
 }
+
 .emptyState {
     align-items: center;
     background: var(--background-subtle);
@@ -107,6 +125,7 @@
     padding: 32px 20px;
     text-align: center;
 }
+
 .emptyIcon {
     align-items: center;
     background: var(--background-surface);
@@ -118,10 +137,12 @@
     justify-content: center;
     width: 48px;
 }
+
 .emptyTitle {
     font-size: 14px;
     margin: 4px 0 0;
 }
+
 .emptyDescription {
     color: var(--text-secondary);
     font-size: 14px;
@@ -129,6 +150,7 @@
     margin: 0;
     max-width: 340px;
 }
+
 .emptyAction {
     margin-top: 12px;
 }
@@ -150,19 +172,24 @@
     .panelBody {
         padding: 16px;
     }
+
     .headerLine {
         align-items: flex-start;
     }
+
     .dataRow {
         align-items: flex-start;
         flex-wrap: wrap;
     }
+
     .rowButton {
         margin-left: 56px;
     }
+
     .rowActions {
         margin-left: 56px;
     }
+
     .panelTitle {
         padding: 16px 16px 0;
     }

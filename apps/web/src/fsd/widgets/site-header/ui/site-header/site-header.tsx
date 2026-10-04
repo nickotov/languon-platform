@@ -12,12 +12,17 @@ import styles from './site-header.module.css';
 
 export function SiteHeader() {
     const { href, t } = useI18n();
+
     const handle = useSessionStore((state) =>
         state.status === 'authenticated' ? state.user?.handle : null,
     );
+
     const homeHref = href('/');
+
     const profileHref = href('/profile');
+
     const homeLabel = t('auth.brandHome');
+
     return (
         <header className={styles.header}>
             <div className={styles.inner}>

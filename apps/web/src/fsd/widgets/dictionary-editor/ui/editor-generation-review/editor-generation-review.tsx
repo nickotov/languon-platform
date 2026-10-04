@@ -57,15 +57,20 @@ export function EditorGenerationReview({
         ? generationCard.data?.card
         : undefined;
 
+    function resolveErrorValue() {
+        if (generationJob.error || generationAction.error) {
+            return dictionaryErrorMessage(
+                generationJob.error ?? generationAction.error,
+                t,
+            );
+        }
+
+        return null;
+    }
+
     const errorValue: ComponentProps<
         typeof DictionaryGenerationPanel
-    >['error'] =
-        generationJob.error || generationAction.error
-            ? dictionaryErrorMessage(
-                  generationJob.error ?? generationAction.error,
-                  t,
-              )
-            : null;
+    >['error'] = resolveErrorValue();
 
     const jobValue: ComponentProps<typeof DictionaryGenerationPanel>['job'] =
         generationJob.data?.job ?? undefined;
@@ -91,8 +96,11 @@ export function EditorGenerationReview({
         typeof DictionaryGenerationPanel
     >['onClose'] = () => {
         setGenerationTarget(null);
+
         setGenerationCompared(false);
+
         syncGenerationUrl(null);
+
         generationAction.reset();
     };
 
@@ -121,6 +129,7 @@ export function EditorGenerationReview({
             cards.refetch(),
             generationCard.refetch(),
         ]);
+
         setGenerationCompared(true);
     };
 
@@ -134,53 +143,68 @@ export function EditorGenerationReview({
     };
 
     const title = t('dictionary.generation.title');
+
     const closeLabel = t('common.cancel');
 
-    return generationTarget && generationJob.isPending ? (
-        <BottomSheet
-            open
-            onClose={handleClose}
-            title={title}
-            closeLabel={closeLabel}
-        >
-            <LoadingState>{t('dictionary.generation.loading')}</LoadingState>
-        </BottomSheet>
-    ) : generationTarget && generationJob.isError && !generationJob.data ? (
-        <BottomSheet
-            open
-            onClose={handleClose}
-            title={title}
-            closeLabel={closeLabel}
-        >
-            <ErrorState
-                action={
-                    <Button onClick={handleClick} type='button'>
-                        {t('common.retry')}
-                    </Button>
-                }
-                title={t('dictionary.generation.loadFailed')}
+    if (generationTarget && generationJob.isPending) {
+        return (
+            <BottomSheet
+                open
+                onClose={handleClose}
+                title={title}
+                closeLabel={closeLabel}
             >
-                {dictionaryErrorMessage(generationJob.error, t)}
-            </ErrorState>
-        </BottomSheet>
-    ) : generationTarget ? (
-        <DictionaryGenerationPanel
-            available={availableValue}
-            card={generationCard.data?.card}
-            conflict={generationConflict}
-            currentCard={currentCardValue}
-            dictionary={current}
-            error={errorValue}
-            job={jobValue}
-            languages={catalog}
-            onAccept={handleAccept}
-            onCancel={handleCancel}
-            onClose={handleClose}
-            onDiscard={handleDiscard}
-            onRegenerate={handleRegenerate}
-            onReloadCompare={handleReloadCompare}
-            onStart={handleStart}
-            pendingAction={generationAction.isPending}
-        />
-    ) : null;
+                <LoadingState>
+                    {t('dictionary.generation.loading')}
+                </LoadingState>
+            </BottomSheet>
+        );
+    }
+
+    if (generationTarget && generationJob.isError && !generationJob.data) {
+        return (
+            <BottomSheet
+                open
+                onClose={handleClose}
+                title={title}
+                closeLabel={closeLabel}
+            >
+                <ErrorState
+                    action={
+                        <Button onClick={handleClick} type='button'>
+                            {t('common.retry')}
+                        </Button>
+                    }
+                    title={t('dictionary.generation.loadFailed')}
+                >
+                    {dictionaryErrorMessage(generationJob.error, t)}
+                </ErrorState>
+            </BottomSheet>
+        );
+    }
+
+    if (generationTarget) {
+        return (
+            <DictionaryGenerationPanel
+                available={availableValue}
+                card={generationCard.data?.card}
+                conflict={generationConflict}
+                currentCard={currentCardValue}
+                dictionary={current}
+                error={errorValue}
+                job={jobValue}
+                languages={catalog}
+                onAccept={handleAccept}
+                onCancel={handleCancel}
+                onClose={handleClose}
+                onDiscard={handleDiscard}
+                onRegenerate={handleRegenerate}
+                onReloadCompare={handleReloadCompare}
+                onStart={handleStart}
+                pendingAction={generationAction.isPending}
+            />
+        );
+    }
+
+    return null;
 }

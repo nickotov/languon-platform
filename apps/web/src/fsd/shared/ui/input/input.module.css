@@ -3,19 +3,23 @@
     flex-direction: column;
     gap: 6px;
 }
+
 .fullWidth {
     width: 100%;
 }
+
 .label {
     color: var(--text-primary);
     font-size: 14px;
     font-weight: 500;
     line-height: 20px;
 }
+
 .control {
     display: block;
     position: relative;
 }
+
 .input {
     background: var(--background-surface);
     border: 1px solid var(--border-default);
@@ -28,53 +32,65 @@
         box-shadow var(--duration-fast);
     width: 100%;
 }
+
 .sm,
 .compact,
 .small {
     font-size: 14px;
     min-height: 32px;
 }
+
 .md,
 .default,
 .medium {
     font-size: 14px;
     min-height: 40px;
 }
+
 .lg,
 .large {
     font-size: 16px;
     min-height: 48px;
 }
+
 .input::placeholder {
     color: var(--text-tertiary);
 }
+
 .input:hover:not(:disabled) {
     border-color: var(--border-strong);
 }
+
 .input:focus {
     border-color: var(--border-focus);
     box-shadow: 0 0 0 3px var(--primary-subtle);
     outline: none;
 }
+
 .input[aria-invalid='true'] {
     border-color: var(--danger-default);
 }
+
 .input:read-only {
     background: var(--background-subtle);
     border-color: var(--border-strong);
 }
+
 .input:disabled {
     background: var(--background-subtle);
     border-color: var(--border-default);
     color: var(--text-disabled);
     cursor: not-allowed;
 }
+
 .withLeading {
     padding-left: 40px;
 }
+
 .withTrailing {
     padding-right: 40px;
 }
+
 .icon {
     align-items: center;
     color: var(--text-tertiary);
@@ -85,24 +101,30 @@
     top: 0;
     z-index: 1;
 }
+
 .icon :where(svg) {
     height: 16px;
     width: 16px;
 }
+
 .leading {
     left: 12px;
 }
+
 .trailing {
     right: 12px;
 }
+
 .hint,
 .error {
     font-size: 12px;
     line-height: 16px;
 }
+
 .hint {
     color: var(--text-tertiary);
 }
+
 .error {
     color: var(--danger-default);
 }

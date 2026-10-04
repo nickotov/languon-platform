@@ -8,7 +8,7 @@ import { Button, ErrorState } from '@/fsd/shared/ui';
 import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
 import { syncGenerationUrl } from '../../lib/generation-url';
-import styles from '../dictionary-editor/dictionary-editor.module.css';
+import styles from '../dictionary-editor-common.module.css';
 import { EditorEmptyCards } from '../editor-empty-cards/editor-empty-cards';
 
 type ListProps = ComponentProps<typeof DictionaryCardList>;
@@ -94,21 +94,30 @@ export function EditorCards({
             cardLifecycle === 'active' &&
             card.values[field]?.trim();
 
-        return available ? (
-            <DictionaryAudioControl
-                card={card}
-                field={field}
-                playback={audio}
-            />
-        ) : null;
+        if (available) {
+            return (
+                <DictionaryAudioControl
+                    card={card}
+                    field={field}
+                    playback={audio}
+                />
+            );
+        }
+
+        return null;
     };
 
     const generate: NonNullable<ListProps['onGenerate']> = (card) => {
         const nextTarget = { cardId: card.id };
+
         setEditing(null);
+
         setGenerationTarget(nextTarget);
+
         setGenerationCompared(false);
+
         syncGenerationUrl(nextTarget);
+
         generationAction.reset();
     };
 

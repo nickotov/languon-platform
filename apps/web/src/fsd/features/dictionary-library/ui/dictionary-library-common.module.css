@@ -4,6 +4,7 @@
     padding: 32px 16px 64px;
     color: var(--text-primary);
 }
+
 .header,
 .actions,
 .filters {
@@ -13,9 +14,11 @@
     gap: 12px;
     justify-content: space-between;
 }
+
 .header {
     align-items: flex-start;
 }
+
 .title {
     font-size: 30px;
     font-weight: 600;
@@ -23,21 +26,26 @@
     line-height: 38px;
     margin: 0;
 }
+
 .subtitle {
     color: var(--text-secondary);
     font-size: 15px;
     margin: 4px 0 0;
 }
+
 .actions {
     justify-content: flex-end;
     gap: 8px;
 }
+
 .filters {
     margin: 32px 0 24px;
 }
+
 .search {
     max-width: 320px;
 }
+
 .segments {
     display: inline-flex;
     gap: 4px;
@@ -46,6 +54,7 @@
     border-radius: 12px;
     background: var(--background-subtle);
 }
+
 .segment {
     min-height: 36px;
     padding: 6px 12px;
@@ -57,17 +66,20 @@
     font-weight: 500;
     cursor: pointer;
 }
+
 .segment:where([aria-pressed='true']) {
     background: var(--primary-default);
     border-color: var(--primary-default);
     color: var(--text-on-primary);
     font-weight: 600;
 }
+
 .segment:focus-visible,
 .openLink:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 3px;
 }
+
 .list {
     display: grid;
     gap: 16px;
@@ -76,6 +88,7 @@
     margin: 0;
     padding: 0;
 }
+
 .dictionaryCard {
     position: relative;
     display: flex;
@@ -86,9 +99,11 @@
     background: var(--background-surface);
     border-color: var(--border-default);
 }
+
 .dictionaryCard:hover {
     border-color: var(--border-strong);
 }
+
 .cardContent {
     display: flex;
     flex-direction: column;
@@ -96,6 +111,7 @@
     height: 100%;
     min-width: 0;
 }
+
 .dictionaryIcon {
     align-items: center;
     background: var(--primary-subtle);
@@ -107,6 +123,7 @@
     justify-content: center;
     width: 40px;
 }
+
 .cardTitle {
     font-size: 16px;
     font-weight: 600;
@@ -116,16 +133,19 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .openLink {
     color: inherit;
     text-decoration: none;
 }
+
 .openLink::after {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
 }
+
 .cardMeta {
     display: flex;
     align-items: center;
@@ -135,6 +155,7 @@
     color: var(--text-secondary);
     font-size: 14px;
 }
+
 .description {
     max-width: 46rem;
     color: var(--text-secondary);
@@ -142,6 +163,7 @@
     margin: 8px 0 0;
     overflow-wrap: anywhere;
 }
+
 .cardFooter {
     align-items: center;
     color: var(--text-secondary);
@@ -153,11 +175,13 @@
     margin-top: auto;
     padding-top: 20px;
 }
+
 .updated {
     color: var(--text-tertiary);
     font-size: 12px;
     margin: 8px 0 0;
 }
+
 .rowActions {
     position: relative;
     z-index: 1;
@@ -166,11 +190,13 @@
     gap: 8px;
     flex-shrink: 0;
 }
+
 .rowSelection {
     margin-bottom: 10px;
     position: relative;
     z-index: 2;
 }
+
 .selectionToolbar {
     align-items: center;
     background: var(--background-subtle);
@@ -183,72 +209,90 @@
     margin-bottom: 12px;
     padding: 12px 16px;
 }
+
 .selectionCount {
     color: var(--text-secondary);
     font-size: 14px;
     margin-inline-end: auto;
 }
+
 .selectionActions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
+
 .deletionWarning {
     color: var(--text-secondary);
     margin: 0 0 16px;
 }
+
 .chevron {
     color: var(--text-tertiary);
 }
+
 .srOutcome {
     margin: 0;
 }
+
 .srOutcome:empty {
     display: none;
 }
+
 @media (max-width: 640px) {
     .main {
         padding: 24px 16px;
     }
+
     .filters {
         align-items: stretch;
         flex-direction: column;
     }
+
     .search {
         max-width: none;
     }
+
     .segments {
         align-self: flex-start;
     }
+
     .dictionaryCard {
         padding: 12px;
     }
+
     .selectionToolbar,
     .selectionActions {
         align-items: stretch;
         flex-direction: column;
     }
+
     .selectionActions {
         width: 100%;
     }
 }
+
 @media (min-width: 640px) {
     .main {
         padding: 40px 24px 72px;
     }
+
     .list {
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
     }
 }
+
 @media (min-width: 1200px) {
     .main {
         padding-inline: 48px;
     }
 }
+
 @media (max-width: 380px) {
     .rowActions {
         gap: 0;
     }
+
     .chevron {
         display: none;
     }
@@ -257,6 +301,7 @@
 .loadingLine {
     margin-top: 12px;
 }
+
 .firstDictionary {
     display: flex;
     flex-direction: column;
@@ -264,17 +309,20 @@
     gap: 12px;
     text-align: center;
 }
+
 :where(.firstDictionary) .emptyTitle {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
 }
+
 :where(.firstDictionary) .emptyHelp {
     max-width: 448px;
     margin: 0;
     font-size: 14px;
     color: var(--text-secondary);
 }
+
 .emptyIcon {
     display: flex;
     align-items: center;
@@ -285,16 +333,19 @@
     background: var(--primary-subtle);
     color: var(--primary-default);
 }
+
 :where(.emptyResults) .emptyTitle {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
 }
+
 :where(.emptyResults) .emptyHelp {
     margin: 4px 0 0;
     font-size: 14px;
     color: var(--text-secondary);
 }
+
 .emptyActions {
     display: flex;
     flex-wrap: wrap;

@@ -28,6 +28,7 @@ import styles from './dictionary-document-generation-panel.module.css';
 
 const ACCEPTED_DOCUMENT_TYPES =
     '.txt,.md,.markdown,.docx,.pdf,.png,.jpg,.jpeg,.webp';
+
 const EDITABLE_FIELDS = [
     'source',
     'translation',
@@ -86,20 +87,28 @@ export function DictionaryDocumentGenerationPanel({
     pendingAction: boolean;
 }) {
     const { t } = useI18n();
+
     const [file, setFile] = useState<File | null>(null);
+
     const [instruction, setInstruction] = useState('');
+
     const [drafts, setDrafts] = useState<CandidateDraft[]>([]);
+
     const [selectedRows, setSelectedRows] = useState<ReadonlySet<number>>(
         new Set(),
     );
+
     const [selectedFailures, setSelectedFailures] = useState<
         ReadonlySet<number>
     >(new Set());
+
     const initializedReviewJobId = useRef<string | null>(null);
 
     useEffect(() => {
         if (!job?.proposal || initializedReviewJobId.current === job.id) return;
+
         initializedReviewJobId.current = job.id;
+
         setDrafts(
             job.proposal.candidates.map((row) => ({
                 candidate: row.candidate,
@@ -107,9 +116,11 @@ export function DictionaryDocumentGenerationPanel({
                 rowIndex: row.rowIndex,
             })),
         );
+
         setSelectedRows(
             new Set(job.proposal.candidates.map((row) => row.rowIndex)),
         );
+
         setSelectedFailures(
             new Set(
                 job.proposal.failures
@@ -122,11 +133,14 @@ export function DictionaryDocumentGenerationPanel({
     const selectedDrafts = drafts.filter((draft) =>
         selectedRows.has(draft.rowIndex),
     );
+
     const retryableFailures =
         job?.proposal?.failures.filter((failure) => failure.retryable) ?? [];
+
     const selectedRetryFailures = retryableFailures.filter((failure) =>
         selectedFailures.has(failure.rowIndex),
     );
+
     const run = async (action: () => Promise<void>) => {
         try {
             await action();
@@ -134,9 +148,12 @@ export function DictionaryDocumentGenerationPanel({
             // The owning composition exposes the localized persistent error.
         }
     };
+
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
         if (!file) return;
+
         void run(() =>
             onStart({
                 file,
@@ -146,32 +163,41 @@ export function DictionaryDocumentGenerationPanel({
             }),
         );
     };
+
     const updateCandidate = (
         rowIndex: number,
         field: DictionaryGenerationField,
         value: string,
     ) => {
+        function resolveValues() {
+            if (field === 'source' || field === 'translation') {
+                return value;
+            }
+
+            if (value.trim()) {
+                return value;
+            }
+
+            return null;
+        }
+
         setDrafts((current) =>
-            current.map((draft) =>
-                draft.rowIndex === rowIndex
-                    ? {
-                          ...draft,
-                          candidate: {
-                              ...draft.candidate,
-                              values: {
-                                  ...draft.candidate.values,
-                                  [field]:
-                                      field === 'source' ||
-                                      field === 'translation'
-                                          ? value
-                                          : value.trim()
-                                            ? value
-                                            : null,
-                              },
-                          },
-                      }
-                    : draft,
-            ),
+            current.map((draft) => {
+                if (draft.rowIndex === rowIndex) {
+                    return {
+                        ...draft,
+                        candidate: {
+                            ...draft.candidate,
+                            values: {
+                                ...draft.candidate.values,
+                                [field]: resolveValues(),
+                            },
+                        },
+                    };
+                }
+
+                return draft;
+            }),
         );
     };
 
@@ -522,9 +548,11 @@ function CandidateRow({
     selected: boolean;
 }) {
     const { t } = useI18n();
+
     const proposalRow = job.proposal?.candidates.find(
         (row) => row.rowIndex === draft.rowIndex,
     );
+
     const warnings = job.proposal?.warnings.filter(
         (warning) => warning.rowIndex === draft.rowIndex,
     );
@@ -580,14 +608,25 @@ function CandidateRow({
                         dictionary,
                         draft.candidate,
                     );
+
                     const value = draft.candidate.values[field] ?? '';
-                    const Control = [
-                        'definition',
-                        'example',
-                        'exampleTranslation',
-                    ].includes(field)
-                        ? Textarea
-                        : Input;
+
+                    function resolveControl() {
+                        if (
+                            [
+                                'definition',
+                                'example',
+                                'exampleTranslation',
+                            ].includes(field)
+                        ) {
+                            return Textarea;
+                        }
+
+                        return Input;
+                    }
+
+                    const Control = resolveControl();
+
                     return (
                         <Field
                             key={field}
@@ -636,6 +675,7 @@ function fieldLanguage(
     candidate: DictionaryGenerationCandidate,
 ) {
     if (field === 'translation') return dictionary.targetLanguage;
+
     if (field === 'definition') {
         return languageForRole(
             candidate.overrides.definitionLanguage ??
@@ -644,20 +684,31 @@ function fieldLanguage(
             dictionary.targetLanguage,
         );
     }
+
     if (field === 'example' || field === 'exampleTranslation') {
         const exampleRole =
             candidate.overrides.exampleLanguage ??
             dictionary.settings.values.exampleLanguage;
+
+        function resolveDictionaryDocumentGenerationPanelContent() {
+            if (field === 'example') {
+                return exampleRole;
+            }
+
+            if (exampleRole === 'source') {
+                return 'target' as const;
+            }
+
+            return 'source' as const;
+        }
+
         return languageForRole(
-            field === 'example'
-                ? exampleRole
-                : exampleRole === 'source'
-                  ? 'target'
-                  : 'source',
+            resolveDictionaryDocumentGenerationPanelContent(),
             dictionary.sourceLanguage,
             dictionary.targetLanguage,
         );
     }
+
     return dictionary.sourceLanguage;
 }
 
@@ -667,14 +718,21 @@ function fieldEnabled(
     candidate: DictionaryGenerationCandidate,
 ) {
     const settings = dictionary.settings.values;
+
     const overrides = candidate.overrides;
+
     if (field === 'source' || field === 'translation') return true;
+
     if (field === 'transcription')
         return overrides.transcriptionEnabled ?? settings.transcriptionEnabled;
+
     if (field === 'definition')
         return overrides.definitionEnabled ?? settings.definitionEnabled;
+
     const exampleEnabled = overrides.exampleEnabled ?? settings.exampleEnabled;
+
     if (field === 'example') return exampleEnabled;
+
     return (
         exampleEnabled &&
         (overrides.exampleTranslationEnabled ??
@@ -716,8 +774,10 @@ function toggledSet(
     included: boolean,
 ) {
     const next = new Set(current);
+
     if (included) next.add(value);
     else next.delete(value);
+
     return next;
 }
 

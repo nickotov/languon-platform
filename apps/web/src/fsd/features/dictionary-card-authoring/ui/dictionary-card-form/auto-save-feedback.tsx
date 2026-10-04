@@ -21,6 +21,7 @@ export function AutoSaveFeedback({
         | 'unchanged';
 }) {
     const { t } = useI18n();
+
     if (status === 'conflict') {
         return (
             <InlineAlert tone='warning'>
@@ -28,14 +29,30 @@ export function AutoSaveFeedback({
             </InlineAlert>
         );
     }
+
     if (status === 'failed' || status === 'refreshFailed') {
         const refreshFailed = status === 'refreshFailed';
-        const message = refreshFailed
-            ? t('dictionary.card.ai.savedRefreshFailed')
-            : t('dictionary.authoring.autoSaveFailed');
-        const retryLabel = refreshFailed
-            ? t('dictionary.authoring.retryRefresh')
-            : t('dictionary.authoring.retrySave');
+
+        function resolveMessage() {
+            if (refreshFailed) {
+                return t('dictionary.card.ai.savedRefreshFailed');
+            }
+
+            return t('dictionary.authoring.autoSaveFailed');
+        }
+
+        const message = resolveMessage();
+
+        function resolveRetryLabel() {
+            if (refreshFailed) {
+                return t('dictionary.authoring.retryRefresh');
+            }
+
+            return t('dictionary.authoring.retrySave');
+        }
+
+        const retryLabel = resolveRetryLabel();
+
         return (
             <InlineAlert tone={refreshFailed ? 'warning' : 'danger'}>
                 <p>{message}</p>
@@ -50,6 +67,7 @@ export function AutoSaveFeedback({
             </InlineAlert>
         );
     }
+
     if (status === 'invalid') {
         return (
             <InlineAlert tone='warning'>
@@ -57,14 +75,18 @@ export function AutoSaveFeedback({
             </InlineAlert>
         );
     }
+
     let message: string | null = null;
+
     if (status === 'saving') message = t('dictionary.authoring.autoSaving');
     else if (status === 'saved') message = t('dictionary.authoring.autoSaved');
     else if (status === 'unchanged')
         message = t('dictionary.authoring.noChanges');
     else if (!existing && hasGeneratedContent)
         message = t('dictionary.authoring.createRequired');
+
     if (!message) return null;
+
     return (
         <p aria-live='polite' role='status'>
             {message}

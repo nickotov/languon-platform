@@ -9,6 +9,7 @@
 .intro {
     margin-bottom: 24px;
 }
+
 .introTitle {
     font-size: 24px;
     font-weight: 600;
@@ -16,6 +17,7 @@
     line-height: 1.25;
     margin: 0;
 }
+
 .introDescription {
     color: var(--text-secondary);
     font-size: 14px;
@@ -33,26 +35,31 @@
     margin-bottom: 24px;
     padding: 20px 24px;
 }
+
 .identity {
     align-items: center;
     display: flex;
     gap: 16px;
     min-width: 0;
 }
+
 .identityText {
     min-width: 0;
 }
+
 .identityTitle {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
+
 .identityHeading {
     font-size: 20px;
     font-weight: 600;
     margin: 0;
 }
+
 .identityEmail {
     color: var(--text-secondary);
     font-size: 14px;
@@ -61,14 +68,17 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .summaryFacts {
     display: flex;
     gap: 40px;
     margin: 0;
 }
+
 .summaryFact {
     min-width: 96px;
 }
+
 .summaryLabel {
     color: var(--text-tertiary);
     font-size: 12px;
@@ -76,6 +86,7 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
+
 .summaryValue {
     font-size: 14px;
     font-weight: 600;
@@ -85,35 +96,43 @@
 .tabs {
     margin-bottom: 0;
 }
+
 .tabList {
     max-width: 100%;
     overflow-x: auto;
     scrollbar-width: thin;
 }
+
 .sections {
     display: grid;
     gap: 24px;
     padding-top: 24px;
 }
+
 .section,
 .dangerSection {
     background: var(--background-surface);
 }
+
 .dangerSection {
     border-color: color-mix(in srgb, var(--danger-default) 40%, transparent);
 }
+
 .sectionHeader {
     border-bottom: 1px solid var(--border-default);
     padding: 20px 24px;
 }
+
 .sectionTitle {
     font-size: 16px;
     font-weight: 600;
     margin: 0;
 }
+
 .dangerTitle {
     color: var(--danger-default);
 }
+
 .sectionDescription {
     color: var(--text-secondary);
     font-size: 14px;
@@ -121,9 +140,11 @@
     margin: 4px 0 0;
     max-width: var(--size-max-width-reading);
 }
+
 .sectionBody {
     padding: 20px 24px;
 }
+
 .emailChange {
     align-items: center;
     border-top: 1px solid var(--border-default);
@@ -142,31 +163,37 @@
     display: flex;
     gap: 16px;
 }
+
 .photoCopy,
 .rowCopy,
 .emptyCopy {
     flex: 1;
     min-width: 0;
 }
+
 .photoRow {
     border-bottom: 1px solid var(--border-default);
     padding-bottom: 24px;
 }
+
 .profileGrid {
     display: grid;
     gap: 16px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 24px 0;
 }
+
 .handleForm {
     margin-bottom: 16px;
 }
+
 .emptyTitle,
 .rowTitle {
     font-size: 14px;
     font-weight: 600;
     margin: 0;
 }
+
 .muted,
 .rowDescription,
 .emptyDescription {
@@ -175,10 +202,12 @@
     line-height: 1.55;
     margin: 4px 0 0;
 }
+
 .emailChangeDescription {
     flex: 1 1 260px;
     margin: 0;
 }
+
 .rowIcon,
 .emptyIcon {
     align-items: center;
@@ -191,6 +220,7 @@
     justify-content: center;
     width: 40px;
 }
+
 .glyph {
     height: 18px;
     width: 18px;
@@ -202,6 +232,7 @@
     padding: 24px;
     place-items: center;
 }
+
 .signedOut {
     display: grid;
     gap: 12px;
@@ -209,10 +240,12 @@
     max-width: 440px;
     text-align: center;
 }
+
 .signedOutTitle {
     font-size: 20px;
     margin: 0;
 }
+
 .signedOutDescription {
     color: var(--text-secondary);
     line-height: 1.55;
@@ -237,28 +270,34 @@
         flex-direction: column;
         padding: 16px;
     }
+
     .summaryFacts {
         border-top: 1px solid var(--border-default);
         gap: 24px;
         padding-top: 16px;
     }
+
     .summaryFact {
         flex: 1;
         min-width: 0;
     }
+
     .sectionHeader,
     .sectionBody {
         padding: 16px;
     }
+
     .photoRow,
     .actionRow,
     .emptyBlock {
         align-items: flex-start;
         flex-wrap: wrap;
     }
+
     .profileGrid {
         grid-template-columns: minmax(0, 1fr);
     }
+
     .rowAction,
     .emptyAction {
         margin-left: 56px;

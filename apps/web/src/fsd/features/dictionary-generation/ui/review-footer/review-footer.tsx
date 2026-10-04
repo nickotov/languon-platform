@@ -3,7 +3,7 @@ import { Button } from '@/fsd/shared/ui';
 
 import type { GenerationReviewState } from '../../hooks/use-generation-review';
 import type { GenerationReviewProps } from '../../model/generation-review';
-import styles from '../dictionary-generation-panel/dictionary-generation-panel.module.css';
+import styles from '../dictionary-generation-panel-common.module.css';
 
 export function ReviewFooter({
     state,
@@ -17,14 +17,92 @@ export function ReviewFooter({
     onClose: GenerationReviewProps['onClose'];
 }) {
     const { t } = useI18n();
+
     const closeLabel = t('dictionary.generation.close');
+
     const discardLabel = t('dictionary.generation.discard');
+
     const regenerateLabel = t('dictionary.generation.regenerate');
+
     const acceptLabel = t('dictionary.generation.accept');
+
     const generateLabel = t('dictionary.generation.start');
-    const cancelLabel = cancellationRequested
-        ? t('dictionary.generation.cancelling')
-        : t('dictionary.generation.cancel');
+
+    function resolveCancelLabel() {
+        if (cancellationRequested) {
+            return t('dictionary.generation.cancelling');
+        }
+
+        return t('dictionary.generation.cancel');
+    }
+
+    const cancelLabel = resolveCancelLabel();
+
+    function resolveReviewFooterContent() {
+        if (state.ready) {
+            return (
+                <>
+                    <Button
+                        disabled={pending}
+                        onClick={state.handleDiscard}
+                        type='button'
+                        variant='secondary'
+                    >
+                        {discardLabel}
+                    </Button>
+                    <Button
+                        disabled={state.generateDisabled}
+                        onClick={state.handleGenerate}
+                        type='button'
+                        variant='secondary'
+                    >
+                        <ReviewActionIcon kind='refresh' />
+                        {regenerateLabel}
+                    </Button>
+                    <Button
+                        disabled={state.acceptDisabled}
+                        loading={pending}
+                        onClick={state.handleAccept}
+                        type='button'
+                    >
+                        {acceptLabel}
+                    </Button>
+                </>
+            );
+        }
+
+        if (state.busy) {
+            return (
+                <Button
+                    disabled={state.cancelDisabled}
+                    loading={pending}
+                    onClick={state.handleCancel}
+                    type='button'
+                    variant='secondary'
+                >
+                    {cancelLabel}
+                </Button>
+            );
+        }
+
+        if (state.canGenerate) {
+            return (
+                <Button
+                    disabled={state.generateDisabled}
+                    loading={pending}
+                    onClick={state.handleGenerate}
+                    type='button'
+                >
+                    <ReviewActionIcon kind='sparkles' />
+                    {generateLabel}
+                </Button>
+            );
+        }
+
+        return null;
+    }
+
+    const resolvedReviewFooterContent = resolveReviewFooterContent();
 
     return (
         <div className={styles.footer}>
@@ -37,55 +115,7 @@ export function ReviewFooter({
                 {closeLabel}
             </Button>
             <div className={styles.footerActions}>
-                {state.ready ? (
-                    <>
-                        <Button
-                            disabled={pending}
-                            onClick={state.handleDiscard}
-                            type='button'
-                            variant='secondary'
-                        >
-                            {discardLabel}
-                        </Button>
-                        <Button
-                            disabled={state.generateDisabled}
-                            onClick={state.handleGenerate}
-                            type='button'
-                            variant='secondary'
-                        >
-                            <ReviewActionIcon kind='refresh' />
-                            {regenerateLabel}
-                        </Button>
-                        <Button
-                            disabled={state.acceptDisabled}
-                            loading={pending}
-                            onClick={state.handleAccept}
-                            type='button'
-                        >
-                            {acceptLabel}
-                        </Button>
-                    </>
-                ) : state.busy ? (
-                    <Button
-                        disabled={state.cancelDisabled}
-                        loading={pending}
-                        onClick={state.handleCancel}
-                        type='button'
-                        variant='secondary'
-                    >
-                        {cancelLabel}
-                    </Button>
-                ) : state.canGenerate ? (
-                    <Button
-                        disabled={state.generateDisabled}
-                        loading={pending}
-                        onClick={state.handleGenerate}
-                        type='button'
-                    >
-                        <ReviewActionIcon kind='sparkles' />
-                        {generateLabel}
-                    </Button>
-                ) : null}
+                {resolvedReviewFooterContent}
             </div>
         </div>
     );

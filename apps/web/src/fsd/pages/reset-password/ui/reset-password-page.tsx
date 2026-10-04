@@ -9,6 +9,7 @@ import { useI18n } from '@/fsd/shared/i18n';
 
 export function ResetPasswordPage({ flowId }: { flowId?: string | undefined }) {
     const { href, t } = useI18n();
+
     return (
         <AuthShell
             description={t('reset.intro')}

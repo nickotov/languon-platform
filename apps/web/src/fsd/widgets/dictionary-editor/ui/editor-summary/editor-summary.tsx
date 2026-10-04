@@ -3,7 +3,7 @@ import { languageLabel } from '@/fsd/entities/dictionary';
 import { Badge, Breadcrumb, IconButton, InlineAlert } from '@/fsd/shared/ui';
 import { Settings } from 'lucide-react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor/dictionary-editor.module.css';
+import styles from '../dictionary-editor-common.module.css';
 import { EditorSecondaryActions } from '../editor-secondary-actions/editor-secondary-actions';
 
 export function EditorSummary({

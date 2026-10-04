@@ -9,9 +9,11 @@
     padding: 0;
     width: 100vw;
 }
+
 .dialog::backdrop {
     background: var(--overlay);
 }
+
 .panel {
     background: var(--background-surface);
     border-inline-end: 1px solid var(--border-default);
@@ -19,6 +21,7 @@
     max-width: calc(100vw - var(--size-nav-drawer-gutter));
     width: var(--size-nav-drawer-width);
 }
+
 @media (min-width: 1024px) {
     .dialog {
         display: none;

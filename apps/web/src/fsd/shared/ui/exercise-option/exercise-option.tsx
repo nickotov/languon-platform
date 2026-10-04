@@ -5,8 +5,10 @@ import {
     XCircleIcon,
 } from 'lucide-react';
 import styles from './exercise-option.module.css';
+
 export type ExerciseOptionState =
     'default' | 'selected' | 'correct' | 'incorrect';
+
 export interface ExerciseOptionProps {
     label: string;
     state?: ExerciseOptionState;
@@ -16,18 +18,21 @@ export interface ExerciseOptionProps {
     onSelect?: () => void;
     className?: string;
 }
+
 const icons = {
     default: CircleIcon,
     selected: DotIcon,
     correct: CheckCircle2Icon,
     incorrect: XCircleIcon,
 };
+
 const labels = {
     default: '',
     selected: 'Selected',
     correct: 'Correct',
     incorrect: 'Incorrect',
 };
+
 export function ExerciseOption({
     label,
     state = 'default',
@@ -38,6 +43,7 @@ export function ExerciseOption({
     className,
 }: ExerciseOptionProps) {
     const Icon = icons[state];
+
     return (
         <button
             type='button'

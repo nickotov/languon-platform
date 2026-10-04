@@ -28,6 +28,7 @@ export function AuthShell({
     variant?: 'account' | 'auth';
 }) {
     const { t } = useI18n();
+
     if (variant === 'account') {
         return (
             <main className={styles.accountLayout}>
@@ -143,6 +144,7 @@ export function FormMessage({
     tone?: 'error' | 'info' | 'success';
 }) {
     const message = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         if (tone === 'error') message.current?.focus();
     }, [tone]);
@@ -176,14 +178,25 @@ export function AuthLinks({
     returnTo?: string | undefined;
 }) {
     const { href, t } = useI18n();
+
     const { capabilities } = useAuth();
+
     const destination = safeReturnPath(returnTo);
+
     const path = mode === 'login' ? '/signup' : '/login';
-    const target =
-        destination === '/'
-            ? path
-            : `${path}?${new URLSearchParams({ returnTo: destination }).toString()}`;
+
+    function resolveTarget() {
+        if (destination === '/') {
+            return path;
+        }
+
+        return `${path}?${new URLSearchParams({ returnTo: destination }).toString()}`;
+    }
+
+    const target = resolveTarget();
+
     if (mode === 'login' && capabilities?.email.signUp === false) return null;
+
     return (
         <p className={styles.switch}>
             {mode === 'login'

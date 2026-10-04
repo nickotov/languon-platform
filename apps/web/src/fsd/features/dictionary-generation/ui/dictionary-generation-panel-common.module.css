@@ -1,10 +1,12 @@
 .dialog {
     color: var(--text-primary);
 }
+
 .content {
     display: grid;
     gap: 16px;
 }
+
 .footer,
 .footerActions {
     align-items: center;
@@ -12,19 +14,23 @@
     flex-wrap: wrap;
     gap: 8px;
 }
+
 .footer {
     justify-content: space-between;
 }
+
 .fields {
     display: grid;
     gap: 12px;
 }
+
 .proposalField {
     border: 1px solid var(--border-default);
     border-radius: 12px;
     min-width: 0;
     padding: 12px;
 }
+
 .fieldHeader {
     align-items: center;
     display: flex;
@@ -32,6 +38,7 @@
     gap: 8px;
     justify-content: space-between;
 }
+
 .fieldTitle {
     color: var(--text-primary);
     font-size: 14px;
@@ -39,21 +46,25 @@
     line-height: 20px;
     margin: 0;
 }
+
 .fieldLanguage {
     color: var(--text-tertiary);
     font-weight: 400;
 }
+
 .reason {
     color: var(--text-secondary);
     font-size: 12px;
     line-height: 16px;
     margin: 4px 0 0;
 }
+
 .fieldComparison {
     display: grid;
     gap: 12px;
     margin-top: 8px;
 }
+
 .savedValue {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
@@ -61,6 +72,7 @@
     min-width: 0;
     padding: 10px;
 }
+
 .savedParagraph {
     color: var(--text-primary);
     font-size: 14px;
@@ -68,6 +80,7 @@
     margin: 4px 0 0;
     overflow-wrap: anywhere;
 }
+
 .savedLabel {
     color: var(--text-tertiary);
     font-size: 12px;
@@ -77,9 +90,11 @@
     margin: 0;
     text-transform: uppercase;
 }
+
 .alternatives {
     margin-top: 8px;
 }
+
 .alternativesLabel {
     color: var(--text-tertiary);
     font-size: 12px;
@@ -87,6 +102,7 @@
     line-height: 16px;
     margin: 0;
 }
+
 .alternativesList {
     display: grid;
     gap: 4px;
@@ -94,6 +110,7 @@
     margin: 4px 0 0;
     padding: 0;
 }
+
 .alternative {
     align-items: center;
     border: 1px dashed var(--border-strong);
@@ -104,6 +121,7 @@
     justify-content: space-between;
     padding: 8px;
 }
+
 .alternativeValue {
     color: var(--text-secondary);
     font-size: 14px;
@@ -112,6 +130,7 @@
     min-width: 0;
     overflow-wrap: anywhere;
 }
+
 .progress {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
@@ -119,25 +138,31 @@
     font-size: 14px;
     padding: 12px;
 }
+
 .progressDetail {
     color: var(--text-tertiary);
 }
+
 .warningList {
     margin: 4px 0 0;
     padding-inline-start: 20px;
 }
+
 .currentValues {
     display: grid;
     gap: 12px;
 }
+
 .currentLabel {
     color: var(--text-tertiary);
     font-size: 12px;
 }
+
 .currentValue {
     margin: 4px 0 0;
     overflow-wrap: anywhere;
 }
+
 @media (min-width: 768px) {
     .fieldComparison {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -153,17 +178,21 @@
         max-width: none;
         width: 100%;
     }
+
     .dialogHeader {
         border-bottom: 1px solid var(--border-default);
         padding: 12px 16px;
     }
+
     .dialogTitle {
         font-size: 16px;
         line-height: 24px;
     }
+
     .dialogBody {
         padding: 16px;
     }
+
     .dialogFooter {
         padding: 12px 16px;
     }
@@ -175,6 +204,7 @@
     line-height: 20px;
     min-height: 0;
 }
+
 .textareaLabel {
     line-height: 14px;
 }

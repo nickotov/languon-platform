@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Field, Input, RadioGroup, Switch } from '@/fsd/shared/ui';
 import type { SetSetting } from '../../types';
-import styles from '../dictionary-settings-form/dictionary-settings-form.module.css';
+import styles from '../dictionary-settings-form-common.module.css';
 
 export function SettingsTranscription({
     settings,
@@ -13,8 +13,11 @@ export function SettingsTranscription({
     setSetting: SetSetting;
 }) {
     const { t } = useI18n();
+
     const custom = settings.transcriptionNotation === 'custom';
+
     const customLabel = settings.transcriptionCustomLabel ?? '';
+
     const options = ['ipa', 'romanization', 'custom'].map((value) => ({
         value,
         label: t(`dictionary.notation.${value}` as 'dictionary.notation.ipa'),

@@ -1,6 +1,7 @@
 .card {
     padding: 20px;
 }
+
 .embedded {
     background: transparent;
     border: 0;
@@ -12,16 +13,19 @@
     flex: 1;
     min-height: 0;
 }
+
 .title {
     font-family: var(--font-heading);
     margin: 0;
 }
+
 .form {
     display: flex;
     flex-direction: column;
     min-height: 0;
     margin-top: 20px;
 }
+
 .body {
     container: card-authoring / inline-size;
     display: grid;
@@ -30,6 +34,7 @@
     min-width: 0;
     overflow-y: auto;
 }
+
 .wordPair {
     align-items: start;
     display: grid;
@@ -37,9 +42,11 @@
     grid-template-columns: minmax(0, 1fr);
     min-width: 0;
 }
+
 .wordPairField {
     min-width: 0;
 }
+
 @media (min-width: 768px) {
     @container card-authoring (min-width: 36rem) {
         .wordPair:has(> :where(.wordPairField:nth-child(2))) {
@@ -47,20 +54,24 @@
         }
     }
 }
+
 :where(.embedded) .form {
     margin-top: 0;
     flex: 1;
     overflow: hidden;
 }
+
 :where(.embedded) .body {
     padding: 20px 24px;
 }
+
 .fieldCount {
     color: var(--text-tertiary);
     font-size: 12px;
     margin: 4px 0 0;
     text-align: right;
 }
+
 .suggestionHeading,
 .suggestionActions,
 .actions,
@@ -71,12 +82,14 @@
     gap: 8px;
     justify-content: space-between;
 }
+
 .optionalFields {
     border-top: 1px solid var(--border-default);
     display: grid;
     gap: 16px;
     padding-top: 16px;
 }
+
 .optionalHeading {
     align-items: center;
     color: var(--text-tertiary);
@@ -89,10 +102,12 @@
     margin: 0;
     text-transform: uppercase;
 }
+
 .optionalBadge {
     border-radius: 6px;
     letter-spacing: normal;
 }
+
 .suggestions {
     background: var(--background-subtle);
     border: 1px dashed var(--border-strong);
@@ -102,6 +117,7 @@
     margin-top: 8px;
     padding: 12px;
 }
+
 .inlineSuggestion,
 .fieldProgress {
     background: var(--background-subtle);
@@ -110,16 +126,19 @@
     min-height: 44px;
     padding: 10px 12px;
 }
+
 .inlineSuggestion {
     display: grid;
     gap: 10px;
 }
+
 .inlineSuggestionValue {
     font-size: 14px;
     margin: 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
+
 .inlineSuggestionHeading {
     align-items: center;
     display: flex;
@@ -127,6 +146,7 @@
     gap: 8px;
     justify-content: space-between;
 }
+
 .inlineSuggestionLabel {
     align-items: center;
     color: var(--text-secondary);
@@ -137,11 +157,13 @@
     letter-spacing: 0.025em;
     text-transform: uppercase;
 }
+
 .inlineSuggestionDetail,
 .suggestionDependency {
     color: var(--text-secondary);
     font-size: 12px;
 }
+
 .fieldProgress {
     align-items: center;
     color: var(--text-secondary);
@@ -149,9 +171,11 @@
     font-size: 14px;
     gap: 8px;
 }
+
 .previousSuggestions {
     margin-top: 8px;
 }
+
 .previousSummary {
     color: var(--text-secondary);
     cursor: pointer;
@@ -159,22 +183,27 @@
     font-weight: 500;
     width: fit-content;
 }
+
 :where(.previousSuggestions[open]) .previousSummary {
     margin-bottom: 8px;
 }
+
 .suggestionTitle {
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 500;
 }
+
 .choiceCount {
     color: var(--text-tertiary);
     font-weight: 400;
     white-space: nowrap;
 }
+
 .suggestionHelp {
     color: var(--text-secondary);
 }
+
 .suggestionList {
     display: grid;
     gap: 8px;
@@ -182,6 +211,7 @@
     margin: 0;
     padding: 0;
 }
+
 .suggestion {
     align-items: flex-start;
     background: var(--background-surface);
@@ -194,17 +224,21 @@
     min-width: 0;
     padding: 10px;
 }
+
 .suggestion:where([data-selected]) {
     border-color: var(--success-default);
 }
+
 .suggestionContent {
     flex: 1 1 180px;
     min-width: 0;
 }
+
 .suggestionLabel {
     color: var(--text-tertiary);
     font-size: 12px;
 }
+
 .suggestionValue {
     font-size: 14px;
     font-style: italic;
@@ -212,18 +246,22 @@
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
+
 .suggestionActions {
     align-items: start;
     gap: 8px;
     justify-content: flex-start;
 }
+
 .suggestionButton {
     justify-self: start;
 }
+
 .overrideDivider {
     border-top: 1px solid var(--border-default);
     padding-top: 16px;
 }
+
 .overridePanel {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
@@ -232,23 +270,27 @@
     gap: 12px;
     padding: 12px;
 }
+
 .overrideTitle {
     font-size: 14px;
     font-weight: 500;
     margin: 0;
 }
+
 .overrideDescription {
     color: var(--text-secondary);
     display: block;
     font-size: 12px;
     margin-top: 2px;
 }
+
 .overrideFields {
     border-top: 1px solid var(--border-default);
     display: grid;
     gap: 12px;
     padding-top: 12px;
 }
+
 .footer {
     background: var(--background-surface);
     border-top: 1px solid var(--border-default);
@@ -257,18 +299,21 @@
     gap: 8px;
     padding: 16px 0;
 }
+
 .footerRow {
     align-items: center;
     display: flex;
     gap: 16px;
     justify-content: space-between;
 }
+
 .versionNavigation {
     align-items: center;
     display: flex;
     flex: none;
     gap: 4px;
 }
+
 .versionCounter {
     color: var(--text-secondary);
     font-size: 13px;
@@ -276,42 +321,52 @@
     min-width: 72px;
     text-align: center;
 }
+
 .actions {
     flex: 1;
     justify-content: flex-end;
 }
+
 :where(.embedded) .footer {
     padding: 16px 24px;
 }
+
 .primaryAction:disabled {
     background: var(--primary-default);
     border-color: transparent;
     color: var(--text-on-primary);
     opacity: 0.5;
 }
+
 @media (max-width: 767px) {
     :where(.embedded) .body {
         padding: 16px;
     }
+
     :where(.embedded) .footer {
         padding: 12px 16px;
     }
+
     .footerRow {
         align-items: stretch;
         flex-direction: column;
     }
+
     .versionNavigation {
         justify-content: center;
         order: 2;
     }
+
     .actions {
         justify-content: space-between;
     }
+
     .versionButton {
         height: 44px;
         width: 44px;
     }
 }
+
 .saveHint {
     color: var(--text-secondary);
     font-size: 12px;
@@ -325,6 +380,7 @@
     gap: 6px;
     margin-top: 6px;
 }
+
 .suggestionTitle {
     display: inline-flex;
     align-items: center;
@@ -332,6 +388,7 @@
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
+
 .choiceCount {
     text-transform: none;
     letter-spacing: normal;

@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { LessonContentBlock } from './lesson-content-block';
+
 export default {
     title: 'UI/Lesson content block',
     component: LessonContentBlock,
 } satisfies Meta<typeof LessonContentBlock>;
+
 export const Reading: StoryObj<typeof LessonContentBlock> = {
     args: {
         eyebrow: 'Unit 3 · Grammar',
