@@ -4,7 +4,7 @@ id: BL-003
 title: 'Personal learning progress'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-02
+updated: 2026-10-04
 original_tasks: '6 and 10'
 summary: Flashcard persistence verified and frontend progress implemented under feature 034; other exercise modes remain outstanding.
 evidence:
@@ -16,6 +16,12 @@ evidence:
 # BL-003 — Personal learning progress
 
 [Backlog index and shared constraints](README.md).
+
+Sentence attempts, hint statistics and directional vocabulary coverage are
+planned in the [backend-first sentence implementation plan](../sentence-practice-implementation-plan.md).
+Implementation was authorized on 2026-10-04; the plan supplies no new delivery evidence.
+Its backend/design/frontend checkpoints leave the grammar and manual-exercise
+progress scopes outstanding; BL-003 remains in progress.
 
 ## Confirmed requirements
 

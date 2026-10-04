@@ -12,6 +12,8 @@ import {
 
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
 import { DrizzleAccountPurgeStore } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store';
+import { textAiPreferencesTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/schema';
+import { flashcardPreferencesTable } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
 import {
     userEmailsTable,
@@ -83,29 +85,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(usersTable.id, userId));
                 const dictionaryId = randomUUID(),
                     cardId = randomUUID();
-                await database
-                    .insert(dictionariesTable)
-                    .values({
-                        id: dictionaryId,
-                        ownerId: userId,
-                        name: 'Restoration test',
-                        sourceLanguageTag: 'en',
-                        targetLanguageTag: 'es',
-                    });
+                await database.insert(dictionariesTable).values({
+                    id: dictionaryId,
+                    ownerId: userId,
+                    name: 'Restoration test',
+                    sourceLanguageTag: 'en',
+                    targetLanguageTag: 'es',
+                });
                 await database
                     .insert(dictionarySettingsTable)
                     .values({ dictionaryId });
-                await database
-                    .insert(dictionaryCardsTable)
-                    .values({
-                        id: cardId,
-                        dictionaryId,
-                        source: 'hello',
-                        translation: 'hola',
-                        normalizedSource: 'hello',
-                        sortKey: 1n,
-                        authorship: 'human',
-                    });
+                await database.insert(dictionaryCardsTable).values({
+                    id: cardId,
+                    dictionaryId,
+                    source: 'hello',
+                    translation: 'hola',
+                    normalizedSource: 'hello',
+                    sortKey: 1n,
+                    authorship: 'human',
+                });
                 const audio = new DrizzleDictionaryAudioStore(database);
                 const budget = {
                     ownerDailyCost: 10000,
@@ -461,6 +459,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await database
                 .insert(usersTable)
                 .values({ id: otherUserId, status: 'active' });
+            await database.insert(textAiPreferencesTable).values([
+                {
+                    userId,
+                    mode: 'explicit',
+                    modelId: 'deepseek-chat',
+                    version: 1,
+                },
+                {
+                    userId: otherUserId,
+                    mode: 'explicit',
+                    modelId: 'gemini-2.5-pro',
+                    version: 2,
+                },
+            ]);
             const sourceId = randomUUID();
             const forkId = randomUUID();
             await database.insert(dictionariesTable).values({
@@ -490,6 +502,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(user?.status).toBe('purged');
             expect(user?.handle).toBeNull();
             expect(
+                await database.select().from(textAiPreferencesTable),
+            ).toMatchObject([
+                {
+                    userId: otherUserId,
+                    mode: 'explicit',
+                    modelId: 'gemini-2.5-pro',
+                    version: 2,
+                },
+            ]);
+            expect(
                 await database
                     .select()
                     .from(userEmailsTable)
@@ -516,6 +538,129 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, sourceId));
             expect(source).toBeUndefined();
+        });
+        it('purges preferences under the dedicated role without reading preference or learning content', async () => {
+            const userId = await scheduledIdentity();
+            const otherUserId = randomUUID();
+            await database
+                .insert(usersTable)
+                .values({ id: otherUserId, status: 'active' });
+            await database.insert(textAiPreferencesTable).values([
+                {
+                    userId,
+                    mode: 'explicit',
+                    modelId: 'deepseek-chat',
+                    version: 1,
+                },
+                { userId: otherUserId, mode: 'auto', version: 3 },
+            ]);
+            const dictionaryId = randomUUID();
+            await database.insert(dictionariesTable).values({
+                id: dictionaryId,
+                ownerId: otherUserId,
+                name: 'Independent learner content',
+                sourceLanguageTag: 'en',
+                targetLanguageTag: 'es',
+            });
+            await database.insert(flashcardPreferencesTable).values([
+                {
+                    learnerId: userId,
+                    dictionaryId,
+                    shuffle: true,
+                    configuration: { front: ['source'], back: ['translation'] },
+                },
+                {
+                    learnerId: otherUserId,
+                    dictionaryId,
+                    shuffle: false,
+                    configuration: { front: ['translation'], back: ['source'] },
+                },
+            ]);
+            const role = `account_purge_test_${randomUUID().replaceAll('-', '')}`;
+            const script = await readFile(
+                new URL(
+                    '../../../../../../../infra/deploy/sql/account-purge-worker-role.sql',
+                    import.meta.url,
+                ),
+                'utf8',
+            );
+            await client.unsafe(`create role ${role}`);
+            const connection = createPostgresClient({
+                databaseUrl: getTestDatabaseUrl(),
+                maxConnections: 1,
+            });
+            try {
+                await client.unsafe(
+                    script
+                        .split('\n')
+                        .filter((line) => !line.startsWith('\\'))
+                        .join('\n')
+                        .replaceAll(':"account_purge_role"', role),
+                );
+                await connection.unsafe(`set role ${role}`);
+                for (const query of [
+                    'select model_id from user_text_ai_preferences',
+                    'select mode from user_text_ai_preferences',
+                    'select configuration from flashcard_preferences',
+                    'select rating from flashcard_attempts',
+                    'select handle from users',
+                ])
+                    await expect(connection.unsafe(query)).rejects.toThrow();
+                await expect(
+                    connection.unsafe(
+                        "update user_text_ai_preferences set mode='auto' where false",
+                    ),
+                ).rejects.toThrow();
+                const workerStore = new DrizzleAccountPurgeStore(
+                    createDrizzleDatabase(connection, databaseSchema),
+                );
+                const claim = await workerStore.claimDue({
+                    now,
+                    workerId: 'narrow-purge-worker',
+                });
+                expect(claim).toEqual({ userId, fencingToken: 1 });
+                expect(
+                    (await workerStore.inspectOwner(claim!)).activeJobs,
+                ).toBe(0);
+                await expect(
+                    workerStore.finish({
+                        ...claim!,
+                        now,
+                        workerId: 'narrow-purge-worker',
+                    }),
+                ).resolves.toBe(true);
+                expect(
+                    await database.select().from(textAiPreferencesTable),
+                ).toMatchObject([
+                    { userId: otherUserId, mode: 'auto', version: 3 },
+                ]);
+                expect(
+                    await database.select().from(flashcardPreferencesTable),
+                ).toMatchObject([
+                    { learnerId: otherUserId, dictionaryId, shuffle: false },
+                ]);
+                expect(
+                    (
+                        await database
+                            .select()
+                            .from(usersTable)
+                            .where(eq(usersTable.id, userId))
+                    )[0]?.status,
+                ).toBe('purged');
+                expect(
+                    (
+                        await database
+                            .select()
+                            .from(usersTable)
+                            .where(eq(usersTable.id, otherUserId))
+                    )[0]?.status,
+                ).toBe('active');
+            } finally {
+                await connection.unsafe('reset role');
+                await connection.end({ timeout: 1 });
+                await client.unsafe(`drop owned by ${role}`);
+                await client.unsafe(`drop role ${role}`);
+            }
         });
     },
 );

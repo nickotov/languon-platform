@@ -32,10 +32,10 @@ import {
     type DictionaryPastedTermsGenerationAgent,
 } from './dictionary-pasted-terms-generation-agent';
 import {
-    dictionaryTextRequestLimits,
-    type DictionaryTextModelRequestLimits,
-    type DictionaryTextStructuredOutputMode,
-} from './dictionary-text-provider-catalog';
+    textAiRequestLimits as dictionaryTextRequestLimits,
+    type TextAiModelRequestLimits as DictionaryTextModelRequestLimits,
+    type TextAiStructuredOutputMode as DictionaryTextStructuredOutputMode,
+} from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
 
 const boundedFailureText = z
     .string()

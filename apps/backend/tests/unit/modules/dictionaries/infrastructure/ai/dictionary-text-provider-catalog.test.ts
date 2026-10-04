@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-    createDictionaryTextMastraGeneratorOptions,
-    createDictionaryTextMastraModel,
-    createDictionaryTextProviderReadiness,
-    dictionaryTextModelCatalog,
-    dictionaryTextRequestLimits,
-    findDictionaryTextModel,
-} from '../../../../../../src/modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
+    createTextAiMastraGeneratorOptions as createDictionaryTextMastraGeneratorOptions,
+    createTextAiMastraModel as createDictionaryTextMastraModel,
+    createTextAiProviderReadiness as createDictionaryTextProviderReadiness,
+    textAiModelCatalog as dictionaryTextModelCatalog,
+    textAiRequestLimits as dictionaryTextRequestLimits,
+    findTextAiModel as findDictionaryTextModel,
+} from '../../../../../../src/modules/text-ai/infrastructure/ai/text-ai-provider-catalog';
 
 describe('dictionary text provider catalog', () => {
     it('exposes fixed provider URLs, model IDs, credentials, formats, and request caps', () => {

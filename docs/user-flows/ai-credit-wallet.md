@@ -2,7 +2,7 @@
 feature: ai-credit-wallet
 title: AI Credit Wallet
 status: current
-last_verified: 2026-09-25
+last_verified: 2026-10-04
 surfaces:
     - browser
     - admin
@@ -11,6 +11,7 @@ surfaces:
 source_paths:
     - .agent/features/029-ai-credit-wallet/**
     - apps/admin/src/pages/users/**
+    - apps/backend/src/modules/text-ai/**
     - apps/backend/src/modules/administration/**
     - apps/backend/src/modules/ai-credits/**
     - apps/backend/src/modules/dictionaries/**
@@ -24,6 +25,7 @@ e2e_tests:
 e2e_scenarios:
     - admin-grants-and-generation-consumes-ai-credits
 related_features:
+    - user-ai-model-preferences-backend
     - admin-user-management
     - ai-provider-management
     - dictionary-platform
@@ -34,6 +36,11 @@ related_features:
 ## What this verifies
 
 This guide verifies that an active administration owner can inspect and adjust a user's normalized AI credits, configure limited or expiring/permanent unlimited access, and see immutable ledger activity. With credit enforcement activated after rollout preflight, each new managed dictionary text job reserves one attempt atomically and settles reported use or a labeled conservative estimate. Operational provider and concurrency limits remain separate.
+
+New explicit learner preferences pin the selected model credit rate, while Auto
+uses the configured default. Replays/retries retain the admitted pricing and do
+not follow later preference or rate changes. See
+[the preference backend journey](./user-ai-model-preferences-backend.md).
 
 The release does not add subscriptions, checkout, purchased-credit UI, a learner balance page, audio charging, or editable model rates. Subscription and purchase grant sources exist only as future idempotent ledger inputs.
 

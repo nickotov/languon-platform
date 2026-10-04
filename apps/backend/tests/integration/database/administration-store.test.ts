@@ -1,3 +1,8 @@
+import {
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
+    dictionaryAiWorkerObservationsTable,
+} from '../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { eq, sql } from 'drizzle-orm';
 import {
@@ -36,11 +41,7 @@ import {
     usersTable,
 } from '../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
-import {
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-    dictionaryAiWorkerObservationsTable,
-} from '../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
+
 import { publishDictionaryAiWorkerObservations } from '../../../src/modules/dictionaries/infrastructure/ai/dictionary-ai-worker-observations';
 import {
     createTestPostgresClient,
@@ -205,6 +206,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .mockResolvedValueOnce({ status: 200 } as Response)
                     .mockResolvedValueOnce({ status: 405 } as Response);
                 await publishDictionaryAiWorkerObservations({
+                    supportedFormats: ['single-card:v1'],
                     credentials: {
                         DEEPSEEK_API_KEY: 'deepseek-secret-never-returned',
                         KIE_API_KEY: 'kie-secret-never-returned',

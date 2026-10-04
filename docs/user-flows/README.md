@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Learner AI model preferences backend](./user-ai-model-preferences-backend.md) —
+  authenticated Auto/explicit settings and immutable dictionary execution.
+
 - [Flashcard Training Web](./flashcard-training-web.md) — training setup, learning
   sessions, Undo and independent personal progress; existing previews unchanged.
 

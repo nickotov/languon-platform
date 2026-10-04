@@ -1,3 +1,6 @@
+import { DrizzleTextAiAdmissionParticipant } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
+
 import {
     and,
     asc,
@@ -60,8 +63,6 @@ import {
     dictionaryDocumentObjectVersionsTable,
     dictionaryDocumentUploadsTable,
     dictionaryGenerationJobsTable,
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
     dictionaryGenerationProposalsTable,
     dictionarySettingsTable,
 } from './schema';
@@ -188,30 +189,24 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         private readonly aiCreditEnforcementEnabled = false,
     ) {}
 
-    private async activeProviderExecution(tx: Transaction) {
-        const [configured] = await tx
-            .select({
-                id: dictionaryAiConfigurationRevisionsTable.id,
-                snapshot:
-                    dictionaryAiConfigurationRevisionsTable.catalogSnapshot,
-            })
-            .from(dictionaryAiConfigurationTable)
-            .innerJoin(
-                dictionaryAiConfigurationRevisionsTable,
-                eq(
-                    dictionaryAiConfigurationRevisionsTable.id,
-                    dictionaryAiConfigurationTable.activeRevisionId,
-                ),
-            )
-            .where(eq(dictionaryAiConfigurationTable.id, 'global'))
-            .limit(1);
-        return configured
-            ? {
-                  budget: configured.snapshot.aggregateBudget,
-                  revisionId: configured.id,
-                  snapshot: configured.snapshot,
-              }
-            : { budget: this.providerBudget, revisionId: null, snapshot: null };
+    private async activeProviderExecution(
+        tx: Transaction,
+        ownerId: string,
+        format: string,
+        now: Date,
+    ) {
+        try {
+            return await new DrizzleTextAiAdmissionParticipant(tx).resolve({
+                userId: ownerId,
+                format,
+                now,
+                legacyBudget: this.providerBudget,
+            });
+        } catch (error) {
+            if (error instanceof TextAiSelectionUnavailableError)
+                throw new DictionaryGenerationNotAvailableError();
+            throw error;
+        }
     }
 
     private async settleAiCreditAttempt(
@@ -475,7 +470,12 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 throw new DictionaryDocumentUploadCapacityError();
 
             const jobId = this.ids.generate();
-            const providerExecution = await this.activeProviderExecution(tx);
+            const providerExecution = await this.activeProviderExecution(
+                tx,
+                input.ownerId,
+                dictionaryDocumentGenerationFormat,
+                input.context.now,
+            );
             const creditPricing = this.aiCreditEnforcementEnabled
                 ? providerExecution.snapshot?.creditPricing
                 : undefined;
@@ -503,6 +503,10 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 createdAt: input.context.now,
                 dictionaryId: input.dictionaryId,
                 executionRevisionId: providerExecution.revisionId,
+                selectedExecutionVersion: providerExecution.selectionVersion,
+                selectedExecutionSnapshot: providerExecution.selectionVersion
+                    ? providerExecution.snapshot
+                    : null,
                 expectedCardVersion: null,
                 expectedDictionaryVersion: input.expectedDictionaryVersion,
                 expectedSettingsVersion: input.expectedSettingsVersion,

@@ -26,7 +26,7 @@ import type {
 } from '../../domain/generation';
 import type { DictionaryOperationContext } from './dictionary-store';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
-import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
+import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../text-ai/application/text-ai-provider-catalog';
 
 export type DictionaryGenerationPublicState =
     | 'accepted'
@@ -213,6 +213,7 @@ export interface DictionaryGenerationStore {
         leaseDurationMs: number;
         globalConcurrency: number;
         managedRoutingRevision?: 1;
+        textAiSelectionRevision?: 1;
         ownerConcurrency: number;
         supportedFormats: readonly string[];
         workerId: string;

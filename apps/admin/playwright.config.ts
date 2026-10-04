@@ -41,7 +41,7 @@ const backendPort = new URL(backendOrigin).port || '4000';
 const adminPort = new URL(adminOrigin).port || '3001';
 const webPort = new URL(webOrigin).port || '3333';
 const reuseExistingServer = process.env.ADMIN_E2E_REUSE_SERVERS === 'true';
-const generationFormats = 'single-card:v1';
+const generationFormats = 'single-card:v2';
 
 export default defineConfig({
     expect: { timeout: 10_000 },

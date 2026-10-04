@@ -4,14 +4,26 @@ id: BL-004
 title: 'AI sentence translation practice'
 status: pending
 created: 2026-10-01
-updated: 2026-10-02
+updated: 2026-10-04
 original_tasks: '7'
+depends_on:
+    - BL-005
 evidence: []
 ---
 
 # BL-004 — AI sentence translation practice
 
 [Backlog index and shared constraints](README.md).
+
+## Delivery planning
+
+The [backend-first implementation plan](../sentence-practice-implementation-plan.md)
+records the agreed sentence behavior and the BL-005 prerequisite. The user authorized
+implementation on 2026-10-04; its backend follows the BL-005 prerequisite. Finish and verify both
+backends, then save separate detailed Magic Patterns prompts covering all UI
+states, without concrete API paths in the copyable prompts. Wait for the returned
+designs before frontend implementation. Planning and a backend-only slice do not
+complete BL-004; no implementation evidence is claimed here.
 
 ## Confirmed requirements
 

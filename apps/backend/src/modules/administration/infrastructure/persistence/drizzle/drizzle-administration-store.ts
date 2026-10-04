@@ -1,4 +1,9 @@
 import {
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
+    dictionaryAiWorkerObservationsTable,
+} from '../../../../text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import {
     and,
     count,
     desc,
@@ -66,16 +71,12 @@ import type {
 } from '../../../application/ports/administration-store';
 import { adminAuditEventsTable, adminMembershipsTable } from './schema';
 import { activeOwnerMutationLock } from './owner-lock';
+
 import {
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-    dictionaryAiWorkerObservationsTable,
-} from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
-import {
-    dictionaryAiModelCatalog,
-    dictionaryAiTextFormats,
-    findDictionaryAiModel,
-} from '../../../../dictionaries/application/dictionary-ai-provider-catalog';
+    textAiModelCatalog as dictionaryAiModelCatalog,
+    textAiTextFormats as dictionaryAiTextFormats,
+    findTextAiModel as findDictionaryAiModel,
+} from '../../../../text-ai/application/text-ai-provider-catalog';
 
 type AdministrationDatabase = PostgresJsDatabase<typeof databaseSchema>;
 type AdministrationTransaction = Parameters<

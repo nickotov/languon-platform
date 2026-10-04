@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { dictionaryAiModelCatalog } from '../../../../../../src/modules/dictionaries/application/dictionary-ai-provider-catalog';
+import { textAiModelCatalog as dictionaryAiModelCatalog } from '../../../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import type { CardProposalGeneratorRequest } from '../../../../../../src/modules/dictionaries/application/ports/card-proposal-generator';
 import { createCardProposalGenerator } from '../../../../../../src/modules/dictionaries/infrastructure/ai/card-proposal-generators';
 import {
-    createDictionaryTextMastraModel,
-    dictionaryTextModelCatalog,
-} from '../../../../../../src/modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
+    createTextAiMastraModel as createDictionaryTextMastraModel,
+    textAiModelCatalog as dictionaryTextModelCatalog,
+} from '../../../../../../src/modules/text-ai/infrastructure/ai/text-ai-provider-catalog';
 
 const input = {
     context: {

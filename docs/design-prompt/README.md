@@ -27,3 +27,13 @@ The skill defaults to this directory; explicit response-only requests or custom
 paths take precedence. A prompt does not establish backend deployment readiness,
 design fidelity, or frontend completion. Feature specifications and accepted
 ADRs remain authoritative.
+
+## Planned backend-first briefs
+
+The [model and sentence practice implementation plan](../sentence-practice-implementation-plan.md)
+requires two separate detailed prompts after both backends are implemented and
+verified: profile AI-model preferences and sentence translation practice. These
+prompts are not generated yet. Each will cover loading, empty, error, recovery,
+interaction and accessibility states, omit concrete API paths from its copyable
+block, and receive a versioned feature-owned handoff. Frontend implementation
+waits for the user's returned Magic Patterns designs.

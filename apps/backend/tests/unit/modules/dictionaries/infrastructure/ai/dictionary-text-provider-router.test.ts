@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-    dictionaryAiModelCatalog,
-    type DictionaryAiExecutionSnapshot,
-} from '../../../../../../src/modules/dictionaries/application/dictionary-ai-provider-catalog';
+    textAiModelCatalog as dictionaryAiModelCatalog,
+    type TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot,
+} from '../../../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../../../../../src/modules/dictionaries/application/ports/dictionary-generation-provider-policy';
 import {
     createDictionaryTextProviderRoutingAdapters,

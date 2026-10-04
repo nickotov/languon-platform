@@ -20,6 +20,17 @@ GRANT DELETE ON TABLE auth_verification_challenges, auth_passkeys,
 -- DELETE filters need only the opaque owner column, never email/hash/credential data.
 GRANT SELECT (user_id) ON TABLE auth_verification_challenges, auth_passkeys,
     password_credentials, auth_sessions, user_emails TO :"account_purge_role";
+GRANT DELETE ON TABLE user_text_ai_preferences TO :"account_purge_role";
+GRANT SELECT (user_id) ON TABLE user_text_ai_preferences TO :"account_purge_role";
+-- Learner cleanup includes records on dictionaries owned by another user.
+GRANT DELETE ON TABLE flashcard_entry_progress, flashcard_attempts,
+    flashcard_preferences TO :"account_purge_role";
+GRANT SELECT (learner_id) ON TABLE flashcard_entry_progress, flashcard_attempts,
+    flashcard_preferences TO :"account_purge_role";
+GRANT DELETE ON TABLE dictionary_deletion_receipts,
+    dictionary_generation_provider_usage_archive TO :"account_purge_role";
+GRANT SELECT (owner_id) ON TABLE dictionary_deletion_receipts,
+    dictionary_generation_provider_usage_archive TO :"account_purge_role";
 GRANT SELECT (user_id), UPDATE (metadata) ON TABLE auth_security_events TO :"account_purge_role";
 GRANT SELECT (actor_user_id, target_user_id), UPDATE (metadata, reason)
     ON TABLE admin_audit_events TO :"account_purge_role";

@@ -13,6 +13,10 @@ export const e2eCommands = new Map([
         'flashcard-training-backend',
         'node scripts/run-flashcard-training-e2e.mjs',
     ],
+    [
+        'user-ai-model-preferences-backend',
+        'node scripts/run-user-ai-model-preferences-e2e.mjs',
+    ],
     ['ai-credit-wallet', 'pnpm test:e2e:ai-credit-wallet'],
     ['ai-provider-management', 'pnpm test:e2e:ai-provider-management'],
     ['admin-user-management', 'pnpm test:e2e:admin-user-management'],

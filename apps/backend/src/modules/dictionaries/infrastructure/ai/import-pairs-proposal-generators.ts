@@ -27,10 +27,10 @@ import {
     type DictionaryImportPairsGenerationAgent,
 } from './dictionary-import-pairs-generation-agent';
 import {
-    dictionaryTextRequestLimits,
-    type DictionaryTextModelRequestLimits,
-    type DictionaryTextStructuredOutputMode,
-} from './dictionary-text-provider-catalog';
+    textAiRequestLimits as dictionaryTextRequestLimits,
+    type TextAiModelRequestLimits as DictionaryTextModelRequestLimits,
+    type TextAiStructuredOutputMode as DictionaryTextStructuredOutputMode,
+} from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
 
 export class ImportPairsProposalGeneratorExecutionError extends CardProposalGeneratorError {}
 

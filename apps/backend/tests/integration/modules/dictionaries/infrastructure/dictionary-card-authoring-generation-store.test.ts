@@ -1,3 +1,7 @@
+import {
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
+} from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { randomUUID } from 'node:crypto';
 
 import {
@@ -37,10 +41,8 @@ import {
     dictionaryGenerationJobsTable,
     dictionaryGenerationProposalsTable,
     dictionaryGenerationProviderCircuitTable,
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
 } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
-import { dictionaryAiModelCatalog } from '../../../../../src/modules/dictionaries/application/dictionary-ai-provider-catalog';
+import { textAiModelCatalog as dictionaryAiModelCatalog } from '../../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import {
     DictionaryTextProviderRouter,
     type DictionaryTextProviderSet,

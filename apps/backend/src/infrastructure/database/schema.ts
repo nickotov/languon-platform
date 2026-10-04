@@ -1,8 +1,20 @@
+import {
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
+    dictionaryAiWorkerObservationsTable,
+} from '../../modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 export {
     userEmailsTable,
     usersTable,
     userStatusEnum,
 } from '../../modules/users/infrastructure/persistence/drizzle/schema';
+export { textAiPreferencesTable } from '../../modules/text-ai/infrastructure/persistence/drizzle/schema';
+export {
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiConfigurationTable,
+    dictionaryAiWorkerObservationsTable,
+} from '../../modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import { textAiPreferencesTable } from '../../modules/text-ai/infrastructure/persistence/drizzle/schema';
 export {
     accountDeletionRequestsTable,
     accountDeletionStateEnum,
@@ -49,9 +61,6 @@ export {
     dictionaryDocumentExtractionsTable,
     dictionaryDocumentObjectVersionsTable,
     dictionaryDocumentUploadsTable,
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-    dictionaryAiWorkerObservationsTable,
     dictionaryEnablementEnum,
     dictionaryGenerationExecutionStateEnum,
     dictionaryGenerationJobsTable,
@@ -104,9 +113,6 @@ import {
     dictionaryDocumentExtractionsTable,
     dictionaryDocumentObjectVersionsTable,
     dictionaryDocumentUploadsTable,
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-    dictionaryAiWorkerObservationsTable,
     dictionaryGenerationJobsTable,
     dictionaryGenerationProposalsTable,
     dictionaryGenerationProviderUsageArchiveTable,
@@ -129,6 +135,7 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
 
 export const databaseSchema = {
+    textAiPreferences: textAiPreferencesTable,
     flashcardPreferences: flashcardPreferencesTable,
     flashcardAttempts: flashcardAttemptsTable,
     flashcardEntryProgress: flashcardEntryProgressTable,

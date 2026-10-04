@@ -1,3 +1,6 @@
+import { DrizzleTextAiAdmissionParticipant } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
+import { dictionaryAiConfigurationRevisionsTable } from '../../../../text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import {
     dictionaryDocumentGenerationFormat,
     dictionaryDocumentGenerationFormats,
@@ -56,7 +59,7 @@ import {
     AiCreditInsufficientBalanceError,
     resolveAiCreditMeasurement,
 } from '../../../../ai-credits/domain/ai-credit';
-import type { DictionaryAiExecutionSnapshot } from '../../../application/dictionary-ai-provider-catalog';
+import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../../text-ai/application/text-ai-provider-catalog';
 import {
     DictionaryCardNotFoundError,
     DictionaryGenerationCandidateConflictError,
@@ -132,8 +135,6 @@ import {
     dictionaryCardRevisionsTable,
     dictionaryCardsTable,
     dictionaryGenerationJobsTable,
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
     dictionaryGenerationProposalsTable,
     dictionaryGenerationProviderCircuitTable,
     dictionaryGenerationProviderUsageArchiveTable,
@@ -153,6 +154,7 @@ type ProviderExecution = {
     budget: DictionaryGenerationProviderBudgetPolicy;
     revisionId: string | null;
     snapshot: DictionaryAiExecutionSnapshot | null;
+    selectionVersion: 1 | null;
 };
 
 function isSingleCardGenerationInput(
@@ -875,6 +877,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             )
                 throw new DictionaryVersionConflictError();
 
+            const providerExecution = await this.activeProviderExecution(
+                tx,
+                input.ownerId,
+                dictionaryGenerationFormat,
+                input.context.now,
+            );
             const [providerCircuit] = await tx
                 .select({
                     openUntil:
@@ -884,7 +892,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 .where(
                     eq(
                         dictionaryGenerationProviderCircuitTable.id,
-                        dictionaryGenerationFormat,
+                        this.providerCircuitKey(
+                            dictionaryGenerationFormat,
+                            providerExecution.snapshot,
+                        ),
                     ),
                 )
                 .limit(1);
@@ -919,7 +930,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             generationLimits.maxRunnableQueueAgeMs)
             )
                 throw new DictionaryGenerationNotAvailableError();
-            const providerExecution = await this.activeProviderExecution(tx);
+
             const providerAdmission = await this.providerBudgetUsage(
                 tx,
                 input.ownerId,
@@ -983,6 +994,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
                     executionRevisionId: providerExecution.revisionId,
+                    selectedExecutionVersion:
+                        providerExecution.selectionVersion,
+                    selectedExecutionSnapshot:
+                        providerExecution.selectionVersion
+                            ? providerExecution.snapshot
+                            : null,
                     expectedCardVersion: input.expectedCardVersion,
                     expectedDictionaryVersion: input.expectedDictionaryVersion,
                     expectedSettingsVersion: input.expectedSettingsVersion,
@@ -1349,6 +1366,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
                     executionRevisionId: providerExecution.revisionId,
+                    selectedExecutionVersion:
+                        providerExecution.selectionVersion,
+                    selectedExecutionSnapshot:
+                        providerExecution.selectionVersion
+                            ? providerExecution.snapshot
+                            : null,
                     expectedCardVersion:
                         target.kind === 'update'
                             ? target.expectedCardVersion
@@ -1567,6 +1590,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     createdAt: input.context.now,
                     dictionaryId: input.dictionaryId,
                     executionRevisionId: providerExecution.revisionId,
+                    selectedExecutionVersion:
+                        providerExecution.selectionVersion,
+                    selectedExecutionSnapshot:
+                        providerExecution.selectionVersion
+                            ? providerExecution.snapshot
+                            : null,
                     expectedCardVersion: null,
                     expectedDictionaryVersion: input.expectedDictionaryVersion,
                     expectedSettingsVersion: input.expectedSettingsVersion,
@@ -1914,6 +1943,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     createdAt: input.context.now,
                     dictionaryId: current.dictionary.id,
                     executionRevisionId: providerExecution.revisionId,
+                    selectedExecutionVersion:
+                        providerExecution.selectionVersion,
+                    selectedExecutionSnapshot:
+                        providerExecution.selectionVersion
+                            ? providerExecution.snapshot
+                            : null,
                     expectedCardVersion: null,
                     expectedDictionaryVersion: current.dictionary.version,
                     expectedSettingsVersion: current.settings.version,
@@ -2166,6 +2201,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     createdAt: input.context.now,
                     dictionaryId: current.dictionary.id,
                     executionRevisionId: providerExecution.revisionId,
+                    selectedExecutionVersion:
+                        providerExecution.selectionVersion,
+                    selectedExecutionSnapshot:
+                        providerExecution.selectionVersion
+                            ? providerExecution.snapshot
+                            : null,
                     expectedCardVersion: null,
                     expectedDictionaryVersion: current.dictionary.version,
                     expectedSettingsVersion: current.settings.version,
@@ -3539,6 +3580,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 await tx.execute(
                     sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
                 );
+            if (input.textAiSelectionRevision === 1) {
+                await tx.execute(
+                    sql`select set_config('languon.text_ai_selection_revision', '1', true)`,
+                );
+            }
             if (input.managedRoutingRevision === 1) {
                 await tx.execute(
                     sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
@@ -3560,6 +3606,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             dictionaryGenerationJobsTable.leaseDeadline,
                             input.context.now,
                         ),
+                        input.textAiSelectionRevision === 1
+                            ? undefined
+                            : isNull(
+                                  dictionaryGenerationJobsTable.selectedExecutionVersion,
+                              ),
                         input.creditSettlementRevision === 1
                             ? undefined
                             : eq(
@@ -3660,6 +3711,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         isNotNull(
                             dictionaryGenerationJobsTable.cancellationRequestedAt,
                         ),
+                        input.textAiSelectionRevision === 1
+                            ? undefined
+                            : isNull(
+                                  dictionaryGenerationJobsTable.selectedExecutionVersion,
+                              ),
                         input.creditSettlementRevision === 1
                             ? undefined
                             : eq(
@@ -3752,12 +3808,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         inArray(dictionaryGenerationJobsTable.format, [
                             ...input.supportedFormats,
                         ]),
-                        sql`not exists (
-                            select 1
-                            from ${dictionaryGenerationProviderCircuitTable} circuit
-                            where circuit.id = ${dictionaryGenerationJobsTable.format}
-                              and circuit.open_until > ${input.context.now.toISOString()}::timestamptz
-                        )`,
+
                         lt(
                             dictionaryGenerationJobsTable.attemptCount,
                             dictionaryGenerationJobsTable.maxAttempts,
@@ -3776,6 +3827,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         isNull(
                             dictionaryGenerationJobsTable.cancellationRequestedAt,
                         ),
+                        input.textAiSelectionRevision === 1
+                            ? undefined
+                            : isNull(
+                                  dictionaryGenerationJobsTable.selectedExecutionVersion,
+                              ),
                         input.creditSettlementRevision === 1
                             ? undefined
                             : eq(
@@ -3794,6 +3850,9 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                                 sql`${dictionaryGenerationJobsTable.providerMaxOutputTokensPerAttempt} <= ${this.providerBudget.maxOutputTokensPerAttempt}`,
                             ),
                         ),
+                        this.providerCircuitAvailableCondition(
+                            input.context.now,
+                        ),
                         sql`${runningForOwner} < ${input.ownerConcurrency}`,
                     ),
                 )
@@ -3811,7 +3870,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 .where(
                     eq(
                         dictionaryGenerationProviderCircuitTable.id,
-                        candidate.format,
+                        await this.jobProviderCircuitKey(tx, candidate),
                     ),
                 )
                 .limit(1)
@@ -3994,7 +4053,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 input: parsed,
                 leaseDeadline,
                 providerBudget: candidateProviderBudget,
-                providerExecution: revision?.snapshot ?? null,
+                providerExecution:
+                    claimed.selectedExecutionSnapshot ??
+                    revision?.snapshot ??
+                    null,
                 workerId: input.workerId,
             };
         });
@@ -4426,7 +4488,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 .returning({ id: dictionaryGenerationJobsTable.id });
             if (!updated)
                 throw new Error('Generation completion fencing changed');
-            await this.recordProviderSuccess(tx, job.format, input.context.now);
+            await this.recordProviderSuccess(tx, job, input.context.now);
             return true;
         });
     }
@@ -4535,11 +4597,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     'provider_unavailable',
                 ].includes(input.failureCategory)
             )
-                await this.recordProviderFailure(
-                    tx,
-                    job.format,
-                    input.context.now,
-                );
+                await this.recordProviderFailure(tx, job, input.context.now);
             if (updated && !retry && job.kind === 'document-terms')
                 await this.scheduleDocumentCleanup(
                     tx,
@@ -5149,13 +5207,23 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         format: string,
         now: Date,
     ): Promise<ProviderExecution> {
-        const providerExecution = await this.activeProviderExecution(tx);
+        const providerExecution = await this.activeProviderExecution(
+            tx,
+            ownerId,
+            format,
+            now,
+        );
         const [providerCircuit] = await tx
             .select({
                 openUntil: dictionaryGenerationProviderCircuitTable.openUntil,
             })
             .from(dictionaryGenerationProviderCircuitTable)
-            .where(eq(dictionaryGenerationProviderCircuitTable.id, format))
+            .where(
+                eq(
+                    dictionaryGenerationProviderCircuitTable.id,
+                    this.providerCircuitKey(format, providerExecution.snapshot),
+                ),
+            )
             .limit(1);
         if (providerCircuit?.openUntil && providerCircuit.openUntil > now)
             throw new DictionaryGenerationNotAvailableError();
@@ -5312,35 +5380,22 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
 
     private async activeProviderExecution(
         tx: Transaction,
-    ): Promise<ProviderExecution> {
-        const [configured] = await tx
-            .select({
-                id: dictionaryAiConfigurationRevisionsTable.id,
-                snapshot:
-                    dictionaryAiConfigurationRevisionsTable.catalogSnapshot,
-            })
-            .from(dictionaryAiConfigurationTable)
-            .innerJoin(
-                dictionaryAiConfigurationRevisionsTable,
-                eq(
-                    dictionaryAiConfigurationRevisionsTable.id,
-                    dictionaryAiConfigurationTable.activeRevisionId,
-                ),
-            )
-            .where(eq(dictionaryAiConfigurationTable.id, 'global'))
-            .limit(1);
-        if (!configured) {
-            return {
-                budget: this.providerBudget,
-                revisionId: null,
-                snapshot: null,
-            };
+        ownerId: string,
+        format: string,
+        now: Date,
+    ) {
+        try {
+            return await new DrizzleTextAiAdmissionParticipant(tx).resolve({
+                userId: ownerId,
+                format,
+                now,
+                legacyBudget: this.providerBudget,
+            });
+        } catch (error) {
+            if (error instanceof TextAiSelectionUnavailableError)
+                throw new DictionaryGenerationNotAvailableError();
+            throw error;
         }
-        return {
-            budget: configured.snapshot.aggregateBudget,
-            revisionId: configured.id,
-            snapshot: configured.snapshot,
-        };
     }
 
     private async providerBudgetUsage(
@@ -5521,23 +5576,72 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             .where(eq(dictionaryGenerationJobsTable.id, jobId));
     }
 
+    private providerCircuitKey(
+        format: string,
+        snapshot: DictionaryAiExecutionSnapshot | null,
+    ): string {
+        return snapshot
+            ? `${snapshot.providerId}/${snapshot.modelId}/${format}`
+            : format;
+    }
+
+    private async jobProviderCircuitKey(
+        tx: Transaction,
+        job: typeof dictionaryGenerationJobsTable.$inferSelect,
+    ): Promise<string> {
+        if (job.selectedExecutionSnapshot)
+            return this.providerCircuitKey(
+                job.format,
+                job.selectedExecutionSnapshot,
+            );
+        if (!job.executionRevisionId) return job.format;
+        const [revision] = await tx
+            .select({
+                snapshot:
+                    dictionaryAiConfigurationRevisionsTable.catalogSnapshot,
+            })
+            .from(dictionaryAiConfigurationRevisionsTable)
+            .where(
+                eq(
+                    dictionaryAiConfigurationRevisionsTable.id,
+                    job.executionRevisionId,
+                ),
+            )
+            .limit(1);
+        if (!revision)
+            throw new Error(
+                'Pinned text AI execution revision is unavailable.',
+            );
+        return this.providerCircuitKey(job.format, revision.snapshot);
+    }
+
+    private providerCircuitAvailableCondition(now: Date) {
+        // Keep format-only historical circuits for unmanaged jobs. A known immutable
+        // provider/model uses its own scope, including Auto and explicit selections.
+        const key = sql`case when ${dictionaryGenerationJobsTable.selectedExecutionSnapshot} is null and ${dictionaryGenerationJobsTable.executionRevisionId} is null then ${dictionaryGenerationJobsTable.format} else
+            coalesce(${dictionaryGenerationJobsTable.selectedExecutionSnapshot}->>'providerId', (select ${dictionaryAiConfigurationRevisionsTable.catalogSnapshot}->>'providerId' from ${dictionaryAiConfigurationRevisionsTable} where ${dictionaryAiConfigurationRevisionsTable.id} = ${dictionaryGenerationJobsTable.executionRevisionId})) || '/' ||
+            coalesce(${dictionaryGenerationJobsTable.selectedExecutionSnapshot}->>'modelId', (select ${dictionaryAiConfigurationRevisionsTable.catalogSnapshot}->>'modelId' from ${dictionaryAiConfigurationRevisionsTable} where ${dictionaryAiConfigurationRevisionsTable.id} = ${dictionaryGenerationJobsTable.executionRevisionId})) || '/' || ${dictionaryGenerationJobsTable.format} end`;
+        return sql`not exists (select 1 from ${dictionaryGenerationProviderCircuitTable} where ${dictionaryGenerationProviderCircuitTable.id} = ${key} and ${dictionaryGenerationProviderCircuitTable.openUntil} > ${now.toISOString()}::timestamptz)`;
+    }
+
     private async recordProviderFailure(
         tx: Transaction,
-        format: string,
+        job: typeof dictionaryGenerationJobsTable.$inferSelect,
         now: Date,
     ) {
+        const key = await this.jobProviderCircuitKey(tx, job);
         await tx
             .insert(dictionaryGenerationProviderCircuitTable)
             .values({
                 consecutiveFailures: 0,
-                id: format,
+                id: key,
                 updatedAt: now,
             })
             .onConflictDoNothing();
         const [circuit] = await tx
             .select()
             .from(dictionaryGenerationProviderCircuitTable)
-            .where(eq(dictionaryGenerationProviderCircuitTable.id, format))
+            .where(eq(dictionaryGenerationProviderCircuitTable.id, key))
             .for('update');
         const consecutiveFailures = (circuit?.consecutiveFailures ?? 0) + 1;
         await tx
@@ -5554,19 +5658,20 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         : circuit?.openUntil,
                 updatedAt: now,
             })
-            .where(eq(dictionaryGenerationProviderCircuitTable.id, format));
+            .where(eq(dictionaryGenerationProviderCircuitTable.id, key));
     }
 
     private async recordProviderSuccess(
         tx: Transaction,
-        format: string,
+        job: typeof dictionaryGenerationJobsTable.$inferSelect,
         now: Date,
     ) {
+        const key = await this.jobProviderCircuitKey(tx, job);
         await tx
             .insert(dictionaryGenerationProviderCircuitTable)
             .values({
                 consecutiveFailures: 0,
-                id: format,
+                id: key,
                 openUntil: null,
                 updatedAt: now,
             })

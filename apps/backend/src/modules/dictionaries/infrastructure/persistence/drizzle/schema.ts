@@ -1,3 +1,4 @@
+import { dictionaryAiConfigurationRevisionsTable } from '../../../../text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { sql } from 'drizzle-orm';
 import {
     type AnyPgColumn,
@@ -30,7 +31,7 @@ import type { DictionaryImportPairsGenerationProposalPayload } from '../../../do
 import type { DictionaryCardAuthoringProposalPayload } from '../../../domain/card-authoring';
 import type { DictionaryCardRevisionSnapshot } from '../../../domain/revision';
 import { dictionaryGenerationMinimumSupportedInputTokens } from '../../../application/ports/dictionary-generation-provider-policy';
-import type { DictionaryAiExecutionSnapshot } from '../../../application/dictionary-ai-provider-catalog';
+import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../../text-ai/application/text-ai-provider-catalog';
 import type {
     DictionaryGenerationInputPayload,
     DictionaryGenerationProposalPayload,
@@ -385,108 +386,6 @@ export const dictionaryCardsTable = pgTable(
     ],
 );
 
-export const dictionaryAiConfigurationRevisionsTable = pgTable(
-    'dictionary_ai_configuration_revisions',
-    {
-        catalogSnapshot: jsonb('catalog_snapshot')
-            .$type<DictionaryAiExecutionSnapshot>()
-            .notNull(),
-        createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        createdByUserId: uuid('created_by_user_id')
-            .notNull()
-            .references(() => usersTable.id, { onDelete: 'restrict' }),
-        id: uuid('id').primaryKey(),
-        version: integer('version').notNull(),
-    },
-    (table) => [
-        unique('dictionary_ai_configuration_revisions_version_unique').on(
-            table.version,
-        ),
-        check(
-            'dictionary_ai_configuration_revisions_version_positive',
-            sql`${table.version} > 0`,
-        ),
-        check(
-            'dictionary_ai_configuration_revisions_snapshot_object',
-            sql`jsonb_typeof(${table.catalogSnapshot}) = 'object' and octet_length(${table.catalogSnapshot}::text) <= 16384`,
-        ),
-    ],
-);
-
-export const dictionaryAiConfigurationTable = pgTable(
-    'dictionary_ai_configuration',
-    {
-        activeRevisionId: uuid('active_revision_id').references(
-            () => dictionaryAiConfigurationRevisionsTable.id,
-            { onDelete: 'restrict' },
-        ),
-        id: text('id').primaryKey().default('global'),
-        updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        version: integer('version').default(0).notNull(),
-    },
-    (table) => [
-        check(
-            'dictionary_ai_configuration_singleton',
-            sql`${table.id} = 'global'`,
-        ),
-        check(
-            'dictionary_ai_configuration_version_nonnegative',
-            sql`${table.version} >= 0`,
-        ),
-        check(
-            'dictionary_ai_configuration_revision_pair',
-            sql`(${table.version} = 0 and ${table.activeRevisionId} is null) or (${table.version} > 0 and ${table.activeRevisionId} is not null)`,
-        ),
-    ],
-);
-
-export const dictionaryAiWorkerObservationsTable = pgTable(
-    'dictionary_ai_worker_observations',
-    {
-        adapterRevision: text('adapter_revision').notNull(),
-        checkedAt: timestamp('checked_at', {
-            mode: 'date',
-            withTimezone: true,
-        }).notNull(),
-        expiresAt: timestamp('expires_at', {
-            mode: 'date',
-            withTimezone: true,
-        }).notNull(),
-        id: text('id').primaryKey(),
-        message: text('message').notNull(),
-        modelId: text('model_id').notNull(),
-        providerId: text('provider_id').notNull(),
-        status: text('status').notNull(),
-        workerId: text('worker_id').notNull(),
-    },
-    (table) => [
-        check(
-            'dictionary_ai_worker_observations_identity_bounded',
-            sql`char_length(${table.id}) between 3 and 256 and char_length(${table.providerId}) between 1 and 64 and char_length(${table.modelId}) between 1 and 128 and char_length(${table.adapterRevision}) between 1 and 128 and char_length(${table.workerId}) between 1 and 160`,
-        ),
-        check(
-            'dictionary_ai_worker_observations_status_valid',
-            sql`${table.status} in ('available', 'unavailable', 'unverified')`,
-        ),
-        check(
-            'dictionary_ai_worker_observations_message_bounded',
-            sql`char_length(${table.message}) between 1 and 300`,
-        ),
-        check(
-            'dictionary_ai_worker_observations_expiry_ordered',
-            sql`${table.expiresAt} > ${table.checkedAt}`,
-        ),
-        index('dictionary_ai_worker_observations_provider_idx').on(
-            table.providerId,
-            table.checkedAt,
-        ),
-    ],
-);
-
 export const dictionaryGenerationJobsTable = pgTable(
     'dictionary_generation_jobs',
     {
@@ -527,6 +426,10 @@ export const dictionaryGenerationJobsTable = pgTable(
             .defaultNow()
             .notNull(),
         dictionaryId: uuid('dictionary_id').notNull(),
+        selectedExecutionSnapshot: jsonb(
+            'selected_execution_snapshot',
+        ).$type<DictionaryAiExecutionSnapshot>(),
+        selectedExecutionVersion: integer('selected_execution_version'),
         executionRevisionId: uuid('execution_revision_id').references(
             () => dictionaryAiConfigurationRevisionsTable.id,
             { onDelete: 'restrict' },
@@ -700,6 +603,10 @@ export const dictionaryGenerationJobsTable = pgTable(
             sql`${table.failureCategory} is null or (${table.failureCategory} ~ '^[a-z][a-z0-9_]{0,63}$')`,
         ),
         check(
+            'dictionary_generation_jobs_selected_execution_pair',
+            sql`(${table.selectedExecutionVersion} is null and ${table.selectedExecutionSnapshot} is null) or (${table.selectedExecutionVersion} is not null and ${table.selectedExecutionVersion} = 1 and ${table.selectedExecutionSnapshot} is not null and ${table.executionRevisionId} is not null)`,
+        ),
+        check(
             'dictionary_generation_jobs_execution_lease',
             sql`(${table.executionState} = 'running' and ${table.workerId} is not null and ${table.leaseDeadline} is not null and ${table.heartbeatAt} is not null) or (${table.executionState} <> 'running' and ${table.workerId} is null and ${table.leaseDeadline} is null and ${table.heartbeatAt} is null)`,
         ),
@@ -781,7 +688,7 @@ export const dictionaryGenerationProviderCircuitTable = pgTable(
     (table) => [
         check(
             'dictionary_generation_provider_circuit_format',
-            sql`char_length(${table.id}) between 3 and 64 and ${table.id} ~ '^[a-z][a-z0-9-]*:v[1-9][0-9]*$'`,
+            sql`char_length(${table.id}) between 3 and 192 and ${table.id} ~ '^([a-z][a-z0-9-]*/[a-z][a-z0-9.-]*/)?[a-z][a-z0-9-]*:v[1-9][0-9]*$'`,
         ),
         check(
             'dictionary_generation_provider_circuit_failures',

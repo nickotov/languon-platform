@@ -1,31 +1,29 @@
 import type { OpenAICompatibleConfig } from '@mastra/core/llm';
 
 import {
-    findDictionaryAiModel,
-    type DictionaryAiModelDefinition,
-} from '../../application/dictionary-ai-provider-catalog';
-import type { DictionaryGenerationProviderBudgetPolicy } from '../../application/ports/dictionary-generation-provider-policy';
+    findTextAiModel as findCuratedTextAiModel,
+    type TextAiModelDefinition,
+} from '../../application/text-ai-provider-catalog';
+import type { TextAiProviderBudgetPolicy } from '../../application/text-ai-provider-catalog';
 
-export const dictionaryTextProviderIds = ['deepseek', 'kie'] as const;
-export type DictionaryTextProviderId =
-    (typeof dictionaryTextProviderIds)[number];
+export const textAiProviderIds = ['deepseek', 'kie'] as const;
+export type TextAiProviderId = (typeof textAiProviderIds)[number];
 
-export const dictionaryTextModelIds = [
+export const textAiModelIds = [
     'deepseek/deepseek-chat',
     'kie/gemini-2.5-pro',
 ] as const;
-export type DictionaryTextModelId = (typeof dictionaryTextModelIds)[number];
+export type TextAiModelId = (typeof textAiModelIds)[number];
 
-export interface DictionaryTextModelRequestLimits {
+export interface TextAiModelRequestLimits {
     maxInputTokens: number;
     maxOutputTokens: number;
 }
 
-export type DictionaryTextStructuredOutputMode =
-    | 'native-json-schema'
-    | 'prompt-injection';
+export type TextAiStructuredOutputMode =
+    'native-json-schema' | 'prompt-injection';
 
-export type DictionaryTextProviderReadiness =
+export type TextAiProviderReadiness =
     | {
           acceptedStatuses: readonly [200];
           method: 'GET';
@@ -40,37 +38,37 @@ export type DictionaryTextProviderReadiness =
           url: string;
       };
 
-export interface DictionaryTextModelCatalogEntry {
+export interface TextAiModelCatalogEntry {
     apiBaseUrl: string;
     credentialEnvironmentVariable: 'DEEPSEEK_API_KEY' | 'KIE_API_KEY';
     credentialReference: 'env:DEEPSEEK_API_KEY' | 'env:KIE_API_KEY';
-    id: DictionaryTextModelId;
+    id: TextAiModelId;
     label: string;
     modelId: string;
     pricing: {
         inputCostMicrosPerMillionTokens: number;
         outputCostMicrosPerMillionTokens: number;
     };
-    providerId: DictionaryTextProviderId;
-    readiness: DictionaryTextProviderReadiness;
-    requestLimits: DictionaryTextModelRequestLimits;
-    structuredOutput: DictionaryTextStructuredOutputMode;
+    providerId: TextAiProviderId;
+    readiness: TextAiProviderReadiness;
+    requestLimits: TextAiModelRequestLimits;
+    structuredOutput: TextAiStructuredOutputMode;
     supportedFormats: readonly string[];
 }
 
 function requiredModel(
-    providerId: DictionaryTextProviderId,
+    providerId: TextAiProviderId,
     modelId: string,
-): DictionaryAiModelDefinition {
-    const model = findDictionaryAiModel(providerId, modelId);
-    if (!model) throw new Error('Curated dictionary AI model is missing.');
+): TextAiModelDefinition {
+    const model = findCuratedTextAiModel(providerId, modelId);
+    if (!model) throw new Error('Curated text AI model is missing.');
     return model;
 }
 
 const deepSeekChat = requiredModel('deepseek', 'deepseek-chat');
 const kieGemini25Pro = requiredModel('kie', 'gemini-2.5-pro');
 
-export const dictionaryTextModelCatalog = {
+export const textAiModelCatalog = {
     'deepseek/deepseek-chat': {
         apiBaseUrl: 'https://api.deepseek.com',
         credentialEnvironmentVariable: deepSeekChat.credentialReference,
@@ -125,22 +123,19 @@ export const dictionaryTextModelCatalog = {
         structuredOutput: 'native-json-schema',
         supportedFormats: kieGemini25Pro.supportedFormats,
     },
-} as const satisfies Record<
-    DictionaryTextModelId,
-    DictionaryTextModelCatalogEntry
->;
+} as const satisfies Record<TextAiModelId, TextAiModelCatalogEntry>;
 
-export function findDictionaryTextModel(
+export function findTextAiModel(
     modelId: string,
-): DictionaryTextModelCatalogEntry | undefined {
-    return dictionaryTextModelIds.includes(modelId as DictionaryTextModelId)
-        ? dictionaryTextModelCatalog[modelId as DictionaryTextModelId]
+): TextAiModelCatalogEntry | undefined {
+    return textAiModelIds.includes(modelId as TextAiModelId)
+        ? textAiModelCatalog[modelId as TextAiModelId]
         : undefined;
 }
 
-export function createDictionaryTextMastraModel(options: {
+export function createTextAiMastraModel(options: {
     apiKey: string;
-    model: DictionaryTextModelCatalogEntry;
+    model: TextAiModelCatalogEntry;
 }): OpenAICompatibleConfig {
     return {
         apiKey: options.apiKey,
@@ -150,21 +145,21 @@ export function createDictionaryTextMastraModel(options: {
     };
 }
 
-export function createDictionaryTextMastraGeneratorOptions(options: {
+export function createTextAiMastraGeneratorOptions(options: {
     apiKey: string;
     fetchProvider?: typeof fetch;
-    model: DictionaryTextModelCatalogEntry;
-    providerBudget: DictionaryGenerationProviderBudgetPolicy;
+    model: TextAiModelCatalogEntry;
+    providerBudget: TextAiProviderBudgetPolicy;
 }) {
     return {
         mode: 'mastra' as const,
-        model: createDictionaryTextMastraModel({
+        model: createTextAiMastraModel({
             apiKey: options.apiKey,
             model: options.model,
         }),
         modelRequestLimits: options.model.requestLimits,
         providerBudget: options.providerBudget,
-        providerReadiness: createDictionaryTextProviderReadiness({
+        providerReadiness: createTextAiProviderReadiness({
             apiKey: options.apiKey,
             ...(options.fetchProvider
                 ? { fetchProvider: options.fetchProvider }
@@ -175,10 +170,10 @@ export function createDictionaryTextMastraGeneratorOptions(options: {
     };
 }
 
-export function createDictionaryTextProviderReadiness(options: {
+export function createTextAiProviderReadiness(options: {
     apiKey: string;
     fetchProvider?: typeof fetch;
-    readiness: DictionaryTextProviderReadiness;
+    readiness: TextAiProviderReadiness;
 }): (signal: AbortSignal) => Promise<void> {
     const fetchProvider = options.fetchProvider ?? globalThis.fetch;
     return async (signal) => {
@@ -200,17 +195,17 @@ export function createDictionaryTextProviderReadiness(options: {
                 response.status as never,
             )
         )
-            throw new Error('Dictionary text provider is unavailable.');
+            throw new Error('Text AI provider is unavailable.');
     };
 }
 
-export function dictionaryTextRequestLimits(options: {
+export function textAiRequestLimits(options: {
     aggregate: {
         maxInputTokensPerAttempt: number;
         maxOutputTokensPerAttempt: number;
     };
-    model: DictionaryTextModelRequestLimits;
-}): DictionaryTextModelRequestLimits {
+    model: TextAiModelRequestLimits;
+}): TextAiModelRequestLimits {
     return {
         maxInputTokens: Math.min(
             options.aggregate.maxInputTokensPerAttempt,

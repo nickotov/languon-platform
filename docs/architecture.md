@@ -180,6 +180,16 @@ separate from database backups. [ADR-0012](./adr/0012-dictionary-worker-and-docu
 and the [operations design](./operations/dictionary-jobs-and-documents.md) define
 the execution and trust boundaries.
 
+## Shared text AI selection
+
+The backend `text-ai` module owns curated text model selection and learner
+Auto/explicit preferences. Dictionary and learning modules own their task agents,
+jobs and results; shared selection resolves inside admission transactions and
+pins immutable execution/pricing. Existing admin configuration and audit stay
+privileged, and no public arbitrary-provider or generic-prompt endpoint exists.
+Worker capability checks protect mixed releases. See
+[ADR-0026](adr/0026-shared-text-ai-selection-and-user-preferences.md).
+
 ## Flashcard learning backend
 
 The backend `learning` module owns personal flashcard preferences, content-free

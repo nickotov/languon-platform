@@ -8,9 +8,9 @@ import {
     loadDictionaryGenerationProviderBudgetPolicy,
 } from '../../modules/dictionaries/infrastructure/dictionary-generation-provider-policy';
 import {
-    findDictionaryTextModel,
-    type DictionaryTextModelCatalogEntry,
-} from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
+    findTextAiModel as findDictionaryTextModel,
+    type TextAiModelCatalogEntry as DictionaryTextModelCatalogEntry,
+} from '../../modules/text-ai/infrastructure/ai/text-ai-provider-catalog';
 import {
     loadDictionaryDocumentS3Environment,
     type DictionaryDocumentS3Environment,

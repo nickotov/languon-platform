@@ -1,7 +1,7 @@
 import type { DictionaryBatchGenerationProposalPayload } from '../../domain/batch-generation';
 import type { DictionaryGenerationInputPayload } from '../../domain/generation';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
-import type { DictionaryAiExecutionSnapshot } from '../dictionary-ai-provider-catalog';
+import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../text-ai/application/text-ai-provider-catalog';
 
 export type DictionaryGenerationExecutionStage =
     | 'scanning'

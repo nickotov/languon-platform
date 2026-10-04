@@ -12,7 +12,7 @@ import {
 import type { DictionaryDocumentTermsGenerationInputPayload } from '../domain/generation';
 import { dictionaryGenerationProviderUsageCostMicros } from './ports/dictionary-generation-provider-policy';
 import type { DictionaryGenerationProviderBudgetPolicy } from './ports/dictionary-generation-provider-policy';
-import type { DictionaryAiExecutionSnapshot } from './dictionary-ai-provider-catalog';
+import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../text-ai/application/text-ai-provider-catalog';
 import type { DocumentMalwareScanner } from './ports/document-malware-scanner';
 import {
     DocumentOcrUnavailableError,

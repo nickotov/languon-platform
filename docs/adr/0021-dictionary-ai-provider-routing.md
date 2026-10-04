@@ -5,6 +5,7 @@ title: 'Dictionary AI provider routing'
 status: accepted
 date: 2026-09-23
 supersedes: 'None'
+superseded_in_part_by: 'ADR-0026 configuration ownership and global-only selection'
 ---
 
 # ADR-0021: Dictionary AI provider routing

@@ -38,6 +38,7 @@ export function createApp(options?: {
     dictionaries?: OpenAPIHono;
     learning?: OpenAPIHono;
     operational?: AppOperationalOptions;
+    textAi?: OpenAPIHono;
     userProfiles?: UserProfileRouteDependencies;
 }): OpenAPIHono {
     const app = new OpenAPIHono();
@@ -67,6 +68,11 @@ export function createApp(options?: {
     }
     if (options?.learning) {
         app.route('/', options.learning);
+    }
+    // Preferences include PUT/OPTIONS beneath /users; mount their route-specific
+    // policy before the older profile wildcard preflight handler.
+    if (options?.textAi) {
+        app.route('/', options.textAi);
     }
     if (options?.userProfiles) {
         app.route('/', createUserProfileRoutes(options.userProfiles));

@@ -2,7 +2,7 @@
 feature: ai-provider-management
 title: AI Provider and Model Management
 status: current
-last_verified: 2026-09-23
+last_verified: 2026-10-04
 surfaces:
     - browser
     - admin
@@ -11,6 +11,7 @@ source_paths:
     - .agent/features/028-ai-provider-management/**
     - apps/admin/src/pages/ai-settings/**
     - apps/admin/src/shared/api/**
+    - apps/backend/src/modules/text-ai/**
     - apps/backend/src/modules/administration/**
     - apps/backend/src/modules/dictionaries/application/**
     - apps/backend/src/modules/dictionaries/infrastructure/**
@@ -22,6 +23,7 @@ e2e_tests:
 e2e_scenarios:
     - admin-configures-dictionary-ai-default
 related_features:
+    - user-ai-model-preferences-backend
     - admin-user-management
     - ai-credit-wallet
     - dictionary-platform
@@ -34,7 +36,8 @@ related_features:
 This guide verifies that an owner can select a curated DeepSeek or Kie text model
 for Mastra-backed dictionary generation. Configuration is versioned and audited;
 credentials remain server-side; text and pronunciation-audio settings remain
-separate. A saved default applies to new jobs while an admitted job retains its
+separate. A saved default applies to new Auto jobs; an enabled compatible explicit learner
+preference selects that model for new work instead. An admitted job retains its
 provider, model, adapter revision, and budget.
 
 The journey does not perform a paid model request. It starts the real dictionary
@@ -42,7 +45,10 @@ worker with a test-only deterministic provider transport, so admission, pinned
 routing, worker dispatch, proposal review, and acceptance still cross the real
 application and persistence boundaries. Separate wire fixtures cover each
 provider's OpenAI-compatible request and structured response mapping.
-User-selectable models and per-user allowances are outside this version.
+The learner preference backend is verified separately in
+[User AI model preferences backend](./user-ai-model-preferences-backend.md).
+It preserves curated models and immutable admitted execution; this admin journey
+does not implement the deferred profile picker or per-user allowance changes.
 
 ## Start the development environment
 

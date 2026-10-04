@@ -1,10 +1,7 @@
-export interface DictionaryGenerationProviderBudgetPolicy {
-    inputCostMicrosPerMillionTokens: number;
-    maxCostMicrosPerAttempt: number;
-    maxInputTokensPerAttempt: number;
-    maxOutputTokensPerAttempt: number;
-    outputCostMicrosPerMillionTokens: number;
-}
+import type { TextAiProviderBudgetPolicy } from '../../../text-ai/application/text-ai-provider-catalog';
+
+export type DictionaryGenerationProviderBudgetPolicy =
+    TextAiProviderBudgetPolicy;
 
 export const dictionaryGenerationMinimumSupportedInputTokens = 32_768;
 

@@ -1,8 +1,5 @@
-import type { DictionaryAiExecutionSnapshot } from '../../application/dictionary-ai-provider-catalog';
-import {
-    dictionaryAiCreditPricingMatches,
-    findDictionaryAiModel,
-} from '../../application/dictionary-ai-provider-catalog';
+import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../text-ai/application/text-ai-provider-catalog';
+import { resolveTextAiExecutionSnapshot } from '../../../text-ai/infrastructure/ai/text-ai-provider-resolver';
 import type { CardAuthoringProposalGenerator } from '../../application/ports/card-authoring-proposal-generator';
 import type { CardProposalGenerator } from '../../application/ports/card-proposal-generator';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../application/ports/dictionary-generation-provider-policy';
@@ -11,9 +8,9 @@ import type { PastedTermsProposalGenerator } from '../../application/ports/paste
 import { createCardAuthoringProposalGenerator } from './card-authoring-proposal-generators';
 import { createCardProposalGenerator } from './card-proposal-generators';
 import {
-    createDictionaryTextMastraGeneratorOptions,
-    findDictionaryTextModel,
-} from './dictionary-text-provider-catalog';
+    createTextAiMastraGeneratorOptions as createDictionaryTextMastraGeneratorOptions,
+    findTextAiModel as findDictionaryTextModel,
+} from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
 import { createImportPairsProposalGenerator } from './import-pairs-proposal-generators';
 import { createPastedTermsProposalGenerator } from './pasted-terms-proposal-generators';
 
@@ -60,7 +57,7 @@ export class DictionaryTextProviderRouter {
         snapshot: DictionaryAiExecutionSnapshot,
         budget: DictionaryGenerationProviderBudgetPolicy,
     ): DictionaryTextProviderSet {
-        const catalogModel = validateExecutionSnapshot(snapshot, budget);
+        const catalogModel = resolveTextAiExecutionSnapshot(snapshot, budget);
         const credential =
             this.options.credentials[snapshot.credentialReference];
         if (!credential)
@@ -177,58 +174,6 @@ function createProviderSet(
         importPairs: createImportPairsProposalGenerator(shared),
         pastedTerms: createPastedTermsProposalGenerator(shared),
     };
-}
-
-function validateExecutionSnapshot(
-    snapshot: DictionaryAiExecutionSnapshot,
-    budget: DictionaryGenerationProviderBudgetPolicy,
-) {
-    const model = findDictionaryAiModel(snapshot.providerId, snapshot.modelId);
-    if (
-        !model ||
-        snapshot.adapterRevision !== model.adapterRevision ||
-        snapshot.credentialReference !== model.credentialReference ||
-        snapshot.perCallMaxInputTokens !== model.perCallMaxInputTokens ||
-        snapshot.perCallMaxOutputTokens !== model.perCallMaxOutputTokens ||
-        !snapshot.enabledModelIds.includes(snapshot.modelId) ||
-        !isStringSubset(snapshot.supportedFormats, model.supportedFormats) ||
-        (snapshot.creditPricing !== undefined &&
-            !dictionaryAiCreditPricingMatches(
-                snapshot.creditPricing,
-                model.creditPricing,
-            )) ||
-        !sameBudget(snapshot.aggregateBudget, budget)
-    )
-        throw new Error(
-            'Dictionary text provider execution snapshot is unsupported.',
-        );
-    return model;
-}
-
-function sameBudget(
-    left: DictionaryGenerationProviderBudgetPolicy,
-    right: DictionaryGenerationProviderBudgetPolicy,
-): boolean {
-    return (
-        left.inputCostMicrosPerMillionTokens ===
-            right.inputCostMicrosPerMillionTokens &&
-        left.maxCostMicrosPerAttempt === right.maxCostMicrosPerAttempt &&
-        left.maxInputTokensPerAttempt === right.maxInputTokensPerAttempt &&
-        left.maxOutputTokensPerAttempt === right.maxOutputTokensPerAttempt &&
-        left.outputCostMicrosPerMillionTokens ===
-            right.outputCostMicrosPerMillionTokens
-    );
-}
-
-function isStringSubset(
-    required: readonly string[],
-    supported: readonly string[],
-): boolean {
-    // A newer release may add code-reviewed formats to the same model. Older
-    // revisions remain valid, but rollback workers still reject revisions that
-    // require a format absent from their catalog.
-    const supportedValues = new Set(supported);
-    return required.every((value) => supportedValues.has(value));
 }
 
 function stableSnapshotKey(snapshot: DictionaryAiExecutionSnapshot): string {

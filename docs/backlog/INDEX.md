@@ -10,13 +10,18 @@ implementation, read the selected task in full and the relevant shared context
 in [README.md](README.md). Statuses mirror authoritative task frontmatter;
 numbers are stable IDs, not delivery priority.
 
+Preparation for BL-005, BL-004 and the sentence portion of BL-003 is recorded in
+the [backend-first implementation plan](../sentence-practice-implementation-plan.md).
+Implementation was authorized on 2026-10-04; feature 035 owns the model backend.
+Full task completion still requires the deferred frontend.
+
 | ID     | Task                                                                                                | Status      |
 | ------ | --------------------------------------------------------------------------------------------------- | ----------- |
 | BL-001 | [Streamlined dictionary editing](001-streamlined-dictionary-editing-done.md)                        | done        |
 | BL-002 | [Configurable flashcard training](002-configurable-flashcard-training-done.md)                      | done        |
 | BL-003 | [Personal learning progress](003-personal-learning-progress.md)                                     | in-progress |
 | BL-004 | [AI sentence translation practice](004-ai-sentence-translation-practice.md)                         | pending     |
-| BL-005 | [User-selectable AI models](005-user-selectable-ai-models.md)                                       | pending     |
+| BL-005 | [User-selectable AI models](005-user-selectable-ai-models.md)                                       | in-progress |
 | BL-006 | [Grammar conversations and learning documents](006-grammar-conversations-and-learning-documents.md) | pending     |
 | BL-007 | [Manual exercise creation and editing](007-manual-exercise-creation-and-editing.md)                 | pending     |
 | BL-008 | [Increased sentence difficulty](008-increased-sentence-difficulty.md)                               | pending     |

@@ -14,8 +14,8 @@ import {
 import postgres from 'postgres';
 
 // @user-flow-revision admin-user-management sha256:4f24e107863f2093
-// @user-flow-revision ai-provider-management sha256:dc741eefb55aaec6
-// @user-flow-revision ai-credit-wallet sha256:9cf122911016613c
+// @user-flow-revision ai-provider-management sha256:fff99a54c9d51797
+// @user-flow-revision ai-credit-wallet sha256:a7a27b2b83437c47
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(
@@ -197,8 +197,8 @@ async function startDictionaryWorker() {
                 DEEPSEEK_API_KEY: 'admin-e2e-deepseek-worker-key',
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-                DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v1',
-                DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'single-card:v1',
+                DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v2',
+                DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'single-card:v2',
                 DICTIONARY_WORKER_CONCURRENCY: '1',
                 DICTIONARY_WORKER_DATABASE_URL: databaseUrl,
                 DICTIONARY_WORKER_POLL_INTERVAL_MS: '50',
@@ -570,11 +570,11 @@ test.describe.serial('admin user management journeys', () => {
                 expect(reservation).toMatchObject({
                     dispatchedAt: expect.any(Date),
                     measurement: 'estimated',
-                    reservedCredits: '400000',
+                    reservedCredits: '4000000',
                     settledAt: expect.any(Date),
                     state: 'settled',
                 });
-                expect(reservation!.chargedCredits).toBe('400000');
+                expect(reservation!.chargedCredits).toBe('4000000');
                 const history = await database<Array<{ kind: string }>>`
                     select kind
                     from ai_credit_history
@@ -596,7 +596,7 @@ test.describe.serial('admin user management journeys', () => {
                 .getByRole('row')
                 .filter({ hasText: 'Settlement' })
                 .filter({ hasText: 'Estimated maximum' });
-            await expect(settlementHistoryRow).toContainText('−400,000');
+            await expect(settlementHistoryRow).toContainText('−4,000,000');
             const accepted = await request.post(
                 `${backendOrigin}/dictionary-generation-jobs/${jobId}/accept`,
                 {
@@ -654,6 +654,39 @@ test.describe.serial('admin user management journeys', () => {
                 page.getByText(/Configuration version \d+/),
             ).toBeVisible();
         }
+
+        // This journey queues two independently priced revisions. Fund them via
+        // the owner UI rather than relying on the separate credit-wallet case.
+        await page.goto(`/users/${targetId}`);
+        await expect(
+            page.getByText('AI credits', { exact: true }),
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'Adjust credits' }).click();
+        const adjustmentDialog = page.getByRole('dialog', {
+            name: 'Adjust AI credits',
+        });
+        const amount = adjustmentDialog.getByRole('spinbutton', {
+            name: 'Credits',
+        });
+        await expect(amount).toHaveValue('1');
+        await amount.fill('5000000');
+        await expect(amount).toHaveValue('5000000');
+        await adjustmentDialog
+            .getByLabel('Reason')
+            .fill('Fund pinned provider-revision generation jobs');
+        await expect(adjustmentDialog.getByLabel('Reason')).toHaveValue(
+            'Fund pinned provider-revision generation jobs',
+        );
+        await adjustmentDialog
+            .getByRole('button', { name: 'Apply adjustment' })
+            .click();
+        await expect(
+            page.getByText('Grant', { exact: true }).first(),
+        ).toBeVisible();
+        await page.getByRole('menuitem', { name: 'AI settings' }).click();
+        await expect(
+            page.getByRole('heading', { name: 'AI providers' }),
+        ).toBeVisible();
 
         const targetLogin = await request.post(
             `${backendOrigin}/auth/login/password`,
@@ -741,41 +774,49 @@ test.describe.serial('admin user management journeys', () => {
             expect(response.status()).toBe(202);
             return ((await response.json()) as { job: { id: string } }).job.id;
         };
-        const deepSeekJobId = await enqueue(deepSeekCard);
-
-        await page
-            .locator('label.ant-radio-button-wrapper')
-            .filter({ hasText: 'Kie' })
-            .click();
-        const kieCheckbox = page.getByRole('checkbox', {
-            name: /Gemini 2\.5 Pro via Kie/,
-        });
-        if (!(await kieCheckbox.isChecked())) {
-            await kieCheckbox.evaluate((element: HTMLInputElement) =>
-                element.click(),
-            );
-        }
-        await page.getByLabel('Default model').press('ArrowDown');
-        await page.getByLabel('Default model').press('Enter');
-        await page
-            .getByLabel('Reason for change')
-            .fill('Switch new dictionary jobs to the curated Kie model');
-        await page.getByRole('button', { name: 'Save configuration' }).click();
-        await expect(
-            page.getByText(/Configuration version \d+/i),
-        ).toBeVisible();
-        const kieJobId = await enqueue(kieCard);
-
-        const database = postgres(databaseUrl, { max: 1 });
+        let worker: ChildProcess | undefined;
         try {
-            const pinned = await database<
-                Array<{
-                    jobId: string;
-                    modelId: string;
-                    providerId: string;
-                    revisionId: string;
-                }>
-            >`
+            // Selected provider revisions require a current capable-worker
+            // observation before admission. Keep this deterministic worker alive
+            // through both revisions so it can execute the pinned jobs too.
+            worker = await startDictionaryWorker();
+            const deepSeekJobId = await enqueue(deepSeekCard);
+
+            await page
+                .locator('label.ant-radio-button-wrapper')
+                .filter({ hasText: 'Kie' })
+                .click();
+            const kieCheckbox = page.getByRole('checkbox', {
+                name: /Gemini 2\.5 Pro via Kie/,
+            });
+            if (!(await kieCheckbox.isChecked())) {
+                await kieCheckbox.evaluate((element: HTMLInputElement) =>
+                    element.click(),
+                );
+            }
+            await page.getByLabel('Default model').press('ArrowDown');
+            await page.getByLabel('Default model').press('Enter');
+            await page
+                .getByLabel('Reason for change')
+                .fill('Switch new dictionary jobs to the curated Kie model');
+            await page
+                .getByRole('button', { name: 'Save configuration' })
+                .click();
+            await expect(
+                page.getByText(/Configuration version \d+/i),
+            ).toBeVisible();
+            const kieJobId = await enqueue(kieCard);
+
+            const database = postgres(databaseUrl, { max: 1 });
+            try {
+                const pinned = await database<
+                    Array<{
+                        jobId: string;
+                        modelId: string;
+                        providerId: string;
+                        revisionId: string;
+                    }>
+                >`
                 select
                     jobs.id as "jobId",
                     jobs.execution_revision_id as "revisionId",
@@ -787,26 +828,25 @@ test.describe.serial('admin user management journeys', () => {
                 where jobs.id in (${deepSeekJobId}, ${kieJobId})
                 order by jobs.id
             `;
-            expect(pinned).toHaveLength(2);
-            expect(new Set(pinned.map((row) => row.revisionId)).size).toBe(2);
-            expect(
-                pinned.map(({ modelId, providerId }) => ({
-                    modelId,
-                    providerId,
-                })),
-            ).toEqual(
-                expect.arrayContaining([
-                    { modelId: 'deepseek-chat', providerId: 'deepseek' },
-                    { modelId: 'gemini-2.5-pro', providerId: 'kie' },
-                ]),
-            );
-        } finally {
-            await database.end();
-        }
+                expect(pinned).toHaveLength(2);
+                expect(new Set(pinned.map((row) => row.revisionId)).size).toBe(
+                    2,
+                );
+                expect(
+                    pinned.map(({ modelId, providerId }) => ({
+                        modelId,
+                        providerId,
+                    })),
+                ).toEqual(
+                    expect.arrayContaining([
+                        { modelId: 'deepseek-chat', providerId: 'deepseek' },
+                        { modelId: 'gemini-2.5-pro', providerId: 'kie' },
+                    ]),
+                );
+            } finally {
+                await database.end();
+            }
 
-        let worker: ChildProcess | undefined;
-        try {
-            worker = await startDictionaryWorker();
             const deepSeekJob = await waitForGenerationReview(
                 request,
                 accessToken,

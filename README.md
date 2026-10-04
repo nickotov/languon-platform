@@ -79,7 +79,10 @@ handling, and non-billable readiness probes. DeepSeek's authenticated
 `GET /models` can report available; Kie's route-only `HEAD` probe remains
 unverified because it does not prove the credential or structured output. The admin AI settings page can
 enable catalog models and choose the global default; it never reads or writes
-credentials.
+credentials. Active learners can read/save Auto or an explicit curated model
+through the [model preference backend](docs/user-flows/user-ai-model-preferences-backend.md);
+new jobs resolve that choice and existing jobs retain their pinned execution.
+The profile picker is deferred to the external-design continuation.
 
 `DICTIONARY_AI_MANAGED_ROUTING_ENABLED` is the expand/activate safety gate. For a
 deployed environment, enable it only after every active and rollback-floor worker
@@ -306,3 +309,11 @@ delivery/review improvements; [workflow evaluation](./docs/agentic-workflow-eval
 provides decision probes and repair-inclusive quality/cost measurements.
 Frontend component and state work uses the project-local
 `$frontend-development` skill.
+
+### Verify learner model preferences
+
+`pnpm test:e2e:user-ai-model-preferences-backend` runs the authenticated API and
+pinned dictionary-admission journey on explicitly confirmed disposable
+PostgreSQL/Redis only. See its [safe verification guide](docs/user-flows/user-ai-model-preferences-backend.md)
+for required test environment variables; it has no default database target and
+never calls a paid provider.

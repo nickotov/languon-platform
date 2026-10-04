@@ -288,6 +288,34 @@
       "when": 1790943584898,
       "tag": "0040_confused_firedrake",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791129238303,
+      "tag": "0041_fuzzy_ultimates",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791129314765,
+      "tag": "0042_text_ai_selection_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791129636114,
+      "tag": "0043_lean_amphibian",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791132502783,
+      "tag": "0044_goofy_jubilee",
+      "breakpoints": true
     }
   ]
 }

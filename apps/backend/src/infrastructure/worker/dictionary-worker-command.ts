@@ -18,7 +18,7 @@ import { createCardProposalGenerator } from '../../modules/dictionaries/infrastr
 import { createCardAuthoringProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators';
 import { createPastedTermsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators';
 import { createImportPairsProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators';
-import { createDictionaryTextMastraGeneratorOptions } from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog';
+import { createTextAiMastraGeneratorOptions as createDictionaryTextMastraGeneratorOptions } from '../../modules/text-ai/infrastructure/ai/text-ai-provider-catalog';
 import {
     createDictionaryTextProviderRoutingAdapters,
     DictionaryTextProviderRouter,
@@ -322,6 +322,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
     await publishDictionaryAiWorkerObservations({
+        supportedFormats: environment.supportedFormats,
         credentials: environment.providerCredentials,
         database,
         ...(environment.providerFixtureMode === 'deterministic'
@@ -335,6 +336,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     });
     const observationTimer = setInterval(() => {
         void publishDictionaryAiWorkerObservations({
+            supportedFormats: environment.supportedFormats,
             credentials: environment.providerCredentials,
             database,
             ...(environment.providerFixtureMode === 'deterministic'

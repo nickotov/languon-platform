@@ -451,6 +451,7 @@ export class DictionaryGenerationWorkerService {
             globalConcurrency: this.settings.globalConcurrency,
             leaseDurationMs: this.settings.leaseDurationMs,
             managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
             ownerConcurrency: this.settings.ownerConcurrency,
             supportedFormats: input.supportedFormats,
             workerId: input.workerId,

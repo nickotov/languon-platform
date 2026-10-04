@@ -11,6 +11,7 @@ import { createAdministrationComposition } from './modules/administration/infras
 import { createAuthenticationComposition } from './modules/authentication/infrastructure/authentication-composition';
 import { createDictionaryComposition } from './modules/dictionaries/infrastructure/dictionary-composition';
 import { createLearningComposition } from './modules/learning/infrastructure/learning-composition';
+import { createTextAiModule } from './modules/text-ai/infrastructure/text-ai-composition';
 import { createDictionaryAudioAdapters } from './modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
 import { dictionaryAudioBudget } from './modules/dictionaries/infrastructure/audio/dictionary-audio-budget';
 import { loadDictionaryAudioEnvironment } from './modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
@@ -140,6 +141,10 @@ const learning = createLearningComposition({
     policy: authentication.options.policy,
 });
 const app = createApp({
+    textAi: createTextAiModule({
+        ...authentication.productDependencies,
+        policy: authentication.options.policy,
+    }).routes,
     learning: learning.routes,
     administration,
     authentication: authentication.options,

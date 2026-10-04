@@ -43,6 +43,7 @@ import {
     flashcardPreferencesTable,
 } from '../../../../learning/infrastructure/persistence/drizzle/schema';
 import { userEmailsTable, usersTable } from './schema';
+import { textAiPreferencesTable } from '../../../../text-ai/infrastructure/persistence/drizzle/schema';
 
 type AccountPurgeDatabase = PostgresJsDatabase<typeof databaseSchema>;
 const leaseMs = 5 * 60_000;
@@ -364,6 +365,9 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                 input.userId,
             );
+            await tx
+                .delete(textAiPreferencesTable)
+                .where(eq(textAiPreferencesTable.userId, input.userId));
 
             // Purged users retain tombstones. Remove learning on foreign dictionaries
             // explicitly; owned-dictionary and user deletion cascades cannot cover it.

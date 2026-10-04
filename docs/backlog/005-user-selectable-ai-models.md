@@ -2,9 +2,9 @@
 type: backlog-task
 id: BL-005
 title: 'User-selectable AI models'
-status: pending
+status: in-progress
 created: 2026-10-01
-updated: 2026-10-02
+updated: 2026-10-04
 original_tasks: '8'
 evidence: []
 ---
@@ -12,6 +12,18 @@ evidence: []
 # BL-005 — User-selectable AI models
 
 [Backlog index and shared constraints](README.md).
+
+## Delivery planning
+
+The [backend-first implementation plan](../sentence-practice-implementation-plan.md)
+delivers model routing/preferences before the BL-004 sentence backend. The user
+authorized implementation on 2026-10-04. The backend is owned by
+[feature 035](../../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md). Once both backends are
+verified, save separate model-preference and sentence-practice design prompts,
+then wait for the user's Magic Patterns designs before frontend code generation.
+The profile prompt covers loading, saving, conflicts, availability and recovery
+without concrete API paths. Backend-only delivery does not complete BL-005;
+the plan is not implementation evidence.
 
 ## Confirmed requirements
 
@@ -50,3 +62,13 @@ separate from the model preference unless explicitly included in delivery.
 Persist Auto and explicit selection; apply the preference across text features;
 retain the admitted model during retries; handle a disabled or incompatible
 selection and insufficient credits; display capability/cost without exposing secrets.
+
+## Verified backend checkpoint
+
+[Feature 035](../../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md)
+is complete: authenticated preferences, sanitized catalog, per-job dictionary
+selection, mixed-worker guards, exact-format readiness and model-isolated circuits
+passed database/API/worker/browser checks and independent correctness/security
+reviews. This backlog task remains in progress for profile UI and final design
+integration. The design prompt waits until the sentence backend is also verified,
+as specified in the [delivery plan](../sentence-practice-implementation-plan.md).
