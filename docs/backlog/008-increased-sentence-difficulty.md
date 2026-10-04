@@ -13,7 +13,7 @@ evidence: []
 
 # BL-008 — Increased sentence difficulty
 
-Depends on: [BL-004](004-ai-sentence-translation-practice.md)
+Depends on: [BL-004](004-ai-sentence-translation-practice-done.md)
 
 [Backlog index and shared constraints](README.md).
 

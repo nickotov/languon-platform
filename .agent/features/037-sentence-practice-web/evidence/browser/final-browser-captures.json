@@ -1,0 +1,122 @@
+{
+    "suite": "6 passed (35.1s)",
+    "guide_revision": "sha256:10ce631498e40ee5",
+    "source": "/private/tmp/languon-feature037-browser-final-20261005",
+    "captures": [
+        {
+            "file": "sentence-over-limit-draft.png",
+            "bytes": 51975,
+            "source_mtime": "2026-10-04T21:56:23.971425+00:00"
+        },
+        {
+            "file": "sentence-mobile-history.png",
+            "bytes": 71556,
+            "source_mtime": "2026-10-04T21:56:24.456827+00:00"
+        },
+        {
+            "file": "sentence-access-loss-no-cached-content.png",
+            "bytes": 43749,
+            "source_mtime": "2026-10-04T21:56:24.565619+00:00"
+        },
+        {
+            "file": "sentence-dialog-draft-dark.png",
+            "bytes": 98770,
+            "source_mtime": "2026-10-04T21:56:19.347916+00:00"
+        },
+        {
+            "file": "sentence-failed-check-close-guard.png",
+            "bytes": 66714,
+            "source_mtime": "2026-10-04T21:56:24.143702+00:00"
+        },
+        {
+            "file": "sentence-setup.png",
+            "bytes": 119442,
+            "source_mtime": "2026-10-04T21:56:17.356287+00:00"
+        },
+        {
+            "file": "sentence-fullscreen-feedback-dark.png",
+            "bytes": 66433,
+            "source_mtime": "2026-10-04T21:56:21.524970+00:00"
+        },
+        {
+            "file": "sentence-zero-credit-check-denied.png",
+            "bytes": 51988,
+            "source_mtime": "2026-10-04T21:56:24.072893+00:00"
+        },
+        {
+            "file": "sentence-mobile-reference.png",
+            "bytes": 60903,
+            "source_mtime": "2026-10-04T21:56:24.305821+00:00"
+        },
+        {
+            "file": "sentence-check-pending-dark.png",
+            "bytes": 97525,
+            "source_mtime": "2026-10-04T21:56:19.585864+00:00"
+        },
+        {
+            "file": "sentence-signed-in-share-continuation.png",
+            "bytes": 81345,
+            "source_mtime": "2026-10-04T21:56:29.691788+00:00"
+        },
+        {
+            "file": "profile-back-fallback-keep-draft.png",
+            "bytes": 110243,
+            "source_mtime": "2026-10-04T21:56:40.048055+00:00"
+        },
+        {
+            "file": "sentence-compact-rtl-history-sheet.png",
+            "bytes": 58649,
+            "source_mtime": "2026-10-04T21:56:38.127704+00:00"
+        },
+        {
+            "file": "sentence-rtl-japanese-200-percent-viewport-simulation.png",
+            "bytes": 28745,
+            "source_mtime": "2026-10-04T21:56:37.738879+00:00"
+        },
+        {
+            "file": "sentence-compact-summary-sheet.png",
+            "bytes": 55050,
+            "source_mtime": "2026-10-04T21:56:37.980106+00:00"
+        },
+        {
+            "file": "sentence-keyboard-viewport-simulation.png",
+            "bytes": 26595,
+            "source_mtime": "2026-10-04T21:56:38.211847+00:00"
+        },
+        {
+            "file": "profile-model-auto.png",
+            "bytes": 113119,
+            "source_mtime": "2026-10-04T21:56:14.496597+00:00"
+        },
+        {
+            "file": "profile-model-dark.png",
+            "bytes": 114130,
+            "source_mtime": "2026-10-04T21:56:15.609845+00:00"
+        },
+        {
+            "file": "profile-model-conflict.png",
+            "bytes": 143397,
+            "source_mtime": "2026-10-04T21:56:15.230470+00:00"
+        },
+        {
+            "file": "profile-model-mobile-actions-dark.png",
+            "bytes": 61606,
+            "source_mtime": "2026-10-04T21:56:15.750817+00:00"
+        },
+        {
+            "file": "profile-model-saved.png",
+            "bytes": 110105,
+            "source_mtime": "2026-10-04T21:56:15.075627+00:00"
+        },
+        {
+            "file": "profile-model-mobile-dark.png",
+            "bytes": 62505,
+            "source_mtime": "2026-10-04T21:56:15.669215+00:00"
+        },
+        {
+            "file": "sentence-cancellation-requested-reduced-motion.png",
+            "bytes": 108803,
+            "source_mtime": "2026-10-04T21:56:32.733871+00:00"
+        }
+    ]
+}

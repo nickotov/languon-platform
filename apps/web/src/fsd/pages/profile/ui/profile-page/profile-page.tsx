@@ -28,7 +28,13 @@ import { LanguageSwitcher } from '@/fsd/features/change-locale';
 import { SecuritySettings, useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
+    ModelPreferenceSection,
+    preferenceCopy,
+} from '@/fsd/features/text-ai-preferences';
+import { useModelPreferenceNavigation } from '../../hooks/use-model-preference-navigation';
+import {
     Avatar,
+    Dialog,
     Badge,
     Button,
     ButtonLink,
@@ -148,7 +154,9 @@ function AuthenticatedProfile({
     onScheduled(receipt: AccountDeletionScheduleResponse): void;
     user: AuthUser;
 }) {
-    const { href, t } = useI18n();
+    const { href, t, locale } = useI18n();
+    const preferenceNavigation = useModelPreferenceNavigation();
+    const modelCopy = preferenceCopy(locale);
 
     const router = useRouter();
 
@@ -164,6 +172,25 @@ function AuthenticatedProfile({
         });
     };
 
+    function navigateTab(value: ProfileTab) {
+        const nextParams = new URLSearchParams(searchParams.toString());
+        if (value === 'account') nextParams.delete('tab');
+        else nextParams.set('tab', value);
+        const query = nextParams.toString();
+        router.replace(href(`/profile${query ? `?${query}` : ''}`), {
+            scroll: false,
+        });
+    }
+
+    function handleTabChange(value: string) {
+        if (!isProfileTab(value) || value === activeTab) return;
+        preferenceNavigation.request(() => navigateTab(value));
+    }
+
+    function openCredits() {
+        handleTabChange('credits');
+    }
+
     const tabs = [
         {
             content: (
@@ -175,6 +202,8 @@ function AuthenticatedProfile({
                         clearLocalSession();
                     }}
                     requestWithSession={requestWithSession}
+                    onModelDirtyChange={preferenceNavigation.setDirty}
+                    onOpenCredits={openCredits}
                 />
             ),
             icon: <User />,
@@ -256,25 +285,30 @@ function AuthenticatedProfile({
                 className={styles.tabs!}
                 listClassName={styles.tabList}
                 items={tabs}
-                onValueChange={(value) => {
-                    if (!isProfileTab(value)) return;
-
-                    const nextParams = new URLSearchParams(
-                        searchParams.toString(),
-                    );
-
-                    if (value === 'account') nextParams.delete('tab');
-                    else nextParams.set('tab', value);
-
-                    const query = nextParams.toString();
-
-                    router.replace(
-                        href(`/profile${query ? `?${query}` : ''}`),
-                        { scroll: false },
-                    );
-                }}
+                onValueChange={handleTabChange}
                 value={activeTab}
                 variant='underline'
+            />
+            <Dialog
+                closeLabel={modelCopy.close}
+                description={modelCopy.leaveDescription}
+                onClose={preferenceNavigation.keepEditing}
+                open={preferenceNavigation.open}
+                role='alertdialog'
+                title={modelCopy.leaveTitle}
+                footer={
+                    <>
+                        <Button
+                            onClick={preferenceNavigation.keepEditing}
+                            variant='secondary'
+                        >
+                            {modelCopy.keepEditing}
+                        </Button>
+                        <Button onClick={preferenceNavigation.discard}>
+                            {modelCopy.discard}
+                        </Button>
+                    </>
+                }
             />
         </main>
     );
@@ -284,7 +318,11 @@ function AccountTab({
     onComingSoon,
     onScheduled,
     requestWithSession,
+    onModelDirtyChange,
+    onOpenCredits,
 }: ComingSoonProps & {
+    onModelDirtyChange(dirty: boolean): void;
+    onOpenCredits(): void;
     onScheduled(receipt: AccountDeletionScheduleResponse): void;
     requestWithSession<T>(
         operation: (accessToken: string) => Promise<T>,
@@ -346,6 +384,11 @@ function AccountTab({
                     {t('profile.otherDetailsComingSoon')}
                 </p>
             </SettingsSection>
+            <ModelPreferenceSection
+                onDirtyChange={onModelDirtyChange}
+                onOpenCredits={onOpenCredits}
+                requestWithSession={requestWithSession}
+            />
             <SettingsSection
                 description={t('profile.dataDescription')}
                 title={t('profile.dataTitle')}

@@ -23,7 +23,7 @@ import {
 } from '@/fsd/entities/dictionary';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
-import { TrainingLauncher } from '@/fsd/features/flashcard-training';
+import { DictionaryTraining } from '@/fsd/widgets/dictionary-training';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     Badge,
@@ -216,7 +216,7 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
                     })}
                 </p>
                 <Badge tone='warning'>{t('dictionary.public.noIndex')}</Badge>
-                <TrainingLauncher
+                <DictionaryTraining
                     activeCount={dictionary.activeCardCount}
                     dictionaryTitle={dictionary.name}
                     identity={trainingIdentity}

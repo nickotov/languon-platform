@@ -1,9 +1,9 @@
 ---
 type: implementation-plan
 title: Backend first AI model preferences and sentence translation practice
-status: awaiting-design
+status: complete
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 backlog_tasks:
     - BL-005
     - BL-004
@@ -19,14 +19,17 @@ source_paths:
     - packages/prompts
     - apps/web/src/fsd/pages/profile
     - apps/web/src/fsd/features/flashcard-training
+  - apps/web/src/fsd/features/text-ai-preferences
+  - apps/web/src/fsd/features/sentence-training
+  - apps/web/src/fsd/widgets/dictionary-training
     - apps/web/src/fsd/pages/shared-dictionary
 evidence: []
 ---
 
 # Backend first AI model preferences and sentence translation practice
 
-Implement the backend for [BL-005 model preferences](backlog/005-user-selectable-ai-models.md)
-before the backend for [BL-004 sentence practice](backlog/004-ai-sentence-translation-practice.md).
+Implement the backend for [BL-005 model preferences](backlog/005-user-selectable-ai-models-done.md)
+before the backend for [BL-004 sentence practice](backlog/004-ai-sentence-translation-practice-done.md).
 Sentence attempts and coverage also deliver part of
 [BL-003 personal progress](backlog/003-personal-learning-progress.md).
 After both backends are implemented and verified, save two detailed, copyable
@@ -36,11 +39,11 @@ requests frontend implementation against selected design revisions.
 This is the canonical planning baseline, not implementation evidence or an
 accepted ADR. The user authorized implementation on 2026-10-04 after clarifying
 cross-session reuse, fresh generation, retained exercises and display modes.
-**Current checkpoint: implement and verify the backends; frontend remains deferred
-until the user returns with Magic Patterns designs.**
+**Current checkpoint: both backends verified; selected design revisions are implemented
+and verified in [feature 037](../.agent/features/037-sentence-practice-web/FEATURE.md).**
 Verified model backend (`bcfda16`): [feature 035](../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md)
 and [ExecPlan](../.agent/features/035-user-ai-model-preferences-backend/EXEC_PLAN.md).
-Active sentence backend: [feature036](../.agent/features/036-sentence-practice-backend/FEATURE.md)
+Verified sentence backend (`8909424`): [feature036](../.agent/features/036-sentence-practice-backend/FEATURE.md)
 and [ExecPlan](../.agent/features/036-sentence-practice-backend/EXEC_PLAN.md).
 
 Documentation delivery is recorded in the
@@ -57,8 +60,8 @@ Both backends are implemented and independently reviewed: feature035 provides
 personal model preferences and pinned text execution; feature036 provides sentence
 practice, typed work/accounting, personal AI feedback and free manual reference
 review. Security and completion findings were remediated; detailed evidence lives
-in the linked feature records. No sentence/profile-model frontend integration or
-production enablement was performed.
+in the linked feature records. That backend checkpoint did not include frontend integration or production
+enablement. The user subsequently authorized selected-design frontend delivery.
 
 Copy these separate prompts into Magic Patterns:
 
@@ -68,9 +71,19 @@ Copy these separate prompts into Magic Patterns:
 Immutable snapshots, fingerprints and design-return slots are tracked in
 [035 DESIGN.md](../.agent/features/035-user-ai-model-preferences-backend/DESIGN.md)
 and [036 DESIGN.md](../.agent/features/036-sentence-practice-backend/DESIGN.md).
-No implementation target is selected. Continue frontend generation only after the
-user returns the design/source and selects the applicable revision. Backlog003,
-004 and005 remain in progress for their deferred frontend/product scope.
+The user returned both designs on 2026-10-04 and requested bounded UI analysis.
+Their provider v6 artifacts are pinned and relevant source/context is retained.
+The authoritative scope inventories are
+[model preferences](../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04)
+and [sentence practice](../.agent/features/036-sentence-practice-backend/FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04).
+Select only the Account modelPreference section and the sentence practice
+journey. Exclude unrelated prototype shell/account/dictionary features and mock
+services. Adapt feedback, free-reference access, retry semantics, history and
+fullscreen behavior to the real contracts; replace the preferences placeholder.
+Candidates are Ready for review; analysis alone does not assert visual fidelity
+or frontend completion. No implementation target is selected for this
+analysis-only request. At that checkpoint, Backlog003/004/005 remained in progress;
+the verified frontend completion section below records the final disposition.
 
 ## Delivery phases and mandatory checkpoints
 
@@ -637,3 +650,29 @@ free reference review section above and the updated feature036 acceptance criter
 The user mentioned Jev as a possible future correctness estimator. Primary
 TypeSafe documentation has been researched and linked above; integration remains
 a future evaluation task, without a current dependency or pricing commitment.
+
+## Frontend implementation checkpoint — 2026-10-05
+
+The user requested implementation of the selected Magic Patterns designs.
+[Feature 037](../.agent/features/037-sentence-practice-web/FEATURE.md) owns the
+bounded profile Account model-preference section and sentence-practice journey.
+Its [ExecPlan](../.agent/features/037-sentence-practice-web/EXEC_PLAN.md),
+[evidence](../.agent/features/037-sentence-practice-web/EVIDENCE.md), and
+[review](../.agent/features/037-sentence-practice-web/REVIEW.md) record source
+fidelity, implementation, browser journeys, independent review and remediation.
+
+The frontend uses real contracts and production orchestration, with deterministic
+providers only in guarded disposable tests. It preserves Flashcards and excludes
+unrelated shell, account-management, billing, audio and dictionary-editor design
+changes. Both backend feature records remain Complete. BL-004 and BL-005 are Done after final frontend review and verification; BL-003 retains its
+remaining grammar/manual-exercise scope.
+
+## Verified frontend completion — 2026-10-05
+
+Feature 037 completes the selected profile and sentence designs. All six real-app
+browser journeys, 417 unit/component/contract tests, affected lint/typechecks,
+production build and independent remediation reviews pass. The two v001 design
+targets are Implemented; BL-004/BL-005 are Done with synchronized links/evidence.
+BL-003 remains in progress for broader grammar/manual-exercise scope. Explicit
+proof limits and the unrelated existing profile deletion-receipt failure are
+recorded in the frontend evidence; no production enablement or push is included.

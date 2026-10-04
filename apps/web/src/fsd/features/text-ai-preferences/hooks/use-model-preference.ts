@@ -1,0 +1,205 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import type { TextAiPreferenceResponse } from '@languon/contracts';
+import { useSessionStore } from '@/fsd/entities/session';
+import {
+    preferencesApi,
+    PreferenceApiError,
+    type SessionRequest,
+} from '../api/preferences-api';
+
+export function choiceOf(preference: TextAiPreferenceResponse): string {
+    return preference.mode === 'auto' ? 'auto' : preference.modelId!;
+}
+export function useModelPreference(requestWithSession: SessionRequest) {
+    const actor = useSessionStore((state) => state.user?.id ?? null);
+    const authenticated = useSessionStore(
+        (state) => state.status === 'authenticated',
+    );
+    const queryClient = useQueryClient();
+    const actorRef = useRef(actor);
+    actorRef.current = actor;
+    const [base, setBase] = useState<TextAiPreferenceResponse | null>(null);
+    const [draft, setDraft] = useState<string | null>(null);
+    const [saveState, setSaveState] = useState<
+        'idle' | 'saving' | 'saved' | 'error' | 'rejected' | 'conflict'
+    >('idle');
+    const [latest, setLatest] = useState<TextAiPreferenceResponse | null>(null);
+    const [online, setOnline] = useState(true);
+    const savingRef = useRef(false);
+    const pref = useQuery({
+        queryKey: ['text-ai-preference', actor],
+        queryFn: () => requestWithSession(preferencesApi.read),
+        enabled: authenticated && actor !== null,
+        retry: false,
+        gcTime: 0,
+        refetchOnWindowFocus: false,
+    });
+    const catalog = useQuery({
+        queryKey: ['text-ai-catalog', actor],
+        queryFn: () => requestWithSession(preferencesApi.catalog),
+        enabled: authenticated && actor !== null,
+        retry: false,
+        gcTime: 0,
+        refetchOnWindowFocus: false,
+    });
+    useEffect(() => {
+        setBase(null);
+        setDraft(null);
+        setLatest(null);
+        setSaveState('idle');
+        savingRef.current = false;
+        return () => {
+            void queryClient.cancelQueries({
+                queryKey: ['text-ai-preference', actor],
+            });
+            queryClient.removeQueries({
+                queryKey: ['text-ai-preference', actor],
+            });
+            queryClient.removeQueries({ queryKey: ['text-ai-catalog', actor] });
+        };
+    }, [actor, authenticated, queryClient]);
+    useEffect(() => {
+        if (pref.data && !base && authenticated) {
+            setBase(pref.data);
+            setDraft(choiceOf(pref.data));
+        }
+    }, [pref.data, base, authenticated]);
+    useEffect(() => {
+        const update = () => setOnline(navigator.onLine);
+        update();
+        window.addEventListener('online', update);
+        window.addEventListener('offline', update);
+        return () => {
+            window.removeEventListener('online', update);
+            window.removeEventListener('offline', update);
+        };
+    }, []);
+    const dirty = authenticated && base !== null && draft !== choiceOf(base);
+    const draftModel = catalog.data?.models.find((model) => model.id === draft);
+    const available =
+        draft === 'auto' || draftModel?.availability === 'available';
+    const saveAllowed =
+        dirty &&
+        online &&
+        available &&
+        saveState !== 'saving' &&
+        saveState !== 'conflict';
+    function select(value: string) {
+        if (savingRef.current) return;
+        setDraft(value);
+        if (saveState !== 'conflict') setSaveState('idle');
+    }
+    function cancel() {
+        if (!base || savingRef.current) return;
+        setDraft(choiceOf(base));
+        setLatest(null);
+        setSaveState('idle');
+    }
+    async function reloadLatest() {
+        setLatest(null);
+        const owner = actor;
+        try {
+            const result = await pref.refetch();
+            if (
+                actorRef.current === owner &&
+                useSessionStore.getState().user?.id === owner &&
+                result.isSuccess &&
+                result.data
+            )
+                setLatest(result.data);
+        } catch {
+            /* The query exposes its failure for retry. */
+        }
+    }
+    async function save(overwrite = false) {
+        const expected = overwrite ? latest : base;
+        if (
+            !authenticated ||
+            !expected ||
+            !draft ||
+            !online ||
+            !available ||
+            savingRef.current
+        )
+            return;
+        if (!overwrite && saveState === 'conflict') return;
+        const owner = actor;
+        const choice = draft;
+        savingRef.current = true;
+        setSaveState('saving');
+        try {
+            const body =
+                choice === 'auto'
+                    ? {
+                          mode: 'auto' as const,
+                          expectedVersion: expected.version,
+                      }
+                    : {
+                          mode: 'explicit' as const,
+                          modelId: choice,
+                          expectedVersion: expected.version,
+                      };
+            const saved = await requestWithSession((token) =>
+                preferencesApi.save(token, body),
+            );
+            if (
+                actorRef.current !== owner ||
+                useSessionStore.getState().user?.id !== owner ||
+                useSessionStore.getState().status !== 'authenticated'
+            )
+                return;
+            setBase(saved);
+            setDraft(choiceOf(saved));
+            setLatest(null);
+            setSaveState('saved');
+            queryClient.setQueryData(['text-ai-preference', actor], saved);
+        } catch (error) {
+            if (
+                actorRef.current !== owner ||
+                useSessionStore.getState().user?.id !== owner ||
+                useSessionStore.getState().status !== 'authenticated'
+            )
+                return;
+            if (
+                error instanceof PreferenceApiError &&
+                error.code === 'conflict'
+            ) {
+                setSaveState('conflict');
+                await reloadLatest();
+            } else if (
+                error instanceof PreferenceApiError &&
+                error.code === 'model_unavailable'
+            ) {
+                setSaveState('rejected');
+                void catalog.refetch();
+            } else setSaveState('error');
+        } finally {
+            if (actorRef.current === owner) savingRef.current = false;
+        }
+    }
+    function useLatest() {
+        if (!latest) return;
+        setBase(latest);
+        setDraft(choiceOf(latest));
+        setLatest(null);
+        setSaveState('idle');
+    }
+    return {
+        base: authenticated ? base : null,
+        draft: authenticated ? draft : null,
+        catalog,
+        pref,
+        dirty,
+        saveState,
+        online,
+        latest: authenticated ? latest : null,
+        saveAllowed,
+        select,
+        cancel,
+        save,
+        reloadLatest,
+        useLatest,
+    };
+}
+export type ModelPreferenceController = ReturnType<typeof useModelPreference>;

@@ -1,5 +1,17 @@
 # ExecPlan: Sentence translation practice backend
 
+## Returned design analysis checkpoint — 2026-10-04
+
+Provider v6 sentence flow is source-inspected and bounded to the authorized
+practice journey. [FEATURE.md](./FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04)
+owns controls/states, intended owners and required contract adaptations;
+[DESIGN.md](./DESIGN.md) pins the retained source identity.
+Analysis complete; implementation and rendered comparison remain pending.
+Keep backend Complete and candidate Ready for review; no implementation target
+or Last implemented change. The next frontend continuation must replace
+mock grading/jobs/references and the preferences placeholder, retain Flashcards,
+and verify live access, zero-credit review and layout continuity.
+
 Status: Complete
 Updated: 2026-10-04
 
@@ -163,3 +175,8 @@ until user returns designs/source; do not invent a target from a mutable URL.
 
 Local feature commit and squash delivery follow the required feature workflow;
 no branch push/deletion or production enablement/deployment is authorized/performed.
+
+- 2026-10-05 — Selected frontend continuation completed in
+  [feature 037](../037-sentence-practice-web/FEATURE.md), with verified browser,
+  static/build and independent review evidence. This backend delivery remains
+  Complete; earlier frontend-pending checkpoints are historical.

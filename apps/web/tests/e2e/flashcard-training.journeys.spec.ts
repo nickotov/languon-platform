@@ -7,7 +7,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision flashcard-training-web sha256:4dde1a9c6158abb9
+// @user-flow-revision flashcard-training-web sha256:f89dbe9481716848
 
 const password = 'E2e!Flashcard-password-2026';
 const runId =

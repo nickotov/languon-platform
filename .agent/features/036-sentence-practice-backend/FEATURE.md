@@ -124,3 +124,138 @@ canonical plan/backlogs. See [DESIGN.md](./DESIGN.md) and prerequisite
 [035 handoff](../035-user-ai-model-preferences-backend/DESIGN.md). Frontend integration
 is deliberately outside this backend feature and awaits a returned selected design.
 Production enablement/deployment was not performed.
+
+## Returned design scope and source inventory — 2026-10-04
+
+The user supplied the sentence-practice flow and requested only UI required for
+the features being developed. This analysis covers BL-004 and its personal-progress
+slice; backend status stays Complete. Candidate v001/provider v6 and retained source
+identity are in [DESIGN.md](./DESIGN.md). This inventory owns the selected UI.
+
+**Include:** sentence/history entries in the existing Train menu; owner and
+signed-in shared-reader setup; active sentence, hints, free-text draft, default AI
+check, free reference review, feedback and earlier attempts; async/recovery states;
+personal AI/manual history; progress/session summary; fullscreen/dialog/mobile
+presentation and safe leave confirmation. Enable the existing sentence option
+when the real capability permits it, retaining working Flashcards.
+
+**Exclude:** the prototype's library/workspace/navigation redesign, card editor,
+AI dictionary authoring/review, audio, import/export/settings, marketing/purchases,
+scenario galleries and role/credit/network toggles. No Jev selector, mastery,
+streaks, difficulty controls or progress-reset/delete actions. Workspace and
+SharedDictionary exports establish placement only.
+
+Intended ownership: a sibling `features/sentence-training` slice with real API,
+session model/hooks and colocated UI. Existing dictionary pages compose public
+exports. Keep flashcard domain state independent; shared presentation primitives
+may be reused without private cross-slice imports. The preferences recovery action
+uses the real model-preference UI, not the prototype placeholder.
+
+### Required source UI and verification mapping
+
+All rows are pending implementation and runtime evidence. Original brief IDs
+remain separate from source inventory IDs.
+
+| Inventory ID | Brief        | Source section/control/state                                                                                                                                                                            | Intended owner                                | Verification and disposition                                                                                                                                                                       | Implementation proof — 2026-10-05                                                                                                                              |
+| ------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SP-UI-01     | SP-01        | PracticeLauncher: Sentence practice/My practice history; owner/shared/anonymous/archived context                                                                                                        | Existing Train menu/pages + sentence launcher | Owner, verified reader, anonymous auth return, capability off/archive. Include; keep working Flashcards.                                                                                           | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-02     | SP-02        | PracticeSetup: Direction; Explanation language default dictionary front; All eligible/Choose entries, search, Select all shown/Clear, checkbox list, skipped disclosure/count                           | Setup/controller/manual selection             | Both directions, changed IDs (not only count), partial/no eligible, empty search/selection, localized labels. Adapt to authoritative prepare response.                                             | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-03     | SP-02        | Saved first/New only/Review only descriptions; saved and uncompleted counts; free/paid note; zero-credit saved versus no saved; Start in a dialog/Start in full screen                                  | Setup modes/footer                            | First/later session, partial coverage, retained fresh generations, current direction/scope counts, no invented free generation. Include.                                                           | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-04     | SP-01, SP-02 | Setup skeleton; preparation failure Try again; feature unavailable; no eligible; sign-in requirement                                                                                                    | Preparation/auth states                       | Load/error retry without setup loss; stale response exclusion; real capability/auth. Include.                                                                                                      | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-05     | SP-03        | SentenceWithHints: large source text, underlined target buttons, word/phrase popover, Hints shown chips, repeated-target shared reveal                                                                  | Sentence/hints UI                             | Exact supplied segments, phrases/repeats/inflections, keyboard/touch/RTL, helper text not interactive; no score penalty. Adapt to hint/occurrence IDs.                                             | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-06     | SP-04        | DraftField: labelled multiline translation; inline validation/counter; exact draft; read-only during check                                                                                              | Draft/session state                           | Whitespace/over-limit/non-Latin text; submitted answer preserved; cancel unlocks. Adapt to contract code-point limit.                                                                              | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-07     | SP-04, SP-06 | PracticeActions: Check with AI primary; free reveal secondary; Skip before completion; Next sentence after completion; later Check new answer                                                           | Session actions                               | No duplicate paid action; skip does not complete; AI/manual completion distinct; free reveal usable despite model/credit failures. Include.                                                        | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-08     | SP-05        | AiResultPanel: percentage/rating, explanation, exact submitted text with numbered marks, correction list, vocabulary chips, improved translation/details, assisted badge and earlier-attempt disclosure | Feedback/attempt UI                           | Four ratings, missing target, spanless/minor issue, perfect/no corrections, long feedback, earlier attempts unchanged. Adapt public fields; never grade locally.                                   | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-09     | SP-06        | ReferencePanel: neutral dashed Reference translation, Manually reviewed, one-valid-translation help, Hide/Show again; pending/reveal error                                                              | Reference controller/UI                       | Explicit server reveal, zero credits/no model; replay once; no score/verdict; failed reveal no completion; assistance at check admission. Include.                                                 | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-10     | SP-07        | JobStatus: preparing versus checking, honest indeterminate progress, Cancel/Stopping, resumed-work and possible credit-use help                                                                         | Job controller/status                         | Queued/running/cancellation/completed/failed, reconnect same ID, late result isolation, no refund/ETA promises. Adapt actual job fields.                                                           | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-11     | SP-07        | PracticeNotice: credits/model/capacity/offline/timeout/provider/cancelled; retry/free reveal/review saved/return/preferences recovery                                                                   | Error mapping/controller                      | Different error codes, access still required for free actions, retry delay and ambiguous admission recovery, failed terminal job versus same-job poll. Adapt copy and actions.                     | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-12     | SP-02, SP-07 | PracticeBody empty pool/exhausted: Switch to New only, Restart review, Back to dictionary                                                                                                               | Selection/session controller                  | Review never generates; visited set reset only; mode change deliberate; no server history/progress reset. Adapt actual next/prepare result.                                                        | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-13     | SP-08        | HistoryContent: AI checks/Manual reviews tabs, personal rows/time/languages/answer/score/assistance/Feedback, manual reference without grade, outdated badge, load-more/error/empty                     | Personal history queries/UI                   | Separate cursor streams, initial/loading-more/error states, actor isolation, outdated read-only, purged rows removed. Adapt; no fixture totals.                                                    | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-14     | SP-08        | ProgressStrip/SessionSummary: vocabulary seen/not seen; AI/manual/assisted/rating counts; My history/Keep practising/Leave practice                                                                     | Progress query + session counters/summary     | Server directional counters versus local session events clearly separated; dedupe polling/replay, no mastery. Include.                                                                             | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#sentence-evidence).                                                |
+| SP-UI-15     | SP-09        | PracticeFrame: dictionary header/direction/mode/feedback language; Summary, History, layout toggle, Close; full viewport and bounded dialog with scroll body/sticky actions                             | Presentation/session shell                    | Layout switch retains one controller and draft/reference/result/counters/job; native gesture/fallback/Escape; focus return; pending/draft leave confirmation. Adapt existing flashcard convention. | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#presentation-and-access-evidence).                                 |
+| SP-UI-16     | SP-07, SP-09 | Revoked/expired/archived/outdated/removed notice; real sign-in/return; AI preference recovery overlay                                                                                                   | Auth/access integration + model-preference UI | Hide protected cached content immediately; reauthorize after identity/share changes; preserved session on preferences overlay. Adapt, no fake sign-in or placeholder.                              | Implemented with recorded adaptations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#presentation-and-access-evidence).                                 |
+| SP-UI-17     | SP-11        | Semantic controls/status/error associations; focused hint/feedback overlays; responsive sheet, dark/RTL/long text/keyboard                                                                              | Sentence UI/shared primitives                 | Keyboard-only, touch, 200% zoom, reduced motion, RTL/non-Latin, narrow/wide and keyboard-open renders. Include; rendering/fidelity evidence pending.                                               | Verified RTL content, compact layouts and honest viewport simulations; [037 proof](../037-sentence-practice-web/EVIDENCE.md#presentation-and-access-evidence). |
+
+SP-10's 25 states map explicitly: 1→01/04; 2→04; 3–4→02;
+5–6→03; 7→12; 8→10/11; 9→05; 10→06; 11→07/10/11;
+12→08; 13→09; 14–15→03/07/09/11; 16→11/16; 17–18→10/11;
+19→16; 20→13; 21→14; 22–25→15/17. Demo galleries are references,
+not real product controls.
+
+### Geometry and presentation to preserve
+
+Full viewport uses 100dvh, safe-area padding, fixed header/progress, scrollable
+body and sticky footer with a centered max-w-3xl reading column (48rem). Desktop
+dialog uses size lg with bounded scrolling, separated header/body/footer, no
+overlay dismissal of active work, and the same session content. Compact practice
+uses the full viewport; setup/history/summary use a responsive desktop dialog or
+bottom sheet (source sheet max-height92vh, rounded24px top corners). Setup uses
+20px group spacing, 16px section boundaries, bounded searchable selection list,
+and right-aligned wrapping start actions. Source sentence panel uses 16px padding,
+20px at sm, 12px radius; sentence text24px and28px at md with relaxed line height.
+Draft has three rows, vertically resizable, with inline validation. Feedback uses
+16px padding, compact numbered corrections, semantic borders/badges and expandable
+details. Manual reference uses neutral subtle surface and dashed border, distinctly
+separate from scored feedback. Primary Check becomes secondary after completion;
+Next becomes primary. Keep the existing runtime semantic tokens; do not import
+prototype global CSS/theme/config or invent a second design system.
+
+### Contract discrepancies and required adaptations
+
+- Ordinary exercises omit referenceTranslation. The prototype embeds a reference
+  in every exercise: **never port that shape**. Fetch/store reference only after
+  explicit authorized reveal, or in returned personal manual-review history.
+  Failed reveal must not show Manually reviewed or mark completion.
+- Adapt forward/reverse to source-to-target/target-to-source; subset to manual
+  scope; prototype “again” to practise-again-later. Backend assessments are
+  used/missing, not a separate synonym enum. Display returned explanations rather
+  than fabricate synonym/spelling/punctuation categories or local correctness.
+- Feedback issues have meaning/grammar/target kind, severity and optional validated
+  spans; feedback/target text is server-owned. Preserve UTF16 span semantics and
+  grapheme boundaries. No exact-string checking, confidence estimate or fixture
+  scores. Character limit is4000 Unicode code points, not JS string.length.
+- Queued/running/completed/failed/cancelled are actual job states.
+  cancellationRequested drives Stopping. Prototype retrying is not a standalone
+  supplied state; display it only if reliable retry evidence exists, otherwise
+  use running/queued without invention. No simulated timers, prices or queue ETA.
+- Reusing an operation ID recovers ambiguous admission; polling reconnects the
+  same job. A terminal failed/cancelled job does not become new work by replaying
+  its ID. Deliberate new submission needs a new operation and may charge credits.
+  Replace blanket “retry is not a new charge” promises with outcome-specific help.
+- The API has no review-empty reason distinct from review-exhausted. Use returned
+  prepare counts to explain an empty pool versus visited-session exhaustion; do
+  not invent a server enum. Saved-first completion uses personal checks/manual
+  reviews, not fixtures or flashcard completion.
+- Prepare/progress counts are authoritative for current direction/version/scope.
+  Reprepare on changed entry IDs even when selected.length is unchanged. Do not
+  use mock seenEntryIds or total loaded history rows as all-time counts. Do not
+  promise share-reader access to another reader's private generated exercises.
+- History pagination is cursor-based, separate for AI/manual. Add initial loading
+  and initial failure states (prototype mainly covers pagination). Remove purged
+  and inaccessible rows from caches, but show authorized outdated history read-only.
+- Existing native fullscreen Escape returns to dialog; prototype native exit
+  stays viewport. Follow the approved plan/existing flashcards, preserving state.
+  Keep overlays within the fullscreen/top-layer context and return focus safely.
+- Open AI preferences currently displays explanatory placeholder text. Replace it
+  with real selected model preference UI, preserving in-memory practice state.
+  Fake setViewer/sign-in and setOnline handlers are excluded.
+- Session-expired notice claims local draft remains visible. Protected content
+  must be hidden/cleared through established auth/access lifecycle; no cross-user
+  draft cache or post-reload continuity promise. Generic access failures must not
+  guess whether an unavailable dictionary was deleted or unshared.
+- Capability off stays truthful and does not authorize production activation.
+  Keep existing flashcards working: the source disabled Flashcards is a demo
+  limitation, not the selected product behavior.
+
+Reference rendered access was unavailable during this analysis; source exports
+do not establish visual fidelity. All required controls/states need real backend
+integration, regression tests and source/runtime rendered comparison before UI
+completion. No frontend implementation, paid call or production enablement occurred.
+
+## Frontend continuation completed — 2026-10-05
+
+[Feature 037](../037-sentence-practice-web/FEATURE.md) implemented and verified
+this selected inventory. Its [evidence](../037-sentence-practice-web/EVIDENCE.md)
+and [review](../037-sentence-practice-web/REVIEW.md) own frontend proof and resolved
+findings. This backend feature remains Complete; no competing UI inventory or
+external pixel-equivalence claim is introduced.

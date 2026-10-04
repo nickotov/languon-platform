@@ -2,6 +2,27 @@
 
 Status: Complete — backend and design-prompt scope verified.
 
+## Returned design analysis evidence — 2026-10-04
+
+- Read-only Magic Patterns access identified editor syycdjxpposwrfn72sbix4,
+  provider v6 artifact40e0c753-773a-4449-8639-dc86e928fdac. Rechecked active artifact
+  after reads; unchanged, generation inactive. Partial retained source/context
+  (27 nonempty files) and digest are linked in [DESIGN.md](./DESIGN.md).
+- Source-derived SP-UI-01–17 inventory maps SP-01–11 and all25 requested state
+  groups in [FEATURE.md](./FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04).
+  Compared sentence public contracts, accepted ADRs0016/0017/0027, existing
+  Train menu, runtime primitives/tokens and approved fullscreen convention.
+- Frozen v001 prompt remains unchanged:
+  15369d538a7967aa5e93351d94f833c7cde4ef902bd6086fb61907d06a2654ba.
+- Reference rendered retrieval was unavailable due response decoding failure;
+  source inspection establishes scope only. No browser fidelity comparison or
+  new runtime UI evidence is claimed. Retained export is partial; prototype
+  fixture/hooks/utilities are contextual design material, not production code.
+- Documentation/link/hash/diff checks recorded at handoff. No frontend/API/schema
+  changes, paid AI, prototype execution, external writes or production enablement.
+  Backend Complete and its earlier review/evidence remain unchanged. BL-004 and
+  the broader BL-003 scope remain in-progress pending frontend/product work.
+
 ## Owned infrastructure
 
 All real database evidence uses the owned PostgreSQL17 container
@@ -136,3 +157,10 @@ words covers SP-01–SP-11 and25 state groups. Canonical links resolve and the r
 recorded canonical base. No implementation target or external design was fabricated.
 Final guide/mapping checks pass18 guides; frontend generation remains paused at
 this user-requested design-return checkpoint.
+
+## Frontend continuation verified — 2026-10-05
+
+Selected v001 integration is complete in [feature 037](../037-sentence-practice-web/FEATURE.md).
+Its [evidence](../037-sentence-practice-web/EVIDENCE.md) and
+[review](../037-sentence-practice-web/REVIEW.md) supersede earlier frontend-pending
+notes without changing this backend's completed status or historic backend proof.

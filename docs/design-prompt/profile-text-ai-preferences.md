@@ -12,8 +12,8 @@ source_paths:
 related_docs:
     - docs/sentence-practice-implementation-plan.md
     - .agent/features/035-user-ai-model-preferences-backend/DESIGN.md
-    - docs/backlog/004-ai-sentence-translation-practice.md
-    - docs/backlog/005-user-selectable-ai-models.md
+    - docs/backlog/004-ai-sentence-translation-practice-done.md
+    - docs/backlog/005-user-selectable-ai-models-done.md
 ---
 
 # Profile AI model preferences — design prompt v001

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision magic-profile-page sha256:208fbba1f5d6e832
+// @user-flow-revision magic-profile-page sha256:e0f33ecdc5020652
 // @user-flow-revision profile-account-controls sha256:65250b786a33e71b
 
 const password = 'E2e!Profile-password-2026';
@@ -134,9 +134,15 @@ test('saves a unique handle, keeps Security real and email mock honest, then sch
     await expect(
         page.getByRole('heading', { name: `@${handle}` }),
     ).toBeVisible();
+    const accountMenu = page.getByRole('button', {
+        name: `Account menu, @${handle}`,
+    });
+    await expect(accountMenu).toBeVisible();
+    await accountMenu.click();
     await expect(
-        page.getByRole('link', { name: `@${handle}` }),
+        page.getByRole('link', { name: 'Profile', exact: true }),
     ).toHaveAttribute('href', '/profile');
+    await page.keyboard.press('Escape');
 
     await page.getByRole('tab', { name: /Security/ }).click();
     await expect(

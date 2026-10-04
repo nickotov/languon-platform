@@ -13,3 +13,8 @@ apps/backend/drizzle/meta
 apps/*/next-env.d.ts
 # Immutable provider export; DESIGN.md records its original content hash.
 .agent/features/033-flashcard-training-backend/designs/flashcard-training/v001/source-export.json
+# Frozen design handoffs and provider source; preserve recorded SHA-256 identities.
+.agent/features/035-user-ai-model-preferences-backend/designs/profile-text-ai-preferences/v001.prompt.md
+.agent/features/035-user-ai-model-preferences-backend/designs/profile-text-ai-preferences/v001/source
+.agent/features/036-sentence-practice-backend/designs/sentence-practice/v001.prompt.md
+.agent/features/036-sentence-practice-backend/designs/sentence-practice/v001/source

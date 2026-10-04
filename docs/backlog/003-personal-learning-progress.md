@@ -4,7 +4,7 @@ id: BL-003
 title: 'Personal learning progress'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-04
+updated: 2026-10-05
 original_tasks: '6 and 10'
 summary: Flashcard persistence verified and frontend progress implemented under feature 034; other exercise modes remain outstanding.
 evidence:
@@ -92,3 +92,11 @@ statistics and personal history, including free reference-review completion. See
 [backend evidence](../../.agent/features/036-sentence-practice-backend/EVIDENCE.md)
 and the [sentence design prompt](../design-prompt/sentence-practice.md). This
 sentence slice does not complete the broader progress backlog or its deferred UI.
+
+## Sentence frontend progress checkpoint — 2026-10-05
+
+[Feature 037](../../.agent/features/037-sentence-practice-web/FEATURE.md) verifies
+personal sentence AI/manual histories, directional coverage and session summary.
+See its [evidence](../../.agent/features/037-sentence-practice-web/EVIDENCE.md).
+This does not complete broader grammar/manual-exercise progress; BL-003 remains
+in progress.

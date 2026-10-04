@@ -104,6 +104,7 @@ export {
 } from './locked-content-state/locked-content-state';
 export { Logo } from './logo/logo';
 export { Menu } from './menu/menu';
+export type { MenuItem } from './menu/types';
 export {
     NavItem,
     type NavItemOrientation,

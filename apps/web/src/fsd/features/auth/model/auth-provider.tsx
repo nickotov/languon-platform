@@ -20,6 +20,7 @@ import {
 import { currentAccessToken, useSessionStore } from '@/fsd/entities/session';
 import { authApi, AuthApiError } from '@/fsd/shared/api/auth-api';
 import { useI18n } from '@/fsd/shared/i18n';
+import { useHistoryPositionTracking } from '@/fsd/shared/lib/navigation/history-position';
 
 import { RefreshCoordinator } from './refresh-coordinator';
 
@@ -63,6 +64,7 @@ async function refreshWithDeadline(): Promise<AuthenticationSuccessResponse> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    useHistoryPositionTracking();
     const { t } = useI18n();
 
     const [queryClient] = useState(

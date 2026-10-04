@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Menu } from '@/fsd/shared/ui';
+import { Menu, type MenuItem } from '@/fsd/shared/ui';
 import { createLearningApi } from '../../api/learning-api';
 import { useTrainingCapabilities } from '../../hooks/use-training-capabilities';
 import type {
@@ -33,6 +33,8 @@ export interface TrainingLauncherProps {
     className?: string;
     triggerClassName?: string | undefined;
     placement?: 'top' | 'bottom';
+    /** Higher-level composition supplies other learning journeys. */
+    additionalItems?: MenuItem[];
 }
 
 interface Running {
@@ -69,6 +71,7 @@ function Launcher({
     className,
     triggerClassName,
     placement = 'bottom',
+    additionalItems,
 }: TrainingLauncherProps) {
     const { t } = useI18n();
 
@@ -169,13 +172,15 @@ function Launcher({
 
     const items = [
         ...(showCards ? [cardsItem] : []),
-        {
-            label: t('training.sentenceLabel'),
-            hint: t('training.comingSoon'),
-            icon: <MessageSquareText className='h-4 w-4' />,
-            onSelect: ignore,
-            disabled: true,
-        },
+        ...(additionalItems ?? [
+            {
+                label: t('training.sentenceLabel'),
+                hint: t('training.comingSoon'),
+                icon: <MessageSquareText className='h-4 w-4' />,
+                onSelect: ignore,
+                disabled: true,
+            },
+        ]),
     ];
 
     const trigger = (

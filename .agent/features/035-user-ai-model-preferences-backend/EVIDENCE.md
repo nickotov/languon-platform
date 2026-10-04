@@ -2,6 +2,27 @@
 
 Updated: 2026-10-04
 
+## Returned design analysis evidence — 2026-10-04
+
+- Read-only Magic Patterns access identified editor atdgyvrxnwiz1u41sfdgdf,
+  provider v6 artifact6bf6dbd3-4522-4a49-a084-09336bd62659. Rechecked active artifact
+  after reads; unchanged, generation inactive. Partial source/context export
+  (17 nonempty files) and retained-source digest are linked in [DESIGN.md](./DESIGN.md).
+- Source-derived Account-only inventory MP-UI-01–10 and MP-01–06/state mappings
+  are recorded in [FEATURE.md](./FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04).
+  Compared public text-AI contracts, accepted ADRs0016/0017/0026, runtime tokens,
+  profile composition, shared Dialog/Popover contracts and Dialog stories.
+- Frozen v001 prompt remains unchanged:
+  fead9eccb536905a10261c64ec0676f401a0e5c890b2b476621b0ede33bba403.
+- Reference web rendering retrieval failed with a response decoding error.
+  Connector source remains available; no rendered reference or local UI
+  comparison is claimed. Source primitive paths returning empty were not retained
+  as empty files. Export is explicitly partial, not runnable verification.
+- Documentation/link/hash/diff checks recorded at handoff. No product-code,
+  API/schema, prompt snapshot, dependency or external editor mutation; no paid
+  models or additional application tests. Existing backend evidence is unchanged.
+  BL-005 remains in-progress; frontend implementation/evidence is pending.
+
 ## Acceptance coverage
 
 | Acceptance ID | Implementation                                                                        | Evidence                                                          | Result      |
@@ -117,3 +138,10 @@ and immutablev001 snapshot are delivered; see [DESIGN.md](./DESIGN.md) and
 [canonical prompt](../../../docs/design-prompt/profile-text-ai-preferences.md).
 Frontend integration remains awaiting a returned selected design. No external
 Magic Patterns generation/publishing was performed.
+
+## Frontend continuation verified — 2026-10-05
+
+Selected v001 integration is complete in [feature 037](../037-sentence-practice-web/FEATURE.md).
+Its [evidence](../037-sentence-practice-web/EVIDENCE.md) and
+[review](../037-sentence-practice-web/REVIEW.md) supersede earlier frontend-pending
+notes without changing this backend's completed status or historic backend proof.

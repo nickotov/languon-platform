@@ -14,7 +14,7 @@ evidence: []
 
 # BL-009 — Practice plans for weak areas
 
-Depends on: [BL-003](003-personal-learning-progress.md) and [BL-004](004-ai-sentence-translation-practice.md)
+Depends on: [BL-003](003-personal-learning-progress.md) and [BL-004](004-ai-sentence-translation-practice-done.md)
 
 [Backlog index and shared constraints](README.md).
 

@@ -3,7 +3,11 @@
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
 import { languageDirection, languageLabel } from '@/fsd/entities/dictionary';
 import { useSessionStore } from '@/fsd/entities/session';
-import { TrainingLauncher } from '@/fsd/features/flashcard-training';
+import {
+    TrainingLauncher,
+    type TrainingLauncherProps,
+} from '@/fsd/features/flashcard-training';
+import type { ReactNode } from 'react';
 import { LoadingState } from '@/fsd/shared/ui';
 
 import { useDictionaryEditorController } from '../../hooks/use-dictionary-editor-controller';
@@ -28,9 +32,11 @@ import styles from '../dictionary-editor-common.module.css';
 export function DictionaryEditor({
     dictionaryId,
     requestWithSession,
+    renderTraining = (props) => <TrainingLauncher {...props} />,
 }: {
     dictionaryId: string;
     requestWithSession: RequestWithSession;
+    renderTraining?(props: TrainingLauncherProps): ReactNode;
 }) {
     const model = useDictionaryEditorController(
         dictionaryId,
@@ -104,19 +110,19 @@ export function DictionaryEditor({
             <EditorToolbar model={view.workspace.toolbar} />
             <EditorCards model={view.workspace.cards} />
             <div className={styles.addCard}>
-                <TrainingLauncher
-                    triggerClassName={styles.trainButton}
-                    activeCount={current.activeCardCount}
-                    archived={!active}
-                    dictionaryTitle={current.name}
-                    identity={trainingIdentity}
-                    placement='top'
-                    requestWithSession={requestWithSession}
-                    signedIn={signedIn}
-                    sourceLanguage={sourceLanguage}
-                    target={target}
-                    targetLanguage={targetLanguage}
-                />
+                {renderTraining({
+                    triggerClassName: styles.trainButton,
+                    activeCount: current.activeCardCount,
+                    archived: !active,
+                    dictionaryTitle: current.name,
+                    identity: trainingIdentity,
+                    placement: 'top',
+                    requestWithSession,
+                    signedIn,
+                    sourceLanguage,
+                    target,
+                    targetLanguage,
+                })}
                 {active ? (
                     <EditorAddCard model={view.workspace.addCard} />
                 ) : null}

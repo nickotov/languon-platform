@@ -20,6 +20,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-empty-coming-soon-and-header-navigation
 related_features:
+    - sentence-practice-web
     - user-authentication
     - profile-account-controls
     - web-i18n-support
@@ -64,8 +65,12 @@ test database and Redis services.
    content to reflow without horizontal clipping.
 4. In Account, expect interface-language selection to work immediately and
    unsupported name, learning-language, time-zone, and photo editing to be
-   clearly coming soon. In Security, expect the real primary email and embedded
-   password, passkey, and session controls. The passkey card has a centered
+   clearly coming soon.
+   The Account tab also includes the live Auto/explicit AI model preference,
+   documented and exercised in [Sentence practice web](sentence-practice-web.md);
+   catalog errors and zero credits do not turn its free save into billing.
+   In Security, expect the real primary email and embedded password, passkey,
+   and session controls. The passkey card has a centered
    empty state with a direct Add action, and enrolled rows show only known
    metadata with accessible rename and confirmed revoke. Google, Yandex, and Apple rows are
    visible as coming soon with disabled Connect actions; the email-change request explicitly sends no email.

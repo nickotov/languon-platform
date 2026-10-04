@@ -2,16 +2,41 @@
 type: backlog-task
 id: BL-004
 title: 'AI sentence translation practice'
-status: in-progress
+status: done
 created: 2026-10-01
-updated: 2026-10-04
+updated: 2026-10-05
 original_tasks: '7'
 depends_on:
     - BL-005
-evidence: []
+evidence:
+    - .agent/features/036-sentence-practice-backend/EVIDENCE.md
+    - .agent/features/037-sentence-practice-web/EVIDENCE.md
+    - docs/user-flows/sentence-practice-web.md
 ---
 
-# BL-004 — AI sentence translation practice
+# BL-004 — AI sentence translation practice — Done
+
+## Completed delivery — 2026-10-05
+
+The agreed backend and selected frontend scope is implemented and verified.
+[Feature 037](../../.agent/features/037-sentence-practice-web/FEATURE.md),
+[evidence](../../.agent/features/037-sentence-practice-web/EVIDENCE.md),
+[review](../../.agent/features/037-sentence-practice-web/REVIEW.md), and
+[current browser guide](../user-flows/sentence-practice-web.md) substantiate the
+frontend. Six real-app journeys and final unit/static/build checks pass; all
+material independent review findings are resolved. Prior backend-only/design
+checkpoints below are historical. The broader BL-003 task remains in progress.
+
+## Returned design analysis — 2026-10-04
+
+The user returned the sentence-practice prototype. Provider v6 is pinned in the
+[handoff](../../.agent/features/036-sentence-practice-backend/DESIGN.md);
+the [source inventory](../../.agent/features/036-sentence-practice-backend/FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04)
+selects setup, active practice/hints/draft, AI feedback, free manual reference,
+personal history/summary and fullscreen/dialog controls. Unrelated dictionary
+and shell UI is excluded; real contracts replace simulated services.
+Analysis is complete, not frontend implementation or rendered fidelity proof.
+This task remains in-progress.
 
 [Backlog index and shared constraints](README.md).
 

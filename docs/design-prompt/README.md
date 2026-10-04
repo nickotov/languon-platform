@@ -16,8 +16,8 @@ requirement IDs for design review and later frontend verification.
 | [Dictionary and AI cards](./dictionary-ai-cards.md)                         | Dictionary library/settings, manual cards, inline AI authoring, saved-card AI review and pronunciation audio | Draft: supply Magic Patterns design-system reference |
 | [Flashcard training](./flashcard-training.md)                               | Configurable cards, fullscreen/dialog practice, personal learning progress and retry/undo states             | Implemented selected v001; training-only feature 034 |
 
-| [Profile AI model preferences](./profile-text-ai-preferences.md) | Personal Auto/explicit model selection, availability, credits context and conflict recovery | v001 awaiting returned design; backend035 complete |
-| [Sentence practice](./sentence-practice.md) | Fullscreen/dialog translation practice, hints, AI feedback, free reference review and all recovery states | v001 awaiting returned design; backend036 complete |
+| [Profile AI model preferences](./profile-text-ai-preferences.md) | Personal Auto/explicit model selection, availability, credits context and conflict recovery | v001 returned provider v6; scoped analysis saved in 035 handoff; backend complete |
+| [Sentence practice](./sentence-practice.md) | Fullscreen/dialog translation practice, hints, AI feedback, free reference review and all recovery states | v001 returned provider v6; scoped analysis saved in 036 handoff; backend complete |
 
 Every saved brief also has a [versioned handoff](../../.agent/DESIGN_HANDOFF.md)
 with a frozen prompt, generated-design URL slot, approval history and selected
@@ -47,3 +47,8 @@ comparison alternative, including zero-credit/model-unavailable use of saved
 exercises, manual completion without grade, separate AI/manual summaries/history,
 reference assistance, loading/retry/revoked/stale/deleted states, and preserved
 answer draft across dialog/fullscreen switches. Never promise free new generation.
+
+The two selected v001 designs were implemented and verified on 2026-10-05 in
+[feature 037](../../.agent/features/037-sentence-practice-web/FEATURE.md).
+The handoffs retain unchanged frozen prompt/source identities and record final
+implementation proof and mechanical backlog-path mappings.

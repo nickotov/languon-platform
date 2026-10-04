@@ -2,14 +2,39 @@
 type: backlog-task
 id: BL-005
 title: 'User-selectable AI models'
-status: in-progress
+status: done
 created: 2026-10-01
-updated: 2026-10-04
+updated: 2026-10-05
 original_tasks: '8'
-evidence: []
+evidence:
+    - .agent/features/035-user-ai-model-preferences-backend/EVIDENCE.md
+    - .agent/features/037-sentence-practice-web/EVIDENCE.md
+    - docs/user-flows/sentence-practice-web.md
 ---
 
-# BL-005 — User-selectable AI models
+# BL-005 — User-selectable AI models — Done
+
+## Completed delivery — 2026-10-05
+
+The agreed backend and selected frontend scope is implemented and verified.
+[Feature 037](../../.agent/features/037-sentence-practice-web/FEATURE.md),
+[evidence](../../.agent/features/037-sentence-practice-web/EVIDENCE.md),
+[review](../../.agent/features/037-sentence-practice-web/REVIEW.md), and
+[current browser guide](../user-flows/sentence-practice-web.md) substantiate the
+frontend. Six real-app journeys and final unit/static/build checks pass; all
+material independent review findings are resolved. Prior backend-only/design
+checkpoints below are historical. The broader BL-003 task remains in progress.
+
+## Returned design analysis — 2026-10-04
+
+The user returned the profile prototype and explicitly selected only the
+modelPreference section in Account. Provider v6 is pinned in the
+[handoff](../../.agent/features/035-user-ai-model-preferences-backend/DESIGN.md);
+the [source inventory](../../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04)
+selects the picker, saved/draft summary, availability/conflict/recovery states
+and related actions. Account management, security, billing and shell redesign
+are excluded. Backend Complete is unchanged; frontend remains pending, so this
+task stays in-progress.
 
 [Backlog index and shared constraints](README.md).
 

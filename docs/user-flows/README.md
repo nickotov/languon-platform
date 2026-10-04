@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Sentence Practice and Model Preferences Web](./sentence-practice-web.md) —
+  model persistence, real sentence jobs and personal free reference review.
+
 - [Sentence practice backend](./sentence-practice-backend.md) — generated exercises,
   personal AI checks, free manual reference reviews and shared-reader privacy.
 

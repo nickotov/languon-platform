@@ -71,6 +71,8 @@ for (const [name, value] of [
 const backendPort = backendUrl.port;
 const webPort = webUrl.port;
 const reuseExistingServer = process.env.AUTH_E2E_REUSE_SERVERS === 'true';
+const sentenceServicesEnabled =
+    process.env.AUTH_E2E_SENTENCE_SERVICES === 'true';
 const documentServicesEnabled =
     process.env.AUTH_E2E_DOCUMENT_SERVICES === 'true';
 const documentStorageOrigin = documentServicesEnabled
@@ -144,6 +146,11 @@ export default defineConfig({
                 BACKEND_PORT: backendPort,
                 DATABASE_URL: databaseUrl,
                 LEARNING_FLASHCARDS_ENABLED: 'true',
+                LEARNING_SENTENCES_ENABLED: sentenceServicesEnabled
+                    ? 'true'
+                    : 'false',
+                DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED:
+                    sentenceServicesEnabled ? 'true' : 'false',
                 DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
                 DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
@@ -151,7 +158,9 @@ export default defineConfig({
                 DICTIONARY_AUDIO_FINGERPRINT_SECRET:
                     'audio-e2e-only-fingerprint-secret-32bytes',
                 DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'false',
-                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'false',
+                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: sentenceServicesEnabled
+                    ? 'true'
+                    : 'false',
                 DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_CANCELLABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_DISCARDABLE_FORMATS: dictionaryJobFormats,
@@ -181,9 +190,14 @@ export default defineConfig({
             url: `${backendOrigin}/health`,
         },
         {
-            command: `until curl --fail --silent ${backendOrigin}/health >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend dictionary:worker`,
+            command: `until curl --fail --silent ${backendOrigin}/health >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend ${sentenceServicesEnabled ? 'exec tsx tests/support/sentence-web-worker.ts' : 'dictionary:worker'}`,
             env: {
                 APP_ENV: 'test',
+                AUTH_E2E_SENTENCE_SERVICES: sentenceServicesEnabled
+                    ? 'true'
+                    : 'false',
+                AUTH_E2E_DATABASE_URL: databaseUrl,
+                AUTH_E2E_RUN_ID: runId,
                 DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'false',
                 DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'false',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
@@ -226,7 +240,11 @@ export default defineConfig({
             stderr: 'pipe',
             stdout: 'pipe',
             timeout: 120_000,
-            wait: { stdout: /Dictionary worker .* ready/ },
+            wait: {
+                stdout: sentenceServicesEnabled
+                    ? /Sentence browser fixture worker ready/
+                    : /Dictionary worker .* ready/,
+            },
         },
         {
             command: `pnpm exec next dev --turbopack -p ${webPort} -H 127.0.0.1`,

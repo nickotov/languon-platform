@@ -1,5 +1,15 @@
 # ExecPlan: User AI model preferences backend
 
+## Returned design analysis checkpoint — 2026-10-04
+
+The user returned provider v6 and requested only the Account modelPreference UI
+be analyzed. [FEATURE.md](./FEATURE.md#returned-design-scope-and-source-inventory--2026-10-04)
+owns the source inventory and contract adaptations; [DESIGN.md](./DESIGN.md)
+pins artifact/export identity. Analysis finished; no frontend code or rendered
+fidelity evidence. Backend remains Complete, candidate Ready for review, no
+implementation target/Last implemented change. Next frontend continuation uses
+this bounded inventory and links the preference recovery from sentence practice.
+
 Feature: [FEATURE.md](FEATURE.md)
 Last updated: 2026-10-04
 
@@ -103,3 +113,8 @@ and immutablev001 snapshot are delivered; see [DESIGN.md](./DESIGN.md) and
 [canonical prompt](../../../docs/design-prompt/profile-text-ai-preferences.md).
 Frontend integration remains awaiting a returned selected design. No external
 Magic Patterns generation/publishing was performed.
+
+- 2026-10-05 — Selected frontend continuation completed in
+  [feature 037](../037-sentence-practice-web/FEATURE.md), with verified browser,
+  static/build and independent review evidence. This backend delivery remains
+  Complete; earlier frontend-pending checkpoints are historical.

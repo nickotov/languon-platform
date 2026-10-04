@@ -9,6 +9,7 @@ source_paths:
     - .agent/features/034-flashcard-training-web/**
     - apps/web/src/fsd/features/flashcard-training/**
     - apps/web/src/fsd/widgets/dictionary-editor/**
+    - apps/web/src/fsd/widgets/dictionary-training/**
     - apps/web/src/fsd/pages/shared-dictionary/**
     - apps/web/src/fsd/shared/i18n/**
     - apps/web/playwright.config.ts
@@ -23,6 +24,7 @@ e2e_scenarios:
     - anonymous-practice-does-not-persist
     - rtl-touch-reduced-motion-training
 related_features:
+    - sentence-practice-web
     - flashcard-training-backend
     - dictionary-platform
     - user-authentication
@@ -62,7 +64,10 @@ local verification code. Exact verified services/commands/cleanup belong to the
 
 1. Create an active English-to-Spanish dictionary and a manual card. Existing
    dictionary previews remain intact; Train is beside Add card.
-2. Choose Train → Cards. Sentences is disabled/Coming soon. Setup defaults to
+2. Choose Train → Cards. The menu also contains Sentence practice and personal
+   history when its separate capability is enabled; those journeys are documented
+   in [Sentence practice web](sentence-practice-web.md). Flashcards remain available
+   independently. Setup defaults to
    target example on Front, source example on Back and Shuffle. Missing examples
    fall back to words. Empty dictionaries explain why Start is disabled; archived
    dictionaries cannot train.

@@ -22,7 +22,7 @@ evidence:
 ## Confirmed requirements
 
 - Add Train beside Create in the dictionary interface. Its menu offers Cards
-  and Sentences; the sentence journey is defined in [BL-004](004-ai-sentence-translation-practice.md).
+  and Sentences; the sentence journey is defined in [BL-004](004-ai-sentence-translation-practice-done.md).
 - Selecting Cards first opens a settings dialog where the learner selects one
   or more fields for the front and back.
 - Select examples only by default: translated example on the front,

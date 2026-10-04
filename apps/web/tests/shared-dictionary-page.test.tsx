@@ -11,6 +11,8 @@ import { render } from './render';
 
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: vi.fn() }),
+    usePathname: () => '/shared/example',
+    useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock('@/fsd/entities/session', () => ({
     useSessionStore: (selector: (state: { status: string }) => unknown) =>
