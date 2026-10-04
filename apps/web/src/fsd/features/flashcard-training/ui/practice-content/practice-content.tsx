@@ -117,6 +117,7 @@ export function PracticeContent({
                             <div className='mx-auto flex h-full min-h-0 w-full min-w-0 max-w-2xl flex-1 items-center'>
                                 {session.currentItem ? (
                                     <Flashcard
+                                        key={`${state.round}-${state.index}-${session.currentItem.entryId}-${session.currentItem.learningVersion}`}
                                         item={session.currentItem}
                                         face={state.face}
                                         position={position}
@@ -124,6 +125,10 @@ export function PracticeContent({
                                         onRate={session.rate}
                                         ratingDisabled={blocked}
                                         flipDisabled={flipDisabled}
+                                        recoverSwipe={Boolean(
+                                            state.conflict ||
+                                            state.pending?.status === 'error',
+                                        )}
                                     />
                                 ) : (
                                     <div className='w-full'>

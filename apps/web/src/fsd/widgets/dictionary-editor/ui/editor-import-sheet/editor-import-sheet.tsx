@@ -105,6 +105,7 @@ export function EditorImportSheet({
         >
             {interchangeOpen === 'import' ? (
                 <DictionaryImportPanel
+                    showHeading={false}
                     aiAvailable={aiAvailableValue}
                     error={errorValue}
                     onCommit={handleCommit}

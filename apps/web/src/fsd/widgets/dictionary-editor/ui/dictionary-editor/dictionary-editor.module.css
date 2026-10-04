@@ -94,6 +94,12 @@
     max-width: calc(100vw - 32px);
 }
 
+.addCard button[aria-haspopup='menu'] {
+    height: 52px;
+    font-size: 16px;
+    padding-inline: 24px;
+}
+
 .statusTabs {
     display: inline-flex;
     width: fit-content;

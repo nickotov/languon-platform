@@ -1,0 +1,9 @@
+dbfa53d9a6d18a4e9710ce7d8a920b1357e8066613cb7e13f8d163c779c57dd5  apps/web/src/fsd/features/dictionary-interchange/ui/dictionary-import-panel/dictionary-import-panel.module.css
+bf46f5223f96ed379edf952517dc410141498a0419b35ed2542bbebaaa174e8b  apps/web/src/fsd/features/dictionary-interchange/ui/dictionary-import-panel/dictionary-import-panel.tsx
+7398daec00ef15372891b46458673b9e7fbc9670933531cc23adff29e2baebe3  apps/web/src/fsd/features/flashcard-training/hooks/use-card-interaction.ts
+68fbe7c025ae89dcf7c3302370ce2dcd6e1ac1bb5c89cb8f3f2b7b190d56fc50  apps/web/src/fsd/features/flashcard-training/ui/flashcard/flashcard.tsx
+5f3fec03784356b80f2cab22438627817aafad15883316c61bd68db783b3dc63  apps/web/src/fsd/features/flashcard-training/ui/practice-content/practice-content.tsx
+141533e4e52d4d6b52f42e57856bb6f7b80d25e091d0be16b60b3955819fdc5e  apps/web/src/fsd/widgets/dictionary-editor/ui/dictionary-editor/dictionary-editor.module.css
+bbf7b0860d55c524806c6f2aff5e46d2f5e085c84e16914b83c8a003176072a3  apps/web/src/fsd/widgets/dictionary-editor/ui/editor-import-sheet/editor-import-sheet.tsx
+29bd1a899ec55ba580f7dfeb94dda71f29311d18ee3d2b44096493a761210db2  apps/web/tests/e2e/flashcard-training.journeys.spec.ts
+95ebab2a0979d366cf5d347dffd0c4dfbed1501defd687cdddeeff74f63a97a8  apps/web/tests/flashcard-training-interactions.test.tsx

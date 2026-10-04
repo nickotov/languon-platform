@@ -18,14 +18,16 @@ export function Flashcard({
     onRate,
     ratingDisabled,
     flipDisabled,
+    recoverSwipe = false,
 }: {
     item: FlashcardItem;
     face: Face;
     position: string;
     onFlip(): void;
-    onRate(rating: Rating): void;
+    onRate(rating: Rating, beforeAdvance?: Promise<void>): void;
     ratingDisabled: boolean;
     flipDisabled: boolean;
+    recoverSwipe?: boolean;
 }) {
     const { t } = useI18n();
     const itemKey = `${item.entryId}-${item.learningVersion}`;
@@ -34,6 +36,7 @@ export function Flashcard({
         onRate,
         disabled: ratingDisabled,
         itemKey,
+        recover: recoverSwipe,
     });
     const presentations = face === 'front' ? item.front : item.back;
     const faceLabel = t(`training.${face}`);
@@ -41,15 +44,19 @@ export function Flashcard({
     const flipLabel = t(
         face === 'front' ? 'training.showBack' : 'training.showFront',
     );
-    const dragging = drag.dx !== 0;
+    const dragging = drag.dx !== 0 && !drag.departing;
     const committed = drag.progress >= 1;
-    const cardClass = `relative flex min-h-0 touch-pan-y select-text flex-col overflow-hidden rounded-3xl border bg-background-surface shadow-elevation-md ${committed ? 'border-border-focus' : 'border-border-default'} ${dragging ? '' : 'transition-transform motion-reduce:transition-none'}`;
-    const cardStyle = { transform: drag.transform };
+    const cardClass = `relative flex min-h-0 touch-pan-y select-text flex-col overflow-hidden rounded-3xl border bg-background-surface shadow-elevation-md ${committed ? 'border-border-focus' : 'border-border-default'} ${dragging ? '' : 'transition-[transform,opacity] duration-200 motion-reduce:transition-none'}`;
+    const cardStyle = {
+        transform: drag.transform,
+        opacity: drag.departing ? 0 : 1,
+    };
     const hintStyle = { width: `${drag.progress * 100}%` };
     const instruction = t(committed ? 'training.release' : 'training.drag');
+    const containerClass = `relative flex max-h-full min-h-0 w-full flex-col ${styles.enter}`;
 
     return (
-        <div className='relative flex max-h-full min-h-0 w-full flex-col'>
+        <div className={containerClass}>
             <div
                 ref={drag.ref}
                 onPointerDown={drag.onPointerDown}

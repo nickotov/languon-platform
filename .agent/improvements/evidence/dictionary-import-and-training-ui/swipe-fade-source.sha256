@@ -1,0 +1,10 @@
+afc9a4fe6ef0acf056ab8ea55f00ce17c93dbe4f327ea99f4977059c145f6553  apps/web/src/fsd/features/flashcard-training/hooks/use-card-interaction.ts
+c0e88a555c737d55e453bffa64f0731504301abc6d3f7041dcb4820b2d2ba202  apps/web/src/fsd/features/flashcard-training/model/practice-session.ts
+ffd99594966afab26814d9fdf2cd13ab04b257f3025818e3df1fee2a300d10c0  apps/web/src/fsd/features/flashcard-training/model/session-writer.ts
+5657fa0ec57e7209d2efa23e8262bbc8ce87bef24411426954c93985987d3020  apps/web/src/fsd/features/flashcard-training/ui/flashcard/flashcard.tsx
+020dfb5bdcccaa2ffd25644598833b27720af252d3a1d1184014edb53b14846d  apps/web/src/fsd/features/flashcard-training/ui/flashcard/flashcard.module.css
+5f3fec03784356b80f2cab22438627817aafad15883316c61bd68db783b3dc63  apps/web/src/fsd/features/flashcard-training/ui/practice-content/practice-content.tsx
+26354ff17ff584a4b09da3d4bd8819e55e4dfd478ee442effc6885fc831269c3  apps/web/tests/flashcard-training-interactions.test.tsx
+f45c70e4e566e038d7613345e470be70d4c6277eb903204e88e0fbbfdb795cda  apps/web/tests/flashcard-training-state.test.ts
+8a86c21295343cbe6ad1b082654d69c6f386e37806312f12f92f3d3dfb482b93  apps/web/tests/e2e/flashcard-training.journeys.spec.ts
+2afb36bc4e007a598f806fe21e4848d8bcb8806827932484b6650e23a7ef7c2e  docs/user-flows/flashcard-training-web.md

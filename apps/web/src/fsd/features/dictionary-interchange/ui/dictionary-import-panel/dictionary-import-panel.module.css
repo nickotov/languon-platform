@@ -2,36 +2,110 @@
 .form,
 .preview {
     display: grid;
-    gap: var(--space-4);
+    gap: var(--spacing-24);
+    min-width: 0;
+}
+
+.intro,
+.previewHeading,
+.enrichment,
+.failures {
+    display: grid;
+    gap: var(--spacing-8);
+}
+
+.intro p,
+.intro h3,
+.previewHeading p,
+.previewHeading h4,
+.enrichment p,
+.failures h4 {
+    margin: 0;
+}
+
+.intro p,
+.previewHeading p,
+.enrichment p {
+    color: var(--text-secondary);
+}
+
+.intro h3,
+.previewHeading h4,
+.failures h4 {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .eyebrow {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.form .fileInput {
+    background: var(--background-subtle);
+    padding: var(--spacing-12);
+    font-size: 14px;
+    min-width: 0;
+}
+
+.fileInput::file-selector-button {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 500;
+    margin-inline-end: var(--spacing-12);
+    min-height: 40px;
+    padding: var(--spacing-8) var(--spacing-12);
+}
+
+.fileInput::file-selector-button:hover {
+    background: var(--primary-subtle);
+    border-color: var(--border-strong);
+}
+
+.preview {
+    border-top: 1px solid var(--border-default);
+    padding-top: var(--spacing-24);
 }
 
 .mapping {
     align-items: end;
     display: grid;
-    gap: var(--space-3);
+    gap: var(--spacing-16);
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .rows {
     display: grid;
-    gap: var(--space-2);
-    max-height: 22rem;
-    overflow: auto;
+    gap: var(--spacing-12);
 }
 
 .row {
     align-items: center;
     display: grid;
-    gap: var(--space-2);
+    gap: var(--spacing-16);
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.row > span[aria-hidden='true'] {
+    color: var(--text-tertiary);
+}
+
+.failures ul {
+    display: grid;
+    gap: var(--spacing-8);
+    margin: 0;
+    padding-inline-start: var(--spacing-20);
 }
 
 .row > label {
@@ -51,5 +125,6 @@
 
     .row > span[aria-hidden='true'] {
         transform: rotate(90deg);
+        justify-self: start;
     }
 }

@@ -41,6 +41,7 @@ export function DictionaryImportPanel({
     target,
     targetLanguage,
     languages,
+    showHeading = true,
 }: {
     aiAvailable: boolean;
     error?: string | null;
@@ -53,6 +54,7 @@ export function DictionaryImportPanel({
     sourceLanguage: string;
     target: DictionaryImportTarget;
     targetLanguage: string;
+    showHeading?: boolean;
 }) {
     const { t } = useI18n();
     const [content, setContent] = useState('');
@@ -135,11 +137,13 @@ export function DictionaryImportPanel({
 
     return (
         <section className={styles.section}>
-            <div>
+            <div className={styles.intro}>
                 <p className={styles.eyebrow}>
                     {t('dictionary.interchange.importEyebrow')}
                 </p>
-                <h3>{t('dictionary.interchange.importTitle')}</h3>
+                {showHeading ? (
+                    <h3>{t('dictionary.interchange.importTitle')}</h3>
+                ) : null}
                 <p>{t('dictionary.interchange.importHelp')}</p>
             </div>
             {error ? <InlineAlert tone='danger'>{error}</InlineAlert> : null}
@@ -149,7 +153,9 @@ export function DictionaryImportPanel({
             <form className={styles.form} onSubmit={submitPreview}>
                 <Field label={t('dictionary.interchange.file')}>
                     <Input
+                        className={styles.fileInput}
                         accept='.txt,.csv,.tsv,text/plain,text/csv'
+                        disabled={pending}
                         onChange={(event) => void loadFile(event)}
                         type='file'
                     />
@@ -163,7 +169,7 @@ export function DictionaryImportPanel({
                         onChange={(event) =>
                             setContent(event.currentTarget.value)
                         }
-                        rows={9}
+                        rows={6}
                         value={content}
                     />
                 </Field>
@@ -253,7 +259,7 @@ export function DictionaryImportPanel({
 
             {visiblePreview ? (
                 <div className={styles.preview}>
-                    <div aria-live='polite'>
+                    <div aria-live='polite' className={styles.previewHeading}>
                         <h4>{t('dictionary.interchange.previewTitle')}</h4>
                         <p>
                             {t('dictionary.interchange.summary', {
@@ -284,7 +290,12 @@ export function DictionaryImportPanel({
                     ) : null}
                     <div className={styles.rows}>
                         {visiblePreview.rows.map((row) => (
-                            <Card className={styles.row} key={row.rowIndex}>
+                            <Card
+                                className={styles.row}
+                                key={row.rowIndex}
+                                padding='sm'
+                                variant='outlined'
+                            >
                                 {canUseAi ? (
                                     <Checkbox
                                         checked={selected.has(row.rowIndex)}
@@ -331,7 +342,7 @@ export function DictionaryImportPanel({
                         ))}
                     </div>
                     {visiblePreview.failures.length ? (
-                        <div>
+                        <div className={styles.failures}>
                             <h4>{t('dictionary.interchange.failures')}</h4>
                             <ul>
                                 {visiblePreview.failures.map((failure) => (
@@ -350,23 +361,27 @@ export function DictionaryImportPanel({
                             </ul>
                         </div>
                     ) : null}
-                    <Switch
-                        checked={useAi}
-                        disabled={!canUseAi || pending}
-                        onChange={(event) =>
-                            setEnrich(event.currentTarget.checked)
-                        }
-                    >
-                        {t('dictionary.interchange.enrich')}
-                    </Switch>
-                    {!aiAvailable ? (
-                        <p>{t('dictionary.interchange.aiUnavailable')}</p>
-                    ) : !optionalFieldsEnabled ? (
-                        <p>{t('dictionary.interchange.aiNoOptionalFields')}</p>
-                    ) : null}
-                    {canUseAi && visiblePreview.summary.readyRows > 100 ? (
-                        <p>{t('dictionary.interchange.aiLimit')}</p>
-                    ) : null}
+                    <div className={styles.enrichment}>
+                        <Switch
+                            checked={useAi}
+                            disabled={!canUseAi || pending}
+                            onChange={(event) =>
+                                setEnrich(event.currentTarget.checked)
+                            }
+                        >
+                            {t('dictionary.interchange.enrich')}
+                        </Switch>
+                        {!aiAvailable ? (
+                            <p>{t('dictionary.interchange.aiUnavailable')}</p>
+                        ) : !optionalFieldsEnabled ? (
+                            <p>
+                                {t('dictionary.interchange.aiNoOptionalFields')}
+                            </p>
+                        ) : null}
+                        {canUseAi && visiblePreview.summary.readyRows > 100 ? (
+                            <p>{t('dictionary.interchange.aiLimit')}</p>
+                        ) : null}
+                    </div>
                     {useAi ? (
                         <Field label={t('dictionary.interchange.instruction')}>
                             <Textarea

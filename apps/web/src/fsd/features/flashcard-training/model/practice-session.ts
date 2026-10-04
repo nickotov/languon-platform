@@ -69,7 +69,8 @@ export class PracticeSession implements SessionHost {
     public refreshProgress = (): Promise<void> => this.reader.refreshProgress();
     public resolveContentConflict = (): Promise<void> =>
         this.reader.reloadCurrent();
-    public rate = (rating: Rating): void => this.writer.rate(rating);
+    public rate = (rating: Rating, beforeAdvance?: Promise<void>): void =>
+        this.writer.rate(rating, beforeAdvance);
     public undo = (): void => this.writer.undo();
     public retry = (): void => this.writer.retry();
     public flip = (): void => {

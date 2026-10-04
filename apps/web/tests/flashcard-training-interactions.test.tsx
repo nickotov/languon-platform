@@ -139,20 +139,27 @@ function CardHarness({
     onFlip,
     onRate,
     disabled = false,
+    itemKey = 'entry-1',
+    recover = false,
 }: {
     onFlip: ReturnType<typeof vi.fn>;
     onRate: ReturnType<typeof vi.fn>;
     disabled?: boolean;
+    itemKey?: string;
+    recover?: boolean;
 }) {
     const drag = useCardInteraction({
         onFlip,
         onRate,
         disabled,
-        itemKey: 'entry-1',
+        itemKey,
+        recover,
     });
     return (
         <div
             data-testid='gesture'
+            data-departing={drag.departing}
+            style={{ transform: drag.transform }}
             ref={drag.ref}
             onPointerDown={drag.onPointerDown}
             onPointerMove={drag.onPointerMove}
@@ -243,7 +250,10 @@ describe('training card drag and text interaction', () => {
         pointer(node, 'pointerup', 110);
         fireEvent.click(node);
         act(() => vi.advanceTimersByTime(300));
-        expect(onRate).toHaveBeenCalledExactlyOnceWith('known');
+        expect(onRate).toHaveBeenCalledExactlyOnceWith(
+            'known',
+            expect.any(Promise),
+        );
         expect(onFlip).not.toHaveBeenCalled();
     });
     it('does not rate on short drag, return-to-origin, vertical scroll or cancellation', () => {
@@ -262,6 +272,88 @@ describe('training card drag and text interaction', () => {
         pointer(node, 'pointermove', -110);
         pointer(node, 'pointercancel', -110);
         expect(onRate).not.toHaveBeenCalled();
+        expect(node.style.transform).toBe('');
+    });
+    it.each([110, -110])(
+        'keeps a committed swipe at its release position until a new card arrives (%s)',
+        (distance) => {
+            const { node, onRate, onFlip, rerender } = start();
+            pointer(node, 'pointerdown', 0);
+            pointer(node, 'pointermove', distance);
+            pointer(node, 'pointerup', distance);
+            expect(node).toHaveAttribute('data-departing', 'true');
+            expect(node.style.transform).toContain(`translateX(${distance}px)`);
+            // Another release/cancellation must not recenter or submit a second rating.
+            pointer(node, 'pointercancel', distance);
+            pointer(node, 'pointerdown', 0);
+            pointer(node, 'pointermove', distance);
+            pointer(node, 'pointerup', distance);
+            expect(node).toHaveAttribute('data-departing', 'true');
+            expect(onRate).toHaveBeenCalledExactlyOnceWith(
+                distance > 0 ? 'known' : 'again',
+                expect.any(Promise),
+            );
+            rerender(<CardHarness onRate={onRate} onFlip={onFlip} disabled />);
+            expect(node).toHaveAttribute('data-departing', 'true');
+            rerender(
+                <CardHarness
+                    onRate={onRate}
+                    onFlip={onFlip}
+                    itemKey='entry-2'
+                />,
+            );
+            expect(node).toHaveAttribute('data-departing', 'false');
+            expect(node.style.transform).toBe('');
+        },
+    );
+    it('restores a departed card when saving fails or conflicts', () => {
+        const { node, onRate, onFlip, rerender } = start();
+        pointer(node, 'pointerdown', 0);
+        pointer(node, 'pointermove', 110);
+        pointer(node, 'pointerup', 110);
+        rerender(
+            <CardHarness onRate={onRate} onFlip={onFlip} disabled recover />,
+        );
+        expect(node).toHaveAttribute('data-departing', 'false');
+        expect(node.style.transform).toBe('');
+        expect(onRate).toHaveBeenCalledOnce();
+    });
+    it('completes the exit only after its opacity fade, without changing position', async () => {
+        vi.useFakeTimers();
+        const { node, onRate } = start();
+        pointer(node, 'pointerdown', 0);
+        pointer(node, 'pointermove', 110);
+        pointer(node, 'pointerup', 110);
+        const finish = vi.fn();
+        void onRate.mock.calls[0]![1].then(finish);
+        await act(async () => vi.advanceTimersByTime(199));
+        expect(finish).not.toHaveBeenCalled();
+        expect(node.style.transform).toContain('translateX(110px)');
+        await act(async () => vi.advanceTimersByTime(1));
+        expect(finish).toHaveBeenCalledOnce();
+        expect(node.style.transform).toContain('translateX(110px)');
+    });
+    it('omits the animation barrier for reduced motion', () => {
+        vi.mocked(matchMedia).mockReturnValue({
+            matches: true,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        } as unknown as MediaQueryList);
+        const { node, onRate } = start();
+        pointer(node, 'pointerdown', 0);
+        pointer(node, 'pointermove', 110);
+        pointer(node, 'pointerup', 110);
+        expect(onRate).toHaveBeenCalledExactlyOnceWith('known', undefined);
+        expect(node.style.transform).toBe('translateX(110px) rotate(0deg)');
+    });
+    it('resolves a pending exit barrier on unmount', async () => {
+        const { node, onRate, unmount } = start();
+        pointer(node, 'pointerdown', 0);
+        pointer(node, 'pointermove', 110);
+        pointer(node, 'pointerup', 110);
+        const completion = onRate.mock.calls[0]![1];
+        unmount();
+        await expect(completion).resolves.toBeUndefined();
     });
     it('allows touch swipes on text but protects mouse text selection', () => {
         const { node, onRate } = start();
@@ -273,7 +365,10 @@ describe('training card drag and text interaction', () => {
         pointer(text, 'pointerdown', 0);
         pointer(node, 'pointermove', -110);
         pointer(node, 'pointerup', -110);
-        expect(onRate).toHaveBeenCalledExactlyOnceWith('again');
+        expect(onRate).toHaveBeenCalledExactlyOnceWith(
+            'again',
+            expect.any(Promise),
+        );
     });
     it('freezes rating while waiting for server acknowledgement', () => {
         const { node, onRate } = start(true);

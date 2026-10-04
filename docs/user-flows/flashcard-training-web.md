@@ -72,9 +72,12 @@ local verification code. Exact verified services/commands/cleanup belong to the
 4. Start requests fullscreen during the click, with viewport fallback. Dialog view
    preserves face/position/stats. Fullscreen Escape goes to dialog; dialog Escape
    opens End confirmation. Backdrop clicks do not end practice.
-5. Flip by card click or Show back/front. Rate with buttons, arrows or horizontal
-   drag. Scrolling/text selection do not rate. Signed-in advance waits for ACK;
-   failed saves preserve the choice/card and retry the same operation.
+5. Flip by card click or Show back/front. Rate by buttons, arrows or horizontal
+   drag. Scrolling/text selection do not rate. A committed swipe fades at its
+   release position, then the next card fades in at the center. Signed-in advance
+   waits for both ACK and exit fade; failed saves restore the current card and
+   retry the same operation. Anonymous practice waits only for the local fade.
+   Reduced motion skips animations and their delay.
 6. Undo latest rating, restoring prior face/counts. Complete a round and inspect
    separate round/session/saved totals. Again requires an explicit new round.
    Start over and Finish are distinct actions.

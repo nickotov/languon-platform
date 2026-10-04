@@ -7,7 +7,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision flashcard-training-web sha256:30701a35bf0a8862
+// @user-flow-revision flashcard-training-web sha256:4dde1a9c6158abb9
 
 const password = 'E2e!Flashcard-password-2026';
 const runId =
@@ -389,7 +389,17 @@ test.describe('flashcard training journeys', () => {
         );
         const assertNoBrowserErrors = captureBrowserErrors(page);
         await createArabicDictionaryWithLongCard(page, name);
+        await page
+            .getByRole('button', { name: 'Add card', exact: true })
+            .click();
+        await page.getByLabel(/^Source word or phrase \(/).fill('التالي');
+        await page.getByLabel(/^Translation \(/).fill('Next card');
+        await page.getByRole('button', { name: 'Create card' }).click();
+        await expect(
+            page.getByRole('dialog', { name: 'Add card' }),
+        ).not.toBeVisible();
         const setup = await openCardSetup(page);
+        await setup.getByLabel('Dictionary order').check();
         const front = setup.getByRole('group', { name: 'Front' });
         await front.getByLabel('Translation').uncheck();
         await front.getByLabel('Source', { exact: true }).check();
@@ -407,6 +417,7 @@ test.describe('flashcard training journeys', () => {
         });
         const card = practice.getByTestId('training-card');
         const rtlText = card.locator('[data-card-text][dir="rtl"]');
+        await expect(card.locator('..')).toHaveCSS('animation-name', 'none');
         await expect(rtlText).toBeVisible();
         await expect(rtlText).toHaveAttribute('lang', 'ar');
         await expect(card).toBeInViewport();
@@ -446,7 +457,7 @@ test.describe('flashcard training journeys', () => {
             ),
         ).toBeTruthy();
 
-        const cardFace = card.getByLabel('Front of card 1 / 1');
+        const cardFace = card.getByLabel('Front of card 1 / 2');
         expect(
             await cardFace.evaluate(
                 (element) => element.scrollWidth / 2 <= element.clientWidth,
@@ -512,9 +523,18 @@ test.describe('flashcard training journeys', () => {
             body: await page.screenshot(),
             contentType: 'image/png',
         });
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
 
         const bounds = await card.boundingBox();
         expect(bounds).not.toBeNull();
+        let releaseRating!: () => void;
+        const ratingGate = new Promise<void>((resolve) => {
+            releaseRating = resolve;
+        });
+        await page.route('**/flashcards/attempts', async (route) => {
+            await ratingGate;
+            await route.continue();
+        });
         const touchY = Math.max(
             bounds!.y + 24,
             Math.min(bounds!.y + bounds!.height - 24, 420),
@@ -539,10 +559,40 @@ test.describe('flashcard training journeys', () => {
                 touchPoints: [{ x, y: touchY, id: 2 }],
             });
         }
+        // CDP delivery can precede React's final move paint. Sample the actual
+        // released position only after that paint, not a coalesced earlier move.
+        await expect
+            .poll(async () =>
+                Math.round(
+                    await card.evaluate(
+                        (element) =>
+                            new DOMMatrix(getComputedStyle(element).transform)
+                                .m41,
+                    ),
+                ),
+            )
+            .toBe(Math.round(bounds!.width - 48));
+        const releaseTransform = await card.evaluate(
+            (element) => getComputedStyle(element).transform,
+        );
         await cdp.send('Input.dispatchTouchEvent', {
             type: 'touchEnd',
             touchPoints: [],
         });
+        await expect(
+            practice.getByText('Saving…', { exact: true }),
+        ).toBeVisible();
+        await expect(card).toHaveCSS('opacity', '0');
+        await expect(card).toHaveCSS('transform', releaseTransform);
+        releaseRating();
+        await expect(card.getByLabel('Front of card 2 / 2')).toBeVisible();
+        await expect(card).toHaveCSS('opacity', '1');
+        await expect(card).toHaveCSS('transform', 'none');
+        await expect(card.locator('..')).toHaveCSS('animation-name', /enter/);
+        await page.unroute('**/flashcards/attempts');
+        await practice
+            .getByRole('button', { name: 'Known', exact: true })
+            .click();
         await expect(
             page.getByRole('heading', { name: 'Round 1 complete' }),
         ).toBeVisible();

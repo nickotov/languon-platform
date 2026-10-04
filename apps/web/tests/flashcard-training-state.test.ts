@@ -102,6 +102,83 @@ async function settle() {
 }
 
 describe('flashcard training session controller', () => {
+    it('surfaces a rejected save without waiting for or later advancing on the fade', async () => {
+        const learningApi = api();
+        vi.mocked(learningApi.rate).mockRejectedValueOnce(
+            error('learning_version_conflict'),
+        );
+        const practice = session(learningApi);
+        const fade = deferred<void>();
+        practice.start();
+        await settle();
+        practice.rate('known', fade.promise);
+        await settle();
+        expect(practice.getState()).toMatchObject({
+            index: 0,
+            pending: null,
+            conflict: 'content',
+            reviewEvents: 0,
+        });
+        fade.resolve();
+        await settle();
+        expect(practice.getState().index).toBe(0);
+        expect(practice.getState().reviewEvents).toBe(0);
+        practice.dispose();
+    });
+
+    it.each([true, false])(
+        'waits for the swipe fade before advancing, with input guarded (signedIn=%s)',
+        async (signedIn) => {
+            const learningApi = api();
+            const practice = session(learningApi, signedIn);
+            const fade = deferred<void>();
+            practice.start();
+            await settle();
+            practice.rate('known', fade.promise);
+            await settle();
+            expect(practice.getState()).toMatchObject({
+                index: 0,
+                pending: { status: 'saving' },
+                reviewEvents: 0,
+            });
+            practice.flip();
+            practice.rate('again');
+            practice.undo();
+            expect(practice.getState().face).toBe('front');
+            expect(learningApi.rate).toHaveBeenCalledTimes(signedIn ? 1 : 0);
+            fade.resolve();
+            await settle();
+            expect(practice.getState()).toMatchObject({
+                index: 1,
+                pending: null,
+                reviewEvents: 1,
+                savedCount: signedIn ? 1 : 0,
+            });
+            practice.dispose();
+        },
+    );
+
+    it.each([true, false])(
+        'does not revive a disposed session when its fade completes (signedIn=%s)',
+        async (signedIn) => {
+            const practice = session(api(), signedIn);
+            const fade = deferred<void>();
+            practice.start();
+            await settle();
+            practice.rate('known', fade.promise);
+            await settle();
+            practice.dispose();
+            fade.resolve();
+            await settle();
+            expect(practice.getState()).toMatchObject({
+                phase: 'unavailable',
+                queue: [],
+                pending: null,
+                reviewEvents: 0,
+            });
+        },
+    );
+
     it.each(['learning_version_conflict', 'idempotency_conflict'] as const)(
         'retains the previous confirmed rating after a later card %s rejection',
         async (code) => {

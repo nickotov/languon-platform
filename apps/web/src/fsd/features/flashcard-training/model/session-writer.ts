@@ -9,7 +9,11 @@ import type { Rating } from '../types';
 import type { AckedRating, Pending, SessionHost } from './session-state';
 
 type Operation =
-    | { pending: Pending; payload: FlashcardAttemptRequest }
+    | {
+          pending: Pending;
+          payload: FlashcardAttemptRequest;
+          beforeAdvance?: Promise<void>;
+      }
     | { pending: Pending; acknowledged: AckedRating };
 
 /** Retains the exact payload until ACK; ambiguous retries cannot create a new rating. */
@@ -18,7 +22,7 @@ export class SessionWriter {
     private operation: Operation | null = null;
     public constructor(private readonly host: SessionHost) {}
 
-    public rate(rating: Rating): void {
+    public rate(rating: Rating, beforeAdvance?: Promise<void>): void {
         const host = this.host;
         const state = host.getState();
         const entryId = state.queue[state.index];
@@ -32,6 +36,10 @@ export class SessionWriter {
         )
             return;
         if (!host.input.signedIn) {
+            if (beforeAdvance) {
+                void this.rateLocally(rating, beforeAdvance);
+                return;
+            }
             host.patch(acknowledgeRating(state, rating, null));
             void host.load();
             return;
@@ -45,6 +53,7 @@ export class SessionWriter {
         };
         this.operation = {
             pending,
+            ...(beforeAdvance ? { beforeAdvance } : {}),
             payload: {
                 operationId: pending.operationId,
                 sessionId: host.input.sessionId,
@@ -76,6 +85,32 @@ export class SessionWriter {
         };
         this.operation = { pending, acknowledged };
         void this.submit(this.operation);
+    }
+
+    private async rateLocally(
+        rating: Rating,
+        beforeAdvance: Promise<void>,
+    ): Promise<void> {
+        const host = this.host;
+        const generation = host.currentGeneration();
+        this.busy = true;
+        host.patch({
+            pending: {
+                kind: 'rate',
+                rating,
+                entryId: host.getState().queue[host.getState().index]!,
+                operationId: crypto.randomUUID(),
+                status: 'saving',
+            },
+        });
+        try {
+            await beforeAdvance;
+            if (!host.isCurrent(generation)) return;
+            host.patch(acknowledgeRating(host.getState(), rating, null));
+            void host.load();
+        } finally {
+            this.busy = false;
+        }
     }
 
     public retry(): void {
@@ -111,6 +146,8 @@ export class SessionWriter {
                         operation.payload.expectedLearningVersion
                 )
                     throw new Error('Mismatched rating acknowledgment');
+                if (operation.beforeAdvance) await operation.beforeAdvance;
+                if (!host.isCurrent(generation)) return;
                 host.patch(
                     acknowledgeRating(
                         host.getState(),
