@@ -7,6 +7,8 @@ import { TextAiSelectionUnavailableError } from '../../../../../src/modules/text
 import { DrizzleTextAiAdmissionParticipant } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { resolveTextAiExecutionSnapshot } from '../../../../../src/modules/text-ai/infrastructure/ai/text-ai-provider-resolver';
 
+import { sentenceExecutionObservationId } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+
 const now = new Date('2026-10-04T10:00:00Z');
 const [defaultModel, selectedModel] = textAiModelCatalog;
 function snapshot(model = defaultModel!) {
@@ -23,10 +25,11 @@ function snapshot(model = defaultModel!) {
         supportedFormats: [...model.supportedFormats],
     };
 }
-function database(results: unknown[][]) {
+function database(results: unknown[][], overlap = false) {
     return {
+        execute: async () => [{ overlap }],
         select() {
-            const result = results.shift()!;
+            const result = results.shift() ?? [];
             const chain = {
                 from: () => chain,
                 where: () => chain,
@@ -41,8 +44,8 @@ function database(results: unknown[][]) {
         typeof DrizzleTextAiAdmissionParticipant
     >[0];
 }
-function participant(results: unknown[][]) {
-    return new DrizzleTextAiAdmissionParticipant(database(results), {
+function participant(results: unknown[][], overlap = false) {
+    return new DrizzleTextAiAdmissionParticipant(database(results, overlap), {
         routingEnabled: true,
         credentialConfigured: () => true,
     });
@@ -142,6 +145,67 @@ describe('transactional text AI admission selection', () => {
                 [{ mode: 'explicit', modelId: selectedModel!.id }],
                 [{ id: 'global-revision', snapshot: configured }],
             ]).resolve(input),
+        ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+    });
+    it('learning Auto pins selection only with exact learning/settlement/capacity capability', async () => {
+        const model = defaultModel!;
+        const format = 'sentence-generation:v1';
+        const workerId = 'learning-worker';
+        const observation = {
+            id: sentenceExecutionObservationId(
+                workerId,
+                model.providerId,
+                model.id,
+            ),
+            workerId,
+            providerId: model.providerId,
+            modelId: model.id,
+            status: 'available',
+            textAiSelectionRevision: 1,
+            textAiCapacityRevision: 1,
+            learningExecutionRevision: 1,
+            creditSettlementRevision: 1,
+            textAiSupportedFormats: [format],
+        };
+        const result = await participant([
+            [],
+            [{ id: 'global', snapshot: snapshot() }],
+            [observation],
+        ]).resolve({ ...input, format });
+        expect(result.selectionVersion).toBe(1);
+        expect(result.snapshot?.supportedFormats).toEqual([format]);
+        await expect(participant([[], [{ id: 'global', snapshot: snapshot() }], [observation],
+            [{ openUntil: new Date(now.getTime() + 60_000) }],
+        ]).resolve({ ...input, format })).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+        await expect(
+            participant([
+                [],
+                [{ id: 'global', snapshot: snapshot() }],
+                [{ ...observation, creditSettlementRevision: null }],
+            ]).resolve({ ...input, format }),
+        ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+    });
+    it('rejects dictionary Auto from selection-only workers while sentence usage overlaps', async () => {
+        const model = defaultModel!;
+        await expect(
+            participant(
+                [
+                    [],
+                    [{ id: 'global', snapshot: snapshot() }],
+                    [
+                        {
+                            id: `old/${model.providerId}/${model.id}/text-ai-selection:v1`,
+                            workerId: 'old',
+                            providerId: model.providerId,
+                            modelId: model.id,
+                            textAiSelectionRevision: 1,
+                            status: 'available',
+                            textAiSupportedFormats: [input.format],
+                        },
+                    ],
+                ],
+                true,
+            ).resolve(input),
         ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
     });
     it('executes historical credit rates even after curated prices change', () => {

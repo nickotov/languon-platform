@@ -72,3 +72,27 @@ TO :"dictionary_worker_role";
 GRANT SELECT (id, dictionary_id, source, sort_key, translation, example, example_translation, lifecycle, version, example_enabled_override, example_translation_enabled_override, example_language_role_override) ON TABLE
     dictionary_cards
 TO :"dictionary_worker_role";
+
+-- Learning runs in the same bounded worker process. Locks require UPDATE on
+-- one harmless column; they do not authorize account or vocabulary mutations.
+GRANT UPDATE (updated_at) ON TABLE users, dictionaries, dictionary_cards
+TO :"dictionary_worker_role";
+GRANT SELECT (id, lifecycle, owner_id, share_key_digest, share_key_version,
+    share_locator, source_language_tag, target_language_tag, version, visibility)
+ON TABLE dictionaries TO :"dictionary_worker_role";
+GRANT SELECT (learning_version) ON TABLE dictionary_cards
+TO :"dictionary_worker_role";
+GRANT SELECT, UPDATE ON TABLE sentence_ai_jobs
+TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE sentence_job_entries, sentence_manual_reviews
+TO :"dictionary_worker_role";
+GRANT SELECT, INSERT ON TABLE sentence_exercises, sentence_exercise_entries,
+    sentence_attempts, sentence_exposures
+TO :"dictionary_worker_role";
+GRANT SELECT, INSERT, UPDATE ON TABLE sentence_entry_coverage
+TO :"dictionary_worker_role";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE dictionary_generation_provider_usage_archive
+TO :"dictionary_worker_role";
+GRANT SELECT (version, custom_notation_label, definition_language_role,
+    example_language_role, transcription_notation) ON TABLE dictionary_settings
+TO :"dictionary_worker_role";

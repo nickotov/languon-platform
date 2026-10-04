@@ -68,7 +68,8 @@
         "user-flow:e2e": "node scripts/user-flow-e2e.mjs",
         "user-flow:e2e:check": "node scripts/user-flow-e2e.mjs check",
         "web-dev-panel:check": "pnpm --filter @languon/web-dev-panel catalog:check",
-        "test:e2e:user-ai-model-preferences-backend": "node scripts/run-user-ai-model-preferences-e2e.mjs"
+        "test:e2e:user-ai-model-preferences-backend": "node scripts/run-user-ai-model-preferences-e2e.mjs",
+        "test:e2e:sentence-practice-backend": "node scripts/run-sentence-practice-e2e.mjs"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

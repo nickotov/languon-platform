@@ -1,3 +1,5 @@
+import { sentenceGenerationPrompt } from './local/sentence-generation';
+import { sentenceCheckPrompt } from './local/sentence-check';
 export { LangfuseClient } from '@langfuse/client';
 
 import { courseBuilderPrompt } from './local/course-builder';
@@ -8,6 +10,8 @@ import { dictionaryImportPairsGenerationPrompt } from './local/dictionary-import
 import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring';
 
 const localPrompts = {
+    [sentenceGenerationPrompt.name]: sentenceGenerationPrompt.system,
+    [sentenceCheckPrompt.name]: sentenceCheckPrompt.system,
     [courseBuilderPrompt.name]: courseBuilderPrompt.system,
     [developmentHarnessPrompt.name]: developmentHarnessPrompt.system,
     [dictionaryCardGenerationPrompt.name]:

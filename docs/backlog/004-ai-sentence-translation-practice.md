@@ -2,7 +2,7 @@
 type: backlog-task
 id: BL-004
 title: 'AI sentence translation practice'
-status: pending
+status: in-progress
 created: 2026-10-01
 updated: 2026-10-04
 original_tasks: '7'
@@ -74,3 +74,32 @@ Generate from owned/shared content; use hints and submit a free answer; check
 correct, partially correct, and valid alternative translations; inspect detailed
 feedback; generate subsequent exercises with used/remaining vocabulary; handle
 changed dictionaries and AI failures while keeping learner results separate.
+
+## Active backend delivery
+
+[Feature036](../../.agent/features/036-sentence-practice-backend/FEATURE.md) and
+[ExecPlan](../../.agent/features/036-sentence-practice-backend/EXEC_PLAN.md) implement
+this backend scope after verified model backend035 (`bcfda16`). The approved
+[plan](../sentence-practice-implementation-plan.md) remains the product baseline.
+Design prompts are created after both backends are verified; frontend delivery
+waits for the user's returned Magic Patterns designs.
+
+## Approved free reference review
+
+The [plan](../sentence-practice-implementation-plan.md#free-reference-review-and-default-ai-checking)
+now includes a reference translation generated alongside sentence/hints and an
+explicit free reveal that works with zero credits. It completes Saved first as a
+personal manual review, with no AI score; AI checking remains the default. See
+[feature036 AC-4a/4b](../../.agent/features/036-sentence-practice-backend/FEATURE.md).
+Jev correctness estimation is recorded as future research, not active integration.
+
+## Verified backend / design checkpoint — 2026-10-04
+
+Backend delivery is implemented, verified and independently reviewed. The detailed
+[implementation plan](../sentence-practice-implementation-plan.md) records completed
+backend and deferred frontend scope. Copy the
+[sentence-practice v001 prompt](../design-prompt/sentence-practice.md) into Magic Patterns;
+return its generated design/source before frontend implementation continues.
+[Versioned handoff](../../.agent/features/036-sentence-practice-backend/DESIGN.md) preserves the
+snapshot and selection history. This task remains In progress; backend completion
+does not mark the deferred UI/product work done.

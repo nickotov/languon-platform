@@ -53,6 +53,14 @@ export const textAiTextFormats = [
     'import-pairs:v2',
     'document-terms:v1',
     'document-terms:v2',
+    'sentence-generation:v1',
+    'sentence-check:v1',
+] as const;
+
+export type TextAiWorkFormat = (typeof textAiTextFormats)[number];
+export const textAiSentenceFormats = [
+    'sentence-generation:v1',
+    'sentence-check:v1',
 ] as const;
 
 export type TextAiProviderId = 'deepseek' | 'kie';

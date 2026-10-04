@@ -9,6 +9,7 @@ const guidesDirectory = join(repositoryRoot, 'docs', 'user-flows');
 const indexPath = join(guidesDirectory, 'README.md');
 const maximumTestFileBytes = 2 * 1024 * 1024;
 export const e2eCommands = new Map([
+    ['sentence-practice-backend', 'node scripts/run-sentence-practice-e2e.mjs'],
     [
         'flashcard-training-backend',
         'node scripts/run-flashcard-training-e2e.mjs',

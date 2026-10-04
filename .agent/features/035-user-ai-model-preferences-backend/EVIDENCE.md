@@ -109,3 +109,11 @@ remains valid for untouched behavior.
 The preference guide revision is now `sha256:1eb78a4d4c46a816`; its mapped journey
 was rerun successfully after revision synchronization. Initial manifest is retained
 for review history. Scoped correctness/security follow-up reviews passed against this exact digest.
+
+## Design prompt checkpoint — 2026-10-04
+
+After verified backend036 completion, the detailed profile-model preference prompt
+and immutablev001 snapshot are delivered; see [DESIGN.md](./DESIGN.md) and
+[canonical prompt](../../../docs/design-prompt/profile-text-ai-preferences.md).
+Frontend integration remains awaiting a returned selected design. No external
+Magic Patterns generation/publishing was performed.

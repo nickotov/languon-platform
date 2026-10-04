@@ -9,6 +9,10 @@ import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { databaseSchema } from '../../../src/infrastructure/database/schema';
+import type { AiCreditJobKind } from '../../../src/modules/ai-credits/application/ai-credit-participant';
+import { sentenceAiJobsTable } from '../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-schema';
+import { dictionaryAiConfigurationRevisionsTable } from '../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import { textAiModelCatalog } from '../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import { AiCreditInsufficientBalanceError } from '../../../src/modules/ai-credits/domain/ai-credit';
 import {
     DrizzleAiCreditTransactionParticipant,
@@ -160,6 +164,512 @@ run('DrizzleAiCreditTransactionParticipant', () => {
         });
     });
 
+    async function sentenceCreditJob(
+        kind: AiCreditJobKind,
+        maximum: bigint,
+        id = randomUUID(),
+        policyMode: 'limited' | 'unlimited' = 'limited',
+    ) {
+        const dictionaryId = randomUUID();
+        await database.insert(dictionariesTable).values({
+            id: dictionaryId,
+            ownerId,
+            name: 'Credit fixture',
+            sourceLanguageTag: 'en',
+            targetLanguageTag: 'de',
+        });
+        const model = textAiModelCatalog[0]!;
+        let [revision] = await database
+            .select()
+            .from(dictionaryAiConfigurationRevisionsTable)
+            .limit(1);
+        if (!revision) {
+            [revision] = await database
+                .insert(dictionaryAiConfigurationRevisionsTable)
+                .values({
+                    id: randomUUID(),
+                    version: 1,
+                    createdByUserId: ownerId,
+                    catalogSnapshot: {
+                        ...model,
+                        modelId: model.id,
+                        enabledModelIds: [model.id],
+                        supportedFormats: [...model.supportedFormats],
+                    },
+                })
+                .returning();
+        }
+        if (!revision)
+            throw new Error('Failed to create credit fixture revision');
+        await database.transaction(async (transaction) => {
+            await transaction.execute(
+                sql`select set_config('languon.learning_execution_revision', '1', true), set_config('languon.text_ai_selection_revision', '1', true), set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.ai_credit_settlement_revision', '1', true)`,
+            );
+            await transaction.insert(sentenceAiJobsTable).values({
+                id,
+                learnerId: ownerId,
+                dictionaryId,
+                jobKind: kind as 'sentence-generation' | 'sentence-check',
+                direction: 'source-to-target',
+                operationId: randomUUID(),
+                sessionId: randomUUID(),
+                requestFingerprint: 'hmac-sha256:v1:' + 'b'.repeat(43),
+                format:
+                    kind === 'sentence-generation'
+                        ? 'sentence-generation:v1'
+                        : 'sentence-check:v1',
+                authority: { kind: 'owner' },
+                providerMaxCostMicrosPerAttempt: 100,
+                providerMaxInputTokensPerAttempt: 100,
+                providerMaxOutputTokensPerAttempt: 100,
+                aiCreditAccounted: true,
+                aiCreditMaxCreditsPerAttempt: Number(maximum),
+                aiCreditPricingRevision: model.creditPricing.revision,
+                aiCreditInputCreditsPerMillionTokens:
+                    model.creditPricing.inputCreditsPerMillionTokens,
+                aiCreditOutputCreditsPerMillionTokens:
+                    model.creditPricing.outputCreditsPerMillionTokens,
+                aiCreditPolicyMode: policyMode,
+                attemptCount: 1,
+                maxAttempts: 3,
+                executionRevisionId: revision.id,
+                selectedExecutionSnapshot: {
+                    adapterRevision: model.adapterRevision,
+                    aggregateBudget: model.aggregateBudget,
+                    credentialReference: model.credentialReference,
+                    creditPricing: {
+                        ...model.creditPricing,
+                        maxCreditsPerAttempt: Number(maximum),
+                    },
+                    enabledModelIds: [model.id],
+                    modelId: model.id,
+                    perCallMaxInputTokens: model.perCallMaxInputTokens,
+                    perCallMaxOutputTokens: model.perCallMaxOutputTokens,
+                    providerId: model.providerId,
+                    supportedFormats: [
+                        kind === 'sentence-generation'
+                            ? 'sentence-generation:v1'
+                            : 'sentence-check:v1',
+                    ],
+                },
+                inputPayload: {
+                    schemaVersion: 1,
+                    generationPolicyVersion: 1,
+                    priorityEntryId: randomUUID(),
+                    dictionaryId,
+                    direction: 'source-to-target',
+                    sourceLanguage: 'en',
+                    targetLanguage: 'de',
+                    candidates: [],
+                },
+                createdAt: instant(0),
+                updatedAt: instant(0),
+            });
+        });
+        return id;
+    }
+
+    it.each([
+        'dictionary-generation',
+        'sentence-generation',
+        'sentence-check',
+    ] as const)(
+        'settles and releases typed %s attempts atomically',
+        async (jobKind) => {
+            await grant({
+                amount: 200n,
+                sourceReference: `grant:typed:${jobKind}`,
+            });
+            const jobId =
+                jobKind === 'dictionary-generation'
+                    ? await creditJob(60n)
+                    : await sentenceCreditJob(jobKind, 60n);
+            const reservationId = randomUUID();
+            await withCredits(async (credits) => {
+                await credits.reserveAttempt({
+                    at: instant(1),
+                    attempt: 1,
+                    jobId,
+                    jobKind,
+                    maximumCredits: 60n,
+                    ownerId,
+                    reservationId,
+                });
+                await credits.markProviderDispatched({
+                    dispatchedAt: instant(2),
+                    ownerId,
+                    reservationId,
+                });
+                expect(
+                    await credits.settleAttempt({
+                        measuredCredits: 20n,
+                        measurement: 'provider_reported',
+                        ownerId,
+                        reservationId,
+                        settledAt: instant(3),
+                    }),
+                ).toMatchObject({ chargedCredits: 20n, releasedCredits: 40n });
+            });
+            await database.transaction(async (transaction) => {
+                await transaction.execute(
+                    sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+                );
+                await transaction
+                    .update(
+                        jobKind === 'dictionary-generation'
+                            ? dictionaryGenerationJobsTable
+                            : sentenceAiJobsTable,
+                    )
+                    .set({ attemptCount: 2 })
+                    .where(
+                        eq(
+                            jobKind === 'dictionary-generation'
+                                ? dictionaryGenerationJobsTable.id
+                                : sentenceAiJobsTable.id,
+                            jobId,
+                        ),
+                    );
+            });
+            const second = randomUUID();
+            await withCredits(async (credits) => {
+                await credits.reserveAttempt({
+                    at: instant(4),
+                    attempt: 2,
+                    jobId,
+                    jobKind,
+                    maximumCredits: 60n,
+                    ownerId,
+                    reservationId: second,
+                });
+                await credits.releaseUndispatchedAttempt({
+                    ownerId,
+                    reservationId: second,
+                    releasedAt: instant(5),
+                });
+                expect(
+                    await credits.accountSummary(ownerId, instant(6)),
+                ).toMatchObject({
+                    availableCredits: 180n,
+                    reservedCredits: 0n,
+                });
+            });
+        },
+    );
+
+    it.each([
+        {
+            jobKind: 'sentence-generation' as const,
+            measurement: 'estimated' as const,
+            missingUsage: false,
+        },
+        {
+            jobKind: 'sentence-check' as const,
+            measurement: 'estimated' as const,
+            missingUsage: false,
+        },
+        {
+            jobKind: 'sentence-generation' as const,
+            measurement: 'estimated' as const,
+            missingUsage: true,
+        },
+        {
+            jobKind: 'sentence-check' as const,
+            measurement: 'estimated' as const,
+            missingUsage: true,
+        },
+    ])(
+        'settles $jobKind with $measurement usage (missing=$missingUsage)',
+        async ({ jobKind, measurement, missingUsage }) => {
+            await grant({ amount: 100n, sourceReference: 'grant:typed:usage' });
+            const jobId = await sentenceCreditJob(jobKind, 60n);
+            const reservationId = randomUUID();
+            await withCredits(async (credits) => {
+                await credits.reserveAttempt({
+                    at: instant(1),
+                    attempt: 1,
+                    jobId,
+                    jobKind,
+                    maximumCredits: 60n,
+                    ownerId,
+                    reservationId,
+                });
+                await credits.markProviderDispatched({
+                    dispatchedAt: instant(2),
+                    ownerId,
+                    reservationId,
+                });
+                if (!missingUsage) {
+                    await expect(
+                        credits.settleAttempt({
+                            measuredCredits: 30n,
+                            measurement,
+                            ownerId,
+                            reservationId,
+                            settledAt: instant(3),
+                        }),
+                    ).rejects.toThrow(
+                        'Estimated and unmetered settlement cannot claim measured credits.',
+                    );
+                }
+                expect(
+                    await credits.settleAttempt({
+                        measuredCredits: null,
+                        measurement,
+                        ownerId,
+                        reservationId,
+                        settledAt: instant(3),
+                    }),
+                ).toMatchObject({
+                    chargedCredits: 60n,
+                    releasedCredits: 0n,
+                });
+            });
+        },
+    );
+
+    it.each(['sentence-generation', 'sentence-check'] as const)(
+        'rejects wrong owner and atomically rolls back %s credit admission',
+        async (jobKind) => {
+            await grant({
+                amount: 200n,
+                sourceReference: 'grant:typed:rollback',
+            });
+            const jobId = await sentenceCreditJob(jobKind, 60n);
+            const otherOwner = randomUUID();
+            await database
+                .insert(usersTable)
+                .values({ id: otherOwner, status: 'active' });
+            await withCredits(async (credits) =>
+                credits.issueGrant({
+                    amount: 100n,
+                    createdAt: instant(0),
+                    expiresAt: null,
+                    ownerId: otherOwner,
+                    source: 'admin',
+                    sourceReference: 'grant:typed:other',
+                }),
+            );
+            await expect(
+                withCredits(async (credits) =>
+                    credits.reserveAttempt({
+                        at: instant(1),
+                        attempt: 1,
+                        jobId,
+                        jobKind,
+                        maximumCredits: 60n,
+                        ownerId: otherOwner,
+                        reservationId: randomUUID(),
+                    }),
+                ),
+            ).rejects.toThrow();
+            const reservationId = randomUUID();
+            await expect(
+                withCredits(async (credits) => {
+                    await credits.reserveAttempt({
+                        at: instant(1),
+                        attempt: 1,
+                        jobId,
+                        jobKind,
+                        maximumCredits: 60n,
+                        ownerId,
+                        reservationId,
+                    });
+                    throw new Error('rollback fixture');
+                }),
+            ).rejects.toThrow('rollback fixture');
+            expect(
+                await database.select().from(aiCreditReservationsTable),
+            ).toEqual([]);
+            await withCredits(async (credits) => {
+                expect(
+                    await credits.accountSummary(ownerId, instant(2)),
+                ).toMatchObject({
+                    availableCredits: 200n,
+                    reservedCredits: 0n,
+                });
+            });
+        },
+    );
+
+    it.each([
+        'dictionary-generation',
+        'sentence-generation',
+        'sentence-check',
+    ] as const)(
+        'prevents erasing active %s credit reservations',
+        async (jobKind) => {
+            await grant({
+                amount: 100n,
+                sourceReference: 'grant:typed:activeerase',
+            });
+            const jobId =
+                jobKind === 'dictionary-generation'
+                    ? await creditJob(60n)
+                    : await sentenceCreditJob(jobKind, 60n);
+            const reservationId = randomUUID();
+            await expect(
+                withCredits((credits) =>
+                    credits.reserveAttempt({
+                        at: instant(1),
+                        attempt: 1,
+                        jobId,
+                        jobKind,
+                        maximumCredits: 61n,
+                        ownerId,
+                        reservationId,
+                    }),
+                ),
+            ).rejects.toThrow();
+            await withCredits((credits) =>
+                credits.reserveAttempt({
+                    at: instant(1),
+                    attempt: 1,
+                    jobId,
+                    jobKind,
+                    maximumCredits: 60n,
+                    ownerId,
+                    reservationId,
+                }),
+            );
+            await expect(
+                database
+                    .delete(
+                        jobKind === 'dictionary-generation'
+                            ? dictionaryGenerationJobsTable
+                            : sentenceAiJobsTable,
+                    )
+                    .where(
+                        eq(
+                            jobKind === 'dictionary-generation'
+                                ? dictionaryGenerationJobsTable.id
+                                : sentenceAiJobsTable.id,
+                            jobId,
+                        ),
+                    ),
+            ).rejects.toThrow();
+            const [reservation] = await database
+                .select()
+                .from(aiCreditReservationsTable)
+                .where(eq(aiCreditReservationsTable.id, reservationId));
+            expect(reservation).toMatchObject({
+                state: 'active',
+                reservedCredits: 60n,
+            });
+        },
+    );
+
+    it('rejects cross-kind UUID replay and immutable kind mutation', async () => {
+        await grant({ amount: 200n, sourceReference: 'grant:typed:collision' });
+        const jobId = await creditJob(60n);
+        await expect(
+            sentenceCreditJob('sentence-generation', 60n, jobId),
+        ).rejects.toThrow();
+        const reservationId = randomUUID();
+        await withCredits(async (credits) => {
+            await credits.reserveAttempt({
+                at: instant(1),
+                attempt: 1,
+                jobId,
+                maximumCredits: 60n,
+                ownerId,
+                reservationId,
+            });
+        });
+        await expect(
+            withCredits(async (credits) =>
+                credits.reserveAttempt({
+                    at: instant(2),
+                    attempt: 1,
+                    jobId,
+                    jobKind: 'sentence-generation',
+                    maximumCredits: 60n,
+                    ownerId,
+                    reservationId,
+                }),
+            ),
+        ).rejects.toThrow();
+        await expect(
+            database
+                .update(aiCreditReservationsTable)
+                .set({ jobKind: 'sentence-generation' })
+                .where(eq(aiCreditReservationsTable.id, reservationId)),
+        ).rejects.toThrow();
+        await expect(
+            database
+                .update(aiCreditReservationsTable)
+                .set({ jobKind: 'unknown' })
+                .where(eq(aiCreditReservationsTable.id, reservationId)),
+        ).rejects.toThrow();
+        const [row] = await database
+            .select()
+            .from(aiCreditReservationsTable)
+            .where(eq(aiCreditReservationsTable.id, reservationId));
+        expect(row).toMatchObject({
+            jobKind: 'dictionary-generation',
+            state: 'active',
+            reservedCredits: 60n,
+        });
+    });
+
+    it('rejects invalid allocations after terminal private job erasure', async () => {
+        const firstGrant = await grant({
+            amount: 60n,
+            sourceReference: 'grant:typed:erased:first',
+        });
+        const secondGrant = await grant({
+            amount: 60n,
+            sourceReference: 'grant:typed:erased:second',
+        });
+        const jobId = await sentenceCreditJob('sentence-check', 60n);
+        const reservationId = randomUUID();
+        await withCredits(async (credits) => {
+            await credits.reserveAttempt({
+                at: instant(1),
+                attempt: 1,
+                jobId,
+                jobKind: 'sentence-check',
+                maximumCredits: 60n,
+                ownerId,
+                reservationId,
+            });
+            await credits.releaseUndispatchedAttempt({
+                ownerId,
+                reservationId,
+                releasedAt: instant(2),
+            });
+        });
+        await database
+            .update(sentenceAiJobsTable)
+            .set({ executionState: 'cancelled', completedAt: instant(3) })
+            .where(eq(sentenceAiJobsTable.id, jobId));
+        await database
+            .delete(sentenceAiJobsTable)
+            .where(eq(sentenceAiJobsTable.id, jobId));
+        await expect(
+            database.transaction(async (transaction) => {
+                await transaction
+                    .insert(aiCreditReservationAllocationsTable)
+                    .values({
+                        reservationId,
+                        grantId:
+                            secondGrant.grantId === firstGrant.grantId
+                                ? randomUUID()
+                                : secondGrant.grantId,
+                        allocatedCredits: 1n,
+                    });
+            }),
+        ).rejects.toThrow();
+        const [row] = await database
+            .select()
+            .from(aiCreditReservationsTable)
+            .where(eq(aiCreditReservationsTable.id, reservationId));
+        expect(row).toMatchObject({
+            state: 'released',
+            reservedCredits: 60n,
+            chargedCredits: 0n,
+        });
+    });
+
     it('uses earliest expiry first and can settle a pre-expiry reservation after that lot expires', async () => {
         const early = await grant({
             amount: 50n,
@@ -228,110 +738,160 @@ run('DrizzleAiCreditTransactionParticipant', () => {
         });
     });
 
-    it('pins admission policy for retries in both policy-change directions', async () => {
-        await grant({ amount: 200n, sourceReference: 'grant:policy-pin' });
-        const limitedJobId = await creditJob(50n);
-        const limitedAttemptOne = randomUUID();
-        await withCredits(async (credits, transaction) => {
-            await expect(
-                credits.reserveAttempt({
-                    at: instant(10),
-                    attempt: 1,
-                    jobId: limitedJobId,
-                    maximumCredits: 50n,
+    it.each([
+        'dictionary-generation',
+        'sentence-generation',
+        'sentence-check',
+    ] as const)(
+        'pins %s admission policy for retries in both policy-change directions',
+        async (jobKind) => {
+            await grant({ amount: 200n, sourceReference: 'grant:policy-pin' });
+            const limitedJobId =
+                jobKind === 'dictionary-generation'
+                    ? await creditJob(50n)
+                    : await sentenceCreditJob(jobKind, 50n);
+            const limitedAttemptOne = randomUUID();
+            await withCredits(async (credits, transaction) => {
+                await expect(
+                    credits.reserveAttempt({
+                        at: instant(10),
+                        attempt: 1,
+                        jobId: limitedJobId,
+                        jobKind,
+                        maximumCredits: 50n,
+                        ownerId,
+                        reservationId: limitedAttemptOne,
+                    }),
+                ).resolves.toMatchObject({
+                    policy: { mode: 'limited' },
+                    reservedCredits: 50n,
+                });
+                await credits.releaseUndispatchedAttempt({
                     ownerId,
+                    releasedAt: instant(11),
                     reservationId: limitedAttemptOne,
-                }),
-            ).resolves.toMatchObject({
-                policy: { mode: 'limited' },
-                reservedCredits: 50n,
-            });
-            await credits.releaseUndispatchedAttempt({
-                ownerId,
-                releasedAt: instant(11),
-                reservationId: limitedAttemptOne,
-            });
-            await credits.updatePolicy({
-                at: instant(12),
-                expectedManagementVersion: 0,
-                mode: 'unlimited',
-                ownerId,
-                reason: 'Enable support override',
-                unlimitedUntil: instant(1_000),
-            });
-            await transaction.execute(
-                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
-            );
-            await transaction
-                .update(dictionaryGenerationJobsTable)
-                .set({ attemptCount: 2, updatedAt: instant(13) })
-                .where(eq(dictionaryGenerationJobsTable.id, limitedJobId));
-            await expect(
-                credits.reserveAttempt({
-                    at: instant(13),
-                    attempt: 2,
-                    jobId: limitedJobId,
-                    maximumCredits: 50n,
+                });
+                await credits.updatePolicy({
+                    at: instant(12),
+                    expectedManagementVersion: 0,
+                    mode: 'unlimited',
                     ownerId,
-                    reservationId: randomUUID(),
-                }),
-            ).resolves.toMatchObject({
-                policy: { mode: 'limited', unlimitedUntil: null },
-                reservedCredits: 50n,
+                    reason: 'Enable support override',
+                    unlimitedUntil: instant(1_000),
+                });
+                await transaction.execute(
+                    sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+                );
+                await transaction
+                    .update(
+                        jobKind === 'dictionary-generation'
+                            ? dictionaryGenerationJobsTable
+                            : sentenceAiJobsTable,
+                    )
+                    .set({ attemptCount: 2, updatedAt: instant(13) })
+                    .where(
+                        eq(
+                            jobKind === 'dictionary-generation'
+                                ? dictionaryGenerationJobsTable.id
+                                : sentenceAiJobsTable.id,
+                            limitedJobId,
+                        ),
+                    );
+                await expect(
+                    credits.reserveAttempt({
+                        at: instant(13),
+                        attempt: 2,
+                        jobId: limitedJobId,
+                        jobKind,
+                        maximumCredits: 50n,
+                        ownerId,
+                        reservationId: randomUUID(),
+                    }),
+                ).resolves.toMatchObject({
+                    policy: { mode: 'limited', unlimitedUntil: null },
+                    reservedCredits: 50n,
+                });
             });
-        });
 
-        const unlimitedJobId = await creditJob(50n, 'unlimited');
-        const unlimitedAttemptOne = randomUUID();
-        await withCredits(async (credits, transaction) => {
-            await expect(
-                credits.reserveAttempt({
-                    at: instant(20),
-                    attempt: 1,
-                    jobId: unlimitedJobId,
-                    maximumCredits: 50n,
+            const unlimitedJobId =
+                jobKind === 'dictionary-generation'
+                    ? await creditJob(50n, 'unlimited')
+                    : await sentenceCreditJob(
+                          jobKind,
+                          50n,
+                          randomUUID(),
+                          'unlimited',
+                      );
+            const unlimitedAttemptOne = randomUUID();
+            await withCredits(async (credits, transaction) => {
+                await expect(
+                    credits.reserveAttempt({
+                        at: instant(20),
+                        attempt: 1,
+                        jobId: unlimitedJobId,
+                        jobKind,
+                        maximumCredits: 50n,
+                        ownerId,
+                        reservationId: unlimitedAttemptOne,
+                    }),
+                ).resolves.toMatchObject({
+                    policy: {
+                        mode: 'unlimited',
+                        unlimitedUntil: instant(1_000),
+                    },
+                    reservedCredits: 0n,
+                });
+                await credits.releaseUndispatchedAttempt({
                     ownerId,
+                    releasedAt: instant(21),
                     reservationId: unlimitedAttemptOne,
-                }),
-            ).resolves.toMatchObject({
-                policy: { mode: 'unlimited', unlimitedUntil: instant(1_000) },
-                reservedCredits: 0n,
-            });
-            await credits.releaseUndispatchedAttempt({
-                ownerId,
-                releasedAt: instant(21),
-                reservationId: unlimitedAttemptOne,
-            });
-            await credits.updatePolicy({
-                at: instant(22),
-                expectedManagementVersion: 1,
-                mode: 'limited',
-                ownerId,
-                reason: 'End support override',
-                unlimitedUntil: null,
-            });
-            await transaction.execute(
-                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
-            );
-            await transaction
-                .update(dictionaryGenerationJobsTable)
-                .set({ attemptCount: 2, updatedAt: instant(23) })
-                .where(eq(dictionaryGenerationJobsTable.id, unlimitedJobId));
-            await expect(
-                credits.reserveAttempt({
-                    at: instant(23),
-                    attempt: 2,
-                    jobId: unlimitedJobId,
-                    maximumCredits: 50n,
+                });
+                await credits.updatePolicy({
+                    at: instant(22),
+                    expectedManagementVersion: 1,
+                    mode: 'limited',
                     ownerId,
-                    reservationId: randomUUID(),
-                }),
-            ).resolves.toMatchObject({
-                policy: { mode: 'unlimited', unlimitedUntil: instant(1_000) },
-                reservedCredits: 0n,
+                    reason: 'End support override',
+                    unlimitedUntil: null,
+                });
+                await transaction.execute(
+                    sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+                );
+                await transaction
+                    .update(
+                        jobKind === 'dictionary-generation'
+                            ? dictionaryGenerationJobsTable
+                            : sentenceAiJobsTable,
+                    )
+                    .set({ attemptCount: 2, updatedAt: instant(23) })
+                    .where(
+                        eq(
+                            jobKind === 'dictionary-generation'
+                                ? dictionaryGenerationJobsTable.id
+                                : sentenceAiJobsTable.id,
+                            unlimitedJobId,
+                        ),
+                    );
+                await expect(
+                    credits.reserveAttempt({
+                        at: instant(23),
+                        attempt: 2,
+                        jobId: unlimitedJobId,
+                        jobKind,
+                        maximumCredits: 50n,
+                        ownerId,
+                        reservationId: randomUUID(),
+                    }),
+                ).resolves.toMatchObject({
+                    policy: {
+                        mode: 'unlimited',
+                        unlimitedUntil: instant(1_000),
+                    },
+                    reservedCredits: 0n,
+                });
             });
-        });
-    });
+        },
+    );
 
     it('allows a restricted worker to reserve a limited retry after an admin removal', async () => {
         await grant({ amount: 200n, sourceReference: 'grant:worker-role' });

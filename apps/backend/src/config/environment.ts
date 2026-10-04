@@ -107,6 +107,10 @@ const RawEnvironmentSchema = z
             .enum(['true', 'false'])
             .default('false'),
         DICTIONARY_HMAC_SECRET: DictionarySecretSchema,
+        LEARNING_SENTENCES_ENABLED: z
+            .enum(['true', 'false'])
+            .default('false')
+            .transform((value) => value === 'true'),
         LEARNING_FLASHCARDS_ENABLED: z
             .enum(['true', 'false'])
             .default('true')

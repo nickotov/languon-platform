@@ -420,3 +420,223 @@ describe('DictionaryWorkerRuntime', () => {
         );
     });
 });
+
+function pendingUntilAbort(signal: AbortSignal) {
+    return new Promise<void>((resolve) => {
+        if (signal.aborted) resolve();
+        else signal.addEventListener('abort', () => resolve(), { once: true });
+    });
+}
+function deferred() {
+    let resolve!: () => void;
+    const promise = new Promise<void>((r) => (resolve = r));
+    return { promise, resolve };
+}
+function combinedRuntime(
+    service: ConstructorParameters<
+        typeof DictionaryWorkerRuntime
+    >[0]['service'],
+    sentenceService: NonNullable<
+        ConstructorParameters<
+            typeof DictionaryWorkerRuntime
+        >[0]['sentenceService']
+    >,
+    concurrency = 1,
+) {
+    return new DictionaryWorkerRuntime({
+        service,
+        sentenceService,
+        concurrency,
+        drainTimeoutMs: 50,
+        pollIntervalMs: 50,
+        readinessTimeoutMs: 50,
+        supportedFormats: ['single-card:v1'],
+        workerId: 'shared-worker',
+        logger: { info: vi.fn(), error: vi.fn() },
+    });
+}
+describe('shared dictionary and sentence slot pool', () => {
+    afterEach(() => vi.useRealTimers());
+    it('alternates both nonempty queues in one bounded slot', async () => {
+        const calls: string[] = [];
+        const entered = deferred();
+        const process = async (kind: string, signal: AbortSignal) => {
+            calls.push(kind);
+            if (calls.length === 4) {
+                entered.resolve();
+                await pendingUntilAbort(signal);
+            }
+            return true;
+        };
+        const service = {
+            readiness: vi.fn(async () => {}),
+            processNext: vi.fn(({ signal }: { signal: AbortSignal }) =>
+                process('dictionary', signal),
+            ),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const sentences = {
+            processNext: vi.fn((signal: AbortSignal) =>
+                process('sentence', signal),
+            ),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const runtime = combinedRuntime(service, sentences);
+        const running = runtime.run();
+        await entered.promise;
+        expect(calls).toEqual([
+            'dictionary',
+            'sentence',
+            'dictionary',
+            'sentence',
+        ]);
+        await expect(runtime.shutdown('SIGTERM')).resolves.toEqual({
+            forced: false,
+        });
+        await running;
+        expect(service.releaseWorkerLeases).toHaveBeenCalledOnce();
+        expect(sentences.releaseWorkerLeases).toHaveBeenCalledOnce();
+    });
+    it('falls back sequentially when the preferred queue is empty', async () => {
+        const calls: string[] = [];
+        const entered = deferred();
+        let active = 0,
+            maxActive = 0;
+        const process = async (kind: string, signal: AbortSignal) => {
+            active++;
+            maxActive = Math.max(active, maxActive);
+            calls.push(kind);
+            if (calls.length === 4) {
+                entered.resolve();
+                await pendingUntilAbort(signal);
+            }
+            active--;
+            return calls.length % 2 === 0;
+        };
+        const service = {
+            readiness: vi.fn(async () => {}),
+            processNext: vi.fn(({ signal }: { signal: AbortSignal }) =>
+                process('dictionary', signal),
+            ),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const sentences = {
+            processNext: vi.fn((signal: AbortSignal) =>
+                process('sentence', signal),
+            ),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const runtime = combinedRuntime(service, sentences);
+        const running = runtime.run();
+        await entered.promise;
+        expect(calls).toEqual([
+            'dictionary',
+            'sentence',
+            'sentence',
+            'dictionary',
+        ]);
+        expect(maxActive).toBe(1);
+        await runtime.shutdown('SIGTERM');
+        await running;
+    });
+    it('uses two existing slots across both queues and drains before releasing both lease types', async () => {
+        const entered = deferred();
+        let active = 0,
+            maxActive = 0;
+        const kinds: string[] = [];
+        let releaseSignal: AbortSignal | undefined;
+        const process = async (kind: string, signal: AbortSignal) => {
+            active++;
+            maxActive = Math.max(active, maxActive);
+            kinds.push(kind);
+            if (active === 2) entered.resolve();
+            await pendingUntilAbort(signal);
+            active--;
+            return false;
+        };
+        const service = {
+            readiness: vi.fn(async () => {}),
+            processNext: vi.fn(({ signal }: { signal: AbortSignal }) =>
+                process('dictionary', signal),
+            ),
+            releaseWorkerLeases: vi.fn(async () => {
+                expect(active).toBe(0);
+            }),
+        };
+        const sentences = {
+            processNext: vi.fn((signal: AbortSignal) =>
+                process('sentence', signal),
+            ),
+            releaseWorkerLeases: vi.fn(async (signal: AbortSignal) => {
+                releaseSignal = signal;
+                expect(signal.aborted).toBe(false);
+                expect(active).toBe(0);
+            }),
+        };
+        const runtime = combinedRuntime(service, sentences, 2);
+        const running = runtime.run();
+        await entered.promise;
+        expect(kinds).toEqual(['dictionary', 'sentence']);
+        expect(maxActive).toBe(2);
+        await runtime.shutdown('SIGTERM');
+        await running;
+        expect(kinds).toHaveLength(2);
+        expect(releaseSignal?.aborted).toBe(false);
+    });
+    it('releases both lease types even when sentence release rejects', async () => {
+        const entered = deferred();
+        const service = {
+            readiness: vi.fn(async () => {}),
+            processNext: vi.fn(async ({ signal }: { signal: AbortSignal }) => {
+                entered.resolve();
+                await pendingUntilAbort(signal);
+                return false;
+            }),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const sentences = {
+            processNext: vi.fn(async () => false),
+            releaseWorkerLeases: vi.fn(async () => {
+                throw new Error('unavailable');
+            }),
+        };
+        const runtime = combinedRuntime(service, sentences);
+        const running = runtime.run();
+        await entered.promise;
+        await expect(runtime.shutdown('SIGTERM')).resolves.toEqual({
+            forced: true,
+        });
+        await running;
+        expect(service.releaseWorkerLeases).toHaveBeenCalledOnce();
+        expect(sentences.releaseWorkerLeases).toHaveBeenCalledOnce();
+    });
+    it('bounds stuck sentence lease release with a fresh cancellation signal', async () => {
+        vi.useFakeTimers();
+        const entered = deferred();
+        let releaseSignal: AbortSignal | undefined;
+        const service = {
+            readiness: vi.fn(async () => {}),
+            processNext: vi.fn(async () => {
+                entered.resolve();
+                return false;
+            }),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const sentences = {
+            processNext: vi.fn(async () => false),
+            releaseWorkerLeases: vi.fn(async (signal: AbortSignal) => {
+                releaseSignal = signal;
+                return new Promise<void>(() => {});
+            }),
+        };
+        const runtime = combinedRuntime(service, sentences);
+        const running = runtime.run();
+        await entered.promise;
+        const shutdown = runtime.shutdown('SIGTERM');
+        await vi.advanceTimersByTimeAsync(51);
+        await expect(shutdown).resolves.toEqual({ forced: true });
+        await running;
+        expect(releaseSignal?.aborted).toBe(true);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+});

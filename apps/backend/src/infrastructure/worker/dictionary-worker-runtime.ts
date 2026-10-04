@@ -41,6 +41,11 @@ export interface DictionaryWorkerRuntimeOptions {
     pollIntervalMs: number;
     readinessTimeoutMs: number;
     service: DictionaryWorkerApplicationService;
+    /** Shares the existing slot pool; never creates an independent poll loop. */
+    sentenceService?: {
+        processNext(signal: AbortSignal): Promise<boolean>;
+        releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
+    };
     supportedFormats: readonly string[];
     workerId: string;
     logger?: DictionaryWorkerLogger;
@@ -208,12 +213,38 @@ export class DictionaryWorkerRuntime {
                 this.#options.drainTimeoutMs,
             ));
         }
-        const released = await settlesBeforeTimeout(
-            this.#options.service.releaseWorkerLeases({
-                workerId: this.#options.workerId,
-            }),
+        const releaseController = new AbortController();
+        const releaseTimer = setTimeout(
+            () => releaseController.abort(),
             this.#options.readinessTimeoutMs,
         );
+        let released: boolean;
+        try {
+            released = await settlesBeforeTimeout(
+                Promise.allSettled([
+                    Promise.resolve().then(() =>
+                        this.#options.service.releaseWorkerLeases({
+                            workerId: this.#options.workerId,
+                        }),
+                    ),
+                    ...(this.#options.sentenceService
+                        ? [
+                              Promise.resolve().then(() =>
+                                  this.#options.sentenceService!.releaseWorkerLeases(
+                                      releaseController.signal,
+                                  ),
+                              ),
+                          ]
+                        : []),
+                ]).then((results) => {
+                    if (results.some((result) => result.status === 'rejected'))
+                        throw new Error('Worker lease release failed.');
+                }),
+                this.#options.readinessTimeoutMs,
+            );
+        } finally {
+            clearTimeout(releaseTimer);
+        }
         if (!released) {
             forced = true;
             this.#logger.error(
@@ -226,13 +257,32 @@ export class DictionaryWorkerRuntime {
 
     async #poll(index: number): Promise<void> {
         const signal = this.#controller.signal;
+        let preferSentence = index % 2 === 1;
         while (!signal.aborted) {
+            const sentenceFirst = preferSentence;
+            preferSentence = !preferSentence;
             try {
-                const processed = await this.#options.service.processNext({
-                    signal,
-                    supportedFormats: this.#options.supportedFormats,
-                    workerId: this.#options.workerId,
-                });
+                const dictionary = () =>
+                    this.#options.service.processNext({
+                        signal,
+                        supportedFormats: this.#options.supportedFormats,
+                        workerId: this.#options.workerId,
+                    });
+                const sentence = () =>
+                    this.#options.sentenceService!.processNext(signal);
+                const first =
+                    this.#options.sentenceService && sentenceFirst
+                        ? sentence
+                        : dictionary;
+                const second = this.#options.sentenceService
+                    ? sentenceFirst
+                        ? dictionary
+                        : sentence
+                    : undefined;
+                let processed = await first();
+                // Fallback is sequential in the same slot and is skipped after shutdown.
+                if (!processed && second && !signal.aborted)
+                    processed = await second();
                 if (!processed && !signal.aborted) {
                     await delay(this.#options.pollIntervalMs, signal);
                 }

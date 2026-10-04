@@ -42,7 +42,7 @@ import {
 } from '../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
 
-import { publishDictionaryAiWorkerObservations } from '../../../src/modules/dictionaries/infrastructure/ai/dictionary-ai-worker-observations';
+import { publishTextAiWorkerObservations } from '../../../src/modules/text-ai/infrastructure/ai/text-ai-worker-observations';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
@@ -205,7 +205,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .fn()
                     .mockResolvedValueOnce({ status: 200 } as Response)
                     .mockResolvedValueOnce({ status: 405 } as Response);
-                await publishDictionaryAiWorkerObservations({
+                await publishTextAiWorkerObservations({
                     supportedFormats: ['single-card:v1'],
                     credentials: {
                         DEEPSEEK_API_KEY: 'deepseek-secret-never-returned',

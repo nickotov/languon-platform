@@ -22,8 +22,30 @@ type DictionaryLearningAccess =
           learnerId: string | null;
       };
 export type LearningDictionary = {
-    dictionary: typeof dictionariesTable.$inferSelect;
-    settings: typeof dictionarySettingsTable.$inferSelect;
+    dictionary: Pick<
+        typeof dictionariesTable.$inferSelect,
+        | 'id'
+        | 'ownerId'
+        | 'lifecycle'
+        | 'visibility'
+        | 'shareKeyDigest'
+        | 'shareKeyVersion'
+        | 'sourceLanguageTag'
+        | 'targetLanguageTag'
+        | 'version'
+    >;
+    settings: Pick<
+        typeof dictionarySettingsTable.$inferSelect,
+        | 'version'
+        | 'customNotationLabel'
+        | 'definitionEnabled'
+        | 'definitionLanguageRole'
+        | 'exampleEnabled'
+        | 'exampleLanguageRole'
+        | 'exampleTranslationEnabled'
+        | 'transcriptionEnabled'
+        | 'transcriptionNotation'
+    >;
 };
 
 /** Infrastructure-only participant. All authority is checked under the same locks as learning writes. */
@@ -55,7 +77,7 @@ export async function authorizeLearningDictionary(
         ]),
     ].sort();
     const users = await tx
-        .select()
+        .select({ id: usersTable.id, status: usersTable.status })
         .from(usersTable)
         .where(inArray(usersTable.id, ids))
         .orderBy(asc(usersTable.id))
@@ -66,7 +88,17 @@ export async function authorizeLearningDictionary(
     )
         throw new DictionaryNotFoundError();
     const [dictionary] = await tx
-        .select()
+        .select({
+            id: dictionariesTable.id,
+            ownerId: dictionariesTable.ownerId,
+            lifecycle: dictionariesTable.lifecycle,
+            visibility: dictionariesTable.visibility,
+            shareKeyDigest: dictionariesTable.shareKeyDigest,
+            shareKeyVersion: dictionariesTable.shareKeyVersion,
+            sourceLanguageTag: dictionariesTable.sourceLanguageTag,
+            targetLanguageTag: dictionariesTable.targetLanguageTag,
+            version: dictionariesTable.version,
+        })
         .from(dictionariesTable)
         .where(and(condition, eq(dictionariesTable.id, candidate.id)))
         .for('share');
@@ -79,7 +111,20 @@ export async function authorizeLearningDictionary(
     )
         throw new DictionaryNotFoundError();
     const [settings] = await tx
-        .select()
+        .select({
+            version: dictionarySettingsTable.version,
+            customNotationLabel: dictionarySettingsTable.customNotationLabel,
+            definitionEnabled: dictionarySettingsTable.definitionEnabled,
+            definitionLanguageRole:
+                dictionarySettingsTable.definitionLanguageRole,
+            exampleEnabled: dictionarySettingsTable.exampleEnabled,
+            exampleLanguageRole: dictionarySettingsTable.exampleLanguageRole,
+            exampleTranslationEnabled:
+                dictionarySettingsTable.exampleTranslationEnabled,
+            transcriptionEnabled: dictionarySettingsTable.transcriptionEnabled,
+            transcriptionNotation:
+                dictionarySettingsTable.transcriptionNotation,
+        })
         .from(dictionarySettingsTable)
         .where(eq(dictionarySettingsTable.dictionaryId, dictionary.id));
     if (!settings) throw new DictionaryNotFoundError();

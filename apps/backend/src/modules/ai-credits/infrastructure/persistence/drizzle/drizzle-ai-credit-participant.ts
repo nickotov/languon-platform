@@ -7,6 +7,7 @@ import type { databaseSchema } from '../../../../../infrastructure/database/sche
 import type {
     AiCreditAccountSummary,
     AiCreditHistoryEntry,
+    AiCreditJobKind,
     AiCreditSettlementResult,
     AiCreditTransactionParticipant,
 } from '../../../application/ai-credit-participant';
@@ -317,10 +318,21 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
         at: Date;
         attempt: number;
         jobId: string;
+        jobKind?: AiCreditJobKind;
         maximumCredits: bigint;
         ownerId: string;
         reservationId: string;
     }) {
+        const jobKind = input.jobKind ?? 'dictionary-generation';
+        if (
+            ![
+                'dictionary-generation',
+                'sentence-generation',
+                'sentence-check',
+            ].includes(jobKind)
+        ) {
+            throw new AiCreditReservationStateError();
+        }
         validatePositiveCreditAmount(input.maximumCredits);
         if (!Number.isInteger(input.attempt) || input.attempt < 1) {
             throw new AiCreditInvalidAmountError(
@@ -340,6 +352,7 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
             .limit(1);
         if (existing) {
             if (
+                existing.jobKind !== jobKind ||
                 existing.id !== input.reservationId ||
                 existing.ownerId !== input.ownerId ||
                 existing.state !== 'active'
@@ -358,7 +371,11 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
         const policy =
             input.attempt === 1
                 ? await this.currentPolicy(input.ownerId, input.at)
-                : await this.admissionPolicy(input.ownerId, input.jobId);
+                : await this.admissionPolicy(
+                      input.ownerId,
+                      input.jobId,
+                      jobKind,
+                  );
         const reservedCredits =
             policy.mode === 'unlimited' ? 0n : input.maximumCredits;
         const allocations =
@@ -374,6 +391,7 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
             createdAt: input.at,
             id: input.reservationId,
             jobId: input.jobId,
+            jobKind,
             ownerId: input.ownerId,
             policyMode: policy.mode,
             reservedCredits,
@@ -788,7 +806,11 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
         } as const;
     }
 
-    private async admissionPolicy(ownerId: string, jobId: string) {
+    private async admissionPolicy(
+        ownerId: string,
+        jobId: string,
+        jobKind: AiCreditJobKind,
+    ) {
         const [reservation] = await this.transaction
             .select({
                 ownerId: aiCreditReservationsTable.ownerId,
@@ -800,6 +822,7 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
                 and(
                     eq(aiCreditReservationsTable.jobId, jobId),
                     eq(aiCreditReservationsTable.attempt, 1),
+                    eq(aiCreditReservationsTable.jobKind, jobKind),
                 ),
             )
             .limit(1);

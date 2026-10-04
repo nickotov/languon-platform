@@ -74,3 +74,21 @@ content indefinitely.
 Independent learners and dictionaries; added, changed, and removed entries;
 historical attempts versus current totals; repeated sessions; exercise edits;
 archive, access revocation, and deletion without exposing another user's history.
+
+The sentence progress slice is now in backend
+[feature036](../../.agent/features/036-sentence-practice-backend/FEATURE.md), with
+personal attempts/ratings and current entry-version coverage. Existing flashcard
+progress remains unchanged. Other progress/UI scope remains separately tracked.
+
+Sentence progress separates ungraded manual reference reviews from AI check scores
+and ratings. Both can complete Saved first for the learner; revealing the reference
+never double-counts word exposure or implies mastery. See the
+[approved plan](../sentence-practice-implementation-plan.md#free-reference-review-and-default-ai-checking).
+
+## Sentence progress backend checkpoint — 2026-10-04
+
+Feature036 implements personal entry exposure/coverage, separate AI/manual event
+statistics and personal history, including free reference-review completion. See
+[backend evidence](../../.agent/features/036-sentence-practice-backend/EVIDENCE.md)
+and the [sentence design prompt](../design-prompt/sentence-practice.md). This
+sentence slice does not complete the broader progress backlog or its deferred UI.

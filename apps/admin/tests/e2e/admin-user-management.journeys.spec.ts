@@ -441,8 +441,8 @@ test.describe.serial('admin user management journeys', () => {
             name: 'Credits',
         });
         await expect(amount).toHaveValue('1');
-        await amount.fill('5000000');
-        await expect(amount).toHaveValue('5000000');
+        await amount.fill('50000000');
+        await expect(amount).toHaveValue('50000000');
         await adjustmentDialog
             .getByLabel('Reason')
             .fill('Grant one deterministic managed generation attempt');
@@ -629,34 +629,30 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByRole('heading', { name: 'AI providers' }),
         ).toBeVisible();
-        const hasManagedRevision =
-            (await page.getByText(/Configuration version \d+/).count()) > 0;
-        if (!hasManagedRevision) {
-            await page
-                .locator('label.ant-radio-button-wrapper')
-                .filter({ hasText: 'DeepSeek' })
-                .click();
-            const deepSeekCheckbox = page.getByRole('checkbox', {
-                name: /DeepSeek Chat/,
-            });
+        // Establish the first revision on every run: this owned fixture can retain
+        // a Kie default from a previous successful run or the credit-wallet case.
+        await page
+            .locator('label.ant-radio-button-wrapper')
+            .filter({ hasText: 'DeepSeek' })
+            .click();
+        const deepSeekCheckbox = page.getByRole('checkbox', {
+            name: /DeepSeek Chat/,
+        });
+        if (!(await deepSeekCheckbox.isChecked())) {
             await deepSeekCheckbox.evaluate((element: HTMLInputElement) =>
                 element.click(),
             );
-            await page.getByLabel('Default model').press('ArrowDown');
-            await page.getByLabel('Default model').press('Enter');
-            await page
-                .getByLabel('Reason for change')
-                .fill('Enable curated DeepSeek dictionary generation');
-            await page
-                .getByRole('button', { name: 'Save configuration' })
-                .click();
-            await expect(
-                page.getByText(/Configuration version \d+/),
-            ).toBeVisible();
         }
+        await page.getByLabel('Default model').press('ArrowDown');
+        await page.getByLabel('Default model').press('Enter');
+        await page
+            .getByLabel('Reason for change')
+            .fill('Establish DeepSeek baseline for pinned revision regression');
+        await page.getByRole('button', { name: 'Save configuration' }).click();
+        await expect(page.getByText(/Configuration version \d+/)).toBeVisible();
 
-        // This journey queues two independently priced revisions. Fund them via
-        // the owner UI rather than relying on the separate credit-wallet case.
+        // Reserve both models full three-attempt ceilings (up to 4M per attempt).
+        // Fund through the owner UI rather than depending on another test case.
         await page.goto(`/users/${targetId}`);
         await expect(
             page.getByText('AI credits', { exact: true }),
@@ -669,8 +665,8 @@ test.describe.serial('admin user management journeys', () => {
             name: 'Credits',
         });
         await expect(amount).toHaveValue('1');
-        await amount.fill('5000000');
-        await expect(amount).toHaveValue('5000000');
+        await amount.fill('50000000');
+        await expect(amount).toHaveValue('50000000');
         await adjustmentDialog
             .getByLabel('Reason')
             .fill('Fund pinned provider-revision generation jobs');

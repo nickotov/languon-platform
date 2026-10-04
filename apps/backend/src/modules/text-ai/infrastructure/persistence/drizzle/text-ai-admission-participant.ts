@@ -12,7 +12,15 @@ import {
     type TextAiAdmissionParticipant,
 } from '../../../application/text-ai-admission-participant';
 import { textAiPreferencesTable } from './schema';
-import { isTextAiSelectionCapableObservation } from './text-ai-worker-readiness';
+import {
+    isTextAiSelectionCapableObservation,
+    isTextAiCapacityCapableObservation,
+    isSentenceExecutionCapableObservation,
+} from './text-ai-worker-readiness';
+import { isTextAiCircuitOpen } from '../../../../../infrastructure/text-ai/text-ai-circuit';
+import { hasSentenceCapacityOverlap } from '../../../../../infrastructure/text-ai/text-ai-capacity';
+import { sql } from 'drizzle-orm';
+import { textAiSentenceFormats } from '../../../application/text-ai-provider-catalog';
 import {
     defaultTextAiAvailabilityPolicy,
     type TextAiAvailabilityPolicy,
@@ -31,6 +39,12 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         input: Parameters<TextAiAdmissionParticipant['resolve']>[0],
     ) {
         const tx = this.transaction;
+        const learning = textAiSentenceFormats.some(
+            (format) => format === input.format,
+        );
+        const overlap = learning
+            ? true
+            : await hasSentenceCapacityOverlap(tx, input.now);
         const [preference] = await tx
             .select()
             .from(textAiPreferencesTable)
@@ -53,7 +67,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             .where(eq(dictionaryAiConfigurationTable.id, 'global'))
             .limit(1);
         if (!configured) {
-            if (preference?.mode === 'explicit')
+            if (learning || preference?.mode === 'explicit')
                 throw new TextAiSelectionUnavailableError();
             return {
                 budget: input.legacyBudget,
@@ -62,7 +76,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 selectionVersion: null,
             };
         }
-        if (preference?.mode !== 'explicit') {
+        if (preference?.mode !== 'explicit' && !learning) {
             if (
                 !configured.snapshot.enabledModelIds.includes(
                     configured.snapshot.modelId,
@@ -96,7 +110,16 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             if (
                 observations.some(
                     (observation) => observation.status === 'unavailable',
-                )
+                ) ||
+                (overlap &&
+                    !observations.some(
+                        (observation) =>
+                            observation.status !== 'unavailable' &&
+                            isTextAiCapacityCapableObservation(
+                                observation,
+                                input.format,
+                            ),
+                    ))
             )
                 throw new TextAiSelectionUnavailableError();
             return {
@@ -107,7 +130,11 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             };
         }
         const model = textAiModelCatalog.find(
-            (candidate) => candidate.id === preference.modelId,
+            (candidate) =>
+                candidate.id ===
+                (preference?.mode === 'explicit'
+                    ? preference.modelId
+                    : configured.snapshot.modelId),
         );
         if (
             !model ||
@@ -143,18 +170,51 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             ) ||
             !observations.some(
                 (observation) =>
-                    isTextAiSelectionCapableObservation(
-                        observation,
-                        input.format,
-                    ) && observation.status !== 'unavailable',
+                    (learning
+                        ? isSentenceExecutionCapableObservation(
+                              observation,
+                              input.format,
+                          )
+                        : overlap
+                          ? isTextAiCapacityCapableObservation(
+                                observation,
+                                input.format,
+                            )
+                          : isTextAiSelectionCapableObservation(
+                                observation,
+                                input.format,
+                            )) && observation.status !== 'unavailable',
             )
         )
             throw new TextAiSelectionUnavailableError();
+        if (
+            learning &&
+            (await isTextAiCircuitOpen(tx, {
+                execution: { providerId: model.providerId, modelId: model.id },
+                format: input.format,
+                now: input.now,
+            }))
+        )
+            throw new TextAiSelectionUnavailableError();
+        if (learning) {
+            await tx.execute(
+                sql`select set_config('languon.learning_execution_revision','1',true), set_config('languon.text_ai_selection_revision','1',true), set_config('languon.ai_credit_settlement_revision','1',true)`,
+            );
+        }
         const snapshot = {
             adapterRevision: model.adapterRevision,
-            aggregateBudget: { ...model.aggregateBudget },
+            aggregateBudget: {
+                ...(preference?.mode !== 'explicit'
+                    ? configured.snapshot.aggregateBudget
+                    : model.aggregateBudget),
+            },
             credentialReference: model.credentialReference,
-            creditPricing: { ...model.creditPricing },
+            creditPricing: {
+                ...(preference?.mode !== 'explicit' &&
+                configured.snapshot.creditPricing
+                    ? configured.snapshot.creditPricing
+                    : model.creditPricing),
+            },
             enabledModelIds: [...configured.snapshot.enabledModelIds],
             modelId: model.id,
             perCallMaxInputTokens: model.perCallMaxInputTokens,

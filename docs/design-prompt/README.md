@@ -5,8 +5,8 @@ title: Design prompts
 
 # Design prompts
 
-Copyable Magic Patterns prompts and source-grounded UI checklists generated with
-`$design-brief`. Each document keeps implementation and ADR links outside its
+Copyable Magic Patterns prompts and source-grounded UI checklists. Each document
+keeps implementation and ADR links outside its
 portable prompt, records source state and limitations, and preserves stable UI
 requirement IDs for design review and later frontend verification.
 
@@ -15,6 +15,9 @@ requirement IDs for design review and later frontend verification.
 | [Authenticated app shell and sidebar](./authenticated-app-shell-sidebar.md) | Reusable authenticated navigation across dictionaries and profile, including desktop rail and mobile drawer  | Implemented selected v001                            |
 | [Dictionary and AI cards](./dictionary-ai-cards.md)                         | Dictionary library/settings, manual cards, inline AI authoring, saved-card AI review and pronunciation audio | Draft: supply Magic Patterns design-system reference |
 | [Flashcard training](./flashcard-training.md)                               | Configurable cards, fullscreen/dialog practice, personal learning progress and retry/undo states             | Implemented selected v001; training-only feature 034 |
+
+| [Profile AI model preferences](./profile-text-ai-preferences.md) | Personal Auto/explicit model selection, availability, credits context and conflict recovery | v001 awaiting returned design; backend035 complete |
+| [Sentence practice](./sentence-practice.md) | Fullscreen/dialog translation practice, hints, AI feedback, free reference review and all recovery states | v001 awaiting returned design; backend036 complete |
 
 Every saved brief also has a [versioned handoff](../../.agent/DESIGN_HANDOFF.md)
 with a frozen prompt, generated-design URL slot, approval history and selected
@@ -31,9 +34,16 @@ ADRs remain authoritative.
 ## Planned backend-first briefs
 
 The [model and sentence practice implementation plan](../sentence-practice-implementation-plan.md)
-requires two separate detailed prompts after both backends are implemented and
-verified: profile AI-model preferences and sentence translation practice. These
+now provides two separate detailed prompts after both backends were implemented,
+verified and independently reviewed: [profile AI model preferences](./profile-text-ai-preferences.md)
+and [sentence practice](./sentence-practice.md). These
 prompts are not generated yet. Each will cover loading, empty, error, recovery,
 interaction and accessibility states, omit concrete API paths from its copyable
 block, and receive a versioned feature-owned handoff. Frontend implementation
 waits for the user's returned Magic Patterns designs.
+
+The sentence prompt must cover default AI checking and the explicit free reference
+comparison alternative, including zero-credit/model-unavailable use of saved
+exercises, manual completion without grade, separate AI/manual summaries/history,
+reference assistance, loading/retry/revoked/stale/deleted states, and preserved
+answer draft across dialog/fullscreen switches. Never promise free new generation.

@@ -1,3 +1,4 @@
+import * as sentenceSchema from '../../modules/learning/infrastructure/persistence/drizzle/sentence-schema';
 import {
     dictionaryAiConfigurationRevisionsTable,
     dictionaryAiConfigurationTable,
@@ -135,6 +136,7 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
 
 export const databaseSchema = {
+    ...sentenceSchema,
     textAiPreferences: textAiPreferencesTable,
     flashcardPreferences: flashcardPreferencesTable,
     flashcardAttempts: flashcardAttemptsTable,
@@ -190,3 +192,5 @@ import {
     flashcardAttemptsTable,
     flashcardEntryProgressTable,
 } from '../../modules/learning/infrastructure/persistence/drizzle/schema';
+
+export * from '../../modules/learning/infrastructure/persistence/drizzle/sentence-schema';

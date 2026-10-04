@@ -21,8 +21,8 @@ import {
     dictionaryAiWorkerObservationsTable,
 } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { textAiPreferencesTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/schema';
-import { textAiSelectionObservationId } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
-import { publishDictionaryAiWorkerObservations } from '../../../../src/modules/dictionaries/infrastructure/ai/dictionary-ai-worker-observations';
+import { textAiCapacityObservationId } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import { publishTextAiWorkerObservations } from '../../../../src/modules/text-ai/infrastructure/ai/text-ai-worker-observations';
 import { DrizzleTextAiAdmissionParticipant } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { TextAiSelectionUnavailableError } from '../../../../src/modules/text-ai/application/text-ai-admission-participant';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
@@ -87,7 +87,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
             await database.insert(dictionaryAiWorkerObservationsTable).values(
                 textAiModelCatalog.map((candidate) => ({
-                    id: textAiSelectionObservationId(
+                    id: textAiCapacityObservationId(
                         'synthetic-worker',
                         candidate.providerId,
                         candidate.id,
@@ -97,6 +97,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     modelId: candidate.id,
                     adapterRevision: candidate.adapterRevision,
                     textAiSelectionRevision: 1,
+                    textAiCapacityRevision: 1,
                     textAiSupportedFormats: [...candidate.supportedFormats],
                     status: 'available',
                     message: 'synthetic readiness',
@@ -283,7 +284,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         it('does not let a rolled-back legacy publisher refresh capable readiness', async () => {
             await database.delete(dictionaryAiWorkerObservationsTable);
             const workerId = 'rollback-worker';
-            await publishDictionaryAiWorkerObservations({
+            await publishTextAiWorkerObservations({
                 supportedFormats: [...textAiModelCatalog[0]!.supportedFormats],
                 database,
                 workerId,
@@ -358,7 +359,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 rows.find(
                     (row) =>
                         row.id ===
-                        textAiSelectionObservationId(
+                        textAiCapacityObservationId(
                             workerId,
                             model.providerId,
                             model.id,
@@ -416,7 +417,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
         it('admits explicit work only in formats advertised by the running worker', async () => {
             await database.delete(dictionaryAiWorkerObservationsTable);
-            await publishDictionaryAiWorkerObservations({
+            await publishTextAiWorkerObservations({
                 database,
                 workerId: 'v1-only-worker',
                 now: at,

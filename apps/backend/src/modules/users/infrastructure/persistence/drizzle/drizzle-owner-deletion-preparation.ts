@@ -3,6 +3,8 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { dictionaryGenerationJobsTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
+import { dictionariesTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
+import { requestSentenceCancellation } from '../../../../learning/infrastructure/persistence/drizzle/sentence-deletion-participant';
 import { dictionaryAudioJobsTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/audio-schema';
 import type { OwnerDeletionPreparation } from '../../../application/ports/owner-deletion-preparation';
 
@@ -18,6 +20,18 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
             await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 76021941))`,
             );
+            const ownedDictionaries = await tx
+                .select({ id: dictionariesTable.id })
+                .from(dictionariesTable)
+                .where(eq(dictionariesTable.ownerId, userId));
+            await requestSentenceCancellation(tx, {
+                accountPurge: true,
+                learnerId: userId,
+                dictionaryIds: ownedDictionaries.map(
+                    (dictionary) => dictionary.id,
+                ),
+                now: new Date(),
+            });
             await tx
                 .update(dictionaryAudioJobsTable)
                 .set({

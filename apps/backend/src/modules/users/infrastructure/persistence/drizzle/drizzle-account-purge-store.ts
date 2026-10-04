@@ -44,6 +44,10 @@ import {
 } from '../../../../learning/infrastructure/persistence/drizzle/schema';
 import { userEmailsTable, usersTable } from './schema';
 import { textAiPreferencesTable } from '../../../../text-ai/infrastructure/persistence/drizzle/schema';
+import {
+    sentenceDeletionBusy,
+    eraseSentenceDerivedContent,
+} from '../../../../learning/infrastructure/persistence/drizzle/sentence-deletion-participant';
 
 type AccountPurgeDatabase = PostgresJsDatabase<typeof databaseSchema>;
 const leaseMs = 5 * 60_000;
@@ -120,6 +124,19 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
     }
 
     public async inspectOwner(input: ClaimedAccountPurge) {
+        const sentenceBusy = await this.database.transaction(async (tx) => {
+            const ownedDictionaries = await tx
+                .select({ id: dictionariesTable.id })
+                .from(dictionariesTable)
+                .where(eq(dictionariesTable.ownerId, input.userId));
+            return sentenceDeletionBusy(tx, {
+                accountPurge: true,
+                learnerId: input.userId,
+                dictionaryIds: ownedDictionaries.map(
+                    (dictionary) => dictionary.id,
+                ),
+            });
+        });
         const [active, objects, audioActive, audioObjects, audioWriters] =
             await Promise.all([
                 this.database
@@ -181,6 +198,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
         return {
             activeJobs:
                 (active[0]?.count ?? 0) +
+                (sentenceBusy ? 1 : 0) +
                 (audioActive[0]?.count ?? 0) +
                 (audioWriters[0]?.count ?? 0),
             objects: [
@@ -255,6 +273,19 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 .limit(1)
                 .for('update');
             if (user?.status !== 'deletion_pending') return false;
+            const ownedDictionaries = await tx
+                .select({ id: dictionariesTable.id })
+                .from(dictionariesTable)
+                .where(eq(dictionariesTable.ownerId, input.userId));
+            const sentenceScope = {
+                accountPurge: true,
+                learnerId: input.userId,
+                dictionaryIds: ownedDictionaries.map(
+                    (dictionary) => dictionary.id,
+                ),
+            };
+            if (await sentenceDeletionBusy(tx, sentenceScope))
+                throw new Error('Sentence work is not quiescent');
             const [activeAudio] = await tx
                 .select({ count: sql<number>`count(*)::int` })
                 .from(dictionaryAudioJobsTable)
@@ -362,6 +393,10 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await tx
                 .delete(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.ownerId, input.userId));
+            await eraseSentenceDerivedContent(tx, {
+                ...sentenceScope,
+                now: input.now,
+            });
             await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                 input.userId,
             );

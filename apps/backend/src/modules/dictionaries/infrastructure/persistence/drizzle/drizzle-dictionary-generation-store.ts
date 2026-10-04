@@ -1,3 +1,10 @@
+import {
+    textAiProviderBudgetAllows as dictionaryGenerationProviderBudgetAllows,
+    type TextAiProviderBudgetUsage as DictionaryGenerationProviderBudgetUsage,
+    lockTextAiCapacity,
+    readTextAiCapacity,
+    textAiCapacityLock,
+} from '../../../../../infrastructure/text-ai/text-ai-capacity';
 import { DrizzleTextAiAdmissionParticipant } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { dictionaryAiConfigurationRevisionsTable } from '../../../../text-ai/infrastructure/persistence/drizzle/configuration-schema';
@@ -137,7 +144,6 @@ import {
     dictionaryGenerationJobsTable,
     dictionaryGenerationProposalsTable,
     dictionaryGenerationProviderCircuitTable,
-    dictionaryGenerationProviderUsageArchiveTable,
     dictionaryIdempotencyKeysTable,
     dictionaryDocumentUploadsTable,
     dictionarySettingsTable,
@@ -207,7 +213,7 @@ function creditUsage(
     return input + output;
 }
 
-export const dictionaryGenerationAdmissionLock = 4_312_189_072;
+export const dictionaryGenerationAdmissionLock = textAiCapacityLock;
 const generationLimits = {
     globalQueued: 1_000,
     maxRunnableQueueAgeMs: 300_000,
@@ -223,84 +229,8 @@ const providerOperationalBudget = {
     ownerActiveAttempts: 3,
 } as const;
 
-export interface DictionaryGenerationProviderBudgetUsage {
-    globalActiveCostMicros: number;
-    globalActiveInputTokens: number;
-    globalActiveOutputTokens: number;
-    globalSettledCostMicros: number;
-    globalSettledInputTokens: number;
-    globalSettledOutputTokens: number;
-    ownerActiveCostMicros: number;
-    ownerActiveInputTokens: number;
-    ownerActiveOutputTokens: number;
-    ownerSettledCostMicros: number;
-    ownerSettledInputTokens: number;
-    ownerSettledOutputTokens: number;
-}
-
-export function dictionaryGenerationProviderBudgetAllows(
-    usage: DictionaryGenerationProviderBudgetUsage,
-    includeNewReservation: boolean,
-    policy: DictionaryGenerationProviderBudgetPolicy,
-): boolean {
-    const reservation = includeNewReservation
-        ? {
-              costMicros: policy.maxCostMicrosPerAttempt,
-              inputTokens: policy.maxInputTokensPerAttempt,
-              outputTokens: policy.maxOutputTokensPerAttempt,
-          }
-        : { costMicros: 0, inputTokens: 0, outputTokens: 0 };
-    return (
-        usage.globalActiveCostMicros + reservation.costMicros <=
-            policy.maxCostMicrosPerAttempt *
-                providerOperationalBudget.globalActiveAttempts &&
-        usage.globalActiveInputTokens + reservation.inputTokens <=
-            policy.maxInputTokensPerAttempt *
-                providerOperationalBudget.globalActiveAttempts &&
-        usage.globalActiveOutputTokens + reservation.outputTokens <=
-            policy.maxOutputTokensPerAttempt *
-                providerOperationalBudget.globalActiveAttempts &&
-        usage.ownerActiveCostMicros + reservation.costMicros <=
-            policy.maxCostMicrosPerAttempt *
-                providerOperationalBudget.ownerActiveAttempts &&
-        usage.ownerActiveInputTokens + reservation.inputTokens <=
-            policy.maxInputTokensPerAttempt *
-                providerOperationalBudget.ownerActiveAttempts &&
-        usage.ownerActiveOutputTokens + reservation.outputTokens <=
-            policy.maxOutputTokensPerAttempt *
-                providerOperationalBudget.ownerActiveAttempts &&
-        usage.globalSettledCostMicros +
-            usage.globalActiveCostMicros +
-            reservation.costMicros <=
-            policy.maxCostMicrosPerAttempt *
-                providerOperationalBudget.dailyGlobalAttempts &&
-        usage.globalSettledInputTokens +
-            usage.globalActiveInputTokens +
-            reservation.inputTokens <=
-            policy.maxInputTokensPerAttempt *
-                providerOperationalBudget.dailyGlobalAttempts &&
-        usage.globalSettledOutputTokens +
-            usage.globalActiveOutputTokens +
-            reservation.outputTokens <=
-            policy.maxOutputTokensPerAttempt *
-                providerOperationalBudget.dailyGlobalAttempts &&
-        usage.ownerSettledCostMicros +
-            usage.ownerActiveCostMicros +
-            reservation.costMicros <=
-            policy.maxCostMicrosPerAttempt *
-                providerOperationalBudget.dailyOwnerAttempts &&
-        usage.ownerSettledInputTokens +
-            usage.ownerActiveInputTokens +
-            reservation.inputTokens <=
-            policy.maxInputTokensPerAttempt *
-                providerOperationalBudget.dailyOwnerAttempts &&
-        usage.ownerSettledOutputTokens +
-            usage.ownerActiveOutputTokens +
-            reservation.outputTokens <=
-            policy.maxOutputTokensPerAttempt *
-                providerOperationalBudget.dailyOwnerAttempts
-    );
-}
+export { textAiProviderBudgetAllows as dictionaryGenerationProviderBudgetAllows } from '../../../../../infrastructure/text-ai/text-ai-capacity';
+export type { TextAiProviderBudgetUsage as DictionaryGenerationProviderBudgetUsage } from '../../../../../infrastructure/text-ai/text-ai-capacity';
 
 function abort(context: DictionaryOperationContext): void {
     context.signal.throwIfAborted();
@@ -798,9 +728,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ) {
         return this.database.transaction(async (tx) => {
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             abort(input.context);
             await tx
                 .select({ id: usersTable.id })
@@ -905,21 +833,16 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             )
                 throw new DictionaryGenerationNotAvailableError();
 
-            const [counts] = await tx
-                .select({
-                    global: count(),
-                    oldestRunnableQueuedAt: sql<
-                        string | null
-                    >`min(${dictionaryGenerationJobsTable.createdAt}) filter (where ${dictionaryGenerationJobsTable.executionState} = 'queued' and ${dictionaryGenerationJobsTable.nextAttemptAt} <= ${input.context.now.toISOString()}::timestamptz)`,
-                    owner: sql<number>`count(*) filter (where ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId})`,
-                })
-                .from(dictionaryGenerationJobsTable)
-                .where(
-                    inArray(dictionaryGenerationJobsTable.executionState, [
-                        'queued',
-                        'running',
-                    ]),
-                );
+            const capacity = await readTextAiCapacity(tx, {
+                actorId: input.ownerId,
+                now: input.context.now,
+                budget: providerExecution.budget,
+            });
+            const counts = {
+                global: capacity.globalQueued + capacity.globalRunning,
+                owner: capacity.actorQueued + capacity.actorRunning,
+                oldestRunnableQueuedAt: capacity.oldestRunnableAt,
+            };
             if (
                 Number(counts?.global ?? 0) >= generationLimits.globalQueued ||
                 Number(counts?.owner ?? 0) >= generationLimits.ownerQueued ||
@@ -1053,9 +976,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 input.format ?? dictionaryCardAuthoringGenerationFormatV1;
             const target = input.target ?? { kind: 'create' as const };
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             await tx
                 .select({ id: usersTable.id })
                 .from(usersTable)
@@ -1425,9 +1346,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ) {
         return this.database.transaction(async (tx) => {
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             await tx
                 .select({ id: usersTable.id })
                 .from(usersTable)
@@ -1666,9 +1585,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ) {
         return this.database.transaction(async (tx) => {
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             const [owner] = await tx
                 .select({ id: usersTable.id })
                 .from(usersTable)
@@ -2042,9 +1959,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ) {
         return this.database.transaction(async (tx) => {
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             const [owner] = await tx
                 .select({ id: usersTable.id })
                 .from(usersTable)
@@ -2468,9 +2383,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ) {
         const result = await this.database.transaction(async (tx) => {
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             abort(input.context);
             await tx
                 .select({ id: usersTable.id })
@@ -2749,9 +2662,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     ) {
         const result = await this.database.transaction(async (tx) => {
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             await tx
                 .select({ id: usersTable.id })
                 .from(usersTable)
@@ -3210,9 +3121,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         );
         const result = await this.database.transaction(async (tx) => {
             abort(input.context);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             await tx
                 .select({ id: usersTable.id })
                 .from(usersTable)
@@ -3590,9 +3499,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
                 );
             }
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
-            );
+            await lockTextAiCapacity(tx);
             const stale = await tx
                 .select()
                 .from(dictionaryGenerationJobsTable)
@@ -3778,19 +3685,19 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     );
             }
 
-            const [runningCount] = await tx
-                .select({ value: count() })
-                .from(dictionaryGenerationJobsTable)
-                .where(
-                    eq(dictionaryGenerationJobsTable.executionState, 'running'),
-                );
-            if (Number(runningCount?.value ?? 0) >= input.globalConcurrency)
+            const runningCapacity = await readTextAiCapacity(tx, {
+                actorId: '00000000-0000-0000-0000-000000000000',
+                now: input.context.now,
+                budget: this.providerBudget,
+            });
+            if (runningCapacity.globalRunning >= input.globalConcurrency)
                 return null;
-
             const runningForOwner = sql<number>`(
-                select count(*) from ${dictionaryGenerationJobsTable} running
-                where running.owner_id = ${dictionaryGenerationJobsTable.ownerId}
-                  and running.execution_state = 'running'
+                select count(*) from (
+                    select owner_id as actor_id from dictionary_generation_jobs where execution_state='running'
+                    union all
+                    select learner_id as actor_id from sentence_ai_jobs where execution_state='running'
+                ) running where running.actor_id = ${dictionaryGenerationJobsTable.ownerId}
             )`;
             const [candidate] = await tx
                 .select()
@@ -5228,21 +5135,16 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         if (providerCircuit?.openUntil && providerCircuit.openUntil > now)
             throw new DictionaryGenerationNotAvailableError();
 
-        const [counts] = await tx
-            .select({
-                global: count(),
-                oldestRunnableQueuedAt: sql<
-                    string | null
-                >`min(${dictionaryGenerationJobsTable.createdAt}) filter (where ${dictionaryGenerationJobsTable.executionState} = 'queued' and ${dictionaryGenerationJobsTable.nextAttemptAt} <= ${now.toISOString()}::timestamptz)`,
-                owner: sql<number>`count(*) filter (where ${dictionaryGenerationJobsTable.ownerId} = ${ownerId})`,
-            })
-            .from(dictionaryGenerationJobsTable)
-            .where(
-                inArray(dictionaryGenerationJobsTable.executionState, [
-                    'queued',
-                    'running',
-                ]),
-            );
+        const capacity = await readTextAiCapacity(tx, {
+            actorId: ownerId,
+            now: now,
+            budget: providerExecution.budget,
+        });
+        const counts = {
+            global: capacity.globalQueued + capacity.globalRunning,
+            owner: capacity.actorQueued + capacity.actorRunning,
+            oldestRunnableQueuedAt: capacity.oldestRunnableAt,
+        };
         if (
             Number(counts?.global ?? 0) >= generationLimits.globalQueued ||
             Number(counts?.owner ?? 0) >= generationLimits.ownerQueued ||
@@ -5404,125 +5306,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         now: Date,
         policy: DictionaryGenerationProviderBudgetPolicy,
     ): Promise<DictionaryGenerationProviderBudgetUsage> {
-        const windowStart = new Date(now.getTime() - 86_400_000).toISOString();
-        await tx
-            .delete(dictionaryGenerationProviderUsageArchiveTable)
-            .where(
-                lte(
-                    dictionaryGenerationProviderUsageArchiveTable.settledAt,
-                    new Date(windowStart),
-                ),
-            );
-        const [usage] = await tx
-            .select({
-                globalActiveCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active'), 0)`,
-                globalActiveInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active'), 0)`,
-                globalActiveOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active'), 0)`,
-                globalSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                globalSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                globalSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                ownerActiveCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId}), 0)`,
-                ownerActiveInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId}), 0)`,
-                ownerActiveOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId}), 0)`,
-                ownerSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                ownerSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                ownerSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
+        return (
+            await readTextAiCapacity(tx, {
+                actorId: ownerId,
+                now,
+                budget: policy,
             })
-            .from(dictionaryGenerationJobsTable)
-            .where(
-                and(
-                    eq(
-                        dictionaryGenerationJobsTable.providerInputCostMicrosPerMillionTokens,
-                        policy.inputCostMicrosPerMillionTokens,
-                    ),
-                    eq(
-                        dictionaryGenerationJobsTable.providerOutputCostMicrosPerMillionTokens,
-                        policy.outputCostMicrosPerMillionTokens,
-                    ),
-                    eq(
-                        dictionaryGenerationJobsTable.providerMaxCostMicrosPerAttempt,
-                        policy.maxCostMicrosPerAttempt,
-                    ),
-                    eq(
-                        dictionaryGenerationJobsTable.providerMaxInputTokensPerAttempt,
-                        policy.maxInputTokensPerAttempt,
-                    ),
-                    eq(
-                        dictionaryGenerationJobsTable.providerMaxOutputTokensPerAttempt,
-                        policy.maxOutputTokensPerAttempt,
-                    ),
-                ),
-            );
-        const [archivedUsage] = await tx
-            .select({
-                globalSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualCostMicros}), 0)`,
-                globalSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualInputTokens}), 0)`,
-                globalSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualOutputTokens}), 0)`,
-                ownerSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualCostMicros}) filter (where ${dictionaryGenerationProviderUsageArchiveTable.ownerId} = ${ownerId}), 0)`,
-                ownerSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualInputTokens}) filter (where ${dictionaryGenerationProviderUsageArchiveTable.ownerId} = ${ownerId}), 0)`,
-                ownerSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationProviderUsageArchiveTable.actualOutputTokens}) filter (where ${dictionaryGenerationProviderUsageArchiveTable.ownerId} = ${ownerId}), 0)`,
-            })
-            .from(dictionaryGenerationProviderUsageArchiveTable)
-            .where(
-                and(
-                    gt(
-                        dictionaryGenerationProviderUsageArchiveTable.settledAt,
-                        new Date(windowStart),
-                    ),
-                    eq(
-                        dictionaryGenerationProviderUsageArchiveTable.inputCostMicrosPerMillionTokens,
-                        policy.inputCostMicrosPerMillionTokens,
-                    ),
-                    eq(
-                        dictionaryGenerationProviderUsageArchiveTable.outputCostMicrosPerMillionTokens,
-                        policy.outputCostMicrosPerMillionTokens,
-                    ),
-                    eq(
-                        dictionaryGenerationProviderUsageArchiveTable.maxCostMicrosPerAttempt,
-                        policy.maxCostMicrosPerAttempt,
-                    ),
-                    eq(
-                        dictionaryGenerationProviderUsageArchiveTable.maxInputTokensPerAttempt,
-                        policy.maxInputTokensPerAttempt,
-                    ),
-                    eq(
-                        dictionaryGenerationProviderUsageArchiveTable.maxOutputTokensPerAttempt,
-                        policy.maxOutputTokensPerAttempt,
-                    ),
-                ),
-            );
-        return {
-            globalActiveCostMicros: Number(usage?.globalActiveCostMicros ?? 0),
-            globalActiveInputTokens: Number(
-                usage?.globalActiveInputTokens ?? 0,
-            ),
-            globalActiveOutputTokens: Number(
-                usage?.globalActiveOutputTokens ?? 0,
-            ),
-            globalSettledCostMicros:
-                Number(usage?.globalSettledCostMicros ?? 0) +
-                Number(archivedUsage?.globalSettledCostMicros ?? 0),
-            globalSettledInputTokens:
-                Number(usage?.globalSettledInputTokens ?? 0) +
-                Number(archivedUsage?.globalSettledInputTokens ?? 0),
-            globalSettledOutputTokens:
-                Number(usage?.globalSettledOutputTokens ?? 0) +
-                Number(archivedUsage?.globalSettledOutputTokens ?? 0),
-            ownerActiveCostMicros: Number(usage?.ownerActiveCostMicros ?? 0),
-            ownerActiveInputTokens: Number(usage?.ownerActiveInputTokens ?? 0),
-            ownerActiveOutputTokens: Number(
-                usage?.ownerActiveOutputTokens ?? 0,
-            ),
-            ownerSettledCostMicros:
-                Number(usage?.ownerSettledCostMicros ?? 0) +
-                Number(archivedUsage?.ownerSettledCostMicros ?? 0),
-            ownerSettledInputTokens:
-                Number(usage?.ownerSettledInputTokens ?? 0) +
-                Number(archivedUsage?.ownerSettledInputTokens ?? 0),
-            ownerSettledOutputTokens:
-                Number(usage?.ownerSettledOutputTokens ?? 0) +
-                Number(archivedUsage?.ownerSettledOutputTokens ?? 0),
-        };
+        ).providerUsage;
     }
 
     private async readView(tx: Transaction, job: JobRow, now: Date) {

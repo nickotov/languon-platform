@@ -190,6 +190,23 @@ privileged, and no public arbitrary-provider or generic-prompt endpoint exists.
 Worker capability checks protect mixed releases. See
 [ADR-0026](adr/0026-shared-text-ai-selection-and-user-preferences.md).
 
+## Sentence learning backend
+
+The learning module owns typed sentence generation/checking, additive exercises,
+personal attempts and explicit free reference reviews. Private references never
+appear in ordinary exercise or job projections. Saved-first completion includes
+personal AI checks and manual reviews, while their statistics remain separate.
+Versioned exposure/coverage survives retirement and removal of other contributing
+entries; full copied-candidate provenance drives strict derived-content erasure.
+
+Dictionary and sentence work share credit settlement, a capacity lock, numerical
+queue/running/provider accounting and the existing bounded root worker slots.
+Exact namespaced capability evidence and immutable job guards protect mixed-worker
+rollout. API admission defaults off; workers still drain existing work. Restricted
+roles and actor/owned-dictionary purge participants preserve private-data and
+numerical-accounting boundaries. See [ADR-0027](adr/0027-typed-sentence-work-and-shared-ai-accounting.md)
+and the [backend flow](user-flows/sentence-practice-backend.md).
+
 ## Flashcard learning backend
 
 The backend `learning` module owns personal flashcard preferences, content-free

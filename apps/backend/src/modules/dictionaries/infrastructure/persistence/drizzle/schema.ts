@@ -1295,6 +1295,14 @@ export const dictionaryGenerationProviderUsageArchiveTable = pgTable(
             .defaultNow()
             .notNull(),
         id: uuid('id').primaryKey(),
+        jobKind: text('job_kind')
+            .$type<
+                | 'dictionary-generation'
+                | 'sentence-generation'
+                | 'sentence-check'
+            >()
+            .notNull()
+            .default('dictionary-generation'),
         inputCostMicrosPerMillionTokens: integer(
             'input_cost_micros_per_million_tokens',
         ).notNull(),
@@ -1319,6 +1327,10 @@ export const dictionaryGenerationProviderUsageArchiveTable = pgTable(
         }).notNull(),
     },
     (table) => [
+        check(
+            'text_ai_usage_archive_kind',
+            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check')`,
+        ),
         check(
             'dictionary_generation_provider_usage_archive_nonnegative',
             sql`${table.actualCostMicros} >= 0 and ${table.actualInputTokens} >= 0 and ${table.actualOutputTokens} >= 0`,

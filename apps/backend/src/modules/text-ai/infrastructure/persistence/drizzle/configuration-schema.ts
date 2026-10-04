@@ -91,6 +91,9 @@ export const dictionaryAiWorkerObservationsTable = pgTable(
         status: text('status').notNull(),
         workerId: text('worker_id').notNull(),
         textAiSelectionRevision: integer('text_ai_selection_revision'),
+        textAiCapacityRevision: integer('text_ai_capacity_revision'),
+        learningExecutionRevision: integer('learning_execution_revision'),
+        creditSettlementRevision: integer('credit_settlement_revision'),
         textAiSupportedFormats: jsonb('text_ai_supported_formats').$type<
             string[]
         >(),

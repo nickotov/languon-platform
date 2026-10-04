@@ -72,3 +72,14 @@ passed database/API/worker/browser checks and independent correctness/security
 reviews. This backlog task remains in progress for profile UI and final design
 integration. The design prompt waits until the sentence backend is also verified,
 as specified in the [delivery plan](../sentence-practice-implementation-plan.md).
+
+## Verified backend / design checkpoint — 2026-10-04
+
+Backend delivery is implemented, verified and independently reviewed. The detailed
+[implementation plan](../sentence-practice-implementation-plan.md) records completed
+backend and deferred frontend scope. Copy the
+[profile-text-ai-preferences v001 prompt](../design-prompt/profile-text-ai-preferences.md) into Magic Patterns;
+return its generated design/source before frontend implementation continues.
+[Versioned handoff](../../.agent/features/035-user-ai-model-preferences-backend/DESIGN.md) preserves the
+snapshot and selection history. This task remains In progress; backend completion
+does not mark the deferred UI/product work done.

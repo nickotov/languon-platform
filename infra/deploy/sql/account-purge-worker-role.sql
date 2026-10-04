@@ -31,6 +31,31 @@ GRANT DELETE ON TABLE dictionary_deletion_receipts,
     dictionary_generation_provider_usage_archive TO :"account_purge_role";
 GRANT SELECT (owner_id) ON TABLE dictionary_deletion_receipts,
     dictionary_generation_provider_usage_archive TO :"account_purge_role";
+GRANT INSERT (id, owner_id, actual_cost_micros, actual_input_tokens,
+    actual_output_tokens, input_cost_micros_per_million_tokens,
+    output_cost_micros_per_million_tokens, max_cost_micros_per_attempt,
+    max_input_tokens_per_attempt, max_output_tokens_per_attempt,
+    settled_at, archived_at, job_kind)
+    ON TABLE dictionary_generation_provider_usage_archive TO :"account_purge_role";
+GRANT SELECT (id) ON TABLE dictionary_generation_provider_usage_archive TO :"account_purge_role";
+-- Permanent sentence cleanup uses identity and numerical accounting only.
+GRANT DELETE ON TABLE sentence_ai_jobs, sentence_exercises, sentence_attempts,
+    sentence_manual_reviews, sentence_exposures, sentence_entry_coverage,
+    sentence_next_receipts TO :"account_purge_role";
+GRANT SELECT (id, learner_id, dictionary_id, execution_state,
+    provider_reservation_state, job_kind, provider_actual_cost_micros,
+    provider_actual_input_tokens, provider_actual_output_tokens,
+    provider_input_cost_micros_per_million_tokens,
+    provider_output_cost_micros_per_million_tokens,
+    provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt,
+    provider_max_output_tokens_per_attempt, provider_reservation_settled_at)
+    ON TABLE sentence_ai_jobs TO :"account_purge_role";
+GRANT SELECT (id, creator_id, dictionary_id) ON TABLE sentence_exercises TO :"account_purge_role";
+GRANT SELECT (id, learner_id, dictionary_id, exercise_id, operation_id, request_fingerprint)
+    ON TABLE sentence_manual_reviews TO :"account_purge_role";
+GRANT SELECT (learner_id) ON TABLE sentence_attempts, sentence_exposures TO :"account_purge_role";
+GRANT SELECT (learner_id, dictionary_id) ON TABLE sentence_entry_coverage,
+    sentence_next_receipts TO :"account_purge_role";
 GRANT SELECT (user_id), UPDATE (metadata) ON TABLE auth_security_events TO :"account_purge_role";
 GRANT SELECT (actor_user_id, target_user_id), UPDATE (metadata, reason)
     ON TABLE admin_audit_events TO :"account_purge_role";

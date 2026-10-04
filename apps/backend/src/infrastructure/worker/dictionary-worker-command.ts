@@ -5,6 +5,9 @@ import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
+import { createSentenceWorkerComposition } from '../../modules/learning/infrastructure/sentence-composition';
+import { createSentenceAiProvider } from '../../modules/learning/infrastructure/ai/sentence-ai-provider';
+import type { SentenceAiProvider } from '../../modules/learning/application/ports/sentence-ai-provider';
 import { DictionaryAudioWorker } from '../../modules/dictionaries/application/dictionary-audio-worker';
 import { DictionaryWorkerCoordinator } from '../../modules/dictionaries/application/dictionary-worker-coordinator';
 import { createDictionaryAudioAdapters } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
@@ -23,7 +26,7 @@ import {
     createDictionaryTextProviderRoutingAdapters,
     DictionaryTextProviderRouter,
 } from '../../modules/dictionaries/infrastructure/ai/dictionary-text-provider-router';
-import { publishDictionaryAiWorkerObservations } from '../../modules/dictionaries/infrastructure/ai/dictionary-ai-worker-observations';
+import { publishTextAiWorkerObservations } from '../../modules/text-ai/infrastructure/ai/text-ai-worker-observations';
 import { createDictionaryWorkerComposition } from '../../modules/dictionaries/infrastructure/dictionary-worker-composition';
 import {
     dictionaryImportPairsGenerationFormat,
@@ -45,13 +48,36 @@ import {
 import { ClamAvDocumentMalwareScanner } from '../../modules/dictionaries/infrastructure/document/clamav-document-malware-scanner';
 import { BubblewrapSandboxedDocumentExtractor } from '../../modules/dictionaries/infrastructure/document/bubblewrap-sandboxed-document-extractor';
 import { HmacDictionaryCryptography } from '../../modules/dictionaries/infrastructure/crypto/dictionary-cryptography';
-import { loadDictionaryWorkerEnvironment } from './dictionary-worker-environment';
+import {
+    loadDictionaryWorkerEnvironment,
+    type DictionaryWorkerEnvironment,
+} from './dictionary-worker-environment';
 import { DictionaryWorkerRuntime } from './dictionary-worker-runtime';
 
 export const dictionaryWorkerLocalEnvironmentFile = new URL(
     '../../../../../.env.local',
     import.meta.url,
 );
+
+/** Dictionary deterministic fixtures do not define a language-general sentence
+ * fixture. Fail closed instead of accidentally calling a paid model. Reviewed
+ * composed journeys inject their deterministic provider through the worker port. */
+export function createWorkerSentenceProvider(
+    environment: Pick<
+        DictionaryWorkerEnvironment,
+        'providerFixtureMode' | 'providerCredentials'
+    >,
+): SentenceAiProvider {
+    if (environment.providerFixtureMode === 'deterministic') {
+        const unavailable = async (): Promise<never> => {
+            throw new Error('Sentence provider fixtures are unavailable.');
+        };
+        return { generate: unavailable, check: unavailable };
+    }
+    return createSentenceAiProvider({
+        credentials: environment.providerCredentials,
+    });
+}
 
 class DictionaryWorkerConfigurationError extends Error {}
 
@@ -286,6 +312,20 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             : {}),
     };
     const workerId = createWorkerId(environment.releaseSha);
+    // The API flag controls admissions, never draining persisted sentence jobs.
+    const { worker: sentenceWorker } = createSentenceWorkerComposition({
+        database,
+        provider: createWorkerSentenceProvider(environment),
+        clock: { now: () => new Date() },
+        workerId,
+        leaseMs: 30_000,
+        heartbeatMs: 10_000,
+        timeoutMs: 20_000,
+        globalConcurrency: 10,
+        learnerConcurrency: 1,
+        maxAttempts: 3,
+        retryDelayMs: 5_000,
+    });
     const observationWorkerId = `${environment.releaseSha}:${hostname().slice(0, 64)}`;
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
@@ -294,6 +334,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         pollIntervalMs: environment.pollIntervalMs,
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
+        sentenceService: sentenceWorker,
         supportedFormats: environment.supportedFormats,
         workerId,
     });
@@ -321,7 +362,9 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     };
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
-    await publishDictionaryAiWorkerObservations({
+    await publishTextAiWorkerObservations({
+        learningExecutionEnabled:
+            environment.providerFixtureMode !== 'deterministic',
         supportedFormats: environment.supportedFormats,
         credentials: environment.providerCredentials,
         database,
@@ -335,7 +378,9 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         workerId: observationWorkerId,
     });
     const observationTimer = setInterval(() => {
-        void publishDictionaryAiWorkerObservations({
+        void publishTextAiWorkerObservations({
+            learningExecutionEnabled:
+                environment.providerFixtureMode !== 'deterministic',
             supportedFormats: environment.supportedFormats,
             credentials: environment.providerCredentials,
             database,

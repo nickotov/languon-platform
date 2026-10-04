@@ -143,6 +143,7 @@ export const aiCreditReservationsTable = pgTable(
         }),
         id: uuid('id').primaryKey(),
         jobId: uuid('job_id').notNull(),
+        jobKind: text('job_kind').default('dictionary-generation').notNull(),
         measuredCredits: bigint('measured_credits', { mode: 'bigint' }),
         measurement: aiCreditMeasurementEnum('measurement'),
         ownerId: uuid('owner_id')
@@ -165,6 +166,10 @@ export const aiCreditReservationsTable = pgTable(
         }),
     },
     (table) => [
+        check(
+            'ai_credit_reservations_job_kind_closed',
+            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check')`,
+        ),
         check(
             'ai_credit_reservations_attempt_positive',
             sql`${table.attempt} > 0`,

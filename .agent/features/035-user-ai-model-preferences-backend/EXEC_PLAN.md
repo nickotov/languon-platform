@@ -95,3 +95,11 @@ pending until both backend feature scopes are verified.
   the exact73-file digest, with both findings resolved and no new material issue.
   Backend scope Complete; final local feature commit/squash handoff follows.
   Next: sentence backend feature from updated main, then both versioned prompts.
+
+## Design prompt checkpoint — 2026-10-04
+
+After verified backend036 completion, the detailed profile-model preference prompt
+and immutablev001 snapshot are delivered; see [DESIGN.md](./DESIGN.md) and
+[canonical prompt](../../../docs/design-prompt/profile-text-ai-preferences.md).
+Frontend integration remains awaiting a returned selected design. No external
+Magic Patterns generation/publishing was performed.

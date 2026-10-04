@@ -37,6 +37,7 @@ export function createApp(options?: {
     authentication?: AppAuthenticationOptions;
     dictionaries?: OpenAPIHono;
     learning?: OpenAPIHono;
+    sentenceLearning?: OpenAPIHono;
     operational?: AppOperationalOptions;
     textAi?: OpenAPIHono;
     userProfiles?: UserProfileRouteDependencies;
@@ -65,6 +66,9 @@ export function createApp(options?: {
     }
     if (options?.dictionaries) {
         app.route('/', options.dictionaries);
+    }
+    if (options?.sentenceLearning) {
+        app.route('/', options.sentenceLearning);
     }
     if (options?.learning) {
         app.route('/', options.learning);

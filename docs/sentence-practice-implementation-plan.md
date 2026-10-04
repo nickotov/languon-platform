@@ -1,7 +1,7 @@
 ---
 type: implementation-plan
 title: Backend first AI model preferences and sentence translation practice
-status: implementing
+status: awaiting-design
 created: 2026-10-04
 updated: 2026-10-04
 backlog_tasks:
@@ -38,8 +38,10 @@ accepted ADR. The user authorized implementation on 2026-10-04 after clarifying
 cross-session reuse, fresh generation, retained exercises and display modes.
 **Current checkpoint: implement and verify the backends; frontend remains deferred
 until the user returns with Magic Patterns designs.**
-Active model backend: [feature 035](../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md)
+Verified model backend (`bcfda16`): [feature 035](../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md)
 and [ExecPlan](../.agent/features/035-user-ai-model-preferences-backend/EXEC_PLAN.md).
+Active sentence backend: [feature036](../.agent/features/036-sentence-practice-backend/FEATURE.md)
+and [ExecPlan](../.agent/features/036-sentence-practice-backend/EXEC_PLAN.md).
 
 Documentation delivery is recorded in the
 [planning record](../.agent/improvements/sentence-practice-delivery-plan.md).
@@ -48,6 +50,27 @@ Related context: [backlog index](backlog/INDEX.md),
 [existing flashcard delivery](flashcard-training-implementation-plan.md),
 [design prompt index](design-prompt/README.md), and
 [versioned design handoff rules](../.agent/DESIGN_HANDOFF.md).
+
+## Verified backend and design checkpoint
+
+Both backends are implemented and independently reviewed: feature035 provides
+personal model preferences and pinned text execution; feature036 provides sentence
+practice, typed work/accounting, personal AI feedback and free manual reference
+review. Security and completion findings were remediated; detailed evidence lives
+in the linked feature records. No sentence/profile-model frontend integration or
+production enablement was performed.
+
+Copy these separate prompts into Magic Patterns:
+
+- [Profile AI model preferences — v001](design-prompt/profile-text-ai-preferences.md)
+- [Sentence practice — v001](design-prompt/sentence-practice.md)
+
+Immutable snapshots, fingerprints and design-return slots are tracked in
+[035 DESIGN.md](../.agent/features/035-user-ai-model-preferences-backend/DESIGN.md)
+and [036 DESIGN.md](../.agent/features/036-sentence-practice-backend/DESIGN.md).
+No implementation target is selected. Continue frontend generation only after the
+user returns the design/source and selects the applicable revision. Backlog003,
+004 and005 remain in progress for their deferred frontend/product scope.
 
 ## Delivery phases and mandatory checkpoints
 
@@ -86,9 +109,10 @@ within backend verification; they are not substitutes for the later frontend.
   simple grammar and one to three target entries plus common supporting words.
   Phrases and senses retain separate entry identities.
 - Automatic practice serves eligible saved exercises the learner has never
-  successfully checked, then generates one new sentence when that pool is
-  exhausted. A completed check counts regardless of score; failed checking does
-  not. Setup offers three explicit choices: Saved first (default), New sentences
+  completed through a successful AI check or an explicit reference-answer
+  reveal, then generates one new sentence when that pool is exhausted. A successful
+  AI check counts regardless of score. A reveal counts as manually reviewed; a
+  failed check or failed reveal does not complete the exercise. Setup offers three explicit choices: Saved first (default), New sentences
   (always request fresh generation), and Review saved (never generate). New
   sentences is available on every session, does not delete previous generations
   and does not reset vocabulary coverage or personal history.
@@ -100,7 +124,7 @@ within backend verification; they are not substitutes for the later frontend.
 - Normalize inflected content-word hints to lexical base forms, present verb
   hints in infinitive form, and omit standalone articles/auxiliary helpers.
   Preserve meaningful multiword expressions and the complete source sentence.
-- Learners type freely. Checking assesses meaning, grammar and required target
+- Learners type freely. AI checking is the default and assesses meaning, grammar and required target
   vocabulary, accepts natural inflections and recognizes valid alternatives.
   A synonym can convey the right meaning without satisfying the target task.
 - Show a percentage, quality rating, highlighted mistakes, explanations and an
@@ -108,6 +132,11 @@ within backend verification; they are not substitutes for the later frontend.
   below 50% Practise again later. Missing required vocabulary caps the score at
   79%; substantive mistakes prevent Perfect.
 - Track hint use separately without reducing the answer score.
+- Generate and store a validated reference translation in the same generation as
+  the source sentence and lexical hint mapping. Offer an explicit free Show
+  reference answer action with no AI analysis. It works with zero credits for an
+  already generated, currently authorized exercise. Reveal counts as manually
+  reviewed for that learner and is separate from AI scores and ratings.
 - Persist used/remaining coverage per learner, dictionary, direction and current
   entry learning version. Successful generation counts when its exercise is
   saved; reused content counts on first presentation to that learner. Count
@@ -125,8 +154,8 @@ within backend verification; they are not substitutes for the later frontend.
 - Meaningful edits retire linked exercises from practice while retaining
   authorized personal history. Permanent deletion removes content-bearing
   exercises, answers, feedback and job inputs.
-- New generation and checking use the learner's existing credit policy and
-  model preference. Stored content/feedback reads are free. Existing per-provider-
+- New generation and AI checking use the learner's existing credit policy and
+  model preference. Stored content/feedback reads and reference reveals are free. Existing per-provider-
   attempt retry and settlement policy remains unchanged.
 - Disabled, incompatible or unavailable selections fail with actionable errors;
   preserve the preference and never silently select a different model.
@@ -144,15 +173,15 @@ the learner advances; a first-time shared reader may already have owner-generate
 content available. Partial generation is retained between sessions.
 
 For example, with entries A, B and C, the learner generates an exercise for A
-and one for B but only completes checking A. The next Saved first session offers
+and one for B but only completes A (by AI checking or manual reference review). The next Saved first session offers
 the saved B exercise, then generates new content prioritizing C. The previously
-checked A exercise remains available in Review saved. If both A and B were
-checked, Saved first proceeds directly to new generation prioritizing C.
+completed A exercise remains available in Review saved. If both A and B were
+completed, Saved first proceeds directly to new generation prioritizing C.
 
 Never infer that an entry is learned because a sentence was generated, opened or
-checked. Coverage controls generation variety; answer quality and hint use are
+checked or manually reviewed. Coverage controls generation variety; answer quality and hint use are
 separate personal attempt data. Saved first does not automatically repeat already
-checked mistakes; the learner can select Review saved. Weak-area scheduling
+completed exercises; the learner can select Review saved. Weak-area scheduling
 remains a later feature.
 
 New sentences bypasses saved selection on every Next, even on second or later
@@ -224,18 +253,21 @@ immutability and compatibility guarantees.
 
 Keep sentence models in `learning`, separate from flashcard schemas:
 
-| Model                | Responsibility                                                                                                    |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Exercise             | Saved source, internal reference translation, hints, direction, creator, visibility and generation-policy version |
-| Exercise-entry links | Exact source entry identities and learning versions                                                               |
-| Personal attempt     | Answer, feedback, score/rating, hints, session and operation identity                                             |
-| Personal coverage    | Usage by learner/dictionary/direction/entry/current version                                                       |
-| Exposure marker      | Exactly-once coverage for each learner/exercise                                                                   |
-| Learning AI job      | Generation/checking inputs, pinned execution, credits, leases and result references                               |
+| Model                | Responsibility                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Exercise             | Saved source, protected reference translation, hints, direction, creator, visibility and generation-policy version |
+| Exercise-entry links | Exact source entry identities and learning versions                                                                |
+| Personal attempt     | AI-checked answer, feedback, score/rating, hint/reference assistance, session and operation identity               |
+| Manual review        | Personal explicit reference reveal, exercise/session/operation identity and review time; no AI grade               |
+| Personal coverage    | Usage by learner/dictionary/direction/entry/current version                                                        |
+| Exposure marker      | Exactly-once coverage for each learner/exercise                                                                    |
+| Learning AI job      | Generation/checking inputs, pinned execution, credits, leases and result references                                |
 
 Use explicit foreign keys and indexed provenance. Include deletion provenance
 for all content-bearing inputs, including unused generation candidates. Internal
-reference translations are absent from pre-check responses. Attempts are readable
+reference translations are absent from ordinary exercise, generation-result and
+job responses. Only explicit authorized reveal exposes the stored reference,
+without a provider call or credit admission. Attempts and manual review records are readable
 only by their learner. Do not introduce a universal exercise table, generic job
 registry or detached learning-history archive.
 
@@ -243,18 +275,24 @@ Extend existing owner and shared learning prefixes:
 `/learning/dictionaries/{dictionaryId}` and
 `/learning/shared-dictionaries/{shareId}`.
 
-| Relative operation                              | Behavior                                                                                                              |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `POST /sentences/prepare`                       | Validate direction, scope, explanation language and practice mode; return eligibility/saved-pool information          |
-| `POST /sentences/next`                          | Follow Saved first, New sentences or Review saved; return saved content, admit generation or report review exhaustion |
-| `GET /sentences/jobs/{jobId}`                   | Authorized durable status/result                                                                                      |
-| `POST /sentences/jobs/{jobId}/cancel`           | Cooperative cancellation and existing credit settlement                                                               |
-| `POST /sentences/exercises/{exerciseId}/checks` | Admit checking of the exact answer                                                                                    |
-| `GET /sentences/attempts`                       | Paginated personal history                                                                                            |
-| `GET /sentences/progress`                       | Directional current coverage and attempt summary                                                                      |
+| Relative operation                                        | Behavior                                                                                                              |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `POST /sentences/prepare`                                 | Validate direction, scope, explanation language and practice mode; return eligibility/saved-pool information          |
+| `POST /sentences/next`                                    | Follow Saved first, New sentences or Review saved; return saved content, admit generation or report review exhaustion |
+| `GET /sentences/jobs/{jobId}`                             | Authorized durable status/result                                                                                      |
+| `POST /sentences/jobs/{jobId}/cancel`                     | Cooperative cancellation and existing credit settlement                                                               |
+| `POST /sentences/exercises/{exerciseId}/checks`           | Admit checking of the exact answer                                                                                    |
+| `POST /sentences/exercises/{exerciseId}/reference-answer` | Reveal the saved reference free of AI/credits and idempotently record a personal manual review                        |
+| `GET /sentences/attempts`                                 | Paginated personal history                                                                                            |
+| `GET /sentences/reviews`                                  | Paginated personal ungraded manual-reference history                                                                  |
+| `GET /sentences/progress`                                 | Directional current coverage and attempt summary                                                                      |
 
-Extend capability contracts with sentence availability. Reuse shared-key
-transport, pagination and request bounds. Each new AI request uses a unique
+Expose sentence availability through its separate capability contract; preserve
+the legacy flashcard capability shape for strict existing clients. Reuse shared-key
+transport, pagination and request bounds. Temporary queue, queue-age or provider
+daily-budget pressure returns retryable503 `capacity_unavailable`, never missing
+content404. Admission limits count combined queued plus running dictionary and
+sentence work globally and per learner. Each new AI request uses a unique
 operation ID; identical replay returns existing work and changed payloads conflict.
 These paths belong only to engineering documents. **Do not copy them into either
 portable design prompt.** Confirm final interfaces against implementation and ADRs.
@@ -263,9 +301,9 @@ portable design prompt.** Confirm final interfaces against implementation and AD
 
 Saved-first selection reauthorizes the learner/dictionary, restricts visibility
 and direction, requires every linked entry to remain active/current, fits all
-targets within the selected scope and excludes completed checks/current-session
-visits. The client tracks visited IDs locally; exclusions never confer authority.
-Review uses valid saved content regardless of prior checks, least recently
+targets within the selected scope and excludes exercises completed by AI checking or manual reference review,
+plus current-session visits. The client tracks visited IDs locally; exclusions never confer authority.
+Review uses valid saved content regardless of prior AI checks or manual reviews, least recently
 practised first, and finishes without generation when its pool is exhausted.
 New sentences bypasses saved selection and admits one fresh generation per Next
 using the same unused/less-exposed priority and existing credit/model rules.
@@ -274,7 +312,8 @@ pool or clears personal progress.
 
 If generation is needed, prefer unused entries then less-exposed entries; supply
 a bounded candidate shortlist and require one to three targets including the
-priority entry. Construct a public-safe vocabulary projection; omit private
+priority entry. Generate the reference translation in the same validated generation, not on reveal.
+Construct a public-safe vocabulary projection; omit private
 dictionary/card translation context even for owner-generated shared exercises.
 After final live/version checks, persist validated exercise content, links and
 creator coverage atomically.
@@ -294,6 +333,62 @@ have global issues. Invalid output cannot become a completed attempt.
 Derive rating labels/caps on the server. Each completed check is a separate
 personal attempt. Edited rechecking is a new operation; transport retries retain
 the old operation ID. Stored feedback is reopened without calling AI.
+
+### Free reference review and default AI checking
+
+AI Check answer remains the primary/default assessment action. Show reference
+answer is an explicit secondary action available regardless of wallet balance,
+model availability or AI worker readiness. Never reveal automatically after a
+credit error or substitute manual review silently for a requested AI check.
+
+A reference is one valid target-language translation, not the only acceptable
+answer. Display the learner's retained draft next to the reference for comparison.
+Manual review performs no exact-string pass/fail, percentage, grammar analysis,
+correctness probability or quality rating. Do not label it AI checked or award a
+synthetic score. Required target vocabulary still applies to the reference itself.
+
+Generation validates and saves source, complete reference translation and target
+hint mapping together. Revealing an existing exercise requires active identity,
+current source versions and live owner/share authority, but does not resolve the
+current model, require a credit balance, reserve/settle credits, enqueue a job or
+call a provider. New generation still requires credits; zero-credit users can
+practise and reveal existing authorized saved exercises. An empty saved pool does
+not grant free generation.
+
+Record manual reviews personally and idempotently by operation, exercise and
+session. Successful reveal completes that exercise for the learner's Saved first
+pool. Review saved can revisit it, and later paid AI analysis remains available.
+Retries must not duplicate manual review counts. Reference reveal never increments
+vocabulary exposure a second time, resets coverage or changes another learner's
+completion. Retain the draft, hints and reference across fullscreen/dialog changes.
+
+Separate AI attempts/ratings from manual-review events and totals in progress,
+history and session summaries. Record reference disclosure separately from lexical
+hint usage; AI analysis requested after revealing a reference in that session is
+reference-assisted, without an extra score penalty. Manual review does not prove
+mastery. Exercise retirement and permanent deletion apply to reference content and
+manual records, with live authorization on replay and no stale-content disclosure.
+
+Future assessment engine: Jev from TypeSafe AI is a researched candidate for
+structured semantic judgments, separate from this implementation. Its official
+[overview](https://docs.typesafe.ai/introduction) describes Choice, Score and Noul
+primitives returning typed decisions/probabilities. Jev does not generate textual
+feedback or reference translations. Its
+[Choice documentation](https://docs.typesafe.ai/primitives/choice) distinguishes
+option probabilities from confidence; neither is automatically our learner quality
+percentage. The official
+[model limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13) document
+literal interpretation, adversarial-input and numerical-calibration limitations.
+
+A later evaluation can ask separate meaning/grammar/required-target questions from
+source, reference, answer and target vocabulary, then combine results in reviewed
+server policy. Test multilingual valid alternatives, inflections versus synonyms,
+ambiguous sentences, deliberate instruction injection, calibration and low-confidence
+fallback. Keep numeric rating boundaries/caps in code. Generative feedback still
+needs a generative model if explanations/corrections are required. No Jev dependency,
+provider credentials, model choice, pricing, production integration or probability
+conversion is part of the current feature. Research verified2026-10-04 from primary
+documentation; live Jev calls were not made.
 
 ### Jobs, credits and compatibility
 
@@ -441,21 +536,22 @@ or mobile-native capabilities.
 
 ### Sentence practice prompt inventory
 
-| Area                  | Required states                                                                                                                                                                               |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Entry and identity    | Train menu with Sentences, owner, signed-in shared reader, signed-out sign-in requirement, capability unavailable, archived/revoked dictionary                                                |
-| Setup                 | Loading, language direction swap, explanation default/selection, all/manual scope, search/pagination, selected count, empty selection and load/retry failure                                  |
-| Eligibility           | Empty dictionary, no eligible entries, missing translations/skipped entries, no saved exercises, all saved answered, partial selected scope                                                   |
-| Modes and coverage    | Saved first, New sentences and Review saved; fresh generation on later sessions; retained older generations; used/remaining per direction, zero/partial/full coverage and first-opening reuse |
-| Generation            | Admitting/queued/running, delayed work, reconnect/resume, cancel pending/cancelled, retryable failure, insufficient credits, unavailable model, stale content and revoked access              |
-| Exercise              | New or saved label, required source highlights, word/phrase/repeated-token hints, grammatical helpers without hints, hover/focus/tap disclosure, RTL and mixed scripts                        |
-| Answer                | Empty/typing/invalid input, bounded length, check ready, submitting/queued/checking, duplicate-click protection, recovery retaining answer and edited recheck cost                            |
-| Feedback              | Perfect, Good, Not bad, Practise again later; correct alternatives; missing targets; localized explanations; span/global errors; improved answer and overlapping issue display                |
-| Feedback failure      | Invalid/provider failure, reconnect, stored-result reload without charge, insufficient credits, unavailable model, content changed or access revoked during checking                          |
-| Navigation            | Next, Skip, exit confirmation for unsent answer, review exhaustion, session summary, progress refresh and interrupted session                                                                 |
-| Display modes         | Fullscreen Start, native fullscreen unavailable/denied with viewport fallback, switch to dialog/back, Escape behavior, preserved answer/hints/feedback and active job while switching         |
-| Personal history      | Loading, empty, paginated attempts, detailed stored feedback, assisted indicator, outdated/retired content and unavailable/deleted source                                                     |
-| Privacy/accessibility | Independent reader history, private-reader exercises, identity/share-context reset, keyboard-only flow, touch targets, screen-reader announcements and focus restoration                      |
+| Area                  | Required states                                                                                                                                                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entry and identity    | Train menu with Sentences, owner, signed-in shared reader, signed-out sign-in requirement, capability unavailable, archived/revoked dictionary                                                                                        |
+| Setup                 | Loading, language direction swap, explanation default/selection, all/manual scope, search/pagination, selected count, empty selection and load/retry failure                                                                          |
+| Eligibility           | Empty dictionary, no eligible entries, missing translations/skipped entries, no saved exercises, all saved answered, partial selected scope                                                                                           |
+| Modes and coverage    | Saved first, New sentences and Review saved; fresh generation on later sessions; retained older generations; used/remaining per direction, zero/partial/full coverage and first-opening reuse                                         |
+| Generation            | Admitting/queued/running, delayed work, reconnect/resume, cancel pending/cancelled, retryable failure, insufficient credits, unavailable model, stale content and revoked access                                                      |
+| Exercise              | New or saved label, required source highlights, word/phrase/repeated-token hints, grammatical helpers without hints, hover/focus/tap disclosure, RTL and mixed scripts                                                                |
+| Answer                | Empty/typing/invalid input, bounded length, default AI check, always available explicit free reference reveal, check ready, submitting/queued/checking, duplicate-click protection, recovery retaining answer and edited recheck cost |
+| Free reference review | Hidden/reveal loading/visible, draft-reference comparison, manually reviewed without score, repeated reveal, zero credits/model unavailable, retry without charge, stale/revoked/deleted source                                       |
+| Feedback              | Perfect, Good, Not bad, Practise again later; correct alternatives; missing targets; localized explanations; span/global errors; improved answer and overlapping issue display                                                        |
+| Feedback failure      | Invalid/provider failure, reconnect, stored-result reload without charge, insufficient credits, unavailable model, content changed or access revoked during checking                                                                  |
+| Navigation            | Next, Skip, exit confirmation for unsent answer, review exhaustion, session summary separating AI results/manual reviews, progress refresh and interrupted session                                                                    |
+| Display modes         | Fullscreen Start, native fullscreen unavailable/denied with viewport fallback, switch to dialog/back, Escape behavior, preserved answer/hints/feedback and active job while switching                                                 |
+| Personal history      | Loading, empty, paginated attempts, separate AI scores and ungraded manual reviews, detailed stored feedback, hint/reference-assisted indicators, outdated/retired content and unavailable/deleted source                             |
+| Privacy/accessibility | Independent reader history, private-reader exercises, identity/share-context reset, keyboard-only flow, touch targets, screen-reader announcements and focus restoration                                                              |
 
 Include deterministic fixture controls so the designer can demonstrate every
 reachable state without real APIs. Specify actions and what stays visible in
@@ -514,7 +610,7 @@ saved-first selection, hints/checking, history/reload and model/credit/access
 recovery. Browser verification must cover desktop/mobile layouts, keyboard/touch,
 RTL, focus, error highlighting, console errors and failed requests. Compare the
 runtime against the selected design and stable brief IDs.
-Explicitly test partial generation across sessions, saved-unchecked reuse,
+Explicitly test partial generation across sessions, saved-uncompleted reuse, free manual completion with zero credits, independent reader manual reviews,
 fresh-generation mode without history loss, and fullscreen/dialog switching
 during typing, checking and feedback without extra AI operations.
 
@@ -530,3 +626,14 @@ Feature035 backend verified after review remediation on2026-10-04. See its
 and [review](../.agent/features/035-user-ai-model-preferences-backend/REVIEW.md).
 The sentence backend follows; design prompt creation and frontend implementation
 remain staged exactly as requested.
+
+## Approved adjustment: free reference review
+
+On2026-10-04 the user added an explicit free reference-answer option and confirmed
+that reveal counts as manually reviewed for Saved first, separately from AI scores.
+AI checking remains the default. The reference is generated and retained alongside
+each exercise; reveal never calls AI or checks wallet/model readiness. See the
+free reference review section above and the updated feature036 acceptance criteria.
+The user mentioned Jev as a possible future correctness estimator. Primary
+TypeSafe documentation has been researched and linked above; integration remains
+a future evaluation task, without a current dependency or pricing commitment.

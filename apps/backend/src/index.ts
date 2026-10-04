@@ -1,3 +1,4 @@
+import { createSentenceComposition } from './modules/learning/infrastructure/sentence-composition';
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 
@@ -146,6 +147,12 @@ const app = createApp({
         policy: authentication.options.policy,
     }).routes,
     learning: learning.routes,
+    sentenceLearning: createSentenceComposition({
+        ...authentication.productDependencies,
+        dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
+        enabled: environment.LEARNING_SENTENCES_ENABLED,
+        policy: authentication.options.policy,
+    }).routes,
     administration,
     authentication: authentication.options,
     userProfiles: {

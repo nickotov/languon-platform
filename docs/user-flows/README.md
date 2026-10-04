@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Sentence practice backend](./sentence-practice-backend.md) — generated exercises,
+  personal AI checks, free manual reference reviews and shared-reader privacy.
+
 - [Learner AI model preferences backend](./user-ai-model-preferences-backend.md) —
   authenticated Auto/explicit settings and immutable dictionary execution.
 

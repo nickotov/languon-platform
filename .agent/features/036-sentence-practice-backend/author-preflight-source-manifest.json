@@ -1,0 +1,363 @@
+{
+    "base": "bcfda16",
+    "branch": "feature/sentence-practice-backend",
+    "digest": "e89e94dc10c4b05c04ec48aa32bf4f343176d7ded8534b43fd09e3c14e942b08",
+    "files": [
+        {
+            "path": ".env.example",
+            "sha256": "291a52845f5312e43bdd5c6687872cdd43ccfa5bd98eb24dffc01ed4955be050"
+        },
+        {
+            "path": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+            "sha256": "e48d6297908097d97d810d90f4bab2ac437811e27edb245614ffddbdedc34a39"
+        },
+        {
+            "path": "apps/backend/drizzle/0045_motionless_kitty_pryde.sql",
+            "sha256": "1070c0727e5e3a334f74d23fab80a5d0f7140b7a54c8d7cbab743c9ae99a0567"
+        },
+        {
+            "path": "apps/backend/drizzle/0046_sentence_credit_guards.sql",
+            "sha256": "27482608d09cb09d21cf2c9a1a60d9c1142704958eb87d05d468437834853396"
+        },
+        {
+            "path": "apps/backend/drizzle/0047_sentence_capacity_guards.sql",
+            "sha256": "eb13be636e248f4b132379654a6739be925bff8734c6edb195199aef34be4a9a"
+        },
+        {
+            "path": "apps/backend/drizzle/0048_sentence_execution_guards.sql",
+            "sha256": "d5d8779ab8c475225e13223ef7a22c5ce7379702433f76ee83b342bd606264e9"
+        },
+        {
+            "path": "apps/backend/drizzle/0049_motionless_scream.sql",
+            "sha256": "950270565628b87be5a5e3d71ffcf1f10ebd04140cdc75eb42cd38c769780c91"
+        },
+        {
+            "path": "apps/backend/drizzle/0050_naive_falcon.sql",
+            "sha256": "fc4acc6ebaf9f785228e335c2c9daf136e8cbb2ee1f22ac6fd7e5eb931515940"
+        },
+        {
+            "path": "apps/backend/drizzle/0051_magenta_stryfe.sql",
+            "sha256": "c42700276f71d9563a43aaf19ee7757ce9aa62ad7a0b371aca468cb2758e48e0"
+        },
+        {
+            "path": "apps/backend/drizzle/deployment.json",
+            "sha256": "2f140e3a7b8056c868f48ffdef7f94328755a044b4b86bc1273180e8cbfe52de"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0045_snapshot.json",
+            "sha256": "0ba4184da41d519a0f807337b2e57b0f9fd91ad820f4292ba6d05e0fa0b0b789"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0046_snapshot.json",
+            "sha256": "88d2984dbf0d05edde2f78fdd959f35258d7c0ce05b68153f8b31091771e8404"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0047_snapshot.json",
+            "sha256": "e6bea8571edefd4ea0b0cfe80d35185c3e6bdb9e97510ed4972ae3e9fa325f20"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0048_snapshot.json",
+            "sha256": "722e73ed5f04dbddab4a67cfa5811b9d663dbb5599f8b896e3f705213798a1e4"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0049_snapshot.json",
+            "sha256": "4afeb91fc7030a6abf37d253f18bc921279c9101204d0a42524375c915105c04"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0050_snapshot.json",
+            "sha256": "9e5f06ad59a39802f427333e1dccf5e4256192c86cbe06fa3cc6c05018f02f1b"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0051_snapshot.json",
+            "sha256": "a3dffade154a9be5e1138497fc7072584a46370ff366bfb7776c1c72017de349"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/_journal.json",
+            "sha256": "bc1bcd20c26af6b9ea145363a208758ea5d7b7d05658e60807199ddeb16e917e"
+        },
+        {
+            "path": "apps/backend/src/app.ts",
+            "sha256": "277492f65a54438b61285185cdf03e0fb9275d6558514edd5b97f12f415d3193"
+        },
+        {
+            "path": "apps/backend/src/config/environment.ts",
+            "sha256": "60d9292ece303e1a2828a9789b801ddced2b706a3bcbbe1b194500782577e84d"
+        },
+        {
+            "path": "apps/backend/src/index.ts",
+            "sha256": "8aa9d53664ea83a47922099dbee8c8dbabf2473522d03facc3a5f1cf390136fe"
+        },
+        {
+            "path": "apps/backend/src/infrastructure/database/schema.ts",
+            "sha256": "65cd05326e433c0c22a157014793a3dc9f09e17634c8147986bdec01ba528b25"
+        },
+        {
+            "path": "apps/backend/src/infrastructure/text-ai/text-ai-capacity.ts",
+            "sha256": "a66cfcd360cae1848957c2387a75cb8a0fabfa7b8e1f809d2135a1370da3be8d"
+        },
+        {
+            "path": "apps/backend/src/infrastructure/text-ai/text-ai-circuit.ts",
+            "sha256": "6554cc17482154453fdf049b9e3ae8b2229b86dad95ed6455d89d38f52bfbd8b"
+        },
+        {
+            "path": "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+            "sha256": "c88951fe87f331cc74dc9a1d0134ecd77bc3fc040dcbdc1feba46043f698e73f"
+        },
+        {
+            "path": "apps/backend/src/infrastructure/worker/dictionary-worker-runtime.ts",
+            "sha256": "690849aa88c7c55105cc797cbf91871c829519cf8435949f05241d134466feec"
+        },
+        {
+            "path": "apps/backend/src/modules/ai-credits/application/ai-credit-participant.ts",
+            "sha256": "2b92de6f7edddbd141576e6dde6c6ab8b82323daf103f942c750563b21e13e8e"
+        },
+        {
+            "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant.ts",
+            "sha256": "3119e26607b070d51bca65b42deefec7b17c9648d8c70ec86ca3947f404c7a7d"
+        },
+        {
+            "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/schema.ts",
+            "sha256": "7c2018a9ac76e75c5efb9b199150c18589be6936e23e504daaeef6c4dcad76a2"
+        },
+        {
+            "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/dictionary-ai-worker-observations.ts",
+            "sha256": null
+        },
+        {
+            "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-learning-participant.ts",
+            "sha256": "b96efa27a97bb07e117e50ac3c42605c4ca4d72c77ef16d23d620438aae102f1"
+        },
+        {
+            "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-deletion-store.ts",
+            "sha256": "b84efd1d0ad7ef4fa194711a96a147d343e6166dda461c9ae2d9d872cef79d73"
+        },
+        {
+            "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store.ts",
+            "sha256": "516d9214baac5d50b485915ba1a78d1eb634aa2686f85318f51ebc27ce5ece67"
+        },
+        {
+            "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/schema.ts",
+            "sha256": "ec393e6fdc3741c6a3dc312b90720615ff48951533144b1e6ba87a403a43f090"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/application/ports/sentence-ai-provider.ts",
+            "sha256": "46fb8ea462554ff5ccf37530734552f71ea3227529359c92eeffea1030c1658b"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/application/ports/sentence-practice-store.ts",
+            "sha256": "3ba4f01cec3e6fd51be9090ed278e6e1b4f6ae872738853d6cfb1a8787328b9d"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/application/ports/sentence-worker-store.ts",
+            "sha256": "a837d4f299740d587b5290ba1b290ddbd502ac49a3b4578bd127194ed135b319"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/application/sentence-practice-service.ts",
+            "sha256": "226fdd1042d2ad9841e10af0052f90835ab380a9c8dba330ca271d8ad5a9c0e4"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/application/sentence-worker-service.ts",
+            "sha256": "a18c772b1f4a3f28a016039d3acfedd8f66a128a8a3445f3c04fb7184ee22bdd"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/domain/sentence-content.ts",
+            "sha256": "31b93e3394bccd29dbecb0165e307f74692fd5688600f978e0cf646850fa58a8"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/domain/sentence-errors.ts",
+            "sha256": "254fa540bda04a3b038d249705bef6d7d6809ad135084cc0b787b93e4b70ad01"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/domain/sentence-feedback.ts",
+            "sha256": "0aaeda05c686209976d48eb25a9036d9021e95e5087571ec7c56c9ce55deb2c4"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/domain/sentence-selection.ts",
+            "sha256": "2509cc64719f01df3635065b1423fd4f5dc5b58011523adfae462816d92d6f1b"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/domain/sentence-types.ts",
+            "sha256": "920a78d138daa102e47698018af4c658e880f5d9c00a4dbe505dde4faefff180"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/ai/sentence-agents.ts",
+            "sha256": "bb50787408ce8a88b7b9d6f3136c5a8f1ba3bc56fd19d027fcadf3d1af39bd87"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/ai/sentence-ai-provider.ts",
+            "sha256": "ac38ba95631f427c43953bf1451c9e39d185595209663fcec5ff726817327c2a"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store.ts",
+            "sha256": "50367da6fa26c7d2d2e05b4ab522e6015019e2bcbba3093e3d5b3f9edbca5595"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store.ts",
+            "sha256": "ac8062d0dc81c7f9a78ee0c16a7e63b92dfdc4cb8bb2e7a17b0c02e30ffb9ab2"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts",
+            "sha256": "bd78eb1d33d6f3b8f3961a7d5b211a52b34ad761de3a6c1d759020113fcc107e"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-job-accounting.ts",
+            "sha256": "bea60b9900d9c547545b0d74aaa2cb82c550a36f3ad474f79e17037e42ddbca0"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-persistence-support.ts",
+            "sha256": "0b26c9f47cc795ef185b21894b77970736921cce2520bb66b9e0fe5cc1afa43a"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-schema.ts",
+            "sha256": "dafc45938047c8a34309a387b918774589ca9954b5c65dcaf7c543c597a6f190"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/infrastructure/sentence-composition.ts",
+            "sha256": "a369cabc21759e3d35ebdd6ff6d8d46cab80ee693b86b267501b4aafa7a7d5a2"
+        },
+        {
+            "path": "apps/backend/src/modules/learning/interface/http/sentence.routes.ts",
+            "sha256": "096c95bc951ef4a7e1003cde4425bb0e0a82701c0686ddd3f060a699b4998ddc"
+        },
+        {
+            "path": "apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts",
+            "sha256": "adee3f3a18ce8a10cbc4a3aa9c3a4b44b78404bbb0e99c0cec2ad48a7fc75907"
+        },
+        {
+            "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-worker-observations.ts",
+            "sha256": "9946dff5ab788b24519b014944cfbc5f2004c1f9c5d8d43642f2ec618c8ec4a8"
+        },
+        {
+            "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema.ts",
+            "sha256": "b6310c7c4a716b5c4c09cf4aaed8881b04c09de51f13f02482ab1baa84281850"
+        },
+        {
+            "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts",
+            "sha256": "e5343e317f71c77551ca031031e5293eb7b43bb57cf1797d3d6fce01cbae9f98"
+        },
+        {
+            "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness.ts",
+            "sha256": "e98a5c2a2fe29a5e7aec90bd7529eafc8707ac2dad4cf36affb3c4dc0c2f3d6f"
+        },
+        {
+            "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store.ts",
+            "sha256": "80848bd8d22314e277f725a8e4301a83f365e499366b1906360797c78479708e"
+        },
+        {
+            "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-owner-deletion-preparation.ts",
+            "sha256": "b822ebae51ec8489bcf0f0345f8b5a35bfd4e31b5db055053cf8d824bbb33ce7"
+        },
+        {
+            "path": "apps/backend/tests/integration/database/administration-store.test.ts",
+            "sha256": "e2e7de7980b351ece3f53942abc036b6f5b0c3140a1dbdcbb63db7987a4df492"
+        },
+        {
+            "path": "apps/backend/tests/integration/database/ai-credit-participant.test.ts",
+            "sha256": "2fa82729a71902a75d110d179e03fee81c8b828dd8c62a50365e16251ebd517c"
+        },
+        {
+            "path": "apps/backend/tests/integration/database/sentence-lifecycle-deletion.test.ts",
+            "sha256": "0fcc9336f71e266e3ecdbe10ec6f1a62b99c949cb91a0eb3b4ded7989dbb0559"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts",
+            "sha256": "0c5739d34aa71e282e0b4343e5303ed77e74fd66b56496a050d238cb4bbe5f9e"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts",
+            "sha256": "c849d59394e0901dd3ed09e00372b56c9b4acbf1b4c6b518b690e3512118c6d4"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/learning/sentence-practice.journeys.test.ts",
+            "sha256": "3775bc6d4f813929b7870cc63d9142744e04bb8929cb4861f5000b9a5a79dc9f"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/text-ai/text-ai-capacity.test.ts",
+            "sha256": "786dd8d36f71b4006994c2ce635b7479224eb58f855ef6a9db24aa65d36a4928"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/text-ai/text-ai-preferences.test.ts",
+            "sha256": "b372d15a8b5dbe050f3677805aa33297c157f05afb0b24b1c74813985d9fbdf0"
+        },
+        {
+            "path": "apps/backend/tests/unit/infrastructure/worker/dictionary-worker-command.test.ts",
+            "sha256": "ca52e758070338813b575f107297f87e5262898c1aea17328f479067bf85a8c0"
+        },
+        {
+            "path": "apps/backend/tests/unit/infrastructure/worker/dictionary-worker-runtime.test.ts",
+            "sha256": "9a200d9d9c49ae679f140a7763946ec76d1f1e6ab6cdda00a5e053df191345d5"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/learning/application/sentence-practice-service.test.ts",
+            "sha256": "d51de0be9759256768766fb64524aaedc211dae9a5d60756bd0cffd597d67ee9"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/learning/application/sentence-worker-service.test.ts",
+            "sha256": "1ae6788b01ee8dc3461023df4c7e742eafeed8b7069f70374dfb26409f5e1254"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/learning/infrastructure/sentence-ai-provider.test.ts",
+            "sha256": "cd39ca01eb5ff3490e117ea78b96c52a2faeb9877cad1f5e639788d404a8136b"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/learning/sentence-domain.test.ts",
+            "sha256": "02e460004d5817e35329c6ae1a634574467421085b03b3f71817729292cd6ce4"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-admission-participant.test.ts",
+            "sha256": "354c130478db24be76b7db129662544a3a136f49b89164c4192c6bb1c9e9147d"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-worker-observations.test.ts",
+            "sha256": "0604e3d1519ed81368d3375e1f2b827190979edea0d93a716093447f21d49e5d"
+        },
+        {
+            "path": "infra/deploy/sql/account-purge-worker-role.sql",
+            "sha256": "30e0e9023aa7210133c29e3b557c1b65b990683a37c3c877ea5a7c28bb9b7fe6"
+        },
+        {
+            "path": "infra/deploy/sql/dictionary-worker-role.sql",
+            "sha256": "7f980635ae58324321fd12af35b6a1e8fb74ad5058182cb0ac0dde81e5dbb29f"
+        },
+        {
+            "path": "package.json",
+            "sha256": "ce10a6f98303244e16facd29016fa897657907653f2d0bd77ff274e077e099d2"
+        },
+        {
+            "path": "packages/contracts/src/index.ts",
+            "sha256": "569b4260b3b4560f8e311c4aecd154c029a172f844ec5434feee37b299f4158b"
+        },
+        {
+            "path": "packages/contracts/src/learning/sentences.ts",
+            "sha256": "26054d25bf1333ffa93b278ea6449674ae5a66205a5b1701a087ba9f300980c3"
+        },
+        {
+            "path": "packages/contracts/tests/sentences.test.ts",
+            "sha256": "92b01ab0de38e53dea2d59257aeabc6bb361203b70f6325764a231efc099b086"
+        },
+        {
+            "path": "packages/prompts/src/index.ts",
+            "sha256": "f2f2d8af3ee849a48d1677f4231c7074bf30dd01f9e05479bb1986a51ab1b10b"
+        },
+        {
+            "path": "packages/prompts/src/local/sentence-check.ts",
+            "sha256": "744c1617ec7a29ac60c77867cc184a025dacdb728ab9916d6a1a8f063c6ba220"
+        },
+        {
+            "path": "packages/prompts/src/local/sentence-generation.ts",
+            "sha256": "a94a418146f3efbaa4ab5b8b0d7c4483bdb7fb50a648f362cf69626ae280ec8e"
+        },
+        {
+            "path": "scripts/check-user-flow-guides.mjs",
+            "sha256": "c86bd66630343b15dc79b9715eabf9a4a08ce40df4cea3fbc94436f286d07ff1"
+        },
+        {
+            "path": "scripts/run-sentence-practice-e2e.mjs",
+            "sha256": "fc8925ee578819598a89c8bf01595c59d9f3bd395dd3eccb2a6348c9929a72b5"
+        },
+        {
+            "path": "scripts/run-sentence-practice-e2e.test.mjs",
+            "sha256": "d357abaee44ddf52a58f173d446c6e3066acd3a9404588d733d598a4f5bcb629"
+        }
+    ]
+}

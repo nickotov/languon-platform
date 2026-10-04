@@ -1,3 +1,6 @@
+export type AiCreditJobKind =
+    'dictionary-generation' | 'sentence-generation' | 'sentence-check';
+
 import type {
     AiCreditGrantSource,
     AiCreditMeasurement,
@@ -88,6 +91,7 @@ export interface AiCreditTransactionParticipant {
         at: Date;
         attempt: number;
         jobId: string;
+        jobKind?: AiCreditJobKind;
         maximumCredits: bigint;
         ownerId: string;
         reservationId: string;

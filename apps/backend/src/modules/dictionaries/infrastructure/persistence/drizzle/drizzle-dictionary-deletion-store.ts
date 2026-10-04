@@ -37,6 +37,10 @@ import {
 
 import type { DictionaryIdGenerator } from './dictionary-id-generator';
 import { dictionaryGenerationAdmissionLock } from './drizzle-dictionary-generation-store';
+import {
+    sentenceDeletionBusy,
+    eraseSentenceDerivedContent,
+} from '../../../../learning/infrastructure/persistence/drizzle/sentence-deletion-participant';
 
 type DictionaryDatabase = PostgresJsDatabase<typeof databaseSchema>;
 type DictionaryTransaction = Parameters<
@@ -431,6 +435,15 @@ export class DrizzleDictionaryDeletionStore {
         cardIds: readonly string[] | null,
     ): Promise<void> {
         abort(input.context);
+        const sentenceScope = cardIds
+            ? { entryIds: cardIds }
+            : { dictionaryIds };
+        if (await sentenceDeletionBusy(tx, sentenceScope))
+            throw new DictionaryDeletionBusyError();
+        await eraseSentenceDerivedContent(tx, {
+            ...sentenceScope,
+            now: input.context.now,
+        });
         const directJobCondition = cardIds
             ? inArray(dictionaryGenerationJobsTable.cardId, [...cardIds])
             : inArray(dictionaryGenerationJobsTable.dictionaryId, [
