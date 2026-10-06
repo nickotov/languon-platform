@@ -11,7 +11,8 @@ import type {
 import type { SentenceTokenUsage } from './sentence-ai-provider';
 import type { SentenceContext } from './sentence-practice-store';
 export type SentenceJobKind = 'sentence-generation' | 'sentence-check';
-export type SentenceJobFormat = 'sentence-generation:v1' | 'sentence-check:v1';
+export type SentenceJobFormat =
+    'sentence-generation:v1' | 'sentence-generation:v2' | 'sentence-check:v1';
 export interface SentenceLease {
     jobId: string;
     workerId: string;
@@ -25,8 +26,16 @@ export type ClaimedSentenceJob = {
     budget: TextAiProviderBudgetPolicy;
     providerIdempotencyKey: string;
 } & (
-    | { kind: 'sentence-generation'; input: SentenceGenerationInput }
-    | { kind: 'sentence-check'; input: SentenceCheckInput }
+    | {
+          kind: 'sentence-generation';
+          format: 'sentence-generation:v1' | 'sentence-generation:v2';
+          input: SentenceGenerationInput;
+      }
+    | {
+          kind: 'sentence-check';
+          format: 'sentence-check:v1';
+          input: SentenceCheckInput;
+      }
 );
 export type SentenceWriteResult = 'committed' | 'terminalized' | 'lost';
 export interface SentenceWorkerStore {

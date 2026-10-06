@@ -1,4 +1,5 @@
 'use client';
+import { SENTENCE_LIMITS } from '@languon/contracts';
 import { requestSentenceFullscreen } from '../use-sentence-display';
 import { useCompactPresentation } from '../use-compact-presentation';
 import { useSentenceCopy } from '../sentence-copy';
@@ -37,6 +38,24 @@ export function SentenceSetup({
     const { t, languageName } = useSentenceCopy();
     const compact = useCompactPresentation();
     const prepared = c.prepared;
+    const selectionFull =
+        c.selectedEntryIds.length >= SENTENCE_LIMITS.selectedEntries;
+    const shownSelection = [
+        ...new Set([
+            ...c.selectedEntryIds,
+            ...c.entries.map((entry) => entry.entryId),
+        ]),
+    ];
+    const canSelectShown =
+        !selectionFull &&
+        c.entries.length > 0 &&
+        shownSelection.length <= SENTENCE_LIMITS.selectedEntries;
+    const batchDescription = t(
+        'Each round uses up to {limit} words. A dictionary batch uses the first eligible words. Choose entries to practise other words.',
+    ).replace('{limit}', String(SENTENCE_LIMITS.selectedEntries));
+    function selectShown() {
+        c.setSelectedEntryIds(shownSelection);
+    }
     const invalid =
         c.loading ||
         !!c.error ||
@@ -151,12 +170,15 @@ export function SentenceSetup({
                         {
                             value: 'all',
                             label: prepared
-                                ? `${t('All eligible entries')} · ${prepared.eligibleCount}`
-                                : t('All eligible entries'),
+                                ? `${t('Dictionary batch')} · ${prepared.eligibleCount}`
+                                : t('Dictionary batch'),
                         },
                         { value: 'manual', label: t('Choose entries') },
                     ]}
                 />
+                <p className='text-sm text-text-secondary'>
+                    {batchDescription}
+                </p>
                 {c.configuration.scope.type === 'manual' ? (
                     <div className='space-y-3 rounded-xl border border-border-default p-3'>
                         <Input
@@ -168,21 +190,15 @@ export function SentenceSetup({
                         />
                         <div className='flex flex-wrap items-center gap-2'>
                             <p className='text-sm text-text-secondary'>
-                                {c.selectedEntryIds.length} {t('selected')}
+                                {c.selectedEntryIds.length} /{' '}
+                                {SENTENCE_LIMITS.selectedEntries}{' '}
+                                {t('selected')}
                             </p>
                             <Button
                                 size='compact'
                                 variant='secondary'
-                                onClick={() =>
-                                    c.setSelectedEntryIds([
-                                        ...new Set([
-                                            ...c.selectedEntryIds,
-                                            ...c.entries.map(
-                                                (entry) => entry.entryId,
-                                            ),
-                                        ]),
-                                    ])
-                                }
+                                disabled={!canSelectShown}
+                                onClick={selectShown}
                             >
                                 {t('Select all shown')}
                             </Button>
@@ -199,6 +215,16 @@ export function SentenceSetup({
                                 {t('Choose at least one entry to start.')}
                             </p>
                         ) : null}
+                        {selectionFull ? (
+                            <p
+                                role='status'
+                                className='text-sm text-text-secondary'
+                            >
+                                {t(
+                                    'Batch limit reached. Deselect a word to choose another.',
+                                )}
+                            </p>
+                        ) : null}
                         {c.entriesError ? (
                             <SentenceErrorNotice
                                 error={c.entriesError}
@@ -209,6 +235,12 @@ export function SentenceSetup({
                             {c.entries.map((entry) => (
                                 <li key={entry.entryId}>
                                     <Checkbox
+                                        disabled={
+                                            selectionFull &&
+                                            !c.selectedEntryIds.includes(
+                                                entry.entryId,
+                                            )
+                                        }
                                         checked={c.selectedEntryIds.includes(
                                             entry.entryId,
                                         )}
@@ -269,7 +301,7 @@ export function SentenceSetup({
                                     <strong>{t('Saved first')}</strong>
                                     <p className='mt-1 text-sm text-text-secondary'>
                                         {t(
-                                            'Use saved, uncompleted sentences first; generate more when needed.',
+                                            'Reuse saved sentences, including completed ones; generate only for words without saved examples.',
                                         )}
                                     </p>
                                 </>
@@ -331,12 +363,8 @@ export function SentenceSetup({
                                 {t('not seen yet')}
                             </p>
                             <p>
-                                <strong>{prepared.savedUncheckedCount}</strong>{' '}
-                                {t('saved, uncompleted')}
-                            </p>
-                            <p>
                                 <strong>{prepared.savedReviewCount}</strong>{' '}
-                                {t('saved for review')}
+                                {t('saved sentences')}
                             </p>
                         </div>
                         {prepared.skippedCount ? (

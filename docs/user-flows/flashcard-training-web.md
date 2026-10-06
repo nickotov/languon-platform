@@ -2,7 +2,7 @@
 feature: flashcard-training-web
 title: Flashcard Training Web
 status: current
-last_verified: 2026-10-02
+last_verified: 2026-10-05
 surfaces:
     - browser
 source_paths:
@@ -75,7 +75,7 @@ local verification code. Exact verified services/commands/cleanup belong to the
    allowed. Manual selections survive search/pages. Cancel saves nothing.
    Eligible/Skipped/With fallback counts describe projected cards.
 4. Start requests fullscreen during the click, with viewport fallback. Dialog view
-   preserves face/position/stats. Fullscreen Escape goes to dialog; dialog Escape
+   fills the viewport (100dvw/100dvh) and preserves face/position/stats. Fullscreen Escape goes to dialog; dialog Escape
    opens End confirmation. Backdrop clicks do not end practice.
 5. Flip by card click or Show back/front. Rate by buttons, arrows or horizontal
    drag. Scrolling/text selection do not rate. A committed swipe fades at its

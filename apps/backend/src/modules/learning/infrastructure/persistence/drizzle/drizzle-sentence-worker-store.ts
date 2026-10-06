@@ -106,6 +106,16 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                           learnerId: job.learnerId,
                       };
             await authorizeSentence(tx, access, true);
+            if (job.jobKind === 'sentence-generation') {
+                const version = (job.inputPayload as SentenceGenerationInput)
+                    .generationPolicyVersion;
+                if (
+                    (job.format === 'sentence-generation:v1' &&
+                        version !== 1) ||
+                    (job.format === 'sentence-generation:v2' && version !== 2)
+                )
+                    return 'invalid_model_output';
+            }
         } catch (error) {
             if (error instanceof SentenceUnavailableError)
                 return 'access_revoked';
@@ -428,10 +438,14 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                     ...(job.jobKind === 'sentence-generation'
                         ? {
                               kind: 'sentence-generation' as const,
+                              format: job.format as
+                                  | 'sentence-generation:v1'
+                                  | 'sentence-generation:v2',
                               input: job.inputPayload as SentenceGenerationInput,
                           }
                         : {
                               kind: 'sentence-check' as const,
+                              format: 'sentence-check:v1' as const,
                               input: job.inputPayload as SentenceCheckInput,
                           }),
                 };
@@ -584,7 +598,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                 sourceText: content.sourceText,
                 segments: content.segments,
                 hints: content.hints,
-                generationPolicyVersion: 1 as const,
+                generationPolicyVersion: input.generationPolicyVersion,
                 createdAt: context.now.toISOString(),
             };
             const [owned] = await tx.execute(
@@ -600,6 +614,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                     shared: owned?.owner_id === job.learnerId,
                     publicContent,
                     referenceTranslation: content.referenceTranslation,
+                    generationPolicyVersion: input.generationPolicyVersion,
                     createdAt: context.now,
                 })
                 .returning();

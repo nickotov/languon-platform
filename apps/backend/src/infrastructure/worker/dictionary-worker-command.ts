@@ -316,6 +316,22 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const { worker: sentenceWorker } = createSentenceWorkerComposition({
         database,
         provider: createWorkerSentenceProvider(environment),
+        onInvalidModelOutput: (event) => {
+            console.warn('Sentence model output rejected.', event);
+        },
+        supportedFormats: environment.supportedFormats.filter(
+            (
+                format,
+            ): format is
+                | 'sentence-generation:v1'
+                | 'sentence-generation:v2'
+                | 'sentence-check:v1' =>
+                [
+                    'sentence-generation:v1',
+                    'sentence-generation:v2',
+                    'sentence-check:v1',
+                ].includes(format),
+        ),
         clock: { now: () => new Date() },
         workerId,
         leaseMs: 30_000,

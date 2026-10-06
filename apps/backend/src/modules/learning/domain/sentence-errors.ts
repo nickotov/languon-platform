@@ -1,6 +1,25 @@
+export const sentenceModelOutputReasons = [
+    'model_output_invalid',
+    'input_invalid',
+    'schema_invalid',
+    'target_assessments_invalid',
+    'answer_span_invalid',
+    'input_token_bound',
+    'usage_invalid',
+] as const;
+export type SentenceModelOutputReason =
+    (typeof sentenceModelOutputReasons)[number];
+
 export class SentenceInvalidModelOutputError extends Error {
-    constructor(message = 'Invalid sentence model output') {
+    readonly reason: SentenceModelOutputReason;
+    constructor(
+        message = 'Invalid sentence model output',
+        reason: SentenceModelOutputReason = 'model_output_invalid',
+    ) {
         super(message);
+        this.reason = sentenceModelOutputReasons.includes(reason)
+            ? reason
+            : 'model_output_invalid';
     }
 }
 export class SentenceUnavailableError extends Error {}

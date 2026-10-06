@@ -10,8 +10,10 @@ export default meta;
 
 function DialogExample({
     kind = 'dialog',
+    size = 'md',
 }: {
     kind?: 'alert' | 'dialog' | 'sheet';
+    size?: 'md' | 'viewport';
 }) {
     const [open, setOpen] = useState(false);
 
@@ -40,6 +42,7 @@ function DialogExample({
         onClose: () => setOpen(false),
         open,
         title: 'Remove passkey?',
+        size,
     };
 
     return (
@@ -51,6 +54,10 @@ function DialogExample({
 }
 
 export const Default: StoryObj = { render: () => <DialogExample /> };
+
+export const Viewport: StoryObj = {
+    render: () => <DialogExample size='viewport' />,
+};
 
 export const UrgentDecision: StoryObj = {
     render: () => <DialogExample kind='alert' />,

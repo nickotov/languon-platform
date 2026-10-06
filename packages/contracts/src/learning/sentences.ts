@@ -6,10 +6,11 @@ import {
 } from '../dictionaries/primitives';
 
 export const SENTENCE_LIMITS = {
-    selectedEntries: 10_000,
-    visitedExercises: 1_000,
+    selectedEntries: 100,
+    visitedExercises: 100,
     candidateEntries: 12,
     requiredTargets: 3,
+    contextualHints: 40,
     sourceCodePoints: 1_000,
     answerCodePoints: 4_000,
     feedbackCodePoints: 4_000,
@@ -74,7 +75,7 @@ export const SentenceScopeSchema = z.discriminatedUnion('type', [
         })
         .strict(),
 ]);
-export const SentencePrepareRequestSchema = z
+const SentenceSetupRequestSchema = z
     .object({
         direction: SentenceDirectionSchema,
         mode: SentenceModeSchema,
@@ -82,11 +83,34 @@ export const SentencePrepareRequestSchema = z
         explanationLanguage: DictionaryLanguageTagSchema.optional(),
     })
     .strict();
-export const SentenceNextRequestSchema = SentencePrepareRequestSchema.extend({
+export const SentencePrepareRequestSchema = SentenceSetupRequestSchema.extend({
+    replayExerciseIds: distinctIds(
+        SENTENCE_LIMITS.visitedExercises,
+        1,
+    ).optional(),
+})
+    .strict()
+    .refine(
+        (input) => !input.replayExerciseIds || input.mode === 'review-only',
+        {
+            path: ['replayExerciseIds'],
+            message: 'Exact replay requires review-only mode',
+        },
+    );
+export const SentenceNextRequestSchema = SentenceSetupRequestSchema.extend({
     operationId: id,
     sessionId: id,
     visitedExerciseIds: distinctIds(SENTENCE_LIMITS.visitedExercises),
-}).strict();
+    replayExerciseId: id.optional(),
+})
+    .strict()
+    .refine(
+        (input) => !input.replayExerciseId || input.mode === 'review-only',
+        {
+            path: ['replayExerciseId'],
+            message: 'Exact replay requires review-only mode',
+        },
+    );
 export const SentencePrepareResponseSchema = z
     .object({
         direction: SentenceDirectionSchema,
@@ -116,10 +140,15 @@ export const SentenceSegmentSchema = z
             })
             .strict()
             .nullable(),
+        contextualHintId: token('hint').optional(),
     })
     .strict();
 export const SentenceHintSchema = z
-    .object({ id: token('hint'), text: safeText(400) })
+    .object({
+        id: token('hint'),
+        text: safeText(400),
+        kind: z.enum(['dictionary', 'contextual']).optional(),
+    })
     .strict();
 export const SentenceExerciseSchema = z
     .object({
@@ -136,11 +165,76 @@ export const SentenceExerciseSchema = z
         hints: z
             .array(SentenceHintSchema)
             .min(1)
-            .max(SENTENCE_LIMITS.requiredTargets),
-        generationPolicyVersion: z.literal(1),
+            .max(
+                SENTENCE_LIMITS.requiredTargets +
+                    SENTENCE_LIMITS.contextualHints,
+            ),
+        generationPolicyVersion: z.union([z.literal(1), z.literal(2)]),
         createdAt: z.iso.datetime(),
     })
-    .strict();
+    .strict()
+    .superRefine((exercise, context) => {
+        if (exercise.generationPolicyVersion === 1) {
+            if (
+                exercise.hints.length > SENTENCE_LIMITS.requiredTargets ||
+                exercise.hints.some((hint) => hint.kind !== undefined) ||
+                exercise.segments.some(
+                    (segment) => segment.contextualHintId !== undefined,
+                )
+            )
+                context.addIssue({
+                    code: 'custom',
+                    message:
+                        'Unexpected contextual metadata in legacy exercise',
+                });
+            return;
+        }
+        const hints = new Map(exercise.hints.map((hint) => [hint.id, hint]));
+        const contextual = exercise.hints.filter(
+            (hint) => hint.kind === 'contextual',
+        );
+        const required = exercise.hints.filter(
+            (hint) => hint.kind === 'dictionary',
+        );
+        const used = new Set<string>();
+        if (
+            hints.size !== exercise.hints.length ||
+            contextual.length < 1 ||
+            contextual.length > SENTENCE_LIMITS.contextualHints ||
+            required.length < 1 ||
+            required.length > SENTENCE_LIMITS.requiredTargets ||
+            contextual.length + required.length !== exercise.hints.length
+        )
+            context.addIssue({
+                code: 'custom',
+                message: 'Invalid version 2 hint inventory',
+            });
+        for (const segment of exercise.segments) {
+            if (segment.target) {
+                used.add(segment.target.hintId);
+                if (
+                    segment.contextualHintId !== undefined ||
+                    hints.get(segment.target.hintId)?.kind !== 'dictionary'
+                )
+                    context.addIssue({
+                        code: 'custom',
+                        message: 'Invalid dictionary hint association',
+                    });
+            } else if (segment.contextualHintId !== undefined) {
+                used.add(segment.contextualHintId);
+                if (hints.get(segment.contextualHintId)?.kind !== 'contextual')
+                    context.addIssue({
+                        code: 'custom',
+                        message: 'Invalid contextual hint association',
+                    });
+            }
+        }
+        if (exercise.hints.some((hint) => !used.has(hint.id)))
+            context.addIssue({
+                code: 'custom',
+                message: 'Unreferenced version 2 hint',
+            });
+    });
 export const SentenceFeedbackIssueSchema = z
     .object({
         id: token('issue'),
@@ -193,7 +287,10 @@ export const SentenceCheckRequestSchema = z
         explanationLanguage: DictionaryLanguageTagSchema,
         revealedHintIds: z
             .array(token('hint'))
-            .max(SENTENCE_LIMITS.requiredTargets)
+            .max(
+                SENTENCE_LIMITS.requiredTargets +
+                    SENTENCE_LIMITS.contextualHints,
+            )
             .refine(
                 (v) => new Set(v).size === v.length,
                 'Hints must be unique',
@@ -210,7 +307,10 @@ export const SentenceAttemptSchema = z
         explanationLanguage: DictionaryLanguageTagSchema,
         revealedHintIds: z
             .array(token('hint'))
-            .max(SENTENCE_LIMITS.requiredTargets),
+            .max(
+                SENTENCE_LIMITS.requiredTargets +
+                    SENTENCE_LIMITS.contextualHints,
+            ),
         assisted: z.boolean(),
         referenceRevealed: z.boolean(),
         feedback: SentenceFeedbackSchema,

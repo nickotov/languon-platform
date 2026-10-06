@@ -365,6 +365,27 @@
       "when": 1791135778681,
       "tag": "0051_magenta_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1791224590676,
+      "tag": "0052_mature_freak",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1791224952716,
+      "tag": "0053_omniscient_killmonger",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1791225026575,
+      "tag": "0054_good_pet_avengers",
+      "breakpoints": true
     }
   ]
 }

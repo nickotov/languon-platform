@@ -46,6 +46,44 @@ function values(
 }
 
 describe('loadEnvironment authentication settings', () => {
+    it.each([
+        ['development', true],
+        ['test', true],
+        ['staging', false],
+        ['production', false],
+    ] as const)(
+        'defaults sentence practice to %s: %s',
+        (appEnvironment, enabled) => {
+            expect(
+                loadEnvironment(values(appEnvironment))
+                    .LEARNING_SENTENCES_ENABLED,
+            ).toBe(enabled);
+        },
+    );
+
+    it.each(['development', 'test', 'staging', 'production'] as const)(
+        'respects explicit sentence practice switches in %s',
+        (appEnvironment) => {
+            for (const enabled of ['true', 'false']) {
+                expect(
+                    loadEnvironment(
+                        values(appEnvironment, {
+                            LEARNING_SENTENCES_ENABLED: enabled,
+                        }),
+                    ).LEARNING_SENTENCES_ENABLED,
+                ).toBe(enabled === 'true');
+            }
+        },
+    );
+
+    it('rejects invalid sentence practice switches', () => {
+        expect(() =>
+            loadEnvironment(
+                values('development', { LEARNING_SENTENCES_ENABLED: 'yes' }),
+            ),
+        ).toThrow();
+    });
+
     it.each(['development', 'test', 'staging', 'production'] as const)(
         'enables flashcards by default in %s',
         (appEnvironment) => {
@@ -652,5 +690,23 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow(/ADMIN_BASE_URL|base URL/i);
+    });
+    it('expands sentence worker capability without activating contextual generation by default', () => {
+        expect(
+            loadEnvironment(values('development'))
+                .LEARNING_SENTENCE_GENERATION_FORMAT,
+        ).toBe('sentence-generation:v1');
+        expect(
+            loadEnvironment({
+                ...values('development'),
+                LEARNING_SENTENCE_GENERATION_FORMAT: 'sentence-generation:v2',
+            }).LEARNING_SENTENCE_GENERATION_FORMAT,
+        ).toBe('sentence-generation:v2');
+        expect(() =>
+            loadEnvironment({
+                ...values('development'),
+                LEARNING_SENTENCE_GENERATION_FORMAT: 'sentence-generation:v3',
+            }),
+        ).toThrow();
     });
 });

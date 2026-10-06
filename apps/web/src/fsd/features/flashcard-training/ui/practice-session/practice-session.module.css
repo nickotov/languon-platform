@@ -1,9 +1,11 @@
 .frame {
-    margin: auto;
+    position: fixed;
+    inset: 0;
+    margin: 0;
     padding: 0;
     max-width: none;
     max-height: none;
-    width: 100%;
+    width: 100dvw;
     height: 100dvh;
     border: 0;
     color: var(--text-primary);
@@ -16,11 +18,6 @@
 }
 
 .dialog {
-    width: calc(100% - 2rem);
-    max-width: 56rem;
-    height: min(48rem, calc(100dvh - 2rem));
-    border: 1px solid var(--border-default);
-    border-radius: 1.5rem;
     background: var(--background-elevated);
     box-shadow: var(--elevation-lg);
 }

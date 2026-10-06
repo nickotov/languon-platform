@@ -34,6 +34,20 @@ describe('dictionary worker environment', () => {
         });
     });
 
+    it('accepts explicit legacy and contextual sentence formats without dropping queued-v1 support', () => {
+        expect(
+            loadDictionaryWorkerEnvironment({
+                ...base,
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
+                DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS:
+                    'sentence-generation:v1,sentence-generation:v2,sentence-check:v1',
+            }).supportedFormats,
+        ).toEqual([
+            'sentence-check:v1',
+            'sentence-generation:v1',
+            'sentence-generation:v2',
+        ]);
+    });
     it('does not require HTTP authentication, Redis, or model credentials', () => {
         expect(loadDictionaryWorkerEnvironment(base)).toMatchObject({
             includeProviderReadiness: false,

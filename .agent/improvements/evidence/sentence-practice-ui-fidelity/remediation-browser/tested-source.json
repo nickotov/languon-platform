@@ -1,0 +1,19 @@
+{
+  "run": "sentence-ui-remediation-final-20261006",
+  "files": {
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-content/sentence-content.tsx": "0fe7d1005ea993e5f6243142551b52dde4b8c6608282fd3337964508157a57f7",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-errors/sentence-errors.tsx": "3782f75a186a6a75f0d62b24c3da35ddc5764d3ef42652ba2489137a95e9beb9",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-hints/sentence-hints.tsx": "845cfdea595a09daeaa91425a75405b8a19ca1fdb36cf7e5578367efabb1e618",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-history/sentence-history.tsx": "1d662a9d1ddb79d5a97326a1d98746f8a232d75383a39d17d09c5b59ff2a7728",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-job-status/sentence-job-status.tsx": "7668c7b12434b00ba1d9a821b65a291845481209373ba79f9b0c07a6321d7ebe",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-footer/sentence-practice-footer.tsx": "af855da60cfd93a6d2b92c0eda95e6c52c63fd05d40cd8d4b94d1820cc67aab9",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-header/sentence-practice-header.tsx": "3d013fc9f6021ea100be155059e333f63d6b24514641ddfec971ee306e268486",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-session/sentence-practice-session.tsx": "de874fdae4102ca08860b5cbace692264a7c30d68144cc5db9771d40afb4b08f",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-reference-comparison/sentence-reference-comparison.tsx": "384b0386e4dbf3a5bfd28ecf9de95028722612de18282e5452eb991791485911",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-session-results/sentence-session-results.tsx": "da96699ce635fddb041da884c7d3e053e4645f694ee28f79016caf66ddd63a77",
+    "apps/web/src/fsd/features/sentence-training/ui/sentence-setup/sentence-setup.tsx": "b159110b2042e7c568b46ac95742d3ca9105df9197db9088acf1a0340b5960f4",
+    "apps/web/tests/e2e/sentence-practice.journeys.spec.ts": "664fe368b23babc0c14bc104b54a9fcd73fb88e028cb028d704e553dc22bad80",
+    "docs/user-flows/sentence-practice-web.md": "1ebab16c71dcc6c959bcdfc6f8b6556e79bcfdc7022cbf9b63dfbc5a090d47bf"
+  },
+  "note": "Source and maintained tests stable before final run."
+}

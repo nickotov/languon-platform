@@ -1,0 +1,299 @@
+{
+  "run": "sentence038final-complete",
+  "date": "2026-10-06",
+  "result": "7 passed (2.5m), exit 0",
+  "browser": "Chromium",
+  "provider": "local fake; no paid AI",
+  "environment": "owned disposable PostgreSQL55489,Redis56439/database1; local web3359/backend4059",
+  "tested_spec_sha256": "f027a321ca1321f973b723ef7df066c7699f6284e7457577a8d02cb76ab409c9",
+  "captures": [
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-over-limit-draft.png",
+      "sha256": "14a31bd4ee610b3373c7e12753426e56ede29d0ff228be47a2070b26a54ce027"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-inline-ai-preferences-mobile.png",
+      "sha256": "743f46599093390dca2a9c506785d356ac7ba577f7d5211cf0e79adc3e639c20"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-contextual-hover-hint.png",
+      "sha256": "b31a9a6ba0742ff99781c979c40830c6c5ee3a0dce063d1546266b49620c50ae"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-mobile-history.png",
+      "sha256": "89b13b2708dd1c701041236abd654f0f2d540b0de8251eee3b1f98b77dbc046e"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-inline-ai-preferences.png",
+      "sha256": "016e0a603468b096f610b3ca0f2f04d41249c450ca261439298c865be57beff8"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-access-loss-no-cached-content.png",
+      "sha256": "39d49ca64be15775d45be981955ccd8bca754d5e6395a0db3b72c1ffc284ee63"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-dialog-draft-dark.png",
+      "sha256": "5b44260badd1f2b14ff9791db6e3c59f187641bdd1cc9986b96cc5626d555c78"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-batch-guidance.png",
+      "sha256": "a68feed7c5c1a725d5ae0985377f290f2bd362b920c1d895cd0f71ecf62c8bb6"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-failed-check-close-guard.png",
+      "sha256": "9b6bf3fa1de386d7cc28911b8d6b03e98b294c100cf40de0c65efe604bdd7227"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-setup.png",
+      "sha256": "57c807d0c62365a36924ce0862a1ddba161ef152dfbd0c09f229d8da84b87ffe"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-fullscreen-feedback-dark.png",
+      "sha256": "a6c2bcfdbcc4ccc8654f4253145b3fcda969c25e8628eb19850ed4b2e48f6770"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-zero-credit-check-denied.png",
+      "sha256": "4b87346dc31d3f3d853f4084967912bd445e602a909c28b0ec614325024cf169"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-mobile-reference.png",
+      "sha256": "e65ba6f3009ffbc4f1d54f9345573fae63c303486c58c66fe47e592ad2606a9a"
+    },
+    {
+      "file": "sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/sentence-check-pending-dark.png",
+      "sha256": "026d0bdcc8d255000494dee62315d098ce1ae9b0d849190f379376fac157fc83"
+    },
+    {
+      "file": "attachments/sentence-setup-e8ed6e49402d1007575f40bc05a855c713be5eab.png",
+      "sha256": "57c807d0c62365a36924ce0862a1ddba161ef152dfbd0c09f229d8da84b87ffe"
+    },
+    {
+      "file": "attachments/sentence-check-pending-dark-02a9da219b7070c4df46018931352710aee5621f.png",
+      "sha256": "026d0bdcc8d255000494dee62315d098ce1ae9b0d849190f379376fac157fc83"
+    },
+    {
+      "file": "attachments/sentence-mobile-reference-3ac19d96e50e00d85f2c46a1008144ee69de8013.png",
+      "sha256": "e65ba6f3009ffbc4f1d54f9345573fae63c303486c58c66fe47e592ad2606a9a"
+    },
+    {
+      "file": "attachments/sentence-mobile-history-8555e5604d97da3cdee3234e27c8a22754aba41e.png",
+      "sha256": "89b13b2708dd1c701041236abd654f0f2d540b0de8251eee3b1f98b77dbc046e"
+    },
+    {
+      "file": "attachments/sentence-failed-check-close-guard-06a9eadcb1b5cc775592653f58ffd6947d616d3f.png",
+      "sha256": "9b6bf3fa1de386d7cc28911b8d6b03e98b294c100cf40de0c65efe604bdd7227"
+    },
+    {
+      "file": "attachments/sentence-batch-guidance-3888b8997a374932d832f2e902ab76218c38a1ab.png",
+      "sha256": "a68feed7c5c1a725d5ae0985377f290f2bd362b920c1d895cd0f71ecf62c8bb6"
+    },
+    {
+      "file": "attachments/sentence-over-limit-draft-ae15992d08fe4fdfd454160df2735c0b23519435.png",
+      "sha256": "14a31bd4ee610b3373c7e12753426e56ede29d0ff228be47a2070b26a54ce027"
+    },
+    {
+      "file": "attachments/sentence-dialog-draft-dark-faf4b8a920fe141649dd3d3c2d0e7dab96cb425c.png",
+      "sha256": "5b44260badd1f2b14ff9791db6e3c59f187641bdd1cc9986b96cc5626d555c78"
+    },
+    {
+      "file": "attachments/sentence-inline-ai-preferences-mobile-e0ec60406e38ab9570101bc3e4bf27501db645e7.png",
+      "sha256": "743f46599093390dca2a9c506785d356ac7ba577f7d5211cf0e79adc3e639c20"
+    },
+    {
+      "file": "attachments/sentence-access-loss-no-cached-content-d84cefe2c63d85588a5500835cc916290e50af35.png",
+      "sha256": "39d49ca64be15775d45be981955ccd8bca754d5e6395a0db3b72c1ffc284ee63"
+    },
+    {
+      "file": "attachments/sentence-fullscreen-feedback-dark-5a3b9671e821a090bfca091f511b0febad964137.png",
+      "sha256": "a6c2bcfdbcc4ccc8654f4253145b3fcda969c25e8628eb19850ed4b2e48f6770"
+    },
+    {
+      "file": "attachments/sentence-zero-credit-check-denied-86bce97a7c25cb2b30f735fef871e663f35062c6.png",
+      "sha256": "4b87346dc31d3f3d853f4084967912bd445e602a909c28b0ec614325024cf169"
+    },
+    {
+      "file": "attachments/sentence-inline-ai-preferences-1ab3f22a59573f61d13fe167f2024d825ae014dc.png",
+      "sha256": "016e0a603468b096f610b3ca0f2f04d41249c450ca261439298c865be57beff8"
+    },
+    {
+      "file": "attachments/sentence-contextual-hover-hint-fb9f014a60532d14b1d1ad2a2b3ef6567465fa11.png",
+      "sha256": "b31a9a6ba0742ff99781c979c40830c6c5ee3a0dce063d1546266b49620c50ae"
+    },
+    {
+      "file": "sentence-practice.journeys-c2aac-sentence-sign-in-entrypoint-chromium/sentence-signed-in-share-continuation.png",
+      "sha256": "f25408dcf339158247f2ca70fd8dbe4f415b3b5d692c3c0f414dbd28c2beadf6"
+    },
+    {
+      "file": "attachments/sentence-signed-in-share-continuation-c1c62f812bc576335a624a584c16ea304276bdfc.png",
+      "sha256": "f25408dcf339158247f2ca70fd8dbe4f415b3b5d692c3c0f414dbd28c2beadf6"
+    },
+    {
+      "file": "sentence-practice.journeys-6527f--without-the-Navigation-API-chromium/profile-back-fallback-keep-draft.png",
+      "sha256": "bf0c4080ac95301d5cbc7fffc31ee8a56881e2bd65b5aaf393ad6eba3305328a"
+    },
+    {
+      "file": "attachments/profile-back-fallback-keep-draft-eda747ff718c6f5f56518f34965652c079047abb.png",
+      "sha256": "bf0c4080ac95301d5cbc7fffc31ee8a56881e2bd65b5aaf393ad6eba3305328a"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-saved-complete.png",
+      "sha256": "e0ed995b53c362e0476230830e379e666754321a95f172089f474d527f655434"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-exact-results.png",
+      "sha256": "4956d0fd73ea0d4ce017dc0698fc7fa9ef35f15d76d6030250035f790612304b"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-new-complete.png",
+      "sha256": "f4e10d5d5176273682e1b49e29fe37e7e71e5d940f1f148f5437d13dfa32d4b4"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-new-results.png",
+      "sha256": "f4e10d5d5176273682e1b49e29fe37e7e71e5d940f1f148f5437d13dfa32d4b4"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-first-results.png",
+      "sha256": "932a32b7af11bc59873d0e0a68b2a71dadc494cd87a9cda67469df69a9301a7b"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-saved-results.png",
+      "sha256": "e0ed995b53c362e0476230830e379e666754321a95f172089f474d527f655434"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-batch-setup.png",
+      "sha256": "f09c76c0ac419f8210f566419be27cc3fb76ff134e6c7db9e9001694970bfe34"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-first-complete.png",
+      "sha256": "932a32b7af11bc59873d0e0a68b2a71dadc494cd87a9cda67469df69a9301a7b"
+    },
+    {
+      "file": "sentence-practice.journeys-b7060-s-new-examples-are-selected-chromium/finite-round-exact-complete.png",
+      "sha256": "4956d0fd73ea0d4ce017dc0698fc7fa9ef35f15d76d6030250035f790612304b"
+    },
+    {
+      "file": "attachments/finite-round-first-results-b1c93fe053cca5277a27c06b87c6a5a3c434202f.png",
+      "sha256": "932a32b7af11bc59873d0e0a68b2a71dadc494cd87a9cda67469df69a9301a7b"
+    },
+    {
+      "file": "attachments/finite-round-batch-setup-c390e907e174ad810b1d52c54136df2f1d0eba81.png",
+      "sha256": "f09c76c0ac419f8210f566419be27cc3fb76ff134e6c7db9e9001694970bfe34"
+    },
+    {
+      "file": "attachments/finite-round-exact-complete-6fd20e7d24d0775a9ac4dcf9d398db3392cac4af.png",
+      "sha256": "4956d0fd73ea0d4ce017dc0698fc7fa9ef35f15d76d6030250035f790612304b"
+    },
+    {
+      "file": "attachments/finite-round-exact-results-6be8200552edcb29e97a0ecff846bf16db9b029d.png",
+      "sha256": "4956d0fd73ea0d4ce017dc0698fc7fa9ef35f15d76d6030250035f790612304b"
+    },
+    {
+      "file": "attachments/finite-round-new-complete-7fcb38934f968c470e0256045c5ed7901470169e.png",
+      "sha256": "f4e10d5d5176273682e1b49e29fe37e7e71e5d940f1f148f5437d13dfa32d4b4"
+    },
+    {
+      "file": "attachments/finite-round-new-results-fd24d302eb520ff603ea4d10b4c28e90f14dc400.png",
+      "sha256": "f4e10d5d5176273682e1b49e29fe37e7e71e5d940f1f148f5437d13dfa32d4b4"
+    },
+    {
+      "file": "attachments/finite-round-saved-complete-8168d1ca553dd54d8c52704691962e6ad336f13d.png",
+      "sha256": "e0ed995b53c362e0476230830e379e666754321a95f172089f474d527f655434"
+    },
+    {
+      "file": "attachments/finite-round-saved-results-5a5f6b4d76fc6ae4014720b7cc7a0ba4c22eac78.png",
+      "sha256": "e0ed995b53c362e0476230830e379e666754321a95f172089f474d527f655434"
+    },
+    {
+      "file": "attachments/finite-round-first-complete-253ec00d8faa9790abdd3b54e51e10ff46b5e091.png",
+      "sha256": "932a32b7af11bc59873d0e0a68b2a71dadc494cd87a9cda67469df69a9301a7b"
+    },
+    {
+      "file": "sentence-practice.journeys-a6b95-viewport-and-compact-sheets-chromium/sentence-rtl-japanese-200-percent-viewport-simulation.png",
+      "sha256": "31d299b5b05ddbfba00c67d8895fbd2a6b628659374d51fe79cf6e988d2b8263"
+    },
+    {
+      "file": "sentence-practice.journeys-a6b95-viewport-and-compact-sheets-chromium/sentence-compact-rtl-inline-history.png",
+      "sha256": "e172a90f0e05b3a27e9b1dc4f4547f18e500648bea9d252014cb39dcb9c9e3d5"
+    },
+    {
+      "file": "sentence-practice.journeys-a6b95-viewport-and-compact-sheets-chromium/sentence-keyboard-viewport-simulation.png",
+      "sha256": "73823ec422c2e0abfc8963866e88656602388bee3c36da0557293697f9c3ff43"
+    },
+    {
+      "file": "attachments/sentence-keyboard-viewport-simulation-4108c6c44ff8ab51833475bdf4a9c620a424c71a.png",
+      "sha256": "73823ec422c2e0abfc8963866e88656602388bee3c36da0557293697f9c3ff43"
+    },
+    {
+      "file": "attachments/sentence-rtl-japanese-200-percent-viewport-simulation-1a805e1a9b95efa798bf80700ea5136faf083223.png",
+      "sha256": "31d299b5b05ddbfba00c67d8895fbd2a6b628659374d51fe79cf6e988d2b8263"
+    },
+    {
+      "file": "attachments/sentence-compact-rtl-inline-history-8133295217692ae6b96cce23c5a8887b52d18d0d.png",
+      "sha256": "e172a90f0e05b3a27e9b1dc4f4547f18e500648bea9d252014cb39dcb9c9e3d5"
+    },
+    {
+      "file": "sentence-practice.journeys-f745a-raft-during-a-real-conflict-chromium/profile-model-auto.png",
+      "sha256": "5fba25c501cc1658cba89e214e185ec78309c23f7e2ab31c80ab5f1edd697558"
+    },
+    {
+      "file": "sentence-practice.journeys-f745a-raft-during-a-real-conflict-chromium/profile-model-dark.png",
+      "sha256": "2adff8a419eeed99c9596785b111805c0012c54abee1338c31a92b773c93934f"
+    },
+    {
+      "file": "sentence-practice.journeys-f745a-raft-during-a-real-conflict-chromium/profile-model-conflict.png",
+      "sha256": "f00f829b0217e4d2c44940f393d996c2451b0e43d9b5b0cbaf551c76eb11f0ed"
+    },
+    {
+      "file": "sentence-practice.journeys-f745a-raft-during-a-real-conflict-chromium/profile-model-mobile-actions-dark.png",
+      "sha256": "dec5fb8412c24b7ef7d20cfe876f5bd277e9de23da4dd30c7111b78811ed814f"
+    },
+    {
+      "file": "sentence-practice.journeys-f745a-raft-during-a-real-conflict-chromium/profile-model-saved.png",
+      "sha256": "c1d956823d95726834429eb291961b12cbbb01018582c0b36eaf5608d30c7295"
+    },
+    {
+      "file": "sentence-practice.journeys-f745a-raft-during-a-real-conflict-chromium/profile-model-mobile-dark.png",
+      "sha256": "a754f62c4c173693aa2373a0f2d6f4964269b0780ae08d67c2fe8637cbd0a50a"
+    },
+    {
+      "file": "attachments/profile-model-conflict-48c8117273e272e65e9f00574d9c0c1fda3bd2ac.png",
+      "sha256": "f00f829b0217e4d2c44940f393d996c2451b0e43d9b5b0cbaf551c76eb11f0ed"
+    },
+    {
+      "file": "attachments/profile-model-saved-671a80c3532150c4f5037382090093524aa322e2.png",
+      "sha256": "c1d956823d95726834429eb291961b12cbbb01018582c0b36eaf5608d30c7295"
+    },
+    {
+      "file": "attachments/profile-model-mobile-dark-f92f9062627fcdc6b637d67a2c979e7a71e6a21b.png",
+      "sha256": "a754f62c4c173693aa2373a0f2d6f4964269b0780ae08d67c2fe8637cbd0a50a"
+    },
+    {
+      "file": "attachments/profile-model-auto-764a80223539a049bea6d081815ca95d675f9366.png",
+      "sha256": "5fba25c501cc1658cba89e214e185ec78309c23f7e2ab31c80ab5f1edd697558"
+    },
+    {
+      "file": "attachments/profile-model-dark-fbc92659d1e90b144d4efedba5a8d7942428f996.png",
+      "sha256": "2adff8a419eeed99c9596785b111805c0012c54abee1338c31a92b773c93934f"
+    },
+    {
+      "file": "attachments/profile-model-mobile-actions-dark-63dbe605292b8c25d1c9f3a9dad2160cd0718828.png",
+      "sha256": "dec5fb8412c24b7ef7d20cfe876f5bd277e9de23da4dd30c7111b78811ed814f"
+    },
+    {
+      "file": "sentence-practice.journeys-863c1-neration-is-being-cancelled-chromium/sentence-cancellation-requested-reduced-motion.png",
+      "sha256": "fa8df85d7ac3048392d306b2a078fa416af9c301774ca95cd3850a2051885567"
+    },
+    {
+      "file": "sentence-practice.journeys-863c1-neration-is-being-cancelled-chromium/sentence-batch-guidance.png",
+      "sha256": "88770290356f70f60666f3d134ffd385d21834b24523b906a361f14e7b5b2d5f"
+    },
+    {
+      "file": "attachments/sentence-cancellation-requested-reduced-motion-43248bf4f4df919d9c686e378ee28bada758b73c.png",
+      "sha256": "fa8df85d7ac3048392d306b2a078fa416af9c301774ca95cd3850a2051885567"
+    },
+    {
+      "file": "attachments/sentence-batch-guidance-46dd4ae920f71ad630315bfb7c86d37b99f35798.png",
+      "sha256": "88770290356f70f60666f3d134ffd385d21834b24523b906a361f14e7b5b2d5f"
+    }
+  ]
+}

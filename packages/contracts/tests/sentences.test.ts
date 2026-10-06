@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     SentenceCheckRequestSchema,
     SentenceNextRequestSchema,
+    SentencePrepareRequestSchema,
     SentenceCapabilitiesResponseSchema,
     SENTENCE_LIMITS,
     SentenceErrorResponseSchema,
@@ -90,6 +91,100 @@ describe('sentence boundary contracts', () => {
                 scope: { type: 'manual', entryIds: [uuid, uuid] },
             }).success,
         ).toBe(false);
+    });
+    it('represents full selected-word coverage within bounded transport limits', () => {
+        const ids = Array.from(
+            { length: 101 },
+            (_, index) =>
+                `00000000-0000-4000-8000-${(index + 1).toString().padStart(12, '0')}`,
+        );
+        const next = {
+            operationId: uuid,
+            sessionId: uuid,
+            direction: 'source-to-target',
+            mode: 'saved-first',
+            scope: { type: 'manual', entryIds: ids.slice(0, 100) },
+            visitedExerciseIds: ids.slice(0, 100),
+        };
+        expect(SentenceNextRequestSchema.safeParse(next).success).toBe(true);
+        expect(Buffer.byteLength(JSON.stringify(next))).toBeLessThan(32_000);
+        expect(
+            SentenceNextRequestSchema.safeParse({
+                ...next,
+                visitedExerciseIds: ids,
+            }).success,
+        ).toBe(false);
+        expect(
+            SentenceNextRequestSchema.safeParse({
+                ...next,
+                scope: { type: 'manual', entryIds: ids },
+            }).success,
+        ).toBe(false);
+    });
+    it('bounds exact replay validation to review-only and keeps prepare lists distinct from next identity', () => {
+        const ids = Array.from(
+            { length: 101 },
+            (_, index) =>
+                `00000000-0000-4000-8000-${(index + 1).toString().padStart(12, '0')}`,
+        );
+        const setup = {
+            direction: 'source-to-target',
+            mode: 'review-only',
+            scope: { type: 'all' },
+        };
+        expect(
+            SentencePrepareRequestSchema.safeParse({
+                ...setup,
+                replayExerciseIds: ids.slice(0, 100),
+            }).success,
+        ).toBe(true);
+        for (const replayExerciseIds of [[], [uuid, uuid], ids])
+            expect(
+                SentencePrepareRequestSchema.safeParse({
+                    ...setup,
+                    replayExerciseIds,
+                }).success,
+            ).toBe(false);
+        for (const mode of ['saved-first', 'new-only'])
+            expect(
+                SentencePrepareRequestSchema.safeParse({
+                    ...setup,
+                    mode,
+                    replayExerciseIds: [uuid],
+                }).success,
+            ).toBe(false);
+        const next = {
+            ...setup,
+            operationId: uuid,
+            sessionId: uuid,
+            visitedExerciseIds: [],
+        };
+        expect(
+            SentenceNextRequestSchema.safeParse({
+                ...next,
+                replayExerciseId: uuid,
+            }).success,
+        ).toBe(true);
+        expect(
+            SentenceNextRequestSchema.safeParse({
+                ...next,
+                replayExerciseId: 'invalid',
+            }).success,
+        ).toBe(false);
+        expect(
+            SentenceNextRequestSchema.safeParse({
+                ...next,
+                replayExerciseIds: [uuid],
+            }).success,
+        ).toBe(false);
+        for (const mode of ['saved-first', 'new-only'])
+            expect(
+                SentenceNextRequestSchema.safeParse({
+                    ...next,
+                    mode,
+                    replayExerciseId: uuid,
+                }).success,
+            ).toBe(false);
     });
     it('publishes isolated bounded sentence errors without extending legacy flashcard errors', () => {
         for (const code of [

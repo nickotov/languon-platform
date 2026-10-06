@@ -1,8 +1,22 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Buffer } from 'node:buffer';
-import { and, asc, desc, eq, notInArray, or, sql } from 'drizzle-orm';
+import {
+    and,
+    asc,
+    desc,
+    eq,
+    inArray,
+    notInArray,
+    or,
+    sql,
+    type SQL,
+} from 'drizzle-orm';
 import { z } from 'zod';
-import { DictionaryLanguageTagSchema } from '@languon/contracts';
+import {
+    DictionaryLanguageTagSchema,
+    SentenceExerciseSchema,
+    SENTENCE_LIMITS,
+} from '@languon/contracts';
 import type {
     SentencePrepareRequest,
     SentenceNextRequest,
@@ -19,6 +33,11 @@ import type {
 } from '../../../application/ports/sentence-practice-store';
 import type { LearningAccess } from '../../../application/ports/learning-store';
 import type { TextAiAdmissionExecution } from '../../../../text-ai/application/text-ai-admission-participant';
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
+import {
+    sentenceLanguageScript,
+    sentenceLetterSqlRange,
+} from '../../../domain/sentence-language';
 import type {
     SentenceCheckInput,
     SentenceGenerationInput,
@@ -64,6 +83,7 @@ import {
     settleSentenceAttempt,
 } from './sentence-job-accounting';
 export interface SentencePersistencePolicy {
+    generationFormat?: 'sentence-generation:v1' | 'sentence-generation:v2';
     resolveExecution: (
         tx: SentenceTransaction,
         userId: string,
@@ -91,6 +111,27 @@ function normalized(input: SentenceNextRequest) {
                   },
         visitedExerciseIds: [...input.visitedExerciseIds].sort(),
     };
+}
+function languageCondition(
+    text: SQL,
+    language: string,
+    otherLanguage: string,
+): SQL {
+    const expected = sentenceLanguageScript(language);
+    const other = sentenceLanguageScript(otherLanguage);
+    if (
+        !expected ||
+        !other ||
+        expected.name === other.name ||
+        (['Hani', 'Jpan', 'Kore'].includes(expected.name) &&
+            ['Hani', 'Jpan', 'Kore'].includes(other.name))
+    )
+        return sql`true`;
+    const expectedCount = sql`char_length(regexp_replace(${text} collate "C", ${`[^${expected.sqlRange}]`}, '', 'g'))`;
+    const otherCount = sql`char_length(regexp_replace(${text} collate "C", ${`[^${other.sqlRange}]`}, '', 'g'))`;
+    const letterCount = sql`char_length(regexp_replace(${text} collate "C", ${`[^${sentenceLetterSqlRange()}]`}, '', 'g'))`;
+    // Numeric/symbol-only text has no script to identify, matching domain validation.
+    return sql`(${letterCount} = 0 or (${expectedCount} > 0 and ${expectedCount} >= ${otherCount}))`;
 }
 const historyCursorSchema = z
     .object({
@@ -131,30 +172,119 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
     }
     private async pool(
         tx: SentenceTransaction,
-        dictionaryId: string,
+        dictionary: {
+            id: string;
+            sourceLanguageTag: string;
+            targetLanguageTag: string;
+        },
         learnerId: string,
         direction: SentenceDirection,
         scope: SentencePrepareRequest['scope'],
         selection?: Pick<SentenceNextRequest, 'mode' | 'visitedExerciseIds'>,
+        replayExerciseIds: readonly string[] = [],
     ) {
-        const { candidates, skippedCount } = await sentenceCandidates(
-            tx,
-            dictionaryId,
-            scope,
-            direction,
-            learnerId,
+        const dictionaryId = dictionary.id;
+        const sourceLanguage =
+            direction === 'source-to-target'
+                ? dictionary.sourceLanguageTag
+                : dictionary.targetLanguageTag;
+        const targetLanguage =
+            direction === 'source-to-target'
+                ? dictionary.targetLanguageTag
+                : dictionary.sourceLanguageTag;
+        const { candidates: eligibleCandidates, skippedCount } =
+            await sentenceCandidates(
+                tx,
+                dictionaryId,
+                scope,
+                direction,
+                learnerId,
+            );
+        // Keep a stable batch across prepare, saved reuse and fresh generation.
+        // Lifetime dictionary progress deliberately uses the full candidate set.
+        const candidates = eligibleCandidates.slice(
+            0,
+            SENTENCE_LIMITS.selectedEntries,
         );
         const checked = sql<boolean>`exists(select 1 from ${attempts} a where a.exercise_id=${exercises.id} and a.learner_id=${learnerId}::uuid) or exists(select 1 from ${manualReviews} r where r.exercise_id=${exercises.id} and r.learner_id=${learnerId}::uuid)`;
-        const valid = and(
-            eq(exercises.dictionaryId, dictionaryId),
-            eq(exercises.direction, direction),
-            or(eq(exercises.shared, true), eq(exercises.creatorId, learnerId)),
-            candidates.length
-                ? sql`exists(select 1 from ${exerciseEntries} e where e.exercise_id=${exercises.id}) and not exists(select 1 from ${exerciseEntries} e left join ${cards} c on c.id=e.entry_id and c.dictionary_id=e.dictionary_id where e.exercise_id=${exercises.id} and (c.id is null or c.learning_version<>e.learning_version or c.lifecycle<>'active' or e.entry_id not in (${sql.join(
-                      candidates.map((c) => sql`${c.entryId}::uuid`),
-                      sql`,`,
-                  )})))`
-                : sql`false`,
+        // Exact replay keeps the original bounded sequence even if All's stable
+        // default batch changed; explicit manual scope remains authoritative.
+        const validFor = (validCandidates: typeof candidates) =>
+            and(
+                eq(exercises.dictionaryId, dictionaryId),
+                eq(exercises.direction, direction),
+                sql`${exercises.publicContent}->>'sourceLanguage' = ${sourceLanguage} and ${exercises.publicContent}->>'targetLanguage' = ${targetLanguage}`,
+                languageCondition(
+                    sql`${exercises.publicContent}->>'sourceText'`,
+                    sourceLanguage,
+                    targetLanguage,
+                ),
+                languageCondition(
+                    sql`${exercises.referenceTranslation}`,
+                    targetLanguage,
+                    sourceLanguage,
+                ),
+                or(
+                    eq(exercises.shared, true),
+                    eq(exercises.creatorId, learnerId),
+                ),
+                validCandidates.length
+                    ? sql`exists(select 1 from ${exerciseEntries} e where e.exercise_id=${exercises.id}) and not exists(select 1 from ${exerciseEntries} e left join ${cards} c on c.id=e.entry_id and c.dictionary_id=e.dictionary_id where e.exercise_id=${exercises.id} and (c.id is null or c.learning_version<>e.learning_version or c.lifecycle<>'active' or e.entry_id not in (${sql.join(
+                          validCandidates.map((c) => sql`${c.entryId}::uuid`),
+                          sql`,`,
+                      )})))`
+                    : sql`false`,
+            );
+        const valid = validFor(candidates);
+        const replayExercises = replayExerciseIds.length
+            ? await tx
+                  .select()
+                  .from(exercises)
+                  .where(
+                      and(
+                          validFor(eligibleCandidates),
+                          inArray(exercises.id, [...replayExerciseIds]),
+                      ),
+                  )
+            : [];
+        if (replayExercises.length !== replayExerciseIds.length)
+            throw new SentenceConflictError('stale_content');
+        if (
+            replayExercises.some(
+                (exercise) =>
+                    !SentenceExerciseSchema.safeParse(exercise.publicContent)
+                        .success,
+            )
+        )
+            throw new SentenceConflictError('stale_content');
+        const replayTargetIds = new Set(
+            replayExercises.flatMap((exercise) =>
+                exercise.publicContent.segments.flatMap((segment) =>
+                    segment.target ? [segment.target.entryId] : [],
+                ),
+            ),
+        );
+        if (replayTargetIds.size > SENTENCE_LIMITS.selectedEntries)
+            throw new LearningInvalidRequestError();
+
+        const covered = selection?.visitedExerciseIds.length
+            ? await tx
+                  .selectDistinct({ entryId: exerciseEntries.entryId })
+                  .from(exerciseEntries)
+                  .innerJoin(
+                      exercises,
+                      eq(exercises.id, exerciseEntries.exerciseId),
+                  )
+                  .where(
+                      and(
+                          valid,
+                          inArray(exercises.id, selection.visitedExerciseIds),
+                      ),
+                  )
+            : [];
+        const coveredIds = new Set(covered.map((entry) => entry.entryId));
+        const remaining = candidates.filter(
+            (candidate) => !coveredIds.has(candidate.entryId),
         );
         const [counts] = await tx
             .select({
@@ -171,9 +301,15 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                       .where(
                           and(
                               valid,
-                              selection.mode === 'saved-first'
-                                  ? sql`not (${checked})`
-                                  : undefined,
+                              remaining.length
+                                  ? sql`exists(select 1 from ${exerciseEntries} needed where needed.exercise_id=${exercises.id} and needed.entry_id in (${sql.join(
+                                        remaining.map(
+                                            (entry) =>
+                                                sql`${entry.entryId}::uuid`,
+                                        ),
+                                        sql`,`,
+                                    )}))`
+                                  : sql`false`,
                               selection.visitedExerciseIds.length
                                   ? notInArray(
                                         exercises.id,
@@ -187,6 +323,8 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                 : [];
         return {
             candidates,
+            replayExercises,
+            remaining,
             skippedCount,
             saved,
             savedReviewCount: counts?.review ?? 0,
@@ -200,12 +338,16 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
         context: SentenceContext,
     ) {
         return this.run(access, context, async (tx, owned, id) => {
+            if (input.replayExerciseIds && input.mode !== 'review-only')
+                throw new LearningInvalidRequestError();
             const pool = await this.pool(
                 tx,
-                owned.dictionary.id,
+                owned.dictionary,
                 id,
                 input.direction,
                 input.scope,
+                undefined,
+                input.replayExerciseIds,
             );
             const sourceLanguage = DictionaryLanguageTagSchema.parse(
                 input.direction === 'source-to-target'
@@ -250,13 +392,17 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
             sql`select set_config('languon.learning_execution_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
         );
         const learnerId = sentenceLearner(access);
-        const format = `${kind}:v1`;
-        const execution = await this.policy.resolveExecution(
-            tx,
-            learnerId,
-            format,
-            now,
-        );
+        const format =
+            kind === 'sentence-generation'
+                ? (this.policy.generationFormat ?? 'sentence-generation:v1')
+                : 'sentence-check:v1';
+        const execution = await this.policy
+            .resolveExecution(tx, learnerId, format, now)
+            .catch((error: unknown) => {
+                if (error instanceof TextAiSelectionUnavailableError)
+                    throw new SentenceModelUnavailableError();
+                throw error;
+            });
         if (
             !execution.snapshot ||
             !execution.revisionId ||
@@ -380,6 +526,8 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
             access,
             context,
             async (tx, owned, id) => {
+                if (input.replayExerciseId && input.mode !== 'review-only')
+                    throw new LearningInvalidRequestError();
                 const hash = fingerprint({
                     dictionaryId: owned.dictionary.id,
                     ...normalized(input),
@@ -398,6 +546,21 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                         throw new SentenceConflictError('stale_content');
                     if (prior.requestFingerprint !== hash)
                         throw new SentenceConflictError('operation_conflict');
+                    if (prior.exerciseId && input.replayExerciseId) {
+                        const exact = await this.pool(
+                            tx,
+                            owned.dictionary,
+                            id,
+                            input.direction,
+                            input.scope,
+                            undefined,
+                            [input.replayExerciseId],
+                        );
+                        return {
+                            kind: 'exercise' as const,
+                            exercise: exact.replayExercises[0]!.publicContent,
+                        };
+                    }
                     if (prior.exerciseId)
                         return {
                             kind: 'exercise' as const,
@@ -456,13 +619,16 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                     throw new SentenceConflictError('operation_conflict');
                 const pool = await this.pool(
                     tx,
-                    owned.dictionary.id,
+                    owned.dictionary,
                     id,
                     input.direction,
                     input.scope,
-                    input,
+                    input.replayExerciseId ? undefined : input,
+                    input.replayExerciseId ? [input.replayExerciseId] : [],
                 );
-                const saved = pool.saved;
+                const saved = input.replayExerciseId
+                    ? pool.replayExercises[0]
+                    : pool.saved;
                 const receipt = {
                     learnerId: id,
                     operationId: input.operationId,
@@ -488,17 +654,16 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                         exercise: saved.publicContent,
                     };
                 }
-                if (input.mode === 'review-only' || !pool.candidates.length) {
-                    const reason =
-                        input.mode === 'review-only' && pool.candidates.length
-                            ? ('review-exhausted' as const)
-                            : ('no-eligible-entries' as const);
+                if (input.mode === 'review-only' || !pool.remaining.length) {
+                    const reason = pool.candidates.length
+                        ? ('review-exhausted' as const)
+                        : ('no-eligible-entries' as const);
                     await tx
                         .insert(receipts)
                         .values({ ...receipt, emptyReason: reason });
                     return { kind: 'empty' as const, reason };
                 }
-                const shortlist = [...pool.candidates]
+                const shortlist = [...pool.remaining]
                     .sort(
                         (a, b) =>
                             a.exposureCount - b.exposureCount ||
@@ -511,7 +676,11 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                     .slice(0, 12);
                 const payload: SentenceGenerationInput = {
                     schemaVersion: 1,
-                    generationPolicyVersion: 1,
+                    generationPolicyVersion:
+                        this.policy.generationFormat ===
+                        'sentence-generation:v2'
+                            ? 2
+                            : 1,
                     dictionaryId: owned.dictionary.id,
                     direction: input.direction,
                     sourceLanguage: DictionaryLanguageTagSchema.parse(

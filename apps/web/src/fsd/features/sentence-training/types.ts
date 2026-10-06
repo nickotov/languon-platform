@@ -27,7 +27,7 @@ export type TrainingTarget =
     | { kind: 'owner'; dictionaryId: string }
     | { kind: 'shared'; shareId: string; shareKey: string };
 export type { RequestWithSession } from '@/fsd/entities/dictionary';
-export type Configuration = SentencePrepareRequest;
+export type Configuration = Omit<SentencePrepareRequest, 'replayExerciseIds'>;
 export type EntryPreview = LearningEntriesResponse['entries'][number];
 export type PresentationMode = 'dialog' | 'fullscreen';
 export interface SentenceApi {
@@ -55,12 +55,34 @@ export interface SentenceApi {
     ): Promise<SentenceManualReviewsResponse>;
     progress(direction: SentenceDirection): Promise<SentenceProgressResponse>;
 }
-export type SessionPhase = 'idle' | 'loading' | 'exercise' | 'empty' | 'error';
+export type SessionPhase =
+    'idle' | 'loading' | 'exercise' | 'empty' | 'error' | 'completed';
+export type ReferenceDifference =
+    'unicode' | 'apostrophes' | 'case' | 'punctuation' | 'spaces';
+export interface ReferenceComparison {
+    kind: 'match' | 'different' | 'reference-only';
+    answer: string;
+    reference: string;
+    normalizedAnswer: string;
+    normalizedReference: string;
+    ignored: ReferenceDifference[];
+}
+export interface SentenceRoundItem {
+    exercise: SentenceExercise;
+    answer: string;
+    attempt: SentenceAttempt | null;
+    reference: SentenceManualReview | null;
+    comparison: ReferenceComparison | null;
+    revealedHintIds: string[];
+    skipped: boolean;
+    outcome: 'pending' | 'ai-checked' | 'manual-reviewed' | 'skipped';
+}
 export interface SessionCounts {
     presented: number;
     checked: number;
     assisted: number;
     manuallyReviewed: number;
+    skipped: number;
     ratings: SentenceProgressResponse['ratings'];
 }
 export interface SentenceSessionController {
@@ -75,7 +97,14 @@ export interface SentenceSessionController {
     job: SentenceJob | null;
     attempt: SentenceAttempt | null;
     reference: SentenceManualReview | null;
+    comparison: ReferenceComparison | null;
+    roundItems: SentenceRoundItem[];
+    replaying: boolean;
+    replayPosition: number | null;
+    replayLoading: boolean;
+    replayError: ApiError | null;
     referenceLoading: boolean;
+    referenceUncertain: boolean;
     error: ApiError | null;
     referenceError: ApiError | null;
     progress: SentenceProgressResponse | null;
@@ -87,12 +116,19 @@ export interface SentenceSessionController {
     canRetry: boolean;
     emptyReason: 'no-eligible-entries' | 'review-exhausted' | null;
     visitedExerciseIds: string[];
+    roundEntryCount: number;
+    roundEligibleCount: number | null;
+    roundComplete: boolean;
     start(configuration: Configuration): Promise<void>;
     changeMode(mode: SentenceMode): Promise<void>;
     restartReview(): Promise<void>;
     next(): Promise<void>;
     check(): Promise<void>;
     revealReference(): Promise<void>;
+    recompare(): Promise<void>;
+    skip(): Promise<void>;
+    repeatExact(): Promise<void>;
+    generateNew(): Promise<void>;
     retry(): Promise<void>;
     cancel(): Promise<void>;
     setDraft(value: string): void;

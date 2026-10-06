@@ -2,7 +2,7 @@
 feature: sentence-practice-backend
 title: Sentence practice backend
 status: current
-last_verified: 2026-10-04
+last_verified: 2026-10-06
 surfaces:
     - api
     - system
@@ -40,9 +40,12 @@ Owner and authenticated shared-reader sentence practice uses current dictionary
 entries, personal completion and exposure, bounded typed jobs, pinned model choice
 and shared credit/provider capacity. AI checking is the default paid action.
 Explicit reference reveal is a free personal manual review, without an AI grade.
-Ordinary exercise and job responses keep the reference answer private. The backend
-is delivered before the planned Magic Patterns design; no sentence screen is
-available yet. See the [implementation plan](../sentence-practice-implementation-plan.md).
+Ordinary exercise and job responses keep the reference answer private. Existing
+sentence practice UI is delivered. The contextual-hint, free-comparison and results
+extension has its returned practice UI implemented and browser-verified; Git
+integration remains tracked separately. See
+the [implementation plan](../sentence-practice-implementation-plan.md) and the
+[extension plan](../sentence-practice-assistance-implementation-plan.md).
 
 ## Start the development environment
 
@@ -52,8 +55,9 @@ with `pnpm --filter @languon/backend db:migrate`, and start with `pnpm dev`.
 Use fake local accounts and dictionaries. Deterministic dictionary-worker fixture
 mode does not advertise sentence generation/checking readiness and fails closed
 for those provider calls; the composed sentence journey injects its own validated
-counting provider. Sentence admission defaults off:
-`LEARNING_SENTENCES_ENABLED=true` enables the HTTP capability. Workers still drain
+counting provider. Sentence admission defaults on in development/test; use
+`LEARNING_SENTENCES_ENABLED=false` to disable it locally. Staging/production default
+off and require `LEARNING_SENTENCES_ENABLED=true` to enable the HTTP capability. Workers still drain
 already admitted work when this flag is false. Configure managed text routing,
 credit accounts and current capable worker observations before paid admission.
 Do not put credentials, tokens, private prompts or share keys in logs.
@@ -74,7 +78,7 @@ providers, never paid models. Run `pnpm test:e2e:sentence-practice-backend`.
    languages, available modes and personal progress; legacy flashcard capabilities
    retain their strict original shape.
 2. Request Next in Saved first using an operation ID and session ID. An empty
-   uncompleted pool admits a generation job; replay the same request and obtain the
+   eligible saved pool admits a generation job; replay the same request and obtain the
    same job without another credit reservation. Poll only through live authority.
 3. After deterministic worker completion, open the exercise. Source segments
    reconstruct the exact sentence, repeated target occurrences share a hint, and
@@ -83,22 +87,43 @@ providers, never paid models. Run `pnpm test:e2e:sentence-practice-backend`.
 4. Submit a draft for AI checking. Retry the same operation and obtain the same
    pinned job. Completion saves the exact answer and validated feedback. Ratings
    follow server caps; valid morphology is allowed, missing required vocabulary
-   caps the result below Good. A successful check completes personal Saved first
-   regardless of its grade.
+   caps the result below Good. A successful check records personal AI feedback,
+   regardless of its grade; it does not exclude that exercise from later sessions.
+   The provider must assess every required dictionary target exactly once; supporting
+   hints are not additional grading targets. Highlight offsets are computed by the
+   server from unique exact quotes in the unchanged answer, including Unicode
+   grapheme boundaries. Repeated or unmatched quotes keep their issue and score
+   impact without a highlight. Invalid assessments still fail closed.
 5. On a different exercise explicitly reveal the reference. Confirm a reference
    and ungraded private manual review, separate manual statistics/history and no
    new job, reservation or provider call. Repeat with zero credits and unavailable
    current model: existing saved content still supports reference review. The
    draft remains available to the future client for comparison or later AI checking.
-6. Review only reuses valid saved exercises without generation. New only generates
-   additively; older generations remain reusable. Saved first drains that learner's
-   uncompleted pool before generation. Reference review does not complete it for
-   another learner. Same-session reference assistance is captured at AI admission
-   and does not penalize the AI score.
+6. Saved first reuses valid saved exercises, including previously AI-checked or
+   manually reviewed examples and their hints, before generating for words still
+   missing in this round. Pass the current round's visited exercise IDs on Next.
+   Each presented target counts once toward the selected-word round, including
+   skipped sentences; no new generation is admitted once all eligible selected
+   words have appeared. Review only never generates. New only bypasses saved
+   selection and generates additively for the round's remaining words. Start a new
+   round with empty visited IDs, even when lifetime exposure already covers every
+   word. Older generations, personal progress and history remain reusable.
+   Same-session reference assistance is captured at AI admission and does not
+   penalize the AI score; manual review stays separate from AI feedback.
 7. Enable unlisted sharing and authenticate another learner. Owner-created
    exercises are shareable; reader-created exercises and every attempt/manual
    review are creator-private. Rotate the share key or revoke access and confirm
    reads, replay, dispatch and publication fail without protected data disclosure.
+8. For Repeat these exact examples, prepare with optional `replayExerciseIds`
+   containing the whole previous sequence: one to 100 unique exercise IDs in
+   review-only mode. Every requested exercise must be current, authorized and
+   compatible with the selected dictionary, direction, languages and manual word
+   scope. A bad item fails the entire preflight, not just that item. Request each
+   exercise through Next's optional `replayExerciseId` in the retained sequence
+   order. It returns that exact exercise or an error; no replacement saved example,
+   job, reservation or provider call is allowed. Current authority is rechecked
+   for each Next and on idempotent replay. The same operation with a different
+   exercise conflicts; explicit replay fields in paid modes fail validation.
 
 ## System verification
 
@@ -119,19 +144,44 @@ providers, never paid models. Run `pnpm test:e2e:sentence-practice-backend`.
 5. Disable new admission and confirm capable workers finish or cancel existing
    work. Old workers cannot claim selected learning jobs or increase dictionary
    capacity during active/recent learning overlap without shared-capacity support.
+6. With Russian source and French answer requested, return clearly reversed
+   writing scripts from the deterministic provider. Confirm rejection and retry
+   within the existing generation attempt/budget limit; only valid content is
+   published. Existing wrong-script saved rows remain stored but are excluded
+   from practice. Script checks tolerate ordinary names and borrowing and cannot
+   identify which language is used when both languages share a writing script.
+7. In the owned v2 fixture, verify additional whole-phrase hints are persisted and
+   reused while required entry targets alone determine coverage and AI assessment.
+   Legacy v1 examples remain usable without contextual enrichment. New v2 content
+   requires at least one useful contextual hint and at most 40 extra hints; required
+   hints remain bounded at three. AI check disclosure accepts all 43 hint IDs.
+   Free reference review retains its existing authority and ungraded response.
+8. Verify exact replay of a complete selected sequence, including an explicitly
+   manually selected word outside the first dictionary batch. Confirm live
+   version/visibility fences, fail-closed whole-list preparation and unchanged
+   provider/credit counts with unavailable AI and zero credits. Session ordering
+   belongs to the client; the existing routes provide exact identity reads without
+   a new paid replay job, server cursor or comparison endpoint.
 
 ## E2E coverage
 
 `generate-check-reuse-private-and-shared` covers real authenticated admission,
 worker generation/checking, replay, reference redaction, personal shared-reader
-manual work, free manual completion, zero-credit/unavailable-model review and
-separate statistics. Pinned-model selection, private reader generation, revoked
+manual work, free manual completion, zero-credit/unavailable-model review,
+reuse after AI checking or manual review, finite five-word rounds, explicit fresh
+rounds despite lifetime exposure, wrong-script rejection/retry and exclusion of
+malformed saved content, and
+separate statistics, plus version-two contextual-hint publication and legacy
+compatibility. It also covers exact replay preparation/read, invalid sequence
+preflight, paid-mode rejection, payload conflicts and no additional financial
+work. Pinned-model selection, private reader generation, revoked
 authority, assisted-check metadata and unchanged flashcard capability contracts
 have focused lower-layer coverage. Domain and
 contract tests cover structural hint/span validation and score rules. Real
 PostgreSQL tests cover constraints, races, retention, erasure, leases, allocation
 settlement and restricted worker roles. Browser evidence for existing provider
-and credit screens remains in their own guides; a new sentence screen awaits design.
+and credit screens remains in their own guides; feature 038's returned sentence
+design is selected and its frontend browser verification is tracked separately.
 
 ## Expected failure and edge cases
 
@@ -145,10 +195,46 @@ and credit screens remains in their own guides; a new sentence screen awaits des
   than missing-content404. Existing valid free reference review remains available.
 - Conflicting operation payloads fail rather than generating again. Content erasure
   invalidates old receipts; a replay cannot silently charge for replacement work.
+- A sentence round contains at most 100 eligible words. The dictionary batch
+  selects the first 100 eligible words in stable entry order; manual scope
+  supports at most 100 selected IDs. Current-round visited exercise IDs also have
+  a 100-ID limit. Sentence HTTP JSON retains its 32,000-byte bound. The dictionary's
+  10,000-entry capacity and whole-dictionary lifetime progress remain unchanged.
+  Over-limit payloads fail validation. There is no automatic next batch, new
+  pagination field or change to provider budgets, admission rates or cost limits.
 - Pending, cancelled, timed-out, retried and stale-fenced jobs never publish late
   results. Known provider usage is settled even when generated content is invalid.
+  Invalid sentence-generation output retries within the existing attempt and
+  accounting limits; invalid AI-check output remains a terminal failure.
+- Saved content must match the requested language tags and distinguishable
+  writing scripts. Clearly reversed legacy examples are excluded without deleting
+  their history; this validation is not universal language identification.
+  Domain validation and saved-content SQL use the same Unicode letter ranges,
+  including resolved writing scripts such as Thai and Armenian.
 - Manual review has no percentage, rating or automatic correctness verdict. Valid
   translations can differ from the one reference; AI evaluates language quality.
+  The frontend's free conservative comparison uses this existing authorized
+  reference response and creates no backend correctness score or comparison job.
+- Exact replay's optional prepare-list and Next-exercise fields are restricted
+  to review-only mode and the existing 100-ID bounds. Current entry versions,
+  direction, languages, scope and visibility are validated before returning
+  content. Unsupported/stale/inaccessible IDs fail without paid fallback or
+  substitution. Preparation verifies the whole list; it does not authorize
+  subsequent reads after revocation. Legacy requests without replay fields keep
+  their existing behavior and public response shapes.
+- `LEARNING_SENTENCE_GENERATION_FORMAT` defaults to `sentence-generation:v1`.
+  The backend release expands readers/workers/database support for v2 first;
+  activate `sentence-generation:v2` only after compatible UI and rollback-floor
+  worker processable formats are ready. The active immutable model configuration
+  revision must support v2; create/activate a new revision rather than editing an
+  existing pinned snapshot. The fixture explicitly selects v2. User development
+  configuration and database are not changed by verification.
+- Version-two jobs require policy2; version-one jobs require policy1. Saved public
+  and relational policy versions must agree. Database constraints reject missing
+  or mismatched versions. Contextual hints have no entry UUID and do not add
+  coverage, mastery or AI target assessments. They disappear with the exercise
+  under existing erasure rules. Unknown/disallowed worker formats cannot claim
+  these jobs, regardless of supported model catalog capabilities.
 - Revealing after an AI submission does not retroactively change its assistance
   metadata. Hints and reference assistance never reduce a valid AI grade.
 
@@ -164,6 +250,16 @@ and credit screens remains in their own guides; a new sentence screen awaits des
   checks the reviewed migration digest.
 
 ## Troubleshooting
+
+For `invalid_model_output` on a check, worker diagnostics now emit only the fixed
+message `Sentence model output rejected.` with allowlisted `kind` and `reason`:
+`input_invalid`, `schema_invalid`, `target_assessments_invalid`,
+`answer_span_invalid`, `input_token_bound`, `usage_invalid`, or the fallback
+`model_output_invalid`. No answer, prompt, reference, model output, user/job ID,
+or error message is logged. The HTTP failure code and retry/accounting rules stay
+unchanged; diagnostics do not retroactively explain an older failed job. Restart
+the worker after updating code and submit a new explicit check rather than polling
+the old terminal failed operation. Instrumentation failure cannot interrupt settlement.
 
 A model-unavailable response requires matching fresh worker observations for the
 requested format, selected execution, combined capacity and credit settlement;

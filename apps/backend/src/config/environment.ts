@@ -107,6 +107,9 @@ const RawEnvironmentSchema = z
             .enum(['true', 'false'])
             .default('false'),
         DICTIONARY_HMAC_SECRET: DictionarySecretSchema,
+        LEARNING_SENTENCE_GENERATION_FORMAT: z
+            .enum(['sentence-generation:v1', 'sentence-generation:v2'])
+            .default('sentence-generation:v1'),
         LEARNING_SENTENCES_ENABLED: z
             .enum(['true', 'false'])
             .default('false')
@@ -259,7 +262,14 @@ export type Environment = Omit<
 export function loadEnvironment(
     values: NodeJS.ProcessEnv = process.env,
 ): Environment {
-    const raw = RawEnvironmentSchema.parse(values);
+    const raw = RawEnvironmentSchema.parse({
+        ...values,
+        LEARNING_SENTENCES_ENABLED:
+            values.LEARNING_SENTENCES_ENABLED ??
+            (values.APP_ENV === 'development' || values.APP_ENV === 'test'
+                ? 'true'
+                : 'false'),
+    });
     const defaultAccessTokenTtl = raw.APP_ENV === 'production' ? '15m' : '2d';
     const accessTokenTtl = parseDurationSeconds(
         raw.AUTH_ACCESS_TOKEN_TTL ?? defaultAccessTokenTtl,

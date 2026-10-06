@@ -1,0 +1,50 @@
+{
+  "run": "sentence-ui-remediation-final-20261006",
+  "command": "pnpm --filter @languon/web test:e2e tests/e2e/sentence-practice.journeys.spec.ts --grep 'checks owner practice|shows stopping|renders RTL'",
+  "result": "3/3passed40.8s",
+  "scenarioDurations": {
+    "owner-reader": 16.7,
+    "generation-cancellation": 6.0,
+    "rtl-japanese": 5.9
+  },
+  "environment": {
+    "web": "http://localhost:3367",
+    "backend": "http://localhost:4067",
+    "database": "127.0.0.1:55495/languon_ui_remediation_e2e",
+    "redis": "127.0.0.1:56495/15",
+    "provider": "deterministicfake,no paidcalls"
+  },
+  "observations": [
+    "Circularheaderhistory/fullscreenicons,sourceAIsettings/Close controls;singleconditionalfreefooteraction",
+    "Generation sourcecard follows skeleton;checking sourcecard immediately below draft",
+    "Stopping credit explanation,disabledStoppingbutton",
+    "Darkdesktopdraft/hints/checking;mobilepreferences/history/reference;RTLJapaneseviewportpressure",
+    "Browserconsole/unexpectedfailedrequests asserted by maintainedjourneys"
+  ],
+  "limits": [
+    "ExternalMagicPatternsrendercomparisonunavailable;source-basedcomparisononly",
+    "One-wordownercompletionshowsresults;nonfinalpopulatedAI-feedbackTwo-wayspositioncoveredbyproductionorder/unitassertionbutnotcurrentbrowsercapture"
+  ],
+  "sourceHashDifferences": [],
+  "screenshots": {
+    "sentence-access-loss-no-cached-content.png": "68538ff21b5057aca3439554bec020b312bdb735df34ae0af8e2f166d4bca87e",
+    "sentence-batch-guidance.png": "7ccd9b33630f12e9e662b68eb4b9d8b072b629bc1fb99a988ab8c6369d9a3d13",
+    "sentence-cancellation-requested-reduced-motion.png": "a080766bf7c971c4af915efc54b6c08cbe8c4696443a2af14bc4b486878a30fe",
+    "sentence-check-pending-dark.png": "7ad7e13ad274cc1832346c52756f76e0e3f59bf24a1b449e68c68896d6943572",
+    "sentence-compact-rtl-inline-history.png": "5c765ac58aae93ba0f768226dc779f3d501c660510bc28e0b4c6796ddda0448d",
+    "sentence-contextual-hover-hint.png": "4569b93028ee606e767fe15b6131a31cfa267afe0064fac26916cc30a34aa7a8",
+    "sentence-dialog-draft-dark.png": "2004f27e7ab8c4a00f1d5f4bdc980aab39edf7480bdd49e9e783b72b2bee392a",
+    "sentence-failed-check-close-guard.png": "e785e89cdb169834def0c76883b4c1f0a9b8207e62a77fa0c044200b1625d510",
+    "sentence-fullscreen-feedback-dark.png": "81ddd85277f114b3b85dd9c38ca2732cb3bc5f18c171c3eeed3943a8c07aa6c9",
+    "sentence-generating-source.png": "4e18410c4debac849b2cef64d151904f24574e9d8952a809881f5c6ef57bf34b",
+    "sentence-inline-ai-preferences-mobile.png": "78cb80b5e02298e6bb6a3b373ef0662b98749e3f4c363804ada8add165d4606a",
+    "sentence-inline-ai-preferences.png": "4626bc49f9709ca92b8b57ab915cfed673852d14a64578251f30de4e1e085509",
+    "sentence-keyboard-viewport-simulation.png": "4688f934bd36f4511bba230de3ce8b5273504b54add308839266b17979b94808",
+    "sentence-mobile-history.png": "310d6d554f7ee287261efaea49c4a68c435812b3ccf45100cadcf555b571926c",
+    "sentence-mobile-reference.png": "2a2a468f739b02455524400ae49ef1029e8ce27571f7865e9ce0109fc420f4f2",
+    "sentence-over-limit-draft.png": "afcc23c4303388e89abfdbea87e2d19836f8c8ea8feed72d5b7fd1622240b2f9",
+    "sentence-rtl-japanese-200-percent-viewport-simulation.png": "0b6ea2b23d11ca5a0526e9996dc3ad45f58e6dfe3c094814b7631f57370b626f",
+    "sentence-setup.png": "e1db4e5e9d551622ddd0d9aa70c52311db3657647a266a0716c96488860ce969",
+    "sentence-zero-credit-check-denied.png": "2a3826ff93806c8202f1fc9dfabc51be2e4008108a11a72b9f895f41e58e2666"
+  }
+}

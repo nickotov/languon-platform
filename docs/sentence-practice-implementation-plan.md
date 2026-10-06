@@ -19,9 +19,9 @@ source_paths:
     - packages/prompts
     - apps/web/src/fsd/pages/profile
     - apps/web/src/fsd/features/flashcard-training
-  - apps/web/src/fsd/features/text-ai-preferences
-  - apps/web/src/fsd/features/sentence-training
-  - apps/web/src/fsd/widgets/dictionary-training
+    - apps/web/src/fsd/features/text-ai-preferences
+    - apps/web/src/fsd/features/sentence-training
+    - apps/web/src/fsd/widgets/dictionary-training
     - apps/web/src/fsd/pages/shared-dictionary
 evidence: []
 ---
@@ -35,6 +35,13 @@ Sentence attempts and coverage also deliver part of
 After both backends are implemented and verified, save two detailed, copyable
 Magic Patterns design prompts. Stop until the user supplies the designs and
 requests frontend implementation against selected design revisions.
+
+The separately authorized 2026-10-05 assistance extension has its own detailed
+[backend-first plan](sentence-practice-assistance-implementation-plan.md),
+[feature 038](../.agent/features/038-sentence-practice-assistance/FEATURE.md)
+and [ExecPlan](../.agent/features/038-sentence-practice-assistance/EXEC_PLAN.md).
+Its contextual hints, conservative free reference comparison and completion/replay
+changes are planned work, not part of this baseline's historical completion.
 
 This is the canonical planning baseline, not implementation evidence or an
 accepted ADR. The user authorized implementation on 2026-10-04 after clarifying
@@ -118,17 +125,23 @@ within backend verification; they are not substitutes for the later frontend.
   selected front/source language.
 - Practise all eligible active entries or a manually selected subset. Respect
   effective language roles and current learning versions.
+  Each round is limited to 100 eligible words: a dictionary batch uses the first
+  100 eligible entries in stable order; manual scope accepts up to 100 IDs and
+  allows choosing a different batch. Setup explains this limit. Finishing does
+  not automatically start another batch; lifetime progress remains dictionary-wide.
 - Initially generate short, natural, grammatically complete sentences using
   simple grammar and one to three target entries plus common supporting words.
   Phrases and senses retain separate entry identities.
-- Automatic practice serves eligible saved exercises the learner has never
-  completed through a successful AI check or an explicit reference-answer
-  reveal, then generates one new sentence when that pool is exhausted. A successful
-  AI check counts regardless of score. A reveal counts as manually reviewed; a
-  failed check or failed reveal does not complete the exercise. Setup offers three explicit choices: Saved first (default), New sentences
-  (always request fresh generation), and Review saved (never generate). New
-  sentences is available on every session, does not delete previous generations
-  and does not reset vocabulary coverage or personal history.
+- Automatic practice reuses eligible saved exercises, including examples already
+  checked with AI or manually reviewed, before generating for selected words
+  still missing in the current round. Setup offers Saved first (default), New
+  sentences (always request fresh generation), and Review saved (never generate).
+  A round finishes as soon as all eligible selected words have appeared, including
+  skipped sentences; repeated targets count once. Keep the final sentence available
+  to answer and make its next action View summary rather than another generation.
+  AI feedback and explicit manual reference review remain separate personal data,
+  not requirements for round completion. New sentences is available on every
+  session without deleting previous generations, lifetime coverage or history.
 - Owner-generated exercises are available to currently authorized dictionary
   readers. Reader-generated exercises are private to the reader. Answers and
   feedback are always personal; practice never changes owner content or progress.
@@ -156,9 +169,10 @@ within backend verification; they are not substitutes for the later frontend.
   each learner/exercise once so generation followed by opening is not doubled.
 - All successful generations remain separate saved exercises, not a replacement
   batch. They remain reusable under visibility, live access, content-version and
-  deletion rules. New generation continues to prefer uncovered entries; after
-  all selected entries are covered, prefer less-exposed entries without silently
-  resetting coverage. Coverage means exposure, not proven mastery.
+  deletion rules. New generation prefers words not yet presented in this round,
+  then uses lifetime exposure to order those candidates. Stop when all selected
+  words have appeared. A new round starts fresh local coverage without resetting
+  lifetime coverage. Coverage means exposure, not proven mastery.
 - Start practice in fullscreen from the Start gesture, with the existing
   flashcard-style viewport fallback when native fullscreen is unavailable.
   Provide Fullscreen and Dialog controls throughout practice. Switching retains
@@ -186,19 +200,19 @@ the learner advances; a first-time shared reader may already have owner-generate
 content available. Partial generation is retained between sessions.
 
 For example, with entries A, B and C, the learner generates an exercise for A
-and one for B but only completes A (by AI checking or manual reference review). The next Saved first session offers
-the saved B exercise, then generates new content prioritizing C. The previously
-completed A exercise remains available in Review saved. If both A and B were
-completed, Saved first proceeds directly to new generation prioritizing C.
+and one for B but only checks or manually reviews A. The next Saved first session
+offers saved A and B exercises, including their hints, then generates for C.
+Once A, B and C have appeared, that round is complete whether the learner
+answered, revealed the reference or skipped each example.
 
 Never infer that an entry is learned because a sentence was generated, opened or
 checked or manually reviewed. Coverage controls generation variety; answer quality and hint use are
-separate personal attempt data. Saved first does not automatically repeat already
-completed exercises; the learner can select Review saved. Weak-area scheduling
-remains a later feature.
+separate personal attempt data. Saved first includes previously completed
+exercises on later rounds; Review saved provides a generation-free alternative.
+Weak-area scheduling remains a later feature.
 
-New sentences bypasses saved selection on every Next, even on second or later
-sessions. Keep every successfully published generation; it does not overwrite
+New sentences bypasses saved selection for words still missing in the current
+round, even on second or later sessions. Keep every successfully published generation; it does not overwrite
 older exercises, answers or feedback. A failed, cancelled or stale job is not a
 saved exercise. None of the session modes bypass live access or deletion rules.
 
@@ -314,16 +328,20 @@ portable design prompt.** Confirm final interfaces against implementation and AD
 
 Saved-first selection reauthorizes the learner/dictionary, restricts visibility
 and direction, requires every linked entry to remain active/current, fits all
-targets within the selected scope and excludes exercises completed by AI checking or manual reference review,
-plus current-session visits. The client tracks visited IDs locally; exclusions never confer authority.
+targets within the selected scope and excludes current-round visits and examples
+that add no word still missing from the round. Prior AI checking or manual review
+does not exclude an exercise. The client tracks visited IDs locally; exclusions
+never confer authority.
 Review uses valid saved content regardless of prior AI checks or manual reviews, least recently
 practised first, and finishes without generation when its pool is exhausted.
-New sentences bypasses saved selection and admits one fresh generation per Next
-using the same unused/less-exposed priority and existing credit/model rules.
+New sentences bypasses saved selection and admits fresh generation while the
+round has selected words still missing, using lifetime exposure to prioritize
+remaining candidates and preserving existing credit/model rules.
 Published generations are additive; choosing this mode never replaces the saved
 pool or clears personal progress.
 
-If generation is needed, prefer unused entries then less-exposed entries; supply
+If generation is needed, consider only words not yet presented in this round;
+prefer lifetime-unused entries then less-exposed entries. Supply
 a bounded candidate shortlist and require one to three targets including the
 priority entry. Generate the reference translation in the same validated generation, not on reveal.
 Construct a public-safe vocabulary projection; omit private
@@ -369,8 +387,8 @@ practise and reveal existing authorized saved exercises. An empty saved pool doe
 not grant free generation.
 
 Record manual reviews personally and idempotently by operation, exercise and
-session. Successful reveal completes that exercise for the learner's Saved first
-pool. Review saved can revisit it, and later paid AI analysis remains available.
+session. Successful reveal records a manual review without removing the exercise
+from future Saved first rounds. Later paid AI analysis remains available.
 Retries must not duplicate manual review counts. Reference reveal never increments
 vocabulary exposure a second time, resets coverage or changes another learner's
 completion. Retain the draft, hints and reference across fullscreen/dialog changes.
@@ -623,7 +641,9 @@ saved-first selection, hints/checking, history/reload and model/credit/access
 recovery. Browser verification must cover desktop/mobile layouts, keyboard/touch,
 RTL, focus, error highlighting, console errors and failed requests. Compare the
 runtime against the selected design and stable brief IDs.
-Explicitly test partial generation across sessions, saved-uncompleted reuse, free manual completion with zero credits, independent reader manual reviews,
+Explicitly test partial generation across sessions, reuse after AI checking or
+manual review, finite selected-word rounds, free manual completion with zero
+credits, independent reader manual reviews,
 fresh-generation mode without history loss, and fullscreen/dialog switching
 during typing, checking and feedback without extra AI operations.
 
@@ -676,3 +696,79 @@ targets are Implemented; BL-004/BL-005 are Done with synchronized links/evidence
 BL-003 remains in progress for broader grammar/manual-exercise scope. Explicit
 proof limits and the unrelated existing profile deletion-receipt failure are
 recorded in the frontend evidence; no production enablement or push is included.
+
+## Approved reliability refinement — 2026-10-05
+
+After using the delivered practice UI, the user clarified that a round finishes
+as soon as every selected word has appeared, including skipped examples, and that
+Saved first must reuse previously completed sentences too. The current product
+and cross-session sections above now reflect those decisions. This supersedes
+the earlier saved-uncompleted selection rule; it does not reinterpret the
+historical feature evidence or modify the frozen v001 design handoffs.
+
+Keep the final sentence visible for its answer and offer View summary without
+admitting another generation. New examples starts fresh round coverage while
+retaining lifetime exposure, previous generations, hints and personal history.
+AI scores and manual reference reviews remain separate from appearance counts.
+
+Reject clearly reversed source/reference writing scripts and retry malformed
+generation within the existing attempt and accounting bounds. Exclude malformed
+saved examples from active practice without deleting their historical records.
+This guard cannot identify languages that share the same writing script. Preserve
+the generation prompt's natural-language guidance. Recover transient transport
+failures with bounded retries using the original operation/job identity; never
+substitute a new paid operation automatically.
+
+An initial review-remediation proposal aligned the visited-exercise limit with the existing maximum
+of 10,000 selected entries and bounds sentence HTTP JSON at 1 MB (1,000,000 bytes), allowing valid
+large rounds to preserve their visited IDs. Request shapes, persisted schemas,
+provider budgets, admission rates and cost caps stay the same; there is no new
+batch-generation mode. That capacity proposal and its verification are historical
+and are superseded by the user's smaller-batch decision below.
+Domain validation and saved-content SQL share the same Unicode letter ranges,
+including dynamically resolved scripts such as Thai and Armenian, while the
+same-script language-identification limitation remains.
+
+Implementation and verification belong to the
+[sentence reliability improvement](../.agent/improvements/sentence-practice-reliability.md)
+and its synchronized [backend](user-flows/sentence-practice-backend.md) and
+[web](user-flows/sentence-practice-web.md) journeys. The original feature completion
+above remains the historical delivery checkpoint.
+
+### Approved smaller rounds — 2026-10-05
+
+The user selected “Limit each round to smaller batch.” Current sentence rounds
+therefore contain at most 100 eligible words, with at most 100 manual entry IDs
+and 100 visited exercise IDs. A dictionary batch takes the first 100 eligible
+entries in stable order; setup states this explicitly. Manual search and Load more
+allow choosing other words for another batch. There is no automatic next batch, pagination field,
+new API field or persisted schema. Sentence HTTP JSON retains its 32,000-byte
+bound. This supersedes the 10,000-ID/1 MB expansion proposal above, not the
+dictionary's unchanged 10,000-entry capacity.
+
+Lifetime progress still covers the whole dictionary. Five-word rounds, completion
+by appearance including skips, the final View summary action, Saved first reuse
+and explicit New examples retain their clarified behavior. Provider budgets,
+admission rates and cost limits remain unchanged. Earlier large-capacity test
+evidence is superseded only for the round-capacity decision; current boundary
+tests and browser setup evidence verify the 100-word limit.
+
+## Authorized assistance extension — 2026-10-05
+
+The user confirmed additional contextual content-word and whole-phrase hints,
+free conservative comparison with the saved reference, and results replacing the
+exercise after the final check, reference reveal or skip. Results offer repeating
+the exact example sequence or explicitly generating fresh examples. This new
+completion transition extends the earlier appearance-based round boundary:
+appearance still exhausts coverage, and the final sentence remains answerable
+until the learner takes its finishing action.
+
+The [new detailed implementation plan](sentence-practice-assistance-implementation-plan.md)
+owns the current extension's backend-first sequence and design state checklist.
+[Feature 038](../.agent/features/038-sentence-practice-assistance/FEATURE.md) and
+its [ExecPlan](../.agent/features/038-sentence-practice-assistance/EXEC_PLAN.md)
+own acceptance criteria and active delivery. Verify that backend, then save a
+versioned prompt without concrete API paths and wait for the returned Magic
+Patterns design before frontend work. Existing completed features, frozen design
+handoffs and BL-004's Done status remain historical baseline evidence, not proof
+that this extension has been implemented.

@@ -32,7 +32,7 @@ export class SentenceSetup {
     ) {
         this.state = {
             configuration: {
-                direction: 'source-to-target',
+                direction: 'target-to-source',
                 mode: 'saved-first',
                 scope: { type: 'all' },
                 ...(initialExplanationLanguage

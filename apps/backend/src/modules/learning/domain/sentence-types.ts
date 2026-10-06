@@ -15,7 +15,7 @@ export interface SentenceCandidate extends SentenceEntry {
 }
 export interface SentenceGenerationInput {
     schemaVersion: 1;
-    generationPolicyVersion: 1;
+    generationPolicyVersion: 1 | 2;
     dictionaryId: string;
     direction: SentenceDirection;
     sourceLanguage: SentenceExercise['sourceLanguage'];
@@ -38,7 +38,17 @@ export interface SentenceCheckInput {
 export interface SentenceGenerationDraft {
     sourceText: string;
     referenceTranslation: string;
-    segments: Array<{ text: string; entryId: string | null }>;
+    segments: Array<{
+        text: string;
+        entryId: string | null;
+        contextualHint?:
+            | {
+                  normalizedHint: string;
+                  hintForm: 'lemma' | 'infinitive' | 'phrase';
+              }
+            | null
+            | undefined;
+    }>;
     targets: Array<{
         entryId: string;
         normalizedHint: string;

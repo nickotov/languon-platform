@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '@/fsd/shared/i18n';
+import { ru } from '@/fsd/shared/i18n/messages/ru';
+import { SentenceReferenceComparison } from '@/fsd/features/sentence-training/ui/sentence-reference-comparison/sentence-reference-comparison';
 import { en } from '@/fsd/shared/i18n/messages/en';
 import { initialSentenceState } from '@/fsd/features/sentence-training/model/sentence-session';
 import { ApiError } from '@/fsd/features/sentence-training/lib/api-error';
@@ -95,7 +97,7 @@ afterEach(() => {
 describe('sentence review regressions', () => {
     it('retains an over-limit Unicode draft, explains the limit and never admits a paid check', () => {
         const draft = '😀'.repeat(4001);
-        const c = controller({ draft });
+        const c = controller({ draft, recompare: vi.fn() });
         practice(c);
         expect(screen.getByRole('textbox')).toHaveValue(draft);
         expect(screen.getByText('4001 / 4000')).toBeVisible();
@@ -108,9 +110,17 @@ describe('sentence review regressions', () => {
         expect(c.check).not.toHaveBeenCalled();
         expect(
             screen.getByRole('button', {
-                name: 'Show reference answer — free',
+                name: 'Compare with reference — free',
             }),
         ).toBeEnabled();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Compare with reference — free',
+            }),
+        );
+        expect(c.recompare).toHaveBeenCalledOnce();
+        expect(c.revealReference).not.toHaveBeenCalled();
+        expect(c.check).not.toHaveBeenCalled();
     });
     it('asks before discarding a draft whose AI request failed before a stored result', () => {
         const close = practice(
@@ -175,8 +185,94 @@ describe('sentence review regressions', () => {
         practice(c);
         const stopping = screen.getByRole('button', { name: /Stopping/ });
         expect(stopping).toBeDisabled();
+        const notice = screen.getByRole('status');
+        expect(notice).toHaveTextContent('Stopping…');
+        expect(notice).toHaveTextContent(
+            'Work that already started may still use credits.',
+        );
+        expect(notice).not.toHaveTextContent('Checking your answer');
         fireEvent.click(stopping);
         expect(c.cancel).not.toHaveBeenCalled();
+    });
+    it('explains the batch cap and allows replacing a word without silently overfilling', () => {
+        const entries = Array.from({ length: 101 }, (_, index) => ({
+            entryId: `entry-${index}`,
+            source: `source ${index}`,
+            translation: `translation ${index}`,
+        }));
+        const selectedEntryIds = entries
+            .slice(0, 100)
+            .map((entry) => entry.entryId);
+        const c: SentenceSetupController = {
+            configuration: {
+                direction: 'target-to-source',
+                mode: 'saved-first',
+                scope: { type: 'manual', entryIds: selectedEntryIds },
+            },
+            setConfiguration: vi.fn(),
+            setSearch: vi.fn(),
+            setSelectedEntryIds: vi.fn(),
+            loadMore: vi.fn(),
+            refresh: vi.fn(),
+            invalidate: vi.fn(),
+            prepared: null,
+            loading: false,
+            error: null,
+            entries: [entries[0]!, entries[100]!],
+            entriesLoading: false,
+            entriesError: null,
+            hasMore: false,
+            search: '',
+            selectedEntryIds,
+        };
+        const setup = (controller: SentenceSetupController) => (
+            <I18nProvider locale='en' messages={en}>
+                <SentenceSetup
+                    controller={controller}
+                    open
+                    onClose={vi.fn()}
+                    onStart={vi.fn()}
+                    sourceLanguage='fr'
+                    targetLanguage='ru'
+                />
+            </I18nProvider>
+        );
+        const view = render(setup(c));
+        expect(
+            screen.getByText(/Each round uses up to 100 words/),
+        ).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent(
+            'Batch limit reached',
+        );
+        expect(
+            screen.getByRole('checkbox', {
+                name: 'source 100 → translation 100',
+            }),
+        ).toBeDisabled();
+        expect(
+            screen.getByRole('checkbox', { name: 'source 0 → translation 0' }),
+        ).toBeEnabled();
+        fireEvent.click(
+            screen.getByRole('checkbox', { name: 'source 0 → translation 0' }),
+        );
+        expect(c.setSelectedEntryIds).toHaveBeenLastCalledWith(
+            selectedEntryIds.slice(1),
+        );
+        view.rerender(
+            setup({ ...c, selectedEntryIds: selectedEntryIds.slice(1) }),
+        );
+        expect(
+            screen.getByRole('button', { name: 'Select all shown' }),
+        ).toBeDisabled();
+        const replacement = screen.getByRole('checkbox', {
+            name: 'source 100 → translation 100',
+        });
+        expect(replacement).toBeEnabled();
+        fireEvent.click(replacement);
+        expect(c.setSelectedEntryIds).toHaveBeenLastCalledWith([
+            ...selectedEntryIds.slice(1),
+            'entry-100',
+        ]);
     });
     it('retries the first entry page rather than requesting a nonexistent next cursor', () => {
         const c: SentenceSetupController = {
@@ -220,5 +316,272 @@ describe('sentence review regressions', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
         expect(c.refresh).toHaveBeenCalledOnce();
         expect(c.loadMore).not.toHaveBeenCalled();
+    });
+});
+
+it('offers one actionable generation choice after saved-review exhaustion', () => {
+    const changeMode = vi.fn();
+    practice(
+        controller({
+            phase: 'empty',
+            exercise: null,
+            emptyReason: 'review-exhausted',
+            changeMode,
+        }),
+    );
+    expect(
+        screen.queryByRole('button', {
+            name: 'Generate new examples',
+            exact: true,
+        }),
+    ).toBeNull();
+    fireEvent.click(
+        screen.getByRole('button', {
+            name: 'Generate new sentences',
+            exact: true,
+        }),
+    );
+    expect(changeMode).toHaveBeenCalledWith('new-only');
+});
+
+it('guards leaving while an empty-draft reference review is still pending', () => {
+    const close = practice(controller({ draft: '', referenceLoading: true }));
+    const unload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Close practice' }));
+    expect(
+        screen.getByRole('dialog', { name: 'Leave practice?' }),
+    ).toBeVisible();
+    expect(
+        screen.getByText(/An AI task or reference review already started/),
+    ).toBeVisible();
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep practising' }));
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(close).not.toHaveBeenCalled();
+});
+
+it('localizes completed rating labels and comparison details in Russian', () => {
+    const c = controller({ phase: 'completed' });
+    c.counts.checked = 1;
+    c.counts.ratings.perfect = 1;
+    render(
+        <I18nProvider locale='ru' messages={ru}>
+            <SentencePracticeSession controller={c} open onClose={vi.fn()} />
+        </I18nProvider>,
+    );
+    expect(screen.getByText('Проверено ИИ')).toBeVisible();
+    expect(screen.getByText('Идеально')).toBeVisible();
+    expect(screen.getByText('Хорошо')).toBeVisible();
+    expect(screen.getByText('Неплохо')).toBeVisible();
+    expect(screen.queryByText('practiseAgainLater')).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    render(
+        <I18nProvider locale='ru' messages={ru}>
+            <SentenceReferenceComparison
+                exercise={{ targetLanguage: 'fr' }}
+                comparison={{
+                    kind: 'match',
+                    answer: 'Bonjour!',
+                    reference: 'bonjour',
+                    normalizedAnswer: 'bonjour',
+                    normalizedReference: 'bonjour',
+                    ignored: ['case', 'punctuation'],
+                }}
+            />
+        </I18nProvider>,
+    );
+    expect(screen.getByText('Не учитываются:')).toBeVisible();
+});
+
+it('keeps completed results visible with queued fresh work and cancellation', () => {
+    const c = controller({
+        phase: 'completed',
+        busy: true,
+        job: {
+            id: '10000000-0000-4000-8000-000000000003',
+            kind: 'sentence-generation',
+            state: 'queued',
+            cancellationRequested: false,
+            attemptCount: 0,
+            createdAt: '2026-10-05T00:00:00.000Z',
+            updatedAt: '2026-10-05T00:00:00.000Z',
+            failureCode: null,
+            result: null,
+        },
+    });
+    c.counts.presented = 3;
+    practice(c);
+    expect(
+        screen.getByRole('heading', { name: 'Round complete' }),
+    ).toBeVisible();
+    expect(screen.getByText('Examples presented')).toBeVisible();
+    expect(
+        screen.getByText('Preparing a sentence — waiting to start'),
+    ).toBeVisible();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(
+        screen.getByRole('button', { name: 'Repeat these exact examples' }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Stop request' }));
+    expect(c.cancel).toHaveBeenCalledOnce();
+});
+
+describe('sentence practice reading order and free actions', () => {
+    it('places the checking notice after the answer and keeps cancellation available', () => {
+        const c = controller({
+            draft: 'Hola',
+            busy: true,
+            job: {
+                id: '10000000-0000-4000-8000-000000000003',
+                kind: 'sentence-check',
+                state: 'running',
+                cancellationRequested: false,
+                attemptCount: 1,
+                failureCode: null,
+                result: null,
+                createdAt: '2026-10-05T00:00:00.000Z',
+                updatedAt: '2026-10-05T00:00:00.000Z',
+            },
+        });
+        practice(c);
+        const answer = screen.getByRole('textbox');
+        const checking = screen.getByRole('status');
+        expect(checking).toHaveTextContent('Checking your answer');
+        expect(
+            answer.compareDocumentPosition(checking) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(answer).toHaveValue('Hola');
+        expect(answer).toBeDisabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Stop request' }));
+        expect(c.cancel).toHaveBeenCalledOnce();
+        expect(
+            screen.getByRole('button', { name: 'Checking…' }),
+        ).toBeDisabled();
+        expect(
+            screen.getByRole('button', {
+                name: 'Compare with reference — free',
+            }),
+        ).toBeDisabled();
+    });
+
+    it('places the generation notice after the sentence placeholder without exposing an old answer', () => {
+        const c = controller({
+            phase: 'loading',
+            exercise: null,
+            busy: true,
+            job: {
+                id: '10000000-0000-4000-8000-000000000003',
+                kind: 'sentence-generation',
+                state: 'queued',
+                cancellationRequested: false,
+                attemptCount: 0,
+                failureCode: null,
+                result: null,
+                createdAt: '2026-10-05T00:00:00.000Z',
+                updatedAt: '2026-10-05T00:00:00.000Z',
+            },
+        });
+        practice(c);
+        const generating = screen.getByRole('status');
+        expect(generating).toHaveTextContent(
+            'Preparing a sentence — waiting to start',
+        );
+        expect(generating.previousElementSibling).toHaveAttribute(
+            'aria-hidden',
+            'true',
+        );
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('heading', { name: 'Two ways to check' }),
+        ).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Stop request' }));
+        expect(c.cancel).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the two-method explanation after AI feedback and before the footer actions', () => {
+        const c = controller({ draft: 'Hola' });
+        c.attempt = {
+            id: '10000000-0000-4000-8000-000000000003',
+            exercise: c.exercise!,
+            contentState: 'current',
+            sessionId: '10000000-0000-4000-8000-000000000004',
+            answer: 'Hola',
+            explanationLanguage: 'en',
+            revealedHintIds: [],
+            assisted: false,
+            referenceRevealed: false,
+            createdAt: '2026-10-05T00:00:00.000Z',
+            feedback: {
+                percentage: 100,
+                rating: 'perfect',
+                meaning: 'correct',
+                grammar: 'correct',
+                targets: [],
+                issues: [],
+                improvedTranslation: 'Hola',
+                explanation: 'Correct',
+            },
+        };
+        practice(c);
+        const feedback = screen.getByRole('region', { name: 'AI feedback' });
+        const explanation = screen.getByRole('heading', {
+            name: 'Two ways to check',
+        });
+        const comparison = screen.getByRole('button', {
+            name: 'Compare with reference — free',
+        });
+        expect(
+            feedback.compareDocumentPosition(explanation) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(
+            explanation.compareDocumentPosition(comparison) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(comparison).toHaveAccessibleDescription(
+            /Comparison ignores case, spacing, punctuation and apostrophe style/,
+        );
+    });
+
+    it('reveals the free reference for an empty answer and compares a nonempty answer through one footer action', () => {
+        const c = controller({ recompare: vi.fn() });
+        const view = render(
+            <I18nProvider locale='en' messages={en}>
+                <SentencePracticeSession
+                    controller={c}
+                    open
+                    onClose={vi.fn()}
+                />
+            </I18nProvider>,
+        );
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Show reference — free' }),
+        );
+        expect(c.revealReference).toHaveBeenCalledOnce();
+        expect(c.recompare).not.toHaveBeenCalled();
+        expect(c.check).not.toHaveBeenCalled();
+        view.rerender(
+            <I18nProvider locale='en' messages={en}>
+                <SentencePracticeSession
+                    controller={{ ...c, draft: 'Hola' }}
+                    open
+                    onClose={vi.fn()}
+                />
+            </I18nProvider>,
+        );
+        expect(
+            screen.queryByRole('button', { name: 'Show reference — free' }),
+        ).not.toBeInTheDocument();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Compare with reference — free',
+            }),
+        );
+        expect(c.recompare).toHaveBeenCalledOnce();
+        expect(c.revealReference).toHaveBeenCalledOnce();
+        expect(c.check).not.toHaveBeenCalled();
     });
 });

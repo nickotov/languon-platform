@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { SENTENCE_LIMITS } from '@languon/contracts';
+import { sentenceLanguageMatches } from './sentence-language';
 import { SentenceInvalidModelOutputError } from './sentence-errors';
 import type {
     SentenceGeneratedContent,
@@ -39,6 +40,18 @@ export const SentenceGenerationDraftSchema = z
                             .min(1)
                             .max(SENTENCE_LIMITS.sourceCodePoints * 2),
                         entryId: z.uuid().nullable(),
+                        contextualHint: z
+                            .object({
+                                normalizedHint: text(400),
+                                hintForm: z.enum([
+                                    'lemma',
+                                    'infinitive',
+                                    'phrase',
+                                ]),
+                            })
+                            .strict()
+                            .nullable()
+                            .optional(),
                     })
                     .strict(),
             )
@@ -80,6 +93,41 @@ export function validateSentenceGeneration(
     const parsed = SentenceGenerationDraftSchema.safeParse(value);
     if (!parsed.success) throw new SentenceInvalidModelOutputError();
     const draft = parsed.data;
+    if (
+        input.generationPolicyVersion === 2 &&
+        draft.segments.some((segment) => segment.contextualHint === undefined)
+    )
+        throw new SentenceInvalidModelOutputError(
+            'Missing contextual hint disposition',
+        );
+    if (
+        input.generationPolicyVersion === 1 &&
+        draft.segments.some((segment) => segment.contextualHint !== undefined)
+    )
+        throw new SentenceInvalidModelOutputError(
+            'Unexpected contextual hint in legacy generation',
+        );
+    const comparableHint = (value: string) =>
+        normalizeSentenceHint(value)
+            .normalize('NFC')
+            .toLocaleLowerCase(input.targetLanguage)
+            .replace(/[\p{P}\p{Z}\s\u02bc]/gu, '');
+    if (
+        !sentenceLanguageMatches(
+            draft.sourceText,
+            input.sourceLanguage,
+            input.targetLanguage,
+        ) ||
+        !sentenceLanguageMatches(
+            draft.referenceTranslation,
+            input.targetLanguage,
+            input.sourceLanguage,
+        )
+    ) {
+        throw new SentenceInvalidModelOutputError(
+            'Sentence languages do not match the requested direction',
+        );
+    }
     const candidates = new Map(
         input.candidates.map((entry) => [entry.entryId, entry]),
     );
@@ -95,20 +143,36 @@ export function validateSentenceGeneration(
     )
         throw new SentenceInvalidModelOutputError();
     const hintByEntry = new Map<string, string>();
-    const hints = draft.targets.map((target, index) => {
-        // Morphology and phrase preservation are semantic provider responsibilities.
-        // Surface equality would incorrectly reject irregular inflections and scripts without spaces.
-        if (
-            normalizeSentenceHint(target.normalizedHint).toLowerCase() ===
-            normalizeSentenceHint(draft.referenceTranslation).toLowerCase()
-        )
-            throw new SentenceInvalidModelOutputError(
-                'Hint reveals the full reference translation',
-            );
-        const id = `hint-${index + 1}`;
-        hintByEntry.set(target.entryId, id);
-        return { id, text: normalizeSentenceHint(target.normalizedHint) };
-    });
+    const hints: SentenceGeneratedContent['hints'] = draft.targets.map(
+        (target, index) => {
+            // Morphology and phrase preservation are semantic provider responsibilities.
+            // Surface equality would incorrectly reject irregular inflections and scripts without spaces.
+            if (
+                input.generationPolicyVersion === 2
+                    ? comparableHint(target.normalizedHint).includes(
+                          comparableHint(draft.referenceTranslation),
+                      )
+                    : normalizeSentenceHint(
+                          target.normalizedHint,
+                      ).toLowerCase() ===
+                      normalizeSentenceHint(
+                          draft.referenceTranslation,
+                      ).toLowerCase()
+            )
+                throw new SentenceInvalidModelOutputError(
+                    'Hint reveals the full reference translation',
+                );
+            const id = `hint-${index + 1}`;
+            hintByEntry.set(target.entryId, id);
+            return {
+                id,
+                text: normalizeSentenceHint(target.normalizedHint),
+                ...(input.generationPolicyVersion === 2
+                    ? { kind: 'dictionary' as const }
+                    : {}),
+            };
+        },
+    );
     const boundaries = sentenceGraphemeBoundaries(draft.sourceText);
     const seen = new Set<string>();
     let position = 0;
@@ -133,16 +197,78 @@ export function validateSentenceGeneration(
                       hintId: hintByEntry.get(segment.entryId)!,
                   };
         if (segment.entryId !== null) seen.add(segment.entryId);
+        const helper = segment.contextualHint;
+        let contextualHintId: string | undefined;
+        if (helper) {
+            const hintText = normalizeSentenceHint(helper.normalizedHint);
+            if (
+                target ||
+                !/\p{L}/u.test(segment.text) ||
+                !/\p{L}/u.test(hintText) ||
+                !sentenceLanguageMatches(
+                    hintText,
+                    input.targetLanguage,
+                    input.sourceLanguage,
+                ) ||
+                comparableHint(hintText).includes(
+                    comparableHint(draft.referenceTranslation),
+                )
+            )
+                throw new SentenceInvalidModelOutputError(
+                    'Invalid contextual hint',
+                );
+            const existing = hints.find(
+                (hint) => hint.kind === 'contextual' && hint.text === hintText,
+            );
+            contextualHintId = existing?.id ?? `hint-${hints.length + 1}`;
+            if (!existing) {
+                if (
+                    hints.filter((hint) => hint.kind === 'contextual').length >=
+                    SENTENCE_LIMITS.contextualHints
+                )
+                    throw new SentenceInvalidModelOutputError(
+                        'Too many contextual hints',
+                    );
+                hints.push({
+                    id: contextualHintId,
+                    text: hintText,
+                    kind: 'contextual',
+                });
+            }
+        }
         return {
             id: `segment-${index + 1}`,
             start,
             end: position,
             text: segment.text,
             target,
+            ...(contextualHintId ? { contextualHintId } : {}),
         };
     });
     if (seen.size !== ids.length)
         throw new SentenceInvalidModelOutputError('Missing target occurrence');
+    if (
+        input.generationPolicyVersion === 2 &&
+        !hints.some((hint) => hint.kind === 'contextual')
+    )
+        throw new SentenceInvalidModelOutputError(
+            'Missing contextual vocabulary assistance',
+        );
+    if (input.generationPolicyVersion === 2) {
+        const hintById = new Map(hints.map((hint) => [hint.id, hint.text]));
+        const occurrenceHints = segments.flatMap((segment) => {
+            const id = segment.target?.hintId ?? segment.contextualHintId;
+            return id ? [hintById.get(id)!] : [];
+        });
+        if (
+            comparableHint(occurrenceHints.join(' ')).includes(
+                comparableHint(draft.referenceTranslation),
+            )
+        )
+            throw new SentenceInvalidModelOutputError(
+                'Combined hints reveal full reference translation',
+            );
+    }
     return {
         sourceText: draft.sourceText,
         referenceTranslation: draft.referenceTranslation,

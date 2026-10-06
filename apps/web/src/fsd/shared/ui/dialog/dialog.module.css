@@ -27,6 +27,17 @@
     max-width: 672px;
 }
 
+.viewport {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    width: 100dvw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+}
+
 .dialog::backdrop {
     backdrop-filter: blur(4px);
     background: rgb(9 10 12 / 50%);
@@ -90,6 +101,7 @@
 }
 
 .body {
+    min-height: 0;
     color: var(--neutral-700);
     flex: 1;
     font-size: 14px;
@@ -103,6 +115,7 @@
 }
 
 .footer {
+    flex-shrink: 0;
     border-top: 1px solid var(--neutral-200);
     padding: 16px 24px;
 }

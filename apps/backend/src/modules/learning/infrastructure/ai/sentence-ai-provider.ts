@@ -1,10 +1,12 @@
 import { SENTENCE_LIMITS } from '@languon/contracts';
 import { Buffer } from 'node:buffer';
 import { z } from 'zod';
+import { SentenceProviderInvalidModelOutputError } from '../../application/ports/sentence-ai-provider';
 import { getLocalPrompt } from '@languon/prompts';
 import type {
     SentenceAiProvider,
     SentenceProviderCall,
+    SentenceTokenUsage,
 } from '../../application/ports/sentence-ai-provider';
 import type {
     SentenceGenerationInput,
@@ -13,7 +15,10 @@ import type {
     SentenceCheckDraft,
 } from '../../domain/sentence-types';
 import { SentenceGenerationDraftSchema } from '../../domain/sentence-content';
-import { SentenceCheckDraftSchema } from '../../domain/sentence-feedback';
+import {
+    SentenceCheckDraftSchema,
+    resolveSentenceIssueSpan,
+} from '../../domain/sentence-feedback';
 import { SentenceInvalidModelOutputError } from '../../domain/sentence-errors';
 import { resolveTextAiProviderOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-resolver';
 import { textAiRequestLimits } from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
@@ -63,51 +68,74 @@ export function createSentenceAiProvider(options: {
         )
             throw new SentenceInvalidModelOutputError(
                 'Input exceeds pinned token bound',
+                'input_token_bound',
             );
         const agents = createSentenceAgents({ model: resolved.model });
         const agent =
             kind === 'generate'
                 ? agents.sentenceGenerationAgent
                 : agents.sentenceCheckAgent;
-        const result = await agent.generate(message, {
-            abortSignal: call.signal,
-            modelSettings: {
-                maxOutputTokens: limits.maxOutputTokens,
-                maxRetries: 0,
-            },
-            runId: call.idempotencyKey,
-            structuredOutput: {
-                schema,
-                ...(resolved.structuredOutputMode === 'prompt-injection'
-                    ? { jsonPromptInjection: 'inline' as const }
-                    : {}),
-            },
-            toolChoice: 'none',
-            tracingOptions: { hideInput: true, hideOutput: true },
-        });
+        const result = await (async () => {
+            try {
+                return await agent.generate(message, {
+                    abortSignal: call.signal,
+                    modelSettings: {
+                        maxOutputTokens: limits.maxOutputTokens,
+                        maxRetries: 0,
+                    },
+                    runId: call.idempotencyKey,
+                    structuredOutput: {
+                        schema,
+                        ...(resolved.structuredOutputMode === 'prompt-injection'
+                            ? { jsonPromptInjection: 'inline' as const }
+                            : {}),
+                    },
+                    toolChoice: 'none',
+                    tracingOptions: { hideInput: true, hideOutput: true },
+                });
+            } catch (error) {
+                // The SDK's native schema failure carries usage as well as raw text.
+                // Read only its stable discriminator and bounded usage, never its payload.
+                if (
+                    error &&
+                    typeof error === 'object' &&
+                    'name' in error &&
+                    error.name === 'AI_NoObjectGeneratedError'
+                ) {
+                    const usage = validateUsage(
+                        'usage' in error ? error.usage : undefined,
+                        limits,
+                    );
+                    throw new SentenceProviderInvalidModelOutputError(
+                        'schema_invalid',
+                        usage,
+                    );
+                }
+                throw error;
+            }
+        })();
         call.signal.throwIfAborted();
+        const usage = validateUsage(result.usage, limits);
+        // A strict SDK schema tripwire is invalid model output, not a transport retry.
+        if (result.tripwire?.processorId === 'structured-output')
+            throw new SentenceProviderInvalidModelOutputError(
+                'schema_invalid',
+                usage,
+            );
         if (result.error || result.tripwire)
             throw new Error('Sentence provider unavailable');
         const parsed = schema.safeParse(result.object);
-        if (!parsed.success) throw new SentenceInvalidModelOutputError();
-        const usage = result.usage;
-        if (!usage) return { draft: parsed.data };
-        if (
-            !Number.isSafeInteger(usage.inputTokens) ||
-            !Number.isSafeInteger(usage.outputTokens) ||
-            usage.inputTokens! < 0 ||
-            usage.outputTokens! < 0 ||
-            usage.inputTokens! > limits.maxInputTokens ||
-            usage.outputTokens! > limits.maxOutputTokens
-        )
-            throw new SentenceInvalidModelOutputError('Invalid usage');
-        return {
-            draft: parsed.data,
-            usage: {
-                inputTokens: usage.inputTokens!,
-                outputTokens: usage.outputTokens!,
-            },
-        };
+        if (!parsed.success)
+            throw new SentenceProviderInvalidModelOutputError(
+                kind === 'check' &&
+                    parsed.error.issues.some(
+                        (issue) => issue.path[0] === 'targets',
+                    )
+                    ? 'target_assessments_invalid'
+                    : 'schema_invalid',
+                usage,
+            );
+        return { draft: parsed.data, ...(usage ? { usage } : {}) };
     }
     return {
         async generate(call) {
@@ -123,8 +151,17 @@ export function createSentenceAiProvider(options: {
                     'Invalid generation candidates',
                 );
             const alias = z.enum(aliases as [string, ...string[]]);
+            const segmentSchema =
+                SentenceGenerationDraftSchema.shape.segments.element;
+            const providerSegmentSchema =
+                call.input.generationPolicyVersion === 2
+                    ? segmentSchema.extend({
+                          contextualHint:
+                              segmentSchema.shape.contextualHint.unwrap(),
+                      })
+                    : segmentSchema.omit({ contextualHint: true });
             const schema = SentenceGenerationDraftSchema.extend({
-                segments: SentenceGenerationDraftSchema.shape.segments.element
+                segments: providerSegmentSchema
                     .extend({ entryId: alias.nullable() })
                     .array()
                     .min(1)
@@ -175,14 +212,28 @@ export function createSentenceAiProvider(options: {
             )
                 throw new SentenceInvalidModelOutputError(
                     'Invalid check targets',
+                    'input_invalid',
                 );
-            const alias = z.enum(aliases as [string, ...string[]]);
+            const assessmentSchema =
+                SentenceCheckDraftSchema.shape.targets.element.omit({
+                    entryId: true,
+                });
+            const targetShape: Record<string, typeof assessmentSchema> =
+                Object.fromEntries(
+                    aliases.map((alias) => [alias, assessmentSchema]),
+                );
+            const issueSchema = SentenceCheckDraftSchema.shape.issues.element;
             const schema = SentenceCheckDraftSchema.extend({
-                targets: SentenceCheckDraftSchema.shape.targets.element
-                    .extend({ entryId: alias })
+                targets: z.object(targetShape).strict(),
+                issues: issueSchema
+                    .omit({ span: true })
+                    .extend({
+                        quote: issueSchema.shape.span
+                            .unwrap()
+                            .shape.quote.nullable(),
+                    })
                     .array()
-                    .min(1)
-                    .max(3),
+                    .max(SENTENCE_LIMITS.issues),
             });
             const input = {
                 sourceText: call.input.sourceText,
@@ -201,9 +252,13 @@ export function createSentenceAiProvider(options: {
             const result = await run(call, 'check', schema, input);
             const mapped = SentenceCheckDraftSchema.parse({
                 ...result.draft,
-                targets: result.draft.targets.map((target) => ({
-                    ...target,
-                    entryId: restoreEntryId(target.entryId, aliases, ids),
+                targets: aliases.map((alias, index) => ({
+                    ...result.draft.targets[alias]!,
+                    entryId: ids[index]!,
+                })),
+                issues: result.draft.issues.map(({ quote, ...issue }) => ({
+                    ...issue,
+                    span: resolveSentenceIssueSpan(call.input.answer, quote),
                 })),
             });
             return { ...result, draft: mapped };
@@ -243,4 +298,29 @@ function restoreEntryId(
             'Unknown provider target alias',
         );
     return ids[index]!;
+}
+
+function validateUsage(
+    reported: unknown,
+    limits: { maxInputTokens: number; maxOutputTokens: number },
+): SentenceTokenUsage | undefined {
+    if (reported === undefined || reported === null) return undefined;
+    if (
+        typeof reported !== 'object' ||
+        !('inputTokens' in reported) ||
+        !('outputTokens' in reported) ||
+        typeof reported.inputTokens !== 'number' ||
+        typeof reported.outputTokens !== 'number' ||
+        !Number.isSafeInteger(reported.inputTokens) ||
+        !Number.isSafeInteger(reported.outputTokens) ||
+        reported.inputTokens < 0 ||
+        reported.outputTokens < 0 ||
+        reported.inputTokens > limits.maxInputTokens ||
+        reported.outputTokens > limits.maxOutputTokens
+    )
+        throw new SentenceProviderInvalidModelOutputError('usage_invalid');
+    return {
+        inputTokens: reported.inputTokens,
+        outputTokens: reported.outputTokens,
+    };
 }

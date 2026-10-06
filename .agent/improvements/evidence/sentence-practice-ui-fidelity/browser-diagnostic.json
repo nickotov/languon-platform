@@ -1,0 +1,19 @@
+{
+  "run": "sentence-ui-verify-20261006",
+  "selected": 3,
+  "passed": [
+    "RTL/Japanese compact reduced-motion"
+  ],
+  "failed": [
+    {
+      "scenario": "owner/reader",
+      "cause": "Cold verify-email compilation delayed signup navigation beyond 10-second assertion before practice UI"
+    },
+    {
+      "scenario": "five-word/replay/results",
+      "cause": "Cold dictionaries compilation 11.6s delayed signup navigation beyond 10-second assertion before practice UI"
+    }
+  ],
+  "productionFailure": false,
+  "finalEvidence": false
+}

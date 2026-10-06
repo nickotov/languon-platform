@@ -7,7 +7,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision flashcard-training-web sha256:f89dbe9481716848
+// @user-flow-revision flashcard-training-web sha256:53fe24550c7e8a4a
 
 const password = 'E2e!Flashcard-password-2026';
 const runId =
@@ -209,12 +209,30 @@ test.describe('flashcard training journeys', () => {
             name: `Card practice · ${name}`,
         });
         await expect(practice).toBeVisible();
+        const bounds = await practice.boundingBox();
+        expect(bounds?.width).toBe(page.viewportSize()!.width);
+        expect(bounds?.height).toBe(page.viewportSize()!.height);
+        await expect(practice).toBeVisible();
         await practice.getByRole('button', { name: 'Show back' }).click();
         await expect(
             practice.getByRole('button', { name: 'Show front' }),
         ).toBeVisible();
         await practice.getByRole('button', { name: 'Dialog view' }).click();
         await expect(practice).toBeVisible();
+        const dialogBounds = await practice.boundingBox();
+        expect(dialogBounds?.x).toBe(0);
+        expect(dialogBounds?.y).toBe(0);
+        expect(dialogBounds?.width).toBe(page.viewportSize()!.width);
+        expect(dialogBounds?.height).toBe(page.viewportSize()!.height);
+        await expect(
+            practice.getByRole('button', { name: 'End', exact: true }),
+        ).toBeInViewport();
+        const screenshot = testInfo.outputPath('flashcard-viewport-dialog.png');
+        await page.screenshot({ path: screenshot });
+        await testInfo.attach('flashcard-viewport-dialog', {
+            path: screenshot,
+            contentType: 'image/png',
+        });
         await practice
             .getByRole('button', { name: 'Known', exact: true })
             .click();

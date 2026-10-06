@@ -124,7 +124,11 @@ export async function publishTextAiWorkerObservations(options: {
                     target: dictionaryAiWorkerObservationsTable.id,
                 });
         };
-        const sentenceFormats = ['sentence-generation:v1', 'sentence-check:v1'];
+        const sentenceFormats = [
+            'sentence-generation:v1',
+            'sentence-generation:v2',
+            'sentence-check:v1',
+        ];
         await publish(
             supportedFormats.filter(
                 (format) => !sentenceFormats.includes(format),

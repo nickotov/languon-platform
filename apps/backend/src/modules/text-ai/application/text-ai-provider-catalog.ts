@@ -54,12 +54,14 @@ export const textAiTextFormats = [
     'document-terms:v1',
     'document-terms:v2',
     'sentence-generation:v1',
+    'sentence-generation:v2',
     'sentence-check:v1',
 ] as const;
 
 export type TextAiWorkFormat = (typeof textAiTextFormats)[number];
 export const textAiSentenceFormats = [
     'sentence-generation:v1',
+    'sentence-generation:v2',
     'sentence-check:v1',
 ] as const;
 

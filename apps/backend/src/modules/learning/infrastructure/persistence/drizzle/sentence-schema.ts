@@ -69,6 +69,10 @@ export const sentenceExercisesTable = pgTable(
             t.id,
         ),
         check(
+            'sentence_exercises_generation_policy',
+            sql`${t.generationPolicyVersion} in (1,2) and (${t.publicContent}->>'generationPolicyVersion' = ${t.generationPolicyVersion}::text) is true`,
+        ),
+        check(
             'sentence_exercises_direction',
             sql`${t.direction} in ('source-to-target','target-to-source')`,
         ),
@@ -366,7 +370,7 @@ export const sentenceAiJobsTable = pgTable(
         index('sentence_ai_jobs_learner_idx').on(t.learnerId, t.executionState),
         check(
             'sentence_ai_jobs_kind_format',
-            sql`(${t.jobKind}='sentence-generation' and ${t.format}='sentence-generation:v1') or (${t.jobKind}='sentence-check' and ${t.format}='sentence-check:v1')`,
+            sql`((${t.jobKind}='sentence-generation' and ((${t.format}='sentence-generation:v1' and ${t.inputPayload}->>'generationPolicyVersion'='1') or (${t.format}='sentence-generation:v2' and ${t.inputPayload}->>'generationPolicyVersion'='2'))) or (${t.jobKind}='sentence-check' and ${t.format}='sentence-check:v1')) is true`,
         ),
         check(
             'sentence_ai_jobs_execution_versions',

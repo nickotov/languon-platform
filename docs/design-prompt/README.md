@@ -18,6 +18,7 @@ requirement IDs for design review and later frontend verification.
 
 | [Profile AI model preferences](./profile-text-ai-preferences.md) | Personal Auto/explicit model selection, availability, credits context and conflict recovery | v001 returned provider v6; scoped analysis saved in 035 handoff; backend complete |
 | [Sentence practice](./sentence-practice.md) | Fullscreen/dialog translation practice, hints, AI feedback, free reference review and all recovery states | v001 returned provider v6; scoped analysis saved in 036 handoff; backend complete |
+| [Sentence practice assistance](./sentence-practice-assistance.md) | Contextual whole-phrase hints, free reference comparison, replacement results and exact/fresh replay | v001 backend checkpoint verified; awaiting returned design ([handoff](../../.agent/features/038-sentence-practice-assistance/DESIGN.md)) |
 
 Every saved brief also has a [versioned handoff](../../.agent/DESIGN_HANDOFF.md)
 with a frozen prompt, generated-design URL slot, approval history and selected

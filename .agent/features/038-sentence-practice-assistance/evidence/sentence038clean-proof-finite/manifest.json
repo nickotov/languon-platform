@@ -1,0 +1,26 @@
+{
+  "run": "sentence038clean-proof",
+  "scenario": "finite/exact/saved/fresh/C5",
+  "scenario_result": "passed",
+  "overall_suite": "5 passed, 2 failed; diagnostic run",
+  "captures": [
+    "finite-round-saved-complete.png",
+    "finite-round-exact-results.png",
+    "finite-round-new-complete.png",
+    "finite-round-new-results.png",
+    "finite-round-first-results.png",
+    "finite-round-saved-results.png",
+    "finite-round-batch-setup.png",
+    "finite-round-first-complete.png",
+    "finite-round-exact-complete.png",
+    "finite-round-first-results-b1c93fe053cca5277a27c06b87c6a5a3c434202f.png",
+    "finite-round-batch-setup-c390e907e174ad810b1d52c54136df2f1d0eba81.png",
+    "finite-round-exact-complete-6fd20e7d24d0775a9ac4dcf9d398db3392cac4af.png",
+    "finite-round-exact-results-6be8200552edcb29e97a0ecff846bf16db9b029d.png",
+    "finite-round-new-complete-7fcb38934f968c470e0256045c5ed7901470169e.png",
+    "finite-round-new-results-fd24d302eb520ff603ea4d10b4c28e90f14dc400.png",
+    "finite-round-saved-complete-8168d1ca553dd54d8c52704691962e6ad336f13d.png",
+    "finite-round-saved-results-5a5f6b4d76fc6ae4014720b7cc7a0ba4c22eac78.png",
+    "finite-round-first-complete-253ec00d8faa9790abdd3b54e51e10ff46b5e091.png"
+  ]
+}

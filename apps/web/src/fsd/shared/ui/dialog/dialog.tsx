@@ -12,7 +12,8 @@ import {
 
 import styles from './dialog.module.css';
 
-export type DialogSize = 'large' | 'lg' | 'md' | 'medium' | 'sm' | 'small';
+export type DialogSize =
+    'large' | 'lg' | 'md' | 'medium' | 'sm' | 'small' | 'viewport';
 
 export type DialogProps = {
     children?: ReactNode;

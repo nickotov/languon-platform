@@ -50,24 +50,64 @@ const fixture = new DeterministicSentenceAiProvider({
             (item) => item.entryId === input.priorityEntryId,
         )!;
         await delay(entry.sourceText === 'slowbook' ? 3000 : 600);
-        const sourceSuffix =
-            input.sourceLanguage === 'ar'
-                ? ' مفيد.'
-                : input.sourceLanguage === 'ja'
-                  ? 'は役に立ちます。'
-                  : ' is useful.';
-        const targetSuffix =
-            input.targetLanguage === 'ar'
-                ? ' مفيد.'
-                : input.targetLanguage === 'ja'
-                  ? 'は役に立ちます。'
-                  : ' es útil.';
+        const suffix = (language: string) => {
+            if (language === 'ar') return ' مفيد.';
+            if (language === 'ja') return 'は役に立ちます。';
+            if (language === 'ru') return ' — это полезно.';
+            if (language === 'fr') return ' est utile.';
+            if (language === 'en') return ' is useful.';
+            return ' es útil.';
+        };
+        const sourceSuffix = suffix(input.sourceLanguage);
+        const targetSuffix = suffix(input.targetLanguage);
+        // Arabic nominal sentences need a little unhinted scaffolding: exposing
+        // the two lexical lemmas must not disclose the complete reference.
+        const sourcePrefix = input.sourceLanguage === 'ar' ? 'هذا ' : '';
+        const targetPrefix = input.targetLanguage === 'ar' ? 'هذا ' : '';
+        const usefulLemma = (language: string) => {
+            if (language === 'ar') return 'مفيد';
+            if (language === 'ja') return '役立つ';
+            if (language === 'ru') return 'полезный';
+            if (language === 'fr') return 'utile';
+            if (language === 'en') return 'useful';
+            return 'útil';
+        };
         return {
-            sourceText: `${entry.sourceText}${sourceSuffix}`,
-            referenceTranslation: `${entry.targetText}${targetSuffix}`,
+            sourceText: `${sourcePrefix}${entry.sourceText}${sourceSuffix}`,
+            referenceTranslation: `${targetPrefix}${entry.targetText}${targetSuffix}`,
             segments: [
-                { text: entry.sourceText, entryId: entry.entryId },
-                { text: sourceSuffix, entryId: null },
+                ...(sourcePrefix
+                    ? [
+                          {
+                              text: sourcePrefix,
+                              entryId: null,
+                              ...(input.generationPolicyVersion === 2
+                                  ? { contextualHint: null }
+                                  : {}),
+                          },
+                      ]
+                    : []),
+                {
+                    text: entry.sourceText,
+                    entryId: entry.entryId,
+                    ...(input.generationPolicyVersion === 2
+                        ? { contextualHint: null }
+                        : {}),
+                },
+                {
+                    text: sourceSuffix,
+                    entryId: null,
+                    ...(input.generationPolicyVersion === 2
+                        ? {
+                              contextualHint: {
+                                  normalizedHint: usefulLemma(
+                                      input.targetLanguage,
+                                  ),
+                                  hintForm: 'lemma' as const,
+                              },
+                          }
+                        : {}),
+                },
             ],
             targets: [
                 {
@@ -197,7 +237,11 @@ async function prepareFixtures() {
         message: 'Synthetic sentence browser provider',
         status: 'available',
         textAiSelectionRevision: 1,
-        textAiSupportedFormats: ['sentence-generation:v1', 'sentence-check:v1'],
+        textAiSupportedFormats: [
+            'sentence-generation:v1',
+            'sentence-generation:v2',
+            'sentence-check:v1',
+        ],
         textAiCapacityRevision: 1,
         learningExecutionRevision: 1,
         creditSettlementRevision: 1,

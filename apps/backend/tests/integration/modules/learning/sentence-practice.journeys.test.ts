@@ -1,17 +1,23 @@
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision sentence-practice-backend sha256:e8f1292e67d5caea
+// @user-flow-revision sentence-practice-backend sha256:2256e394ffdaad85
 
 import {
     AuthenticationSuccessResponseSchema,
     DictionaryResponseSchema,
     SentenceJobSchema,
+    type SentenceExercise,
     SentenceNextResponseSchema,
     SignUpResponseSchema,
 } from '@languon/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../../src/app';
+import {
+    sentenceLanguageMatches,
+    sentenceLanguageScript,
+    sentenceLetterSqlRange,
+} from '../../../../src/modules/learning/domain/sentence-language';
 import { loadEnvironment } from '../../../../src/config/environment';
 import {
     createAuthenticationComposition,
@@ -71,22 +77,20 @@ run('real composed sentence practice HTTP and worker journey', () => {
         await resetTestDatabase(database);
         await migrateTestDatabase(database);
         await database.end();
-        authentication = await createAuthenticationComposition(
-            loadEnvironment({
-                APP_ENV: 'test',
-                NODE_ENV: 'test',
-                AUTH_ALLOWED_ORIGINS: origin,
-                AUTH_CODE_HMAC_SECRET:
-                    'sentence-practice-journey-code-secret-forty-bytes',
-                AUTH_JWT_SECRET:
-                    'sentence-practice-journey-jwt-secret-forty-bytes',
-                DICTIONARY_HMAC_SECRET: secret,
-                AUTH_WEBAUTHN_RP_ID: 'localhost',
-                AUTH_REDIS_NAMESPACE: namespace,
-                DATABASE_URL: getTestDatabaseUrl(),
-                REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
-            }),
-        );
+        const environment = loadEnvironment({
+            APP_ENV: 'test',
+            NODE_ENV: 'test',
+            AUTH_ALLOWED_ORIGINS: origin,
+            AUTH_CODE_HMAC_SECRET:
+                'sentence-practice-journey-code-secret-forty-bytes',
+            AUTH_JWT_SECRET: 'sentence-practice-journey-jwt-secret-forty-bytes',
+            DICTIONARY_HMAC_SECRET: secret,
+            AUTH_WEBAUTHN_RP_ID: 'localhost',
+            AUTH_REDIS_NAMESPACE: namespace,
+            DATABASE_URL: getTestDatabaseUrl(),
+            REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
+        });
+        authentication = await createAuthenticationComposition(environment);
         const dependencies = {
             ...authentication.productDependencies,
             dictionaryHmacSecret: secret,
@@ -97,7 +101,8 @@ run('real composed sentence practice HTTP and worker journey', () => {
             dictionaries: createDictionaryComposition(dependencies).routes,
             sentenceLearning: createSentenceComposition({
                 ...dependencies,
-                enabled: true,
+                enabled: environment.LEARNING_SENTENCES_ENABLED,
+                admission: { generationFormat: 'sentence-generation:v2' },
             }).routes,
         });
     });
@@ -201,6 +206,7 @@ run('real composed sentence practice HTTP and worker journey', () => {
             textAiSelectionRevision: 1,
             textAiSupportedFormats: [
                 'sentence-generation:v1',
+                'sentence-generation:v2',
                 'sentence-check:v1',
             ],
             textAiCapacityRevision: 1,
@@ -237,6 +243,48 @@ run('real composed sentence practice HTTP and worker journey', () => {
 
     // @user-flow sentence-practice-backend/generate-check-reuse-private-and-shared
     it('generates, checks, reuses, and records a free personal shared reference review', async () => {
+        const parityDatabase = createTestPostgresClient();
+        try {
+            for (const [text, language, otherLanguage] of [
+                ['Hello ١٢٣٤٥٦', 'ar', 'en'],
+                ['مرحبا ١٢٣٤٥٦', 'ar', 'en'],
+                ['Āẞ ẮḀ', 'fr', 'ru'],
+                ['Сегодня много работы.', 'ru', 'fr'],
+                ['Hello १२३४५६', 'hi', 'en'],
+                ['नमस्ते १२३४५६', 'hi', 'en'],
+                ['Hello ְֱֲֳִֵֶַָ', 'he', 'en'],
+                ['שלום ְֱֲֳִֵֶַָ', 'he', 'en'],
+                ['Ἀλφα', 'el', 'ru'],
+                ['家族', 'zh', 'ru'],
+                ['こんにちは', 'ja', 'ru'],
+                ['안녕하세요', 'ko', 'ru'],
+                ['١٢٣४५६ 😀', 'ar', 'en'],
+                ['วันนี้ฉันอ่านหนังสือ', 'th', 'en'],
+                ['I read a book today.', 'th', 'en'],
+                ['Ես այսօր գիրք եմ կարդում', 'hy', 'en'],
+                ['I read a book today.', 'hy', 'en'],
+            ] as const) {
+                const expected = sentenceLanguageScript(language!)!;
+                const other = sentenceLanguageScript(otherLanguage!)!;
+                const [row] = await parityDatabase`
+                    select ${text} COLLATE "C" !~ ${`[${sentenceLetterSqlRange()}]`}
+                        or (char_length(regexp_replace(${text} COLLATE "C", ${`[^${expected.sqlRange}]`}, '', 'g')) > 0
+                            and char_length(regexp_replace(${text} COLLATE "C", ${`[^${expected.sqlRange}]`}, '', 'g')) >=
+                                char_length(regexp_replace(${text} COLLATE "C", ${`[^${other.sqlRange}]`}, '', 'g'))) as matches
+                `;
+                expect(
+                    row!.matches,
+                    `${language}/${otherLanguage} SQL/runtime parity`,
+                ).toBe(
+                    sentenceLanguageMatches(text!, language!, otherLanguage!),
+                );
+            }
+        } finally {
+            await parityDatabase.end();
+        }
+        const capabilities = await request('/learning/sentences/capabilities');
+        expect(capabilities.status).toBe(200);
+        expect(await capabilities.json()).toEqual({ sentencesEnabled: true });
         const owner = await signup('sentence-owner');
         const reader = await signup('sentence-reader');
         await configure(owner.userId);
@@ -304,18 +352,60 @@ run('real composed sentence practice HTTP and worker journey', () => {
         const admitted = SentenceNextResponseSchema.parse(await next.json());
         expect(admitted.kind).toBe('job');
         if (admitted.kind !== 'job') throw new Error('Expected generation job');
+        let reverseNextGeneration = false;
         const provider = new DeterministicSentenceAiProvider({
             generate(input) {
                 providerCalls += 1;
                 const target = input.candidates.find(
                     (v) => v.entryId === input.priorityEntryId,
                 )!;
+                const suffix =
+                    input.sourceLanguage === 'ru'
+                        ? ' сегодня пригодится.'
+                        : ' is useful.';
+                if (reverseNextGeneration) {
+                    reverseNextGeneration = false;
+                    return {
+                        sourceText: `${target.targetText} est utile.`,
+                        referenceTranslation: `${target.sourceText} сегодня пригодится.`,
+                        segments: [
+                            {
+                                text: target.targetText,
+                                entryId: target.entryId,
+                                contextualHint: null,
+                            },
+                            {
+                                text: ' est utile.',
+                                entryId: null,
+                                contextualHint: null,
+                            },
+                        ],
+                        targets: [
+                            {
+                                entryId: target.entryId,
+                                normalizedHint: target.targetText,
+                                hintForm: 'lemma',
+                            },
+                        ],
+                    };
+                }
                 return {
-                    sourceText: `${target.sourceText} is useful.`,
+                    sourceText: `${target.sourceText}${suffix}`,
                     referenceTranslation: `${target.targetText} est utile.`,
                     segments: [
-                        { text: target.sourceText, entryId: target.entryId },
-                        { text: ' is useful.', entryId: null },
+                        {
+                            text: target.sourceText,
+                            entryId: target.entryId,
+                            contextualHint: null,
+                        },
+                        {
+                            text: suffix,
+                            entryId: null,
+                            contextualHint: {
+                                normalizedHint: 'utile',
+                                hintForm: 'lemma',
+                            },
+                        },
                     ],
                     targets: [
                         {
@@ -345,7 +435,21 @@ run('real composed sentence practice HTTP and worker journey', () => {
         });
         const worker = createSentenceWorkerComposition({
             database: authentication.productDependencies.database,
-            provider,
+            // Measured synthetic usage keeps multi-example rounds inside the real daily budget.
+            provider: {
+                async generate(call) {
+                    return {
+                        ...(await provider.generate(call)),
+                        usage: { inputTokens: 10, outputTokens: 20 },
+                    };
+                },
+                async check(call) {
+                    return {
+                        ...(await provider.check(call)),
+                        usage: { inputTokens: 10, outputTokens: 20 },
+                    };
+                },
+            },
             clock: authentication.productDependencies.clock,
             workerId: 'sentence-journey-worker',
             leaseMs: 10_000,
@@ -353,7 +457,7 @@ run('real composed sentence practice HTTP and worker journey', () => {
             timeoutMs: 5_000,
             globalConcurrency: 2,
             learnerConcurrency: 1,
-            maxAttempts: 1,
+            maxAttempts: 3,
             retryDelayMs: 1,
         });
         expect(
@@ -369,6 +473,33 @@ run('real composed sentence practice HTTP and worker journey', () => {
             throw new Error('Expected exercise');
         const exercise = generation.result.exercise;
         expect(JSON.stringify(exercise)).not.toContain('referenceTranslation');
+        expect(exercise.generationPolicyVersion).toBe(2);
+        const contextualHint = exercise.hints.find(
+            (hint) => hint.kind === 'contextual',
+        );
+        expect(contextualHint).toMatchObject({
+            text: 'utile',
+            kind: 'contextual',
+        });
+        expect(
+            exercise.segments.some(
+                (segment) =>
+                    segment.contextualHintId === contextualHint!.id &&
+                    segment.target === null,
+            ),
+        ).toBe(true);
+        const publicationDatabase = createTestPostgresClient();
+        try {
+            const [stored] =
+                await publicationDatabase`select generation_policy_version from sentence_exercises where id = ${exercise.id}`;
+            expect(stored!.generation_policy_version).toBe(2);
+            const targets =
+                await publicationDatabase`select entry_id from sentence_exercise_entries where exercise_id = ${exercise.id}`;
+            expect(targets).toHaveLength(1);
+        } finally {
+            await publicationDatabase.end();
+        }
+
         const replay = await request(`${base}/next`, {
             method: 'POST',
             token: owner.token,
@@ -397,7 +528,7 @@ run('real composed sentence practice HTTP and worker journey', () => {
                 sessionId,
                 answer: 'Livre est utile.',
                 explanationLanguage: 'en',
-                revealedHintIds: [exercise.hints[0]!.id],
+                revealedHintIds: exercise.hints.map((hint) => hint.id),
             },
         });
         expect(check.status).toBe(202);
@@ -436,6 +567,99 @@ run('real composed sentence practice HTTP and worker journey', () => {
         };
         const beforeReveal = await counts();
         process.env.DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED = 'false';
+        const unavailableGeneration = await request(`${base}/next`, {
+            method: 'POST',
+            token: owner.token,
+            body: {
+                operationId: randomUUID(),
+                sessionId: randomUUID(),
+                direction: 'source-to-target',
+                mode: 'new-only',
+                scope: { type: 'all' },
+                visitedExerciseIds: [],
+            },
+        });
+        expect(unavailableGeneration.status).toBe(503);
+        expect(await unavailableGeneration.json()).toMatchObject({
+            error: { code: 'model_unavailable' },
+        });
+        expect(await counts()).toEqual(beforeReveal);
+        expect(providerCalls).toBe(2);
+        const exactReplaySetup = {
+            direction: 'source-to-target',
+            mode: 'review-only',
+            scope: { type: 'all' },
+            replayExerciseIds: [exercise.id],
+        };
+        const exactPrepared = await request(`${sharedBase}/prepare`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: capability.shareKey,
+            body: exactReplaySetup,
+        });
+        expect(exactPrepared.status).toBe(200);
+        const invalidSequence = await request(`${sharedBase}/prepare`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: capability.shareKey,
+            body: {
+                ...exactReplaySetup,
+                replayExerciseIds: [exercise.id, randomUUID()],
+            },
+        });
+        expect(invalidSequence.status).toBe(409);
+        expect(await invalidSequence.json()).toMatchObject({
+            error: { code: 'stale_content' },
+        });
+        const exactOperation = randomUUID();
+        const exactReplayBody = {
+            direction: 'source-to-target',
+            mode: 'review-only',
+            scope: { type: 'all' },
+            operationId: exactOperation,
+            sessionId: randomUUID(),
+            visitedExerciseIds: [],
+            replayExerciseId: exercise.id,
+        };
+        const exactReplayed = await request(`${sharedBase}/next`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: capability.shareKey,
+            body: exactReplayBody,
+        });
+        expect(exactReplayed.status).toBe(200);
+        const exactContent = SentenceNextResponseSchema.parse(
+            await exactReplayed.json(),
+        );
+        expect(
+            exactContent.kind === 'exercise' && exactContent.exercise.id,
+        ).toBe(exercise.id);
+        expect(JSON.stringify(exactContent)).not.toContain(
+            'referenceTranslation',
+        );
+        const conflictingReplay = await request(`${sharedBase}/next`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: capability.shareKey,
+            body: { ...exactReplayBody, replayExerciseId: randomUUID() },
+        });
+        expect(conflictingReplay.status).toBe(409);
+        expect(await conflictingReplay.json()).toMatchObject({
+            error: { code: 'idempotency_conflict' },
+        });
+        const paidModeReplay = await request(`${sharedBase}/next`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: capability.shareKey,
+            body: {
+                ...exactReplayBody,
+                operationId: randomUUID(),
+                mode: 'new-only',
+            },
+        });
+        expect(paidModeReplay.status).toBe(400);
+        expect(await counts()).toEqual(beforeReveal);
+        expect(providerCalls).toBe(2);
         const revealBody = {
             operationId: randomUUID(),
             sessionId: randomUUID(),
@@ -495,10 +719,38 @@ run('real composed sentence practice HTTP and worker journey', () => {
             },
         });
         expect(readerPrepared.status).toBe(200);
-        expect(
-            ((await readerPrepared.json()) as { savedUncheckedCount: number })
-                .savedUncheckedCount,
-        ).toBe(0);
+        expect(await readerPrepared.json()).toMatchObject({
+            savedUncheckedCount: 0,
+            savedReviewCount: 1,
+        });
+        const beforeReuse = await counts();
+        for (const [reuseBase, learner, shareKey] of [
+            [base, owner, undefined],
+            [sharedBase, reader, capability.shareKey],
+        ] as const) {
+            const reused = await request(`${reuseBase}/next`, {
+                method: 'POST',
+                token: learner.token,
+                ...(shareKey ? { shareKey } : {}),
+                body: {
+                    operationId: randomUUID(),
+                    sessionId: randomUUID(),
+                    direction: 'source-to-target',
+                    mode: 'saved-first',
+                    scope: { type: 'all' },
+                    visitedExerciseIds: [],
+                },
+            });
+            expect(reused.status).toBe(200);
+            const reuse = SentenceNextResponseSchema.parse(await reused.json());
+            expect(reuse.kind).toBe('exercise');
+            if (reuse.kind !== 'exercise')
+                throw new Error('Expected saved completed exercise');
+            expect(reuse.exercise.id).toBe(exercise.id);
+            expect(reuse.exercise.hints).toEqual(exercise.hints);
+        }
+        expect(await counts()).toEqual(beforeReuse);
+        expect(providerCalls).toBe(2);
         const readerProgress = await request(
             `${sharedBase}/progress?direction=source-to-target`,
             { token: reader.token, shareKey: capability.shareKey },
@@ -515,5 +767,393 @@ run('real composed sentence practice HTTP and worker journey', () => {
             completedCheckCount: 0,
             usedCount: 1,
         });
+
+        // A five-word round is bounded by appearances, not lifetime checks/reviews.
+        const roundCreated = await request('/dictionaries', {
+            method: 'POST',
+            token: owner.token,
+            idempotency: true,
+            body: {
+                name: 'Five word Russian to French round',
+                sourceLanguage: 'ru',
+                targetLanguage: 'fr',
+            },
+        });
+        expect(roundCreated.status).toBe(201);
+        const roundDictionary = DictionaryResponseSchema.parse(
+            await roundCreated.json(),
+        ).dictionary;
+        let dictionaryVersion = roundDictionary.version;
+        for (const [source, translation] of [
+            ['книга', 'livre'],
+            ['работа', 'travail'],
+            ['дом', 'maison'],
+            ['вода', 'eau'],
+            ['друг', 'ami'],
+        ]) {
+            const added = await request(
+                `/dictionaries/${roundDictionary.id}/cards`,
+                {
+                    method: 'POST',
+                    token: owner.token,
+                    body: {
+                        expectedDictionaryVersion: dictionaryVersion,
+                        expectedSettingsVersion:
+                            roundDictionary.settings.version,
+                        values: { source, translation },
+                    },
+                },
+            );
+            expect(added.status).toBe(201);
+            dictionaryVersion = (
+                (await added.json()) as { dictionaryVersion: number }
+            ).dictionaryVersion;
+        }
+        const roundBase = `/learning/dictionaries/${roundDictionary.id}/sentences`;
+        const roundSession = randomUUID();
+        const visitedExerciseIds: string[] = [];
+        const roundExercises: SentenceExercise[] = [];
+        const nextRound = async (
+            mode: 'saved-first' | 'new-only',
+            sessionId: string,
+            visited: string[],
+        ) => {
+            const response = await request(`${roundBase}/next`, {
+                method: 'POST',
+                token: owner.token,
+                body: {
+                    operationId: randomUUID(),
+                    sessionId,
+                    direction: 'source-to-target',
+                    mode,
+                    scope: { type: 'all' },
+                    visitedExerciseIds: visited,
+                },
+            });
+            expect([200, 202]).toContain(response.status);
+            return SentenceNextResponseSchema.parse(await response.json());
+        };
+        const finishGeneration = async (jobId: string) => {
+            expect(
+                await worker.worker.processNext(new AbortController().signal),
+            ).toBe(true);
+            const response = await request(`${roundBase}/jobs/${jobId}`, {
+                token: owner.token,
+            });
+            expect(response.status).toBe(200);
+            return SentenceJobSchema.parse(await response.json());
+        };
+        reverseNextGeneration = true;
+        for (let index = 0; index < 5; index += 1) {
+            const next = await nextRound(
+                'new-only',
+                roundSession,
+                visitedExerciseIds,
+            );
+            expect(next.kind).toBe('job');
+            if (next.kind !== 'job')
+                throw new Error('Expected uncovered word generation');
+            let completedRound = await finishGeneration(next.job.id);
+            if (index === 0) {
+                expect(completedRound.state).toBe('queued');
+                expect(completedRound.attemptCount).toBe(1);
+                expect(completedRound.result).toBeNull();
+                // Retry retains the admitted job, with exactly one separately accounted provider attempt.
+                const retryCounts = await counts();
+                await new Promise((resolve) => setTimeout(resolve, 5));
+                completedRound = await finishGeneration(next.job.id);
+                expect(await counts()).toEqual({
+                    jobs: retryCounts.jobs,
+                    reservations: retryCounts.reservations + 1,
+                });
+            }
+            expect(completedRound.result?.kind).toBe('exercise');
+            if (completedRound.result?.kind !== 'exercise')
+                throw new Error('Expected valid Russian exercise');
+            const roundExercise = completedRound.result.exercise;
+            expect(roundExercise.sourceLanguage).toBe('ru');
+            expect(roundExercise.targetLanguage).toBe('fr');
+            expect(roundExercise.sourceText).toMatch(/\p{Script=Cyrillic}/u);
+            visitedExerciseIds.push(roundExercise.id);
+            roundExercises.push(roundExercise);
+        }
+        expect(
+            new Set(
+                roundExercises.flatMap((value) =>
+                    value.segments.flatMap((segment) =>
+                        segment.target ? [segment.target.entryId] : [],
+                    ),
+                ),
+            ).size,
+        ).toBe(5);
+        const completedCounts = await counts();
+        expect(
+            await nextRound('new-only', roundSession, visitedExerciseIds),
+        ).toEqual({ kind: 'empty', reason: 'review-exhausted' });
+        expect(await counts()).toEqual(completedCounts);
+        const reusedRoundIds: string[] = [];
+        const reusedSession = randomUUID();
+        for (let index = 0; index < 5; index += 1) {
+            const saved = await nextRound(
+                'saved-first',
+                reusedSession,
+                reusedRoundIds,
+            );
+            expect(saved.kind).toBe('exercise');
+            if (saved.kind !== 'exercise')
+                throw new Error('Expected existing saved example');
+            expect(visitedExerciseIds).toContain(saved.exercise.id);
+            reusedRoundIds.push(saved.exercise.id);
+        }
+        expect(
+            await nextRound('saved-first', reusedSession, reusedRoundIds),
+        ).toEqual({ kind: 'empty', reason: 'review-exhausted' });
+        expect(await counts()).toEqual(completedCounts);
+        // Large dictionaries use bounded 100-word rounds while lifetime progress stays complete.
+        // Invented exercise identities cannot fabricate coverage of selected vocabulary.
+        const largeFixtureDatabase = createTestPostgresClient();
+        let largeFixtureEntryIds: string[];
+        try {
+            const seeded = await largeFixtureDatabase`
+                insert into dictionary_cards (id, dictionary_id, authorship, normalized_source, sort_key, source, translation)
+                select gen_random_uuid(), ${roundDictionary.id}::uuid, 'human', 'слово' || n::text, (select max(sort_key) from dictionary_cards where dictionary_id = ${roundDictionary.id}::uuid) + n, 'слово' || n::text, 'mot' || n::text
+                from generate_series(1, 1001) as n
+                returning id
+            `;
+            largeFixtureEntryIds = seeded.map((row) => row.id as string);
+        } finally {
+            await largeFixtureDatabase.end();
+        }
+        const largeScopeEntryIds = [
+            ...new Set(
+                roundExercises.flatMap((value) =>
+                    value.segments.flatMap((segment) =>
+                        segment.target ? [segment.target.entryId] : [],
+                    ),
+                ),
+            ),
+            ...largeFixtureEntryIds.slice(0, 95),
+        ];
+        expect(largeScopeEntryIds).toHaveLength(100);
+        const unrelatedVisitedIds = Array.from({ length: 95 }, () =>
+            randomUUID(),
+        );
+        const largeShared = await request(
+            `/dictionaries/${roundDictionary.id}/share-key/rotate`,
+            {
+                method: 'POST',
+                token: owner.token,
+                body: { expectedDictionaryVersion: dictionaryVersion },
+            },
+        );
+        expect(largeShared.status).toBe(200);
+        const largeCapability = (
+            (await largeShared.json()) as {
+                capability: { shareId: string; shareKey: string };
+            }
+        ).capability;
+        const largeSharedBase = `/learning/shared-dictionaries/${largeCapability.shareId}/sentences`;
+        const largeSession = randomUUID();
+        const largePayload = {
+            operationId: randomUUID(),
+            sessionId: largeSession,
+            direction: 'source-to-target',
+            mode: 'review-only',
+            scope: { type: 'manual', entryIds: largeScopeEntryIds },
+            visitedExerciseIds: unrelatedVisitedIds,
+        };
+        expect(Buffer.byteLength(JSON.stringify(largePayload))).toBeLessThan(
+            32_000,
+        );
+        const largeUncovered = await request(`${largeSharedBase}/next`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: largeCapability.shareKey,
+            body: largePayload,
+        });
+        expect(largeUncovered.status).toBe(200);
+        const largeSaved = SentenceNextResponseSchema.parse(
+            await largeUncovered.json(),
+        );
+        expect(largeSaved.kind).toBe('exercise');
+        if (largeSaved.kind !== 'exercise')
+            throw new Error(
+                'Unrelated visited IDs must not fabricate completed coverage',
+            );
+        expect(visitedExerciseIds).toContain(largeSaved.exercise.id);
+        const largeCompleted = await request(`${largeSharedBase}/next`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: largeCapability.shareKey,
+            body: {
+                ...largePayload,
+                operationId: randomUUID(),
+                visitedExerciseIds: [
+                    ...unrelatedVisitedIds,
+                    ...visitedExerciseIds,
+                ],
+            },
+        });
+        expect(largeCompleted.status).toBe(200);
+        expect(
+            SentenceNextResponseSchema.parse(await largeCompleted.json()),
+        ).toEqual({ kind: 'empty', reason: 'review-exhausted' });
+        expect(await counts()).toEqual(completedCounts);
+        const cappedPrepare = await request(`${roundBase}/prepare`, {
+            method: 'POST',
+            token: owner.token,
+            body: {
+                direction: 'source-to-target',
+                mode: 'saved-first',
+                scope: { type: 'all' },
+            },
+        });
+        expect(cappedPrepare.status).toBe(200);
+        expect(await cappedPrepare.json()).toMatchObject({
+            eligibleCount: 100,
+            skippedCount: 0,
+            savedReviewCount: 5,
+        });
+        const lifetimeProgress = await request(
+            `${roundBase}/progress?direction=source-to-target`,
+            { token: owner.token },
+        );
+        expect(lifetimeProgress.status).toBe(200);
+        expect(await lifetimeProgress.json()).toMatchObject({
+            eligibleCount: 1006,
+            usedCount: 5,
+            remainingCount: 1001,
+        });
+        const outsideEntryId = largeFixtureEntryIds.at(-1)!;
+        const outsidePrepare = await request(`${largeSharedBase}/prepare`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: largeCapability.shareKey,
+            body: {
+                direction: 'source-to-target',
+                mode: 'review-only',
+                scope: { type: 'manual', entryIds: [outsideEntryId] },
+            },
+        });
+        expect(outsidePrepare.status).toBe(200);
+        expect(await outsidePrepare.json()).toMatchObject({
+            eligibleCount: 1,
+            skippedCount: 0,
+            savedReviewCount: 0,
+        });
+        for (const oversized of [
+            {
+                ...largePayload,
+                operationId: randomUUID(),
+                scope: {
+                    type: 'manual',
+                    entryIds: [...largeScopeEntryIds, outsideEntryId],
+                },
+            },
+            {
+                ...largePayload,
+                operationId: randomUUID(),
+                visitedExerciseIds: Array.from({ length: 101 }, () =>
+                    randomUUID(),
+                ),
+            },
+        ]) {
+            const rejected = await request(`${largeSharedBase}/next`, {
+                method: 'POST',
+                token: reader.token,
+                shareKey: largeCapability.shareKey,
+                body: oversized,
+            });
+            expect(rejected.status).toBe(400);
+            expect(await rejected.json()).toMatchObject({
+                error: { code: 'invalid_request' },
+            });
+        }
+        expect(await counts()).toEqual(completedCounts);
+        const fresh = await nextRound('new-only', randomUUID(), []);
+        expect(fresh.kind).toBe('job');
+        if (fresh.kind !== 'job')
+            throw new Error('Expected explicitly requested fresh generation');
+        const freshCompleted = await finishGeneration(fresh.job.id);
+        if (freshCompleted.result?.kind !== 'exercise')
+            throw new Error('Expected fresh exercise');
+        expect(visitedExerciseIds).not.toContain(
+            freshCompleted.result.exercise.id,
+        );
+
+        // Keep corrupt historical rows, but never offer their reversed source text.
+        const corruptId = freshCompleted.result.exercise.id;
+        const database = createTestPostgresClient();
+        try {
+            await database`update sentence_exercises set public_content = jsonb_set(public_content, '{sourceText}', to_jsonb('Bonjour, ceci est français.'::text)) where id = ${corruptId}`;
+            const prepared = await request(`${roundBase}/prepare`, {
+                method: 'POST',
+                token: owner.token,
+                body: {
+                    direction: 'source-to-target',
+                    mode: 'saved-first',
+                    scope: { type: 'all' },
+                },
+            });
+            expect(prepared.status).toBe(200);
+            expect(
+                ((await prepared.json()) as { savedUncheckedCount: number })
+                    .savedUncheckedCount,
+            ).toBe(5);
+            const validSaved = await nextRound('saved-first', randomUUID(), []);
+            expect(validSaved.kind).toBe('exercise');
+            if (validSaved.kind !== 'exercise')
+                throw new Error('Expected uncorrupted saved example');
+            expect(validSaved.exercise.id).not.toBe(corruptId);
+            const retained =
+                await database`select id from sentence_exercises where id = ${corruptId}`;
+            expect(retained).toHaveLength(1);
+            const movedExercise = roundExercises[0]!;
+            const movedEntry = movedExercise.segments.find(
+                (segment) => segment.target,
+            )!.target!.entryId;
+            await database`update dictionary_cards set sort_key = (select max(sort_key) + 1 from dictionary_cards where dictionary_id = ${roundDictionary.id}) where id = ${movedEntry}`;
+            const replayCounts = await counts();
+            const movedPrepared = await request(`${largeSharedBase}/prepare`, {
+                method: 'POST',
+                token: reader.token,
+                shareKey: largeCapability.shareKey,
+                body: {
+                    direction: 'source-to-target',
+                    mode: 'review-only',
+                    scope: { type: 'all' },
+                    replayExerciseIds: [movedExercise.id],
+                },
+            });
+            expect(movedPrepared.status).toBe(200);
+            expect(await movedPrepared.json()).toMatchObject({
+                eligibleCount: 100,
+                savedReviewCount: 4,
+            });
+            const movedReplay = await request(`${largeSharedBase}/next`, {
+                method: 'POST',
+                token: reader.token,
+                shareKey: largeCapability.shareKey,
+                body: {
+                    operationId: randomUUID(),
+                    sessionId: randomUUID(),
+                    direction: 'source-to-target',
+                    mode: 'review-only',
+                    scope: { type: 'all' },
+                    visitedExerciseIds: [],
+                    replayExerciseId: movedExercise.id,
+                },
+            });
+            expect(movedReplay.status).toBe(200);
+            const movedResult = SentenceNextResponseSchema.parse(
+                await movedReplay.json(),
+            );
+            expect(
+                movedResult.kind === 'exercise' && movedResult.exercise.id,
+            ).toBe(movedExercise.id);
+            expect(await counts()).toEqual(replayCounts);
+        } finally {
+            await database.end();
+        }
     }, 60_000);
 });

@@ -31,6 +31,7 @@ const formats = [
     'single-card:v1',
     'single-card:v1',
     'sentence-generation:v1',
+    'sentence-generation:v2',
     'sentence-check:v1',
     'unknown:v1',
 ];
@@ -95,6 +96,7 @@ describe('shared worker capability publication', () => {
         for (const row of learning) {
             expect(row.textAiSupportedFormats).toEqual([
                 'sentence-generation:v1',
+                'sentence-generation:v2',
                 'sentence-check:v1',
             ]);
             expect(row.textAiCapacityRevision).toBe(1);

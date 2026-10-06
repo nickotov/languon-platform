@@ -1,6 +1,340 @@
 'use client';
 import { useI18n } from '@/fsd/shared/i18n';
 const translations: Record<string, [string, string, string]> = {
+    'Your answer and exercise are kept': [
+        'Ваш ответ и упражнение сохраняются',
+        'Votre réponse et votre exercice sont conservés',
+        'Tu respuesta y tu ejercicio se conservan',
+    ],
+    'Work that already started may still use credits.': [
+        'Уже начатая работа может потребовать кредиты.',
+        'Le travail déjà commencé peut encore utiliser des crédits.',
+        'El trabajo ya iniciado puede seguir usando créditos.',
+    ],
+    Close: ['Закрыть', 'Fermer', 'Cerrar'],
+    'AI settings': ['Настройки ИИ', 'Paramètres IA', 'Ajustes de IA'],
+    'Enter full screen': ['На весь экран', 'Plein écran', 'Pantalla completa'],
+    'Exit full screen': [
+        'Выйти из полноэкранного режима',
+        'Quitter le plein écran',
+        'Salir de pantalla completa',
+    ],
+    'Show reference — free': [
+        'Показать пример — бесплатно',
+        'Afficher la référence — gratuit',
+        'Mostrar referencia — gratis',
+    ],
+    'Compare with reference — free': [
+        'Сравнить с примером — бесплатно',
+        'Comparer à la référence — gratuit',
+        'Comparar con referencia — gratis',
+    ],
+    'Checking…': ['Проверяем…', 'Vérification…', 'Comprobando…'],
+    'Revealing…': ['Открываем…', 'Affichage…', 'Mostrando…'],
+    'Preparing a sentence': [
+        'Подготавливаем предложение',
+        'Préparation de la phrase',
+        'Preparando una frase',
+    ],
+    'Checking your answer': [
+        'Проверяем ваш ответ',
+        'Vérification de votre réponse',
+        'Comprobando tu respuesta',
+    ],
+    'waiting to start': [
+        'ожидание начала',
+        'en attente du démarrage',
+        'esperando para empezar',
+    ],
+    'Stop request': [
+        'Остановить запрос',
+        'Arrêter la demande',
+        'Detener solicitud',
+    ],
+    'Uses the AI preference chosen when this check started.': [
+        'Используется модель ИИ, выбранная при запуске проверки.',
+        'Utilise le modèle IA choisi au démarrage de cette vérification.',
+        'Usa el modelo de IA elegido al iniciar esta comprobación.',
+    ],
+    'Check with AI evaluates meaning, grammar and required words — may need credits.':
+        [
+            'Проверка с ИИ оценивает смысл, грамматику и обязательные слова — может потребовать кредиты.',
+            'La vérification IA évalue le sens, la grammaire et les mots requis — des crédits peuvent être nécessaires.',
+            'La IA evalúa el significado, la gramática y las palabras requeridas — puede necesitar créditos.',
+        ],
+    'The free reference action needs no AI.': [
+        'Проверка по сохранённому примеру не использует ИИ.',
+        'La référence gratuite ne nécessite aucune IA.',
+        'La referencia gratuita no necesita IA.',
+    ],
+    'Reveals one saved translation. No comparison is made without an answer.': [
+        'Показывает один сохранённый перевод. Без ответа сравнение не выполняется.',
+        'Affiche une traduction enregistrée. Sans réponse, aucune comparaison n’est faite.',
+        'Muestra una traducción guardada. Sin respuesta no se realiza comparación.',
+    ],
+    'Revealing records a manual review — no grade, no credits.': [
+        'Показ примера считается ручной проверкой — без оценки и списания кредитов.',
+        'Afficher la référence enregistre une révision manuelle — sans note ni crédits.',
+        'Mostrar la referencia registra una revisión manual — sin nota ni créditos.',
+    ],
+    'Last sentence.': [
+        'Последнее предложение.',
+        'Dernière phrase.',
+        'Última frase.',
+    ],
+    'Check, compare or skip this sentence to see your results.': [
+        'Проверьте, сравните или пропустите это предложение, чтобы увидеть результаты.',
+        'Vérifiez, comparez ou passez cette phrase pour voir vos résultats.',
+        'Comprueba, compara u omite esta frase para ver tus resultados.',
+    ],
+    Sentence: ['Предложение', 'Phrase', 'Frase'],
+    'Two ways to check': [
+        'Два способа проверки',
+        'Deux façons de vérifier',
+        'Dos formas de comprobar',
+    ],
+    'Required word': [
+        'Обязательное слово',
+        'Mot requis',
+        'Palabra obligatoria',
+    ],
+    'Extra help': [
+        'Дополнительная подсказка',
+        'Aide supplémentaire',
+        'Ayuda adicional',
+    ],
+    'Across your sessions: {seen} of {total} words seen.': [
+        'За все занятия: просмотрено {seen} из {total} слов.',
+        'Toutes vos séances : {seen} mots vus sur {total}.',
+        'En todas tus sesiones: {seen} de {total} palabras vistas.',
+    ],
+    'Your unsent draft will be discarded. An AI task or reference review already started may continue and be saved to your personal history. Leaving does not cancel pending work or guarantee a refund.':
+        [
+            'Неотправленный ответ будет удалён. Запущенная задача ИИ или просмотр эталона могут продолжиться и сохраниться в вашей истории. Выход не отменяет работу и не гарантирует возврат кредитов.',
+            'Votre brouillon non envoyé sera supprimé. Une tâche IA ou une consultation de référence déjà lancée peut continuer et être enregistrée dans votre historique. Quitter ne les annule pas et ne garantit aucun remboursement.',
+            'Tu borrador sin enviar se descartará. Una tarea de IA o consulta de referencia ya iniciada puede continuar y guardarse en tu historial. Salir no cancela el trabajo ni garantiza un reembolso.',
+        ],
+    'AI checked': ['Проверено ИИ', 'Vérifié par IA', 'Comprobado por IA'],
+    Hint: ['Подсказка', 'Indice', 'Pista'],
+    'Close hint': ['Закрыть подсказку', 'Fermer l’indice', 'Cerrar pista'],
+    'Hint legend': [
+        'Обозначения подсказок',
+        'Légende des indices',
+        'Leyenda de pistas',
+    ],
+    'Support only — not required and not added to your dictionary.': [
+        'Это только помощь: слово не обязательное и не добавляется в словарь.',
+        'Une aide seulement : ce mot n’est pas requis et n’est pas ajouté au dictionnaire.',
+        'Solo ayuda: no es obligatoria ni se añade al diccionario.',
+    ],
+    'Use this dictionary word. Inflected forms are fine.': [
+        'Используйте это слово из словаря. Можно менять его форму.',
+        'Utilisez ce mot du dictionnaire. Les formes fléchies sont acceptées.',
+        'Usa esta palabra del diccionario. Se admiten formas flexionadas.',
+    ],
+    'Hints are free and never lower your score.': [
+        'Подсказки бесплатны и не снижают оценку.',
+        'Les indices sont gratuits et ne baissent jamais la note.',
+        'Las pistas son gratuitas y no reducen la nota.',
+    ],
+    'This saved example has dictionary hints only.': [
+        'В этом сохранённом примере есть только словарные подсказки.',
+        'Cet exemple enregistré ne contient que des indices du dictionnaire.',
+        'Este ejemplo guardado solo tiene pistas del diccionario.',
+    ],
+    'Select, tap or Tab to a marked word to see its hint.': [
+        'Нажмите на отмеченное слово или выберите его клавишей Tab, чтобы открыть подсказку.',
+        'Sélectionnez un mot marqué, au toucher ou avec Tab, pour voir son indice.',
+        'Selecciona una palabra marcada, con un toque o Tab, para ver su pista.',
+    ],
+    'Free comparison': [
+        'Бесплатное сравнение',
+        'Comparaison gratuite',
+        'Comparación gratuita',
+    ],
+    'No AI score': ['Без оценки ИИ', 'Sans note IA', 'Sin nota de IA'],
+    'Hide reference': [
+        'Скрыть пример ответа',
+        'Masquer la référence',
+        'Ocultar referencia',
+    ],
+    'Show reference': [
+        'Показать пример ответа',
+        'Afficher la référence',
+        'Mostrar referencia',
+    ],
+    'Matches the saved example after normalization.': [
+        'После нормализации ответ совпадает с сохранённым примером.',
+        'La réponse correspond à l’exemple enregistré après normalisation.',
+        'La respuesta coincide con el ejemplo guardado tras normalizarla.',
+    ],
+    'Different from this example. Another translation may still be valid.': [
+        'Ответ отличается от примера. Другой перевод тоже может быть правильным.',
+        'La réponse diffère de cet exemple. Une autre traduction peut être valable.',
+        'La respuesta difiere del ejemplo. Otra traducción también puede ser válida.',
+    ],
+    'Reference read without an answer.': [
+        'Пример просмотрен без введённого ответа.',
+        'Référence consultée sans réponse saisie.',
+        'Referencia consultada sin escribir una respuesta.',
+    ],
+    'Comparison ignores case, spacing, punctuation and apostrophe style. Accents and word order matter.':
+        [
+            'При сравнении учитываются только значимые различия: регистр, лишние пробелы, пунктуация и вид апострофов игнорируются. Диакритика и порядок слов важны.',
+            'La comparaison ignore la casse, les espaces, la ponctuation et le style des apostrophes. Les accents et l’ordre des mots comptent.',
+            'La comparación ignora mayúsculas, espacios, puntuación y estilo de apóstrofes. Los acentos y el orden de palabras importan.',
+        ],
+    'No answer entered.': [
+        'Ответ не введён.',
+        'Aucune réponse saisie.',
+        'No se ha escrito una respuesta.',
+    ],
+    'Reference translation — one valid answer': [
+        'Пример перевода — один из возможных ответов',
+        'Traduction de référence — une réponse valable',
+        'Traducción de referencia: una respuesta válida',
+    ],
+    'Compare current answer again': [
+        'Сравнить текущий ответ ещё раз',
+        'Comparer à nouveau la réponse actuelle',
+        'Comparar de nuevo la respuesta actual',
+    ],
+    'Works without AI or credits. A match is a text comparison, not a language-quality grade.':
+        [
+            'Работает без ИИ и кредитов. Совпадение текста не является оценкой качества перевода.',
+            'Fonctionne sans IA ni crédits. Une correspondance de texte n’est pas une note de qualité linguistique.',
+            'Funciona sin IA ni créditos. La coincidencia de texto no es una nota de calidad lingüística.',
+        ],
+    'Saved replay': [
+        'Повтор сохранённых примеров',
+        'Répétition enregistrée',
+        'Repetición guardada',
+    ],
+    'Practice round': [
+        'Раунд практики',
+        'Séance de pratique',
+        'Ronda de práctica',
+    ],
+    'Replay complete': [
+        'Повтор завершён',
+        'Répétition terminée',
+        'Repetición completada',
+    ],
+    'Examples presented': [
+        'Показано примеров',
+        'Exemples présentés',
+        'Ejemplos presentados',
+    ],
+    'Selected words seen': [
+        'Показано выбранных слов',
+        'Mots sélectionnés rencontrés',
+        'Palabras seleccionadas vistas',
+    ],
+    Skipped: ['Пропущено', 'Ignorés', 'Omitidos'],
+    'AI ratings this round': [
+        'Оценки ИИ в этом раунде',
+        'Notes IA de cette séance',
+        'Notas de IA de esta ronda',
+    ],
+    'Every example was skipped. The round is complete but ungraded.': [
+        'Все примеры пропущены. Раунд завершён без оценки.',
+        'Tous les exemples ont été ignorés. La séance est terminée sans note.',
+        'Se omitieron todos los ejemplos. La ronda terminó sin nota.',
+    ],
+    'No AI checks this round. Manual reviews are never graded.': [
+        'В этом раунде нет проверок ИИ. Самостоятельная сверка не получает оценку.',
+        'Aucune vérification IA dans cette séance. Les révisions manuelles ne sont jamais notées.',
+        'No hay comprobaciones de IA en esta ronda. Las revisiones manuales nunca reciben nota.',
+    ],
+    'These counts describe this round, not mastery. AI checks and manual reviews are counted separately.':
+        [
+            'Эти числа показывают действия в раунде, а не степень освоения. Проверки ИИ и самостоятельные сверки учитываются отдельно.',
+            'Ces chiffres décrivent la séance, pas la maîtrise. Les vérifications IA et les révisions manuelles sont comptées séparément.',
+            'Estas cifras describen la ronda, no el dominio. Las comprobaciones de IA y revisiones manuales se cuentan por separado.',
+        ],
+    'Last example': ['Последний пример', 'Dernier exemple', 'Último ejemplo'],
+    'Hide details': [
+        'Скрыть подробности',
+        'Masquer les détails',
+        'Ocultar detalles',
+    ],
+    'Show details': [
+        'Показать подробности',
+        'Afficher les détails',
+        'Mostrar detalles',
+    ],
+    'Skipped — no AI check or manual review.': [
+        'Пропущено — без проверки ИИ и самостоятельной сверки.',
+        'Ignoré — sans vérification IA ni révision manuelle.',
+        'Omitido: sin comprobación de IA ni revisión manual.',
+    ],
+    'This round’s examples': [
+        'Примеры этого раунда',
+        'Exemples de cette séance',
+        'Ejemplos de esta ronda',
+    ],
+    'Repeat these exact examples': [
+        'Повторить эти же примеры',
+        'Répéter exactement ces exemples',
+        'Repetir estos mismos ejemplos',
+    ],
+    'Same examples and order, with fresh answers. Examples and hints are free; AI checks may use credits.':
+        [
+            'Те же примеры в том же порядке, с новыми ответами. Примеры и подсказки бесплатны; проверки ИИ могут расходовать кредиты.',
+            'Les mêmes exemples dans le même ordre, avec de nouvelles réponses. Les exemples et indices sont gratuits ; les vérifications IA peuvent utiliser des crédits.',
+            'Los mismos ejemplos en el mismo orden, con respuestas nuevas. Los ejemplos y pistas son gratis; las comprobaciones de IA pueden usar créditos.',
+        ],
+    'Generate new examples': [
+        'Создать новые примеры',
+        'Générer de nouveaux exemples',
+        'Generar ejemplos nuevos',
+    ],
+    'Fresh examples for the same words. Requires AI and may use credits. Previous examples are kept.':
+        [
+            'Новые примеры для тех же слов. Требуется ИИ, могут расходоваться кредиты. Прежние примеры сохраняются.',
+            'De nouveaux exemples pour les mêmes mots. Nécessite l’IA et peut utiliser des crédits. Les exemples précédents sont conservés.',
+            'Ejemplos nuevos para las mismas palabras. Requiere IA y puede usar créditos. Se conservan los ejemplos anteriores.',
+        ],
+    'Check without AI — free': [
+        'Проверить без ИИ — бесплатно',
+        'Vérifier sans IA — gratuit',
+        'Comprobar sin IA: gratis',
+    ],
+    'Skip and finish': [
+        'Пропустить и завершить',
+        'Ignorer et terminer',
+        'Omitir y terminar',
+    ],
+    'Ignored differences:': [
+        'Не учитываются:',
+        'Différences ignorées :',
+        'Diferencias ignoradas:',
+    ],
+    Case: ['Регистр', 'Casse', 'Mayúsculas'],
+    Spacing: ['Пробелы', 'Espacement', 'Espacios'],
+    Punctuation: ['Пунктуация', 'Ponctuation', 'Puntuación'],
+    'Apostrophe style': [
+        'Вид апострофа',
+        'Style d’apostrophe',
+        'Estilo del apóstrofe',
+    ],
+    'Unicode form': ['Форма Unicode', 'Forme Unicode', 'Forma Unicode'],
+    'Dictionary batch': [
+        'Слова из словаря',
+        'Lot du dictionnaire',
+        'Lote del diccionario',
+    ],
+    'Each round uses up to {limit} words. A dictionary batch uses the first eligible words. Choose entries to practise other words.':
+        [
+            'В одном раунде — до {limit} слов. Из словаря берутся первые подходящие слова. Выберите слова вручную, чтобы потренировать другие.',
+            'Chaque session contient au plus {limit} mots. Un lot du dictionnaire utilise les premiers mots admissibles. Choisissez les entrées pour pratiquer d’autres mots.',
+            'Cada ronda incluye hasta {limit} palabras. Un lote del diccionario usa las primeras palabras válidas. Elige las entradas para practicar otras palabras.',
+        ],
+    'Batch limit reached. Deselect a word to choose another.': [
+        'Лимит слов достигнут. Снимите выбор со слова, чтобы выбрать другое.',
+        'Limite du lot atteinte. Désélectionnez un mot pour en choisir un autre.',
+        'Límite del lote alcanzado. Desmarca una palabra para elegir otra.',
+    ],
     'Sentence practice': [
         'Практика предложений',
         'Pratique des phrases',
@@ -148,6 +482,24 @@ const translations: Record<string, [string, string, string]> = {
         'Siguiente frase',
     ],
     'AI preferences': ['Настройки ИИ', 'Préférences IA', 'Preferencias de IA'],
+    'Round complete': ['Раунд завершён', 'Tour terminé', 'Ronda completada'],
+    'All selected words have appeared. You can finish the last answer or view your results.':
+        [
+            'Все выбранные слова встретились. Можно закончить последний ответ или посмотреть результаты.',
+            'Tous les mots sélectionnés sont apparus. Terminez la dernière réponse ou consultez vos résultats.',
+            'Han aparecido todas las palabras seleccionadas. Puedes terminar la última respuesta o ver tus resultados.',
+        ],
+    'Reuse saved sentences, including completed ones; generate only for words without saved examples.':
+        [
+            'Использовать сохранённые предложения, включая завершённые; генерировать только для слов без сохранённых примеров.',
+            'Réutilisez les phrases enregistrées, même terminées ; générez seulement pour les mots sans exemple enregistré.',
+            'Reutiliza frases guardadas, incluso completadas; genera solo para palabras sin ejemplos guardados.',
+        ],
+    'saved sentences': [
+        'сохранённых предложений',
+        'phrases enregistrées',
+        'frases guardadas',
+    ],
     'AI task queued': [
         'Задача ИИ в очереди',
         'Tâche IA en attente',
@@ -493,7 +845,6 @@ const translations: Record<string, [string, string, string]> = {
         'mots ont un indice — sélectionnez un mot souligné.',
         'palabras tienen pistas: selecciona una palabra subrayada.',
     ],
-    Hint: ['Подсказка', 'Indice', 'Pista'],
     'show hint': ['показать подсказку', 'afficher l’indice', 'mostrar pista'],
     correction: ['исправление', 'correction', 'corrección'],
     meaning: ['смысл', 'sens', 'significado'],
@@ -523,6 +874,7 @@ const translations: Record<string, [string, string, string]> = {
         'Afficher la réponse de référence — gratuit',
         'Mostrar respuesta de referencia — gratis',
     ],
+    Skip: ['Пропустить', 'Passer', 'Omitir'],
     'Skip sentence': [
         'Пропустить предложение',
         'Passer la phrase',

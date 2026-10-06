@@ -1,0 +1,18 @@
+.indeterminate {
+    animation: practice-indeterminate 1.4s var(--easing-standard) infinite;
+}
+@keyframes practice-indeterminate {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(300%);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .indeterminate {
+        animation: none !important;
+        width: 100%;
+        opacity: 0.5;
+    }
+}

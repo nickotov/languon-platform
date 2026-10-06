@@ -1,181 +1,16 @@
 'use client';
 import { useSentenceCopy } from '../sentence-copy';
 
-import { useEffect, useId, useRef, useState } from 'react';
-import type {
-    SentenceAttempt,
-    SentenceExercise,
-    SentenceManualReview,
-} from '@languon/contracts';
+import { useState } from 'react';
+import { CheckCircle2, CircleDashed, Repeat } from 'lucide-react';
+import type { SentenceAttempt, SentenceManualReview } from '@languon/contracts';
 import { Badge, Button } from '@/fsd/shared/ui';
 
 export function languageDirection(language: string) {
     return /^(ar|he|fa|ur)(-|$)/i.test(language) ? 'rtl' : 'ltr';
 }
 
-export function SentenceWithHints({
-    exercise,
-    revealedHintIds,
-    onReveal,
-}: {
-    exercise: SentenceExercise;
-    revealedHintIds: string[];
-    onReveal(id: string): void;
-}) {
-    const { t } = useSentenceCopy();
-    return (
-        <div>
-            <p
-                lang={exercise.sourceLanguage}
-                dir={languageDirection(exercise.sourceLanguage)}
-                className='whitespace-pre-wrap break-words text-2xl font-medium leading-relaxed text-text-primary md:text-[1.75rem]'
-            >
-                {exercise.segments.map((segment) => {
-                    const hint = exercise.hints.find(
-                        (item) => item.id === segment.target?.hintId,
-                    );
-                    if (!hint)
-                        return <span key={segment.id}>{segment.text}</span>;
-                    return (
-                        <HintWord
-                            key={segment.id}
-                            text={segment.text}
-                            hint={hint.text}
-                            language={exercise.targetLanguage}
-                            revealed={revealedHintIds.includes(hint.id)}
-                            onReveal={() => onReveal(hint.id)}
-                        />
-                    );
-                })}
-            </p>
-            <div className='mt-4 flex flex-wrap gap-2 text-sm text-text-secondary'>
-                <span>
-                    {revealedHintIds.length
-                        ? t('Hints shown:')
-                        : `${exercise.hints.length} ${t('words have hints — select an underlined word.')}`}
-                </span>
-                {exercise.hints
-                    .filter((hint) => revealedHintIds.includes(hint.id))
-                    .map((hint) => (
-                        <Badge key={hint.id} size='sm'>
-                            <span lang={exercise.targetLanguage}>
-                                {hint.text}
-                            </span>
-                        </Badge>
-                    ))}
-            </div>
-        </div>
-    );
-}
-
-function HintWord({
-    text,
-    hint,
-    language,
-    revealed,
-    onReveal,
-}: {
-    text: string;
-    hint: string;
-    language: string;
-    revealed: boolean;
-    onReveal(): void;
-}) {
-    const { t, languageName } = useSentenceCopy();
-    const [open, setOpen] = useState(false);
-    const [shift, setShift] = useState({ x: 0, y: 0 });
-    const root = useRef<HTMLSpanElement>(null);
-    const panel = useRef<HTMLSpanElement>(null);
-    const trigger = useRef<HTMLButtonElement>(null);
-    const id = useId();
-    useEffect(() => {
-        if (!open) return;
-        const pointer = (event: PointerEvent) => {
-            if (!root.current?.contains(event.target as Node)) setOpen(false);
-        };
-        const position = () => {
-            const rect = panel.current?.getBoundingClientRect();
-            if (rect)
-                setShift((previous) => ({
-                    x:
-                        previous.x +
-                        Math.max(0, 12 - rect.left) -
-                        Math.max(0, rect.right - window.innerWidth + 12),
-                    y:
-                        previous.y +
-                        Math.max(0, 12 - rect.top) -
-                        Math.max(0, rect.bottom - window.innerHeight + 12),
-                }));
-        };
-        position();
-        document.addEventListener('pointerdown', pointer);
-        window.addEventListener('resize', position);
-        window.addEventListener('scroll', position, true);
-        return () => {
-            document.removeEventListener('pointerdown', pointer);
-            window.removeEventListener('resize', position);
-            window.removeEventListener('scroll', position, true);
-        };
-    }, [open]);
-    return (
-        <span
-            ref={root}
-            className='relative inline'
-            onKeyDown={(event) => {
-                if (event.key === 'Escape' && open) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setOpen(false);
-                    trigger.current?.focus();
-                }
-            }}
-        >
-            <button
-                ref={trigger}
-                type='button'
-                aria-label={`${text}: ${t('show hint')}`}
-                aria-expanded={open}
-                aria-controls={open ? id : undefined}
-                onClick={() => {
-                    setShift({ x: 0, y: 0 });
-                    if (!open) onReveal();
-                    setOpen(!open);
-                }}
-                className={`rounded-sm underline decoration-primary-default decoration-2 underline-offset-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-border-focus ${revealed ? 'bg-primary-subtle decoration-solid' : 'decoration-dotted'}`}
-            >
-                {text}
-            </button>
-            {open ? (
-                <span
-                    ref={panel}
-                    id={id}
-                    role='dialog'
-                    aria-label={`${t('Hint')}: ${text}`}
-                    style={{
-                        transform: `translate(${shift.x}px, ${shift.y}px)`,
-                    }}
-                    className='absolute start-0 top-full z-30 mt-2 block w-64 max-w-[calc(100vw-24px)] rounded-xl border border-border-default bg-background-elevated p-3 text-start shadow-lg'
-                >
-                    <span className='block text-xs font-normal text-text-secondary'>
-                        {t('Hint')} · {languageName(language)}
-                    </span>
-                    <span
-                        className='mt-1 block text-base font-semibold'
-                        lang={language}
-                        dir={languageDirection(language)}
-                    >
-                        {hint}
-                    </span>
-                    <span className='mt-1 block text-xs font-normal text-text-secondary'>
-                        {t(
-                            'Use the matching dictionary word. Change its form when needed.',
-                        )}
-                    </span>
-                </span>
-            ) : null}
-        </span>
-    );
-}
+export { SentenceWithHints } from '../sentence-hints/sentence-hints';
 
 export function segmentAnswer(
     answer: string,
@@ -252,8 +87,15 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
         >
             <div className='flex flex-wrap items-center gap-3'>
                 <span
-                    className={`rounded-xl border-2 px-3 py-1.5 text-xl font-semibold ${result.percentage >= 80 ? 'border-success-default text-success-default' : 'border-warning-default text-warning-default'}`}
+                    className={`inline-flex items-center gap-2 rounded-xl border-2 px-3 py-1.5 text-xl font-semibold tabular-nums ${result.percentage >= 80 ? 'border-success-default text-success-default' : result.rating === 'not-bad' ? 'border-warning-default text-warning-default' : 'border-border-strong text-text-secondary'}`}
                 >
+                    {result.percentage >= 80 ? (
+                        <CheckCircle2 aria-hidden className='h-5 w-5' />
+                    ) : result.rating === 'not-bad' ? (
+                        <CircleDashed aria-hidden className='h-5 w-5' />
+                    ) : (
+                        <Repeat aria-hidden className='h-5 w-5' />
+                    )}
                     {result.percentage}%
                 </span>
                 <div>
@@ -274,7 +116,7 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
                 ) : null}
             </div>
             <p
-                className='mt-3 text-sm'
+                className='mt-3 text-sm leading-relaxed text-text-primary'
                 lang={attempt.explanationLanguage}
                 dir={languageDirection(attempt.explanationLanguage)}
             >
@@ -295,10 +137,10 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
                                 key={issue.id}
                                 className='flex gap-2 rounded-lg border border-border-default p-2.5 text-sm'
                             >
-                                <span className='shrink-0 font-semibold'>
+                                <span className='inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-background-subtle text-xs font-semibold text-text-primary'>
                                     {index + 1}
                                 </span>
-                                <div>
+                                <div className='min-w-0 break-words'>
                                     <Badge size='sm'>{t(issue.kind)}</Badge>
                                     {issue.span ? (
                                         <p

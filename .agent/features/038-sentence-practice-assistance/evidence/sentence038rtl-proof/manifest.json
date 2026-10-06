@@ -1,0 +1,30 @@
+{
+  "run": "sentence038rtl-proof",
+  "result": "1 passed (11.3s); full RTL/Japanese journey",
+  "captures": [
+    {
+      "file": "sentence-rtl-japanese-200-percent-viewport-simulation.png",
+      "sha256": "5bf4bd18b3d216ce0e904bef86ca38ac3e56592ff246c3cd390be1be4c2a45e1"
+    },
+    {
+      "file": "sentence-compact-rtl-inline-history.png",
+      "sha256": "cbb5cf5b412a208e512781fcaab37ae12d03efa41e3d3d52073b0038daed96f7"
+    },
+    {
+      "file": "sentence-keyboard-viewport-simulation.png",
+      "sha256": "85c9333369487af7a2ffb7da01d301ba908011e852286965adcece1a9ac48eca"
+    },
+    {
+      "file": "sentence-keyboard-viewport-simulation-4108c6c44ff8ab51833475bdf4a9c620a424c71a.png",
+      "sha256": "85c9333369487af7a2ffb7da01d301ba908011e852286965adcece1a9ac48eca"
+    },
+    {
+      "file": "sentence-rtl-japanese-200-percent-viewport-simulation-1a805e1a9b95efa798bf80700ea5136faf083223.png",
+      "sha256": "5bf4bd18b3d216ce0e904bef86ca38ac3e56592ff246c3cd390be1be4c2a45e1"
+    },
+    {
+      "file": "sentence-compact-rtl-inline-history-8133295217692ae6b96cce23c5a8887b52d18d0d.png",
+      "sha256": "cbb5cf5b412a208e512781fcaab37ae12d03efa41e3d3d52073b0038daed96f7"
+    }
+  ]
+}

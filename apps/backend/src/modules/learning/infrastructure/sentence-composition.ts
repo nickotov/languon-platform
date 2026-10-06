@@ -15,6 +15,7 @@ import type { SentenceWorkerServiceDependencies } from '../application/sentence-
 export interface SentenceCompositionDependencies extends LearningCompositionDependencies {
     textAiPolicy?: TextAiAvailabilityPolicy;
     admission?: {
+        generationFormat?: 'sentence-generation:v1' | 'sentence-generation:v2';
         defaultMaxAttempts?: number;
         globalQueueLimit?: number;
         userQueueLimit?: number;

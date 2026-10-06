@@ -1,0 +1,11 @@
+{
+  "finalEvidence": false,
+  "passed": [
+    "generationcancellation"
+  ],
+  "failed": [
+    "ownerreader",
+    "RTL"
+  ],
+  "cause": "Both failures used stale Compare reference selectors compiled before root changed label to Compare with reference. Production source was edited during this run. Rerun required."
+}

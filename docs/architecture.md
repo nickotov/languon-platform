@@ -202,10 +202,25 @@ entries; full copied-candidate provenance drives strict derived-content erasure.
 Dictionary and sentence work share credit settlement, a capacity lock, numerical
 queue/running/provider accounting and the existing bounded root worker slots.
 Exact namespaced capability evidence and immutable job guards protect mixed-worker
-rollout. API admission defaults off; workers still drain existing work. Restricted
+rollout. API admission defaults on in development/test and off in staging/production,
+with an explicit environment override; workers still drain existing work. Restricted
 roles and actor/owned-dictionary purge participants preserve private-data and
 numerical-accounting boundaries. See [ADR-0027](adr/0027-typed-sentence-work-and-shared-ai-accounting.md)
 and the [backend flow](user-flows/sentence-practice-backend.md).
+
+The [assistance extension](sentence-practice-assistance-implementation-plan.md)
+adds `sentence-generation:v2` with contextual vocabulary hints stored in the
+existing public exercise JSON. Helper associations carry no dictionary entry
+identity and do not participate in required-target coverage or AI assessment.
+Exact legacy v1 content remains readable and queued v1 work remains drainable.
+Database checks pair job format with input policy and public exercise policy with
+its relational version. Worker claims respect the configured processable-format
+allowlist. Admission defaults to v1 for the expand stage; v2 activation requires
+compatible clients, capable rollback-floor workers and an active compatible
+immutable model configuration revision. Planned normalized free comparison and
+exact session replay use the existing authorized reference action and client
+session state; they add no backend score or new endpoint. Their UI is pending the
+versioned design handoff.
 
 ## Flashcard learning backend
 

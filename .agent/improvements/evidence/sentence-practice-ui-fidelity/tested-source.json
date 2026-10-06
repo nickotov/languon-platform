@@ -1,0 +1,15 @@
+{
+    "base": "e8886612981bcc9e4bd3cd4e73a35e2c4ccd435a",
+    "baseline": "/tmp/languon-sentence-ui-baseline-20261006",
+    "files": {
+        "apps/web/src/fsd/features/sentence-training/ui/sentence-content/sentence-content.tsx": "0fe7d1005ea993e5f6243142551b52dde4b8c6608282fd3337964508157a57f7",
+        "apps/web/src/fsd/features/sentence-training/ui/sentence-copy.ts": "a3e1be20114c4a3bae9b432944d9814dd894f75e8ed4cf132487c23271da8be0",
+        "apps/web/src/fsd/features/sentence-training/ui/sentence-hints/sentence-hints.tsx": "845cfdea595a09daeaa91425a75405b8a19ca1fdb36cf7e5578367efabb1e618",
+        "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-session/sentence-practice-session.tsx": "3505d7b6108420931c20b911ea7722702800b2ae1a7122e273013cdc5da9ffe9",
+        "apps/web/src/fsd/features/sentence-training/ui/sentence-reference-comparison/sentence-reference-comparison.tsx": "384b0386e4dbf3a5bfd28ecf9de95028722612de18282e5452eb991791485911",
+        "apps/web/tests/e2e/sentence-practice.journeys.spec.ts": "e5ad5a87a726c3c9037c69b09b6b4b70442f5f6bc1112a567173a5a19b37e640",
+        "apps/web/tests/sentence-training-ui.test.tsx": "f7e0ab94912305877a1a57fa574acca0cc286639e2b7f10251955e9634099075",
+        "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-header/sentence-practice-header.tsx": "74cacc57fb5e2fa2465f66ebe0e31cc70da22058d3d78fcc71d7cecfe5144a66",
+        "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-footer/sentence-practice-footer.tsx": "0aa56bdb28e000fe89f1ba40742d819564ae88cdbde66d50379c82886b959d67"
+    }
+}

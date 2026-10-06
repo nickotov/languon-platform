@@ -17,27 +17,20 @@ export function SentenceHistory({
     controller: c,
     open,
     onClose,
+    inline = false,
 }: {
     controller: SentenceHistoryController;
     open: boolean;
     onClose(): void;
+    inline?: boolean;
 }) {
     const { t, languageName } = useSentenceCopy();
     const compact = useCompactPresentation();
     const [tab, setTab] = useState<'ai' | 'manual'>('ai');
     const { formatDate } = useI18n();
     const rows = tab === 'ai' ? c.attempts : c.reviews;
-    return (
-        <Dialog
-            variant={compact ? 'sheet' : 'dialog'}
-            className={
-                compact ? '!mb-0 !w-full !max-w-none !rounded-b-none' : ''
-            }
-            open={open}
-            onClose={onClose}
-            size='lg'
-            title={t('My practice history')}
-        >
+    const content = (
+        <>
             <div className='space-y-4'>
                 <div
                     className='flex gap-2'
@@ -157,6 +150,30 @@ export function SentenceHistory({
                     </Button>
                 ) : null}
             </div>
+        </>
+    );
+    if (!open) return null;
+    if (inline)
+        return (
+            <section className='mx-auto max-w-3xl px-4 py-5'>
+                <h3 className='mb-4 text-lg font-semibold'>
+                    {t('My practice history')}
+                </h3>
+                {content}
+            </section>
+        );
+    return (
+        <Dialog
+            variant={compact ? 'sheet' : 'dialog'}
+            className={
+                compact ? '!mb-0 !w-full !max-w-none !rounded-b-none' : ''
+            }
+            open={open}
+            onClose={onClose}
+            size='lg'
+            title={t('My practice history')}
+        >
+            {content}
         </Dialog>
     );
 }

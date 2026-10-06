@@ -84,7 +84,7 @@ describe('sentence content', () => {
             exercise.sourceText,
         );
         const targets = screen.getAllByRole('button', {
-            name: 'book: show hint',
+            name: 'book: show hint · Required word',
         });
         fireEvent.click(targets[0]!);
         expect(reveal).toHaveBeenLastCalledWith('hint-1');

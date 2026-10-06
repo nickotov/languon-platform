@@ -147,6 +147,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
     const [preferencesOpen, setPreferencesOpen] = useState(false);
     const [preferenceDirty, setPreferenceDirty] = useState(false);
     const [confirmPreferenceClose, setConfirmPreferenceClose] = useState(false);
+    const afterPreferenceClose = useRef<(() => void) | null>(null);
     const [accessLost, setAccessLost] = useState(false);
     const session = useSentenceSession({ api, identity: props.identity });
     const setup = useSentenceSetup({
@@ -247,12 +248,26 @@ function TrainingComposition(props: TrainingLauncherProps) {
         setRunning(true);
         void session.start(configuration);
     }
-    function closePreferences() {
+    function closePreferences(afterClose?: () => void) {
         if (preferenceDirty) {
+            afterPreferenceClose.current = afterClose ?? null;
             setConfirmPreferenceClose(true);
             return;
         }
         setPreferencesOpen(false);
+        afterClose?.();
+    }
+    function keepPreferenceChoice() {
+        afterPreferenceClose.current = null;
+        setConfirmPreferenceClose(false);
+    }
+    function discardPreferenceChoice() {
+        setConfirmPreferenceClose(false);
+        setPreferencesOpen(false);
+        setPreferenceDirty(false);
+        const afterClose = afterPreferenceClose.current;
+        afterPreferenceClose.current = null;
+        afterClose?.();
     }
     const items: MenuItem[] = [
         {
@@ -292,42 +307,35 @@ function TrainingComposition(props: TrainingLauncherProps) {
     ];
     const preferencesContent = (
         <>
-            <Dialog
-                open={preferencesOpen}
-                onClose={closePreferences}
-                size='lg'
-                title={copy.preferences}
-                closeLabel={copy.close}
-                dismissOnOverlayClick={false}
-            >
-                {preferencesOpen && (
+            {preferencesOpen && (
+                <section
+                    className='mx-auto w-full max-w-3xl space-y-5 px-4 py-5'
+                    aria-label={copy.preferences}
+                >
+                    <h3 className='text-lg font-semibold'>
+                        {copy.preferences}
+                    </h3>
                     <ModelPreferenceSection
                         requestWithSession={props.requestWithSession}
                         onDirtyChange={setPreferenceDirty}
                         taskInProgress={session.busy}
                     />
-                )}
-            </Dialog>
+                </section>
+            )}
             <Dialog
                 open={confirmPreferenceClose}
-                onClose={() => setConfirmPreferenceClose(false)}
+                onClose={keepPreferenceChoice}
                 size='sm'
                 title={copy.dirty}
                 footer={
                     <>
                         <Button
                             variant='secondary'
-                            onClick={() => setConfirmPreferenceClose(false)}
+                            onClick={keepPreferenceChoice}
                         >
                             {copy.keep}
                         </Button>
-                        <Button
-                            onClick={() => {
-                                setConfirmPreferenceClose(false);
-                                setPreferencesOpen(false);
-                                setPreferenceDirty(false);
-                            }}
-                        >
+                        <Button onClick={discardPreferenceChoice}>
                             {copy.discard}
                         </Button>
                     </>
@@ -377,13 +385,15 @@ function TrainingComposition(props: TrainingLauncherProps) {
                     onClose={closePractice}
                     onOpenPreferences={() => setPreferencesOpen(true)}
                     preferencesContent={preferencesContent}
-                    preferencesOpen={
-                        preferencesOpen || confirmPreferenceClose || historyOpen
-                    }
+                    preferencesOpen={preferencesOpen}
+                    onPreferencesClose={closePreferences}
                     onOpenHistory={() => setHistoryOpen(true)}
+                    historyOpen={historyOpen}
+                    onHistoryClose={() => setHistoryOpen(false)}
                     historyContent={
                         <SentenceHistory
                             controller={history}
+                            inline
                             open={historyOpen}
                             onClose={() => setHistoryOpen(false)}
                         />

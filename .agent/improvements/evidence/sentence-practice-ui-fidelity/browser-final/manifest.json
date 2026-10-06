@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-06",
+  "commands": [
+    "AUTH_E2E_* owned disposable configuration pnpm --filter @languon/web test:e2e tests/e2e/sentence-practice.journeys.spec.ts --grep checks-owner-practice|finishes-a-five-word|renders-RTL",
+    "same owned configuration --grep finishes-a-five-word"
+  ],
+  "runs": [
+    {
+      "run": "sentence-ui-verify-final-20261006",
+      "passed": [
+        "owner/reader20.9s",
+        "RTL/Japanese compact reduced-motion"
+      ],
+      "failed": [
+        "finite round300s: terminalupdatedAt older than runningupdatedAt, unchanged controller ignored it"
+      ]
+    },
+    {
+      "run": "sentence-ui-verify-finite-20261006",
+      "passed": [
+        "finite round1.3m including results/savedreentry/newexamples/exactreplay"
+      ],
+      "sourceChangesBetweenRuns": false
+    }
+  ],
+  "infrastructure": {
+    "postgres": "127.0.0.1:55493/languon_ui_verify_e2e",
+    "redis": "127.0.0.1:56493/15",
+    "web": "localhost:3363",
+    "backend": "localhost:4063",
+    "models": "fake deterministic; no paid calls"
+  },
+  "limitation": "Three affected journeys passed across final run plus exact isolated rerun; first combined run exposed pre-existing timestamp inversion in job completion. No practice behavior or tests were weakened.",
+  "hashes": {
+    "finite-round-saved-complete.png": "781909d4d794f416976186881a0f45015b46da4f33e42a95008e5c7bb1172e07",
+    "finite-round-exact-results.png": "8a4d972dcd96c684120a36b005ebaa103e6532f8fe2b6e9b7575ef55db9bb4e8",
+    "sentence-over-limit-draft.png": "3b3b663c916dfd0d2d3133202a6096a5686c2ac4f6352951da35b057148b214c",
+    "sentence-inline-ai-preferences-mobile.png": "993ad49c32443680af57b8841129023df5c3a49bab17b8006637ffbda3f96c52",
+    "finite-round-new-complete.png": "ff73a97c1e14915c5c0ee517c5c7671b2d3a2e527d3687b3de1de766a4b26553",
+    "sentence-contextual-hover-hint.png": "3575a3abd5dd9b370176367c316ca5af0ebddd9096a914ad54903087a76c332f",
+    "sentence-mobile-history.png": "d1ed1d61a7d0cf94cb97b7f1446c7db22dfb757146a31d3f96720c7c7b2a93ff",
+    "sentence-inline-ai-preferences.png": "a648fb7fd95939730cdeccd94900e3c3b08049219550e2b80c20c9e98e868d1e",
+    "finite-round-failure-test-failed-1.png": "37ed308d34e5a12adb3ec89fd87c6d00be278ca5da1c331733a02f02f2eddc22",
+    "sentence-access-loss-no-cached-content.png": "cbadb5b5839d06ff7bd898545ef1ede7a90b64495ac0a40ee3e7add70757056f",
+    "sentence-dialog-draft-dark.png": "300595f4b96c893fda124af1c56f40a1fc0119a2394d11914cdb644652c8a4ca",
+    "sentence-batch-guidance.png": "752a2c456e72db6973391d568b684eaa2ce23e07407689d11ecc7866e1a5818c",
+    "finite-round-new-results.png": "c0e271ccfb2a8f1800d8520a75180075a027d6729bb87a114c112e2f1301ade7",
+    "finite-round-first-results.png": "777bc9c31c06c59e55b024b569e04ecd32830383b5615278a0c542fc1a7d2122",
+    "finite-round-saved-results.png": "c0e271ccfb2a8f1800d8520a75180075a027d6729bb87a114c112e2f1301ade7",
+    "sentence-failed-check-close-guard.png": "c4dc8b7590730433d329483efdaab9b6b62aba0bbd4187934edd9ed97341c192",
+    "finite-round-batch-setup.png": "2cdabf6676d6c7bd8346e6773189734a4d6cffd2a8f3480b72bd98e84358334a",
+    "finite-round-first-complete.png": "4385d36d1b27f53d0db82e85a923c5dfec269070e738393673efc47a7d5b9bac",
+    "sentence-rtl-japanese-200-percent-viewport-simulation.png": "d841ced05de8ab92113d04f928fca6c988aacdd0fbcf16143bc5db1efc1519b2",
+    "sentence-setup.png": "6f8217a4566975ca5e4534729aa69d20ec0d0dee7425b96ab70fe7558c7875ee",
+    "finite-round-failure-error-context.md": "be5679540bd3fb79b29f37ca0a795b7172402e74714d2c6bc0c93465adae2cbd",
+    "sentence-compact-rtl-inline-history.png": "dceab40b45df03c142a3f2d252fd505c5eb7449e5c459a8299cd863fed0a692e",
+    "finite-round-exact-complete.png": "4d2e4482b9e2902734ba8e8f7e868c580c62281929b5246fec9385e235be73b4",
+    "sentence-fullscreen-feedback-dark.png": "f5f31fa2e61547ab2867685fe69662d835f504b6548ee48b75778463ac720831",
+    "sentence-zero-credit-check-denied.png": "c21f5ce37f627257041fc235cd4ccbad7829116c0f8ada3c2c191e53ba289acd",
+    "sentence-keyboard-viewport-simulation.png": "9a7bb5c2c815982b2e1ca450927173f5add7af0a222b65611dc3b7f29e3964b7",
+    "sentence-mobile-reference.png": "bf9209d11f541d8ab34df6ab18f7f216341640287d7a3970a3d6602b2a34b20b",
+    "sentence-check-pending-dark.png": "a384e473489b7109706c1dd355d3f7ab9953181c28a5a1ddd64f4c0d9242133c",
+    "finite-round-failure-trace.zip": "ba0d93d448ca27c659db299de18efb23f9f3a76e8a8b9859b17026b5bd4a66f5"
+  }
+}

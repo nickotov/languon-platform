@@ -1,0 +1,15 @@
+{
+  "browser_scenario": "owner-reader-reference-practice",
+  "browser_runner": "Playwright Chromium",
+  "browser_result": "1 passed",
+  "browser_duration_seconds": 24.3,
+  "backend_scenario": "generate-check-reuse-private-and-shared",
+  "backend_runner": "pnpm test:e2e:sentence-practice-backend",
+  "backend_result": "1 passed",
+  "backend_duration_seconds": 5.00,
+  "fixture": "deterministic local sentence provider; disposable loopback PostgreSQL and Redis",
+  "browser_command": "pnpm --filter @languon/web exec playwright test tests/e2e/sentence-practice.journeys.spec.ts --workers=1 --grep owner.*reader --reporter=list",
+  "backend_command": "pnpm test:e2e:sentence-practice-backend",
+  "coverage": "successful owner AI check and rendered canonical feedback; browser console, failed requests, and 5xx assertions",
+  "limitations": "The deterministic provider returns a canonical draft. Private provider wiring and canonicalization are covered by the 71 focused deterministic regressions; these runs do not assess paid-provider linguistic behavior."
+}

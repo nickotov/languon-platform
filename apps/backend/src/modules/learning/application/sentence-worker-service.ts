@@ -2,10 +2,17 @@ import type {
     SentenceTokenUsage,
     SentenceAiProvider,
 } from './ports/sentence-ai-provider';
-import type { SentenceWorkerStore } from './ports/sentence-worker-store';
+import { SentenceProviderInvalidModelOutputError } from './ports/sentence-ai-provider';
+import type {
+    SentenceWorkerStore,
+    SentenceJobFormat,
+} from './ports/sentence-worker-store';
 import { validateSentenceGeneration } from '../domain/sentence-content';
 import { validateSentenceCheck } from '../domain/sentence-feedback';
-import { SentenceInvalidModelOutputError } from '../domain/sentence-errors';
+import {
+    SentenceInvalidModelOutputError,
+    type SentenceModelOutputReason,
+} from '../domain/sentence-errors';
 export interface SentenceWorkerServiceDependencies {
     store: SentenceWorkerStore;
     provider: SentenceAiProvider;
@@ -18,6 +25,11 @@ export interface SentenceWorkerServiceDependencies {
     learnerConcurrency: number;
     maxAttempts: number;
     retryDelayMs: number;
+    supportedFormats?: readonly SentenceJobFormat[];
+    onInvalidModelOutput?: (event: {
+        kind: 'sentence-generation' | 'sentence-check';
+        reason: SentenceModelOutputReason;
+    }) => void;
 }
 /** Executes exactly one fenced job; runtime owns the shared bounded slot pool. */
 export class SentenceWorkerService {
@@ -31,8 +43,9 @@ export class SentenceWorkerService {
         const job = await d.store.claimNext(
             {
                 workerId: d.workerId,
-                supportedFormats: [
+                supportedFormats: d.supportedFormats ?? [
                     'sentence-generation:v1',
+                    'sentence-generation:v2',
                     'sentence-check:v1',
                 ],
                 learningExecutionRevision: 1,
@@ -45,6 +58,20 @@ export class SentenceWorkerService {
             context(),
         );
         if (!job) return false;
+        if (
+            job.kind === 'sentence-generation' &&
+            ((job.format === 'sentence-generation:v1' &&
+                job.input.generationPolicyVersion !== 1) ||
+                (job.format === 'sentence-generation:v2' &&
+                    job.input.generationPolicyVersion !== 2))
+        ) {
+            await d.store.fail(
+                job.lease,
+                { code: 'invalid_model_output', retryAt: null },
+                context(),
+            );
+            return true;
+        }
         const controller = new AbortController();
         const combined = AbortSignal.any([
             signal,
@@ -125,6 +152,22 @@ export class SentenceWorkerService {
         } catch (error) {
             // Shutdown leaves the lease recoverable. A cancellation/lost fence cannot publish.
             if (!signal.aborted) {
+                if (error instanceof SentenceInvalidModelOutputError) {
+                    if (
+                        error instanceof SentenceProviderInvalidModelOutputError
+                    )
+                        usage ??= error.usage;
+                    try {
+                        void Promise.resolve(
+                            d.onInvalidModelOutput?.({
+                                kind: job.kind,
+                                reason: error.reason,
+                            }),
+                        ).catch(() => undefined);
+                    } catch {
+                        // Telemetry must never interrupt fenced failure/usage settlement.
+                    }
+                }
                 const code =
                     error instanceof SentenceInvalidModelOutputError
                         ? 'invalid_model_output'
@@ -137,7 +180,8 @@ export class SentenceWorkerService {
                         code,
                         ...(usage ? { usage } : {}),
                         retryAt:
-                            code === 'invalid_model_output' ||
+                            (code === 'invalid_model_output' &&
+                                job.kind !== 'sentence-generation') ||
                             controller.signal.aborted ||
                             job.lease.attempt >= d.maxAttempts
                                 ? null

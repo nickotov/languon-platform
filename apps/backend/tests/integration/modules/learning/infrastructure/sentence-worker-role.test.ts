@@ -79,6 +79,7 @@ run('restricted sentence worker role', () => {
                 workerId: 'sentence-persistence-fixture',
                 supportedFormats: [
                     'sentence-generation:v1',
+                    'sentence-generation:v2',
                     'sentence-check:v1',
                 ],
                 learningExecutionRevision: 1,
@@ -234,7 +235,11 @@ run('restricted sentence worker role', () => {
             perCallMaxInputTokens: model.perCallMaxInputTokens,
             perCallMaxOutputTokens: model.perCallMaxOutputTokens,
             providerId: model.providerId,
-            supportedFormats: ['sentence-generation:v1', 'sentence-check:v1'],
+            supportedFormats: [
+                'sentence-generation:v1',
+                'sentence-generation:v2',
+                'sentence-check:v1',
+            ],
         };
         await db.insert(dictionaryAiConfigurationRevisionsTable).values({
             id: revisionId,

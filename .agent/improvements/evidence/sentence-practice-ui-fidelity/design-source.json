@@ -1,0 +1,77 @@
+{
+  "provider_artifact": "d9db6025-b8b7-4faf-87c2-65d51b0f9814",
+  "retrieved": "2026-10-06",
+  "comparison": "All 14 inspected active source files equal preserved v8 after trailing whitespace removal; no visual revision",
+  "files": [
+    {
+      "file": "components/practice/AiResultPanel.tsx",
+      "content_hash": "6e8e183f61808b904d4dfdea30bf32b8c15a5beb2ef7aa37f1440349d0585432",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/AiSettingsView.tsx",
+      "content_hash": "3be5df9cd6f0da14726bee6248c2a8bb7dca8de09e55dc13b24ce059cb81b4ca",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/DraftField.tsx",
+      "content_hash": "14e127ffacd94b467c0ed7814af96a9da32c112230dd8c7865a6b3a3e888e5b7",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/HintLegend.tsx",
+      "content_hash": "18483f8ad36749b3e1c389561f38359208e5efbae1d346d89c94d26245a715bc",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/HintedSentence.tsx",
+      "content_hash": "96742155585405e9d3cf75f921c7a73d890fac6da5022d1e047d8e050ac9241d",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/HistoryView.tsx",
+      "content_hash": "8001c85e5bf69f229534cb50854a9598df93dbb31026ae81443ed78396cd9cc2",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/PracticeActions.tsx",
+      "content_hash": "ec143345c2175c40fcd1506000928f4607fb36ba7a7284495602c52fd60ae0db",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/PracticeBody.tsx",
+      "content_hash": "18a96e75e2f121d248bb3a121a43874d1fbe6b6b49aca85fb7ee5ffe2c6077f0",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/PracticeSetup.tsx",
+      "content_hash": "ed7609b089ecfcee19b78f5027a114f7e6abb86e2fa0307fdc9b82e896589411",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/PracticeShell.tsx",
+      "content_hash": "cc7dedfad97ff4998c86aa0dc81f5d627ed82f3d9b04ce778e98aed38ab30cbd",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/PracticeSurface.tsx",
+      "content_hash": "6560c65487eb52bda53bff001d00db0c2558cbdf8d33d40d4cf0af82995fb0f3",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/ReferenceCompare.tsx",
+      "content_hash": "0c1a7f5b95bed4866c38b47396e82f0fd6e1236f3fbd3649754be4fb2e97cc37",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "components/practice/SessionResults.tsx",
+      "content_hash": "51215f2ea505b644b43fbe57d2523e5c86775348917d874e842a348c3ff00e31",
+      "difference": "trailing whitespace only vs v001"
+    },
+    {
+      "file": "index.css",
+      "content_hash": "5aec031a8c9c862dde8e07a410363a705e5d925476efc0e743d6609431654974",
+      "difference": "trailing whitespace only vs v001"
+    }
+  ]
+}

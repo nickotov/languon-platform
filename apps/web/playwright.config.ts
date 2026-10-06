@@ -149,6 +149,9 @@ export default defineConfig({
                 LEARNING_SENTENCES_ENABLED: sentenceServicesEnabled
                     ? 'true'
                     : 'false',
+                LEARNING_SENTENCE_GENERATION_FORMAT: sentenceServicesEnabled
+                    ? 'sentence-generation:v2'
+                    : 'sentence-generation:v1',
                 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED:
                     sentenceServicesEnabled ? 'true' : 'false',
                 DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',

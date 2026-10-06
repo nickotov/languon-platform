@@ -1,0 +1,2 @@
+ALTER TABLE "sentence_ai_jobs" DROP CONSTRAINT "sentence_ai_jobs_kind_format";--> statement-breakpoint
+ALTER TABLE "sentence_ai_jobs" ADD CONSTRAINT "sentence_ai_jobs_kind_format" CHECK (("sentence_ai_jobs"."job_kind"='sentence-generation' and "sentence_ai_jobs"."format" in ('sentence-generation:v1','sentence-generation:v2')) or ("sentence_ai_jobs"."job_kind"='sentence-check' and "sentence_ai_jobs"."format"='sentence-check:v1'));

@@ -1,4 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import {
+    sentenceLanguageMatches,
+    sentenceLanguageScript,
+    sentenceLetterSqlRange,
+} from '../../../../src/modules/learning/domain/sentence-language';
 import { selectSentenceCandidates } from '../../../../src/modules/learning/domain/sentence-selection';
 import {
     normalizeSentenceHint,
@@ -6,6 +11,7 @@ import {
 } from '../../../../src/modules/learning/domain/sentence-content';
 import {
     isSentenceSpanValid,
+    resolveSentenceIssueSpan,
     sentenceRating,
     validateSentenceCheck,
 } from '../../../../src/modules/learning/domain/sentence-feedback';
@@ -70,6 +76,147 @@ const feedback: SentenceCheckDraft = {
     explanation: 'Correct.',
 };
 describe('sentence domain', () => {
+    it('rejects French source text for Russian-to-French generation and accepts Russian morphology', () => {
+        const input = {
+            ...generation,
+            sourceLanguage: 'ru' as const,
+            targetLanguage: 'fr' as const,
+            candidates: [{ ...entry, sourceText: 'работа', targetText: 'taf' }],
+        };
+        const wrong = {
+            sourceText: "J'ai du taf.",
+            referenceTranslation: 'У меня работа.',
+            segments: [
+                { text: "J'ai du ", entryId: null },
+                { text: 'taf', entryId: a },
+                { text: '.', entryId: null },
+            ],
+            targets: [
+                {
+                    entryId: a,
+                    normalizedHint: 'taf',
+                    hintForm: 'lemma' as const,
+                },
+            ],
+        };
+        expect(() => validateSentenceGeneration(input, wrong)).toThrow(
+            'Sentence languages',
+        );
+        const correct = {
+            ...wrong,
+            sourceText: 'Сегодня у меня много работы.',
+            referenceTranslation: "J'ai beaucoup de taf aujourd'hui.",
+            segments: [
+                { text: 'Сегодня у меня много ', entryId: null },
+                { text: 'работы', entryId: a },
+                { text: '.', entryId: null },
+            ],
+        };
+        expect(validateSentenceGeneration(input, correct).sourceText).toBe(
+            correct.sourceText,
+        );
+        expect(() =>
+            validateSentenceGeneration(input, {
+                ...correct,
+                referenceTranslation: 'Сегодня у меня много работы.',
+            }),
+        ).toThrow('Sentence languages');
+    });
+    it('accepts normal foreign names and loans without accepting a reversed sentence', () => {
+        expect(
+            sentenceLanguageMatches('Сегодня Pierre читает книгу.', 'ru', 'fr'),
+        ).toBe(true);
+        expect(
+            sentenceLanguageMatches(
+                'Je travaille chez Яндекс aujourd’hui.',
+                'fr',
+                'ru',
+            ),
+        ).toBe(true);
+        expect(
+            sentenceLanguageMatches(
+                'Сегодня используем Wi-Fi дома.',
+                'ru',
+                'fr',
+            ),
+        ).toBe(true);
+        expect(sentenceLanguageMatches('Bonjour monde, да.', 'ru', 'fr')).toBe(
+            false,
+        );
+        expect(
+            sentenceLanguageMatches('Сегодня много работы, oui.', 'fr', 'ru'),
+        ).toBe(false);
+        expect(sentenceLanguageMatches('123 + 456 = 579 😀', 'ru', 'fr')).toBe(
+            true,
+        );
+        expect(sentenceLanguageMatches('123 + 456 = 579 😀', 'fr', 'ru')).toBe(
+            true,
+        );
+        // Shared script cannot establish semantic language identity.
+        expect(sentenceLanguageMatches('This is English.', 'fr', 'en')).toBe(
+            true,
+        );
+    });
+    it('uses letter-only SQL ranges matching runtime script checks beyond historical blocks', () => {
+        for (const [text, language, otherLanguage, matches] of [
+            ['Hello ١٢٣٤٥٦', 'ar', 'en', false],
+            ['مرحبا ١٢٣٤٥٦', 'ar', 'en', true],
+            ['Āẞ ẮḀ', 'fr', 'ru', true],
+            ['Hello १२३४५६', 'hi', 'en', false],
+            ['नमस्ते १२३४५६', 'hi', 'en', true],
+            ['Hello ְֱֲֳִֵֶַָ', 'he', 'en', false],
+            ['שלום ְֱֲֳִֵֶַָ', 'he', 'en', true],
+        ] as const) {
+            expect(sentenceLanguageMatches(text, language, otherLanguage)).toBe(
+                matches,
+            );
+            const expected = sentenceLanguageScript(language)!;
+            const other = sentenceLanguageScript(otherLanguage)!;
+            const allLetters = new RegExp(
+                `[${sentenceLetterSqlRange()}]`,
+                'gu',
+            );
+            const expectedLetters = new RegExp(`[${expected.sqlRange}]`, 'gu');
+            const otherLetters = new RegExp(`[${other.sqlRange}]`, 'gu');
+            const expectedCount = [...text.matchAll(expectedLetters)].length;
+            const otherCount = [...text.matchAll(otherLetters)].length;
+            const sqlRangeMatch =
+                !allLetters.test(text) ||
+                (expectedCount > 0 && expectedCount >= otherCount);
+            expect(sqlRangeMatch).toBe(matches);
+        }
+        expect(
+            new RegExp(`[${sentenceLanguageScript('ar')!.sqlRange}]`, 'u').test(
+                '١',
+            ),
+        ).toBe(false);
+        expect(
+            new RegExp(`[${sentenceLanguageScript('hi')!.sqlRange}]`, 'u').test(
+                '१',
+            ),
+        ).toBe(false);
+        expect(
+            new RegExp(`[${sentenceLanguageScript('he')!.sqlRange}]`, 'u').test(
+                'ְ',
+            ),
+        ).toBe(false);
+    });
+    it('rejects English source reversal for additional distinct writing scripts', () => {
+        for (const [language, text] of [
+            ['th', 'วันนี้ฉันอ่านหนังสือ'],
+            ['hy', 'Ես այսօր գիրք եմ կարդում'],
+            ['ka', 'დღეს წიგნს ვკითხულობ'],
+            ['bn', 'আজ আমি বই পড়ি'],
+            ['am', 'ዛሬ መጽሐፍ አነባለሁ'],
+        ] as const) {
+            expect(sentenceLanguageScript(language)).not.toBeNull();
+            expect(
+                sentenceLanguageMatches('I read a book today.', language, 'en'),
+            ).toBe(false);
+            expect(sentenceLanguageMatches(text, language, 'en')).toBe(true);
+            expect(sentenceLanguageMatches(text, 'en', language)).toBe(false);
+        }
+    });
     it('prioritizes uncovered entries then least exposure without mutating inputs', () => {
         const entries = [
             { ...entry, entryId: a, exposureCount: 2, sortKey: 1n },
@@ -219,6 +366,10 @@ describe('sentence domain', () => {
                     },
                     {
                         ...content,
+                        referenceTranslation:
+                            language === 'ru'
+                                ? 'Мы делали и делаем.'
+                                : content.referenceTranslation,
                         targets: [
                             {
                                 entryId: a,
@@ -239,6 +390,7 @@ describe('sentence domain', () => {
                 },
                 {
                     ...content,
+                    referenceTranslation: '我们照顾家人。',
                     targets: [
                         {
                             entryId: a,
@@ -358,5 +510,65 @@ describe('sentence domain', () => {
                 issues: [{ ...issue, span: null }],
             }).issues[0]?.span,
         ).toBeNull();
+    });
+    it.each([
+        ['  café e\u0301 😀  ', 'café', { start: 2, end: 6, quote: 'café' }],
+        [
+            '  café e\u0301 😀  ',
+            'e\u0301',
+            { start: 7, end: 9, quote: 'e\u0301' },
+        ],
+        ['  café e\u0301 😀  ', '😀', { start: 10, end: 12, quote: '😀' }],
+        ['one one', 'one', null],
+        ['e\u0301 e', 'e', { start: 3, end: 4, quote: 'e' }],
+        ['e\u0301 e e', 'e', null],
+        ['aaa', 'aa', null],
+        ['e\u0301', 'e', null],
+        ['😀', '\ud83d', null],
+        ['👩‍💻', '👩', null],
+        ['👩‍💻', '👩‍💻', { start: 0, end: 5, quote: '👩‍💻' }],
+        ['é', 'e\u0301', null],
+        ['one', 'One', null],
+        ['abc', '', null],
+        ['abc', null, null],
+    ])(
+        'resolves only exact unique grapheme-aligned quotes in %j',
+        (answer, quote, span) => {
+            expect(resolveSentenceIssueSpan(answer, quote)).toEqual(span);
+        },
+    );
+    it('distinguishes target inventory, forged spans and immutable input rejection without changing score caps', () => {
+        for (const targets of [
+            [],
+            [...feedback.targets, ...feedback.targets],
+            [{ ...feedback.targets[0]!, entryId: c }],
+        ]) {
+            expect(() =>
+                validateSentenceCheck(check, { ...feedback, targets }),
+            ).toThrow(
+                expect.objectContaining({
+                    reason: 'target_assessments_invalid',
+                }),
+            );
+        }
+        expect(() =>
+            validateSentenceCheck({ ...check, answer: 'a\u0000' }, feedback),
+        ).toThrow(expect.objectContaining({ reason: 'input_invalid' }));
+        const issue = {
+            kind: 'grammar' as const,
+            severity: 'minor' as const,
+            span: { start: 2, end: 5, quote: 'wrong' },
+            explanation: 'Review.',
+            correction: null,
+        };
+        expect(() =>
+            validateSentenceCheck(check, { ...feedback, issues: [issue] }),
+        ).toThrow(expect.objectContaining({ reason: 'answer_span_invalid' }));
+        expect(
+            validateSentenceCheck(check, {
+                ...feedback,
+                issues: [{ ...issue, span: null }],
+            }).percentage,
+        ).toBe(99);
     });
 });

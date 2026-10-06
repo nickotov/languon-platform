@@ -151,6 +151,9 @@ const app = createApp({
         ...authentication.productDependencies,
         dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
         enabled: environment.LEARNING_SENTENCES_ENABLED,
+        admission: {
+            generationFormat: environment.LEARNING_SENTENCE_GENERATION_FORMAT,
+        },
         policy: authentication.options.policy,
     }).routes,
     administration,
