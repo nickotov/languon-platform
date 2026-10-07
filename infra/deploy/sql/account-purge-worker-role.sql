@@ -62,3 +62,29 @@ GRANT SELECT (actor_user_id, target_user_id), UPDATE (metadata, reason)
 GRANT SELECT (user_id, granted_by_user_id, revoked_by_user_id, revoked_at),
     UPDATE (grant_reason, revoke_reason, updated_at)
     ON TABLE admin_memberships TO :"account_purge_role";
+
+-- Preparation/library erasure reads opaque identities and manifests, never copied
+-- vocabulary entries, translations, answers, or administrative snapshot content.
+GRANT DELETE ON TABLE sentence_preparations, sentence_library_snapshots,
+    sentence_library_receipts, sentence_preparation_batches
+TO :"account_purge_role";
+GRANT SELECT (id, learner_id, dictionary_id, active_job_id) ON TABLE
+    sentence_preparations TO :"account_purge_role";
+GRANT UPDATE (state, pause_reason, active_job_id, updated_at) ON TABLE
+    sentence_preparations TO :"account_purge_role";
+GRANT SELECT (id, preparation_id, manifest) ON TABLE
+    sentence_preparation_batches TO :"account_purge_role";
+GRANT UPDATE (manifest) ON TABLE sentence_preparation_batches
+TO :"account_purge_role";
+GRANT SELECT (actor_id, learner_id, dictionary_id, items) ON TABLE
+    sentence_library_snapshots TO :"account_purge_role";
+GRANT SELECT (actor_id, learner_id, dictionary_id) ON TABLE
+    sentence_library_receipts TO :"account_purge_role";
+-- Users are soft-purged, so personal visibility requires explicit erasure.
+GRANT SELECT (learner_id) ON TABLE sentence_personal_visibility
+TO :"account_purge_role";
+GRANT DELETE ON TABLE sentence_personal_visibility TO :"account_purge_role";
+GRANT SELECT (actor_id) ON TABLE sentence_personal_visibility,
+    sentence_global_visibility TO :"account_purge_role";
+GRANT UPDATE (actor_id) ON TABLE sentence_personal_visibility,
+    sentence_global_visibility TO :"account_purge_role";

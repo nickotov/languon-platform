@@ -1,0 +1,25 @@
+.drawer {
+    margin: 0;
+    inset-inline-start: auto;
+    width: 100dvw;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: var(--elevation-lg);
+}
+
+.drawer::backdrop {
+    backdrop-filter: none;
+    background: var(--overlay);
+}
+
+.body {
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (min-width: 1024px) {
+    .drawer {
+        width: 30rem;
+        border-inline-start: 1px solid var(--border-default);
+    }
+}

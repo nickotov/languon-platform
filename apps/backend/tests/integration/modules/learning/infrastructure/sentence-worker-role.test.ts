@@ -1,3 +1,5 @@
+import { DrizzleSentencePreparationStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store';
+import { sentenceExposuresTable } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-schema';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import type { SentenceDatabase } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-persistence-support';
 import { readFile } from 'node:fs/promises';
@@ -80,6 +82,8 @@ run('restricted sentence worker role', () => {
                 supportedFormats: [
                     'sentence-generation:v1',
                     'sentence-generation:v2',
+                    'sentence-preparation:v1',
+                    'sentence-preparation:v2',
                     'sentence-check:v1',
                 ],
                 learningExecutionRevision: 1,
@@ -349,6 +353,105 @@ run('restricted sentence worker role', () => {
                         (row.chargedCredits ?? 0n) > 0n,
                 ),
             ).toBe(true);
+            const preparation = new DrizzleSentencePreparationStore(
+                restricted,
+                {
+                    admitGeneration:
+                        store.admitPreparationGeneration.bind(store),
+                },
+            );
+            const ownedPreparation = new DrizzleSentencePreparationStore(db, {
+                admitGeneration: store.admitPreparationGeneration.bind(store),
+            });
+            const prepared = await ownedPreparation.start(
+                access(),
+                {
+                    operationId: randomUUID(),
+                    direction: 'source-to-target',
+                    mode: 'new-only',
+                    initialRoundScope: { type: 'manual', entryIds: [a, b] },
+                },
+                context(),
+            );
+            const exposureBefore = await db
+                .select()
+                .from(sentenceExposuresTable);
+            const expiredSnapshotId = randomUUID();
+            await db
+                .insert(databaseSchema.sentenceLibrarySnapshotsTable)
+                .values({
+                    id: expiredSnapshotId,
+                    actorId: owner,
+                    learnerId: owner,
+                    dictionaryId,
+                    operation: 'archive',
+                    scope: 'personal',
+                    items: [],
+                    expiresAt: new Date(context().now.getTime() - 1),
+                });
+            expect(await preparation.tick(context())).toBe(true);
+            expect(
+                await db
+                    .select()
+                    .from(databaseSchema.sentenceLibrarySnapshotsTable)
+                    .where(
+                        eq(
+                            databaseSchema.sentenceLibrarySnapshotsTable.id,
+                            expiredSnapshotId,
+                        ),
+                    ),
+            ).toHaveLength(0);
+
+            const preparedJob = await claim();
+            if (!preparedJob || preparedJob.kind !== 'sentence-generation')
+                throw new Error('No prepared generation job');
+            expect(
+                await worker.markDispatched(preparedJob.lease, context()),
+            ).toBe('dispatch');
+            expect(
+                await worker.completeGeneration(
+                    preparedJob.lease,
+                    {
+                        content: content(preparedJob.input),
+                        usage: { inputTokens: 100, outputTokens: 20 },
+                    },
+                    context(),
+                ),
+            ).toBe('committed');
+            expect(await preparation.tick(context())).toBe(true);
+            expect(await preparation.tick(context())).toBe(true);
+            expect(
+                (await ownedPreparation.get(access(), prepared.id, context()))
+                    .state,
+            ).toBe('completed');
+            expect(await db.select().from(sentenceExposuresTable)).toHaveLength(
+                exposureBefore.length,
+            );
+            await expect(
+                restricted.transaction((tx) =>
+                    tx.execute(
+                        sql`update sentence_personal_visibility set archived_at=now()`,
+                    ),
+                ),
+            ).rejects.toMatchObject({ cause: { code: '42501' } });
+            await expect(
+                restricted.transaction((tx) =>
+                    tx.execute(sql`select * from sentence_library_snapshots`),
+                ),
+            ).rejects.toMatchObject({ cause: { code: '42501' } });
+            await expect(
+                restricted.transaction((tx) =>
+                    tx.execute(sql`delete from sentence_preparation_commands`),
+                ),
+            ).rejects.toMatchObject({ cause: { code: '42501' } });
+            await expect(
+                restricted.transaction((tx) =>
+                    tx.execute(
+                        sql`update user_text_ai_preferences set mode='automatic'`,
+                    ),
+                ),
+            ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             const archiveId = randomUUID();
             await restricted.transaction((tx) =>
                 tx

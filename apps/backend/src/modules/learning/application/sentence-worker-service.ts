@@ -46,6 +46,8 @@ export class SentenceWorkerService {
                 supportedFormats: d.supportedFormats ?? [
                     'sentence-generation:v1',
                     'sentence-generation:v2',
+                    'sentence-preparation:v1',
+                    'sentence-preparation:v2',
                     'sentence-check:v1',
                 ],
                 learningExecutionRevision: 1,
@@ -60,9 +62,13 @@ export class SentenceWorkerService {
         if (!job) return false;
         if (
             job.kind === 'sentence-generation' &&
-            ((job.format === 'sentence-generation:v1' &&
+            ((['sentence-generation:v1', 'sentence-preparation:v1'].includes(
+                job.format,
+            ) &&
                 job.input.generationPolicyVersion !== 1) ||
-                (job.format === 'sentence-generation:v2' &&
+                (['sentence-generation:v2', 'sentence-preparation:v2'].includes(
+                    job.format,
+                ) &&
                     job.input.generationPolicyVersion !== 2))
         ) {
             await d.store.fail(

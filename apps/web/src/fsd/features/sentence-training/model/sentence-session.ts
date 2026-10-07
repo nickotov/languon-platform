@@ -810,8 +810,9 @@ export class SentenceSession {
             this.state.uncertain
         )
             return;
-        const configuration = this.frozenConfiguration('new-only');
-        if (!configuration) return;
+        const frozen = this.frozenConfiguration('new-only');
+        if (!frozen) return;
+        const { preparedBatchId: _preparedBatchId, ...configuration } = frozen;
         const snapshot = {
             ...this.state,
             progressLoading: false,

@@ -47,7 +47,12 @@ export const AdminAuditEventSchema = z
         targetUserId: AdminIdSchema.nullable(),
         targetEmail: AdminEmailSchema.nullable(),
         targetKind: z
-            .enum(['user', 'dictionary_ai_configuration', 'ai_credit_account'])
+            .enum([
+                'user',
+                'dictionary_ai_configuration',
+                'ai_credit_account',
+                'sentence_library',
+            ])
             .nullable()
             .optional(),
         targetId: z.string().trim().min(1).max(160).nullable().optional(),

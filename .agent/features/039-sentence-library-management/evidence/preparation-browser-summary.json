@@ -1,0 +1,20 @@
+{
+    "reviewed_base": "d74fbbd",
+    "web_sentence_full": {
+        "passed": 9,
+        "failed": 0,
+        "elapsed": "3.1 minutes"
+    },
+    "preparation_evidence_rerun": {
+        "passed": 1,
+        "failed": 0,
+        "elapsed": "35 seconds including startup"
+    },
+    "flashcard_owner_regression": {
+        "passed": 1,
+        "failed": 0
+    },
+    "rendering_fault_injection": "Eight preparation GET states are schema-validated presentation-only variants of a real completed aggregate; no backend transition claim.",
+    "unexpected_browser_errors": 0,
+    "source_fidelity_limit": "Frozen exported source inventory and rendered local screenshots; no pixel comparison against inaccessible reference runtime."
+}

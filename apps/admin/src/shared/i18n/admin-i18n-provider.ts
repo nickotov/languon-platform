@@ -1,6 +1,93 @@
 import type { I18nProvider } from '@refinedev/core';
 
 export const adminMessages = {
+    'sentences.title': 'Sentence library',
+    'sentences.heading': 'Saved examples, under control.',
+    'sentences.description':
+        'Inspect generated sentences and their hints. Manage visibility for this user or across the library, with every change recorded in the audit log.',
+    'sentences.manage': 'Manage sentence library',
+    'sentences.dictionary': 'Dictionary',
+    'sentences.chooseDictionary': 'Choose a dictionary',
+    'sentences.moreDictionaries': 'More dictionaries',
+    'sentences.noDictionaries':
+        'No dictionaries with saved sentence activity for this user.',
+    'sentences.loading': 'Loading examples',
+    'sentences.empty': 'No examples match these filters.',
+    'sentences.all': 'All',
+    'sentences.active': 'Active',
+    'sentences.archived': 'Archived',
+    'sentences.current': 'Current',
+    'sentences.outdated': 'Outdated',
+    'sentences.available': 'Available',
+    'sentences.generated': 'Generated',
+    'sentences.private': 'Private',
+    'sentences.shared': 'Shared',
+    'sentences.relation': 'Relation',
+    'sentences.direction': 'Direction',
+    'sentences.personal': 'Personal visibility',
+    'sentences.global': 'Global visibility',
+    'sentences.contentState': 'Content state',
+    'sentences.creatorArchived': 'Creator archived',
+    'sentences.creatorId': 'Creator ID',
+    'sentences.invalidCreator': 'Enter a valid creator UUID.',
+    'sentences.sourceToTarget': 'Source → target',
+    'sentences.targetToSource': 'Target → source',
+    'sentences.selectPage': 'Select this page',
+    'sentences.pageCount': '{count} examples on this page',
+    'sentences.selectSentence': 'Select example: {text}',
+    'sentences.previewSentence': 'Preview example: {text}',
+    'sentences.preview': 'Preview',
+    'sentences.previewTitle': 'Example preview',
+    'sentences.previewNotice':
+        'Read-only preview. Opening an example does not start practice, change scores or spend credits.',
+    'sentences.reference': 'Reference translation',
+    'sentences.hints': 'Hints & phrase mappings',
+    'sentences.noHints': 'No hints available.',
+    'sentences.contextual': 'Context hint',
+    'sentences.dictionaryHint': 'Dictionary word',
+    'sentences.created': 'Generated at',
+    'sentences.exerciseId': 'Example ID',
+    'sentences.personalArchived': 'Archived for user',
+    'sentences.globalArchived': 'Globally archived',
+    'sentences.generatorArchived': 'Archived by creator',
+    'sentences.archive': 'Archive for user',
+    'sentences.restore': 'Restore for user',
+    'sentences.globalArchive': 'Archive globally',
+    'sentences.globalRestore': 'Restore globally',
+    'sentences.delete': 'Delete permanently',
+    'sentences.allMatching': 'All matching examples',
+    'sentences.selectedCount': '{count} selected',
+    'sentences.matchingCount': 'This action affects {count} examples.',
+    'sentences.mutationNotice':
+        'Changes require a reason and recent sign-in. Personal visibility affects only this user; global visibility affects every learner. Restoring an outdated example does not make it eligible for practice.',
+    'sentences.deleteWarning':
+        'Permanent deletion removes the example and affected practice content for every user. Numerical credit accounting remains. This cannot be undone.',
+    'sentences.deleteConfirm':
+        'I understand this permanently deletes the archived examples and affected practice content for every user.',
+    'sentences.confirmRequired':
+        'Confirm permanent deletion before continuing.',
+    'sentences.confirmAction': 'Confirm action',
+    'sentences.snapshotExpiry':
+        'Confirmation expires at {time}. Newly generated examples are excluded.',
+    'sentences.snapshotExpired':
+        'This confirmation expired. Close it and prepare a fresh selection.',
+    'sentences.busy':
+        'An AI request still references these examples. Wait for it to settle, then retry this action.',
+    'sentences.conflict':
+        'These examples changed after selection. Refresh and select them again.',
+    'sentences.reauthenticate':
+        'Sign in again to authorize this administrative action.',
+    'sentences.unavailable':
+        'This sentence library is no longer available. Refresh the user and dictionary.',
+    'sentences.deleteEligibility':
+        'Only examples archived by their creator can be permanently deleted. For deletion across all matching examples, set “Creator archived” to “Archived” first.',
+    'sentences.readOnly':
+        'This account can be inspected, but its saved examples cannot be changed.',
+    'sentences.preparingSnapshot':
+        'Preparing a frozen selection of all matching examples…',
+    'sentences.firstPage': 'First page',
+    'sentences.nextPage': 'Next page',
+
     'access.owner': 'Owner',
     'access.user': 'User',
     'resources.users.name': 'Users',

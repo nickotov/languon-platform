@@ -1,0 +1,23 @@
+declare const styles: {
+    readonly actions: string;
+    readonly creator: string;
+    readonly dictionary: string;
+    readonly dictionaryBar: string;
+    readonly drawer: string;
+    readonly empty: string;
+    readonly example: string;
+    readonly filters: string;
+    readonly full: string;
+    readonly hint: string;
+    readonly intro: string;
+    readonly list: string;
+    readonly listHeading: string;
+    readonly pagination: string;
+    readonly panel: string;
+    readonly reference: string;
+    readonly row: string;
+    readonly rowContent: string;
+    readonly source: string;
+    readonly stats: string;
+};
+export default styles;

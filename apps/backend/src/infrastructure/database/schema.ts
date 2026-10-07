@@ -1,3 +1,5 @@
+import * as sentenceLibrarySchema from '../../modules/learning/infrastructure/persistence/drizzle/sentence-library-schema';
+import * as sentencePreparationSchema from '../../modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema';
 import * as sentenceSchema from '../../modules/learning/infrastructure/persistence/drizzle/sentence-schema';
 import {
     dictionaryAiConfigurationRevisionsTable,
@@ -137,6 +139,8 @@ import {
 
 export const databaseSchema = {
     ...sentenceSchema,
+    ...sentenceLibrarySchema,
+    ...sentencePreparationSchema,
     textAiPreferences: textAiPreferencesTable,
     flashcardPreferences: flashcardPreferencesTable,
     flashcardAttempts: flashcardAttemptsTable,
@@ -194,3 +198,6 @@ import {
 } from '../../modules/learning/infrastructure/persistence/drizzle/schema';
 
 export * from '../../modules/learning/infrastructure/persistence/drizzle/sentence-schema';
+
+export * from '../../modules/learning/infrastructure/persistence/drizzle/sentence-library-schema';
+export * from '../../modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema';

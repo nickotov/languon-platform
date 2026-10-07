@@ -36,3 +36,10 @@ second independent flashcard content store is required.
 Create and edit manually; edit generated content; practise with saved personal
 progress; make a private editable copy; verify the original and prior attempts
 are not silently rewritten.
+
+## Related sentence-library work
+
+[BL-010](./010-sentence-library-management-done.md) tracks personal sentence archives,
+full-dictionary preparation and administrative management. Its
+[implementation plan](../sentence-library-implementation-plan.md) is additive;
+it does not change this task's completion or editing scope.

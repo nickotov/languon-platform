@@ -8,6 +8,11 @@ const backendOrigin =
 const databaseUrl = process.env.ADMIN_E2E_DATABASE_URL;
 const redisUrl = process.env.ADMIN_E2E_REDIS_URL;
 const e2eRateLimitNamespace = `${Date.now()}-${process.pid}`;
+const sentenceServicesEnabled =
+    process.env.ADMIN_E2E_SENTENCE_SERVICES === 'true';
+const sentenceFixtureRunId =
+    process.env.ADMIN_E2E_SENTENCE_RUN_ID ?? e2eRateLimitNamespace;
+process.env.ADMIN_E2E_SENTENCE_RUN_ID = sentenceFixtureRunId;
 
 if (!databaseUrl || !redisUrl) {
     throw new Error(
@@ -75,6 +80,10 @@ export default defineConfig({
                 AUTH_WEBAUTHN_RP_ID: new URL(adminOrigin).hostname,
                 BACKEND_PORT: backendPort,
                 DATABASE_URL: databaseUrl,
+                LEARNING_SENTENCES_ENABLED: sentenceServicesEnabled
+                    ? 'true'
+                    : 'false',
+                LEARNING_SENTENCE_GENERATION_FORMAT: 'sentence-generation:v2',
                 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
                 DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
                 DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED: 'true',
@@ -92,6 +101,24 @@ export default defineConfig({
             timeout: 120_000,
             url: `${backendOrigin}/health`,
         },
+        ...(sentenceServicesEnabled
+            ? [
+                  {
+                      command: `until curl --fail --silent ${backendOrigin}/health >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend exec tsx tests/support/sentence-web-worker.ts`,
+                      env: {
+                          APP_ENV: 'test',
+                          AUTH_E2E_SENTENCE_SERVICES: 'true',
+                          AUTH_E2E_DATABASE_URL: databaseUrl,
+                          AUTH_E2E_RUN_ID: sentenceFixtureRunId,
+                      },
+                      reuseExistingServer,
+                      stderr: 'pipe' as const,
+                      stdout: 'pipe' as const,
+                      timeout: 120_000,
+                      wait: { stdout: /Sentence browser fixture worker ready/ },
+                  },
+              ]
+            : []),
         {
             command: `pnpm exec vite --host 127.0.0.1 --port ${adminPort}`,
             env: { ADMIN_API_PROXY_TARGET: backendOrigin },

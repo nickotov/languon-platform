@@ -23,6 +23,7 @@ import {
 } from '@languon/contracts';
 import type { RequestWithSession, SentenceApi, TrainingTarget } from '../types';
 import { ApiError } from '../lib/api-error';
+import { createSentencePreparationApi } from './sentence-preparation-api';
 
 interface Options {
     target: TrainingTarget;
@@ -165,6 +166,7 @@ export function createSentenceApi(options: Options): SentenceApi {
         return publicRequest ? execute() : requestWithSession(execute);
     }
     return {
+        ...createSentencePreparationApi(request, prefix, pathId),
         capabilities: () =>
             request(
                 '/learning/sentences/capabilities',

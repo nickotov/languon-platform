@@ -81,6 +81,7 @@ const SentenceSetupRequestSchema = z
         mode: SentenceModeSchema,
         scope: SentenceScopeSchema,
         explanationLanguage: DictionaryLanguageTagSchema.optional(),
+        preparedBatchId: id.optional(),
     })
     .strict();
 export const SentencePrepareRequestSchema = SentenceSetupRequestSchema.extend({

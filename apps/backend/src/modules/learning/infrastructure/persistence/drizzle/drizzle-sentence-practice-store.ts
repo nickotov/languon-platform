@@ -26,6 +26,7 @@ import type {
     SentenceDirection,
     SentenceReferenceRevealRequest,
     SentenceManualReviewsQuery,
+    SentencePreparationBatch,
 } from '@languon/contracts';
 import type {
     SentenceContext,
@@ -79,6 +80,10 @@ import {
     type SentenceTransaction,
 } from './sentence-persistence-support';
 import {
+    assertSentencePracticeVisible,
+    sentencePracticeVisibilityCondition,
+} from './sentence-library-visibility';
+import {
     reserveSentenceAttempt,
     settleSentenceAttempt,
 } from './sentence-job-accounting';
@@ -89,7 +94,14 @@ export interface SentencePersistencePolicy {
         userId: string,
         format: string,
         now: Date,
+        requiredWorkerFormat?: string,
     ) => Promise<TextAiAdmissionExecution>;
+    resolvePreparedBatch?: (
+        tx: SentenceTransaction,
+        access: LearningAccess,
+        id: string,
+        context: SentenceContext,
+    ) => Promise<SentencePreparationBatch & { direction: SentenceDirection }>;
     defaultMaxAttempts?: number;
     globalQueueLimit?: number;
     userQueueLimit?: number;
@@ -182,6 +194,7 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
         scope: SentencePrepareRequest['scope'],
         selection?: Pick<SentenceNextRequest, 'mode' | 'visitedExerciseIds'>,
         replayExerciseIds: readonly string[] = [],
+        manifestExerciseIds?: readonly string[],
     ) {
         const dictionaryId = dictionary.id;
         const sourceLanguage =
@@ -213,6 +226,12 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
             and(
                 eq(exercises.dictionaryId, dictionaryId),
                 eq(exercises.direction, direction),
+                sentencePracticeVisibilityCondition(learnerId),
+                manifestExerciseIds
+                    ? manifestExerciseIds.length
+                        ? inArray(exercises.id, [...manifestExerciseIds])
+                        : sql`false`
+                    : undefined,
                 sql`${exercises.publicContent}->>'sourceLanguage' = ${sourceLanguage} and ${exercises.publicContent}->>'targetLanguage' = ${targetLanguage}`,
                 languageCondition(
                     sql`${exercises.publicContent}->>'sourceText'`,
@@ -332,6 +351,109 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
         };
     }
 
+    private async preparedSelection(
+        tx: SentenceTransaction,
+        access: LearningAccess,
+        input: SentencePrepareRequest,
+        context: SentenceContext,
+    ) {
+        if (!input.preparedBatchId) return undefined;
+        if (!this.policy.resolvePreparedBatch)
+            throw new SentenceUnavailableError();
+        const batch = await this.policy.resolvePreparedBatch(
+            tx,
+            access,
+            input.preparedBatchId,
+            context,
+        );
+        if (
+            batch.direction !== input.direction ||
+            (input.scope.type === 'manual' &&
+                input.scope.entryIds.some((id) => !batch.entryIds.includes(id)))
+        )
+            throw new SentenceConflictError('stale_content');
+        const requested =
+            input.scope.type === 'manual'
+                ? new Set(input.scope.entryIds)
+                : undefined;
+        return {
+            ...batch,
+            scope: {
+                type: 'manual' as const,
+                entryIds: batch.preparedEntryIds.filter(
+                    (id) => !requested || requested.has(id),
+                ),
+            },
+        };
+    }
+    /** Transaction-owned coordinator admission; creates no practice receipt or exposure. */
+    public async admitPreparationGeneration(
+        tx: SentenceTransaction,
+        access: LearningAccess,
+        input: {
+            direction: SentenceDirection;
+            scope: { type: 'manual'; entryIds: string[] };
+            operationId: string;
+            sessionId: string;
+        },
+        context: SentenceContext,
+    ) {
+        const owned = await authorizeSentence(tx, access, true);
+        const learnerId = sentenceLearner(access);
+        const { candidates } = await sentenceCandidates(
+            tx,
+            owned.dictionary.id,
+            input.scope,
+            input.direction,
+            learnerId,
+        );
+        if (
+            !candidates.length ||
+            candidates.length > SENTENCE_LIMITS.selectedEntries
+        )
+            throw new SentenceConflictError('stale_content');
+        const shortlist = candidates.slice(0, 12);
+        const generationPolicyVersion =
+            this.policy.generationFormat === 'sentence-generation:v2' ? 2 : 1;
+        const payload: SentenceGenerationInput = {
+            schemaVersion: 1,
+            generationPolicyVersion,
+            dictionaryId: owned.dictionary.id,
+            direction: input.direction,
+            sourceLanguage: DictionaryLanguageTagSchema.parse(
+                input.direction === 'source-to-target'
+                    ? owned.dictionary.sourceLanguageTag
+                    : owned.dictionary.targetLanguageTag,
+            ),
+            targetLanguage: DictionaryLanguageTagSchema.parse(
+                input.direction === 'source-to-target'
+                    ? owned.dictionary.targetLanguageTag
+                    : owned.dictionary.sourceLanguageTag,
+            ),
+            priorityEntryId: shortlist[0]!.entryId,
+            candidates: shortlist.map(
+                ({ entryId, learningVersion, sourceText, targetText }) => ({
+                    entryId,
+                    learningVersion,
+                    sourceText,
+                    targetText,
+                }),
+            ),
+        };
+        const job = await this.admit(
+            tx,
+            access,
+            owned.dictionary.id,
+            input,
+            payload,
+            'sentence-generation',
+            input.direction,
+            fingerprint({ preparation: true, ...input }),
+            context.now,
+            `sentence-preparation:v${generationPolicyVersion}`,
+        );
+        return { jobId: job.id };
+    }
     async prepare(
         access: LearningAccess,
         input: SentencePrepareRequest,
@@ -340,14 +462,21 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
         return this.run(access, context, async (tx, owned, id) => {
             if (input.replayExerciseIds && input.mode !== 'review-only')
                 throw new LearningInvalidRequestError();
+            const prepared = await this.preparedSelection(
+                tx,
+                access,
+                input,
+                context,
+            );
             const pool = await this.pool(
                 tx,
                 owned.dictionary,
                 id,
                 input.direction,
-                input.scope,
+                prepared?.scope ?? input.scope,
                 undefined,
                 input.replayExerciseIds,
+                prepared?.exerciseIds,
             );
             const sourceLanguage = DictionaryLanguageTagSchema.parse(
                 input.direction === 'source-to-target'
@@ -387,6 +516,7 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
         direction: SentenceDirection,
         hash: string,
         now: Date,
+        storedFormat?: 'sentence-preparation:v1' | 'sentence-preparation:v2',
     ) {
         await tx.execute(
             sql`select set_config('languon.learning_execution_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
@@ -397,7 +527,7 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                 ? (this.policy.generationFormat ?? 'sentence-generation:v1')
                 : 'sentence-check:v1';
         const execution = await this.policy
-            .resolveExecution(tx, learnerId, format, now)
+            .resolveExecution(tx, learnerId, format, now, storedFormat)
             .catch((error: unknown) => {
                 if (error instanceof TextAiSelectionUnavailableError)
                     throw new SentenceModelUnavailableError();
@@ -455,7 +585,7 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                 learnerId,
                 dictionaryId,
                 jobKind: kind,
-                format,
+                format: storedFormat ?? format,
                 direction,
                 authority:
                     access.kind === 'owner'
@@ -532,6 +662,12 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                     dictionaryId: owned.dictionary.id,
                     ...normalized(input),
                 });
+                const prepared = await this.preparedSelection(
+                    tx,
+                    access,
+                    input,
+                    context,
+                );
                 const [prior] = await tx
                     .select()
                     .from(receipts)
@@ -552,16 +688,27 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                             owned.dictionary,
                             id,
                             input.direction,
-                            input.scope,
+                            prepared?.scope ?? input.scope,
                             undefined,
                             [input.replayExerciseId],
+                            prepared?.exerciseIds,
                         );
                         return {
                             kind: 'exercise' as const,
                             exercise: exact.replayExercises[0]!.publicContent,
                         };
                     }
-                    if (prior.exerciseId)
+                    if (prior.exerciseId) {
+                        await assertSentencePracticeVisible(
+                            tx,
+                            prior.exerciseId,
+                            id,
+                        );
+                        if (
+                            prepared &&
+                            !prepared.exerciseIds.includes(prior.exerciseId)
+                        )
+                            throw new SentenceConflictError('stale_content');
                         return {
                             kind: 'exercise' as const,
                             exercise: (
@@ -574,6 +721,7 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                                 )
                             ).publicContent,
                         };
+                    }
                     if (prior.jobId) {
                         const [job] = await tx
                             .select()
@@ -622,9 +770,17 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                     owned.dictionary,
                     id,
                     input.direction,
-                    input.scope,
-                    input.replayExerciseId ? undefined : input,
+                    prepared?.scope ?? input.scope,
+                    input.replayExerciseId
+                        ? undefined
+                        : prepared
+                          ? {
+                                mode: 'saved-first',
+                                visitedExerciseIds: input.visitedExerciseIds,
+                            }
+                          : input,
                     input.replayExerciseId ? [input.replayExerciseId] : [],
+                    prepared?.exerciseIds,
                 );
                 const saved = input.replayExerciseId
                     ? pool.replayExercises[0]
@@ -638,6 +794,9 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                         direction: input.direction,
                         mode: input.mode,
                         scope: input.scope,
+                        ...(input.preparedBatchId
+                            ? { preparedBatchId: input.preparedBatchId }
+                            : {}),
                         ...(input.explanationLanguage
                             ? { explanationLanguage: input.explanationLanguage }
                             : {}),
@@ -654,7 +813,11 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                         exercise: saved.publicContent,
                     };
                 }
-                if (input.mode === 'review-only' || !pool.remaining.length) {
+                if (
+                    prepared ||
+                    input.mode === 'review-only' ||
+                    !pool.remaining.length
+                ) {
                     const reason = pool.candidates.length
                         ? ('review-exhausted' as const)
                         : ('no-eligible-entries' as const);
@@ -744,7 +907,8 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                         eq(jobs.dictionaryId, owned.dictionary.id),
                     ),
                 );
-            if (!job) throw new SentenceUnavailableError();
+            if (!job || job.format.startsWith('sentence-preparation:'))
+                throw new SentenceUnavailableError();
             return presentSentenceJob(tx, job);
         });
     }
@@ -768,7 +932,8 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                         ),
                     )
                     .for('update');
-                if (!job) throw new SentenceUnavailableError();
+                if (!job || job.format.startsWith('sentence-preparation:'))
+                    throw new SentenceUnavailableError();
                 if (job.executionState === 'queued') {
                     await settleSentenceAttempt(tx, job, context.now);
                     await tx
@@ -853,6 +1018,7 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                         throw new SentenceConflictError('operation_conflict');
                     return presentSentenceJob(tx, prior);
                 }
+                await assertSentencePracticeVisible(tx, exerciseId, id);
                 const exercise = await readableExercise(
                     tx,
                     exerciseId,
@@ -1027,6 +1193,7 @@ export class DrizzleSentencePracticeStore implements SentencePracticeStore {
                     ),
                 );
             if (paid) throw new SentenceConflictError('operation_conflict');
+            await assertSentencePracticeVisible(tx, exerciseId, id);
             const exercise = await readableExercise(
                 tx,
                 exerciseId,

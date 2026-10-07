@@ -1,0 +1,651 @@
+'use client';
+import { useI18n } from '@/fsd/shared/i18n';
+type Plural = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
+type Row = [string | Plural, string | Plural, string | Plural, string | Plural];
+const PREPARATION = {
+    switchLabel: [
+        'Prepare sentences for the whole dictionary in advance',
+        'Preparar frases para todo el diccionario con antelación',
+        'Préparer des phrases pour tout le dictionnaire à l’avance',
+        'Подготовить предложения для всего словаря заранее',
+    ],
+    switchDesc: [
+        'Off by default. Runs in the background and saves examples without counting them as practice.',
+        'Desactivado por defecto. Se ejecuta en segundo plano y guarda ejemplos sin contarlos como práctica.',
+        'Désactivé par défaut. S’exécute en arrière-plan et enregistre des exemples sans les compter comme pratique.',
+        'Выключено по умолчанию. Идёт в фоне и сохраняет примеры, не засчитывая их как практику.',
+    ],
+    roundScope: [
+        { one: 'Round: {n} word', other: 'Round: {n} words' },
+        { one: 'Ronda: {n} palabra', other: 'Ronda: {n} palabras' },
+        { one: 'Manche : {n} mot', other: 'Manche : {n} mots' },
+        {
+            one: 'Раунд: {n} слово',
+            few: 'Раунд: {n} слова',
+            many: 'Раунд: {n} слов',
+            other: 'Раунд: {n} слова',
+        },
+    ],
+    prepScope: [
+        {
+            one: 'Preparation: all {n} word',
+            other: 'Preparation: all {n} words',
+        },
+        {
+            one: 'Preparación: {n} palabra',
+            other: 'Preparación: las {n} palabras',
+        },
+        { one: 'Préparation : {n} mot', other: 'Préparation : les {n} mots' },
+        {
+            one: 'Подготовка: {n} слово',
+            few: 'Подготовка: все {n} слова',
+            many: 'Подготовка: все {n} слов',
+            other: 'Подготовка: все {n} слова',
+        },
+    ],
+    roundVsPrep: [
+        'The round is what you practise next. Preparation covers the whole dictionary: your round first, then the remaining words in rounds of at most 100.',
+        'La ronda es lo que practicarás ahora. La preparación cubre todo el diccionario: primero tu ronda y luego el resto en rondas de hasta 100.',
+        'La manche est ce que vous pratiquez ensuite. La préparation couvre tout le dictionnaire : votre manche d’abord, puis le reste par manches de 100 mots maximum.',
+        'Раунд — это то, что вы будете практиковать. Подготовка охватывает весь словарь: сначала ваш раунд, затем остальные слова раундами не больше 100.',
+    ],
+    roundPlan: [
+        'Rounds: {list}',
+        'Rondas: {list}',
+        'Manches : {list}',
+        'Раунды: {list}',
+    ],
+    nameSavedFirst: [
+        'Saved first',
+        'Primero guardadas',
+        'Enregistrées d’abord',
+        'Сначала сохранённые',
+    ],
+    nameNew: [
+        'New examples',
+        'Ejemplos nuevos',
+        'Nouveaux exemples',
+        'Новые примеры',
+    ],
+    nameReview: [
+        'Saved only',
+        'Solo guardadas',
+        'Enregistrées uniquement',
+        'Только сохранённые',
+    ],
+    modeSavedFirst: [
+        'Saved first: reuses saved examples (including ones you completed) and generates only for missing words — that may use AI credits.',
+        'Primero guardadas: reutiliza ejemplos guardados (también los completados) y genera solo para palabras que faltan; puede usar créditos de IA.',
+        'Enregistrées d’abord : réutilise les exemples enregistrés (y compris terminés) et génère seulement pour les mots manquants — peut utiliser des crédits IA.',
+        'Сначала сохранённые: используются сохранённые примеры (в том числе пройденные), новые создаются только для недостающих слов — это может расходовать кредиты ИИ.',
+    ],
+    modeNew: [
+        'New examples: prepares fresh examples for this direction and uses AI credits. Older examples are kept.',
+        'Ejemplos nuevos: prepara ejemplos nuevos para esta dirección y usa créditos de IA. Los anteriores se conservan.',
+        'Nouveaux exemples : prépare de nouveaux exemples pour ce sens et utilise des crédits IA. Les anciens sont conservés.',
+        'Новые примеры: для этого направления создаются новые примеры, расходуются кредиты ИИ. Старые примеры сохраняются.',
+    ],
+    modeReview: [
+        'Saved only: no AI and no credits. Words without saved examples stay uncovered.',
+        'Solo guardadas: sin IA ni créditos. Las palabras sin ejemplos quedan sin cubrir.',
+        'Enregistrées uniquement : sans IA ni crédits. Les mots sans exemple restent non couverts.',
+        'Только сохранённые: без ИИ и кредитов. Слова без сохранённых примеров останутся непокрытыми.',
+    ],
+    noEstimate: [
+        'We can’t give an exact price or completion time in advance.',
+        'No podemos indicar un precio o tiempo exactos de antemano.',
+        'Impossible d’indiquer à l’avance un prix ou une durée exacts.',
+        'Точную стоимость и время заранее назвать нельзя.',
+    ],
+    startWhenReady: [
+        'You can start practising as soon as examples are ready.',
+        'Puedes empezar a practicar en cuanto haya ejemplos listos.',
+        'Vous pourrez pratiquer dès que des exemples seront prêts.',
+        'Начать практику можно, как только появятся готовые примеры.',
+    ],
+    startPrep: [
+        'Start preparation',
+        'Iniciar preparación',
+        'Lancer la préparation',
+        'Начать подготовку',
+    ],
+    startingPrep: ['Sending…', 'Enviando…', 'Envoi…', 'Отправляем…'],
+    aiSettings: [
+        'AI settings',
+        'Ajustes de IA',
+        'Paramètres IA',
+        'Настройки ИИ',
+    ],
+    aiSettingsDesc: [
+        'Apply to new requests. Work already started keeps its earlier choice.',
+        'Se aplican a solicitudes nuevas. El trabajo en curso conserva su elección.',
+        'S’appliquent aux nouvelles demandes. Le travail en cours garde son choix.',
+        'Применяются к новым запросам. Уже начатая работа сохраняет прежний выбор.',
+    ],
+    savePreference: [
+        'Save preference',
+        'Guardar preferencia',
+        'Enregistrer',
+        'Сохранить',
+    ],
+    preferenceSaved: [
+        'Saved. Applies to your next AI request.',
+        'Guardado. Se aplica a tu próxima solicitud.',
+        'Enregistré. S’applique à la prochaine demande.',
+        'Сохранено. Применится к следующему запросу.',
+    ],
+    unsaved: [
+        'Unsaved change',
+        'Cambio sin guardar',
+        'Modification non enregistrée',
+        'Изменение не сохранено',
+    ],
+    openLibrary: [
+        'Saved sentences',
+        'Frases guardadas',
+        'Phrases enregistrées',
+        'Сохранённые предложения',
+    ],
+    existingTitle: [
+        'A preparation is already running',
+        'Ya hay una preparación en curso',
+        'Une préparation est déjà en cours',
+        'Подготовка уже идёт',
+    ],
+    existingBody: [
+        'We won’t start a second one. Continue, view its progress or stop it.',
+        'No iniciaremos otra. Continúa, mira el progreso o detenla.',
+        'Nous n’en lançons pas une seconde. Continuez, consultez la progression ou arrêtez-la.',
+        'Вторую мы не запускаем. Продолжите, посмотрите прогресс или остановите её.',
+    ],
+    continue: ['Continue', 'Continuar', 'Continuer', 'Продолжить'],
+    viewProgress: [
+        'View progress',
+        'Ver progreso',
+        'Voir la progression',
+        'Смотреть прогресс',
+    ],
+    stop: [
+        'Stop preparation',
+        'Detener preparación',
+        'Arrêter la préparation',
+        'Остановить подготовку',
+    ],
+    resume: [
+        'Resume preparation',
+        'Reanudar preparación',
+        'Reprendre la préparation',
+        'Продолжить подготовку',
+    ],
+    title: [
+        'Sentence preparation',
+        'Preparación de frases',
+        'Préparation des phrases',
+        'Подготовка предложений',
+    ],
+    readyWords: [
+        '{done} of {total} words ready',
+        '{done} de {total} palabras listas',
+        '{done} mots prêts sur {total}',
+        'Готово {done} из {total} слов',
+    ],
+    reused: [
+        'Saved examples reused: {n}',
+        'Ejemplos guardados reutilizados: {n}',
+        'Exemples réutilisés : {n}',
+        'Использовано сохранённых: {n}',
+    ],
+    generated: [
+        'New examples generated: {n}',
+        'Ejemplos nuevos generados: {n}',
+        'Nouveaux exemples créés : {n}',
+        'Создано новых: {n}',
+    ],
+    countsNote: [
+        'One sentence can cover several words, so these counts don’t add up to coverage.',
+        'Una frase puede cubrir varias palabras, así que estas cifras no suman la cobertura.',
+        'Une phrase peut couvrir plusieurs mots : ces chiffres ne s’additionnent pas.',
+        'Одно предложение может покрывать несколько слов, поэтому эти числа не складываются в покрытие.',
+    ],
+    overall: [
+        'Whole dictionary',
+        'Todo el diccionario',
+        'Tout le dictionnaire',
+        'Весь словарь',
+    ],
+    firstRound: ['Your round', 'Tu ronda', 'Votre manche', 'Ваш раунд'],
+    coverageBar: [
+        '{done} of {total} words covered',
+        '{done} de {total} palabras cubiertas',
+        '{done} mots couverts sur {total}',
+        'Покрыто {done} из {total} слов',
+    ],
+    queued: [
+        'Waiting to start',
+        'Esperando para empezar',
+        'En attente',
+        'Ожидает запуска',
+    ],
+    reusing: [
+        'Matching saved examples…',
+        'Buscando ejemplos guardados…',
+        'Recherche d’exemples enregistrés…',
+        'Подбираем сохранённые примеры…',
+    ],
+    generating: [
+        'Generating an example…',
+        'Generando un ejemplo…',
+        'Création d’un exemple…',
+        'Создаём пример…',
+    ],
+    stopping: [
+        'Stopping… The current example will finish and no next one will start.',
+        'Deteniendo… El ejemplo actual terminará y no empezará otro.',
+        'Arrêt… L’exemple en cours se termine et aucun autre ne commencera.',
+        'Останавливаем… Текущий пример будет завершён, следующий не начнётся.',
+    ],
+    noRefund: [
+        'A request that already started may have used credits.',
+        'Una solicitud ya iniciada puede haber usado créditos.',
+        'Une demande déjà lancée a pu utiliser des crédits.',
+        'Уже начатый запрос мог использовать кредиты.',
+    ],
+    paused: [
+        'Preparation paused',
+        'Preparación en pausa',
+        'Préparation en pause',
+        'Подготовка приостановлена',
+    ],
+    pausedBody: [
+        'Ready examples are saved. Resume whenever you like — nothing restarts on its own.',
+        'Los ejemplos listos se guardan. Reanuda cuando quieras; nada se reinicia solo.',
+        'Les exemples prêts sont enregistrés. Reprenez quand vous voulez — rien ne redémarre seul.',
+        'Готовые примеры сохранены. Продолжите, когда захотите, — сама подготовка не возобновится.',
+    ],
+    completed: [
+        'All words are covered',
+        'Todas las palabras están cubiertas',
+        'Tous les mots sont couverts',
+        'Все слова покрыты',
+    ],
+    completedReuseOnly: [
+        'Every word was covered by saved examples — nothing new was generated.',
+        'Todas las palabras se cubrieron con ejemplos guardados; no se generó nada.',
+        'Tous les mots ont été couverts par des exemples enregistrés — rien de nouveau créé.',
+        'Все слова покрыты сохранёнными примерами — новых не создавалось.',
+    ],
+    completedPartial: [
+        {
+            one: 'Done. {n} word has no saved example and stays uncovered.',
+            other: 'Done. {n} words have no saved example and stay uncovered.',
+        },
+        {
+            one: 'Listo. {n} palabra no tiene ejemplo guardado.',
+            other: 'Listo. {n} palabras no tienen ejemplo guardado.',
+        },
+        {
+            one: 'Terminé. {n} mot n’a pas d’exemple enregistré.',
+            other: 'Terminé. {n} mots n’ont pas d’exemple enregistré.',
+        },
+        {
+            one: 'Готово. Для {n} слова нет сохранённого примера — оно осталось непокрытым.',
+            few: 'Готово. Для {n} слов нет сохранённых примеров — они остались непокрытыми.',
+            many: 'Готово. Для {n} слов нет сохранённых примеров — они остались непокрытыми.',
+            other: 'Готово. Для {n} слова нет сохранённых примеров.',
+        },
+    ],
+    notPractice: [
+        'A finished preparation isn’t a finished practice — your rounds are ready to practise.',
+        'Una preparación terminada no es una práctica terminada: tus rondas están listas.',
+        'Une préparation terminée n’est pas une pratique terminée : vos manches sont prêtes.',
+        'Завершённая подготовка — ещё не пройденная практика: раунды готовы к занятиям.',
+    ],
+    roundsTitle: ['Rounds', 'Rondas', 'Manches', 'Раунды'],
+    roundN: ['Round {i}', 'Ronda {i}', 'Manche {i}', 'Раунд {i}'],
+    roundWords: [
+        { one: '{n} word', other: '{n} words' },
+        { one: '{n} palabra', other: '{n} palabras' },
+        { one: '{n} mot', other: '{n} mots' },
+        {
+            one: '{n} слово',
+            few: '{n} слова',
+            many: '{n} слов',
+            other: '{n} слова',
+        },
+    ],
+    roundCoverage: [
+        '{done}/{total} ready',
+        '{done}/{total} listas',
+        '{done}/{total} prêts',
+        'готово {done}/{total}',
+    ],
+    statePending: ['Pending', 'Pendiente', 'En attente', 'Ожидает'],
+    stateInProgress: ['In progress', 'En curso', 'En cours', 'В процессе'],
+    statePartial: [
+        'Partly ready',
+        'Parcialmente lista',
+        'Partiellement prête',
+        'Частично готов',
+    ],
+    stateReady: ['Ready', 'Lista', 'Prête', 'Готов'],
+    startReady: [
+        'Start with ready examples',
+        'Empezar con ejemplos listos',
+        'Commencer avec les exemples prêts',
+        'Начать с готовыми примерами',
+    ],
+    startReadyPartial: [
+        'Only the {done} of {total} ready words are practised — no extra generation.',
+        'Solo se practican las {done} de {total} palabras listas, sin generar más.',
+        'Seuls les {done} mots prêts sur {total} sont pratiqués — sans nouvelle génération.',
+        'В раунде будут только готовые {done} из {total} слов — без дополнительной генерации.',
+    ],
+    startReadyFull: [
+        'Uses exactly the prepared examples — no extra generation.',
+        'Usa exactamente los ejemplos preparados, sin generar más.',
+        'Utilise exactement les exemples préparés — sans nouvelle génération.',
+        'Используются ровно подготовленные примеры — без дополнительной генерации.',
+    ],
+    startDisabled: [
+        'No examples are ready for this round yet.',
+        'Todavía no hay ejemplos listos para esta ronda.',
+        'Aucun exemple n’est encore prêt pour cette manche.',
+        'Для этого раунда пока нет готовых примеров.',
+    ],
+    showAllRounds: [
+        'Show all rounds ({n})',
+        'Ver todas las rondas ({n})',
+        'Voir toutes les manches ({n})',
+        'Показать все раунды ({n})',
+    ],
+    hideRounds: [
+        'Show fewer rounds',
+        'Ver menos rondas',
+        'Voir moins de manches',
+        'Свернуть раунды',
+    ],
+    background: [
+        'Continue in background',
+        'Continuar en segundo plano',
+        'Continuer en arrière-plan',
+        'Продолжить в фоне',
+    ],
+    backgroundNote: [
+        'You can leave — preparation continues and stays visible on the dictionary.',
+        'Puedes salir: la preparación sigue y se ve en el diccionario.',
+        'Vous pouvez partir : la préparation continue et reste visible sur le dictionnaire.',
+        'Можно уйти — подготовка продолжится, её статус виден в словаре.',
+    ],
+    chipRunning: [
+        'Preparing · {done}/{total}',
+        'Preparando · {done}/{total}',
+        'Préparation · {done}/{total}',
+        'Подготовка · {done}/{total}',
+    ],
+    chipStopping: [
+        'Stopping preparation',
+        'Deteniendo preparación',
+        'Arrêt de la préparation',
+        'Подготовка останавливается',
+    ],
+    chipPaused: [
+        'Preparation paused · {done}/{total}',
+        'Preparación en pausa · {done}/{total}',
+        'Préparation en pause · {done}/{total}',
+        'Подготовка на паузе · {done}/{total}',
+    ],
+    chipAttention: [
+        'Preparation needs attention',
+        'La preparación requiere atención',
+        'La préparation demande votre attention',
+        'Подготовке нужно внимание',
+    ],
+    chipCredits: [
+        'Preparation needs credits',
+        'La preparación necesita créditos',
+        'Crédits nécessaires',
+        'Подготовке нужны кредиты',
+    ],
+    chipDone: [
+        'Preparation complete',
+        'Preparación completa',
+        'Préparation terminée',
+        'Подготовка завершена',
+    ],
+    chipExpired: [
+        'Preparation is outdated',
+        'Preparación caducada',
+        'Préparation obsolète',
+        'Подготовка устарела',
+    ],
+    submittingTitle: [
+        'Sending your request…',
+        'Enviando tu solicitud…',
+        'Envoi de la demande…',
+        'Отправляем запрос…',
+    ],
+    uncertainTitle: [
+        'We couldn’t confirm the start',
+        'No pudimos confirmar el inicio',
+        'Démarrage non confirmé',
+        'Не удалось подтвердить запуск',
+    ],
+    uncertainBody: [
+        'The request may have gone through. Check its status before sending another — that avoids paying twice.',
+        'Puede que la solicitud se haya enviado. Comprueba el estado antes de enviar otra para no pagar dos veces.',
+        'La demande est peut-être passée. Vérifiez l’état avant d’en envoyer une autre, pour ne pas payer deux fois.',
+        'Запрос мог дойти. Проверьте статус, прежде чем отправлять снова, — так вы не заплатите дважды.',
+    ],
+    checkStatus: [
+        'Check status',
+        'Comprobar estado',
+        'Vérifier l’état',
+        'Проверить статус',
+    ],
+    checking: [
+        'Checking whether a preparation already started…',
+        'Comprobando si ya empezó una preparación…',
+        'Vérification d’une préparation existante…',
+        'Проверяем, не запущена ли уже подготовка…',
+    ],
+    recovered: [
+        'Found your preparation — it was already running.',
+        'Encontramos tu preparación: ya estaba en curso.',
+        'Votre préparation a été retrouvée : elle était déjà en cours.',
+        'Подготовка найдена — она уже шла.',
+    ],
+    slow: [
+        'Status updates are slow. Showing the last known progress.',
+        'Las actualizaciones tardan. Se muestra el último progreso conocido.',
+        'Les mises à jour tardent. Dernière progression connue affichée.',
+        'Обновление статуса задерживается. Показан последний известный прогресс.',
+    ],
+    credits: [
+        'Not enough AI credits',
+        'Créditos de IA insuficientes',
+        'Crédits IA insuffisants',
+        'Недостаточно кредитов ИИ',
+    ],
+    creditsBody: [
+        'Ready examples are saved. Top up your credits and resume — nothing prepared is lost. “Saved only” mode stays free.',
+        'Los ejemplos listos se guardan. Recarga créditos y reanuda. El modo «Solo guardadas» sigue siendo gratis.',
+        'Les exemples prêts sont enregistrés. Rechargez vos crédits et reprenez. Le mode « Enregistrées uniquement » reste gratuit.',
+        'Готовые примеры сохранены. Пополните кредиты и продолжите — подготовленное не потеряется. Режим «Только сохранённые» бесплатен.',
+    ],
+    capacity: [
+        'The service is busy right now',
+        'El servicio está ocupado',
+        'Le service est saturé',
+        'Сервис временно перегружен',
+    ],
+    capacityBody: [
+        'This is temporary. Ready examples are saved — resume a little later.',
+        'Es temporal. Los ejemplos listos se guardan; reanuda un poco más tarde.',
+        'C’est temporaire. Les exemples prêts sont enregistrés — reprenez un peu plus tard.',
+        'Это временно. Готовые примеры сохранены — продолжите чуть позже.',
+    ],
+    model: [
+        'Your selected AI model is unavailable',
+        'Tu modelo de IA no está disponible',
+        'Votre modèle IA est indisponible',
+        'Выбранная модель ИИ недоступна',
+    ],
+    modelBody: [
+        'Choose another one in AI settings, then resume. Ready examples are saved.',
+        'Elige otro en Ajustes de IA y reanuda. Los ejemplos listos se guardan.',
+        'Choisissez-en un autre dans les paramètres IA, puis reprenez.',
+        'Выберите другую в настройках ИИ и продолжите. Готовые примеры сохранены.',
+    ],
+    provider: [
+        'An example couldn’t be generated',
+        'No se pudo generar un ejemplo',
+        'Un exemple n’a pas pu être créé',
+        'Не удалось создать пример',
+    ],
+    providerBody: [
+        'The AI service failed. Ready examples are saved — resume when you’re ready.',
+        'Falló el servicio de IA. Los ejemplos listos se guardan; reanuda cuando quieras.',
+        'Le service IA a échoué. Les exemples prêts sont enregistrés — reprenez quand vous voulez.',
+        'Сбой на стороне ИИ. Готовые примеры сохранены — продолжите, когда будете готовы.',
+    ],
+    network: [
+        'You’re offline',
+        'Sin conexión',
+        'Vous êtes hors ligne',
+        'Нет соединения',
+    ],
+    networkBody: [
+        'Showing the last known progress. Preparation may still be running — we’ll check again when you’re back online.',
+        'Se muestra el último progreso. La preparación puede seguir; volveremos a comprobar al reconectar.',
+        'Dernière progression affichée. La préparation continue peut-être — nouvelle vérification au retour de la connexion.',
+        'Показан последний известный прогресс. Подготовка может продолжаться — проверим снова, когда появится соединение.',
+    ],
+    reconnect: [
+        'Check again',
+        'Comprobar de nuevo',
+        'Vérifier à nouveau',
+        'Проверить снова',
+    ],
+    openAiSettings: [
+        'Open AI settings',
+        'Abrir ajustes de IA',
+        'Ouvrir les paramètres IA',
+        'Открыть настройки ИИ',
+    ],
+    stale: [
+        'Preparation is outdated',
+        'La preparación está desactualizada',
+        'Préparation obsolète',
+        'Подготовка устарела',
+    ],
+    staleBody: [
+        'The dictionary words or the direction changed. Start a new “Saved first” preparation — saved examples will be reused.',
+        'Cambiaron las palabras o la dirección. Inicia una nueva preparación «Primero guardadas»: se reutilizarán los ejemplos.',
+        'Les mots ou le sens ont changé. Lancez une nouvelle préparation « Enregistrées d’abord » — les exemples seront réutilisés.',
+        'Слова словаря или направление изменились. Начните новую подготовку «Сначала сохранённые» — сохранённые примеры будут использованы.',
+    ],
+    expiredBody: [
+        'This preparation is no longer available. Older inactive preparations expire after 7 days; resumable pauses are kept. Your saved examples are still in the library.',
+        'Esta preparación ya no está disponible. Las preparaciones inactivas antiguas caducan tras 7 días; las pausas reanudables se conservan. Tus ejemplos siguen en la biblioteca.',
+        'Cette préparation n’est plus disponible. Les anciennes préparations inactives expirent après 7 jours ; les pauses reprenables sont conservées. Vos exemples restent dans la bibliothèque.',
+        'Эта подготовка больше недоступна. Старые неактивные подготовки удаляются через 7 дней; паузы с возможностью продолжения сохраняются. Примеры остались в библиотеке.',
+    ],
+    startAgain: [
+        'Start a new saved-first preparation',
+        'Nueva preparación «Primero guardadas»',
+        'Nouvelle préparation « Enregistrées d’abord »',
+        'Начать заново: «Сначала сохранённые»',
+    ],
+    quota: [
+        'Too many saved preparations',
+        'Demasiadas preparaciones guardadas',
+        'Trop de préparations enregistrées',
+        'Слишком много сохранённых подготовок',
+    ],
+    quotaBody: [
+        'You can keep up to 20 preparations with examples. Finish one or wait for older ones to expire — saved examples aren’t affected.',
+        'Puedes tener hasta 20 preparaciones con ejemplos. Termina alguna o espera a que caduquen; los ejemplos no se ven afectados.',
+        'Vous pouvez conserver 20 préparations avec exemples. Terminez-en une ou attendez l’expiration — les exemples ne sont pas touchés.',
+        'Можно хранить до 20 подготовок с примерами. Завершите одну или дождитесь окончания срока хранения — сохранённые примеры не пострадают.',
+    ],
+    revoked: [
+        'Access to this dictionary was removed',
+        'Se retiró el acceso al diccionario',
+        'L’accès à ce dictionnaire a été retiré',
+        'Доступ к словарю закрыт',
+    ],
+    revokedBody: [
+        'Preparation and practice for this dictionary have stopped. Your history is kept.',
+        'La preparación y la práctica se detuvieron. Tu historial se conserva.',
+        'La préparation et la pratique sont arrêtées. Votre historique est conservé.',
+        'Подготовка и практика для этого словаря остановлены. Ваша история сохранена.',
+    ],
+    session: [
+        'You’ve been signed out',
+        'Se cerró tu sesión',
+        'Vous avez été déconnecté',
+        'Сеанс завершён',
+    ],
+    sessionBody: [
+        'Sign in again to see this preparation. Nothing was started on your behalf.',
+        'Inicia sesión de nuevo para ver esta preparación. No se inició nada en tu nombre.',
+        'Reconnectez-vous pour voir cette préparation. Rien n’a été lancé à votre place.',
+        'Войдите снова, чтобы увидеть подготовку. Ничего не запускалось от вашего имени.',
+    ],
+    removedDict: [
+        'This dictionary was removed',
+        'Este diccionario se eliminó',
+        'Ce dictionnaire a été supprimé',
+        'Словарь удалён',
+    ],
+    removedDictBody: [
+        'Preparation stopped and its examples are no longer available.',
+        'La preparación se detuvo y sus ejemplos ya no están disponibles.',
+        'La préparation s’est arrêtée et ses exemples ne sont plus disponibles.',
+        'Подготовка остановлена, её примеры больше недоступны.',
+    ],
+    toLibrary: [
+        'Go to my dictionaries',
+        'Ir a mis diccionarios',
+        'Aller à mes dictionnaires',
+        'К моим словарям',
+    ],
+    signIn: ['Sign in', 'Iniciar sesión', 'Se connecter', 'Войти'],
+    close: ['Close', 'Cerrar', 'Fermer', 'Закрыть'],
+    savedOnlyZero: [
+        'No AI credits: “Saved only” still works for free.',
+        'Sin créditos: «Solo guardadas» sigue siendo gratis.',
+        'Aucun crédit : « Enregistrées uniquement » reste gratuit.',
+        'Кредитов нет — режим «Только сохранённые» работает бесплатно.',
+    ],
+    liveProgress: [
+        '{done} of {total} words ready',
+        '{done} de {total} palabras listas',
+        '{done} mots prêts sur {total}',
+        'Готово {done} из {total} слов',
+    ],
+} satisfies Record<string, Row>;
+export function usePreparationCopy() {
+    const { locale } = useI18n();
+    function P(
+        key: keyof typeof PREPARATION,
+        values: Record<string, number | string> = {},
+    ) {
+        const indexes = { en: 0, es: 1, fr: 2, ru: 3 };
+        const value: string | Plural = PREPARATION[key][indexes[locale]]!;
+        let text: string;
+        if (typeof value === 'string') text = value;
+        else
+            text =
+                value[
+                    new Intl.PluralRules(locale).select(Number(values.n ?? 0))
+                ] ?? value.other;
+        return text.replace(/\{(\w+)\}/g, (_, name: string) =>
+            String(values[name] ?? ''),
+        );
+    }
+    return {
+        P,
+        num: (value: number) => new Intl.NumberFormat(locale).format(value),
+    };
+}

@@ -92,67 +92,94 @@ describe('sentence worker fencing and failure publication', () => {
         expect(f.store.claimNext.mock.calls[0]?.[0].supportedFormats).toEqual([
             'sentence-generation:v1',
             'sentence-generation:v2',
+            'sentence-preparation:v1',
+            'sentence-preparation:v2',
             'sentence-check:v1',
         ]);
     });
-    it('still completes a legacy-v1 job whose segments lack contextual metadata', async () => {
+    it('rejects preparation format/policy mismatches before paid dispatch', async () => {
         const f = setup();
-        const entryId = '00000000-0000-4000-8000-000000000001';
         f.store.claimNext.mockResolvedValue({
             ...f.job,
             kind: 'sentence-generation',
-            format: 'sentence-generation:v1',
+            format: 'sentence-preparation:v2',
             input: {
                 ...(f.job.kind === 'sentence-generation' ? f.job.input : {}),
-                schemaVersion: 1,
                 generationPolicyVersion: 1,
-                dictionaryId: 'dict',
-                direction: 'source-to-target',
-                sourceLanguage: 'en',
-                targetLanguage: 'de',
-                priorityEntryId: entryId,
-                candidates: [
-                    {
-                        entryId,
-                        learningVersion: 1,
-                        sourceText: 'go',
-                        targetText: 'gehen',
-                    },
-                ],
             },
-        });
-        f.provider.generate.mockResolvedValue({
-            draft: {
-                sourceText: 'We go today.',
-                referenceTranslation: 'Wir gehen heute.',
-                segments: [
-                    { text: 'We ', entryId: null },
-                    { text: 'go', entryId },
-                    { text: ' today.', entryId: null },
-                ],
-                targets: [
-                    {
-                        entryId,
-                        normalizedHint: 'gehen',
-                        hintForm: 'infinitive',
-                    },
-                ],
-            },
-            usage: { inputTokens: 10, outputTokens: 20 },
-        });
+        } as ClaimedSentenceJob);
         await f.service.processNext(new AbortController().signal);
-        expect(f.store.fail).not.toHaveBeenCalled();
-        expect(f.store.completeGeneration).toHaveBeenCalledOnce();
-        const call = f.store.completeGeneration.mock.calls[0]!;
-        expect(call[1].content.hints).toEqual([
-            { id: 'hint-1', text: 'gehen' },
-        ]);
-        expect(
-            call[1].content.segments.every(
-                (segment) => !segment.contextualHintId,
-            ),
-        ).toBe(true);
+        expect(f.store.markDispatched).not.toHaveBeenCalled();
+        expect(f.provider.generate).not.toHaveBeenCalled();
+        expect(f.store.fail).toHaveBeenCalledWith(
+            f.job.lease,
+            { code: 'invalid_model_output', retryAt: null },
+            expect.any(Object),
+        );
     });
+    it.each(['sentence-generation:v1', 'sentence-preparation:v1'] as const)(
+        'completes %s through the same validated executor',
+        async (format) => {
+            const f = setup();
+            const entryId = '00000000-0000-4000-8000-000000000001';
+            f.store.claimNext.mockResolvedValue({
+                ...f.job,
+                kind: 'sentence-generation',
+                format,
+                input: {
+                    ...(f.job.kind === 'sentence-generation'
+                        ? f.job.input
+                        : {}),
+                    schemaVersion: 1,
+                    generationPolicyVersion: 1,
+                    dictionaryId: 'dict',
+                    direction: 'source-to-target',
+                    sourceLanguage: 'en',
+                    targetLanguage: 'de',
+                    priorityEntryId: entryId,
+                    candidates: [
+                        {
+                            entryId,
+                            learningVersion: 1,
+                            sourceText: 'go',
+                            targetText: 'gehen',
+                        },
+                    ],
+                },
+            });
+            f.provider.generate.mockResolvedValue({
+                draft: {
+                    sourceText: 'We go today.',
+                    referenceTranslation: 'Wir gehen heute.',
+                    segments: [
+                        { text: 'We ', entryId: null },
+                        { text: 'go', entryId },
+                        { text: ' today.', entryId: null },
+                    ],
+                    targets: [
+                        {
+                            entryId,
+                            normalizedHint: 'gehen',
+                            hintForm: 'infinitive',
+                        },
+                    ],
+                },
+                usage: { inputTokens: 10, outputTokens: 20 },
+            });
+            await f.service.processNext(new AbortController().signal);
+            expect(f.store.fail).not.toHaveBeenCalled();
+            expect(f.store.completeGeneration).toHaveBeenCalledOnce();
+            const call = f.store.completeGeneration.mock.calls[0]!;
+            expect(call[1].content.hints).toEqual([
+                { id: 'hint-1', text: 'gehen' },
+            ]);
+            expect(
+                call[1].content.segments.every(
+                    (segment) => !segment.contextualHintId,
+                ),
+            ).toBe(true);
+        },
+    );
     it('honors the processable release allowlist, including an empty disabled list', async () => {
         const f = setup();
         f.service = new SentenceWorkerService({

@@ -24,6 +24,7 @@ import { AdminApiError } from '@/shared/api/admin-api';
 import styles from '../shared/page.module.css';
 import { AiCreditsPanel } from './ui/ai-credits-panel/ai-credits-panel';
 import { StatusTag } from './users-page';
+import { SentenceLibraryPanel } from './ui/sentence-library-panel/sentence-library-panel';
 
 type Operation = 'disable' | 'restore' | 'deletion/cancel';
 
@@ -227,6 +228,16 @@ export function UserDetailPage() {
             {detail ? (
                 <AiCreditsPanel
                     key={detail.id}
+                    mutable={['active', 'disabled', 'pending'].includes(
+                        detail.status,
+                    )}
+                    userId={detail.id}
+                />
+            ) : null}
+            {detail &&
+            ['active', 'disabled', 'pending'].includes(detail.status) ? (
+                <SentenceLibraryPanel
+                    key={`sentences-${detail.id}`}
                     mutable={['active', 'disabled', 'pending'].includes(
                         detail.status,
                     )}

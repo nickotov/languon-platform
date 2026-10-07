@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { AdminSentenceLibrary } from '../../../../../src/modules/administration/application/ports/admin-sentence-library';
+import { SentenceLibraryDeletionBusyError } from '../../../../../src/modules/learning/application/ports/sentence-library-store';
 
 import type { AuthenticationService } from '../../../../../src/modules/authentication/application/authentication-service';
 import { RecentAuthenticationRequiredError } from '../../../../../src/modules/authentication/application/authentication-errors';
@@ -18,7 +20,12 @@ const targetId = '0198c200-6e90-7caa-a0ce-93e7faf1405f';
 const sessionId = '0198c200-9c28-7d02-81d4-1ea13de886a8';
 const now = new Date('2026-08-20T08:00:00.000Z');
 
-function setup(options: { membership?: boolean } = {}) {
+function setup(
+    options: {
+        membership?: boolean;
+        sentenceLibrary?: AdminSentenceLibrary;
+    } = {},
+) {
     const store = {
         adjustAiCredits: vi.fn().mockResolvedValue({
             ok: true,
@@ -99,6 +106,9 @@ function setup(options: { membership?: boolean } = {}) {
             clock,
             ids,
             store,
+            ...(options.sentenceLibrary
+                ? { sentenceLibrary: options.sentenceLibrary }
+                : {}),
         }),
         store,
     };
@@ -230,6 +240,201 @@ describe('AdministrationService', () => {
             }),
         );
     });
+    it('discovers dictionaries through the authorized learning projection', async () => {
+        const library = {
+            adminDictionaries: vi
+                .fn()
+                .mockResolvedValue({ items: [], nextCursor: null }),
+            adminList: vi.fn(),
+            adminDetail: vi.fn(),
+            adminSnapshot: vi.fn(),
+            adminMutate: vi.fn(),
+        } satisfies AdminSentenceLibrary;
+        const { service } = setup({ sentenceLibrary: library });
+        await expect(
+            service.sentenceDictionaries(
+                'access-token',
+                targetId,
+                { limit: 25 },
+                sessionId,
+            ),
+        ).resolves.toEqual({ items: [], nextCursor: null });
+        expect(library.adminDictionaries).toHaveBeenCalledWith(
+            expect.objectContaining({
+                actorId,
+                targetUserId: targetId,
+                actorSessionId: sessionId,
+            }),
+            { limit: 25 },
+            expect.any(Object),
+        );
+        expect(library.adminDictionaries.mock.calls[0]?.[0]).not.toHaveProperty(
+            'dictionaryId',
+        );
+    });
+
+    it('authorizes sentence previews and passes a target-scoped, content-free audit context', async () => {
+        const library = {
+            adminDictionaries: vi.fn(),
+            adminList: vi
+                .fn()
+                .mockResolvedValue({ items: [], nextCursor: null }),
+            adminDetail: vi.fn(),
+            adminSnapshot: vi.fn(),
+            adminMutate: vi.fn(),
+        } satisfies AdminSentenceLibrary;
+        const { service, authentication } = setup({ sentenceLibrary: library });
+        await expect(
+            service.sentenceLibraryList(
+                'access-token',
+                targetId,
+                sessionId,
+                {
+                    personalArchive: 'active',
+                    globalArchive: 'all',
+                    contentState: 'all',
+                    relation: 'all',
+                    limit: 25,
+                },
+                sessionId,
+            ),
+        ).resolves.toEqual({ items: [], nextCursor: null });
+        expect(library.adminList).toHaveBeenCalledWith(
+            expect.objectContaining({
+                actorId,
+                actorSessionId: sessionId,
+                targetUserId: targetId,
+                dictionaryId: sessionId,
+                audit: expect.objectContaining({ correlationId: sessionId }),
+            }),
+            expect.any(Object),
+            expect.objectContaining({ now }),
+        );
+        expect(
+            authentication.requireRecentlyAuthenticatedSession,
+        ).not.toHaveBeenCalled();
+    });
+
+    it('blocks sentence management when membership is inactive', async () => {
+        const library = {
+            adminDictionaries: vi.fn(),
+            adminList: vi.fn(),
+            adminDetail: vi.fn(),
+            adminSnapshot: vi.fn(),
+            adminMutate: vi.fn(),
+        } satisfies AdminSentenceLibrary;
+        const { service } = setup({
+            sentenceLibrary: library,
+            membership: false,
+        });
+        await expect(
+            service.sentenceLibraryList(
+                'access-token',
+                targetId,
+                sessionId,
+                {
+                    personalArchive: 'active',
+                    globalArchive: 'all',
+                    contentState: 'all',
+                    relation: 'all',
+                    limit: 25,
+                },
+                sessionId,
+            ),
+        ).rejects.toBeInstanceOf(AdminAccessDeniedError);
+        expect(library.adminList).not.toHaveBeenCalled();
+    });
+
+    it('requires recent auth for archive and audits rejection without sentence content', async () => {
+        const library = {
+            adminDictionaries: vi.fn(),
+            adminList: vi.fn(),
+            adminDetail: vi.fn(),
+            adminSnapshot: vi.fn(),
+            adminMutate: vi.fn(),
+        } satisfies AdminSentenceLibrary;
+        const { service, authentication, store } = setup({
+            sentenceLibrary: library,
+        });
+        vi.mocked(store.findUser).mockResolvedValue({ id: targetId } as never);
+        vi.mocked(
+            authentication.requireRecentlyAuthenticatedSession,
+        ).mockRejectedValue(new RecentAuthenticationRequiredError());
+        await expect(
+            service.mutateSentenceLibrary(
+                'access-token',
+                targetId,
+                sessionId,
+                {
+                    operation: 'archive',
+                    operationId: sessionId,
+                    selection: {
+                        type: 'selected',
+                        items: [{ exerciseId: sessionId, expectedVersion: 0 }],
+                    },
+                    reason: 'User requested removal',
+                },
+                sessionId,
+            ),
+        ).rejects.toBeInstanceOf(RecentAuthenticationRequiredError);
+        expect(library.adminMutate).not.toHaveBeenCalled();
+        expect(store.recordAudit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                action: 'sentence_personally_archived',
+                outcome: 'rejected',
+                targetUserId: targetId,
+                metadata: {
+                    targetKind: 'sentence_library',
+                    requestedTargetUserId: targetId,
+                    dictionaryId: sessionId,
+                    operationId: sessionId,
+                    selectionKind: 'selected',
+                    code: 'recent_authentication_required',
+                },
+            }),
+        );
+    });
+
+    it('audits a retryable purge busy result without creating deferred work', async () => {
+        const library = {
+            adminDictionaries: vi.fn(),
+            adminList: vi.fn(),
+            adminDetail: vi.fn(),
+            adminSnapshot: vi.fn(),
+            adminMutate: vi
+                .fn()
+                .mockRejectedValue(new SentenceLibraryDeletionBusyError()),
+        } satisfies AdminSentenceLibrary;
+        const { service, store } = setup({ sentenceLibrary: library });
+        await expect(
+            service.mutateSentenceLibrary(
+                'access-token',
+                targetId,
+                sessionId,
+                {
+                    operation: 'delete',
+                    operationId: sessionId,
+                    selection: {
+                        type: 'selected',
+                        items: [{ exerciseId: sessionId, expectedVersion: 0 }],
+                    },
+                    reason: 'Confirmed permanent removal',
+                    confirmation: 'delete-archived-examples',
+                },
+                sessionId,
+            ),
+        ).rejects.toBeInstanceOf(SentenceLibraryDeletionBusyError);
+        expect(store.recordAudit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                action: 'sentence_permanently_deleted',
+                outcome: 'rejected',
+                metadata: expect.objectContaining({
+                    code: 'sentence_library_deletion_busy',
+                }),
+            }),
+        );
+    });
+
     it('authorizes from active persisted membership instead of token claims', async () => {
         const { service, store } = setup();
 

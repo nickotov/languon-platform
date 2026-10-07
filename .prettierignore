@@ -18,3 +18,7 @@ apps/*/next-env.d.ts
 .agent/features/035-user-ai-model-preferences-backend/designs/profile-text-ai-preferences/v001/source
 .agent/features/036-sentence-practice-backend/designs/sentence-practice/v001.prompt.md
 .agent/features/036-sentence-practice-backend/designs/sentence-practice/v001/source
+.agent/features/039-sentence-library-management/designs/sentence-library-and-preparation/v001.prompt.md
+.agent/features/039-sentence-library-management/designs/admin-sentence-library-management/v001.prompt.md
+.agent/features/039-sentence-library-management/designs/sentence-library-and-preparation/v001/source
+.agent/features/039-sentence-library-management/designs/sentence-library-and-preparation/v001/source-manifest.json

@@ -33,6 +33,7 @@ import {
     sentenceExerciseEntriesTable as exerciseEntries,
     sentenceAttemptsTable as attempts,
 } from './sentence-schema';
+import { sentencePreparationChildrenTable as preparationChildren } from './sentence-preparation-schema';
 import {
     authorizeSentence,
     lockSentenceLearner,
@@ -110,9 +111,16 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                 const version = (job.inputPayload as SentenceGenerationInput)
                     .generationPolicyVersion;
                 if (
-                    (job.format === 'sentence-generation:v1' &&
+                    ([
+                        'sentence-generation:v1',
+                        'sentence-preparation:v1',
+                    ].includes(job.format) &&
                         version !== 1) ||
-                    (job.format === 'sentence-generation:v2' && version !== 2)
+                    ([
+                        'sentence-generation:v2',
+                        'sentence-preparation:v2',
+                    ].includes(job.format) &&
+                        version !== 2)
                 )
                     return 'invalid_model_output';
             }
@@ -440,7 +448,9 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                               kind: 'sentence-generation' as const,
                               format: job.format as
                                   | 'sentence-generation:v1'
-                                  | 'sentence-generation:v2',
+                                  | 'sentence-generation:v2'
+                                  | 'sentence-preparation:v1'
+                                  | 'sentence-preparation:v2',
                               input: job.inputPayload as SentenceGenerationInput,
                           }
                         : {
@@ -625,7 +635,17 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                     ...t,
                 })),
             );
-            await exposeSentence(tx, job.learnerId, exercise!, context.now);
+            const [preparationChild] = await tx
+                .select()
+                .from(preparationChildren)
+                .where(eq(preparationChildren.jobId, job.id));
+            if (
+                job.format.startsWith('sentence-preparation:') &&
+                !preparationChild
+            )
+                throw new Error('Preparation job has no durable parent');
+            if (!preparationChild)
+                await exposeSentence(tx, job.learnerId, exercise!, context.now);
             await tx
                 .update(jobs)
                 .set({ resultExerciseId: id })

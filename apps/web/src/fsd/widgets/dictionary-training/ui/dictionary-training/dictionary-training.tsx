@@ -1,9 +1,14 @@
 'use client';
 
 import { BookOpen, MessageSquareText, RefreshCw } from 'lucide-react';
-import { DictionaryLanguageTagSchema } from '@languon/contracts';
+import {
+    DictionaryLanguageTagSchema,
+    SentenceDirectionSchema,
+    SentenceModeSchema,
+    SentencePreparationBatchSchema,
+} from '@languon/contracts';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
     TrainingLauncher,
     type TrainingLauncherProps,
@@ -16,6 +21,9 @@ import {
     SentenceSetup,
     SentencePracticeSession,
     SentenceHistory,
+    useSentencePreparation,
+    SentencePreparationChip,
+    SentencePreparationSheet,
     type Configuration,
     isSentenceAccessLoss,
 } from '@/fsd/features/sentence-training';
@@ -38,6 +46,7 @@ const labels = {
         keep: 'Keep editing',
         discard: 'Discard changes',
         close: 'Close',
+        library: 'Saved sentences',
     },
     ru: {
         sentence: 'Практика предложений',
@@ -53,6 +62,7 @@ const labels = {
         keep: 'Продолжить редактирование',
         discard: 'Отменить изменения',
         close: 'Закрыть',
+        library: 'Сохранённые предложения',
     },
     fr: {
         sentence: 'Pratique des phrases',
@@ -68,6 +78,7 @@ const labels = {
         keep: 'Continuer à modifier',
         discard: 'Abandonner',
         close: 'Fermer',
+        library: 'Phrases enregistrées',
     },
     es: {
         sentence: 'Práctica de frases',
@@ -83,6 +94,7 @@ const labels = {
         keep: 'Seguir editando',
         discard: 'Descartar',
         close: 'Cerrar',
+        library: 'Frases guardadas',
     },
 };
 
@@ -104,6 +116,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
     const { locale, href, t } = useI18n();
     const copy = labels[locale];
     const pathname = usePathname();
+    const router = useRouter();
     const search = useSearchParams();
     const root = useRef<HTMLDivElement>(null);
     const dictionaryId =
@@ -138,6 +151,10 @@ function TrainingComposition(props: TrainingLauncherProps) {
     >('loading');
     const [capabilityRevision, setCapabilityRevision] = useState(0);
     const [setupOpen, setSetupOpen] = useState(false);
+    const [restartPreparation, setRestartPreparation] = useState(false);
+    const [preparationOpen, setPreparationOpen] = useState(false);
+    const consumedLaunch = useRef<string | null>(null);
+    const [preparedLaunchError, setPreparedLaunchError] = useState(false);
     const [running, setRunning] = useState(false);
     const [fullscreen, setFullscreen] = useState<
         Promise<boolean> | undefined
@@ -150,6 +167,11 @@ function TrainingComposition(props: TrainingLauncherProps) {
     const afterPreferenceClose = useRef<(() => void) | null>(null);
     const [accessLost, setAccessLost] = useState(false);
     const session = useSentenceSession({ api, identity: props.identity });
+    const preparation = useSentencePreparation({
+        api,
+        identity: `${props.identity.split(':')[0]}:${dictionaryId ? `owner:${dictionaryId}` : `shared:${shareId}`}`,
+        enabled: props.signedIn && !accessLost,
+    });
     const setup = useSentenceSetup({
         api,
         identity: props.identity,
@@ -182,6 +204,67 @@ function TrainingComposition(props: TrainingLauncherProps) {
         exerciseHistory.error,
     ].find((error) => error && isSentenceAccessLoss(error));
     const blocked = accessLost || !!accessError;
+    useEffect(() => {
+        const launch = search.get('practice');
+        if (!launch) {
+            consumedLaunch.current = null;
+            return;
+        }
+        const intent = `${launch}:${search.get('prep') ?? ''}:${search.get('batch') ?? ''}`;
+        if (
+            consumedLaunch.current === intent ||
+            capability !== 'enabled' ||
+            blocked
+        )
+            return;
+        consumedLaunch.current = intent;
+        if (!props.signedIn) setSigninOpen(true);
+        else if (launch === 'setup') setSetupOpen(true);
+        else if (launch === 'progress') setPreparationOpen(true);
+        else if (launch === 'prepared' && api.preparedBatch) {
+            const batchId = SentencePreparationBatchSchema.shape.id.safeParse(
+                search.get('batch'),
+            );
+            const direction = SentenceDirectionSchema.safeParse(
+                search.get('direction'),
+            );
+            const mode = SentenceModeSchema.safeParse(search.get('mode'));
+            if (!batchId.success || !direction.success || !mode.success) {
+                setPreparedLaunchError(true);
+                return;
+            }
+            setPreparedLaunchError(false);
+            let cancelled = false;
+            void api
+                .preparedBatch(batchId.data)
+                .then((batch) => {
+                    if (cancelled) return;
+                    if (!batch.preparedEntryIds.length)
+                        throw new Error('Prepared batch unavailable');
+                    start({
+                        direction: direction.data,
+                        mode: mode.data,
+                        scope: {
+                            type: 'manual',
+                            entryIds: batch.preparedEntryIds,
+                        },
+                        preparedBatchId: batch.id,
+                        ...(preparation.explanationLanguage
+                            ? {
+                                  explanationLanguage:
+                                      preparation.explanationLanguage,
+                              }
+                            : {}),
+                    });
+                })
+                .catch(() => {
+                    if (!cancelled) setPreparedLaunchError(true);
+                });
+            return () => {
+                cancelled = true;
+            };
+        }
+    }, [search, capability, blocked, props.signedIn]);
     useEffect(() => {
         if (!accessError) return;
         setAccessLost(true);
@@ -234,7 +317,17 @@ function TrainingComposition(props: TrainingLauncherProps) {
             setSigninOpen(true);
             return;
         }
+        setRestartPreparation(false);
         setSetupOpen(true);
+    }
+    function openLibrary() {
+        const capabilityFragment =
+            props.target.kind === 'shared' ? `#${props.target.shareKey}` : '';
+        router.push(
+            href(
+                `${pathname.replace(/\/$/, '')}/sentences${capabilityFragment}`,
+            ),
+        );
     }
     function closePractice() {
         setRunning(false);
@@ -270,6 +363,12 @@ function TrainingComposition(props: TrainingLauncherProps) {
         afterClose?.();
     }
     const items: MenuItem[] = [
+        {
+            label: copy.library,
+            icon: <MessageSquareText className='h-4 w-4' />,
+            disabled: blocked || !props.signedIn || capability !== 'enabled',
+            onSelect: openLibrary,
+        },
         {
             label:
                 capability === 'loading'
@@ -352,6 +451,11 @@ function TrainingComposition(props: TrainingLauncherProps) {
     if (blocked)
         return (
             <div ref={root}>
+                {preparedLaunchError ? (
+                    <p role='alert' className='text-sm text-danger-default'>
+                        {copy.unavailable}
+                    </p>
+                ) : null}
                 <TrainingLauncher {...props} additionalItems={items} />
                 <p className='mt-2 text-sm text-text-secondary'>
                     {copy.unavailable}
@@ -363,18 +467,55 @@ function TrainingComposition(props: TrainingLauncherProps) {
         );
     return (
         <div ref={root}>
+            {preparedLaunchError ? (
+                <p role='alert' className='text-sm text-danger-default'>
+                    {copy.unavailable}
+                </p>
+            ) : null}
+            <SentencePreparationChip
+                controller={preparation}
+                onOpen={() => setPreparationOpen(true)}
+            />
             <TrainingLauncher {...props} additionalItems={items} />
             <SentenceSetup
                 controller={setup}
                 open={setupOpen}
                 onClose={() => {
                     setSetupOpen(false);
+                    setRestartPreparation(false);
                     restoreFocus();
                 }}
                 onStart={start}
                 sourceLanguage={props.sourceLanguage.code}
                 targetLanguage={props.targetLanguage.code}
                 dictionaryTitle={props.dictionaryTitle}
+                preparation={preparation}
+                initialPreparationEnabled={
+                    restartPreparation || search.get('prep') === '1'
+                }
+                onViewPreparation={() => setPreparationOpen(true)}
+                onOpenLibrary={openLibrary}
+            />
+            <SentencePreparationSheet
+                controller={preparation}
+                open={preparationOpen}
+                onClose={() => setPreparationOpen(false)}
+                onRestartSetup={() => {
+                    setPreparationOpen(false);
+                    setRestartPreparation(true);
+                    setSetupOpen(true);
+                }}
+                onStart={(configuration) => {
+                    setPreparationOpen(false);
+                    start(configuration);
+                }}
+                dictionaryTitle={props.dictionaryTitle}
+                sourceLanguage={props.sourceLanguage.code}
+                targetLanguage={props.targetLanguage.code}
+                onOpenLibrary={openLibrary}
+                onOpenAiSettings={() =>
+                    router.push(href('/profile?tab=account'))
+                }
             />
             {running && (
                 <SentencePracticeSession

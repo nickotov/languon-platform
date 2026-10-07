@@ -3,6 +3,7 @@ import { publishTextAiWorkerObservations } from '../../../../../src/modules/text
 import {
     isSentenceExecutionCapableObservation,
     isTextAiCapacityCapableObservation,
+    isTextAiSelectionCapableObservation,
     textAiSelectionObservationId,
 } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 type Observation = Parameters<
@@ -112,6 +113,72 @@ describe('shared worker capability publication', () => {
         expect(
             f.rows.filter((row) => row.status === 'unverified'),
         ).toHaveLength(2);
+    });
+    it('advertises preparation only when the new executor explicitly opts in', async () => {
+        for (const enabled of [false, true]) {
+            const f = fixture();
+            await publishTextAiWorkerObservations({
+                database: f.database,
+                credentials: {},
+                now,
+                readinessTimeoutMs: 20,
+                supportedFormats: ['sentence-generation:v2'],
+                workerId: 'worker',
+                learningExecutionEnabled: true,
+                sentencePreparationExecutionEnabled: enabled,
+            });
+            expect(f.rows).toHaveLength(2);
+            for (const row of f.rows) {
+                expect(
+                    isSentenceExecutionCapableObservation(
+                        row,
+                        'sentence-preparation:v2',
+                    ),
+                ).toBe(enabled);
+                expect(
+                    isSentenceExecutionCapableObservation(
+                        row,
+                        'sentence-preparation:v1',
+                    ),
+                ).toBe(false);
+                if (enabled) {
+                    expect(
+                        isSentenceExecutionCapableObservation(
+                            {
+                                ...row,
+                                textAiSupportedFormats: [
+                                    'sentence-preparation:v2',
+                                ],
+                            },
+                            'sentence-preparation:v2',
+                        ),
+                    ).toBe(false);
+                    expect(
+                        isSentenceExecutionCapableObservation(
+                            { ...row, learningExecutionRevision: null },
+                            'sentence-preparation:v2',
+                        ),
+                    ).toBe(false);
+                    expect(
+                        isTextAiCapacityCapableObservation(
+                            row,
+                            'sentence-preparation:v2',
+                        ),
+                    ).toBe(false);
+                    expect(
+                        isTextAiSelectionCapableObservation(
+                            row,
+                            'sentence-preparation:v2',
+                        ),
+                    ).toBe(false);
+                }
+                expect(row.textAiSupportedFormats).toEqual(
+                    enabled
+                        ? ['sentence-generation:v2', 'sentence-preparation:v2']
+                        : ['sentence-generation:v2'],
+                );
+            }
+        }
     });
     it('does not refresh any namespace when no registered requested formats apply', async () => {
         const f = fixture();

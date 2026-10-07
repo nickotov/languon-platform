@@ -8,7 +8,10 @@ export type SelectOptionGroup = { label: string; options: SelectOption[] };
 
 export type SelectSize = 'lg' | 'md' | 'sm';
 
-export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+export type SelectProps = Omit<
+    SelectHTMLAttributes<HTMLSelectElement>,
+    'size'
+> & {
     containerClassName?: string;
     error?: string;
     fullWidth?: boolean;

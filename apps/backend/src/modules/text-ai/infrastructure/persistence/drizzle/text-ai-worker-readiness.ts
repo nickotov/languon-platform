@@ -81,8 +81,18 @@ export function isSentenceExecutionCapableObservation(
     observation: WorkerCapabilityObservation,
     format?: string,
 ): boolean {
+    const preparationBase =
+        format === 'sentence-preparation:v1'
+            ? 'sentence-generation:v1'
+            : format === 'sentence-preparation:v2'
+              ? 'sentence-generation:v2'
+              : undefined;
+    const formatSupported = preparationBase
+        ? supports(observation, preparationBase) &&
+          observation.textAiSupportedFormats!.includes(format!)
+        : supports(observation, format);
     return (
-        supports(observation, format) &&
+        formatSupported &&
         observation.textAiCapacityRevision === 1 &&
         observation.learningExecutionRevision === 1 &&
         observation.creditSettlementRevision === 1 &&

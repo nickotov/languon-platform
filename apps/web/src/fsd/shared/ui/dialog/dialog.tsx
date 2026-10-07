@@ -110,8 +110,14 @@ export function Dialog({
         <DialogContext.Provider value={{ onClose }}>
             <dialog
                 aria-describedby={description ? descriptionId : undefined}
-                aria-labelledby={title ? titleId : undefined}
-                aria-label={!title ? closeLabel : undefined}
+                aria-labelledby={title && showHeader ? titleId : undefined}
+                aria-label={
+                    title && !showHeader
+                        ? title
+                        : !title
+                          ? closeLabel
+                          : undefined
+                }
                 className={[
                     styles.dialog,
                     styles[normalizeSize(size)],

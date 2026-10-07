@@ -457,6 +457,54 @@ function combinedRuntime(
 }
 describe('shared dictionary and sentence slot pool', () => {
     afterEach(() => vi.useRealTimers());
+    it('admits preparation and executes its child in the existing slot', async () => {
+        const calls: string[] = [];
+        const entered = deferred();
+        const service = {
+            readiness: vi.fn(async () => {}),
+            processNext: vi.fn(async () => false),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const sentencePreparation = {
+            tick: vi.fn(
+                async ({ signal }: { now: Date; signal: AbortSignal }) => {
+                    expect(signal.aborted).toBe(false);
+                    calls.push('admit');
+                    return true;
+                },
+            ),
+        };
+        const sentenceService = {
+            processNext: vi.fn(async (signal: AbortSignal) => {
+                calls.push('execute');
+                entered.resolve();
+                await pendingUntilAbort(signal);
+                return true;
+            }),
+            releaseWorkerLeases: vi.fn(async () => {}),
+        };
+        const runtime = new DictionaryWorkerRuntime({
+            service,
+            sentenceService,
+            sentencePreparation,
+            concurrency: 1,
+            drainTimeoutMs: 50,
+            pollIntervalMs: 50,
+            readinessTimeoutMs: 50,
+            supportedFormats: ['single-card:v1'],
+            workerId: 'worker',
+            logger: { info: vi.fn(), error: vi.fn() },
+        });
+        const running = runtime.run();
+        await entered.promise;
+        expect(calls).toEqual(['admit', 'execute']);
+        await expect(runtime.shutdown('SIGTERM')).resolves.toEqual({
+            forced: false,
+        });
+        await running;
+        expect(sentencePreparation.tick).toHaveBeenCalledOnce();
+        expect(sentenceService.releaseWorkerLeases).toHaveBeenCalledOnce();
+    });
     it('alternates both nonempty queues in one bounded slot', async () => {
         const calls: string[] = [];
         const entered = deferred();

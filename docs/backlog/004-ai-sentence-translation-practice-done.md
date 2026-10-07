@@ -173,3 +173,10 @@ tracks the user's requested Magic Patterns practice presentation from header to
 footer, preserving established generation, checking, hints, saved reuse and
 completion behavior. It retains v001 source selection after active-artifact
 reinspection and records scoped runtime evidence. Backlog status remains Done.
+
+## Related sentence-library work
+
+[BL-010](./010-sentence-library-management-done.md) tracks personal sentence archives,
+full-dictionary preparation and administrative management. Its
+[implementation plan](../sentence-library-implementation-plan.md) is additive;
+it does not change this task's completion or editing scope.

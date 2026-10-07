@@ -1,4 +1,4 @@
-// @user-flow-revision sentence-practice-web sha256:d6d7a5db8d528e52
+// @user-flow-revision sentence-practice-web sha256:be2af6f72f9b5ae8
 
 import {
     expect,
@@ -16,7 +16,10 @@ const verifiedOwners = new Set<number>();
 function email(info: TestInfo, role: string) {
     return `sentence-e2e-${runId}-${info.workerIndex}-${role}@example.test`;
 }
-function observeErrors(page: Page, expectedBlocked?: RegExp) {
+function observeErrors(
+    page: Page,
+    expectedBlocked?: RegExp | ((path: string) => boolean),
+) {
     const failures: string[] = [];
     page.on('pageerror', (error) => failures.push(error.message));
     page.on('console', (message) => {
@@ -27,7 +30,13 @@ function observeErrors(page: Page, expectedBlocked?: RegExp) {
             failures.push(message.text());
     });
     page.on('requestfailed', (request) => {
-        if (expectedBlocked?.test(new URL(request.url()).pathname)) return;
+        const path = new URL(request.url()).pathname;
+        if (
+            typeof expectedBlocked === 'function'
+                ? expectedBlocked(path)
+                : expectedBlocked?.test(path)
+        )
+            return;
         if (!request.failure()?.errorText.includes('ERR_ABORTED'))
             failures.push(
                 `${request.method()} ${new URL(request.url()).pathname}`,
@@ -720,7 +729,7 @@ test.describe('sentence practice and model preferences', () => {
             .click();
         await reader.route(
             /\/learning\/shared-dictionaries\/[^/]+\/sentences\/(?:attempts|reviews|prepare|progress)/,
-            (route) => route.abort('failed'),
+            (route) => route.abort('blockedbyclient'),
         );
         const dictionary = await page.request.get(
             `${apiOrigin}/dictionaries/${dictionaryId}`,
@@ -933,7 +942,7 @@ test('finishes a five-word Russian to French round and reuses completed examples
                     name:
                         index === 4
                             ? 'Skip and finish'
-                            : /(?:Skip|Next) sentence/,
+                            : /^(?:Skip|Next sentence)$/,
                 })
                 .click();
             if (index < 4) {
@@ -1370,5 +1379,506 @@ test('keeps dirty model preferences across Back without the Navigation API', asy
     await expect(page).toHaveURL(/\/profile$/);
     await expect(page.getByRole('radio', { name: /^Auto/ })).toBeChecked();
     expect(await page.evaluate(() => history.length)).toBe(length);
+    assertErrors();
+});
+// @user-flow sentence-practice-web/saved-library-preview-archive-restore
+test('previews saved hints and archives or restores an example without a review', async ({
+    page,
+}, info) => {
+    test.setTimeout(120_000);
+    let expectedLibraryFault = false;
+    const assertErrors = observeErrors(
+        page,
+        (path) => expectedLibraryFault && path.includes('/sentences/library'),
+    );
+    const token = await signup(page, email(info, 'library-owner'));
+    const headers = { Authorization: `Bearer ${token}` };
+    page.on('request', (request) => {
+        if (!request.url().startsWith(apiOrigin)) return;
+        const authorization = request.headers()['authorization'];
+        if (authorization) headers.Authorization = authorization;
+    });
+    const dictionaryId = await createDictionary(page, `Saved library ${runId}`);
+    await page.goto(`/dictionaries/${dictionaryId}/sentences`);
+    await expect(
+        page.getByText('No saved sentences yet', { exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'saved-sentence-library-empty');
+    await page.goto(`/dictionaries/${dictionaryId}`);
+    const practice = await startSentence(page);
+    await practice
+        .getByRole('button', { name: 'Close practice', exact: true })
+        .click();
+    const progressPath = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/progress?direction=source-to-target`;
+    const before = await page.request.get(progressPath, { headers });
+    expect(before.status()).toBe(200);
+    const initialProgress = await before.json();
+    await page.goto(`/dictionaries/${dictionaryId}/sentences`);
+    await page
+        .getByLabel('Translation direction', { exact: true })
+        .selectOption('source-to-target');
+    await expect(
+        page.getByRole('heading', { name: 'Saved sentences', exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByText('book is useful.', { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByLabel('Currentness', { exact: true })
+        .selectOption('outdated');
+    await expect(
+        page.getByText('No examples match these filters', { exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'saved-sentence-library-no-match');
+    await page.getByLabel('Currentness', { exact: true }).selectOption('all');
+    await expect(
+        page.getByText('book is useful.', { exact: true }),
+    ).toBeVisible();
+    const libraryPattern = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/library?*`;
+    let intercepted = 0;
+    expectedLibraryFault = true;
+    await page.route(
+        libraryPattern,
+        (route) => {
+            intercepted++;
+            return route.abort('blockedbyclient');
+        },
+        { times: 1 },
+    );
+    await page.reload();
+    await expect(
+        page.getByText('Saved sentences didn’t load', { exact: true }),
+    ).toBeVisible();
+    expectedLibraryFault = false;
+    expect(intercepted).toBe(1);
+    await capture(page, info, 'saved-sentence-library-retryable-error');
+    await page.getByRole('button', { name: 'Try again', exact: true }).click();
+    await expect(
+        page.getByText('book is useful.', { exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'saved-sentence-library-wide');
+    await page
+        .getByRole('checkbox', { name: 'Select: book is useful.', exact: true })
+        .check();
+    await page.getByRole('button', { name: 'View', exact: true }).click();
+    const preview = page.getByRole('dialog', {
+        name: 'Sentence preview',
+        exact: true,
+    });
+    await preview
+        .getByRole('button', { name: 'Example translation', exact: true })
+        .click();
+    await expect(preview).toContainText('libro es útil.');
+    await expect(preview).toContainText('useful');
+    const desktopPreview = await preview.boundingBox();
+    expect(desktopPreview).not.toBeNull();
+    expect(desktopPreview!.width).toBeCloseTo(480, 0);
+    expect(desktopPreview!.x + desktopPreview!.width).toBeCloseTo(
+        await page.evaluate(() => innerWidth),
+        0,
+    );
+    await capture(page, info, 'saved-sentence-preview-wide');
+    await preview.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(
+        page.getByRole('checkbox', {
+            name: 'Select: book is useful.',
+            exact: true,
+        }),
+    ).toBeChecked();
+    await page
+        .getByRole('checkbox', { name: 'Select: book is useful.', exact: true })
+        .uncheck();
+    await page
+        .getByRole('checkbox', { name: 'Select all on this page', exact: true })
+        .check();
+    await page
+        .getByRole('button', {
+            name: 'Everything matching these filters',
+            exact: true,
+        })
+        .click();
+    await capture(page, info, 'saved-sentence-library-selection-all-matching');
+    const snapshotResponse = page.waitForResponse(
+        (response) =>
+            response.url().endsWith('/sentences/library/snapshots') &&
+            response.request().method() === 'POST' &&
+            response.status() === 200,
+    );
+    await page
+        .getByRole('button', { name: 'Remove from my practice', exact: true })
+        .click();
+    const snapshot = (await (await snapshotResponse).json()) as {
+        matchingCount: number;
+    };
+    expect(snapshot.matchingCount).toBe(1);
+    const confirmation = page.getByRole('dialog', {
+        name: 'Remove 1 sentence from your practice?',
+        exact: true,
+    });
+    await expect(confirmation).toContainText('Your learning history stays.');
+    await capture(page, info, 'saved-sentence-archive-confirmation-wide');
+    await confirmation
+        .getByRole('button', { name: 'Remove from my practice', exact: true })
+        .click();
+    await expect(
+        page.getByText('book is useful.', { exact: true }),
+    ).not.toBeVisible();
+    await page.reload();
+    await expect(
+        page.getByRole('heading', { name: 'Saved sentences', exact: true }),
+    ).toBeVisible();
+    await page
+        .getByLabel('Translation direction', { exact: true })
+        .selectOption('source-to-target');
+    await page
+        .getByLabel('In my practice', { exact: true })
+        .selectOption('archived');
+    await expect(
+        page.getByText('book is useful.', { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole('button', { name: /^Restore/ })
+        .first()
+        .click();
+    const restoration = page.getByRole('dialog', {
+        name: 'Restore 1 sentence to your practice?',
+        exact: true,
+    });
+    await restoration
+        .getByRole('button', { name: 'Restore', exact: true })
+        .click();
+    await expect(
+        page.getByText('book is useful.', { exact: true }),
+    ).not.toBeVisible();
+    await page
+        .getByLabel('In my practice', { exact: true })
+        .selectOption('active');
+    await expect(
+        page.getByText('book is useful.', { exact: true }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await capture(page, info, 'saved-sentence-library-narrow');
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+        ),
+    ).toBe(true);
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    const filters = page.getByRole('dialog', { name: 'Filters', exact: true });
+    await expect(
+        filters.getByLabel('Translation direction', { exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'saved-sentence-filters-narrow');
+    await filters.getByRole('button', { name: 'Close', exact: true }).click();
+    await page
+        .getByRole('button', {
+            name: 'Actions for: book is useful.',
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole('menuitemradio', { name: 'View', exact: true })
+        .click();
+    await expect(preview).toBeVisible();
+    await preview
+        .getByRole('button', { name: 'Example translation', exact: true })
+        .click();
+    await expect(preview).toContainText('libro es útil.');
+    const viewportGeometry = await preview.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            viewportWidth: innerWidth,
+            viewportHeight: innerHeight,
+            matchingCss: Array.from(document.styleSheets).flatMap((sheet) => {
+                try {
+                    return Array.from(sheet.cssRules).flatMap((rule) => {
+                        if (!('selectorText' in rule) || !('style' in rule))
+                            return [];
+                        const selector = String(rule.selectorText);
+                        try {
+                            return element.matches(selector)
+                                ? [rule.cssText]
+                                : [];
+                        } catch {
+                            return [];
+                        }
+                    });
+                } catch {
+                    return [];
+                }
+            }),
+            inlineStyle: element.getAttribute('style'),
+            computed: {
+                position: getComputedStyle(element).position,
+                top: getComputedStyle(element).top,
+                inset: getComputedStyle(element).inset,
+                margin: getComputedStyle(element).margin,
+                transform: getComputedStyle(element).transform,
+                className: element.className,
+            },
+            bodyRect: {
+                y: document.body.getBoundingClientRect().y,
+                height: document.body.getBoundingClientRect().height,
+            },
+            scrollY,
+            visualOffsetTop: visualViewport?.offsetTop,
+        };
+    });
+    expect(viewportGeometry.x).toBeCloseTo(0, 0);
+    expect(viewportGeometry.y, JSON.stringify(viewportGeometry)).toBeCloseTo(
+        0,
+        0,
+    );
+    expect(viewportGeometry.width).toBeCloseTo(
+        viewportGeometry.viewportWidth,
+        0,
+    );
+    expect(viewportGeometry.height).toBeCloseTo(
+        viewportGeometry.viewportHeight,
+        0,
+    );
+    await capture(page, info, 'saved-sentence-preview-narrow');
+    await preview.getByRole('button', { name: 'Back', exact: true }).click();
+    const after = await page.request.get(progressPath, { headers });
+    expect(after.status()).toBe(200);
+    expect(await after.json()).toEqual(initialProgress);
+    assertErrors();
+});
+
+// @user-flow sentence-practice-web/background-preparation-ready-reconnect
+test('reconnects to background preparation and practises the saved batch without regeneration', async ({
+    page,
+}, info) => {
+    test.setTimeout(120_000);
+    const { SentencePreparationResponseSchema } =
+        await import('@languon/contracts');
+    const assertErrors = observeErrors(page);
+    let completedSnapshot: unknown;
+    page.on('response', async (response) => {
+        if (
+            !/\/sentences\/preparations\/[^/]+$/.test(response.url()) ||
+            response.request().method() !== 'GET' ||
+            response.status() !== 200
+        )
+            return;
+        const parsed = SentencePreparationResponseSchema.parse(
+            await response.json(),
+        );
+        if (parsed.preparation.state === 'completed')
+            completedSnapshot = parsed;
+    });
+
+    await signup(page, email(info, 'preparation-owner'));
+    const dictionaryId = await createDictionary(
+        page,
+        `Prepared sentences ${runId}`,
+    );
+    await page.getByRole('button', { name: 'Train', exact: true }).click();
+    await page
+        .getByRole('menuitem', { name: 'Sentence practice', exact: true })
+        .click();
+    const setup = page.getByRole('dialog', {
+        name: 'Sentence practice',
+        exact: true,
+    });
+    const preparationSwitch = setup.getByRole('switch', {
+        name: /Prepare.*dictionary.*advance/i,
+    });
+    await expect(preparationSwitch).not.toBeChecked();
+    await preparationSwitch.check();
+    const started = page.waitForResponse(
+        (response) =>
+            response.url().endsWith('/sentences/preparations') &&
+            response.status() < 300 &&
+            response.request().method() === 'POST',
+    );
+    await setup
+        .getByRole('button', { name: 'Start preparation', exact: true })
+        .click();
+    const payload = (await (await started).json()) as {
+        preparation: { id: string };
+    };
+    await expect(
+        page.getByRole('heading', {
+            name: 'Sentence preparation',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await capture(page, info, 'sentence-preparation-started');
+    await page.goto(`/dictionaries/${dictionaryId}`);
+    await page.reload();
+    await page.getByRole('button', { name: /\. View progress$/ }).click();
+    await expect(
+        page.getByRole('heading', {
+            name: 'Sentence preparation',
+            exact: true,
+        }),
+    ).toBeVisible();
+    const ready = page.getByRole('button', {
+        name: 'Start with ready examples',
+        exact: true,
+    });
+    await expect(ready).toBeEnabled({ timeout: 50_000 });
+    await expect(
+        page.getByText('1 of 1 words ready', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+        page.getByText('All words are covered', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+    await capture(page, info, 'sentence-preparation-reconnected-ready-wide');
+    let generatedJobs = 0;
+    const nextBatchIds: string[] = [];
+    page.on('response', async (response) => {
+        if (
+            !response.url().endsWith('/sentences/next') ||
+            response.status() >= 300
+        )
+            return;
+        const data = (await response.json()) as { kind: string };
+        if (data.kind === 'job') generatedJobs++;
+        const input = response.request().postDataJSON() as {
+            preparedBatchId?: string;
+        };
+        if (input.preparedBatchId) nextBatchIds.push(input.preparedBatchId);
+    });
+    await ready.click();
+    const practice = page.getByRole('dialog', {
+        name: 'Sentence practice',
+        exact: true,
+    });
+    await expect(
+        practice.getByRole('button', { name: /: show hint · Required word$/ }),
+    ).toBeVisible({ timeout: 30_000 });
+    expect(nextBatchIds).toHaveLength(1);
+    expect(nextBatchIds[0]).not.toBe(payload.preparation.id);
+    expect(generatedJobs).toBe(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await capture(page, info, 'prepared-sentence-practice-narrow');
+    await practice
+        .getByRole('button', { name: 'Close practice', exact: true })
+        .click();
+    await page.goto(`/dictionaries/${dictionaryId}/sentences`);
+    const preparationChip = page.getByRole('button', {
+        name: 'Preparation complete. View progress',
+        exact: true,
+    });
+    await expect(preparationChip).toBeVisible();
+    await capture(page, info, 'saved-sentence-library-prepared-chip-narrow');
+    await preparationChip.click();
+    await expect(
+        page.getByRole('heading', {
+            name: 'Sentence preparation',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    // Presentation-only fault injection: schema-validated copies of the real completed
+    // response exercise rare UI states without changing saved data or sending commands.
+    // The real preparation, reconnect and prepared practice above prove the business flow;
+    // backend integration coverage proves the actual pause/stop/expiration transitions.
+    const baseline = SentencePreparationResponseSchema.parse(completedSnapshot);
+    const statusUrl = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/preparations/${baseline.preparation.id}`;
+    const states = [
+        {
+            key: 'credits',
+            state: 'paused',
+            pauseReason: 'credits',
+            title: 'Not enough AI credits',
+        },
+        {
+            key: 'capacity',
+            state: 'paused',
+            pauseReason: 'capacity',
+            title: 'The service is busy right now',
+        },
+        {
+            key: 'provider',
+            state: 'paused',
+            pauseReason: 'provider',
+            title: 'An example couldn’t be generated',
+        },
+        {
+            key: 'model',
+            state: 'paused',
+            pauseReason: 'model',
+            title: 'Your selected AI model is unavailable',
+        },
+        {
+            key: 'stale',
+            state: 'paused',
+            pauseReason: 'stale',
+            title: 'Preparation is outdated',
+        },
+        {
+            key: 'access',
+            state: 'paused',
+            pauseReason: 'access',
+            title: 'Access to this dictionary was removed',
+        },
+        {
+            key: 'stopping',
+            state: 'stopping',
+            pauseReason: null,
+            title: 'Stopping… The current example will finish and no next one will start.',
+        },
+        {
+            key: 'partial',
+            state: 'completed',
+            pauseReason: null,
+            eligibleCount: 2,
+            title: 'Preparation complete',
+        },
+    ] as const;
+    for (const state of states) {
+        const injected = SentencePreparationResponseSchema.parse({
+            preparation: {
+                ...baseline.preparation,
+                state: state.state,
+                pauseReason: state.pauseReason,
+                eligibleCount:
+                    'eligibleCount' in state
+                        ? state.eligibleCount
+                        : baseline.preparation.eligibleCount,
+            },
+        });
+        await page.route(statusUrl, (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(injected),
+            }),
+        );
+        await page.reload();
+        await page.getByRole('button', { name: /\. View progress$/ }).click();
+        const sheet = page.getByRole('dialog', {
+            name: 'Sentence preparation',
+            exact: true,
+        });
+        await expect(
+            sheet.getByText(
+                state.key === 'stopping'
+                    ? new RegExp('^Stopping… The current example will finish')
+                    : state.title,
+                { exact: state.key !== 'stopping' },
+            ),
+        ).toBeVisible();
+        if (state.key === 'model')
+            await expect(
+                sheet.getByRole('button', {
+                    name: 'Open AI settings',
+                    exact: true,
+                }),
+            ).toBeVisible();
+        await capture(
+            page,
+            info,
+            `sentence-preparation-rendered-${state.key}-narrow`,
+        );
+        await page.unroute(statusUrl);
+    }
     assertErrors();
 });

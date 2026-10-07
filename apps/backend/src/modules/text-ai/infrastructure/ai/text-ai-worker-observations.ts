@@ -27,6 +27,7 @@ export async function publishTextAiWorkerObservations(options: {
     now?: Date;
     readinessTimeoutMs: number;
     learningExecutionEnabled?: boolean;
+    sentencePreparationExecutionEnabled?: boolean;
     supportedFormats: readonly string[];
     ttlMs?: number;
     workerId: string;
@@ -47,6 +48,19 @@ export async function publishTextAiWorkerObservations(options: {
                 ),
             ),
         ];
+        if (
+            options.learningExecutionEnabled &&
+            options.sentencePreparationExecutionEnabled
+        ) {
+            for (const revision of [1, 2]) {
+                if (
+                    supportedFormats.includes(
+                        `sentence-generation:v${revision}`,
+                    )
+                )
+                    supportedFormats.push(`sentence-preparation:v${revision}`);
+            }
+        }
         let status: 'available' | 'unavailable' | 'unverified' = 'unavailable';
         let message = 'Provider credential is unavailable in the worker.';
 
@@ -127,6 +141,8 @@ export async function publishTextAiWorkerObservations(options: {
         const sentenceFormats = [
             'sentence-generation:v1',
             'sentence-generation:v2',
+            'sentence-preparation:v1',
+            'sentence-preparation:v2',
             'sentence-check:v1',
         ];
         await publish(

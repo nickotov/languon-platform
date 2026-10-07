@@ -1,6 +1,8 @@
 .stack {
     display: grid;
     gap: 22px;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
 }
 .heading {
     align-items: end;
@@ -12,6 +14,10 @@
     font-family: Literata, Georgia, serif;
     letter-spacing: -0.025em;
     margin: 4px 0 0 !important;
+    overflow-wrap: anywhere;
+}
+.heading > div {
+    min-width: 0;
 }
 .eyebrow {
     color: var(--admin-accent);
@@ -50,6 +56,6 @@
         flex-direction: column;
     }
     .details {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }

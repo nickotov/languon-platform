@@ -1,3 +1,5 @@
+import { DrizzleSentenceLibraryStore } from './modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-library-store';
+import { createSentenceLibraryAdministrationHooks } from './modules/administration/infrastructure/sentence-library-administration-hooks';
 import { createSentenceComposition } from './modules/learning/infrastructure/sentence-composition';
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
@@ -67,6 +69,10 @@ const administration = createAdministrationComposition(
     environment,
     authentication,
     deletionJournal,
+    new DrizzleSentenceLibraryStore(
+        authentication.productDependencies.database,
+        createSentenceLibraryAdministrationHooks(),
+    ),
 );
 const dictionaryDocumentS3Client =
     environment.DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED &&

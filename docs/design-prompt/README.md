@@ -20,6 +20,9 @@ requirement IDs for design review and later frontend verification.
 | [Sentence practice](./sentence-practice.md) | Fullscreen/dialog translation practice, hints, AI feedback, free reference review and all recovery states | v001 returned provider v6; scoped analysis saved in 036 handoff; backend complete |
 | [Sentence practice assistance](./sentence-practice-assistance.md) | Contextual whole-phrase hints, free reference comparison, replacement results and exact/fresh replay | v001 backend checkpoint verified; awaiting returned design ([handoff](../../.agent/features/038-sentence-practice-assistance/DESIGN.md)) |
 
+| [Sentence library and preparation](./sentence-library-and-preparation.md) | Dictionary preview, personal archive/restore, optional background preparation and ready rounds | v001 backend verified; awaiting generated design ([handoff](../../.agent/features/039-sentence-library-management/DESIGN.md)) |
+| [Admin sentence management](./admin-sentence-library-management.md) | Per-user discovery, preview, personal/global archive and guarded permanent deletion | v001 backend verified; awaiting generated design ([handoff](../../.agent/features/039-sentence-library-management/DESIGN.md)) |
+
 Every saved brief also has a [versioned handoff](../../.agent/DESIGN_HANDOFF.md)
 with a frozen prompt, generated-design URL slot, approval history and selected
 implementation version. Start with the [dictionary card handoff](../../.agent/features/027-dictionary-pronunciation-audio/DESIGN.md).

@@ -1,3 +1,4 @@
+import type { AdminSentenceLibrary } from '../application/ports/admin-sentence-library';
 import type { AppAdministrationOptions } from '../../../app';
 import type { Environment } from '../../../config/environment';
 import type { AuthenticationComposition } from '../../authentication/infrastructure/authentication-composition';
@@ -10,6 +11,7 @@ export function createAdministrationComposition(
     environment: Environment,
     authentication: AuthenticationComposition,
     deletionJournal: AccountDeletionRecoveryJournal,
+    sentenceLibrary?: AdminSentenceLibrary,
 ): AppAdministrationOptions {
     const dependencies = authentication.administrationDependencies;
     return {
@@ -18,6 +20,7 @@ export function createAdministrationComposition(
             authentication: dependencies.authentication,
             clock: dependencies.clock,
             ids: dependencies.ids,
+            ...(sentenceLibrary ? { sentenceLibrary } : {}),
             store: new DrizzleAdministrationStore(
                 dependencies.database,
                 deletionJournal,

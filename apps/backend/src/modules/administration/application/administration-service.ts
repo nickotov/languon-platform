@@ -1,5 +1,10 @@
 import type {
     AdminActor,
+    AdminAuditAction,
+    AdminSentenceDictionaryQuery,
+    AdminSentenceLibraryQuery,
+    AdminSentenceLibrarySnapshotRequest,
+    AdminSentenceLibraryMutationRequest,
     AdminAiCreditAdjustmentRequest,
     AdminAiCreditPolicyMutationRequest,
     AdminAiCreditsQuery,
@@ -14,6 +19,13 @@ import type {
 import type { AuthenticationService } from '../../authentication/application/authentication-service';
 import { RecentAuthenticationRequiredError } from '../../authentication/application/authentication-errors';
 import type { AccessTokenSigner } from '../../authentication/application/ports/access-token';
+import type { AdminSentenceLibrary } from './ports/admin-sentence-library';
+import { SentenceLibraryDeletionBusyError } from '../../learning/application/ports/sentence-library-store';
+import {
+    SentenceConflictError,
+    SentenceUnavailableError,
+} from '../../learning/domain/sentence-errors';
+import { AdminSentenceLibraryUnavailableError } from './administration-errors';
 import type { Clock } from '../../authentication/application/ports/clock';
 import type { IdGenerator } from '../../authentication/application/ports/id-generator';
 import {
@@ -45,6 +57,7 @@ export interface AdministrationServiceDependencies {
     clock: Clock;
     ids: IdGenerator;
     store: AdministrationStore;
+    sentenceLibrary?: AdminSentenceLibrary;
 }
 
 interface AdminPrincipal {
@@ -409,6 +422,186 @@ export class AdministrationService {
         throw creditMutationError(result.rejection);
     }
 
+    async sentenceDictionaries(
+        accessToken: string,
+        targetUserId: string,
+        query: AdminSentenceDictionaryQuery,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken);
+        const scope = {
+            actorId: principal.actor.id,
+            actorSessionId: principal.sessionId,
+            targetUserId,
+            audit: {
+                id: this.dependencies.ids.generate(),
+                correlationId,
+                expiresAt: new Date(
+                    this.dependencies.clock.now().getTime() +
+                        auditRetentionMilliseconds,
+                ),
+            },
+        };
+        return this.requireSentenceLibrary().adminDictionaries(
+            scope,
+            query,
+            this.sentenceLibraryContext(),
+        );
+    }
+
+    async sentenceLibraryList(
+        accessToken: string,
+        targetUserId: string,
+        dictionaryId: string,
+        query: AdminSentenceLibraryQuery,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken);
+        const library = this.requireSentenceLibrary();
+        return library.adminList(
+            this.sentenceLibraryScope(
+                principal,
+                targetUserId,
+                dictionaryId,
+                correlationId,
+            ),
+            query,
+            this.sentenceLibraryContext(),
+        );
+    }
+
+    async sentenceLibraryDetail(
+        accessToken: string,
+        targetUserId: string,
+        dictionaryId: string,
+        exerciseId: string,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken);
+        const library = this.requireSentenceLibrary();
+        return library.adminDetail(
+            this.sentenceLibraryScope(
+                principal,
+                targetUserId,
+                dictionaryId,
+                correlationId,
+            ),
+            exerciseId,
+            this.sentenceLibraryContext(),
+        );
+    }
+
+    async sentenceLibrarySnapshot(
+        accessToken: string,
+        targetUserId: string,
+        dictionaryId: string,
+        input: AdminSentenceLibrarySnapshotRequest,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken);
+        await this.requireRecent(principal);
+        return this.requireSentenceLibrary().adminSnapshot(
+            this.sentenceLibraryScope(
+                principal,
+                targetUserId,
+                dictionaryId,
+                correlationId,
+            ),
+            input,
+            this.sentenceLibraryContext(),
+        );
+    }
+
+    async mutateSentenceLibrary(
+        accessToken: string,
+        targetUserId: string,
+        dictionaryId: string,
+        input: AdminSentenceLibraryMutationRequest,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken);
+        try {
+            await this.requireRecent(principal);
+            return await this.requireSentenceLibrary().adminMutate(
+                this.sentenceLibraryScope(
+                    principal,
+                    targetUserId,
+                    dictionaryId,
+                    correlationId,
+                ),
+                input,
+                this.sentenceLibraryContext(),
+            );
+        } catch (error) {
+            const code =
+                error instanceof SentenceLibraryDeletionBusyError
+                    ? 'sentence_library_deletion_busy'
+                    : error instanceof SentenceConflictError
+                      ? 'sentence_library_conflict'
+                      : error instanceof SentenceUnavailableError ||
+                          error instanceof AdminSentenceLibraryUnavailableError
+                        ? 'sentence_library_unavailable'
+                        : isAuditableMutationRejection(error)
+                          ? rejectionCode(error)
+                          : null;
+            const target = code
+                ? await this.dependencies.store.findUser(targetUserId)
+                : null;
+            if (code)
+                await this.recordRejected({
+                    action: sentenceLibraryAuditAction(input.operation),
+                    actorUserId: principal.actor.id,
+                    ...(target ? { targetUserId } : {}),
+                    correlationId,
+                    reason: input.reason,
+                    metadata: {
+                        targetKind: 'sentence_library',
+                        requestedTargetUserId: targetUserId,
+                        dictionaryId,
+                        operationId: input.operationId,
+                        selectionKind: input.selection.type,
+                        code,
+                    },
+                });
+            throw error;
+        }
+    }
+
+    private requireSentenceLibrary(): AdminSentenceLibrary {
+        if (!this.dependencies.sentenceLibrary)
+            throw new AdminSentenceLibraryUnavailableError();
+        return this.dependencies.sentenceLibrary;
+    }
+
+    private sentenceLibraryScope(
+        principal: AdminPrincipal,
+        targetUserId: string,
+        dictionaryId: string,
+        correlationId: string,
+    ) {
+        return {
+            actorId: principal.actor.id,
+            actorSessionId: principal.sessionId,
+            targetUserId,
+            dictionaryId,
+            audit: {
+                id: this.dependencies.ids.generate(),
+                correlationId,
+                expiresAt: new Date(
+                    this.dependencies.clock.now().getTime() +
+                        auditRetentionMilliseconds,
+                ),
+            },
+        };
+    }
+
+    private sentenceLibraryContext() {
+        return {
+            now: this.dependencies.clock.now(),
+            signal: new AbortController().signal,
+        };
+    }
+
     private async requireRecent(principal: AdminPrincipal): Promise<void> {
         await this.dependencies.authentication.requireRecentlyAuthenticatedSession(
             {
@@ -443,14 +636,7 @@ export class AdministrationService {
     }
 
     private async recordRejected(input: {
-        action:
-            | 'access_denied'
-            | 'ai_credit_policy_updated'
-            | 'ai_credits_adjusted'
-            | 'ai_settings_updated'
-            | 'user_disabled'
-            | 'user_restored'
-            | 'user_deletion_cancelled';
+        action: AdminAuditAction;
         actorUserId: string;
         beforeStatus?: AdminUserStatus;
         beforeVersion?: number;
@@ -523,4 +709,21 @@ function rejectionCode(error: Error): string {
     if (error instanceof AdminDeletionCancellationUnavailableError)
         return 'deletion_cancellation_unavailable';
     return 'recent_authentication_required';
+}
+
+export function sentenceLibraryAuditAction(
+    operation: AdminSentenceLibraryMutationRequest['operation'],
+): AdminAuditAction {
+    switch (operation) {
+        case 'archive':
+            return 'sentence_personally_archived';
+        case 'restore':
+            return 'sentence_personally_restored';
+        case 'global-archive':
+            return 'sentence_globally_archived';
+        case 'global-restore':
+            return 'sentence_globally_restored';
+        case 'delete':
+            return 'sentence_permanently_deleted';
+    }
 }

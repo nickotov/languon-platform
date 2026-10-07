@@ -370,7 +370,7 @@ export const sentenceAiJobsTable = pgTable(
         index('sentence_ai_jobs_learner_idx').on(t.learnerId, t.executionState),
         check(
             'sentence_ai_jobs_kind_format',
-            sql`((${t.jobKind}='sentence-generation' and ((${t.format}='sentence-generation:v1' and ${t.inputPayload}->>'generationPolicyVersion'='1') or (${t.format}='sentence-generation:v2' and ${t.inputPayload}->>'generationPolicyVersion'='2'))) or (${t.jobKind}='sentence-check' and ${t.format}='sentence-check:v1')) is true`,
+            sql`((${t.jobKind}='sentence-generation' and ((${t.format} in ('sentence-generation:v1','sentence-preparation:v1') and ${t.inputPayload}->>'generationPolicyVersion'='1') or (${t.format} in ('sentence-generation:v2','sentence-preparation:v2') and ${t.inputPayload}->>'generationPolicyVersion'='2'))) or (${t.jobKind}='sentence-check' and ${t.format}='sentence-check:v1')) is true`,
         ),
         check(
             'sentence_ai_jobs_execution_versions',

@@ -1,0 +1,13 @@
+{
+    "reviewed_base": "d74fbbd",
+    "admin_full": {
+        "passed": 9,
+        "failed": 0,
+        "elapsed": "1.2 minutes"
+    },
+    "unexpected_browser_errors": 0,
+    "unexpected_network_failures": 0,
+    "provider_calls": "deterministic guarded fixtures only; no paid calls",
+    "visual_evidence": "Mobile panel top/bottom and preview captures primary. Wide fullpage preview captures have stretched backdrop due whole-page capture.",
+    "inherited_warning": "Ant/Vite provider-settings circular-reference warning remains warning-level; strict browser error observers pass."
+}

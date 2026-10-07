@@ -96,3 +96,31 @@ TO :"dictionary_worker_role";
 GRANT SELECT (version, custom_notation_label, definition_language_role,
     example_language_role, transcription_notation) ON TABLE dictionary_settings
 TO :"dictionary_worker_role";
+
+-- Durable preparation uses the existing admission and worker slots. The worker
+-- reads visibility but cannot change personal/global archives or admin receipts.
+GRANT SELECT ON TABLE sentence_personal_visibility, sentence_global_visibility
+TO :"dictionary_worker_role";
+GRANT SELECT, UPDATE ON TABLE sentence_preparations, sentence_preparation_batches
+TO :"dictionary_worker_role";
+GRANT SELECT, INSERT ON TABLE sentence_preparation_children
+TO :"dictionary_worker_role";
+GRANT INSERT ON TABLE sentence_ai_jobs, sentence_job_entries
+TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE user_text_ai_preferences
+TO :"dictionary_worker_role";
+
+-- Row-lock permission for lifecycle fencing, without account/status/text writes.
+GRANT UPDATE (updated_at) ON TABLE users TO :"dictionary_worker_role";
+-- Preparation admission reserves credits; it cannot issue grants or change policy.
+GRANT INSERT ON TABLE ai_credit_reservations TO :"dictionary_worker_role";
+
+-- Expired inactive manifests are pruned under learner/preparation locks.
+GRANT DELETE ON TABLE sentence_preparation_batches TO :"dictionary_worker_role";
+
+-- Expiry pruning uses only identity and deadline, never confirmation content.
+GRANT SELECT (id, expires_at), DELETE ON TABLE sentence_library_snapshots
+TO :"dictionary_worker_role";
+-- PostgreSQL requires UPDATE on one column for FOR UPDATE SKIP LOCKED.
+GRANT UPDATE (expires_at) ON TABLE sentence_library_snapshots
+TO :"dictionary_worker_role";

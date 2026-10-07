@@ -1,3 +1,4 @@
+import { createSentenceLibraryAdministrationHooks } from '../../../src/modules/administration/infrastructure/sentence-library-administration-hooks';
 import {
     dictionaryAiConfigurationRevisionsTable,
     dictionaryAiConfigurationTable,
@@ -69,6 +70,121 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
         afterAll(async () => {
             await client.end();
+        });
+
+        it('revalidates the sentence actor and commits content-free audit with its transaction', async () => {
+            const { database } = await seed();
+            const hooks = createSentenceLibraryAdministrationHooks();
+            const scope = sentenceScope();
+            await database.transaction(async (transaction) => {
+                await hooks.authorizeAdmin(transaction, scope, true, now);
+                await hooks.onAdminMutation(
+                    transaction,
+                    scope,
+                    {
+                        operation: 'global-archive',
+                        operationId: scope.audit.id,
+                        selection: {
+                            type: 'selected',
+                            items: [
+                                { exerciseId: targetId, expectedVersion: 0 },
+                            ],
+                        },
+                        reason: 'Support reviewed sentence visibility',
+                    },
+                    { operationId: scope.audit.id, affectedCount: 1 },
+                    new Date(),
+                );
+            });
+            const events = await database.select().from(adminAuditEventsTable);
+            expect(events).toHaveLength(1);
+            expect(events[0]).toMatchObject({
+                action: 'sentence_globally_archived',
+                outcome: 'success',
+                targetUserId: targetId,
+                metadata: {
+                    targetKind: 'sentence_library',
+                    dictionaryId: thirdId,
+                    operationId: scope.audit.id,
+                    selectionKind: 'selected',
+                    affectedCount: 1,
+                },
+            });
+            expect(events[0]?.metadata).not.toHaveProperty('sourceText');
+        });
+        it('rolls back sentence audit if the enclosing mutation fails', async () => {
+            const { database } = await seed();
+            const hooks = createSentenceLibraryAdministrationHooks();
+            const scope = sentenceScope();
+            await expect(
+                database.transaction(async (transaction) => {
+                    await hooks.authorizeAdmin(transaction, scope, true, now);
+                    await hooks.onAdminMutation(
+                        transaction,
+                        scope,
+                        {
+                            operation: 'archive',
+                            operationId: scope.audit.id,
+                            selection: {
+                                type: 'selected',
+                                items: [
+                                    {
+                                        exerciseId: targetId,
+                                        expectedVersion: 0,
+                                    },
+                                ],
+                            },
+                            reason: 'Support reviewed sentence visibility',
+                        },
+                        { operationId: scope.audit.id, affectedCount: 1 },
+                        new Date(),
+                    );
+                    throw new Error('mutation failed');
+                }),
+            ).rejects.toThrow('mutation failed');
+            expect(await database.select().from(adminAuditEventsTable)).toEqual(
+                [],
+            );
+        });
+        it('rejects revoked sentence administrator membership inside the transaction', async () => {
+            const { database } = await seed();
+            await database
+                .update(adminMembershipsTable)
+                .set({
+                    revokedAt: new Date(),
+                    revokedByUserId: ownerId,
+                    revokeReason: 'Owner access revoked for test',
+                })
+                .where(eq(adminMembershipsTable.userId, ownerId));
+            await expect(
+                database.transaction((transaction) =>
+                    createSentenceLibraryAdministrationHooks().authorizeAdmin(
+                        transaction,
+                        sentenceScope(),
+                        false,
+                        now,
+                    ),
+                ),
+            ).rejects.toBeInstanceOf(AdminAccessDeniedError);
+        });
+        it('uses database time rather than an old request clock for recent sentence authentication', async () => {
+            const { database } = await seed();
+            await database
+                .update(authSessionsTable)
+                .set({
+                    authenticatedAt: sql`clock_timestamp() - interval '6 minutes'`,
+                })
+                .where(eq(authSessionsTable.userId, ownerId));
+            await expect(
+                database.transaction((transaction) =>
+                    createSentenceLibraryAdministrationHooks().authorizeAdmin(
+                        transaction,
+                        sentenceScope(),
+                        true,
+                        now,
+                    ),
+                ),
+            ).rejects.toBeInstanceOf(RecentAuthenticationRequiredError);
         });
 
         it('atomically disables a user, revokes sessions, and records audit', async () => {
@@ -1008,5 +1124,20 @@ function creditMutation(
         expectedVersion,
         reason: 'Support approved this AI credit change',
         targetUserId: targetId,
+    };
+}
+
+function sentenceScope() {
+    const base = mutation(targetId, 1, 'Support approved sentence visibility');
+    return {
+        actorId: ownerId,
+        actorSessionId: base.actorSessionId,
+        targetUserId: targetId,
+        dictionaryId: thirdId,
+        audit: {
+            id: base.audit.id,
+            correlationId: base.audit.correlationId,
+            expiresAt: base.audit.expiresAt,
+        },
     };
 }

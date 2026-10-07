@@ -2,12 +2,15 @@
 feature: sentence-practice-web
 title: Sentence Practice and Model Preferences Web
 status: current
-last_verified: 2026-10-06
+last_verified: 2026-10-07
 surfaces:
     - browser
 source_paths:
     - .agent/features/037-sentence-practice-web/**
     - .agent/features/038-sentence-practice-assistance/**
+    - .agent/features/039-sentence-library-management/**
+    - apps/web/src/fsd/features/sentence-library/**
+    - apps/web/src/fsd/pages/sentence-library/**
     - apps/web/src/fsd/features/sentence-training/**
     - apps/web/src/fsd/features/text-ai-preferences/**
     - apps/web/src/fsd/widgets/dictionary-training/**
@@ -28,6 +31,8 @@ e2e_scenarios:
     - rtl-non-latin-accessibility
     - model-preference-back-fallback
     - finite-round-saved-reentry
+    - saved-library-preview-archive-restore
+    - background-preparation-ready-reconnect
 related_features:
     - user-ai-model-preferences-backend
     - sentence-practice-backend
@@ -178,6 +183,11 @@ and model revision. Verification never changes the user's configuration/data.
 
 ## E2E coverage
 
+- `saved-library-preview-archive-restore` verifies real preview, personal archive
+  and restoration with responsive screenshots.
+- `background-preparation-ready-reconnect` verifies optional durable preparation,
+  background recovery and prepared practice without implicit generation.
+
 - `model-preference-persistence`: real authenticated two-tab optimistic conflict,
   preserved selection, explicit recovery and reloaded server persistence.
 - `owner-reader-reference-practice`: real manual card, generated exercise, hints,
@@ -281,3 +291,46 @@ Close only this run's browser contexts. Playwright stops its owned application
 processes. Stop only explicitly owned disposable containers and remove synthetic
 test data by disposing of that infrastructure. Preserve existing development
 services and unrelated sessions; never flush shared Redis or reset a shared DB.
+
+## Saved sentence library and preparation
+
+Open Train → Saved sentences from a dictionary. The library shows generated
+source sentences, direction and availability badges. Filter personal archive,
+currentness and advanced global archive state. Preview opens a desktop drawer
+or a mobile full-height view; the reference starts collapsed, and required
+vocabulary and contextual whole-phrase hints remain separately grouped.
+Previewing does not create a review, score, practice exposure or credit charge.
+
+Select examples or all matching filters, confirm the frozen count, and remove
+them from personal practice. Restore through the archive filter. Personal
+archive is reversible and does not alter another learner’s availability; global
+archive and outdated cards can still prevent practice after personal restore.
+Version conflicts require refreshing the selection and reconfirming.
+
+Preparation is optional and off by default in setup. Its scope is the whole
+dictionary, partitioned into rounds of at most 100 words with the chosen round
+first. Saved first reuses saved examples; New examples adds fresh generations;
+Review saved does not spend credits. Close progress to continue in the
+background, return through the preparation chip, stop after active work settles,
+or explicitly resume a paused run. Ready or partial rounds start using their
+prepared manifest without implicit regeneration. Reload reconnects to the saved
+preparation identity. Stale/access pauses require a new preparation.
+
+The `saved-library-preview-archive-restore` and
+`background-preparation-ready-reconnect` browser scenarios verify real preview,
+personal archive/restore, preparation background/reload and prepared practice,
+with narrow/wide captures and browser error checks.
+
+## Related backend checkpoint
+
+[Sentence library management and preparation](../sentence-library-implementation-plan.md)
+adds backend contracts and verified API/database behavior. The returned learner design is being integrated under feature 039; final
+browser evidence is recorded in its EVIDENCE.md.
+
+The preparation scenario also exercises credit, capacity, provider, stale/access,
+stopping and partially covered presentation states with schema-validated local
+response overrides. These captures verify rendered notices and recovery controls;
+they do not claim to execute those backend transitions. The first half of the
+scenario uses real preparation, reconnect and ready-batch APIs, with no generation
+when practice starts. Backend database/API evidence separately verifies transition
+and authorization semantics.

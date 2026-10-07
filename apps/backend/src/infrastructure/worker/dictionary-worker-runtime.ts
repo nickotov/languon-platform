@@ -42,6 +42,9 @@ export interface DictionaryWorkerRuntimeOptions {
     readinessTimeoutMs: number;
     service: DictionaryWorkerApplicationService;
     /** Shares the existing slot pool; never creates an independent poll loop. */
+    sentencePreparation?: {
+        tick(context: { now: Date; signal: AbortSignal }): Promise<boolean>;
+    };
     sentenceService?: {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
@@ -268,8 +271,21 @@ export class DictionaryWorkerRuntime {
                         supportedFormats: this.#options.supportedFormats,
                         workerId: this.#options.workerId,
                     });
-                const sentence = () =>
-                    this.#options.sentenceService!.processNext(signal);
+                const sentence = async () => {
+                    try {
+                        await this.#options.sentencePreparation?.tick({
+                            now: new Date(),
+                            signal,
+                        });
+                    } catch {
+                        if (signal.aborted) return false;
+                        this.#logger.error(
+                            'Sentence preparation coordination failed; polling will retry.',
+                        );
+                    }
+                    if (signal.aborted) return false;
+                    return this.#options.sentenceService!.processNext(signal);
+                };
                 const first =
                     this.#options.sentenceService && sentenceFirst
                         ? sentence

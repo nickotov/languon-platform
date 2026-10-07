@@ -17,6 +17,8 @@ source_paths:
     - apps/backend/src/index.ts
     - apps/backend/drizzle/**
     - packages/contracts/src/learning/sentences.ts
+    - packages/contracts/src/learning/sentence-library.ts
+    - packages/contracts/src/learning/sentence-preparation.ts
     - packages/prompts/src/local/sentence-*.ts
     - infra/deploy/sql/*worker-role.sql
 e2e_command: sentence-practice-backend
@@ -24,12 +26,14 @@ e2e_tests:
     - apps/backend/tests/integration/modules/learning/sentence-practice.journeys.test.ts
 e2e_scenarios:
     - generate-check-reuse-private-and-shared
+    - manage-saved-library-and-partial-preparation
 related_features:
     - user-ai-model-preferences-backend
     - flashcard-training-backend
     - ai-credit-wallet
     - dictionary-permanent-deletion
     - profile-account-controls
+    - sentence-library-management
 ---
 
 # Sentence practice backend
@@ -46,6 +50,10 @@ extension has its returned practice UI implemented and browser-verified; Git
 integration remains tracked separately. See
 the [implementation plan](../sentence-practice-implementation-plan.md) and the
 [extension plan](../sentence-practice-assistance-implementation-plan.md).
+Saved-example management and durable full-dictionary preparation are backend-first
+extensions. Their new web/admin interfaces remain deferred until the returned
+designs are selected; this guide verifies the API/system behavior, not those interfaces.
+See the [sentence library plan](../sentence-library-implementation-plan.md).
 
 ## Start the development environment
 
@@ -125,6 +133,24 @@ providers, never paid models. Run `pnpm test:e2e:sentence-practice-backend`.
    for each Next and on idempotent replay. The same operation with a different
    exercise conflicts; explicit replay fields in paid modes fail validation.
 
+9. Start optional whole-dictionary preparation with a separate operation ID and
+   initial practice scope. Preparation persists bounded partitions and a saved
+   manifest while existing generation jobs use current credits and worker slots.
+   Replaying the start returns the same preparation. A bounded batch-list query
+   exposes every partition; its query rejects limits above 25. Background generation saves
+   examples without recording exposure, completion or AI grades.
+10. Stop after partial preparation and retrieve its retained ready coverage.
+    Preview saved examples, translations and hints through the library without
+    changing learning statistics. Archive selected examples personally, then
+    verify a shared reader still sees owner-created shared content. Restore them
+    using their current versions. Active library listings exclude personal and
+    global archives by default; explicit archive filters support management.
+11. Start practice using the prepared batch ID. It presents only the authorized
+    prepared manifest, records exposure at presentation and does not regenerate
+    ready New examples. Revoking or rotating shared access denies subsequent
+    library and preparation reads. Administrative global archive and irreversible
+    creator-archived deletion are verified through the admin boundary separately.
+
 ## System verification
 
 1. Run the mapped journey against the owned disposable targets. It composes real
@@ -163,6 +189,16 @@ providers, never paid models. Run `pnpm test:e2e:sentence-practice-backend`.
    belongs to the client; the existing routes provide exact identity reads without
    a new paid replay job, server cursor or comparison endpoint.
 
+Preparation retains at most 20 content-bearing manifests per learner. Inactive
+completed/failed/stale/access-lost manifests expire after seven days only when
+child/provider work is settled. Resumable pauses remain available. Expiry keeps
+safe operation identity while removing copied words and sharing digests; it never
+removes saved examples. New preparation over quota returns capacity rather than
+silently discarding work. Confirmation snapshots are bounded to five per
+actor/dictionary and 25 per actor; older confirmations can become superseded.
+All-matching operations exceeding 10,000 examples require narrower filters or
+smaller selections. Saved reuse yields after each persisted 100-example page.
+
 ## E2E coverage
 
 `generate-check-reuse-private-and-shared` covers real authenticated admission,
@@ -183,6 +219,17 @@ settlement and restricted worker roles. Browser evidence for existing provider
 and credit screens remains in their own guides; feature 038's returned sentence
 design is selected and its frontend browser verification is tracked separately.
 
+`manage-saved-library-and-partial-preparation` covers real authenticated start
+and replay, deterministic preparation worker publication, stop with retained
+partial results, zero learning exposure before presentation, read-only translation
+preview, selected personal archive/restore, another learner's unaffected shared
+library, prepared New examples practice without another generation, and denied
+library/preparation reads after share-key rotation. Real repository tests cover
+whole dictionaries larger than a practice round, bulk snapshots, concurrent
+mutations, resume and content/access invalidation. Admin composed service/routes
+and persistence tests cover administrative authority and permanent deletion; this
+sentence API journey does not claim admin UI verification.
+
 ## Expected failure and edge cases
 
 - Disabled sentence capability, expired sessions, archived dictionaries, removed
@@ -200,8 +247,19 @@ design is selected and its frontend browser verification is tracked separately.
   supports at most 100 selected IDs. Current-round visited exercise IDs also have
   a 100-ID limit. Sentence HTTP JSON retains its 32,000-byte bound. The dictionary's
   10,000-entry capacity and whole-dictionary lifetime progress remain unchanged.
-  Over-limit payloads fail validation. There is no automatic next batch, new
-  pagination field or change to provider budgets, admission rates or cost limits.
+  Over-limit practice payloads fail validation. Optional whole-dictionary
+  preparation persists separate partitions of at most 100 words, including the
+  intended first round; it does not expand the practice request limit or change
+  provider budgets, admission rates or cost limits.
+- Library preview is read-only; archiving retains saved content and numerical
+  history. Personal archive does not affect other learners. Global archive blocks
+  future selection for everyone. Outdated content can remain inspectable but is
+  ineligible for practice. Already-admitted AI work may finish into history.
+- Closing a preparation view does not stop durable work. Stop prevents new
+  admissions and requests cancellation of the current child job; partial results
+  remain saved. Insufficient credits or terminal provider/model failure pauses
+  preparation with a reason. Resume uses the same snapshot; stale entry versions
+  require a refreshed preparation. Newly added words require a later preparation.
 - Pending, cancelled, timed-out, retried and stale-fenced jobs never publish late
   results. Known provider usage is settled even when generated content is invalid.
   Invalid sentence-generation output retries within the existing attempt and

@@ -13,7 +13,7 @@ import {
 } from '@playwright/test';
 import postgres from 'postgres';
 
-// @user-flow-revision admin-user-management sha256:4f24e107863f2093
+// @user-flow-revision admin-user-management sha256:8f1ff6e6a88850b6
 // @user-flow-revision ai-provider-management sha256:fff99a54c9d51797
 // @user-flow-revision ai-credit-wallet sha256:a7a27b2b83437c47
 
@@ -330,6 +330,389 @@ test.describe.serial('admin user management journeys', () => {
         );
     });
 
+    // @user-flow admin-user-management/admin-sentence-library-management
+    test('inspects, archives, restores and permanently removes saved examples with reasons', async ({
+        page,
+        request,
+    }, info) => {
+        test.skip(
+            process.env.ADMIN_E2E_SENTENCE_SERVICES !== 'true',
+            'Requires the guarded deterministic sentence worker.',
+        );
+        test.setTimeout(120_000);
+        const assertErrors = captureBrowserErrors(page, {
+            '/api/admin/auth/refresh': 401,
+        });
+        // This disposable database can retain the previous run's Kie default.
+        // Configure the model processed by our deterministic sentence worker
+        // through the same audited administrator UI used in production.
+        await passwordLogin(page);
+        await page.getByRole('menuitem', { name: 'AI settings' }).click();
+        await page
+            .locator('label.ant-radio-button-wrapper')
+            .filter({ hasText: 'DeepSeek' })
+            .click();
+        const modelEnabled = page.getByRole('checkbox', {
+            name: /DeepSeek Chat/,
+        });
+        if (!(await modelEnabled.isChecked()))
+            await modelEnabled.evaluate((element: HTMLInputElement) =>
+                element.click(),
+            );
+        const fixtureDefault = page.getByLabel('Default model');
+        await fixtureDefault.press('ArrowDown');
+        await fixtureDefault.press('Home');
+        await fixtureDefault.press('Enter');
+        await expect(
+            page.locator('.ant-select').filter({ has: fixtureDefault }),
+        ).toContainText('DeepSeek Chat');
+        await page
+            .getByLabel('Reason for change')
+            .fill(
+                'Select deterministic sentence fixture model for isolated E2E',
+            );
+        await page.getByRole('button', { name: 'Save configuration' }).click();
+        await expect(page.getByText(/Configuration version \d+/)).toBeVisible();
+        const fixtureRunId = process.env.ADMIN_E2E_SENTENCE_RUN_ID!;
+        const learnerEmail = `sentence-e2e-${fixtureRunId}-admin-owner@example.test`;
+        const learnerId = await provisionVerifiedUser(
+            request,
+            learnerEmail,
+            ownerPassword,
+        );
+        const login = await request.post(
+            `${backendOrigin}/auth/login/password`,
+            {
+                data: { email: learnerEmail, password: ownerPassword },
+                headers: { Origin: webOrigin },
+            },
+        );
+        expect(login.status()).toBe(200);
+        const headers = {
+            Authorization: `Bearer ${((await login.json()) as { accessToken: string }).accessToken}`,
+            Origin: webOrigin,
+        };
+        const dictionaryResponse = await request.post(
+            `${backendOrigin}/dictionaries`,
+            {
+                headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() },
+                data: {
+                    name: `Sentence operations ${fixtureRunId}`,
+                    sourceLanguage: 'en',
+                    targetLanguage: 'fr',
+                },
+            },
+        );
+        expect(dictionaryResponse.status()).toBe(201);
+        const { dictionary } = (await dictionaryResponse.json()) as {
+            dictionary: {
+                id: string;
+                version: number;
+                settingsVersion: number;
+            };
+        };
+        const card = await request.post(
+            `${backendOrigin}/dictionaries/${dictionary.id}/cards`,
+            {
+                headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() },
+                data: {
+                    expectedDictionaryVersion: dictionary.version,
+                    expectedSettingsVersion: dictionary.settingsVersion,
+                    values: { source: 'book', translation: 'livre' },
+                },
+            },
+        );
+        expect(card.status()).toBe(201);
+        const sentencePath = `${backendOrigin}/learning/dictionaries/${dictionary.id}/sentences`;
+        // Wait for fixture provider readiness and credit initialization via the real setup API.
+        await expect
+            .poll(
+                async () => {
+                    const setup = await request.post(
+                        `${sentencePath}/prepare`,
+                        {
+                            headers,
+                            data: {
+                                direction: 'source-to-target',
+                                mode: 'new-only',
+                                scope: { type: 'all' },
+                            },
+                        },
+                    );
+                    return setup.status();
+                },
+                { timeout: 30_000 },
+            )
+            .toBe(200);
+        const nextInput = {
+            direction: 'source-to-target',
+            mode: 'new-only',
+            scope: { type: 'all' },
+            sessionId: crypto.randomUUID(),
+            operationId: crypto.randomUUID(),
+            visitedExerciseIds: [],
+        };
+        let next: Awaited<ReturnType<typeof request.post>>;
+        await expect
+            .poll(
+                async () => {
+                    next = await request.post(`${sentencePath}/next`, {
+                        headers,
+                        data: nextInput,
+                    });
+                    if (next.status() === 503) {
+                        const error = (await next!.json()) as {
+                            error?: { code?: string };
+                        };
+                        return `503:${error.error?.code ?? 'unknown'}`;
+                    }
+                    return String(next.status());
+                },
+                {
+                    timeout: 30_000,
+                    intervals: [1000, 2000, 4000],
+                    message:
+                        'Wait for deterministic sentence worker policy and credit readiness',
+                },
+            )
+            .toBe('202');
+        const admitted = (await next!.json()) as { job: { id: string } };
+        await expect
+            .poll(
+                async () => {
+                    const response = await request.get(
+                        `${sentencePath}/jobs/${admitted.job.id}`,
+                        { headers },
+                    );
+                    expect(response.status()).toBe(200);
+                    return ((await response.json()) as { state: string }).state;
+                },
+                { timeout: 40_000 },
+            )
+            .toBe('completed');
+        await page.goto(`/users/${learnerId}`);
+        await page
+            .getByRole('button', {
+                name: 'Manage sentence library',
+                exact: true,
+            })
+            .click();
+        await expect(
+            page.getByRole('heading', {
+                name: 'Saved examples, under control.',
+                exact: true,
+            }),
+        ).toBeVisible();
+        await page
+            .getByRole('combobox', { name: 'Dictionary', exact: true })
+            .click();
+        await page
+            .getByText(`Sentence operations ${fixtureRunId} · EN → FR`, {
+                exact: true,
+            })
+            .click();
+        const selection = page.getByRole('checkbox', {
+            name: 'Select example: book is useful.',
+        });
+        await expect(selection).toBeVisible();
+        await page
+            .getByRole('button', { name: 'Preview example: book is useful.' })
+            .click();
+        const preview = page.getByRole('dialog', { name: 'Example preview' });
+        await expect(preview).toContainText('livre est utile.');
+        await expect(
+            preview.getByText('Hints & phrase mappings', { exact: true }),
+        ).toBeVisible();
+        await page.screenshot({
+            animations: 'disabled',
+            path: info.outputPath('admin-sentence-preview-wide.png'),
+            fullPage: true,
+        });
+        await preview
+            .getByRole('button', { name: 'Close', exact: true })
+            .click();
+        await page.getByText('Dark', { exact: true }).click();
+        await expect(page.locator('html')).toHaveAttribute(
+            'data-theme',
+            'dark',
+        );
+        await page
+            .getByRole('button', { name: 'Preview example: book is useful.' })
+            .click();
+        await expect(preview).toContainText('livre est utile.');
+        await page.screenshot({
+            path: info.outputPath('admin-sentence-preview-wide-dark.png'),
+            animations: 'disabled',
+            fullPage: false,
+        });
+        await preview
+            .getByRole('button', { name: 'Close', exact: true })
+            .click();
+        await page.getByText('Light', { exact: true }).click();
+        await expect(page.locator('html')).toHaveAttribute(
+            'data-theme',
+            'light',
+        );
+        const mutate = async (label: string, reason: string, purge = false) => {
+            await selection.check();
+            await page
+                .getByRole('button', { name: label, exact: true })
+                .click();
+            const dialog = page.getByRole('dialog', {
+                name: label,
+                exact: true,
+            });
+            await dialog.getByLabel('Reason', { exact: true }).fill(reason);
+            await page.screenshot({
+                animations: 'disabled',
+                path: info.outputPath(
+                    `admin-sentence-confirm-${label.replaceAll(' ', '-').toLowerCase()}.png`,
+                ),
+                fullPage: true,
+            });
+            if (purge) {
+                await dialog
+                    .getByRole('button', {
+                        name: 'Confirm action',
+                        exact: true,
+                    })
+                    .click();
+                await expect(dialog).toBeVisible();
+                await expect(
+                    dialog.getByText(
+                        'Confirm permanent deletion before continuing.',
+                        { exact: true },
+                    ),
+                ).toBeVisible();
+                await dialog
+                    .getByRole('checkbox', {
+                        name: /I understand this permanently deletes/,
+                    })
+                    .check();
+            }
+            await dialog
+                .getByRole('button', { name: 'Confirm action', exact: true })
+                .click();
+            await expect(dialog).not.toBeVisible();
+        };
+        await mutate(
+            'Archive globally',
+            'Hide the synthetic example globally for verification',
+        );
+        await mutate(
+            'Restore globally',
+            'Restore the synthetic globally archived example',
+        );
+        await mutate(
+            'Archive for user',
+            'Archive the generator example before permanent cleanup',
+        );
+        await page.reload();
+        await page
+            .getByRole('button', {
+                name: 'Manage sentence library',
+                exact: true,
+            })
+            .click();
+        await page
+            .getByRole('combobox', { name: 'Dictionary', exact: true })
+            .click();
+        await page
+            .getByText(`Sentence operations ${fixtureRunId} · EN → FR`, {
+                exact: true,
+            })
+            .click();
+        await expect(selection).toBeVisible();
+        await mutate(
+            'Restore for user',
+            'Verify personal restore retains saved example content',
+        );
+        await mutate(
+            'Archive for user',
+            'Archive the generator example for final permanent cleanup',
+        );
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(
+            page.getByRole('heading', {
+                name: 'Saved examples, under control.',
+                exact: true,
+            }),
+        ).toBeVisible();
+        await page.screenshot({
+            animations: 'disabled',
+            path: info.outputPath('admin-sentence-library-narrow.png'),
+            fullPage: true,
+        });
+        const sentencePanel = page.locator('.ant-card').filter({
+            has: page.getByText('Sentence library', { exact: true }),
+        });
+        await sentencePanel.screenshot({
+            path: info.outputPath('admin-sentence-panel-narrow.png'),
+            animations: 'disabled',
+        });
+        const panelPosition = await sentencePanel.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            const header = document.querySelector('.ant-layout-header');
+            return {
+                top: rect.top + scrollY,
+                bottom: rect.bottom + scrollY,
+                header: header?.getBoundingClientRect().height ?? 0,
+            };
+        });
+        await page.evaluate(
+            (position) =>
+                scrollTo(0, Math.max(0, position.top - position.header - 16)),
+            panelPosition,
+        );
+        await page.screenshot({
+            path: info.outputPath('admin-sentence-panel-top-narrow.png'),
+            animations: 'disabled',
+        });
+        await page.evaluate(
+            (position) =>
+                scrollTo(0, Math.max(0, position.bottom - innerHeight + 16)),
+            panelPosition,
+        );
+        await page.screenshot({
+            path: info.outputPath('admin-sentence-panel-bottom-narrow.png'),
+            animations: 'disabled',
+        });
+        expect(
+            await page.evaluate(
+                () =>
+                    document.documentElement.scrollWidth <=
+                    window.innerWidth + 1,
+            ),
+        ).toBe(true);
+        await page
+            .getByRole('button', { name: 'Preview example: book is useful.' })
+            .click();
+        await expect(preview).toContainText('livre est utile.');
+        await page.screenshot({
+            animations: 'disabled',
+            path: info.outputPath('admin-sentence-preview-narrow.png'),
+            fullPage: false,
+        });
+        await preview
+            .getByRole('button', { name: 'Close', exact: true })
+            .click();
+        await mutate(
+            'Delete permanently',
+            'Permanently erase this synthetic creator archived example',
+            true,
+        );
+        await expect(selection).not.toBeVisible();
+        const remaining = await request.get(
+            `${sentencePath}/library?personalArchive=all&globalArchive=all`,
+            { headers },
+        );
+        expect(remaining.status()).toBe(200);
+        expect(
+            ((await remaining.json()) as { items: unknown[] }).items,
+        ).toHaveLength(0);
+        assertErrors();
+    });
+
     // @user-flow admin-user-management/admin-owner-password-login-and-user-inspection
     test('owner signs in, refreshes the dedicated session, and inspects a user', async ({
         page,
@@ -417,9 +800,17 @@ test.describe.serial('admin user management journeys', () => {
             .click();
         await page
             .getByRole('checkbox', { name: /DeepSeek Chat/ })
-            .evaluate((element: HTMLInputElement) => element.click());
-        await page.getByLabel('Default model').press('ArrowDown');
-        await page.getByLabel('Default model').press('Enter');
+            .evaluate((element: HTMLInputElement) => {
+                // A preceding sentence journey may already have enabled this model.
+                if (!element.checked) element.click();
+            });
+        const defaultModel = page.getByLabel('Default model');
+        await defaultModel.press('ArrowDown');
+        await defaultModel.press('Home');
+        await defaultModel.press('Enter');
+        await expect(
+            page.locator('.ant-select').filter({ has: defaultModel }),
+        ).toContainText('DeepSeek Chat');
         await page
             .getByLabel('Reason for change')
             .fill('Configure priced managed generation for credit E2E');
@@ -513,32 +904,33 @@ test.describe.serial('admin user management journeys', () => {
             card: { id: string; version: number };
             dictionaryVersion: number;
         };
-        const generationResponse = await request.post(
-            `${backendOrigin}/dictionaries/${dictionary.dictionary.id}/cards/${card.card.id}/generations`,
-            {
-                data: {
-                    expectedCardVersion: card.card.version,
-                    expectedDictionaryVersion: card.dictionaryVersion,
-                    expectedSettingsVersion:
-                        dictionary.dictionary.settingsVersion,
-                    instruction: 'Keep the translation concise.',
-                },
-                headers: {
-                    ...apiHeaders,
-                    'Idempotency-Key': `credit-generation-${runId}`,
-                },
-            },
-        );
-        expect(generationResponse.status()).toBe(202);
-        const jobId = (
-            (await generationResponse.json()) as {
-                job: { id: string };
-            }
-        ).job.id;
-
         let worker: ChildProcess | undefined;
         try {
+            // Admission must observe a live worker that can process card authoring,
+            // even when the sentence fixture has already published its own formats.
             worker = await startDictionaryWorker();
+            const generationResponse = await request.post(
+                `${backendOrigin}/dictionaries/${dictionary.dictionary.id}/cards/${card.card.id}/generations`,
+                {
+                    data: {
+                        expectedCardVersion: card.card.version,
+                        expectedDictionaryVersion: card.dictionaryVersion,
+                        expectedSettingsVersion:
+                            dictionary.dictionary.settingsVersion,
+                        instruction: 'Keep the translation concise.',
+                    },
+                    headers: {
+                        ...apiHeaders,
+                        'Idempotency-Key': `credit-generation-${runId}`,
+                    },
+                },
+            );
+            expect(generationResponse.status()).toBe(202);
+            const jobId = (
+                (await generationResponse.json()) as {
+                    job: { id: string };
+                }
+            ).job.id;
             const job = await waitForGenerationReview(
                 request,
                 accessToken,
@@ -570,11 +962,11 @@ test.describe.serial('admin user management journeys', () => {
                 expect(reservation).toMatchObject({
                     dispatchedAt: expect.any(Date),
                     measurement: 'estimated',
-                    reservedCredits: '4000000',
+                    reservedCredits: '400000',
                     settledAt: expect.any(Date),
                     state: 'settled',
                 });
-                expect(reservation!.chargedCredits).toBe('4000000');
+                expect(reservation!.chargedCredits).toBe('400000');
                 const history = await database<Array<{ kind: string }>>`
                     select kind
                     from ai_credit_history
@@ -596,7 +988,7 @@ test.describe.serial('admin user management journeys', () => {
                 .getByRole('row')
                 .filter({ hasText: 'Settlement' })
                 .filter({ hasText: 'Estimated maximum' });
-            await expect(settlementHistoryRow).toContainText('−4,000,000');
+            await expect(settlementHistoryRow).toContainText('−400,000');
             const accepted = await request.post(
                 `${backendOrigin}/dictionary-generation-jobs/${jobId}/accept`,
                 {
@@ -643,8 +1035,13 @@ test.describe.serial('admin user management journeys', () => {
                 element.click(),
             );
         }
-        await page.getByLabel('Default model').press('ArrowDown');
-        await page.getByLabel('Default model').press('Enter');
+        const defaultModel = page.getByLabel('Default model');
+        await defaultModel.press('ArrowDown');
+        await defaultModel.press('Home');
+        await defaultModel.press('Enter');
+        await expect(
+            page.locator('.ant-select').filter({ has: defaultModel }),
+        ).toContainText('DeepSeek Chat');
         await page
             .getByLabel('Reason for change')
             .fill('Establish DeepSeek baseline for pinned revision regression');
@@ -925,10 +1322,13 @@ test.describe.serial('admin user management journeys', () => {
         ).toBeVisible();
         await page.getByRole('menuitem', { name: 'Audit' }).click();
         await expect(
-            page.getByRole('row').filter({
-                hasText:
-                    'Reviewed administrator cancellation in disposable E2E',
-            }),
+            page
+                .getByRole('row')
+                .filter({
+                    hasText:
+                        'Reviewed administrator cancellation in disposable E2E',
+                })
+                .filter({ hasText: targetEmail }),
         ).toBeVisible();
         assertNoBrowserErrors();
     });
@@ -1013,8 +1413,12 @@ test.describe.serial('admin user management journeys', () => {
                 .getByRole('button', { name: 'Sign in', exact: true })
                 .click();
             await expect(page).toHaveURL(/\/profile\?tab=security$/);
-            await page.getByLabel('Passkey name').fill(`Admin E2E ${runId}`);
-            await page.getByRole('button', { name: 'Add passkey' }).click();
+            await page
+                .getByRole('button', {
+                    name: 'Add your first passkey',
+                    exact: true,
+                })
+                .click();
             await expect(page.getByText('Passkey added.')).toBeVisible();
             await page.getByRole('button', { name: 'Sign out here' }).click();
 

@@ -1,3 +1,16 @@
+import { sentenceExercisesTable } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-schema';
+import {
+    sentencePersonalVisibilityTable,
+    sentenceGlobalVisibilityTable,
+} from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-library-schema';
+import {
+    sentencePreparationsTable,
+    sentencePreparationBatchesTable,
+} from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema';
+import {
+    sentenceLibrarySnapshotsTable,
+    sentenceLibraryReceiptsTable,
+} from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-library-schema';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
@@ -576,6 +589,110 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     configuration: { front: ['translation'], back: ['source'] },
                 },
             ]);
+            const sharedExerciseId = randomUUID();
+            await database.insert(sentenceExercisesTable).values({
+                id: sharedExerciseId,
+                creatorId: otherUserId,
+                dictionaryId,
+                direction: 'source-to-target',
+                shared: true,
+                referenceTranslation: 'hola',
+                publicContent: {
+                    id: sharedExerciseId,
+                    dictionaryId,
+                    direction: 'source-to-target',
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es',
+                    sourceText: 'hello',
+                    generationPolicyVersion: 1,
+                    createdAt: now.toISOString(),
+                    segments: [
+                        {
+                            id: 'segment-1',
+                            start: 0,
+                            end: 5,
+                            text: 'hello',
+                            target: {
+                                entryId: randomUUID(),
+                                occurrenceId: 'occurrence-1',
+                                hintId: 'hint-1',
+                            },
+                        },
+                    ],
+                    hints: [{ id: 'hint-1', text: 'hola', kind: 'dictionary' }],
+                },
+            });
+            await database.insert(sentencePersonalVisibilityTable).values(
+                [userId, otherUserId].map((learnerId) => ({
+                    learnerId,
+                    exerciseId: sharedExerciseId,
+                    archivedAt: now,
+                    actorId: userId,
+                    updatedAt: now,
+                })),
+            );
+            await database.insert(sentenceGlobalVisibilityTable).values({
+                exerciseId: sharedExerciseId,
+                archivedAt: now,
+                actorId: userId,
+                updatedAt: now,
+            });
+            const erasedPreparationId = randomUUID();
+            const survivingPreparationId = randomUUID();
+            await database.insert(sentencePreparationsTable).values(
+                [userId, otherUserId].map((learnerId, index) => ({
+                    id: index ? survivingPreparationId : erasedPreparationId,
+                    learnerId,
+                    dictionaryId,
+                    authority: { kind: 'owner' } as const,
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es',
+                    direction: 'source-to-target' as const,
+                    mode: 'saved-first' as const,
+                    state: 'paused' as const,
+                    operationId: randomUUID(),
+                    fingerprint: 'fixture',
+                    createdAt: now,
+                    updatedAt: now,
+                })),
+            );
+            await database.insert(sentencePreparationBatchesTable).values(
+                [erasedPreparationId, survivingPreparationId].map(
+                    (preparationId) => ({
+                        id: randomUUID(),
+                        preparationId,
+                        ordinal: 0,
+                        entries: [
+                            {
+                                entryId: randomUUID(),
+                                learningVersion: 1,
+                                sourceText: 'private vocabulary',
+                                targetText: 'private translation',
+                            },
+                        ],
+                        manifest: [],
+                    }),
+                ),
+            );
+            await database.insert(sentenceLibrarySnapshotsTable).values({
+                id: randomUUID(),
+                actorId: userId,
+                learnerId: userId,
+                dictionaryId,
+                operation: 'archive',
+                scope: 'personal',
+                items: [],
+                expiresAt: new Date(now.getTime() + 60000),
+            });
+            await database.insert(sentenceLibraryReceiptsTable).values({
+                actorId: userId,
+                operationId: randomUUID(),
+                learnerId: userId,
+                dictionaryId,
+                fingerprint: 'opaque-idempotency',
+                affectedCount: 0,
+                createdAt: now,
+            });
             const role = `account_purge_test_${randomUUID().replaceAll('-', '')}`;
             const script = await readFile(
                 new URL(
@@ -604,6 +721,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'select configuration from flashcard_preferences',
                     'select rating from flashcard_attempts',
                     'select handle from users',
+                    'select entries from sentence_preparation_batches',
+                    'select input_payload from sentence_ai_jobs',
                 ])
                     await expect(connection.unsafe(query)).rejects.toThrow();
                 await expect(
@@ -629,6 +748,43 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         workerId: 'narrow-purge-worker',
                     }),
                 ).resolves.toBe(true);
+                expect(
+                    await database
+                        .select()
+                        .from(sentencePersonalVisibilityTable),
+                ).toMatchObject([
+                    {
+                        learnerId: otherUserId,
+                        exerciseId: sharedExerciseId,
+                        actorId: null,
+                        archivedAt: now,
+                    },
+                ]);
+                expect(
+                    await database.select().from(sentenceGlobalVisibilityTable),
+                ).toMatchObject([
+                    {
+                        exerciseId: sharedExerciseId,
+                        actorId: null,
+                        archivedAt: now,
+                    },
+                ]);
+                expect(
+                    await database.select().from(sentencePreparationsTable),
+                ).toMatchObject([
+                    { id: survivingPreparationId, learnerId: otherUserId },
+                ]);
+                expect(
+                    await database
+                        .select()
+                        .from(sentencePreparationBatchesTable),
+                ).toHaveLength(1);
+                expect(
+                    await database.select().from(sentenceLibrarySnapshotsTable),
+                ).toHaveLength(0);
+                expect(
+                    await database.select().from(sentenceLibraryReceiptsTable),
+                ).toHaveLength(0);
                 expect(
                     await database.select().from(textAiPreferencesTable),
                 ).toMatchObject([

@@ -1,3 +1,14 @@
+import { SentenceUnavailableError } from '../domain/sentence-errors';
+import type {
+    SentenceLibraryQuery,
+    SentenceLibrarySnapshotRequest,
+    SentenceLibraryMutationRequest,
+    SentencePreparationStartRequest,
+    SentencePreparationBatchesQuery,
+    SentencePreparationCommandRequest,
+} from '@languon/contracts';
+import type { SentenceLibraryStore } from './ports/sentence-library-store';
+import type { SentencePreparationStore } from './ports/sentence-preparation-store';
 import type {
     SentencePrepareRequest,
     SentenceNextRequest,
@@ -42,6 +53,8 @@ export interface SentencePracticeServiceDependencies {
     enabled: boolean;
     rateLimiter: RateLimiter;
     store: SentencePracticeStore;
+    library?: SentenceLibraryStore;
+    preparation?: SentencePreparationStore;
 }
 
 /** Authentication and bounded request admission; the store rechecks access transactionally. */
@@ -166,6 +179,158 @@ export class SentencePracticeService {
         );
     }
 
+    public listLibrary(
+        target: LearningTarget,
+        input: SentenceLibraryQuery,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'content', async (access) => {
+            if (!this.dependencies.library)
+                throw new SentenceUnavailableError();
+            return this.dependencies.library.list(access, input, {
+                now: this.dependencies.clock.now(),
+                signal: context.signal,
+            });
+        });
+    }
+    public snapshotLibrary(
+        target: LearningTarget,
+        input: SentenceLibrarySnapshotRequest,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'write', async (access) => {
+            if (!this.dependencies.library)
+                throw new SentenceUnavailableError();
+            return this.dependencies.library.snapshot(access, input, {
+                now: this.dependencies.clock.now(),
+                signal: context.signal,
+            });
+        });
+    }
+    public mutateLibrary(
+        target: LearningTarget,
+        input: SentenceLibraryMutationRequest,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'write', async (access) => {
+            if (!this.dependencies.library)
+                throw new SentenceUnavailableError();
+            return this.dependencies.library.mutate(access, input, {
+                now: this.dependencies.clock.now(),
+                signal: context.signal,
+            });
+        });
+    }
+    public startPreparation(
+        target: LearningTarget,
+        input: SentencePreparationStartRequest,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'prepare', async (access) => {
+            if (!this.dependencies.preparation)
+                throw new SentenceUnavailableError();
+            return {
+                preparation: await this.dependencies.preparation.start(
+                    access,
+                    input,
+                    {
+                        now: this.dependencies.clock.now(),
+                        signal: context.signal,
+                    },
+                ),
+            };
+        });
+    }
+    public detailLibrary(
+        target: LearningTarget,
+        id: string,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'content', async (access) => {
+            if (!this.dependencies.library)
+                throw new SentenceUnavailableError();
+            return this.dependencies.library.detail(access, id, {
+                now: this.dependencies.clock.now(),
+                signal: context.signal,
+            });
+        });
+    }
+    public getPreparation(
+        target: LearningTarget,
+        id: string,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'content', async (access) => {
+            if (!this.dependencies.preparation)
+                throw new SentenceUnavailableError();
+            return {
+                preparation: await this.dependencies.preparation.get(
+                    access,
+                    id,
+                    {
+                        now: this.dependencies.clock.now(),
+                        signal: context.signal,
+                    },
+                ),
+            };
+        });
+    }
+    public preparationBatches(
+        target: LearningTarget,
+        id: string,
+        query: SentencePreparationBatchesQuery,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'content', async (access) => {
+            if (!this.dependencies.preparation)
+                throw new SentenceUnavailableError();
+            return this.dependencies.preparation.listBatches(
+                access,
+                id,
+                query,
+                {
+                    now: this.dependencies.clock.now(),
+                    signal: context.signal,
+                },
+            );
+        });
+    }
+    public preparedBatch(
+        target: LearningTarget,
+        id: string,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'content', async (access) => {
+            if (!this.dependencies.preparation)
+                throw new SentenceUnavailableError();
+            return this.dependencies.preparation.batch(access, id, {
+                now: this.dependencies.clock.now(),
+                signal: context.signal,
+            });
+        });
+    }
+    public commandPreparation(
+        target: LearningTarget,
+        id: string,
+        input: SentencePreparationCommandRequest,
+        context: LearningRequestContext,
+    ) {
+        return this.run(target, context, 'write', async (access) => {
+            if (!this.dependencies.preparation)
+                throw new SentenceUnavailableError();
+            return {
+                preparation: await this.dependencies.preparation.command(
+                    access,
+                    id,
+                    input,
+                    {
+                        now: this.dependencies.clock.now(),
+                        signal: context.signal,
+                    },
+                ),
+            };
+        });
+    }
     private async run<T>(
         target: LearningTarget,
         context: LearningRequestContext,

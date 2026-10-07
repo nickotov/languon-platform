@@ -1288,7 +1288,8 @@ function mapAuditEvent(
                 : row.targetUserId,
         targetKind:
             metadata.targetKind === 'dictionary_ai_configuration' ||
-            metadata.targetKind === 'ai_credit_account'
+            metadata.targetKind === 'ai_credit_account' ||
+            metadata.targetKind === 'sentence_library'
                 ? metadata.targetKind
                 : row.targetUserId
                   ? 'user'

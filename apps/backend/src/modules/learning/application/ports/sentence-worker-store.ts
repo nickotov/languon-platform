@@ -12,7 +12,11 @@ import type { SentenceTokenUsage } from './sentence-ai-provider';
 import type { SentenceContext } from './sentence-practice-store';
 export type SentenceJobKind = 'sentence-generation' | 'sentence-check';
 export type SentenceJobFormat =
-    'sentence-generation:v1' | 'sentence-generation:v2' | 'sentence-check:v1';
+    | 'sentence-generation:v1'
+    | 'sentence-generation:v2'
+    | 'sentence-preparation:v1'
+    | 'sentence-preparation:v2'
+    | 'sentence-check:v1';
 export interface SentenceLease {
     jobId: string;
     workerId: string;
@@ -28,7 +32,11 @@ export type ClaimedSentenceJob = {
 } & (
     | {
           kind: 'sentence-generation';
-          format: 'sentence-generation:v1' | 'sentence-generation:v2';
+          format:
+              | 'sentence-generation:v1'
+              | 'sentence-generation:v2'
+              | 'sentence-preparation:v1'
+              | 'sentence-preparation:v2';
           input: SentenceGenerationInput;
       }
     | {

@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-06",
+  "branch": "feature/sentence-library-management",
+  "base_commit": "cb9f3ed9d96a95ac606d1089b10e81ab0f1c2384",
+  "source_state": "verified working tree before backend checkpoint commit",
+  "source_sha256": "c5c68d99e2d2b8439fb383b2857efe45c28ddfea7261b16031d04bdf6aba670d",
+  "source_files": [
+    "apps/backend/drizzle/0055_modern_king_bedlam.sql",
+    "apps/backend/drizzle/0056_nice_saracen.sql",
+    "apps/backend/drizzle/meta/0055_snapshot.json",
+    "apps/backend/drizzle/meta/0056_snapshot.json",
+    "apps/backend/drizzle/meta/_journal.json",
+    "apps/backend/src/index.ts",
+    "apps/backend/src/infrastructure/database/schema.ts",
+    "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+    "apps/backend/src/infrastructure/worker/dictionary-worker-runtime.ts",
+    "apps/backend/src/modules/administration/application/administration-errors.ts",
+    "apps/backend/src/modules/administration/application/administration-service.ts",
+    "apps/backend/src/modules/administration/application/ports/admin-sentence-library.ts",
+    "apps/backend/src/modules/administration/infrastructure/administration-composition.ts",
+    "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/drizzle-administration-store.ts",
+    "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/schema.ts",
+    "apps/backend/src/modules/administration/infrastructure/sentence-library-administration-hooks.ts",
+    "apps/backend/src/modules/administration/interface/http/administration-http-error-mapping.ts",
+    "apps/backend/src/modules/administration/interface/http/administration.routes.ts",
+    "apps/backend/src/modules/learning/application/ports/sentence-library-store.ts",
+    "apps/backend/src/modules/learning/application/ports/sentence-preparation-store.ts",
+    "apps/backend/src/modules/learning/application/ports/sentence-worker-store.ts",
+    "apps/backend/src/modules/learning/application/sentence-practice-service.ts",
+    "apps/backend/src/modules/learning/application/sentence-worker-service.ts",
+    "apps/backend/src/modules/learning/domain/sentence-preparation-policy.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-library-store.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-library-schema.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-library-visibility.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema.ts",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-schema.ts",
+    "apps/backend/src/modules/learning/infrastructure/sentence-composition.ts",
+    "apps/backend/src/modules/learning/interface/http/sentence.routes.ts",
+    "apps/backend/src/modules/text-ai/application/text-ai-admission-participant.ts",
+    "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-worker-observations.ts",
+    "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts",
+    "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness.ts",
+    "infra/deploy/sql/account-purge-worker-role.sql",
+    "infra/deploy/sql/dictionary-worker-role.sql",
+    "packages/contracts/src/admin/contracts.ts",
+    "packages/contracts/src/admin/index.ts",
+    "packages/contracts/src/admin/models.ts",
+    "packages/contracts/src/admin/primitives.ts",
+    "packages/contracts/src/admin/sentence-library.ts",
+    "packages/contracts/src/index.ts",
+    "packages/contracts/src/learning/sentence-library.ts",
+    "packages/contracts/src/learning/sentence-preparation.ts",
+    "packages/contracts/src/learning/sentences.ts"
+  ],
+  "backend_database": {
+    "files": 5,
+    "tests": 56,
+    "duration_seconds": 42.15,
+    "log": "backend-final-db.txt",
+    "guarded_disposable": true
+  },
+  "maintained_api_journey": {
+    "files": 1,
+    "tests": 2,
+    "duration_seconds": 8.79,
+    "log": "backend-final-api.txt",
+    "guide_revision": "sha256:bf3394d7a0503c39"
+  },
+  "other_composed_and_purger_verification": {
+    "files": 3,
+    "tests": 14,
+    "duration_seconds": 13.6
+  },
+  "deterministic_backend": {
+    "files_passed": 103,
+    "files_guarded_skipped": 34,
+    "tests_passed": 823,
+    "tests_guarded_skipped": 292,
+    "note": "Guarded skips are not infrastructure evidence; final dedicated DB/API runs above establish those surfaces."
+  },
+  "static_checks": [
+    "contracts lint/typecheck/build and 90 tests",
+    "backend lint/typecheck/build",
+    "web typecheck",
+    "admin typecheck",
+    "19 user-flow guides and backend mapping validation",
+    "git diff --check"
+  ],
+  "design_briefs": [
+    {
+      "slug": "sentence-library-and-preparation",
+      "title": "Dictionary sentence library and optional preparation",
+      "canonical_sha256": "d0f47f56a7f608f84f6a382cd697e1a56171288f1d18746c948d050eeba38c60",
+      "prompt_sha256": "2502df1b412f047b451cb5a6a29bb7f03c0ef4b217567fb61f195c0bc3bf2995"
+    },
+    {
+      "slug": "admin-sentence-library-management",
+      "title": "Per-user administrative sentence management",
+      "canonical_sha256": "db78c1072d6eb3eed92e41f5eb411d4031943e0f5dd793d42bb8b3787347edbe",
+      "prompt_sha256": "67db3cea1804da5ff56c19af7ac45c58391363bc7365308c3a6dc04ca1fa36be"
+    }
+  ],
+  "frontend_status": "not implemented; waiting for returned selected Magic Patterns designs",
+  "reviews": {
+    "completion": "approved backend checkpoint; R1-R7 closed",
+    "security": "approved backend checkpoint; SEC1-4 closed",
+    "residual": "SEC05 low trusted-worker compromise hardening deferred"
+  }
+}

@@ -1,5 +1,9 @@
 'use client';
 import { SENTENCE_LIMITS } from '@languon/contracts';
+import { useEffect, useState } from 'react';
+import { MessageSquareTextIcon, SparklesIcon } from 'lucide-react';
+import { usePreparationCopy } from '../sentence-preparation-copy';
+import { SentencePreparationOption } from '../sentence-preparation-option/sentence-preparation-option';
 import { requestSentenceFullscreen } from '../use-sentence-display';
 import { useCompactPresentation } from '../use-compact-presentation';
 import { useSentenceCopy } from '../sentence-copy';
@@ -13,7 +17,11 @@ import {
     RadioGroup,
     Select,
 } from '@/fsd/shared/ui';
-import type { Configuration, SentenceSetupController } from '../../types';
+import type {
+    Configuration,
+    SentenceSetupController,
+    SentencePreparationController,
+} from '../../types';
 import { SentenceErrorNotice } from '../sentence-errors/sentence-errors';
 
 export type SentenceSetupProps = {
@@ -24,6 +32,11 @@ export type SentenceSetupProps = {
     sourceLanguage: string;
     targetLanguage: string;
     dictionaryTitle?: string;
+    preparation?: SentencePreparationController;
+    initialPreparationEnabled?: boolean;
+    totalEligibleCount?: number;
+    onViewPreparation?(): void;
+    onOpenLibrary?(): void;
 };
 
 export function SentenceSetup({
@@ -34,9 +47,34 @@ export function SentenceSetup({
     sourceLanguage,
     targetLanguage,
     dictionaryTitle,
+    preparation,
+    initialPreparationEnabled = false,
+    totalEligibleCount,
+    onViewPreparation,
+    onOpenLibrary,
 }: SentenceSetupProps) {
     const { t, languageName } = useSentenceCopy();
     const compact = useCompactPresentation();
+    const { P } = usePreparationCopy();
+    const [prepareAll, setPrepareAll] = useState(initialPreparationEnabled);
+    const loadEligibleCount = preparation?.loadEligibleCount;
+    useEffect(() => {
+        if (prepareAll) void loadEligibleCount?.();
+    }, [prepareAll, loadEligibleCount]);
+    const activePreparation =
+        preparation?.preparation &&
+        !['completed', 'failed'].includes(preparation.preparation.state) &&
+        preparation.preparation.pauseReason !== 'stale' &&
+        preparation.preparation.pauseReason !== 'access';
+    const preparing = !!preparation && prepareAll && !activePreparation;
+    function viewPreparation() {
+        onViewPreparation?.();
+    }
+    function startPreparation() {
+        if (!preparation) return;
+        onViewPreparation?.();
+        void preparation.start(c.configuration);
+    }
     const prepared = c.prepared;
     const selectionFull =
         c.selectedEntryIds.length >= SENTENCE_LIMITS.selectedEntries;
@@ -80,23 +118,58 @@ export function SentenceSetup({
             description={dictionaryTitle}
             dismissOnOverlayClick={false}
             footer={
-                <div className='flex flex-wrap justify-end gap-2'>
-                    {!compact && (
-                        <Button
-                            variant='secondary'
-                            disabled={invalid}
-                            onClick={() => start(false)}
-                        >
-                            {t('Start in a dialog')}
+                preparing ? (
+                    <div className='space-y-2'>
+                        <div className='flex flex-wrap items-center justify-end gap-2'>
+                            <Button
+                                leadingIcon={
+                                    <SparklesIcon
+                                        aria-hidden
+                                        className='h-4 w-4'
+                                    />
+                                }
+                                disabled={invalid || preparation?.busy}
+                                onClick={startPreparation}
+                            >
+                                {P('startPrep')}
+                            </Button>
+                        </div>
+                        <p className='text-end text-xs text-text-secondary'>
+                            {P('startWhenReady')}
+                        </p>
+                    </div>
+                ) : (
+                    <div className='flex flex-wrap justify-end gap-2'>
+                        {!compact && (
+                            <Button
+                                variant='secondary'
+                                disabled={invalid}
+                                onClick={() => start(false)}
+                            >
+                                {t('Start in a dialog')}
+                            </Button>
+                        )}
+                        <Button disabled={invalid} onClick={() => start(true)}>
+                            {t('Start in full screen')}
                         </Button>
-                    )}
-                    <Button disabled={invalid} onClick={() => start(true)}>
-                        {t('Start in full screen')}
-                    </Button>
-                </div>
+                    </div>
+                )
             }
         >
             <div className='space-y-5'>
+                {onOpenLibrary ? (
+                    <button
+                        type='button'
+                        onClick={onOpenLibrary}
+                        className='inline-flex items-center gap-1.5 text-sm font-medium text-primary-default underline underline-offset-2 hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus'
+                    >
+                        <MessageSquareTextIcon
+                            aria-hidden
+                            className='h-4 w-4'
+                        />
+                        {P('openLibrary')}
+                    </button>
+                ) : null}
                 <p className='text-sm text-text-secondary'>
                     {t(
                         'Translate sentences using your dictionary words. Saved sentences and reference answers can be reused.',
@@ -399,6 +472,21 @@ export function SentenceSetup({
                                 )}
                             </p>
                         ) : null}
+                    </div>
+                ) : null}
+                {preparation ? (
+                    <div className='border-t border-border-default pt-4'>
+                        <SentencePreparationOption
+                            enabled={prepareAll}
+                            onChange={setPrepareAll}
+                            roundWords={prepared?.eligibleCount ?? 0}
+                            totalWords={
+                                totalEligibleCount ?? preparation.eligibleCount
+                            }
+                            mode={c.configuration.mode}
+                            controller={preparation}
+                            onView={viewPreparation}
+                        />
                     </div>
                 ) : null}
             </div>

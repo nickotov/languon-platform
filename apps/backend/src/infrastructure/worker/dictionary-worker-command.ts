@@ -5,7 +5,10 @@ import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
-import { createSentenceWorkerComposition } from '../../modules/learning/infrastructure/sentence-composition';
+import {
+    createSentencePreparationWorkerComposition,
+    createSentenceWorkerComposition,
+} from '../../modules/learning/infrastructure/sentence-composition';
 import { createSentenceAiProvider } from '../../modules/learning/infrastructure/ai/sentence-ai-provider';
 import type { SentenceAiProvider } from '../../modules/learning/application/ports/sentence-ai-provider';
 import { DictionaryAudioWorker } from '../../modules/dictionaries/application/dictionary-audio-worker';
@@ -76,6 +79,34 @@ export function createWorkerSentenceProvider(
     }
     return createSentenceAiProvider({
         credentials: environment.providerCredentials,
+    });
+}
+
+/** Both initial and recurring publication use this reviewed executor capability seam. */
+export function publishWorkerTextAiObservations(
+    environment: Pick<
+        DictionaryWorkerEnvironment,
+        | 'providerFixtureMode'
+        | 'supportedFormats'
+        | 'providerCredentials'
+        | 'readinessTimeoutMs'
+    >,
+    database: Parameters<typeof publishTextAiWorkerObservations>[0]['database'],
+    workerId: string,
+) {
+    return publishTextAiWorkerObservations({
+        learningExecutionEnabled:
+            environment.providerFixtureMode !== 'deterministic',
+        sentencePreparationExecutionEnabled:
+            environment.providerFixtureMode !== 'deterministic',
+        supportedFormats: environment.supportedFormats,
+        credentials: environment.providerCredentials,
+        database,
+        ...(environment.providerFixtureMode === 'deterministic'
+            ? { fetchProvider: async () => new Response(null, { status: 200 }) }
+            : {}),
+        readinessTimeoutMs: environment.readinessTimeoutMs,
+        workerId,
     });
 }
 
@@ -313,22 +344,47 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     };
     const workerId = createWorkerId(environment.releaseSha);
     // The API flag controls admissions, never draining persisted sentence jobs.
+    const generationFormat =
+        process.env.LEARNING_SENTENCE_GENERATION_FORMAT ??
+        'sentence-generation:v1';
+    if (
+        generationFormat !== 'sentence-generation:v1' &&
+        generationFormat !== 'sentence-generation:v2'
+    )
+        throw new Error('Invalid sentence generation format');
+    const { preparation: sentencePreparation } =
+        createSentencePreparationWorkerComposition({
+            database,
+            admission: { generationFormat },
+        });
     const { worker: sentenceWorker } = createSentenceWorkerComposition({
         database,
         provider: createWorkerSentenceProvider(environment),
         onInvalidModelOutput: (event) => {
             console.warn('Sentence model output rejected.', event);
         },
-        supportedFormats: environment.supportedFormats.filter(
+        supportedFormats: [
+            ...environment.supportedFormats,
+            ...(environment.supportedFormats.includes('sentence-generation:v1')
+                ? ['sentence-preparation:v1']
+                : []),
+            ...(environment.supportedFormats.includes('sentence-generation:v2')
+                ? ['sentence-preparation:v2']
+                : []),
+        ].filter(
             (
                 format,
             ): format is
                 | 'sentence-generation:v1'
                 | 'sentence-generation:v2'
+                | 'sentence-preparation:v1'
+                | 'sentence-preparation:v2'
                 | 'sentence-check:v1' =>
                 [
                     'sentence-generation:v1',
                     'sentence-generation:v2',
+                    'sentence-preparation:v1',
+                    'sentence-preparation:v2',
                     'sentence-check:v1',
                 ].includes(format),
         ),
@@ -351,6 +407,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
         sentenceService: sentenceWorker,
+        sentencePreparation,
         supportedFormats: environment.supportedFormats,
         workerId,
     });
@@ -378,37 +435,17 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     };
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
-    await publishTextAiWorkerObservations({
-        learningExecutionEnabled:
-            environment.providerFixtureMode !== 'deterministic',
-        supportedFormats: environment.supportedFormats,
-        credentials: environment.providerCredentials,
+    await publishWorkerTextAiObservations(
+        environment,
         database,
-        ...(environment.providerFixtureMode === 'deterministic'
-            ? {
-                  fetchProvider: async () =>
-                      new Response(null, { status: 200 }),
-              }
-            : {}),
-        readinessTimeoutMs: environment.readinessTimeoutMs,
-        workerId: observationWorkerId,
-    });
+        observationWorkerId,
+    );
     const observationTimer = setInterval(() => {
-        void publishTextAiWorkerObservations({
-            learningExecutionEnabled:
-                environment.providerFixtureMode !== 'deterministic',
-            supportedFormats: environment.supportedFormats,
-            credentials: environment.providerCredentials,
+        void publishWorkerTextAiObservations(
+            environment,
             database,
-            ...(environment.providerFixtureMode === 'deterministic'
-                ? {
-                      fetchProvider: async () =>
-                          new Response(null, { status: 200 }),
-                  }
-                : {}),
-            readinessTimeoutMs: environment.readinessTimeoutMs,
-            workerId: observationWorkerId,
-        }).catch(() => {
+            observationWorkerId,
+        ).catch(() => {
             process.stderr.write(
                 'Dictionary AI readiness observation failed.\n',
             );

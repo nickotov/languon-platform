@@ -12,6 +12,7 @@ import type {
     SentenceJob,
     SentenceProgressResponse,
     SentenceManualReview,
+    SentenceNextRequest,
 } from '@languon/contracts';
 
 const first = '10000000-0000-4000-8000-000000000001';
@@ -125,6 +126,34 @@ const flush = async () => {
     await Promise.resolve();
 };
 afterEach(() => vi.useRealTimers());
+
+describe('explicit regeneration from a prepared round', () => {
+    it('keeps preparation on ordinary next, but drops it for an explicit new examples action', async () => {
+        const prepare = vi.fn(async (_input: Configuration) => ({
+            ...(await api().prepare(configuration)),
+            eligibleCount: 1,
+        }));
+        const next = vi.fn(async (_input: SentenceNextRequest) => ({
+            kind: 'exercise' as const,
+            exercise,
+        }));
+        const store = new SentenceSession(api({ prepare, next }));
+        await store.start({ ...configuration, preparedBatchId: first });
+        expect(next.mock.calls[0]![0]).toMatchObject({
+            preparedBatchId: first,
+        });
+        await store.skip();
+        expect(store.getSnapshot().phase).toBe('completed');
+        await store.generateNew();
+        expect(prepare.mock.calls.at(-1)![0]).not.toHaveProperty(
+            'preparedBatchId',
+        );
+        expect(next.mock.calls.at(-1)![0]).not.toHaveProperty(
+            'preparedBatchId',
+        );
+        store.reset();
+    });
+});
 
 describe('sentence session admission and recovery', () => {
     const oneWordApi = (overrides: Partial<SentenceApi> = {}) =>

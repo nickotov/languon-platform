@@ -1,0 +1,8 @@
+
+ RUN  v4.1.10 /Users/nickkotov/projects/languon/apps/backend
+
+
+ Test Files  5 passed (5)
+      Tests  56 passed (56)
+   Start at  23:15:55
+   Duration  42.15s (transform 474ms, setup 0ms, import 2.64s, tests 38.86s, environment 0ms)

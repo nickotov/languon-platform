@@ -5,6 +5,19 @@ import {
 } from '@languon/browser-auth';
 import {
     AdminAuditEventsResponseSchema,
+    AdminSentenceDictionariesQuerySchema,
+    AdminSentenceDictionariesResponseSchema,
+    AdminSentenceLibraryQuerySchema,
+    AdminSentenceLibraryListResponseSchema,
+    AdminSentenceLibraryDetailSchema,
+    AdminSentenceLibrarySnapshotRequestSchema,
+    AdminSentenceLibrarySnapshotResponseSchema,
+    AdminSentenceLibraryMutationRequestSchema,
+    AdminSentenceLibraryMutationResponseSchema,
+    type AdminSentenceDictionariesQuery,
+    type AdminSentenceLibraryQuery,
+    type AdminSentenceLibrarySnapshotRequest,
+    type AdminSentenceLibraryMutationRequest,
     AdminAiCreditAdjustmentRequestSchema,
     AdminAiCreditPolicyMutationRequestSchema,
     AdminAiCreditsResponseSchema,
@@ -251,8 +264,72 @@ export const adminApi = {
             'PATCH',
             signal,
         ),
+    sentenceDictionaries: (
+        userId: string,
+        query: AdminSentenceDictionariesQuery,
+        signal?: AbortSignal,
+    ) =>
+        authorized(
+            `/admin/users/${encodeURIComponent(userId)}/sentence-dictionaries?${queryString(AdminSentenceDictionariesQuerySchema.parse(query))}`,
+            AdminSentenceDictionariesResponseSchema,
+            signal,
+        ),
+    sentences: (
+        userId: string,
+        dictionaryId: string,
+        query: AdminSentenceLibraryQuery,
+        signal?: AbortSignal,
+    ) =>
+        authorized(
+            `${sentencePath(userId, dictionaryId)}?${queryString(AdminSentenceLibraryQuerySchema.parse(query))}`,
+            AdminSentenceLibraryListResponseSchema,
+            signal,
+        ),
+    sentence: (
+        userId: string,
+        dictionaryId: string,
+        exerciseId: string,
+        signal?: AbortSignal,
+    ) =>
+        authorized(
+            `${sentencePath(userId, dictionaryId)}/${encodeURIComponent(exerciseId)}`,
+            AdminSentenceLibraryDetailSchema,
+            signal,
+        ),
+    snapshotSentences: (
+        userId: string,
+        dictionaryId: string,
+        body: AdminSentenceLibrarySnapshotRequest,
+        signal?: AbortSignal,
+    ) =>
+        authorizedRequest(
+            `${sentencePath(userId, dictionaryId)}/snapshots`,
+            body,
+            AdminSentenceLibrarySnapshotRequestSchema,
+            AdminSentenceLibrarySnapshotResponseSchema,
+            'POST',
+            signal,
+        ),
+    mutateSentences: (
+        userId: string,
+        dictionaryId: string,
+        body: AdminSentenceLibraryMutationRequest,
+        signal?: AbortSignal,
+    ) =>
+        authorizedRequest(
+            `${sentencePath(userId, dictionaryId)}/mutations`,
+            body,
+            AdminSentenceLibraryMutationRequestSchema,
+            AdminSentenceLibraryMutationResponseSchema,
+            'POST',
+            signal,
+        ),
     apiUrl,
 };
+
+function sentencePath(userId: string, dictionaryId: string) {
+    return `/admin/users/${encodeURIComponent(userId)}/dictionaries/${encodeURIComponent(dictionaryId)}/sentences`;
+}
 
 async function authorizedMutation(
     path: string,

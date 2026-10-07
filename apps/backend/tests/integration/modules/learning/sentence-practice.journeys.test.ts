@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision sentence-practice-backend sha256:2256e394ffdaad85
+// @user-flow-revision sentence-practice-backend sha256:bf3394d7a0503c39
 
 import {
     AuthenticationSuccessResponseSchema,
@@ -9,6 +9,10 @@ import {
     type SentenceExercise,
     SentenceNextResponseSchema,
     SignUpResponseSchema,
+    SentencePreparationResponseSchema,
+    SentencePreparationBatchesResponseSchema,
+    SentenceLibraryListResponseSchema,
+    SentenceLibraryDetailSchema,
 } from '@languon/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -66,6 +70,7 @@ run('real composed sentence practice HTTP and worker journey', () => {
     let app: ReturnType<typeof createApp>;
     let authentication: AuthenticationComposition;
     let providerCalls = 0;
+    let sentences: ReturnType<typeof createSentenceComposition>;
 
     beforeAll(async () => {
         process.env.DICTIONARY_AI_MANAGED_ROUTING_ENABLED = 'true';
@@ -96,14 +101,15 @@ run('real composed sentence practice HTTP and worker journey', () => {
             dictionaryHmacSecret: secret,
             policy: authentication.options.policy,
         };
+        sentences = createSentenceComposition({
+            ...dependencies,
+            enabled: environment.LEARNING_SENTENCES_ENABLED,
+            admission: { generationFormat: 'sentence-generation:v2' },
+        });
         app = createApp({
             authentication: authentication.options,
             dictionaries: createDictionaryComposition(dependencies).routes,
-            sentenceLearning: createSentenceComposition({
-                ...dependencies,
-                enabled: environment.LEARNING_SENTENCES_ENABLED,
-                admission: { generationFormat: 'sentence-generation:v2' },
-            }).routes,
+            sentenceLearning: sentences.routes,
         });
     });
     afterAll(async () => {
@@ -208,6 +214,8 @@ run('real composed sentence practice HTTP and worker journey', () => {
                 'sentence-generation:v1',
                 'sentence-generation:v2',
                 'sentence-check:v1',
+                'sentence-preparation:v1',
+                'sentence-preparation:v2',
             ],
             textAiCapacityRevision: 1,
             learningExecutionRevision: 1,
@@ -1155,5 +1163,372 @@ run('real composed sentence practice HTTP and worker journey', () => {
         } finally {
             await database.end();
         }
+    }, 60_000);
+
+    // @user-flow sentence-practice-backend/manage-saved-library-and-partial-preparation
+    it('prepares without exposure, previews and personally archives saved content, then practices a frozen partial batch', async () => {
+        // This runner owns its confirmed disposable schema; isolate this journey from exhausted wallets above.
+        const database = createTestPostgresClient();
+        await resetTestDatabase(database);
+        await migrateTestDatabase(database);
+        await database.end();
+        const owner = await signup('library-owner');
+        const reader = await signup('library-reader');
+        await configure(owner.userId);
+        await credit(owner.userId);
+        const created = await request('/dictionaries', {
+            method: 'POST',
+            token: owner.token,
+            idempotency: true,
+            body: {
+                name: 'Prepared library journey',
+                sourceLanguage: 'en',
+                targetLanguage: 'fr',
+            },
+        });
+        expect(created.status).toBe(201);
+        const dictionary = DictionaryResponseSchema.parse(
+            await created.json(),
+        ).dictionary;
+        let dictionaryVersion = dictionary.version;
+        for (const [source, translation] of [
+            ['book', 'livre'],
+            ['cat', 'chat'],
+        ]) {
+            const response = await request(
+                `/dictionaries/${dictionary.id}/cards`,
+                {
+                    method: 'POST',
+                    token: owner.token,
+                    body: {
+                        expectedDictionaryVersion: dictionaryVersion,
+                        expectedSettingsVersion: dictionary.settings.version,
+                        values: { source, translation },
+                    },
+                },
+            );
+            expect(response.status).toBe(201);
+            dictionaryVersion = (
+                (await response.json()) as { dictionaryVersion: number }
+            ).dictionaryVersion;
+        }
+        const shared = await request(
+            `/dictionaries/${dictionary.id}/share-key/rotate`,
+            {
+                method: 'POST',
+                token: owner.token,
+                body: { expectedDictionaryVersion: dictionaryVersion },
+            },
+        );
+        expect(shared.status).toBe(200);
+        const capability = (
+            (await shared.json()) as {
+                capability: { shareId: string; shareKey: string };
+                dictionaryVersion: number;
+            }
+        ).capability;
+        const base = `/learning/dictionaries/${dictionary.id}/sentences`;
+        const sharedBase = `/learning/shared-dictionaries/${capability.shareId}/sentences`;
+        const startBody = {
+            operationId: randomUUID(),
+            direction: 'source-to-target',
+            mode: 'new-only',
+            initialRoundScope: { type: 'all' },
+        };
+        const started = await request(`${base}/preparations`, {
+            method: 'POST',
+            token: owner.token,
+            body: startBody,
+        });
+        expect(started.status).toBe(200);
+        const preparationId = SentencePreparationResponseSchema.parse(
+            await started.json(),
+        ).preparation.id;
+        const replay = await request(`${base}/preparations`, {
+            method: 'POST',
+            token: owner.token,
+            body: startBody,
+        });
+        expect(
+            SentencePreparationResponseSchema.parse(await replay.json())
+                .preparation.id,
+        ).toBe(preparationId);
+        const listedBatches = await request(
+            `${base}/preparations/${preparationId}/batches?offset=0&limit=1`,
+            { token: owner.token },
+        );
+        expect(listedBatches.status).toBe(200);
+        const batchPage = SentencePreparationBatchesResponseSchema.parse(
+            await listedBatches.json(),
+        );
+        expect(batchPage.items).toHaveLength(1);
+        expect(batchPage.nextOffset).toBeNull();
+        expect(
+            (
+                await request(
+                    `${base}/preparations/${preparationId}/batches?limit=26`,
+                    { token: owner.token },
+                )
+            ).status,
+        ).toBe(400);
+        const tick = () =>
+            sentences.preparation.tick({
+                now: new Date(),
+                signal: new AbortController().signal,
+            });
+        expect(await tick()).toBe(true);
+        let calls = 0;
+        const fixture = new DeterministicSentenceAiProvider({
+            check() {
+                throw new Error('Preparation must not submit AI checks');
+            },
+            generate(input) {
+                calls += 1;
+                const target = input.candidates.find(
+                    (item) => item.entryId === input.priorityEntryId,
+                )!;
+                return {
+                    sourceText: `${target.sourceText} is useful.`,
+                    referenceTranslation: `${target.targetText} est utile.`,
+                    segments: [
+                        {
+                            text: target.sourceText,
+                            entryId: target.entryId,
+                            contextualHint: null,
+                        },
+                        {
+                            text: ' is useful.',
+                            entryId: null,
+                            contextualHint: {
+                                normalizedHint: 'utile',
+                                hintForm: 'lemma',
+                            },
+                        },
+                    ],
+                    targets: [
+                        {
+                            entryId: target.entryId,
+                            normalizedHint: target.targetText,
+                            hintForm: 'lemma',
+                        },
+                    ],
+                };
+            },
+        });
+        const worker = createSentenceWorkerComposition({
+            database: authentication.productDependencies.database,
+            provider: {
+                async generate(input) {
+                    return {
+                        ...(await fixture.generate(input)),
+                        usage: { inputTokens: 10, outputTokens: 20 },
+                    };
+                },
+                check: (input) => fixture.check(input),
+            },
+            supportedFormats: [
+                'sentence-preparation:v1',
+                'sentence-preparation:v2',
+            ],
+            clock: authentication.productDependencies.clock,
+            workerId: 'sentence-journey-worker',
+            leaseMs: 10_000,
+            heartbeatMs: 100,
+            timeoutMs: 5_000,
+            globalConcurrency: 2,
+            learnerConcurrency: 1,
+            maxAttempts: 3,
+            retryDelayMs: 1,
+        });
+        expect(
+            await worker.worker.processNext(new AbortController().signal),
+        ).toBe(true);
+        expect(await tick()).toBe(true);
+        const paused = await request(
+            `${base}/preparations/${preparationId}/commands`,
+            {
+                method: 'POST',
+                token: owner.token,
+                body: { operationId: randomUUID(), action: 'stop' },
+            },
+        );
+        expect(paused.status).toBe(200);
+        const preparation = SentencePreparationResponseSchema.parse(
+            await paused.json(),
+        ).preparation;
+        expect(preparation).toMatchObject({
+            state: 'paused',
+            preparedCount: 1,
+            eligibleCount: 2,
+        });
+        expect(preparation.initialBatch?.state).toBe('partial');
+        const progress = async () =>
+            (await (
+                await request(`${base}/progress?direction=source-to-target`, {
+                    token: owner.token,
+                })
+            ).json()) as {
+                usedCount: number;
+                completedCheckCount: number;
+                manualReviewCount: number;
+            };
+        expect(await progress()).toMatchObject({
+            usedCount: 0,
+            completedCheckCount: 0,
+            manualReviewCount: 0,
+        });
+        const library = SentenceLibraryListResponseSchema.parse(
+            await (
+                await request(`${base}/library`, { token: owner.token })
+            ).json(),
+        );
+        expect(library.items).toHaveLength(1);
+        const item = library.items[0]!;
+        const detail = SentenceLibraryDetailSchema.parse(
+            await (
+                await request(`${base}/library/${item.exerciseId}`, {
+                    token: owner.token,
+                })
+            ).json(),
+        );
+        expect(detail.referenceTranslation).toContain('est utile');
+        expect(await progress()).toMatchObject({
+            usedCount: 0,
+            completedCheckCount: 0,
+            manualReviewCount: 0,
+        });
+        const archived = await request(`${base}/library/mutations`, {
+            method: 'POST',
+            token: owner.token,
+            body: {
+                operationId: randomUUID(),
+                operation: 'archive',
+                selection: {
+                    type: 'selected',
+                    items: [
+                        {
+                            exerciseId: item.exerciseId,
+                            expectedVersion: item.version,
+                        },
+                    ],
+                },
+            },
+        });
+        expect(archived.status).toBe(200);
+        expect(
+            SentenceLibraryListResponseSchema.parse(
+                await (
+                    await request(`${base}/library`, { token: owner.token })
+                ).json(),
+            ).items,
+        ).toHaveLength(0);
+        const readerLibrary = await request(`${sharedBase}/library`, {
+            token: reader.token,
+            shareKey: capability.shareKey,
+        });
+        expect(readerLibrary.status).toBe(200);
+        expect(
+            SentenceLibraryListResponseSchema.parse(await readerLibrary.json())
+                .items,
+        ).toHaveLength(1);
+        const archivedLibrary = SentenceLibraryListResponseSchema.parse(
+            await (
+                await request(`${base}/library?personalArchive=archived`, {
+                    token: owner.token,
+                })
+            ).json(),
+        );
+        const restored = await request(`${base}/library/mutations`, {
+            method: 'POST',
+            token: owner.token,
+            body: {
+                operationId: randomUUID(),
+                operation: 'restore',
+                selection: {
+                    type: 'selected',
+                    items: [
+                        {
+                            exerciseId: item.exerciseId,
+                            expectedVersion: archivedLibrary.items[0]!.version,
+                        },
+                    ],
+                },
+            },
+        });
+        expect(restored.status).toBe(200);
+        const practice = await request(`${base}/next`, {
+            method: 'POST',
+            token: owner.token,
+            body: {
+                operationId: randomUUID(),
+                sessionId: randomUUID(),
+                direction: 'source-to-target',
+                mode: 'new-only',
+                scope: { type: 'all' },
+                preparedBatchId: preparation.initialBatch!.id,
+                visitedExerciseIds: [],
+            },
+        });
+        expect(practice.status).toBe(200);
+        expect(
+            SentenceNextResponseSchema.parse(await practice.json()),
+        ).toMatchObject({
+            kind: 'exercise',
+            exercise: { id: item.exerciseId },
+        });
+        expect(calls).toBe(1);
+        expect((await progress()).usedCount).toBe(1);
+        const readerPreparation = await request(`${sharedBase}/preparations`, {
+            method: 'POST',
+            token: reader.token,
+            shareKey: capability.shareKey,
+            body: {
+                operationId: randomUUID(),
+                direction: 'source-to-target',
+                mode: 'review-only',
+                initialRoundScope: { type: 'all' },
+            },
+        });
+        expect(readerPreparation.status).toBe(200);
+        const readerPreparationId = SentencePreparationResponseSchema.parse(
+            await readerPreparation.json(),
+        ).preparation.id;
+        const dictionaryNow = DictionaryResponseSchema.parse(
+            await (
+                await request(`/dictionaries/${dictionary.id}`, {
+                    token: owner.token,
+                })
+            ).json(),
+        ).dictionary;
+        expect(
+            (
+                await request(
+                    `/dictionaries/${dictionary.id}/share-key/rotate`,
+                    {
+                        method: 'POST',
+                        token: owner.token,
+                        body: {
+                            expectedDictionaryVersion: dictionaryNow.version,
+                        },
+                    },
+                )
+            ).status,
+        ).toBe(200);
+        expect(
+            (
+                await request(`${sharedBase}/library/${item.exerciseId}`, {
+                    token: reader.token,
+                    shareKey: capability.shareKey,
+                })
+            ).status,
+        ).toBe(404);
+        expect(
+            (
+                await request(
+                    `${sharedBase}/preparations/${readerPreparationId}`,
+                    { token: reader.token, shareKey: capability.shareKey },
+                )
+            ).status,
+        ).toBe(404);
     }, 60_000);
 });

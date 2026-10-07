@@ -1,0 +1,12 @@
+
+> languon@0.0.0 test:e2e:sentence-practice-backend /Users/nickkotov/projects/languon
+> node scripts/run-sentence-practice-e2e.mjs
+
+
+ RUN  v4.1.10 /Users/nickkotov/projects/languon/apps/backend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  23:17:50
+   Duration  8.79s (transform 957ms, setup 0ms, import 2.40s, tests 6.23s, environment 0ms)

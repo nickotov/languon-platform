@@ -4,7 +4,10 @@ import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
 import { databaseSchema } from '../../src/infrastructure/database/schema';
-import { createSentenceWorkerComposition } from '../../src/modules/learning/infrastructure/sentence-composition';
+import {
+    createSentenceWorkerComposition,
+    createSentencePreparationWorkerComposition,
+} from '../../src/modules/learning/infrastructure/sentence-composition';
 import { DeterministicSentenceAiProvider } from '../../src/modules/learning/infrastructure/ai/sentence-ai-provider';
 import { textAiModelCatalog } from '../../src/modules/text-ai/application/text-ai-provider-catalog';
 import {
@@ -152,6 +155,14 @@ const provider = {
         };
     },
 };
+const { preparation } = createSentencePreparationWorkerComposition({
+    database,
+    admission: { generationFormat: 'sentence-generation:v2' },
+    textAiPolicy: {
+        routingEnabled: true,
+        credentialConfigured: () => true,
+    },
+});
 const { worker } = createSentenceWorkerComposition({
     database,
     provider,
@@ -162,6 +173,13 @@ const { worker } = createSentenceWorkerComposition({
     timeoutMs: 5_000,
     globalConcurrency: 2,
     learnerConcurrency: 1,
+    supportedFormats: [
+        'sentence-generation:v1',
+        'sentence-generation:v2',
+        'sentence-preparation:v1',
+        'sentence-preparation:v2',
+        'sentence-check:v1',
+    ],
     maxAttempts: 1,
     retryDelayMs: 1,
 });
@@ -241,6 +259,8 @@ async function prepareFixtures() {
             'sentence-generation:v1',
             'sentence-generation:v2',
             'sentence-check:v1',
+            'sentence-preparation:v1',
+            'sentence-preparation:v2',
         ],
         textAiCapacityRevision: 1,
         learningExecutionRevision: 1,
@@ -258,6 +278,7 @@ console.log('Sentence browser fixture worker ready');
 try {
     while (!controller.signal.aborted) {
         await prepareFixtures();
+        await preparation.tick({ now: new Date(), signal: controller.signal });
         await worker.processNext(controller.signal);
         await delay(50);
     }

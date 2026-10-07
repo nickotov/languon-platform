@@ -1,3 +1,18 @@
+import {
+    SentenceLibraryQuerySchema,
+    SentenceLibraryListResponseSchema,
+    SentenceLibraryDetailSchema,
+    SentenceLibrarySnapshotRequestSchema,
+    SentenceLibrarySnapshotResponseSchema,
+    SentenceLibraryMutationRequestSchema,
+    SentenceLibraryMutationResponseSchema,
+    SentencePreparationStartRequestSchema,
+    SentencePreparationBatchesQuerySchema,
+    SentencePreparationBatchesResponseSchema,
+    SentencePreparationResponseSchema,
+    SentencePreparationCommandRequestSchema,
+    SentencePreparationBatchSchema,
+} from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import {
@@ -309,6 +324,250 @@ export function createSentenceRoutes({
         const metadata = (context: Context) =>
             authenticationRequestMetadata(context, policy);
         const security = [{ bearerAuth: [] as string[] }];
+        app.openapi(
+            createRoute({
+                method: 'get',
+                path: `${prefix}/library`,
+                security,
+                request: { ...request, query: SentenceLibraryQuerySchema },
+                responses: {
+                    200: json(
+                        SentenceLibraryListResponseSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.listLibrary(
+                        target(c),
+                        c.req.valid('query'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'get',
+                path: `${prefix}/library/{exerciseId}`,
+                security,
+                request: {
+                    ...request,
+                    params: params.extend({ exerciseId: z.uuid() }),
+                },
+                responses: {
+                    200: json(
+                        SentenceLibraryDetailSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.detailLibrary(
+                        target(c),
+                        c.req.param('exerciseId'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'post',
+                path: `${prefix}/library/snapshots`,
+                security,
+                request: {
+                    ...request,
+                    body: body(SentenceLibrarySnapshotRequestSchema),
+                },
+                responses: {
+                    200: json(
+                        SentenceLibrarySnapshotResponseSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.snapshotLibrary(
+                        target(c),
+                        c.req.valid('json'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'post',
+                path: `${prefix}/library/mutations`,
+                security,
+                request: {
+                    ...request,
+                    body: body(SentenceLibraryMutationRequestSchema),
+                },
+                responses: {
+                    200: json(
+                        SentenceLibraryMutationResponseSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.mutateLibrary(
+                        target(c),
+                        c.req.valid('json'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'post',
+                path: `${prefix}/preparations`,
+                security,
+                request: {
+                    ...request,
+                    body: body(SentencePreparationStartRequestSchema),
+                },
+                responses: {
+                    200: json(
+                        SentencePreparationResponseSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.startPreparation(
+                        target(c),
+                        c.req.valid('json'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'get',
+                path: `${prefix}/preparations/{preparationId}`,
+                security,
+                request: {
+                    ...request,
+                    params: params.extend({ preparationId: z.uuid() }),
+                },
+                responses: {
+                    200: json(
+                        SentencePreparationResponseSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.getPreparation(
+                        target(c),
+                        c.req.param('preparationId'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'post',
+                path: `${prefix}/preparations/{preparationId}/commands`,
+                security,
+                request: {
+                    ...request,
+                    params: params.extend({ preparationId: z.uuid() }),
+                    body: body(SentencePreparationCommandRequestSchema),
+                },
+                responses: {
+                    200: json(
+                        SentencePreparationResponseSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.commandPreparation(
+                        target(c),
+                        c.req.param('preparationId'),
+                        c.req.valid('json'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'get',
+                path: `${prefix}/preparations/{preparationId}/batches`,
+                security,
+                request: {
+                    ...request,
+                    params: params.extend({ preparationId: z.uuid() }),
+                    query: SentencePreparationBatchesQuerySchema,
+                },
+                responses: {
+                    200: json(
+                        SentencePreparationBatchesResponseSchema,
+                        'Prepared sentence batches',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.preparationBatches(
+                        target(c),
+                        c.req.param('preparationId'),
+                        c.req.valid('query'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
+        app.openapi(
+            createRoute({
+                method: 'get',
+                path: `${prefix}/prepared-batches/{batchId}`,
+                security,
+                request: {
+                    ...request,
+                    params: params.extend({ batchId: z.uuid() }),
+                },
+                responses: {
+                    200: json(
+                        SentencePreparationBatchSchema,
+                        'Sentence management result',
+                    ),
+                    ...errors,
+                },
+            }),
+            async (c) =>
+                c.json(
+                    await service.preparedBatch(
+                        target(c),
+                        c.req.param('batchId'),
+                        metadata(c),
+                    ),
+                    200,
+                ),
+        );
         app.openapi(
             createRoute({
                 method: 'post',

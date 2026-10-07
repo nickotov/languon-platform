@@ -29,6 +29,11 @@ export const AdminAuditActionSchema = z.enum([
     'ai_settings_updated',
     'ai_credit_policy_updated',
     'ai_credits_adjusted',
+    'sentence_personally_archived',
+    'sentence_personally_restored',
+    'sentence_globally_archived',
+    'sentence_globally_restored',
+    'sentence_permanently_deleted',
 ]);
 
 export const AdminAiCreditModeSchema = z.enum(['limited', 'unlimited']);

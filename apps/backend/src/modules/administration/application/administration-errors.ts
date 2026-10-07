@@ -94,3 +94,5 @@ export class AdminOperatorActorRequiredError extends Error {
         this.name = 'AdminOperatorActorRequiredError';
     }
 }
+
+export class AdminSentenceLibraryUnavailableError extends Error {}

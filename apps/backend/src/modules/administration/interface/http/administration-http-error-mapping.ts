@@ -1,7 +1,13 @@
+import { SentenceLibraryDeletionBusyError } from '../../../learning/application/ports/sentence-library-store';
+import {
+    SentenceConflictError,
+    SentenceUnavailableError,
+} from '../../../learning/domain/sentence-errors';
 import { RecentAuthenticationRequiredError } from '../../../authentication/application/authentication-errors';
 import { mapAuthenticationHttpError } from '../../../authentication/interface/http/auth-http-error-mapping';
 import {
     AdminAccessDeniedError,
+    AdminSentenceLibraryUnavailableError,
     AdminAiCreditAccountConflictError,
     AdminAiCreditAdjustmentExceedsAvailableError,
     AdminAiCreditInvalidRequestError,
@@ -21,6 +27,27 @@ export function mapAdministrationHttpError(
     error: Error,
 ): AdministrationHttpError {
     if (error instanceof AdministrationHttpError) return error;
+    if (error instanceof SentenceLibraryDeletionBusyError)
+        return new AdministrationHttpError(
+            'sentence_library_deletion_busy',
+            'Related sentence work is still settling. Retry after it completes.',
+            409,
+        );
+    if (error instanceof SentenceConflictError)
+        return new AdministrationHttpError(
+            'sentence_library_conflict',
+            'The saved sentence selection changed. Refresh and confirm again.',
+            409,
+        );
+    if (
+        error instanceof SentenceUnavailableError ||
+        error instanceof AdminSentenceLibraryUnavailableError
+    )
+        return new AdministrationHttpError(
+            'sentence_library_unavailable',
+            'The saved sentence library is unavailable.',
+            404,
+        );
     if (error instanceof AdminAccessDeniedError) {
         return new AdministrationHttpError(
             'admin_access_denied',

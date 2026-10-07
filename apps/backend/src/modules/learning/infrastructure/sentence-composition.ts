@@ -1,3 +1,5 @@
+import { DrizzleSentenceLibraryStore } from './persistence/drizzle/drizzle-sentence-library-store';
+import { DrizzleSentencePreparationStore } from './persistence/drizzle/drizzle-sentence-preparation-store';
 import type { LearningCompositionDependencies } from './learning-composition';
 import { HmacDictionaryCryptography } from '../../dictionaries/infrastructure/crypto/dictionary-cryptography';
 import { DrizzleDictionaryStore } from '../../dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
@@ -31,25 +33,17 @@ export function createSentenceComposition(
         entropy: dependencies.entropy,
         secret: dependencies.dictionaryHmacSecret,
     });
-    const store = new DrizzleSentencePracticeStore(dependencies.database, {
-        ...dependencies.admission,
-        resolveExecution: (tx, userId, format, now) =>
-            new DrizzleTextAiAdmissionParticipant(
-                tx,
-                dependencies.textAiPolicy,
-            ).resolve({
-                userId,
-                format,
-                now,
-                legacyBudget: defaultTextAiProviderBudgetPolicy,
-            }),
-    });
+    const library = new DrizzleSentenceLibraryStore(dependencies.database);
+    const { store, preparation } =
+        createSentencePreparationWorkerComposition(dependencies);
     const service = new SentencePracticeService({
         clock: dependencies.clock,
         enabled: dependencies.enabled,
         cryptography,
         rateLimiter: dependencies.rateLimiter,
         store,
+        library,
+        preparation,
         dictionaries: new DrizzleDictionaryStore(
             dependencies.database,
             dependencies.ids,
@@ -69,8 +63,41 @@ export function createSentenceComposition(
     return {
         service,
         store,
+        library,
+        preparation,
         routes: createSentenceRoutes({ service, policy: dependencies.policy }),
     };
+}
+/** Shared durable preparation admission for HTTP and the existing bounded worker. */
+export function createSentencePreparationWorkerComposition(
+    dependencies: Pick<
+        SentenceCompositionDependencies,
+        'database' | 'textAiPolicy' | 'admission'
+    >,
+) {
+    const store: DrizzleSentencePracticeStore =
+        new DrizzleSentencePracticeStore(dependencies.database, {
+            ...dependencies.admission,
+            resolvePreparedBatch: (tx, access, id, context) =>
+                preparation.resolvePreparedBatch(tx, access, id, context),
+            resolveExecution: (tx, userId, format, now, requiredWorkerFormat) =>
+                new DrizzleTextAiAdmissionParticipant(
+                    tx,
+                    dependencies.textAiPolicy,
+                ).resolve({
+                    userId,
+                    format,
+                    now,
+                    legacyBudget: defaultTextAiProviderBudgetPolicy,
+                    ...(requiredWorkerFormat ? { requiredWorkerFormat } : {}),
+                }),
+        });
+    const preparation: DrizzleSentencePreparationStore =
+        new DrizzleSentencePreparationStore(dependencies.database, {
+            admitGeneration: (tx, access, input, context) =>
+                store.admitPreparationGeneration(tx, access, input, context),
+        });
+    return { store, preparation };
 }
 /** Worker/test seam accepts the same provider port; fixtures count calls without route/store mocks. */
 export function createSentenceWorkerComposition(

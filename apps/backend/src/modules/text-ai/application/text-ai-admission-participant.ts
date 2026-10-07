@@ -16,6 +16,7 @@ export interface TextAiAdmissionParticipant {
         format: string;
         now: Date;
         legacyBudget: TextAiProviderBudgetPolicy;
+        requiredWorkerFormat?: string;
     }): Promise<TextAiAdmissionExecution>;
 }
 

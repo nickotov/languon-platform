@@ -14,6 +14,15 @@ import {
     AdminDashboardResponseSchema,
     AdminErrorResponseSchema,
     AdminMeResponseSchema,
+    AdminSentenceDictionaryQuerySchema,
+    AdminSentenceDictionaryResponseSchema,
+    AdminSentenceLibraryQuerySchema,
+    AdminSentenceLibrarySnapshotRequestSchema,
+    AdminSentenceLibrarySnapshotResponseSchema,
+    AdminSentenceLibraryMutationRequestSchema,
+    AdminSentenceLibraryMutationResponseSchema,
+    AdminSentenceLibraryListResponseSchema,
+    AdminSentenceLibraryDetailSchema,
     AdminUserIdParamsSchema,
     AdminUserResponseSchema,
     AdminUsersQuerySchema,
@@ -352,6 +361,168 @@ function registerResourceRoutes(
     dependencies: AdministrationRouteDependencies,
     bearer: (value: string | undefined) => string,
 ) {
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/admin/users/{userId}/sentence-dictionaries',
+            security: bearerSecurity,
+            tags: ['Administration'],
+            request: {
+                params: AdminUserIdParamsSchema,
+                query: AdminSentenceDictionaryQuerySchema,
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminSentenceDictionaryResponseSchema,
+                    'Saved sentence dictionary discovery',
+                ),
+                ...errors,
+            },
+        }),
+        async (context) => {
+            return context.json(
+                await dependencies.administration.sentenceDictionaries(
+                    bearer(context.req.header('Authorization')),
+                    context.req.valid('param').userId,
+                    context.req.valid('query'),
+                    correlationId(context.req.header('X-Correlation-ID')),
+                ),
+                200,
+            );
+        },
+    );
+    const libraryParams = z.object({
+        userId: z.uuid(),
+        dictionaryId: z.uuid(),
+    });
+    const libraryPath =
+        '/admin/users/{userId}/dictionaries/{dictionaryId}/sentences';
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: libraryPath,
+            security: bearerSecurity,
+            tags: ['Administration'],
+            request: {
+                params: libraryParams,
+                query: AdminSentenceLibraryQuerySchema,
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminSentenceLibraryListResponseSchema,
+                    'Saved examples',
+                ),
+                ...errors,
+            },
+        }),
+        async (context) => {
+            const { userId, dictionaryId } = context.req.valid('param');
+            return context.json(
+                await dependencies.administration.sentenceLibraryList(
+                    bearer(context.req.header('Authorization')),
+                    userId,
+                    dictionaryId,
+                    context.req.valid('query'),
+                    correlationId(context.req.header('X-Correlation-ID')),
+                ),
+                200,
+            );
+        },
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: `${libraryPath}/{exerciseId}`,
+            security: bearerSecurity,
+            tags: ['Administration'],
+            request: { params: libraryParams.extend({ exerciseId: z.uuid() }) },
+            responses: {
+                200: jsonResponse(
+                    AdminSentenceLibraryDetailSchema,
+                    'Saved example details',
+                ),
+                ...errors,
+            },
+        }),
+        async (context) => {
+            const { userId, dictionaryId, exerciseId } =
+                context.req.valid('param');
+            return context.json(
+                await dependencies.administration.sentenceLibraryDetail(
+                    bearer(context.req.header('Authorization')),
+                    userId,
+                    dictionaryId,
+                    exerciseId,
+                    correlationId(context.req.header('X-Correlation-ID')),
+                ),
+                200,
+            );
+        },
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: `${libraryPath}/snapshots`,
+            security: bearerSecurity,
+            tags: ['Administration'],
+            request: {
+                params: libraryParams,
+                body: requestBody(AdminSentenceLibrarySnapshotRequestSchema),
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminSentenceLibrarySnapshotResponseSchema,
+                    'Bounded confirmation',
+                ),
+                ...errors,
+            },
+        }),
+        async (context) => {
+            const { userId, dictionaryId } = context.req.valid('param');
+            return context.json(
+                await dependencies.administration.sentenceLibrarySnapshot(
+                    bearer(context.req.header('Authorization')),
+                    userId,
+                    dictionaryId,
+                    context.req.valid('json'),
+                    correlationId(context.req.header('X-Correlation-ID')),
+                ),
+                200,
+            );
+        },
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: `${libraryPath}/mutations`,
+            security: bearerSecurity,
+            tags: ['Administration'],
+            request: {
+                params: libraryParams,
+                body: requestBody(AdminSentenceLibraryMutationRequestSchema),
+            },
+            responses: {
+                200: jsonResponse(
+                    AdminSentenceLibraryMutationResponseSchema,
+                    'Saved example mutation',
+                ),
+                ...errors,
+            },
+        }),
+        async (context) => {
+            const { userId, dictionaryId } = context.req.valid('param');
+            return context.json(
+                await dependencies.administration.mutateSentenceLibrary(
+                    bearer(context.req.header('Authorization')),
+                    userId,
+                    dictionaryId,
+                    context.req.valid('json'),
+                    correlationId(context.req.header('X-Correlation-ID')),
+                ),
+                200,
+            );
+        },
+    );
     app.openapi(
         createRoute({
             method: 'get',

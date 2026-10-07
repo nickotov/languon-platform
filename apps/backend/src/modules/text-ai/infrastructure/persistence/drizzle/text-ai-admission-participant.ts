@@ -117,7 +117,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                             observation.status !== 'unavailable' &&
                             isTextAiCapacityCapableObservation(
                                 observation,
-                                input.format,
+                                input.requiredWorkerFormat ?? input.format,
                             ),
                     ))
             )
@@ -173,16 +173,16 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                     (learning
                         ? isSentenceExecutionCapableObservation(
                               observation,
-                              input.format,
+                              input.requiredWorkerFormat ?? input.format,
                           )
                         : overlap
                           ? isTextAiCapacityCapableObservation(
                                 observation,
-                                input.format,
+                                input.requiredWorkerFormat ?? input.format,
                             )
                           : isTextAiSelectionCapableObservation(
                                 observation,
-                                input.format,
+                                input.requiredWorkerFormat ?? input.format,
                             )) && observation.status !== 'unavailable',
             )
         )

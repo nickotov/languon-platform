@@ -46,6 +46,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0025](./0025-flashcard-capability-enabled-by-default.md)       | Flashcard capability enabled by default      | Accepted               |
 | [ADR-0026](./0026-shared-text-ai-selection-and-user-preferences.md) | Shared text AI and user model preferences    | Accepted               |
 | [ADR-0027](./0027-typed-sentence-work-and-shared-ai-accounting.md)  | Typed sentence work and shared AI accounting | Accepted               |
+| [ADR-0028](./0028-sentence-library-visibility-and-preparation.md) | Sentence library visibility and durable preparation | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

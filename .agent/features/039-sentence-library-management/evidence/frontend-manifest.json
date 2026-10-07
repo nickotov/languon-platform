@@ -1,0 +1,311 @@
+{
+    "base": "d74fbbd",
+    "capturedAt": "2026-10-07",
+    "sourceIdentity": "1e84f5693b129dac46488f7c6f7d4203ece21d0b7ad331627b214ca14ab2acac",
+    "files": [
+        {
+            "path": "apps/admin/playwright.config.ts",
+            "sha256": "ed65897db6c3237085de10f790ed8ab9868ac005e5bf9bbbd0660b5818890374"
+        },
+        {
+            "path": "apps/admin/src/pages/shared/page.module.css",
+            "sha256": "e0beadb9cc310c726fd10d2571b14b038950be20dd32f2725b221eea2ce0c1e8"
+        },
+        {
+            "path": "apps/admin/src/pages/users/hooks/use-sentence-library.ts",
+            "sha256": "21b122e480b59aa6e85f49939bd9cdbc5240c5eba1bf0e6a0011a780ebeefccc"
+        },
+        {
+            "path": "apps/admin/src/pages/users/hooks/use-sentence-mutation.ts",
+            "sha256": "f491d9d240d35522b75155c73c3c7b0aa8ab60099cab7c4e66c266b37a3b85a2"
+        },
+        {
+            "path": "apps/admin/src/pages/users/lib/sentence-selection.ts",
+            "sha256": "c83ecd4893e7a5477d78c07d6d99274e204acea617faa3586411e2491c10f483"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-actions.tsx",
+            "sha256": "36c5711f00e36b5f5456d00a22d2e39e6f304da845fb4b2aec8b0707e628d25a"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-detail.tsx",
+            "sha256": "054e1e2be1c3d52b088a758790d5b07a02a8da05a9ec97178567fb9cbd5f5cd4"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-filters.tsx",
+            "sha256": "87d95a0030f0aa9ec66f96efd0b7c7e9d7b8b23f6f04d5d01bf7061101c506bb"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-library-panel.module.css",
+            "sha256": "900a41b14119321ce0e458aa0fd3911d48355ed64d1f1dd9c649aa7373b710da"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-library-panel.module.css.d.ts",
+            "sha256": "bf7155515c7c0c31a34ecdc0388cbc1029de413ebea6f6bec58195e3f90d8847"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-library-panel.tsx",
+            "sha256": "cac176d19abfdae86f75bb0340d3769e23b41deaa6efd3a4c9e966500c0700e6"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-list.tsx",
+            "sha256": "1671ba44b13d7ab62bfb81e2210912fcd683682938c0e348f02785e00ebc9d26"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-mutation-dialog.tsx",
+            "sha256": "6dec9068efb2640afd3be035232c79381dd87227b4e60863a86e0452099ede4d"
+        },
+        {
+            "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-workspace.tsx",
+            "sha256": "957bdeac700d34017292de3132ba006f35a418a12e6594310a6f302e8075b1e3"
+        },
+        {
+            "path": "apps/admin/src/pages/users/user-detail-page.tsx",
+            "sha256": "85c18a35b9153eb3751373a986f2de6b5e4719ca494f85260a29fbbbfb9b0111"
+        },
+        {
+            "path": "apps/admin/src/shared/api/admin-api.ts",
+            "sha256": "e1304ccc61d7102ff4ba83552129c2517b9d149bd79d9fbd3c2341c063bc1c7b"
+        },
+        {
+            "path": "apps/admin/src/shared/i18n/admin-i18n-provider.ts",
+            "sha256": "30cd72645b8a2504e212ab11495e5d9c84be1dd9a519df4b2570911ca2bfa9b7"
+        },
+        {
+            "path": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+            "sha256": "2291890bba7c356e5c1f91a534917766a19f316a4fe055bde0ea12c75e29c415"
+        },
+        {
+            "path": "apps/admin/tests/sentence-library.test.tsx",
+            "sha256": "0260e272b1121fcab3e3c0dcdd9935888be3a40883e3ce74f06568670abedb4d"
+        },
+        {
+            "path": "apps/backend/tests/support/sentence-web-worker.ts",
+            "sha256": "3d72b448f8ecb251fdc8680bd09c02a585363f9eb9eaea3f6a3f836557e8eb27"
+        },
+        {
+            "path": "apps/web/src/app/dictionaries/[dictionaryId]/sentences/[exampleId]/page.tsx",
+            "sha256": "10afa44726e9d93572e6f62d7db1f323b1f3f240c5c1de2de9c2f14115567be7"
+        },
+        {
+            "path": "apps/web/src/app/dictionaries/[dictionaryId]/sentences/layout.tsx",
+            "sha256": "2f71b0d162da5d04b469df09d71c8c7cd3daaba558d45ec3edb7917fb8f082a0"
+        },
+        {
+            "path": "apps/web/src/app/dictionaries/[dictionaryId]/sentences/page.tsx",
+            "sha256": "10afa44726e9d93572e6f62d7db1f323b1f3f240c5c1de2de9c2f14115567be7"
+        },
+        {
+            "path": "apps/web/src/app/shared/dictionaries/[shareId]/sentences/[exampleId]/page.tsx",
+            "sha256": "10afa44726e9d93572e6f62d7db1f323b1f3f240c5c1de2de9c2f14115567be7"
+        },
+        {
+            "path": "apps/web/src/app/shared/dictionaries/[shareId]/sentences/layout.tsx",
+            "sha256": "606b06b6f10bec333531e334659b7080b7ccf4c115bb780f20d4ce26e4902bf1"
+        },
+        {
+            "path": "apps/web/src/app/shared/dictionaries/[shareId]/sentences/page.tsx",
+            "sha256": "10afa44726e9d93572e6f62d7db1f323b1f3f240c5c1de2de9c2f14115567be7"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/api/library-api.ts",
+            "sha256": "fe84e75eaf4c2549ceb6c392c7792252b6f12a3f10bd569a471d5c0eee7302ae"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/hooks/use-interface-text.ts",
+            "sha256": "c429401e6fc33806a0135b1fc2ae757e2c0e2f248cb4d4965d6cd5aefd7bd850"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/hooks/use-is-compact.ts",
+            "sha256": "b2987bd89b91ba15473e13996d6aa09d3de583edd7cae442e61b0318a12ff29e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/hooks/use-sentence-library.ts",
+            "sha256": "5669b5cae9340b30501022541f17205dcf667dd3fe5a7a189311b94207e6e4a7"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/index.ts",
+            "sha256": "1077c5b09c24e73b0170f1fde8aa5b56fa11c6353f2196f988937e4b97c911a0"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/lib/copy.ts",
+            "sha256": "8a8170e6ac6660e34873c29d4f99e98cc907a47fbe49c2f702ae3d6c37a6796c"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/lib/i18n-format.ts",
+            "sha256": "e270411ef3f0dcfb02d5d583f34a235f4a70007ba18fde37c44b7bfca92a3f31"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/lib/preview-focus.ts",
+            "sha256": "842017fd4d782a1ca64249a5d7586e9cdebff6d5b0e4ad4e436722ecabe30231"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/lib/sentence-display.ts",
+            "sha256": "233f5c1525de13490a511a661359daf64f559b589ec80a5b4010d37f28eba007"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/types.ts",
+            "sha256": "b05c8bbdcb640511a2fee55446d9294cab5dbe34bbae57852d01c0659e1d9995"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/archive-confirmation/archive-confirmation.tsx",
+            "sha256": "7f83a267336f5072ed22a23fc5f51de1401c3d7e92ab55ff7454dd7ba157e8d6"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/hint-groups/hint-groups.tsx",
+            "sha256": "a2421d1155ba45cfd62b507215a8dd2f0c1882c94b649d66237a7502b02db11d"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/library-filters/library-filters.tsx",
+            "sha256": "fa101b712089e03a4351323d0fe90c1035f9fe99eae2f07c0bbda7d55f74040e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/library-list/library-list.tsx",
+            "sha256": "45f9e256b47f149c3c2969c1ef4755c339cd67194130dd5eb88c7ec6cd45b9de"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/library-states/library-states.tsx",
+            "sha256": "e4df69134856d3a910606ef525460c3d7386180b743d0d5bfccc64d7e432f75a"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-badges/sentence-badges.tsx",
+            "sha256": "7389fc10a3e8f19a0f8e951d6b718c085daeaaa22238980e3d50d0784f54c273"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-detail/sentence-detail.module.css",
+            "sha256": "50dbb88f4e8453a2361018c66148c6c8093e6d8aa8283b76d46aae44491dc169"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-detail/sentence-detail.tsx",
+            "sha256": "9b1de4745ea07e5d2b9ba6806136680df52242cc5731489b8d9a2f0e6daed092"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-detail/sentence-status.tsx",
+            "sha256": "b79c87512bc533b7b3c7fcf10ad500814e2db9a9a47d9035c658a140e61d0d6d"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-library/sentence-library.tsx",
+            "sha256": "bb51409627091c0c072174d746ff3014eba6c3a70d7247d8c6fea94d30550db3"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-row/sentence-row.tsx",
+            "sha256": "4f5bdd69ab8f31741cce294a4f5b3970ad86dc2bea5c3a5d26d8707176caeb8b"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/api/sentence-api.ts",
+            "sha256": "0a855849c8217cf9906528b12174e387824cbabcbc1fae9f6ee41009720f9783"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/api/sentence-preparation-api.ts",
+            "sha256": "04c54aaae04b484cbb352c8df3cb22a72f5bbfa0252260eab6fc29c7cd9f63f0"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/hooks/use-preparation-retry-cooldown.ts",
+            "sha256": "b12cae1b6f56314e8fe9462fee7c870d2e1baa809a19c161a0dde848c27e13df"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/hooks/use-sentence-preparation.ts",
+            "sha256": "cceb2d158d8eb0d6d26237f3050e5bde68614777894ca296f08f8a570e61e1cc"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/index.ts",
+            "sha256": "bb1269dfa30039b964563442d500f133a40aa6e2a330947de50a1d38d6fc621d"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts",
+            "sha256": "489b49d9cd38888a68fd4b561d852454860f020881475f087d9a187d12f49e6d"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/model/sentence-session.ts",
+            "sha256": "4f02bc7163ae0c2cd0d958535175fc00d65885a3dc8b51147f9e109317f7309f"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/types.ts",
+            "sha256": "709586a8434c481bdfdd003178ee06d55c57d01048ea9d109dc793725f8418ac"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-chip/sentence-preparation-chip.tsx",
+            "sha256": "99512361ecc8bfc5728b87818d0a7b3f485475b2bb19092523975e4688dcf11e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-copy.ts",
+            "sha256": "11f444348aaa663887501db6ef2b173eb76ab6c69a8243765c1ec521c6d8611f"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-notice/sentence-preparation-notice.tsx",
+            "sha256": "c3a27abe0f93023518524564e64152470fd79f6fa724ebc10cf3b07fa8cde880"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-option/sentence-preparation-option.tsx",
+            "sha256": "8f9cd09619f02c0191846e6bb5366f91ccf9ba3011a0b70ca6254c4c399d2f1b"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-progress/sentence-preparation-progress.tsx",
+            "sha256": "2afb8a64334abb1fe23470537c9a03e298dd105ae4468bdf5afdf529475d8f2f"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-rounds/sentence-preparation-rounds.tsx",
+            "sha256": "7e44ea9affc9c9084259c0e62d09db2f3cc48a8517313a66e858d497d4444854"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-sheet/sentence-preparation-sheet.tsx",
+            "sha256": "4ffe191c05c64f54445183912d4f507b6a910a35e6a944147d7f2198dadf56c3"
+        },
+        {
+            "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-setup/sentence-setup.tsx",
+            "sha256": "967ee338b82f8127430f9dd8c60450b27b1283a52efa7588ec43b4e64bd1d4ce"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/sentence-library/index.ts",
+            "sha256": "95d4fec0ca85444051574f876a8c30866f0ccaab5ae2556f57b4e9f9c8991655"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/sentence-library/ui/sentence-library-page/sentence-library-page.tsx",
+            "sha256": "3e817e3dd35b50c4d68398129efe944097b7b56da3a8c945dc473e90ff472fb0"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/sentence-library/ui/sentence-library-route/sentence-library-route.tsx",
+            "sha256": "e161f8bfb737743397b55a13015b22ad558d31bc4bdfd26c288f9238a9f96084"
+        },
+        {
+            "path": "apps/web/src/fsd/shared/ui/dialog/dialog.tsx",
+            "sha256": "49f4377a9a6585b02569e3a08dfd02b822587bf17d5dc5fd231cc57d225020f2"
+        },
+        {
+            "path": "apps/web/src/fsd/shared/ui/select/select.tsx",
+            "sha256": "f20680735eb6eced1b9f9df9e0a1ee4f4a1ef4d0029db15557e6f49469e37d1f"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/dictionary-training/ui/dictionary-training/dictionary-training.tsx",
+            "sha256": "2798fcbd9ade72fdcfb1b706429b7f8d6a991a8562e3cdfb607a5896cbc43350"
+        },
+        {
+            "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+            "sha256": "8592b0f6315cfc3aef0c77734a151898301a5b2fa7b78fbd5d8d2d4f654b5277"
+        },
+        {
+            "path": "apps/web/tests/sentence-library-api.test.ts",
+            "sha256": "782063f7650f58939d17c483ff127f8afbede83f764283e69b14ff40c6b74fe0"
+        },
+        {
+            "path": "apps/web/tests/sentence-preparation-notice.test.tsx",
+            "sha256": "c56985065b1b456d64e342a3c02c7e5c29d77192bc13cd15012cb048601d6464"
+        },
+        {
+            "path": "apps/web/tests/sentence-preparation-state.test.ts",
+            "sha256": "1c275bdbe9d6978819e0d55b21deeb315b33a78398afae72876a3f6719386c49"
+        },
+        {
+            "path": "apps/web/tests/sentence-training-state.test.ts",
+            "sha256": "9a9c5e12002cde462ed72538d13a761ed86f4e9fd26322aa3a7f48249100cef5"
+        },
+        {
+            "path": "apps/web/tests/ui-kit.test.tsx",
+            "sha256": "d0fa823fe7cc9ce2eab14d6634052090d6bf686a9ca4087473d031d21434945e"
+        },
+        {
+            "path": "infra/deploy/tests/admin-edge.journey.test.mjs",
+            "sha256": "b8ad7ea182316a65724ad607158aec531c94a08a6b8510e0e01f8f61a1ce32be"
+        }
+    ]
+}

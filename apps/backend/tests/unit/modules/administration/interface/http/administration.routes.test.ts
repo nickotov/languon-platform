@@ -1,3 +1,4 @@
+import { SentenceLibraryDeletionBusyError } from '../../../../../../src/modules/learning/application/ports/sentence-library-store';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AdministrationService } from '../../../../../../src/modules/administration/application/administration-service';
@@ -41,6 +42,17 @@ function authenticatedResponse() {
 
 function setup(options: { denyMembership?: boolean } = {}) {
     const administration = {
+        sentenceDictionaries: vi
+            .fn()
+            .mockResolvedValue({ items: [], nextCursor: null }),
+        sentenceLibraryList: vi
+            .fn()
+            .mockResolvedValue({ items: [], nextCursor: null }),
+        sentenceLibraryDetail: vi.fn(),
+        sentenceLibrarySnapshot: vi.fn(),
+        mutateSentenceLibrary: vi
+            .fn()
+            .mockResolvedValue({ operationId: sessionId, affectedCount: 1 }),
         adjustAiCredits: vi.fn().mockResolvedValue(creditResponse()),
         aiCredits: vi.fn().mockResolvedValue(creditResponse()),
         assertActiveMembership: options.denyMembership
@@ -391,6 +403,100 @@ describe('administration routes', () => {
         });
     });
 
+    it('discovers per-user sentence dictionaries with bounded pagination', async () => {
+        const { administration, app } = setup();
+        const response = await app.request(
+            `/admin/users/${userId}/sentence-dictionaries?limit=5`,
+            { headers: { Authorization: 'Bearer header.payload.signature' } },
+        );
+        expect(response.status).toBe(200);
+        expect(administration.sentenceDictionaries).toHaveBeenCalledWith(
+            'header.payload.signature',
+            userId,
+            { limit: 5 },
+            expect.any(String),
+        );
+        const invalid = await app.request(
+            `/admin/users/${userId}/sentence-dictionaries?limit=101`,
+            { headers: { Authorization: 'Bearer header.payload.signature' } },
+        );
+        expect(invalid.status).toBe(400);
+    });
+
+    it('lists saved examples using validated target and dictionary scope', async () => {
+        const { administration, app } = setup();
+        const response = await app.request(
+            `/admin/users/${userId}/dictionaries/${sessionId}/sentences?relation=generated&personalArchive=all`,
+            { headers: { Authorization: 'Bearer header.payload.signature' } },
+        );
+        expect(response.status).toBe(200);
+        expect(administration.sentenceLibraryList).toHaveBeenCalledWith(
+            'header.payload.signature',
+            userId,
+            sessionId,
+            expect.objectContaining({
+                relation: 'generated',
+                personalArchive: 'all',
+            }),
+            expect.any(String),
+        );
+    });
+    it('rejects unbounded reason and unsafe permanent deletion requests before mutation', async () => {
+        const { administration, app } = setup();
+        const response = await app.request(
+            `/admin/users/${userId}/dictionaries/${sessionId}/sentences/mutations`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer header.payload.signature',
+                    'Content-Type': 'application/json',
+                    Origin: origin,
+                },
+                body: JSON.stringify({
+                    operation: 'archive',
+                    operationId: sessionId,
+                    selection: {
+                        type: 'selected',
+                        items: [{ exerciseId: userId, expectedVersion: 0 }],
+                    },
+                    reason: 'no',
+                }),
+            },
+        );
+        expect(response.status).toBe(400);
+        expect(administration.mutateSentenceLibrary).not.toHaveBeenCalled();
+    });
+    it('returns typed retryable busy response for purge', async () => {
+        const { administration, app } = setup();
+        vi.mocked(administration.mutateSentenceLibrary).mockRejectedValue(
+            new SentenceLibraryDeletionBusyError(),
+        );
+        const response = await app.request(
+            `/admin/users/${userId}/dictionaries/${sessionId}/sentences/mutations`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer header.payload.signature',
+                    'Content-Type': 'application/json',
+                    Origin: origin,
+                },
+                body: JSON.stringify({
+                    operation: 'delete',
+                    operationId: sessionId,
+                    selection: {
+                        type: 'selected',
+                        items: [{ exerciseId: userId, expectedVersion: 0 }],
+                    },
+                    reason: 'Confirmed permanent deletion',
+                    confirmation: 'delete-archived-examples',
+                }),
+            },
+        );
+        expect(response.status).toBe(409);
+        expect(await response.json()).toMatchObject({
+            error: { code: 'sentence_library_deletion_busy' },
+        });
+    });
     it('rejects credentialed authentication from an unlisted origin', async () => {
         const { app } = setup();
         const response = await app.request('/admin/auth/login/password', {

@@ -680,6 +680,31 @@ describe('shared UI accessibility contracts', () => {
         }
     });
 
+    it('labels a custom-header dialog without a dangling heading reference', () => {
+        const showModal = HTMLDialogElement.prototype.showModal;
+        HTMLDialogElement.prototype.showModal = function showModalForTest() {
+            this.setAttribute('open', '');
+        };
+        try {
+            render(
+                <Dialog
+                    open
+                    onClose={() => undefined}
+                    title='Sentence preview'
+                    showHeader={false}
+                >
+                    Preview content
+                </Dialog>,
+            );
+            const dialog = screen.getByRole('dialog', {
+                name: 'Sentence preview',
+            });
+            expect(dialog).not.toHaveAttribute('aria-labelledby');
+        } finally {
+            HTMLDialogElement.prototype.showModal = showModal;
+        }
+    });
+
     it('prevents close controls and Escape dismissal while a dialog is not dismissible', () => {
         const showModal = HTMLDialogElement.prototype.showModal;
         HTMLDialogElement.prototype.showModal = function showModalForTest() {

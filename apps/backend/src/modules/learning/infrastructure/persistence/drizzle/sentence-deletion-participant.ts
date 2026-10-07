@@ -13,6 +13,7 @@ import {
 } from './sentence-schema';
 import type { SentenceTransaction } from './sentence-persistence-support';
 export interface SentenceDeletionScope {
+    exerciseIds?: readonly string[];
     dictionaryIds?: readonly string[];
     entryIds?: readonly string[];
     learnerId?: string;
@@ -26,7 +27,21 @@ function copiedEntryList(scope: SentenceDeletionScope) {
     );
 }
 function affectedExerciseScope(scope: SentenceDeletionScope): SQL {
+    if (
+        scope.exerciseIds &&
+        (scope.dictionaryIds ||
+            scope.entryIds ||
+            scope.learnerId ||
+            scope.accountPurge)
+    )
+        throw new Error(
+            'Explicit exercise deletion cannot combine broader scopes',
+        );
     const clauses: SQL[] = [];
+    if (scope.exerciseIds?.length)
+        clauses.push(
+            sql`${exercises.id} in (select value::uuid from jsonb_array_elements_text(${JSON.stringify(scope.exerciseIds)}::jsonb))`,
+        );
     if (scope.dictionaryIds?.length)
         clauses.push(inArray(exercises.dictionaryId, [...scope.dictionaryIds]));
     if (scope.learnerId) clauses.push(eq(exercises.creatorId, scope.learnerId));
@@ -38,7 +53,12 @@ function affectedExerciseScope(scope: SentenceDeletionScope): SQL {
 }
 function jobScope(scope: SentenceDeletionScope): SQL {
     if (scope.accountPurge) {
-        if (!scope.learnerId || !scope.dictionaryIds || scope.entryIds?.length)
+        if (
+            !scope.learnerId ||
+            !scope.dictionaryIds ||
+            scope.entryIds?.length ||
+            scope.exerciseIds?.length
+        )
             throw new Error('Account purge requires complete ownership scope');
         return or(
             eq(jobs.learnerId, scope.learnerId),
@@ -66,6 +86,20 @@ export async function sentenceDeletionBusy(
     tx: SentenceTransaction,
     scope: SentenceDeletionScope,
 ): Promise<boolean> {
+    const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
+    const deletedEntries = scope.entryIds?.length
+        ? sql`item->>'entryId' in (${sql.join(
+              scope.entryIds.map((id) => sql`${id}`),
+              sql`,`,
+          )})`
+        : sql`false`;
+    const copiedEntryCondition = scope.entryIds?.length
+        ? sql`or exists(select 1 from jsonb_array_elements(b.entries) item where ${deletedEntries})`
+        : sql``;
+    const [preparationBusy] = await tx.execute(
+        sql`select 1 from sentence_preparations p join sentence_ai_jobs j on j.id=p.active_job_id where (j.execution_state in ('queued','running') or j.provider_reservation_state='active') and exists(select 1 from sentence_preparation_batches b where b.preparation_id=p.id and (exists(select 1 from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid in (${selected})) ${copiedEntryCondition})) limit 1`,
+    );
+    if (preparationBusy) return true;
     const [busy] = await tx
         .select({ id: jobs.id })
         .from(jobs)
@@ -102,12 +136,81 @@ export async function requestSentenceCancellation(
 }
 /** Permanent deletion erases WHOLE copied jobs and multi-entry exercises before
  * entry cascades. Coverage has no exercise FK, so deleting B leaves A's count. */
+/** Remove copied preparation content without broadening selected-exercise erasure. */
+async function scrubPreparationContent(
+    tx: SentenceTransaction,
+    scope: SentenceDeletionScope & { now: Date },
+): Promise<void> {
+    if (scope.accountPurge && scope.learnerId) {
+        await tx.execute(
+            sql`delete from sentence_personal_visibility where learner_id=${scope.learnerId}::uuid`,
+        );
+        await tx.execute(
+            sql`update sentence_personal_visibility set actor_id=null where actor_id=${scope.learnerId}::uuid`,
+        );
+        await tx.execute(
+            sql`update sentence_global_visibility set actor_id=null where actor_id=${scope.learnerId}::uuid`,
+        );
+    }
+    if (scope.learnerId || scope.dictionaryIds?.length) {
+        const dictionaryList = scope.dictionaryIds?.length
+            ? sql`dictionary_id in (${sql.join(
+                  scope.dictionaryIds.map((id) => sql`${id}::uuid`),
+                  sql`,`,
+              )})`
+            : sql`false`;
+        const learner = scope.learnerId
+            ? sql`learner_id=${scope.learnerId}::uuid`
+            : sql`false`;
+        await tx.execute(
+            sql`delete from sentence_preparations where (${learner}) or (${dictionaryList})`,
+        );
+        await tx.execute(
+            sql`delete from sentence_library_snapshots where (${learner}) or (${dictionaryList})${scope.accountPurge ? sql` or actor_id=${scope.learnerId}::uuid` : sql``}`,
+        );
+        if (scope.accountPurge)
+            await tx.execute(
+                sql`delete from sentence_library_receipts where (${learner}) or (${dictionaryList}) or actor_id=${scope.learnerId}::uuid`,
+            );
+    }
+    const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
+    const deletedEntries = scope.entryIds?.length
+        ? sql`item->>'entryId' in (${sql.join(
+              scope.entryIds.map((id) => sql`${id}`),
+              sql`,`,
+          )})`
+        : sql`false`;
+    const copiedEntryCondition = scope.entryIds?.length
+        ? sql`or exists(select 1 from jsonb_array_elements(b.entries) item where ${deletedEntries})`
+        : sql``;
+    const relevant = sql`exists(select 1 from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid in (${selected})) ${copiedEntryCondition}`;
+    await tx.execute(
+        sql`update sentence_preparations p set state='paused',pause_reason='stale',active_job_id=null,updated_at=${scope.now.toISOString()}::timestamptz where exists(select 1 from sentence_preparation_batches b where b.preparation_id=p.id and (${relevant}))`,
+    );
+    if (scope.entryIds?.length) {
+        await tx.execute(
+            sql`delete from sentence_preparation_batches b where (${relevant}) and not exists(select 1 from jsonb_array_elements(b.entries) item where not (${deletedEntries}))`,
+        );
+        await tx.execute(
+            sql`update sentence_preparation_batches b set entries=(select coalesce(jsonb_agg(item),'[]'::jsonb) from jsonb_array_elements(b.entries) item where not (${deletedEntries})),manifest=(select coalesce(jsonb_agg(item),'[]'::jsonb) from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid not in (${selected})) where (${relevant})`,
+        );
+    } else {
+        await tx.execute(
+            sql`update sentence_preparation_batches b set manifest=(select coalesce(jsonb_agg(item),'[]'::jsonb) from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid not in (${selected})) where (${relevant})`,
+        );
+    }
+    await tx.execute(
+        sql`delete from sentence_library_snapshots s where exists(select 1 from jsonb_array_elements(s.items) item where (item->>'exerciseId')::uuid in (${selected}))`,
+    );
+}
+
 export async function eraseSentenceDerivedContent(
     tx: SentenceTransaction,
     scope: SentenceDeletionScope & { now: Date },
 ): Promise<void> {
     if (await sentenceDeletionBusy(tx, scope))
         throw new Error('Sentence work is not quiescent');
+    await scrubPreparationContent(tx, scope);
     if (scope.accountPurge)
         await tx
             .delete(receipts)

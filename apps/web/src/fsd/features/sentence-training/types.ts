@@ -1,4 +1,11 @@
 import type {
+    SentencePreparation,
+    SentencePreparationBatch,
+    SentencePreparationStartRequest,
+    SentencePreparationResponse,
+    SentencePreparationCommandRequest,
+    SentencePreparationBatchesQuery,
+    SentencePreparationBatchesResponse,
     LearningEntriesQuery,
     LearningEntriesResponse,
     SentenceCapabilitiesResponse,
@@ -30,7 +37,39 @@ export type { RequestWithSession } from '@/fsd/entities/dictionary';
 export type Configuration = Omit<SentencePrepareRequest, 'replayExerciseIds'>;
 export type EntryPreview = LearningEntriesResponse['entries'][number];
 export type PresentationMode = 'dialog' | 'fullscreen';
-export interface SentenceApi {
+export interface SentencePreparationApi {
+    startPreparation(
+        input: SentencePreparationStartRequest,
+    ): Promise<SentencePreparationResponse>;
+    getPreparation(id: string): Promise<SentencePreparationResponse>;
+    preparedBatch(id: string): Promise<SentencePreparationBatch>;
+    commandPreparation(
+        id: string,
+        input: SentencePreparationCommandRequest,
+    ): Promise<SentencePreparationResponse>;
+    preparationBatches(
+        id: string,
+        query: Partial<SentencePreparationBatchesQuery>,
+    ): Promise<SentencePreparationBatchesResponse>;
+}
+export interface SentencePreparationController {
+    preparation: SentencePreparation | null;
+    batches: SentencePreparationBatch[];
+    busy: boolean;
+    error: ApiError | null;
+    uncertain: boolean;
+    nextOffset: number | null;
+    eligibleCount: number | null;
+    explanationLanguage: Configuration['explanationLanguage'];
+    loadEligibleCount(): Promise<void>;
+    start(configuration: Configuration): Promise<void>;
+    refresh(): Promise<void>;
+    stop(): Promise<void>;
+    resume(): Promise<void>;
+    loadMore(): Promise<void>;
+    clear(): void;
+}
+export interface SentenceApi extends Partial<SentencePreparationApi> {
     capabilities(): Promise<SentenceCapabilitiesResponse>;
     listEntries(
         input: Partial<LearningEntriesQuery>,

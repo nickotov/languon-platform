@@ -1,0 +1,2 @@
+ALTER TABLE "sentence_preparation_batches" ADD COLUMN "scan_cursor" jsonb;--> statement-breakpoint
+CREATE INDEX "sentence_library_snapshots_actor_dictionary_expiry_idx" ON "sentence_library_snapshots" USING btree ("actor_id","dictionary_id","expires_at");

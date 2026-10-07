@@ -2,7 +2,7 @@
 feature: admin-user-management
 title: Admin User Management
 status: current
-last_verified: 2026-08-20
+last_verified: 2026-10-07
 surfaces:
     - browser
     - admin
@@ -30,6 +30,7 @@ e2e_scenarios:
     - admin-non-member-denied
     - admin-owner-passkey-login
     - admin-private-edge-authentication
+    - admin-sentence-library-management
 related_features:
     - ai-provider-management
     - user-authentication
@@ -298,6 +299,9 @@ one-year audit event and never removes unexpired entries.
 
 ## E2E coverage
 
+- `admin-sentence-library-management` verifies per-user dictionary discovery,
+  previews, personal/global mutations, deletion guards and responsive rendering.
+
 - `admin-owner-password-login-and-user-inspection` proves real password login,
   dedicated refresh bootstrap after reload, list search, and safe user detail.
 - `admin-owner-disable-and-restore-user` proves both audited status transitions
@@ -394,3 +398,29 @@ dedicated containers using their exact names. Remove only the disposable admin
 E2E database/container after checking its name and loopback port; never run a
 schema drop, Compose volume removal, or owner command against shared, stage, or
 production data as cleanup.
+
+## Per-user saved sentence management
+
+Open a user detail and its sentence library panel. Choose a relevant dictionary
+and inspect available/generated examples with personal/global archive, direction,
+currentness and creator filters. Preview the reference and grouped hints without
+editing sentence content, user answers or scores. Lists and preview remain usable
+at narrow widths.
+
+Personal archive affects the selected learner; global archive affects everyone.
+Selected and all-matching operations require a bounded reason and fresh
+authentication. Confirm the frozen selection; conflicts require refreshing and
+reconfirming, and uncertain network outcomes preserve the operation identity.
+Permanent deletion is available only for generator-archived examples, requires
+the explicit deletion confirmation, and has no undo. Busy unsettled work must
+settle before retry. All successful changes are audited.
+
+The `admin-sentence-library-management` browser scenario covers dictionary
+discovery, preview, personal/global mutations, deletion guard and responsive
+rendering with real authenticated backend requests.
+
+## Related backend checkpoint
+
+[Sentence library management and preparation](../sentence-library-implementation-plan.md)
+adds backend contracts and verified API/database behavior. The returned learner design and authorized local admin composition are being
+integrated under feature 039; final browser evidence is recorded in EVIDENCE.md.
