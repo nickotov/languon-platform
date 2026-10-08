@@ -121,6 +121,11 @@
     text-transform: uppercase;
 }
 
+.separator {
+    border-top: 1px solid var(--border-default);
+    margin-block: 4px;
+}
+
 .hint {
     color: var(--text-tertiary);
     font-size: 12px;

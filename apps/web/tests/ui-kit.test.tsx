@@ -414,8 +414,19 @@ describe('shared UI accessibility contracts', () => {
             <Menu
                 items={[
                     { label: 'Rename', onSelect: vi.fn() },
-                    { disabled: true, label: 'Archive', onSelect: vi.fn() },
-                    { label: 'Remove', onSelect: vi.fn(), tone: 'danger' },
+                    {
+                        disabled: true,
+                        label: 'Archive',
+                        onSelect: vi.fn(),
+                        separatorBefore: true,
+                        headingBefore: 'Bulk and sharing',
+                    },
+                    {
+                        label: 'Remove',
+                        onSelect: vi.fn(),
+                        tone: 'danger',
+                        separatorBefore: true,
+                    },
                 ]}
                 label='Lesson actions'
                 trigger='Actions'
@@ -424,6 +435,8 @@ describe('shared UI accessibility contracts', () => {
 
         const trigger = screen.getByRole('button', { name: 'Lesson actions' });
         await user.click(trigger);
+        expect(screen.getAllByRole('separator')).toHaveLength(2);
+        expect(screen.getByText('Bulk and sharing')).toBeVisible();
         expect(screen.getByRole('menuitem', { name: 'Rename' })).toHaveFocus();
         await user.keyboard('{ArrowDown}');
         const remove = screen.getByRole('menuitem', { name: 'Remove' });
@@ -651,6 +664,79 @@ describe('shared UI accessibility contracts', () => {
                 screen.getByRole('button', { name: 'Close dialog' }),
             );
             expect(onClose).toHaveBeenCalledTimes(1);
+        } finally {
+            HTMLDialogElement.prototype.showModal = showModal;
+            HTMLDialogElement.prototype.close = close;
+        }
+    });
+
+    it('closes the native dialog before controlled removal without notifying its owner twice', () => {
+        const showModal = HTMLDialogElement.prototype.showModal;
+        const close = HTMLDialogElement.prototype.close;
+        const connectedAtClose: boolean[] = [];
+        HTMLDialogElement.prototype.showModal = function () {
+            this.setAttribute('open', '');
+        };
+        HTMLDialogElement.prototype.close = function () {
+            connectedAtClose.push(this.isConnected);
+            this.removeAttribute('open');
+            this.dispatchEvent(new Event('close'));
+        };
+        const onClose = vi.fn();
+        try {
+            const { rerender, unmount } = render(
+                <Dialog open onClose={onClose} title='Practice history'>
+                    Results
+                </Dialog>,
+            );
+            rerender(
+                <Dialog open={false} onClose={onClose} title='Practice history'>
+                    Results
+                </Dialog>,
+            );
+            expect(connectedAtClose).toEqual([true]);
+            expect(onClose).not.toHaveBeenCalled();
+            rerender(
+                <Dialog open onClose={onClose} title='Practice history'>
+                    Results
+                </Dialog>,
+            );
+            unmount();
+            expect(connectedAtClose).toEqual([true, true]);
+            expect(onClose).not.toHaveBeenCalled();
+        } finally {
+            HTMLDialogElement.prototype.showModal = showModal;
+            HTMLDialogElement.prototype.close = close;
+        }
+    });
+
+    it('ignores queued cleanup close events after Strict Mode reopens the native dialog', () => {
+        const showModal = HTMLDialogElement.prototype.showModal;
+        const close = HTMLDialogElement.prototype.close;
+        const queued: HTMLDialogElement[] = [];
+        HTMLDialogElement.prototype.showModal = function () {
+            this.open = true;
+        };
+        HTMLDialogElement.prototype.close = function () {
+            this.open = false;
+            queued.push(this);
+        };
+        const onClose = vi.fn();
+        try {
+            const { unmount } = render(
+                <Dialog open onClose={onClose} title='Add card'>
+                    Draft
+                </Dialog>,
+                { reactStrictMode: true },
+            );
+            const dialog = screen.getByRole('dialog', { name: 'Add card' });
+            expect(queued.length).toBeGreaterThan(0);
+            for (const node of queued) fireEvent(node, new Event('close'));
+            expect(dialog).toHaveAttribute('open');
+            expect(onClose).not.toHaveBeenCalled();
+            unmount();
+            for (const node of queued) fireEvent(node, new Event('close'));
+            expect(onClose).not.toHaveBeenCalled();
         } finally {
             HTMLDialogElement.prototype.showModal = showModal;
             HTMLDialogElement.prototype.close = close;

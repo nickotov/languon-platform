@@ -2,7 +2,7 @@
 feature: sentence-practice-web
 title: Sentence Practice and Model Preferences Web
 status: current
-last_verified: 2026-10-07
+last_verified: 2026-10-08
 surfaces:
     - browser
 source_paths:
@@ -117,8 +117,12 @@ and model revision. Verification never changes the user's configuration/data.
    presentation preserves draft and state. Check with AI submits a real job and
    displays server-owned feedback, including in final result details.
 4. Close practice and create a sharing link. A separate verified reader opens it
-   and starts saved-first practice. The owner's saved exercise is reusable but
-   the owner's attempt is private.
+   and starts saved-first practice. The signed-in shared reader has a separate
+   More dictionary actions menu containing only Sentences and My practice history,
+   rather than owner editing actions. Opening the shared sentence library and
+   returning through its dictionary breadcrumb keeps the capability fragment.
+   Closing personal history restores focus to that More trigger. The owner's
+   saved exercise is reusable but the owner's attempt is private.
 5. The reader's default AI check fails with insufficient credits, creates no
    attempt and keeps the reference hidden. Explicitly reveal the reference with
    the reader's zero-credit wallet. The
@@ -184,14 +188,18 @@ and model revision. Verification never changes the user's configuration/data.
 ## E2E coverage
 
 - `saved-library-preview-archive-restore` verifies real preview, personal archive
-  and restoration with responsive screenshots.
+  and restoration with responsive screenshots, icon/order/group fidelity in the
+  editor menu, a two-item training launcher, and standalone history tabs with real
+  saved progress, both direction aggregates, empty AI history, a real manual review
+  with reference details, interrupted statistics with explicit retry, and mobile focus.
 - `background-preparation-ready-reconnect` verifies optional durable preparation,
   background recovery and prepared practice without implicit generation.
 
 - `model-preference-persistence`: real authenticated two-tab optimistic conflict,
   preserved selection, explicit recovery and reloaded server persistence.
 - `owner-reader-reference-practice`: real manual card, generated exercise, hints,
-  draft presentation continuity, default AI check, sharing, zero-credit AI-check denial and saved
+  draft presentation continuity, default AI check, sharing, shared secondary-menu/library navigation with retained
+  capability and history close focus, zero-credit AI-check denial and saved
   reference reveal, separate personal progress/history, over-limit draft
   retention, rejected-check close guard, exact-replay whole-list preparation
   after sharing revocation and unavailable-refresh protected-cache invalidation,
@@ -294,7 +302,18 @@ services and unrelated sessions; never flush shared Redis or reset a shared DB.
 
 ## Saved sentence library and preparation
 
-Open Train → Saved sentences from a dictionary. The library shows generated
+Open More dictionary actions → Sentences from a dictionary. The secondary menu
+uses icons for every action and separates saved practice/history, bulk authoring,
+and export/sharing. Train contains only Cards and Sentence practice.
+
+More dictionary actions → My practice history opens a dialog with Flashcards and
+Sentences tabs. Flashcards show saved Known, Practise again and Unstudied progress.
+Sentences show separate aggregate progress for both translation directions, then
+paginated personal AI checks or manual reviews. Aggregate counts come from the
+progress API, independently of loaded history rows. Loading and retry notices
+remain explicit; tab keyboard navigation and mobile bounds remain accessible.
+
+The library shows generated
 source sentences, direction and availability badges. Filter personal archive,
 currentness and advanced global archive state. Preview opens a desktop drawer
 or a mobile full-height view; the reference starts collapsed, and required

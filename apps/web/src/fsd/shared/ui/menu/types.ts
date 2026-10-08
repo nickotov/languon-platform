@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 
 export type MenuItem = {
+    separatorBefore?: boolean;
+    headingBefore?: string;
     disabled?: boolean;
     icon?: ReactNode;
     label: string;

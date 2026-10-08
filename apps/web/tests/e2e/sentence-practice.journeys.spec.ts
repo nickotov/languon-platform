@@ -1,4 +1,4 @@
-// @user-flow-revision sentence-practice-web sha256:be2af6f72f9b5ae8
+// @user-flow-revision sentence-practice-web sha256:30e6921701e3a8f5
 
 import {
     expect,
@@ -557,9 +557,94 @@ test.describe('sentence practice and model preferences', () => {
             email(info, 'reader-one'),
             `/shared/dictionaries/${capability.shareId}`,
         );
+        let readerAuthorization = `Bearer ${readerToken}`;
+        reader.on('request', (request) => {
+            if (!request.url().startsWith(apiOrigin)) return;
+            const authorization = request.headers()['authorization'];
+            if (authorization) readerAuthorization = authorization;
+        });
         await reader.goto(
             `/shared/dictionaries/${capability.shareId}#${capability.shareKey}`,
         );
+        const sharedActions = reader.getByRole('button', {
+            name: 'More dictionary actions',
+            exact: true,
+        });
+        await sharedActions.click();
+        await expect(reader.getByRole('menuitem')).toHaveText([
+            'Sentences',
+            'My practice history',
+        ]);
+        await expect(
+            reader
+                .getByRole('menuitem', { name: 'Sentences', exact: true })
+                .locator('svg'),
+        ).toHaveCount(1);
+        await horizontallyContained(reader, reader.getByRole('menu'));
+        await capture(reader, info, 'shared-secondary-actions-mobile');
+        await reader
+            .getByRole('menuitem', { name: 'Sentences', exact: true })
+            .click();
+        await expect(reader).toHaveURL(
+            new RegExp(`/shared/dictionaries/${capability.shareId}/sentences#`),
+        );
+        expect(new URL(reader.url()).hash.length).toBeGreaterThan(1);
+        await expect(
+            reader.getByRole('heading', {
+                name: 'Saved sentences',
+                exact: true,
+            }),
+        ).toBeVisible();
+        await reader
+            .getByRole('button', { name: /Filters/, exact: false })
+            .click();
+        const sharedFilters = reader.getByRole('dialog', {
+            name: 'Filters',
+            exact: true,
+        });
+        await sharedFilters
+            .getByLabel('Translation direction', { exact: true })
+            .selectOption('source-to-target');
+        await sharedFilters
+            .getByRole('button', { name: 'Close', exact: true })
+            .click();
+        await expect(
+            reader.getByText('book is useful.', { exact: true }),
+        ).toBeVisible();
+        await capture(reader, info, 'shared-sentence-library-mobile');
+        await reader
+            .getByRole('navigation', { name: 'Breadcrumb', exact: true })
+            .getByRole('link', { name, exact: true })
+            .click();
+        await sharedActions.click();
+        await reader
+            .getByRole('menuitem', { name: 'My practice history', exact: true })
+            .click();
+        const sharedHistory = reader.getByRole('dialog', {
+            name: 'My practice history',
+            exact: true,
+        });
+        await expect(
+            sharedHistory.getByRole('img', {
+                name: '0 Known, 0 Practise again, 1 Unstudied of 1',
+            }),
+        ).toBeVisible();
+        await sharedHistory
+            .getByRole('tab', { name: 'Sentences', exact: true })
+            .click();
+        await expect(
+            sharedHistory.getByText('No AI checks yet', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            sharedHistory.getByRole('region', {
+                name: 'English → Spanish',
+                exact: true,
+            }),
+        ).toBeVisible();
+        await sharedHistory
+            .getByRole('button', { name: 'Close dialog', exact: true })
+            .click();
+        await expect(sharedActions).toBeFocused();
         const paidRequests: string[] = [];
         reader.on('request', (request) => {
             if (
@@ -649,7 +734,7 @@ test.describe('sentence practice and model preferences', () => {
         ).toHaveLength(1);
         const sharedBase = `${apiOrigin}/learning/shared-dictionaries/${capability.shareId}/sentences`;
         const readerHeaders = {
-            Authorization: `Bearer ${readerToken}`,
+            Authorization: readerAuthorization,
             'X-Languon-Share-Key': capability.shareKey,
         };
         const readerAttempts = await reader.request.get(
@@ -1387,9 +1472,12 @@ test('previews saved hints and archives or restores an example without a review'
 }, info) => {
     test.setTimeout(120_000);
     let expectedLibraryFault = false;
+    let expectedHistoryFault = false;
     const assertErrors = observeErrors(
         page,
-        (path) => expectedLibraryFault && path.includes('/sentences/library'),
+        (path) =>
+            (expectedLibraryFault && path.includes('/sentences/library')) ||
+            (expectedHistoryFault && path.includes('/sentences/progress')),
     );
     const token = await signup(page, email(info, 'library-owner'));
     const headers = { Authorization: `Bearer ${token}` };
@@ -1399,7 +1487,40 @@ test('previews saved hints and archives or restores an example without a review'
         if (authorization) headers.Authorization = authorization;
     });
     const dictionaryId = await createDictionary(page, `Saved library ${runId}`);
-    await page.goto(`/dictionaries/${dictionaryId}/sentences`);
+    await page.getByRole('button', { name: 'Train', exact: true }).click();
+    await expect(page.getByRole('menuitem')).toHaveText([
+        'Cards',
+        'Sentence practice',
+    ]);
+    await page.keyboard.press('Escape');
+    const secondary = page.getByRole('button', {
+        name: 'More dictionary actions',
+    });
+    await secondary.click();
+    const actions = page.getByRole('menuitem');
+    await expect(actions).toHaveText([
+        'Sentences',
+        'My practice history',
+        'Generate cards from pasted terms',
+        'Generate cards from a document',
+        'Import cards',
+        'Export',
+        'Sharing',
+    ]);
+    for (const action of await actions.all())
+        await expect(action.locator('svg')).toHaveCount(1);
+    await expect(page.getByRole('separator')).toHaveCount(2);
+    await expect(
+        page.getByText('Bulk and sharing', { exact: true }),
+    ).toBeVisible();
+    await expect(actions.first()).toBeFocused();
+    await capture(page, info, 'editor-secondary-actions-wide');
+    await page
+        .getByRole('menuitem', { name: 'Sentences', exact: true })
+        .click();
+    await expect(page).toHaveURL(
+        new RegExp(`/dictionaries/${dictionaryId}/sentences$`),
+    );
     await expect(
         page.getByText('No saved sentences yet', { exact: true }),
     ).toBeVisible();
@@ -1407,8 +1528,173 @@ test('previews saved hints and archives or restores an example without a review'
     await page.goto(`/dictionaries/${dictionaryId}`);
     const practice = await startSentence(page);
     await practice
+        .getByRole('button', { name: /Show reference — free/ })
+        .click();
+    await expect(
+        practice.getByRole('region', { name: 'Free comparison' }),
+    ).toContainText('libro es útil.');
+    await practice
         .getByRole('button', { name: 'Close practice', exact: true })
         .click();
+    // The first statistics read is deliberately interrupted; retry uses the real API.
+    expectedHistoryFault = true;
+    const statisticsPattern = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/progress?direction=source-to-target`;
+    await page.route(statisticsPattern, (route) =>
+        route.abort('blockedbyclient'),
+    );
+    // Standalone history uses true saved aggregates, not totals from paginated history.
+    await page.getByRole('button', { name: 'More dictionary actions' }).click();
+    await page
+        .getByRole('menuitem', { name: 'My practice history', exact: true })
+        .click();
+    const standaloneHistory = page.getByRole('dialog', {
+        name: 'My practice history',
+        exact: true,
+    });
+    await expect(
+        standaloneHistory.getByRole('tab', { name: 'Flashcards', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await expect(
+        standaloneHistory.getByRole('img', {
+            name: '0 Known, 0 Practise again, 1 Unstudied of 1',
+        }),
+    ).toBeVisible();
+    await standaloneHistory
+        .getByRole('tab', { name: 'Sentences', exact: true })
+        .click();
+    const statistics = standaloneHistory.getByRole('region', {
+        name: 'Saved sentence statistics',
+        exact: true,
+    });
+    await expect(
+        statistics.getByRole('region', {
+            name: 'English → Spanish',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        statistics.getByRole('region', {
+            name: 'Spanish → English',
+            exact: true,
+        }),
+    ).toBeVisible();
+    const forwardStatistics = statistics.getByRole('region', {
+        name: 'English → Spanish',
+        exact: true,
+    });
+    await expect(
+        forwardStatistics.getByText('Could not load saved statistics', {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await capture(page, info, 'practice-history-statistics-retry');
+    await page.unroute(statisticsPattern);
+    expectedHistoryFault = false;
+    await forwardStatistics
+        .getByRole('button', { name: 'Retry', exact: true })
+        .click();
+    await expect(forwardStatistics.locator('dl').first()).toContainText(
+        'Manual reviews1',
+    );
+    await expect(forwardStatistics.locator('dl').first()).toContainText(
+        'AI checks0',
+    );
+
+    await expect(
+        standaloneHistory.getByText('No AI checks yet', { exact: true }),
+    ).toBeVisible();
+    await standaloneHistory
+        .getByRole('button', { name: 'Manual reviews', exact: true })
+        .click();
+    await expect(
+        standaloneHistory
+            .locator('summary')
+            .filter({ hasText: 'View details' }),
+    ).toHaveCount(1);
+    await standaloneHistory
+        .locator('summary')
+        .filter({ hasText: 'View details' })
+        .click();
+    await expect(
+        standaloneHistory.getByRole('region', {
+            name: 'Reference translation',
+        }),
+    ).toContainText('libro es útil.');
+    await standaloneHistory
+        .getByRole('tab', { name: 'Sentences', exact: true })
+        .scrollIntoViewIfNeeded();
+    await capture(page, info, 'practice-history-sentences-wide');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await horizontallyContained(page, standaloneHistory);
+    await containedFocus(standaloneHistory);
+    await standaloneHistory
+        .getByRole('tab', { name: 'Flashcards', exact: true })
+        .click();
+    await page.keyboard.press('ArrowRight');
+    await expect(
+        standaloneHistory.getByRole('tab', { name: 'Sentences', exact: true }),
+    ).toBeFocused();
+    await capture(page, info, 'practice-history-sentences-mobile-loading');
+    await expect(forwardStatistics.locator('dl').first()).toContainText(
+        'Manual reviews1',
+    );
+    await standaloneHistory
+        .getByRole('button', { name: 'Manual reviews', exact: true })
+        .click();
+    await expect(
+        standaloneHistory
+            .locator('summary')
+            .filter({ hasText: 'View details' }),
+    ).toHaveCount(1);
+    await standaloneHistory
+        .getByRole('tab', { name: 'Sentences', exact: true })
+        .scrollIntoViewIfNeeded();
+    await capture(page, info, 'practice-history-sentences-mobile');
+    await standaloneHistory
+        .locator('summary')
+        .filter({ hasText: 'View details' })
+        .click();
+    const mobileReference = standaloneHistory.getByRole('region', {
+        name: 'Reference translation',
+    });
+    await mobileReference.scrollIntoViewIfNeeded();
+    await expect(mobileReference).toContainText('libro es útil.');
+    await capture(page, info, 'practice-history-review-details-mobile');
+    await standaloneHistory
+        .getByRole('button', { name: 'Close dialog', exact: true })
+        .click();
+    const historyTrigger = page.getByRole('button', {
+        name: 'More dictionary actions',
+        exact: true,
+    });
+    await expect(historyTrigger).toBeFocused();
+    expect(new URL(page.url()).searchParams.has('practice')).toBe(false);
+    await historyTrigger.click();
+    await page
+        .getByRole('menuitem', { name: 'My practice history', exact: true })
+        .click();
+    await expect(
+        standaloneHistory.getByRole('tab', { name: 'Flashcards', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await standaloneHistory
+        .getByRole('button', { name: 'Close dialog', exact: true })
+        .click();
+    await expect(historyTrigger).toBeFocused();
+    await historyTrigger.click();
+    await horizontallyContained(page, page.getByRole('menu'));
+    await capture(page, info, 'editor-secondary-actions-mobile');
+    await page.keyboard.press('Escape');
+    await expect(
+        page.getByRole('button', { name: 'More dictionary actions' }),
+    ).toBeFocused();
+    await page.getByRole('button', { name: 'Train', exact: true }).click();
+    await expect(page.getByRole('menuitem')).toHaveText([
+        'Cards',
+        'Sentence practice',
+    ]);
+    await capture(page, info, 'training-launcher-mobile');
+    await page.keyboard.press('Escape');
+    await page.setViewportSize({ width: 1280, height: 720 });
     const progressPath = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/progress?direction=source-to-target`;
     const before = await page.request.get(progressPath, { headers });
     expect(before.status()).toBe(200);
@@ -1750,9 +2036,15 @@ test('reconnects to background preparation and practises the saved batch without
         name: 'Sentence practice',
         exact: true,
     });
-    await expect(
-        practice.getByRole('button', { name: /: show hint · Required word$/ }),
-    ).toBeVisible({ timeout: 30_000 });
+    await waitForRetryableReady(
+        () =>
+            expect(
+                practice.getByRole('button', {
+                    name: /: show hint · Required word$/,
+                }),
+            ).toBeVisible({ timeout: 30_000 }),
+        practice.getByRole('button', { name: /^Try again/ }),
+    );
     expect(nextBatchIds).toHaveLength(1);
     expect(nextBatchIds[0]).not.toBe(payload.preparation.id);
     expect(generatedJobs).toBe(0);

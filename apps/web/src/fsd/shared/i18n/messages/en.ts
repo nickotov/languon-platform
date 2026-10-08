@@ -144,6 +144,9 @@ export const profileFeatureMessages = {
         'Save is unavailable while suggestions are generating. Cancel generation to save your draft.',
     'dictionary.generation.savedNow': 'Saved now',
     'dictionary.editor.actions': 'More dictionary actions',
+    'dictionary.editor.savedSentences': 'Sentences',
+    'dictionary.editor.practiceHistory': 'My practice history',
+    'dictionary.editor.bulkAndSharing': 'Bulk and sharing',
     'dictionary.editor.sharing': 'Sharing',
 
     'theme.switchToLight': 'Switch to light theme',

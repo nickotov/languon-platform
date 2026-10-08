@@ -7,7 +7,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision flashcard-training-web sha256:53fe24550c7e8a4a
+// @user-flow-revision flashcard-training-web sha256:73e4ead5a65dfd25
 
 const password = 'E2e!Flashcard-password-2026';
 const runId =
@@ -249,6 +249,42 @@ test.describe('flashcard training journeys', () => {
         ).toBeVisible();
         await page.getByRole('button', { name: 'Finish', exact: true }).click();
         await expect(practice).not.toBeVisible();
+        await page
+            .getByRole('button', { name: 'More dictionary actions' })
+            .click();
+        await page
+            .getByRole('menuitem', { name: 'My practice history', exact: true })
+            .click();
+        const history = page.getByRole('dialog', {
+            name: 'My practice history',
+            exact: true,
+        });
+        await expect(
+            history.getByRole('tab', { name: 'Flashcards', exact: true }),
+        ).toHaveAttribute('aria-selected', 'true');
+        await expect(
+            history.getByRole('img', {
+                name: '1 Known, 0 Practise again, 0 Unstudied of 1',
+            }),
+        ).toBeVisible();
+        await page.setViewportSize({ width: 390, height: 844 });
+        const historyBounds = await history.boundingBox();
+        expect(historyBounds!.x).toBeGreaterThanOrEqual(0);
+        expect(historyBounds!.x + historyBounds!.width).toBeLessThanOrEqual(
+            390,
+        );
+        const historyScreenshot = testInfo.outputPath(
+            'flashcard-saved-history-mobile.png',
+        );
+        await page.screenshot({ path: historyScreenshot });
+        await testInfo.attach('flashcard-saved-history-mobile', {
+            path: historyScreenshot,
+            contentType: 'image/png',
+        });
+        await history
+            .getByRole('button', { name: 'Close dialog', exact: true })
+            .click();
+        await page.setViewportSize({ width: 1280, height: 720 });
 
         await page.reload();
         const restoredSetup = await openCardSetup(page);

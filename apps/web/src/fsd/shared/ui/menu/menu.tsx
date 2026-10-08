@@ -9,6 +9,7 @@ import {
 } from '@floating-ui/react';
 import {
     type KeyboardEvent,
+    Fragment,
     useCallback,
     useEffect,
     useId,
@@ -183,14 +184,23 @@ export function Menu({
 
     function renderItem(item: MenuItem, index: number) {
         return (
-            <MenuItemButton
-                key={item.label}
-                item={item}
-                index={index}
-                onClose={closeAndRestoreFocus}
-                onMove={move}
-                onRegister={registerItem}
-            />
+            <Fragment key={item.label}>
+                {item.separatorBefore ? (
+                    <div role='separator' className={styles.separator} />
+                ) : null}
+                {item.headingBefore ? (
+                    <div role='presentation' className={styles.heading}>
+                        {item.headingBefore}
+                    </div>
+                ) : null}
+                <MenuItemButton
+                    item={item}
+                    index={index}
+                    onClose={closeAndRestoreFocus}
+                    onMove={move}
+                    onRegister={registerItem}
+                />
+            </Fragment>
         );
     }
 

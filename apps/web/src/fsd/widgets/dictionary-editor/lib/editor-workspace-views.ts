@@ -59,6 +59,7 @@ export function createWorkspaceViews(
     };
 
     const secondaryActions = {
+        href: controller.state.href,
         t: controller.state.t,
         current: workspace.current,
         generationCapabilities: controller.queries.generationCapabilities,

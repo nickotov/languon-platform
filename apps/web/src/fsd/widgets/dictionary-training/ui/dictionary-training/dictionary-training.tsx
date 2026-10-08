@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, MessageSquareText, RefreshCw } from 'lucide-react';
+import { MessageSquareText, RefreshCw } from 'lucide-react';
 import {
     DictionaryLanguageTagSchema,
     SentenceDirectionSchema,
@@ -10,6 +10,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
+    createLearningApi,
     TrainingLauncher,
     type TrainingLauncherProps,
 } from '@/fsd/features/flashcard-training';
@@ -20,7 +21,6 @@ import {
     useSentenceHistory,
     SentenceSetup,
     SentencePracticeSession,
-    SentenceHistory,
     useSentencePreparation,
     SentencePreparationChip,
     SentencePreparationSheet,
@@ -30,6 +30,8 @@ import {
 import { ModelPreferenceSection } from '@/fsd/features/text-ai-preferences';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, ButtonLink, Dialog, type MenuItem } from '@/fsd/shared/ui';
+import { PracticeHistory } from '../practice-history/practice-history';
+import { SharedPracticeActions } from '../shared-practice-actions/shared-practice-actions';
 
 const labels = {
     en: {
@@ -146,6 +148,21 @@ function TrainingComposition(props: TrainingLauncherProps) {
             props.requestWithSession,
         ],
     );
+    const learningApi = useMemo(
+        () =>
+            createLearningApi({
+                target: props.target,
+                signedIn: props.signedIn,
+                requestWithSession: props.requestWithSession,
+            }),
+        [
+            dictionaryId,
+            shareId,
+            shareKey,
+            props.signedIn,
+            props.requestWithSession,
+        ],
+    );
     const [capability, setCapability] = useState<
         'loading' | 'enabled' | 'disabled' | 'error'
     >('loading');
@@ -180,12 +197,6 @@ function TrainingComposition(props: TrainingLauncherProps) {
         ).parse(props.sourceLanguage.code),
         enabled: setupOpen && props.signedIn,
     });
-    const history = useSentenceHistory({
-        api,
-        identity: props.identity,
-        enabled: historyOpen,
-        direction: session.configuration?.direction,
-    });
     const exerciseHistory = useSentenceHistory({
         api,
         identity: props.identity,
@@ -200,7 +211,6 @@ function TrainingComposition(props: TrainingLauncherProps) {
         session.progressError,
         setup.error,
         setup.entriesError,
-        history.error,
         exerciseHistory.error,
     ].find((error) => error && isSentenceAccessLoss(error));
     const blocked = accessLost || !!accessError;
@@ -211,6 +221,23 @@ function TrainingComposition(props: TrainingLauncherProps) {
             return;
         }
         const intent = `${launch}:${search.get('prep') ?? ''}:${search.get('batch') ?? ''}`;
+        if (launch === 'history') {
+            if (consumedLaunch.current === intent) return;
+            consumedLaunch.current = intent;
+            if (!props.signedIn) setSigninOpen(true);
+            else setHistoryOpen(true);
+            const remainingSearch = new URLSearchParams(search.toString());
+            remainingSearch.delete('practice');
+            const nextSearch = remainingSearch.toString();
+            const sharedFragment = shareKey ? `#${shareKey}` : '';
+            router.replace(
+                href(
+                    `${pathname}${nextSearch ? `?${nextSearch}` : ''}${sharedFragment}`,
+                ),
+                { scroll: false },
+            );
+            return;
+        }
         if (
             consumedLaunch.current === intent ||
             capability !== 'enabled' ||
@@ -275,13 +302,11 @@ function TrainingComposition(props: TrainingLauncherProps) {
         setConfirmPreferenceClose(false);
         session.reset();
         setup.invalidate();
-        history.invalidate();
         exerciseHistory.invalidate();
     }, [
         accessError,
         session.reset,
         setup.invalidate,
-        history.invalidate,
         exerciseHistory.invalidate,
     ]);
     useEffect(() => {
@@ -307,6 +332,16 @@ function TrainingComposition(props: TrainingLauncherProps) {
         };
     }, [api, capabilityRevision]);
 
+    function loseHistoryAccess() {
+        setAccessLost(true);
+        setHistoryOpen(false);
+        setRunning(false);
+        setPreferencesOpen(false);
+        setConfirmPreferenceClose(false);
+        session.reset();
+        setup.invalidate();
+        exerciseHistory.invalidate();
+    }
     function restoreFocus() {
         requestAnimationFrame(() =>
             root.current?.querySelector<HTMLButtonElement>('button')?.focus(),
@@ -319,6 +354,9 @@ function TrainingComposition(props: TrainingLauncherProps) {
         }
         setRestartPreparation(false);
         setSetupOpen(true);
+    }
+    function openHistory() {
+        setHistoryOpen(true);
     }
     function openLibrary() {
         const capabilityFragment =
@@ -364,12 +402,6 @@ function TrainingComposition(props: TrainingLauncherProps) {
     }
     const items: MenuItem[] = [
         {
-            label: copy.library,
-            icon: <MessageSquareText className='h-4 w-4' />,
-            disabled: blocked || !props.signedIn || capability !== 'enabled',
-            onSelect: openLibrary,
-        },
-        {
             label:
                 capability === 'loading'
                     ? `${copy.sentence} · ${t('training.checking')}`
@@ -392,16 +424,6 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 capability === 'error'
                     ? () => setCapabilityRevision((v) => v + 1)
                     : openSetup,
-        },
-        {
-            label: copy.history,
-            icon: <BookOpen className='h-4 w-4' />,
-            disabled:
-                blocked ||
-                !props.signedIn ||
-                capability !== 'enabled' ||
-                !!props.archived,
-            onSelect: () => setHistoryOpen(true),
         },
     ];
     const preferencesContent = (
@@ -476,7 +498,17 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 controller={preparation}
                 onOpen={() => setPreparationOpen(true)}
             />
-            <TrainingLauncher {...props} additionalItems={items} />
+            <div className='flex flex-wrap items-center gap-2'>
+                <TrainingLauncher {...props} additionalItems={items} />
+                {props.target.kind === 'shared' ? (
+                    <SharedPracticeActions
+                        signedIn={props.signedIn}
+                        sentencesEnabled={capability === 'enabled'}
+                        onOpenLibrary={openLibrary}
+                        onOpenHistory={openHistory}
+                    />
+                ) : null}
+            </div>
             <SentenceSetup
                 controller={setup}
                 open={setupOpen}
@@ -532,11 +564,19 @@ function TrainingComposition(props: TrainingLauncherProps) {
                     historyOpen={historyOpen}
                     onHistoryClose={() => setHistoryOpen(false)}
                     historyContent={
-                        <SentenceHistory
-                            controller={history}
+                        <PracticeHistory
                             inline
+                            initialTab='sentences'
                             open={historyOpen}
                             onClose={() => setHistoryOpen(false)}
+                            onAccessLoss={loseHistoryAccess}
+                            learningApi={learningApi}
+                            sentenceApi={api}
+                            identity={props.identity}
+                            dictionaryTitle={props.dictionaryTitle}
+                            sourceLanguage={props.sourceLanguage.name}
+                            targetLanguage={props.targetLanguage.name}
+                            sentencesEnabled={capability === 'enabled'}
                         />
                     }
                     previousAttempts={exerciseHistory.attempts.filter(
@@ -548,13 +588,19 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 />
             )}
             {!running && (
-                <SentenceHistory
-                    controller={history}
+                <PracticeHistory
                     open={historyOpen}
                     onClose={() => {
                         setHistoryOpen(false);
-                        restoreFocus();
                     }}
+                    onAccessLoss={loseHistoryAccess}
+                    learningApi={learningApi}
+                    sentenceApi={api}
+                    identity={props.identity}
+                    dictionaryTitle={props.dictionaryTitle}
+                    sourceLanguage={props.sourceLanguage.name}
+                    targetLanguage={props.targetLanguage.name}
+                    sentencesEnabled={capability === 'enabled'}
                 />
             )}
             <Dialog

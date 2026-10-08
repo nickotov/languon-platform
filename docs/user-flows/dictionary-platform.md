@@ -148,6 +148,14 @@ shared, staging, or production database.
 
 ## Browser verification
 
+The editor’s More dictionary actions menu contains icon-labelled Sentences and
+My practice history, followed by grouped bulk authoring and export/sharing.
+Training is launched separately through Train → Cards or Sentence practice.
+These practice entry points and history tabs are verified by the mapped
+[sentence practice](sentence-practice-web.md) and
+[flashcard training](flashcard-training-web.md) journeys; dictionary lifecycle
+and authoring coverage below remains unchanged.
+
 ### Owner authoring and lifecycle recovery
 
 1. Sign up with a fresh fake account and use `/dictionaries` as the return path.

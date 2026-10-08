@@ -2,7 +2,7 @@
 feature: flashcard-training-web
 title: Flashcard Training Web
 status: current
-last_verified: 2026-10-05
+last_verified: 2026-10-08
 surfaces:
     - browser
 source_paths:
@@ -64,8 +64,8 @@ local verification code. Exact verified services/commands/cleanup belong to the
 
 1. Create an active English-to-Spanish dictionary and a manual card. Existing
    dictionary previews remain intact; Train is beside Add card.
-2. Choose Train → Cards. The menu also contains Sentence practice and personal
-   history when its separate capability is enabled; those journeys are documented
+2. Choose Train → Cards. The launcher contains only Cards and Sentence practice when its separate
+   capability is enabled. Personal history is in More dictionary actions; those journeys are documented
    in [Sentence practice web](sentence-practice-web.md). Flashcards remain available
    independently. Setup defaults to
    target example on Front, source example on Back and Shuffle. Missing examples
@@ -86,7 +86,10 @@ local verification code. Exact verified services/commands/cleanup belong to the
 6. Undo latest rating, restoring prior face/counts. Complete a round and inspect
    separate round/session/saved totals. Again requires an explicit new round.
    Start over and Finish are distinct actions.
-7. Finish/reload: signed-in preferences persist; queue/manual subset do not resume.
+7. Finish, then open More dictionary actions → My practice history. The Flashcards
+   tab shows saved Known, Practise again and Unstudied counts for the dictionary,
+   rather than a dated session list. The Sentences tab is separate. Verify narrow
+   containment and keyboard tab navigation. Finish/reload: signed-in preferences persist; queue/manual subset do not resume.
    Shared learners retain separate progress. Anonymous results are never imported.
 8. Verify narrow/wide, light/dark, keyboard, long/RTL and reduced motion. Compare
    only selected training surfaces; missing reference-rendered captures must stay
@@ -95,7 +98,8 @@ local verification code. Exact verified services/commands/cleanup belong to the
 ## E2E coverage
 
 - `owner-sets-up-rates-and-undo`: real signup/manual creation, setup, acknowledged
-  rating/Undo, dialog transition, completion and reloaded preferences.
+  rating/Undo, dialog transition, completion, real saved flashcard totals in the
+  standalone history tab at a narrow viewport, and reloaded preferences.
 - `shared-learners-keep-personal-progress`: real sharing and separate signed-in
   readers save their own results and see independent current totals.
 - `anonymous-practice-does-not-persist`: anonymous shared practice completes

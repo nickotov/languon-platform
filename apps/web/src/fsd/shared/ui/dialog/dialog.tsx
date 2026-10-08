@@ -5,7 +5,7 @@ import {
     type HTMLAttributes,
     type ReactNode,
     useContext,
-    useEffect,
+    useLayoutEffect,
     useId,
     useRef,
 } from 'react';
@@ -87,6 +87,7 @@ export function Dialog({
     variant = 'dialog',
 }: DialogProps) {
     const ref = useRef<HTMLDialogElement>(null);
+    const closingNative = useRef(false);
 
     const titleId = useId();
 
@@ -94,14 +95,32 @@ export function Dialog({
 
     const canDismissWithEscape = dismissible && dismissOnEscape;
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const dialog = ref.current;
 
         if (!dialog) return;
+        closingNative.current = false;
+        const opener = document.activeElement;
 
         if (open && !dialog.open) dialog.showModal();
 
         if (!open && dialog.open) dialog.close();
+        // Close while the native node is still connected so the browser can
+        // restore its opener before React removes the controlled dialog.
+        return () => {
+            closingNative.current = true;
+            if (dialog.open) dialog.close();
+            // React can detach the focused dialog child before native close.
+            // Restore the captured opener after that commit, unless reopened.
+            queueMicrotask(() => {
+                if (
+                    !ref.current?.open &&
+                    opener instanceof HTMLElement &&
+                    opener.isConnected
+                )
+                    opener.focus();
+            });
+        };
     }, [open]);
 
     if (!open) return null;
@@ -139,8 +158,17 @@ export function Dialog({
                     )
                         onClose();
                 }}
-                onClose={() => {
-                    if (open && dismissible) onClose();
+                onClose={(event) => {
+                    // Native close events are queued. Ignore cleanup events
+                    // arriving after Strict Mode reopened or replaced the node.
+                    if (
+                        event.currentTarget.isConnected &&
+                        !event.currentTarget.open &&
+                        open &&
+                        dismissible &&
+                        !closingNative.current
+                    )
+                        onClose();
                 }}
                 ref={ref}
                 role={role}

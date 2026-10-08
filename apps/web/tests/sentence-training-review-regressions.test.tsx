@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '@/fsd/shared/i18n';
 import { ru } from '@/fsd/shared/i18n/messages/ru';
@@ -73,6 +73,17 @@ function practice(c: SentenceSessionController, close = vi.fn()) {
     );
     return close;
 }
+const originalShowModal = {
+    configurable: true,
+    writable: true,
+    value: HTMLDialogElement.prototype.showModal,
+};
+const originalClose = {
+    configurable: true,
+    writable: true,
+    value: HTMLDialogElement.prototype.close,
+};
+
 beforeEach(() => {
     // jsdom has no native dialog implementation; the production component and
     // all its accessible controls remain real, with only platform calls stubbed.
@@ -90,8 +101,13 @@ beforeEach(() => {
     });
 });
 afterEach(() => {
-    Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
-    Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+    cleanup();
+    Object.defineProperty(
+        HTMLDialogElement.prototype,
+        'showModal',
+        originalShowModal,
+    );
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', originalClose);
     vi.unstubAllGlobals();
 });
 describe('sentence review regressions', () => {
