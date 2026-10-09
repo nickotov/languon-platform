@@ -103,6 +103,18 @@ pnpm feature:new -- <slug> "<title>"
 Prefer targeted workspace commands while iterating. Use Docker for PostgreSQL
 and Redis; application processes normally run on the host.
 
+## Code search and analysis
+
+For implementation exploration and review, use
+[$efficient-code-search](.agents/skills/efficient-code-search/SKILL.md).
+Scope searches to the likely app/package first: use `rg` (or scoped `grep`/`find`)
+for literals and paths, available LSP tools for symbol definitions/references, and
+`pnpm search:ast` for syntax patterns. Choose by question; do not require all tools
+on every query. Read relevant bodies and surrounding context, bound output, and
+expand scope when evidence warrants it. If semantic tooling is unavailable, use
+the documented fallback and state coverage limits. Search remains read-only;
+normal implementation and verification authority still applies.
+
 ## Global engineering constraints
 
 - Use Node.js 24, TypeScript strict mode, pnpm workspaces, and Turborepo.

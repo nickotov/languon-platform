@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Efficient code search'
+    short_description: 'Find code with scoped text, LSP and AST queries'
+    default_prompt: 'Use $efficient-code-search to locate the implementation and relevant callers with the appropriate search tools.'

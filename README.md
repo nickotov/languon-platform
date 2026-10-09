@@ -193,6 +193,8 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm browser:install`                        | Install Chrome for agent-led browser checks                                        |
 | `pnpm browser:check`                          | Test the safe wrapper and live browser launch                                      |
 | `pnpm agent-skills:check`                     | Validate repository-scoped agent skill packages                                    |
+| `pnpm search:ast`                             | Read-only structural code search using the pinned ast-grep CLI                     |
+| `pnpm test:code-search`                       | Verify TypeScript/TSX structural search behavior                                   |
 | `pnpm db:generate`                            | Generate reviewed Drizzle SQL migrations                                           |
 | `pnpm db:check`                               | Validate Drizzle migration history                                                 |
 | `pnpm db:migrate`                             | Explicitly apply pending PostgreSQL migrations                                     |

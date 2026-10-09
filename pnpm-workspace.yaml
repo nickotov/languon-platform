@@ -7,5 +7,6 @@ preferWorkspacePackages: true
 injectWorkspacePackages: true
 
 onlyBuiltDependencies:
+    - '@ast-grep/cli'
     - esbuild
     - sharp

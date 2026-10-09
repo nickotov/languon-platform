@@ -1,3 +1,8 @@
+---
+type: reference
+title: Repository agent skills
+---
+
 # Repository agent skills
 
 Languon keeps project-specific Codex workflows under `.agents/skills`. They are
@@ -49,6 +54,22 @@ for the subsequent supplied-design implementation.
 Run `pnpm agent-skills:check` after every skill change. The validator checks all
 repository skill frontmatter, directory/name agreement, required Codex UI
 metadata, default prompts, size bounds, and explicit-only invocation policy.
+
+## Code search
+
+Use [`$efficient-code-search`](../.agents/skills/efficient-code-search/SKILL.md)
+for implementation exploration and review. The skill selects scoped text search
+for literals/paths, available LSP tools for semantic relationships and the pinned
+`pnpm search:ast` command for syntax. It includes fallback when ripgrep or semantic
+tools are unavailable; no additional MCP server or global CLI is required.
+Serena availability depends on the agent environment, not this repository's
+configuration. Restart the agent session to discover this new skill.
+
+AST pattern syntax and CLI behavior follow the official
+[ast-grep quick start](https://ast-grep.github.io/guide/quick-start.html) and
+[pattern syntax](https://ast-grep.github.io/guide/pattern-syntax.html).
+The workflow aims to reduce irrelevant context; comparative token/time savings
+have not been measured. The existing testing and review requirements still apply.
 
 ## Locally adapted engineering skills
 

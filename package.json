@@ -52,7 +52,7 @@
         "lint": "eslint .",
         "resources:dashboard": "node scripts/resources/dashboard.mjs",
         "resources:profile": "node scripts/resources/profile.mjs",
-        "test": "node --test scripts/create-feature.test.mjs && pnpm test:agent-browser && pnpm test:document-services && pnpm test:frontend-architecture && pnpm test:mastra-harness && pnpm test:release-deployment && turbo run test",
+        "test": "pnpm test:code-search && node --test scripts/create-feature.test.mjs && pnpm test:agent-browser && pnpm test:document-services && pnpm test:frontend-architecture && pnpm test:mastra-harness && pnpm test:release-deployment && turbo run test",
         "test:agent-browser": "node --test scripts/agent-browser.test.mjs",
         "test:document-services": "node --test infra/test/document-services.test.mjs",
         "test:e2e:admin-user-management": "node scripts/run-admin-user-management-e2e.mjs",
@@ -69,9 +69,12 @@
         "user-flow:e2e:check": "node scripts/user-flow-e2e.mjs check",
         "web-dev-panel:check": "pnpm --filter @languon/web-dev-panel catalog:check",
         "test:e2e:user-ai-model-preferences-backend": "node scripts/run-user-ai-model-preferences-e2e.mjs",
-        "test:e2e:sentence-practice-backend": "node scripts/run-sentence-practice-e2e.mjs"
+        "test:e2e:sentence-practice-backend": "node scripts/run-sentence-practice-e2e.mjs",
+        "search:ast": "ast-grep",
+        "test:code-search": "node --test scripts/code-search.test.mjs"
     },
     "devDependencies": {
+        "@ast-grep/cli": "0.45.3",
         "@eslint/js": "^10.0.1",
         "@types/node": "^26.2.0",
         "@types/react": "^19.2.18",
