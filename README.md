@@ -307,6 +307,8 @@ the [dictionary and AI-card UI prompt](./docs/design-prompt/dictionary-ai-cards.
 with links to their feature implementations and relevant ADRs.
 The [repository agent skills guide](./docs/agent-skills.md) documents local skill
 invocation, authority, provenance, and upstream license notices.
+Ask for a survey with a short research brief, or invoke `$survey`, to compare
+options and save sourced findings in [research surveys](./docs/surveys/README.md).
 The [workflow audit and rollout](./docs/agentic-workflow-audit.md) explains
 delivery/review improvements; [workflow evaluation](./docs/agentic-workflow-evaluation.md)
 provides decision probes and repair-inclusive quality/cost measurements.

@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Survey'
+    short_description: 'Research options and save a sourced survey'
+    default_prompt: 'Use $survey to research this short brief, ask focused questions, compare current sources, and save the findings in docs/surveys.'

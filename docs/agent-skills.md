@@ -33,6 +33,20 @@ than providing routine delivery steps.
 Start a new Codex session after adding or changing repository skills so their
 descriptions and UI metadata are reloaded.
 
+### Research surveys from a short brief
+
+Use [`$survey`](../.agents/skills/survey/SKILL.md), or ask “Make a survey of…”
+with a short description of what you are searching for. The skill supports
+automatic selection, asks focused questions, checks current primary sources,
+compares options against your constraints, and saves the findings under
+[docs/surveys](./surveys/README.md) by default. Explicit chat-only requests or
+alternate destinations override that default.
+
+Survey findings distinguish requirements, verified facts, proposals, and open
+questions. They do not start implementation, accept ADRs, or authorize vendor
+outreach or paid experiments. This is an original Languon-owned skill; no
+external upstream package is incorporated.
+
 ### Design briefs for backend-first delivery
 
 `$design-brief` is a Languon-owned, explicit-only skill for creating or updating
