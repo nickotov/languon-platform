@@ -122,6 +122,8 @@ export const profileFeatureMessages = {
     'shell.loadingDictionaries': 'Loading dictionaries',
     'shell.dictionaryLoadFailed': 'Couldn’t load dictionaries',
     'shell.accountMenu': 'Account menu',
+    'shell.settings': 'Settings',
+    'shell.sharedDictionary': 'Shared dictionary',
     'shell.profile': 'Profile',
     'shell.signOut': 'Sign out',
     'shell.signingOut': 'Signing out…',

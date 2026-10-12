@@ -1,31 +1,13 @@
 .main {
     display: grid;
-    min-height: 100vh;
-    padding: clamp(var(--space-24), 6vw, var(--space-80));
+    min-height: calc(100dvh - var(--app-topbar-height, 0px));
+    padding: var(--space-24);
     place-items: center;
 }
 
-.content {
-    max-width: var(--size-720);
-}
-
-.eyebrow {
-    color: var(--sys-color-action-primary);
-    font-size: var(--size-14);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .title {
-    font-family: var(--sys-font-display);
-    font-size: clamp(var(--size-40), 10vw, var(--size-64));
-    line-height: 1;
-    margin: var(--sys-space-4) 0;
-}
-
-.description {
-    color: var(--sys-color-text-secondary);
-    font-size: var(--size-18);
-    line-height: 1.6;
+    color: var(--text-secondary);
+    font-size: var(--size-24);
+    font-weight: 500;
+    margin: 0;
 }

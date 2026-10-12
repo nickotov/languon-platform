@@ -1,7 +1,7 @@
 .main {
     margin: 0 auto;
     max-width: var(--size-max-width-app);
-    min-height: calc(100dvh - var(--size-topbar-height));
+    min-height: calc(100dvh - var(--app-topbar-height, 0px));
     padding: var(--space-32) var(--size-page-padding-mobile) var(--space-64);
     width: 100%;
 }
@@ -228,7 +228,7 @@
 
 .centered {
     display: grid;
-    min-height: calc(100dvh - var(--size-topbar-height));
+    min-height: calc(100dvh - var(--app-topbar-height, 0px));
     padding: var(--space-24);
     place-items: center;
 }

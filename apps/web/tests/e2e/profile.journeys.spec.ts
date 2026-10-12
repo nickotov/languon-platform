@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision magic-profile-page sha256:e0f33ecdc5020652
+// @user-flow-revision magic-profile-page sha256:08674df4ddf980ab
 // @user-flow-revision profile-account-controls sha256:65250b786a33e71b
 
 const password = 'E2e!Profile-password-2026';
@@ -107,7 +107,8 @@ test('shows truthful account placeholders and the authenticated application shel
     });
 
     await page.getByRole('link', { name: 'Languon home' }).click();
-    await expect(page).toHaveURL(/\/dictionaries$/);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('#main-content')).toHaveText('WIP');
     assertNoBrowserErrors();
 });
 

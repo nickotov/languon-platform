@@ -9,11 +9,14 @@ import { IconButton, Logo } from '@/fsd/shared/ui';
 import type { AppShellState } from '../../hooks/use-app-shell-state';
 import type { NavigationVariant } from '../../types';
 import { AccountArea } from '../account-area/account-area';
+import { GuestArea } from '../guest-area/guest-area';
 import { DictionariesNavigation } from './dictionaries-navigation';
 import styles from './sidebar-common.module.css';
 
 type Props = {
+    authenticated: boolean;
     navigation: DictionaryNavigationState;
+    pending: boolean;
     onClose?: (() => void) | undefined;
     onNavigate?: (() => void) | undefined;
     shell: AppShellState;
@@ -21,7 +24,9 @@ type Props = {
 };
 
 export function Sidebar({
+    authenticated,
     navigation,
+    pending,
     onClose,
     onNavigate,
     shell,
@@ -68,7 +73,7 @@ export function Sidebar({
         <div className={styles.sidebarContent}>
             <div className={rail ? styles.railBrand : styles.brand}>
                 <Logo
-                    href={href('/dictionaries')}
+                    href={href('/')}
                     label={t('auth.brandHome')}
                     monogram={rail}
                 />
@@ -89,20 +94,32 @@ export function Sidebar({
                     />
                 ) : null}
                 <ul className={styles.navList}>
-                    <DictionariesNavigation
-                        navigation={navigation}
-                        onNavigate={onNavigate}
-                        shell={shell}
-                        variant={variant}
-                    />
+                    {authenticated ? (
+                        <DictionariesNavigation
+                            navigation={navigation}
+                            onNavigate={onNavigate}
+                            shell={shell}
+                            variant={variant}
+                        />
+                    ) : null}
                 </ul>
             </nav>
-            <AccountArea
-                accountOpen={shell.accountOpen}
-                onAccountOpenChange={shell.setAccountOpen}
-                onNavigate={onNavigate}
-                variant={variant}
-            />
+            {authenticated ? (
+                <AccountArea
+                    accountOpen={shell.accountOpen}
+                    onAccountOpenChange={shell.setAccountOpen}
+                    onNavigate={onNavigate}
+                    variant={variant}
+                />
+            ) : (
+                <GuestArea
+                    accountOpen={shell.accountOpen}
+                    onAccountOpenChange={shell.setAccountOpen}
+                    onNavigate={onNavigate}
+                    pending={pending}
+                    variant={variant}
+                />
+            )}
         </div>
     );
 }

@@ -131,6 +131,14 @@ translation and formatting helpers to the rendered tree. Manual selection
 updates only the cookie and refreshes the unchanged route. ADR-0007 defines this
 contract.
 
+The root web layout owns one session-aware sidebar shell on all normal pages,
+with an expanded/collapsed desktop sidebar and mobile top bar/modal drawer.
+Private navigation queries are enabled only for authenticated users and scoped
+by user identity. Guests have Sign in and a Settings preference popover; signed-in
+users retain the account menu. Both reuse locale/theme controls. The logo leads
+to the temporary WIP home at /. ADR-0030 replaces only ADR-0007's original
+top-right preference placement; its locale/persistence contract remains active.
+
 ## Mobile
 
 The Expo application groups user-facing screens separately from reusable

@@ -1,6 +1,6 @@
 .main {
     display: grid;
-    min-height: 100vh;
+    min-height: calc(100dvh - var(--app-topbar-height, 0px));
     padding: clamp(var(--space-16), 5vw, var(--space-64));
     place-items: center;
 }

@@ -5,6 +5,7 @@ title: 'Web request locale strategy'
 status: accepted
 date: 2026-08-14
 supersedes: 'ADR-0006'
+superseded_in_part_by: 'ADR-0030 for top-right language-control placement only'
 ---
 
 # ADR-0007: Web request locale strategy

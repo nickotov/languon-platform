@@ -4,7 +4,7 @@ import type {
     LanguagesResponse,
 } from '@languon/contracts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -92,7 +92,7 @@ function renderChrome() {
     return render(
         <QueryClientProvider client={client}>
             <ThemeProvider preference='light'>
-                <ApplicationChrome publicHeader={<div>Public header</div>}>
+                <ApplicationChrome>
                     <main>Page body</main>
                 </ApplicationChrome>
             </ThemeProvider>
@@ -100,7 +100,7 @@ function renderChrome() {
     );
 }
 
-describe('authenticated application shell', () => {
+describe('session-aware global application shell', () => {
     beforeEach(() => {
         pathname = '/dictionaries';
         push.mockReset();
@@ -159,6 +159,35 @@ describe('authenticated application shell', () => {
             'true',
         );
     });
+
+    it.each([
+        '/dictionaries-other',
+        '/profile-other',
+        '/shared/dictionaries-other',
+    ])(
+        'does not classify lookalike not-found route %s as a section',
+        async (route) => {
+            pathname = route;
+            renderChrome();
+            expect(
+                screen.getByTitle('Languon', { exact: true }),
+            ).toBeInTheDocument();
+            expect(
+                screen.getByRole('button', {
+                    name: 'Dictionaries',
+                    exact: true,
+                }),
+            ).toHaveAttribute('aria-expanded', 'false');
+            await userEvent
+                .setup()
+                .click(
+                    screen.getByRole('button', { name: 'Collapse sidebar' }),
+                );
+            expect(
+                screen.getByRole('link', { name: 'Dictionaries', exact: true }),
+            ).not.toHaveAttribute('aria-current');
+        },
+    );
 
     it('opens the existing create-dictionary dialog from the sidebar', async () => {
         const interaction = userEvent.setup();
@@ -237,12 +266,159 @@ describe('authenticated application shell', () => {
         await waitFor(() => expect(menu).toHaveFocus());
     });
 
-    it('keeps public routes on the standalone header even when signed in', () => {
-        pathname = '/';
+    it.each([
+        '/',
+        '/login',
+        '/signup',
+        '/shared/dictionaries/example',
+        '/missing',
+    ])('keeps signed-in navigation and home logos on %s', async (route) => {
+        pathname = route;
         renderChrome();
-        expect(screen.getByText('Public header')).toBeInTheDocument();
+        await userEvent.setup().click(
+            screen.getByRole('button', {
+                name: 'Dictionaries',
+                exact: true,
+            }),
+        );
+        expect(await screen.findByText(dictionary.name)).toBeInTheDocument();
+        for (const logo of screen.getAllByRole('link', {
+            name: 'Languon home',
+        })) {
+            expect(logo).toHaveAttribute('href', '/');
+        }
+        expect(screen.getByText('Page body')).toBeInTheDocument();
+    });
+
+    it.each(['/', '/login', '/shared/dictionaries/example', '/missing'])(
+        'shows guest preferences without private navigation or queries on %s',
+        async (route) => {
+            pathname = route;
+            useSessionStore.setState({
+                status: 'signed-out',
+                user: null,
+                accessToken: null,
+            });
+            renderChrome();
+            const sidebar = screen.getByRole('complementary', {
+                name: 'Application sidebar',
+            });
+            expect(
+                within(sidebar).getByRole('link', { name: 'Sign in' }),
+            ).toHaveAttribute('href', '/login');
+            expect(
+                within(sidebar).getByRole('button', { name: 'Settings' }),
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByRole('link', { name: 'All dictionaries' }),
+            ).not.toBeInTheDocument();
+            expect(
+                screen.queryByRole('button', { name: 'Create a dictionary' }),
+            ).not.toBeInTheDocument();
+            expect(
+                screen.queryByRole('button', { name: /Account menu/ }),
+            ).not.toBeInTheDocument();
+            await act(async () => {});
+            expect(dictionaryApi.listDictionaries).not.toHaveBeenCalled();
+            expect(dictionaryApi.listLanguages).not.toHaveBeenCalled();
+        },
+    );
+
+    it('keeps session restoration pending without sign-in or private queries', async () => {
+        useSessionStore.setState({
+            status: 'bootstrapping',
+            user: null,
+            accessToken: null,
+        });
+        renderChrome();
+        expect(screen.getByText('Restoring your account…')).toBeInTheDocument();
         expect(
-            screen.queryByRole('navigation', { name: 'Main navigation' }),
+            screen.queryByRole('link', { name: 'Sign in' }),
         ).not.toBeInTheDocument();
+        await act(async () => {});
+        expect(dictionaryApi.listDictionaries).not.toHaveBeenCalled();
+        expect(dictionaryApi.listLanguages).not.toHaveBeenCalled();
+    });
+
+    it('mounts one guest Settings panel inside the native mobile drawer and restores nested focus', async () => {
+        useSessionStore.setState({
+            status: 'signed-out',
+            user: null,
+            accessToken: null,
+        });
+        const interaction = userEvent.setup();
+        renderChrome();
+        const menu = screen.getByRole('button', { name: 'Open navigation' });
+        await interaction.click(menu);
+        const drawer = screen.getByRole('dialog', { name: 'Main navigation' });
+        const settings = within(drawer).getByRole('button', {
+            name: 'Settings',
+            exact: true,
+        });
+        await interaction.click(settings);
+        expect(
+            screen.getAllByRole('dialog', { name: 'Settings', exact: true }),
+        ).toHaveLength(1);
+        expect(
+            within(drawer).getByRole('combobox', {
+                name: 'Interface language',
+            }),
+        ).toBeInTheDocument();
+        await interaction.click(
+            within(drawer).getByRole('button', { name: 'Dark', exact: true }),
+        );
+        expect(
+            within(drawer).getByRole('button', { name: 'Dark', exact: true }),
+        ).toHaveAttribute('aria-pressed', 'true');
+        await interaction.keyboard('{Escape}');
+        expect(
+            screen.queryByRole('dialog', { name: 'Settings', exact: true }),
+        ).not.toBeInTheDocument();
+        expect(drawer).toHaveAttribute('open');
+        await waitFor(() => expect(settings).toHaveFocus());
+    });
+
+    it('replaces private navigation when the authenticated identity changes and clears it on logout', async () => {
+        const secondDictionary = {
+            ...dictionary,
+            id: '20000000-0000-4000-8000-000000000002',
+            name: 'Second learner vocabulary',
+        };
+        vi.mocked(dictionaryApi.listDictionaries)
+            .mockResolvedValueOnce({ data: [dictionary], nextCursor: null })
+            .mockResolvedValueOnce({
+                data: [secondDictionary],
+                nextCursor: null,
+            });
+        renderChrome();
+        expect(await screen.findByText(dictionary.name)).toBeInTheDocument();
+        act(() =>
+            useSessionStore.setState({
+                user: {
+                    ...user,
+                    id: '10000000-0000-4000-8000-000000000002',
+                    handle: 'second',
+                },
+            }),
+        );
+        expect(screen.queryByText(dictionary.name)).not.toBeInTheDocument();
+        expect(
+            await screen.findByText(secondDictionary.name),
+        ).toBeInTheDocument();
+        expect(dictionaryApi.listDictionaries).toHaveBeenCalledTimes(2);
+        act(() =>
+            useSessionStore.setState({
+                status: 'signed-out',
+                user: null,
+                accessToken: null,
+            }),
+        );
+        expect(
+            screen.queryByText(secondDictionary.name),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getByRole('link', { name: 'Sign in' }),
+        ).toBeInTheDocument();
+        expect(dictionaryApi.listDictionaries).toHaveBeenCalledTimes(2);
     });
 });

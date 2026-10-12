@@ -71,6 +71,8 @@ export const es = {
     'shell.loadingDictionaries': 'Cargando diccionarios',
     'shell.dictionaryLoadFailed': 'No se pudieron cargar los diccionarios',
     'shell.accountMenu': 'Menú de la cuenta',
+    'shell.settings': 'Configuración',
+    'shell.sharedDictionary': 'Diccionario compartido',
     'shell.profile': 'Perfil',
     'shell.signOut': 'Cerrar sesión',
     'shell.signingOut': 'Cerrando sesión…',

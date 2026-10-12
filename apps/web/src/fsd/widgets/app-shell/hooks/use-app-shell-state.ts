@@ -1,6 +1,8 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { isRouteWithin } from '../lib/is-route-within';
+
 const RAIL_KEY = 'languon:app-shell-rail';
 const DICTIONARIES_KEY = 'languon:app-shell-dictionaries';
 
@@ -43,7 +45,7 @@ export function useAppShellState() {
         setAccountOpen(false);
     }, [pathname]);
 
-    const dictionaryRoute = pathname.startsWith('/dictionaries');
+    const dictionaryRoute = isRouteWithin(pathname, '/dictionaries');
     const dictionariesOpen = dictionariesOverride ?? dictionaryRoute;
 
     function toggleRail() {

@@ -1,18 +1,12 @@
 'use client';
 
-import { ChevronUp, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { ChevronUp, LogOut, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { useSessionStore } from '@/fsd/entities/session';
-import { LanguageSwitcher } from '@/fsd/features/change-locale';
 import { useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
-import {
-    themeCookieName,
-    type ThemePreference,
-    useTheme,
-} from '@/fsd/shared/theme';
 import {
     Avatar,
     Popover,
@@ -23,6 +17,7 @@ import {
 } from '@/fsd/shared/ui';
 
 import type { NavigationVariant } from '../../types';
+import { PreferencesControls } from '../preferences-controls/preferences-controls';
 import styles from './account-area.module.css';
 
 type Props = {
@@ -52,13 +47,15 @@ export function AccountArea({
 
     const label = `${t('shell.accountMenu')}, ${handle}`;
 
+    function toggleDrawerAccount() {
+        onAccountOpenChange(!accountOpen);
+    }
+
     const trigger = (
         <button
             aria-label={label}
             className={rail ? styles.railTrigger : styles.trigger}
-            onClick={
-                drawer ? () => onAccountOpenChange(!accountOpen) : undefined
-            }
+            onClick={drawer ? toggleDrawerAccount : undefined}
             title={rail ? label : undefined}
             type='button'
         >
@@ -119,8 +116,6 @@ function AccountMenuContent({
 
     const { signOutHere } = useAuth();
 
-    const { preference, setPreference } = useTheme();
-
     const [signOutPending, setSignOutPending] = useState(false);
 
     async function signOut() {
@@ -137,12 +132,6 @@ function AccountMenuContent({
                 tone: 'danger',
             });
         }
-    }
-
-    function selectTheme(next: ThemePreference) {
-        setPreference(next);
-
-        document.cookie = `${themeCookieName}=${next}; Max-Age=31536000; Path=/; SameSite=Lax`;
     }
 
     const profileLink = (
@@ -164,32 +153,7 @@ function AccountMenuContent({
                 profileLink
             )}
             <div className={styles.divider} />
-            <LanguageSwitcher form />
-            <fieldset className={styles.themeFieldset}>
-                <legend className={styles.themeLegend}>
-                    {t('theme.label')}
-                </legend>
-                <div className={styles.themeOptions}>
-                    <ThemeOption
-                        checked={preference === 'system'}
-                        icon={<Monitor aria-hidden size={15} />}
-                        label={t('theme.option.system')}
-                        onSelect={() => selectTheme('system')}
-                    />
-                    <ThemeOption
-                        checked={preference === 'light'}
-                        icon={<Sun aria-hidden size={15} />}
-                        label={t('theme.option.light')}
-                        onSelect={() => selectTheme('light')}
-                    />
-                    <ThemeOption
-                        checked={preference === 'dark'}
-                        icon={<Moon aria-hidden size={15} />}
-                        label={t('theme.option.dark')}
-                        onSelect={() => selectTheme('dark')}
-                    />
-                </div>
-            </fieldset>
+            <PreferencesControls />
             <div className={styles.divider} />
             <button
                 aria-busy={signOutPending || undefined}
@@ -202,29 +166,5 @@ function AccountMenuContent({
                 {t(signOutPending ? 'shell.signingOut' : 'shell.signOut')}
             </button>
         </div>
-    );
-}
-
-function ThemeOption({
-    checked,
-    icon,
-    label,
-    onSelect,
-}: {
-    checked: boolean;
-    icon: React.ReactNode;
-    label: string;
-    onSelect(): void;
-}) {
-    return (
-        <button
-            aria-pressed={checked}
-            className={styles.themeOption}
-            onClick={onSelect}
-            type='button'
-        >
-            {icon}
-            <span className={styles.themeLabel}>{label}</span>
-        </button>
     );
 }

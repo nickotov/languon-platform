@@ -10,7 +10,6 @@ import { ThemeProvider } from '@/fsd/shared/theme';
 import { getRequestTheme } from '@/fsd/shared/theme/server';
 import { ToastHost } from '@/fsd/shared/ui';
 import { ApplicationChrome } from '@/fsd/widgets/app-shell';
-import { SiteHeader } from '@/fsd/widgets/site-header';
 
 import './globals.css';
 
@@ -36,9 +35,7 @@ export default async function RootLayout({
                 <I18nProvider locale={locale} messages={messages}>
                     <ThemeProvider preference={theme}>
                         <AuthProvider>
-                            <ApplicationChrome publicHeader={<SiteHeader />}>
-                                {children}
-                            </ApplicationChrome>
+                            <ApplicationChrome>{children}</ApplicationChrome>
                             <ToastHost
                                 label={messages['toast.notifications']}
                             />

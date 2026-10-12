@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision web-ui-kit sha256:c43580c00fb14327
+// @user-flow-revision web-ui-kit sha256:56c27d0bd349dca6
 
 function captureBrowserErrors(page: Page) {
     const errors: string[] = [];
@@ -38,10 +38,10 @@ test.describe('web UI kit journeys', () => {
             'data-theme',
             'system',
         );
-        const themeToggle = page.getByRole('button', {
-            name: 'Switch to dark theme',
-        });
-        await themeToggle.click();
+        await page
+            .getByRole('button', { name: 'Settings', exact: true })
+            .click();
+        await page.getByRole('button', { name: 'Dark', exact: true }).click();
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
         await expect(page.locator('html')).toHaveAttribute(
             'data-theme',
@@ -62,21 +62,25 @@ test.describe('web UI kit journeys', () => {
             'data-theme',
             'dark',
         );
-        await expect(
-            page.getByRole('button', { name: 'Switch to light theme' }),
-        ).toBeVisible();
-
         await page
-            .getByRole('button', { name: 'Switch to light theme' })
+            .getByRole('button', { name: 'Settings', exact: true })
             .click();
+        await expect(
+            page.getByRole('button', { name: 'Dark', exact: true }),
+        ).toHaveAttribute('aria-pressed', 'true');
+
+        await page.getByRole('button', { name: 'Light', exact: true }).click();
         await expect(page.locator('html')).toHaveAttribute(
             'data-theme',
             'light',
         );
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
+        await page.keyboard.press('Escape');
 
         await page.setViewportSize({ height: 800, width: 320 });
-        const logo = page.getByRole('link', { name: 'Languon home' });
+        const logo = page
+            .locator('header')
+            .getByRole('link', { name: 'Languon home' });
         const email = page.getByLabel('Email');
         const reveal = page.getByRole('button', { name: 'Show password' });
         await expect(logo).toBeVisible();

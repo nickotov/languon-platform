@@ -10,15 +10,32 @@ import { Sidebar } from '../sidebar/sidebar';
 import styles from './mobile-drawer.module.css';
 
 export function MobileDrawer({
+    authenticated,
     navigation,
+    pending,
     shell,
 }: {
+    authenticated: boolean;
     navigation: DictionaryNavigationState;
+    pending: boolean;
     shell: AppShellState;
 }) {
     const { t } = useI18n();
 
     const dialogRef = useRef<HTMLDialogElement>(null);
+    function cancelDrawer(event: React.SyntheticEvent<HTMLDialogElement>) {
+        event.preventDefault();
+        shell.closeDrawer();
+    }
+    function dismissBackdrop(event: React.MouseEvent<HTMLDialogElement>) {
+        if (event.target === event.currentTarget) shell.closeDrawer();
+    }
+    function closeDrawer() {
+        shell.closeDrawer();
+    }
+    function navigate() {
+        shell.closeDrawer(false);
+    }
 
     useEffect(() => {
         const dialog = dialogRef.current;
@@ -47,22 +64,18 @@ export function MobileDrawer({
             aria-label={t('shell.mainNavigation')}
             className={styles.dialog}
             id='mobile-navigation-drawer'
-            onCancel={(event) => {
-                event.preventDefault();
-
-                shell.closeDrawer();
-            }}
-            onClick={(event) => {
-                if (event.target === event.currentTarget) shell.closeDrawer();
-            }}
+            onCancel={cancelDrawer}
+            onClick={dismissBackdrop}
             ref={dialogRef}
         >
             {shell.drawerOpen ? (
                 <div className={styles.panel}>
                     <Sidebar
+                        authenticated={authenticated}
                         navigation={navigation}
-                        onClose={() => shell.closeDrawer()}
-                        onNavigate={() => shell.closeDrawer(false)}
+                        pending={pending}
+                        onClose={closeDrawer}
+                        onNavigate={navigate}
                         shell={shell}
                         variant='drawer'
                     />

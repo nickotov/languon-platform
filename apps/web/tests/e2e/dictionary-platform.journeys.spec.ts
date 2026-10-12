@@ -437,7 +437,15 @@ test.describe('dictionary platform journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page);
         const name = `Studio Spanish ${runId}`;
         await signUpAndVerify(page, syntheticEmail(testInfo, 'owner'), '/');
-        await page.getByRole('link', { name: 'Dictionaries' }).click();
+        const sidebar = page.getByRole('complementary', {
+            name: 'Application sidebar',
+        });
+        await sidebar
+            .getByRole('button', { name: 'Dictionaries', exact: true })
+            .click();
+        await sidebar
+            .getByRole('link', { name: 'All dictionaries', exact: true })
+            .click();
         await expect(
             page.getByRole('heading', { name: 'My dictionaries' }),
         ).toBeVisible();
@@ -527,9 +535,28 @@ test.describe('dictionary platform journeys', () => {
         for (const input of [draftSource, draftTranslation]) {
             const inputBounds = await input.boundingBox();
             expect(inputBounds!.x).toBeGreaterThanOrEqual(0);
-            expect(inputBounds!.x + inputBounds!.width).toBeLessThanOrEqual(
-                320,
-            );
+            const sizing = await input.evaluate((element) => {
+                const ancestors = [];
+                for (
+                    let node: Element | null = element;
+                    node && ancestors.length < 9;
+                    node = node.parentElement
+                ) {
+                    const css = getComputedStyle(node);
+                    ancestors.push({
+                        className: node.className,
+                        width: node.getBoundingClientRect().width,
+                        minWidth: css.minWidth,
+                        columns: css.gridTemplateColumns,
+                        display: css.display,
+                    });
+                }
+                return ancestors;
+            });
+            expect(
+                inputBounds!.x + inputBounds!.width,
+                JSON.stringify(sizing),
+            ).toBeLessThanOrEqual(320);
         }
         await draftSource.focus();
         await page.keyboard.press('Tab');

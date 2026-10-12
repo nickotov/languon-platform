@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { useRef, useState } from 'react';
 import storyStyles from './popover.stories.module.css';
-import { Popover } from './popover';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 const meta = { component: Popover, title: 'UI/Popover' } satisfies Meta<
     typeof Popover
@@ -43,4 +44,60 @@ export const ViewportCollision: StoryObj<typeof meta> = {
         ),
     ],
     parameters: { viewport: { defaultViewport: 'mobile1' } },
+};
+
+function ModalContainerExample() {
+    const dialogRef = useRef<HTMLDialogElement | null>(null);
+    const [open, setOpen] = useState(false);
+
+    function openDialog() {
+        dialogRef.current?.showModal();
+    }
+
+    function closeDialog() {
+        setOpen(false);
+        dialogRef.current?.close();
+    }
+
+    function resetPopover() {
+        setOpen(false);
+    }
+
+    return (
+        <>
+            <button onClick={openDialog} type='button'>
+                Open modal example
+            </button>
+            <dialog
+                aria-label='Modal popover example'
+                onClose={resetPopover}
+                ref={dialogRef}
+            >
+                <button onClick={closeDialog} type='button'>
+                    Close modal
+                </button>
+                <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger>Open preferences</PopoverTrigger>
+                    <PopoverContent
+                        aria-label='Preferences'
+                        portalContainer={dialogRef.current}
+                    >
+                        <label>
+                            Appearance
+                            <select defaultValue='system'>
+                                <option value='system'>System</option>
+                                <option value='light'>Light</option>
+                                <option value='dark'>Dark</option>
+                            </select>
+                        </label>
+                    </PopoverContent>
+                </Popover>
+            </dialog>
+        </>
+    );
+}
+
+export const InsideModal: StoryObj<typeof meta> = {
+    args: { children: null },
+    render: () => <ModalContainerExample />,
 };

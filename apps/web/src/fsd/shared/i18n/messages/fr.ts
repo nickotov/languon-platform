@@ -71,6 +71,8 @@ export const fr = {
     'shell.loadingDictionaries': 'Chargement des dictionnaires',
     'shell.dictionaryLoadFailed': 'Impossible de charger les dictionnaires',
     'shell.accountMenu': 'Menu du compte',
+    'shell.settings': 'Paramètres',
+    'shell.sharedDictionary': 'Dictionnaire partagé',
     'shell.profile': 'Profil',
     'shell.signOut': 'Se déconnecter',
     'shell.signingOut': 'Déconnexion…',

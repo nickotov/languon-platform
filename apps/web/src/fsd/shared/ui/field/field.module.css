@@ -1,5 +1,7 @@
 .field {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
     font-size: var(--size-14);
     gap: var(--spacing-label-to-input);
 }

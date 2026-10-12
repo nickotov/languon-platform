@@ -1,6 +1,6 @@
 .layout {
     display: flex;
-    min-height: calc(100dvh - var(--size-topbar-height));
+    min-height: calc(100dvh - var(--app-topbar-height, 0px));
     width: 100%;
     flex-direction: column;
     background: var(--background-canvas);
@@ -283,7 +283,7 @@
 
 .accountLayout {
     display: grid;
-    min-height: calc(100dvh - var(--size-topbar-height));
+    min-height: calc(100dvh - var(--app-topbar-height, 0px));
     padding: var(--space-32) var(--space-16);
     place-items: center;
 }
@@ -339,7 +339,7 @@
     }
 
     .formPanel {
-        min-height: calc(100dvh - var(--size-topbar-height));
+        min-height: calc(100dvh - var(--app-topbar-height, 0px));
     }
 
     .authMain {

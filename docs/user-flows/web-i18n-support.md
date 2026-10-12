@@ -2,7 +2,7 @@
 feature: web-i18n-support
 title: Web Internationalization and Language Switching
 status: current
-last_verified: 2026-08-14
+last_verified: 2026-10-12
 surfaces:
     - browser
 source_paths:
@@ -15,6 +15,7 @@ source_paths:
     - apps/web/src/fsd/pages/**
     - apps/web/src/fsd/shared/i18n/**
     - apps/web/src/fsd/widgets/site-header/**
+    - apps/web/src/fsd/widgets/app-shell/**
     - apps/web/tests/e2e/i18n.journeys.spec.ts
     - docs/adr/0006-web-internationalization-strategy.md
 e2e_command: web-playwright
@@ -25,6 +26,7 @@ e2e_scenarios:
     - language-switch-persistence
 related_features:
     - user-authentication
+    - global-app-shell
 ---
 
 # Web Internationalization and Language Switching
@@ -59,7 +61,7 @@ localization checks themselves do not create database records.
 
 1. In a fresh browser context without a locale cookie, open
    `http://localhost:3333/` with Russian as the preferred browser language.
-   Expect Russian home copy, a Russian **Язык** selector in the top-right header,
+   Expect the literal **WIP** home body and localized shell controls,
    `<html lang="ru">`, and an unchanged `/` URL.
 2. Repeat with English, French, and Spanish request-language preferences. Expect
    the same URL and page structure with matching localized copy and document
@@ -69,7 +71,8 @@ localization checks themselves do not create database records.
    labels before and after hydration.
 4. Open a missing route. Expect the not-found metadata and visible content to
    use French while the missing URL stays unchanged.
-5. Change **Langue** to **Español**. Expect the URL to remain
+5. Open guest **Paramètres** and change **Langue de l’interface** to **Español**.
+   Signed-in learners use the same control in the account menu. Expect the URL to remain
    `/login?returnTo=%2Fsecurity` while the document and visible copy refresh to
    Spanish.
 6. Reload the same URL. Expect Spanish again because the selector stored
@@ -78,8 +81,8 @@ localization checks themselves do not create database records.
 7. Clear only the locale cookie and reload. Expect the request-language header
    to control SSR again; with no supported preference, expect English.
 8. At desktop and narrow mobile widths, confirm the selector remains reachable
-   at the top right, has a visible focus indicator, and does not obscure the
-   active form or home actions.
+   in guest Settings or the signed-in account menu, including the mobile drawer,
+   has a visible focus indicator, and does not obscure the active form.
 
 ## E2E coverage
 

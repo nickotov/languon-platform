@@ -3,6 +3,7 @@
 import { Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect } from 'react';
+import { useSessionStore } from '@/fsd/entities/session';
 
 import { useAuth } from '@/fsd/features/auth';
 import {
@@ -13,11 +14,12 @@ import { useI18n } from '@/fsd/shared/i18n';
 import { IconButton, Logo } from '@/fsd/shared/ui';
 
 import { useAppShellState } from '../../hooks/use-app-shell-state';
+import { isRouteWithin } from '../../lib/is-route-within';
 import { MobileDrawer } from '../mobile-drawer/mobile-drawer';
 import { Sidebar } from '../sidebar/sidebar';
-import styles from './authenticated-app-shell.module.css';
+import styles from './app-shell.module.css';
 
-export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children }: { children: ReactNode }) {
     const pathname = usePathname();
 
     const { requestWithSession } = useAuth();
@@ -27,6 +29,9 @@ export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
     const shell = useAppShellState();
 
     const navigation = useDictionaryNavigation(requestWithSession);
+    const status = useSessionStore((state) => state.status);
+    const userId = useSessionStore((state) => state.user?.id ?? null);
+    const authenticated = status === 'authenticated' && userId !== null;
 
     const dictionaryId = pathname.startsWith('/dictionaries/')
         ? pathname.split('/')[2]
@@ -37,11 +42,20 @@ export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
         : null;
 
     function resolvePageTitle() {
-        if (pathname.startsWith('/profile')) {
+        if (pathname === '/') return 'Languon';
+        if (isRouteWithin(pathname, '/profile')) {
             return t('profile.title');
         }
-
-        return currentDictionary?.name ?? t('dictionary.library.title');
+        if (isRouteWithin(pathname, '/dictionaries'))
+            return currentDictionary?.name ?? t('dictionary.library.title');
+        if (pathname === '/login') return t('login.title');
+        if (pathname === '/signup') return t('signup.title');
+        if (pathname === '/verify-email') return t('verify.title');
+        if (pathname === '/forgot-password') return t('forgot.title');
+        if (pathname === '/reset-password') return t('reset.title');
+        if (isRouteWithin(pathname, '/shared/dictionaries'))
+            return t('shell.sharedDictionary');
+        return 'Languon';
     }
 
     const pageTitle = resolvePageTitle();
@@ -49,6 +63,22 @@ export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
     const shellClassName = shell.railCollapsed
         ? `${styles.shell} ${styles.railShell}`
         : styles.shell;
+    const variant = shell.railCollapsed ? 'rail' : 'expanded';
+    // Only the visible modal drawer may open its footer overlay. The desktop
+    // sidebar remains mounted for stable layout but must not portal a duplicate.
+    const desktopShell = {
+        ...shell,
+        accountOpen: shell.accountOpen && !shell.drawerOpen,
+    };
+
+    function openDrawer() {
+        shell.setDrawerOpen(true);
+    }
+
+    useEffect(() => {
+        shell.setAccountOpen(false);
+        shell.setDrawerOpen(false);
+    }, [status, userId, shell.setAccountOpen, shell.setDrawerOpen]);
 
     useEffect(() => {
         const query = window.matchMedia('(min-width: 1024px)');
@@ -74,9 +104,11 @@ export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
                 className={styles.desktopSidebar}
             >
                 <Sidebar
+                    authenticated={authenticated}
                     navigation={navigation}
-                    shell={shell}
-                    variant={shell.railCollapsed ? 'rail' : 'expanded'}
+                    pending={status === 'bootstrapping'}
+                    shell={desktopShell}
+                    variant={variant}
                 />
             </aside>
             <header className={styles.mobileTopBar}>
@@ -86,14 +118,14 @@ export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
                     className={styles.mobileMenuButton}
                     icon={<Menu />}
                     label={t('shell.openNavigation')}
-                    onClick={() => shell.setDrawerOpen(true)}
+                    onClick={openDrawer}
                     ref={shell.menuButtonRef}
                     showTooltip={false}
                     variant='ghost'
                 />
                 <span className={styles.mobileLogo}>
                     <Logo
-                        href={href('/dictionaries')}
+                        href={href('/')}
                         label={t('auth.brandHome')}
                         monogram
                     />
@@ -103,11 +135,18 @@ export function AuthenticatedAppShell({ children }: { children: ReactNode }) {
                     {pageTitle}
                 </p>
             </header>
-            <MobileDrawer navigation={navigation} shell={shell} />
+            <MobileDrawer
+                authenticated={authenticated}
+                navigation={navigation}
+                pending={status === 'bootstrapping'}
+                shell={shell}
+            />
             <div className={styles.content} id='main-content' tabIndex={-1}>
                 {children}
             </div>
-            <LibraryCreateDialog state={navigation} />
+            {authenticated ? (
+                <LibraryCreateDialog key={userId} state={navigation} />
+            ) : null}
         </div>
     );
 }

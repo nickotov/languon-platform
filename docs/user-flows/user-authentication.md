@@ -2,7 +2,7 @@
 feature: user-authentication
 title: User Authentication
 status: current
-last_verified: 2026-09-15
+last_verified: 2026-10-12
 surfaces:
     - browser
     - api
@@ -49,6 +49,7 @@ e2e_scenarios:
     - password-reset-session-revocation
     - passkey-lifecycle
 related_features:
+    - global-app-shell
     - web-i18n-support
     - user-flow-testing-guides
     - web-dev-port-3333
@@ -244,7 +245,8 @@ development context.
    is inferred. Another Add starts the same direct flow.
 5. Select **Sign out here**, then select **Sign in with a passkey** on `/login`.
 6. Choose the discoverable credential and complete user verification. Expect an
-   authenticated home page; open **Security settings**.
+   authenticated WIP home page with real identity in the shell. Open the account
+   menu, choose **Profile**, and select the **Security** tab.
 7. Select the row's accessible **Rename** icon, enter a unique name in the
    dialog, and save. Expect the new name immediately. A failed rename keeps
    the dialog and draft visible.

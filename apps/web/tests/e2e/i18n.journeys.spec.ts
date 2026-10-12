@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision web-i18n-support sha256:4be2bcfe7bdd625f
+// @user-flow-revision web-i18n-support sha256:892b37c815ab7144
 
 function captureBrowserErrors(page: Page) {
     const errors: string[] = [];
@@ -31,7 +31,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'en-US,en;q=0.9',
                 'en',
-                'AI-first language learning',
+                'WIP',
                 'Sign in · Languon',
                 'This page could not be found',
                 'Page not found · Languon',
@@ -39,7 +39,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'ru-RU,ru;q=0.9',
                 'ru',
-                'Изучение языков с помощью ИИ',
+                'WIP',
                 'Вход · Languon',
                 'Страница не найдена',
                 'Страница не найдена · Languon',
@@ -47,7 +47,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'fr-CA,fr;q=0.9',
                 'fr',
-                'Apprentissage des langues avec l’IA',
+                'WIP',
                 'Connexion · Languon',
                 'Cette page est introuvable',
                 'Page introuvable · Languon',
@@ -55,7 +55,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'es-ES,es;q=0.9',
                 'es',
-                'Aprendizaje de idiomas con IA',
+                'WIP',
                 'Iniciar sesión · Languon',
                 'No se encontró esta página',
                 'Página no encontrada · Languon',
@@ -124,7 +124,10 @@ test.describe('web internationalization journeys', () => {
         ).toBeVisible();
 
         await page
-            .getByRole('combobox', { name: 'Language' })
+            .getByRole('button', { name: 'Settings', exact: true })
+            .click();
+        await page
+            .getByRole('combobox', { name: 'Interface language' })
             .selectOption('es');
 
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
@@ -153,8 +156,11 @@ test.describe('web internationalization journeys', () => {
 
         await page.reload();
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
+        await page
+            .getByRole('button', { name: 'Configuración', exact: true })
+            .click();
         await expect(
-            page.getByRole('combobox', { name: 'Idioma' }),
+            page.getByRole('combobox', { name: 'Idioma de la interfaz' }),
         ).toHaveValue('es');
         assertNoBrowserErrors();
     });

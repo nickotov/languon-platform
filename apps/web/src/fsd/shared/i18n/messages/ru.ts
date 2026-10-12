@@ -143,6 +143,8 @@ export const ru = {
     'shell.loadingDictionaries': 'Загрузка словарей',
     'shell.dictionaryLoadFailed': 'Не удалось загрузить словари',
     'shell.accountMenu': 'Меню аккаунта',
+    'shell.settings': 'Настройки',
+    'shell.sharedDictionary': 'Общий словарь',
     'shell.profile': 'Профиль',
     'shell.signOut': 'Выйти',
     'shell.signingOut': 'Выход…',

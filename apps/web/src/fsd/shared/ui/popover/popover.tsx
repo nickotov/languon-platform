@@ -282,6 +282,12 @@ function PopoverRoot({
 
         const escape = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
+                // Consume the nested overlay's Escape before a modal dialog
+                // receives it or the browser performs its default cancel.
+                event.preventDefault();
+
+                event.stopPropagation();
+
                 setOpen(false);
 
                 triggerRef.current?.focus();
@@ -290,12 +296,12 @@ function PopoverRoot({
 
         document.addEventListener('pointerdown', dismiss);
 
-        document.addEventListener('keydown', escape);
+        document.addEventListener('keydown', escape, true);
 
         return () => {
             document.removeEventListener('pointerdown', dismiss);
 
-            document.removeEventListener('keydown', escape);
+            document.removeEventListener('keydown', escape, true);
         };
     }, [open, refs, setOpen]);
 
@@ -455,6 +461,8 @@ type PopoverSide = 'bottom' | 'left' | 'right' | 'top';
 
 export type PopoverContentProps = HTMLAttributes<HTMLDivElement> & {
     align?: 'center' | 'end' | 'start';
+    /** Mount inside a native modal's top layer; defaults to document.body. */
+    portalContainer?: HTMLElement | null;
     showArrow?: boolean;
     side?: PopoverSide;
     sideOffset?: number;
@@ -466,6 +474,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
             align = 'center',
             children,
             className,
+            portalContainer,
             showArrow = false,
             side = 'bottom',
             sideOffset = 8,
@@ -478,6 +487,17 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
         const { setPosition } = context;
 
         const [mounted, setMounted] = useState(false);
+
+        const { contentRef } = context;
+
+        const setContent = useCallback(
+            (node: HTMLDivElement | null) => {
+                contentRef.current = node;
+
+                assignRef(forwardedRef, node);
+            },
+            [contentRef, forwardedRef],
+        );
 
         useEffect(() => {
             setMounted(true);
@@ -497,12 +517,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                     .filter(Boolean)
                     .join(' ')}
                 id={context.contentId}
-                ref={(node) => {
-                    context.contentRef.current = node;
-
-                    if (typeof forwardedRef === 'function') forwardedRef(node);
-                    else if (forwardedRef) forwardedRef.current = node;
-                }}
+                ref={setContent}
                 role={props.role ?? 'dialog'}
                 style={{ ...context.floatingStyles, ...props.style }}
             >
@@ -511,7 +526,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                     <span aria-hidden='true' className={styles.arrow} />
                 ) : null}
             </div>,
-            document.body,
+            portalContainer ?? document.body,
         );
     },
 );

@@ -1,0 +1,71 @@
+.footer {
+    align-items: center;
+    border-top: 1px solid var(--border-default);
+    display: flex;
+    flex: none;
+    gap: var(--space-8);
+    padding: var(--space-12);
+}
+
+.rail {
+    flex-direction: column;
+}
+
+.signIn {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+}
+
+.railSignIn {
+    padding: 0;
+    width: var(--size-44);
+}
+
+.settingsTrigger {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    height: var(--size-44);
+    justify-content: center;
+    width: var(--size-44);
+}
+
+.settingsTrigger:hover,
+.settingsTrigger[aria-expanded='true'] {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+.settingsTrigger:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.pending {
+    align-items: center;
+    color: var(--text-secondary);
+    display: flex;
+    flex: 1;
+    font-size: var(--size-12);
+    gap: var(--space-8);
+    justify-content: center;
+    min-height: var(--size-44);
+    min-width: 0;
+}
+
+.popover {
+    max-width: min(var(--size-272), calc(100vw - var(--size-24)));
+    padding: 0;
+    width: var(--size-272);
+}
+
+.preferences {
+    display: grid;
+    gap: var(--space-8);
+    padding: var(--space-8);
+}

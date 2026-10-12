@@ -18,6 +18,7 @@ source_paths:
     - apps/web/src/fsd/shared/theme/**
     - apps/web/src/fsd/shared/ui/**
     - apps/web/src/fsd/widgets/site-header/**
+    - apps/web/src/fsd/widgets/app-shell/**
     - apps/web/tests/e2e/ui-kit.journeys.spec.ts
     - design/**
     - docs/adr/0016-runtime-ui-kit-authority.md
@@ -27,6 +28,7 @@ e2e_tests:
 e2e_scenarios:
     - theme-preference-persistence
 related_features:
+    - global-app-shell
     - magic-profile-page
     - user-authentication
     - web-i18n-support
@@ -39,7 +41,7 @@ related_features:
 This guide verifies that the public web app uses the single Magic-derived
 Languon runtime UI kit, applies its neutral/indigo semantic light and dark
 palettes, renders a server-safe system theme by default, and persists an
-explicit Light or Dark preference from the application-header toggle without
+explicit System, Light or Dark preference from guest Settings or the signed-in account menu without
 changing the active route.
 It also covers keyboard-visible native controls and compact reflow. Admin,
 mobile, and product-specific learning patterns are outside this journey.
@@ -62,16 +64,17 @@ theme journey does not create data or require a signed-in account.
 1. In a fresh browser context, open
    `http://localhost:3333/login?returnTo=%2Fsecurity`. Expect the page to render
    with `<html data-theme="system">`, the neutral canvas, indigo actions, and
-   visible theme toggle and **Language** selector without a hydration flash. At a
+   visible guest **Settings** control without a hydration flash. Open it to find
+   **Interface language** and System/Light/Dark choices. At a
    desktop width, expect the product story and auth form in a balanced split
    layout; on mobile, expect one focused form column.
-2. Activate **Switch to dark theme**. Expect `<html data-theme="dark">`, an unchanged path and
+2. Open Settings and activate **Dark**. Expect `<html data-theme="dark">`, an unchanged path and
    query, and a `languon-theme=dark` cookie scoped to `/` with `SameSite=Lax`.
 3. Reload, then navigate to `/`. Expect Dark to remain selected and server-rendered
    before hydration because the cookie is global to the application.
-4. Activate **Switch to light theme**. Expect the explicit Light preference to
+4. Reopen Settings and activate **Light**. Expect the explicit Light preference to
    replace Dark without changing the current route.
-5. Use only the keyboard to focus the locale selector, theme toggle, auth fields, password reveal,
+5. Use only the keyboard to focus Settings, its locale selector and appearance choices, auth fields, password reveal,
    and actions. Expect a visible focus ring, native activation, and no keyboard trap.
 6. Repeat at a 320px viewport and 200% browser zoom. Expect the compact logo,
    header controls, form content, status copy, and actions to reflow without
@@ -79,8 +82,8 @@ theme journey does not create data or require a signed-in account.
 
 ## E2E coverage
 
-- `theme-preference-persistence` proves the SSR default, accessible header theme
-  toggle, route/query preservation, global cookie attributes, and explicit dark
+- `theme-preference-persistence` proves the SSR default, accessible guest Settings appearance
+  choices, route/query preservation, global cookie attributes, and explicit dark
   then light preference persistence across reload.
 
 Field associations, tabs keyboard behavior, indeterminate checkbox state, and
@@ -90,7 +93,7 @@ catalog and both theme palettes are built through Storybook.
 ## Expected failure and edge cases
 
 - Missing, unsupported, or malformed theme cookies resolve to System.
-- The untouched System default follows CSS media queries; once the user toggles
+- The untouched System default follows CSS media queries; once the user selects
   appearance, the control stores an explicit Light or Dark preference.
 - Theme changes do not submit surrounding forms, clear user input, refresh the
   route, or change the selected locale.

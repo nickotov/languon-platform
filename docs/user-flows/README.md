@@ -11,6 +11,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Global App Shell](./global-app-shell.md) — session-aware navigation, guest settings, preference persistence, responsive drawer focus, and the WIP home page.
+
 - [Sentence Practice and Model Preferences Web](./sentence-practice-web.md) —
   model persistence, real sentence jobs and personal free reference review.
 

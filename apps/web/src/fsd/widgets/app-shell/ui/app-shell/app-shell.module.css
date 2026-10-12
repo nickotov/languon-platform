@@ -1,4 +1,5 @@
 .shell {
+    --app-topbar-height: var(--size-64);
     --app-sidebar-center-offset: var(--size-120);
     --app-sidebar-width: var(--size-nav-sidebar-width);
     background: var(--background-canvas);
@@ -83,6 +84,9 @@
 }
 
 @media (min-width: 1024px) {
+    .shell {
+        --app-topbar-height: 0px;
+    }
     .desktopSidebar {
         display: block;
     }

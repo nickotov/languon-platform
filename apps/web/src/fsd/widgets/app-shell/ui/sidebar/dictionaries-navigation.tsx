@@ -10,6 +10,7 @@ import { useI18n } from '@/fsd/shared/i18n';
 import { IconButton } from '@/fsd/shared/ui';
 
 import type { AppShellState } from '../../hooks/use-app-shell-state';
+import { isRouteWithin } from '../../lib/is-route-within';
 import type { NavigationVariant } from '../../types';
 import { NavigationLink, NavigationLoading } from './navigation-items';
 import styles from './sidebar-common.module.css';
@@ -31,7 +32,7 @@ export function DictionariesNavigation({
 
     const { href, locale, t } = useI18n();
 
-    const sectionActive = pathname.startsWith('/dictionaries');
+    const sectionActive = isRouteWithin(pathname, '/dictionaries');
 
     const activeId = pathname.startsWith('/dictionaries/')
         ? pathname.split('/')[2]

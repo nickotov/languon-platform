@@ -2,7 +2,7 @@
 feature: magic-profile-page
 title: Magic Patterns Profile Page and Authenticated Shell
 status: current
-last_verified: 2026-09-28
+last_verified: 2026-10-12
 surfaces:
     - browser
 source_paths:
@@ -12,7 +12,7 @@ source_paths:
     - apps/web/src/fsd/widgets/site-header/**
     - apps/web/src/fsd/widgets/app-shell/**
     - apps/web/src/fsd/features/change-theme/**
-    - apps/web/src/fsd/features/auth/ui/home-session-actions.tsx
+    - apps/web/src/fsd/pages/home/**
     - apps/web/tests/e2e/profile.journeys.spec.ts
 e2e_command: web-playwright
 e2e_tests:
@@ -20,6 +20,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-empty-coming-soon-and-header-navigation
 related_features:
+    - global-app-shell
     - sentence-practice-web
     - user-authentication
     - profile-account-controls
@@ -80,8 +81,8 @@ test database and Redis services.
    global `languon-theme` cookie to change while the route remains `/profile`.
    Expect the real handle or Account fallback, email, Profile link, interface
    language, System/Light/Dark choices, and Sign out action to remain reachable.
-7. Click the Languon logo. Expect navigation to `/dictionaries`, the signed-in
-   application home.
+7. Click the Languon logo. Expect navigation to `/` with only WIP in the page body;
+   dictionary navigation and the account menu remain available in the shell.
 8. Repeat at 320px width and at 200% zoom. Expect a compact top bar and modal
    navigation drawer instead of the desktop sidebar. The drawer closes on
    Escape and restores focus to its menu button; the shell, summary, tabs,
@@ -92,7 +93,7 @@ test database and Redis services.
 - `profile-empty-coming-soon-and-header-navigation` signs up and verifies a fake
   account, opens the profile route, validates truthful empty states, selects
   tabs, exercises a coming-soon action, persists an account-menu theme choice,
-  checks the compact navigation drawer, and returns to Dictionaries through the
+  checks the compact navigation drawer, and returns to the WIP home page through the
   shell logo.
 
 Detailed tab keyboard semantics and signed-out/loading boundaries remain in
@@ -117,7 +118,7 @@ focused component tests because they do not require another system boundary.
 Run focused web checks and traceability validation:
 
 ```sh
-pnpm --filter @languon/web exec vitest run tests/profile-page.test.tsx tests/theme.test.tsx tests/home-session-actions.test.tsx
+pnpm --filter @languon/web exec vitest run tests/profile-page.test.tsx tests/theme.test.tsx tests/app-shell.test.tsx tests/home-page.test.tsx
 pnpm --filter @languon/web typecheck
 pnpm --filter @languon/web lint
 pnpm docs:user-flows:check

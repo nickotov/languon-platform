@@ -48,6 +48,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0027](./0027-typed-sentence-work-and-shared-ai-accounting.md)  | Typed sentence work and shared AI accounting        | Accepted               |
 | [ADR-0028](./0028-sentence-library-visibility-and-preparation.md)   | Sentence library visibility and durable preparation | Accepted               |
 | [ADR-0029](./0029-web-css-modules-and-geometry-tokens.md)           | Web CSS Modules and geometry tokens                 | Accepted               |
+| [ADR-0030](./0030-global-web-shell-and-preference-placement.md)     | Global web shell and preference placement           | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.
