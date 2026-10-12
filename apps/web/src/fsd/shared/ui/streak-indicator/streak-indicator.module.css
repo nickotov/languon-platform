@@ -1,12 +1,12 @@
 .sr {
     border: 0;
     clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
+    height: var(--size-1);
+    margin: calc(var(--space-1) * -1);
     overflow: hidden;
     padding: 0;
     position: absolute;
-    width: 1px;
+    width: var(--size-1);
 }
 
 .value,
@@ -19,27 +19,27 @@
 }
 
 .value {
-    gap: 6px;
+    gap: var(--space-6);
 }
 
 .valueIcon {
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .valueLabel {
-    font-size: 14px;
+    font-size: var(--size-14);
     font-variant-numeric: tabular-nums;
     font-weight: 500;
 }
 
 :where(.value.sm) .valueIcon {
-    height: 14px;
-    width: 14px;
+    height: var(--size-14);
+    width: var(--size-14);
 }
 
 :where(.value.sm) .valueLabel {
-    font-size: 12px;
+    font-size: var(--size-12);
 }
 
 .hot {
@@ -58,30 +58,30 @@
     background: var(--background-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-full);
-    gap: 8px;
-    padding: 6px 12px;
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-12);
 }
 
 .pill:where(.sm) {
-    padding: 4px 10px;
+    padding: var(--space-4) var(--space-10);
 }
 
 .week {
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .day {
     align-items: center;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .dot,
 .done {
     background: var(--border-default);
     border-radius: 50%;
-    height: 6px;
-    width: 6px;
+    height: var(--size-6);
+    width: var(--size-6);
 }
 
 .done {
@@ -90,53 +90,53 @@
 
 .dayLabel {
     color: var(--text-tertiary);
-    font-size: 10px;
+    font-size: var(--size-10);
 }
 
 .card {
     background: var(--background-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
-    padding: 16px;
+    padding: var(--space-16);
 }
 
 .cardTop {
     align-items: flex-start;
     display: flex;
-    gap: 16px;
+    gap: var(--space-16);
     justify-content: space-between;
 }
 
 .title {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 500;
     letter-spacing: 0.05em;
-    margin: 0 0 6px;
+    margin: 0 0 var(--space-6);
     text-transform: uppercase;
 }
 
 .description {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     line-height: 1.625;
-    margin: 12px 0 0;
+    margin: var(--space-12) 0 0;
 }
 
 .loading {
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .skeleton {
     animation: pulse 1.5s infinite;
     background: var(--border-default);
     border-radius: var(--radius-full);
-    height: 14px;
-    width: 64px;
+    height: var(--size-14);
+    width: var(--size-64);
 }
 
 .skeleton:first-child {
-    width: 16px;
+    width: var(--size-16);
 }
 
 @keyframes pulse {

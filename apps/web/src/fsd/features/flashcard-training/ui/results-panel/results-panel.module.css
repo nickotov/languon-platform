@@ -1,0 +1,125 @@
+.results {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    width: 100%;
+    max-width: var(--size-672);
+    flex-direction: column;
+    gap: var(--space-32);
+}
+
+.title {
+    font-size: var(--size-24);
+    line-height: var(--size-32);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.summary {
+    margin-top: var(--space-4);
+    color: var(--text-secondary);
+}
+
+.sectionLabel {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: var(--text-tertiary);
+}
+
+.metrics {
+    margin-top: var(--space-12);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12);
+}
+
+@media (min-width: 768px) {
+    .metrics {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.progress {
+    border-radius: var(--radius-16);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-16);
+}
+
+.progressTitle {
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.progressSummary {
+    margin-top: var(--space-4);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+@media (min-width: 640px) {
+    .actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}
+
+.note {
+    margin-top: calc(var(--space-20) * -1);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-tertiary);
+}
+
+.metric {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+}
+
+.metricLabel {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.metricValue {
+    margin-top: var(--space-4);
+    font-size: var(--size-24);
+    line-height: var(--size-32);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.metricNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}

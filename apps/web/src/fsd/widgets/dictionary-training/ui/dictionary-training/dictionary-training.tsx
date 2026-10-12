@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageSquareText, RefreshCw } from 'lucide-react';
+import componentStyles from './dictionary-training.module.css';
 import {
     DictionaryLanguageTagSchema,
     SentenceDirectionSchema,
@@ -410,9 +411,9 @@ function TrainingComposition(props: TrainingLauncherProps) {
                       : copy.sentence,
             icon:
                 capability === 'error' ? (
-                    <RefreshCw className='h-4 w-4' />
+                    <RefreshCw className={componentStyles.icon} />
                 ) : (
-                    <MessageSquareText className='h-4 w-4' />
+                    <MessageSquareText className={componentStyles.icon} />
                 ),
             disabled:
                 blocked ||
@@ -430,10 +431,10 @@ function TrainingComposition(props: TrainingLauncherProps) {
         <>
             {preferencesOpen && (
                 <section
-                    className='mx-auto w-full max-w-3xl space-y-5 px-4 py-5'
+                    className={componentStyles.content}
                     aria-label={copy.preferences}
                 >
-                    <h3 className='text-lg font-semibold'>
+                    <h3 className={componentStyles.heading}>
                         {copy.preferences}
                     </h3>
                     <ModelPreferenceSection
@@ -474,14 +475,12 @@ function TrainingComposition(props: TrainingLauncherProps) {
         return (
             <div ref={root}>
                 {preparedLaunchError ? (
-                    <p role='alert' className='text-sm text-danger-default'>
+                    <p role='alert' className={componentStyles.error}>
                         {copy.unavailable}
                     </p>
                 ) : null}
                 <TrainingLauncher {...props} additionalItems={items} />
-                <p className='mt-2 text-sm text-text-secondary'>
-                    {copy.unavailable}
-                </p>
+                <p className={componentStyles.notice}>{copy.unavailable}</p>
                 <ButtonLink href={href('/dictionaries')}>
                     {copy.back}
                 </ButtonLink>
@@ -490,7 +489,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
     return (
         <div ref={root}>
             {preparedLaunchError ? (
-                <p role='alert' className='text-sm text-danger-default'>
+                <p role='alert' className={componentStyles.error}>
                     {copy.unavailable}
                 </p>
             ) : null}
@@ -498,7 +497,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 controller={preparation}
                 onOpen={() => setPreparationOpen(true)}
             />
-            <div className='flex flex-wrap items-center gap-2'>
+            <div className={componentStyles.actions}>
                 <TrainingLauncher {...props} additionalItems={items} />
                 {props.target.kind === 'shared' ? (
                     <SharedPracticeActions

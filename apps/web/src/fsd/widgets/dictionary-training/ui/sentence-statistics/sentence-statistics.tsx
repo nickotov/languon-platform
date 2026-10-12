@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import componentStyles from './sentence-statistics.module.css';
 import type { SentenceDirection } from '@languon/contracts';
 import type { SentenceApi } from '@/fsd/features/sentence-training';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -20,12 +21,12 @@ export function SentenceStatistics({
     const { locale } = useI18n();
     const copy = historyCopy[locale];
     return (
-        <section className='space-y-4' aria-label={copy.statistics}>
+        <section className={componentStyles.root} aria-label={copy.statistics}>
             <div>
-                <h3 className='font-semibold'>{copy.statistics}</h3>
-                <p className='mt-1 text-sm text-text-secondary'>{copy.help}</p>
+                <h3 className={componentStyles.heading}>{copy.statistics}</h3>
+                <p className={componentStyles.help}>{copy.help}</p>
             </div>
-            <div className='grid gap-4'>
+            <div className={componentStyles.cards}>
                 <DirectionStatistics
                     api={api}
                     direction='source-to-target'
@@ -76,11 +77,8 @@ function DirectionStatistics({
         : [];
 
     return (
-        <section
-            className='rounded-xl border border-border-default bg-background-surface p-4'
-            aria-label={label}
-        >
-            <h4 className='mb-3 text-sm font-semibold'>{label}</h4>
+        <section className={componentStyles.card} aria-label={label}>
+            <h4 className={componentStyles.cardHeading}>{label}</h4>
             {progress.status === 'loading' ? (
                 <LoadingState>{copy.loading}</LoadingState>
             ) : null}
@@ -101,25 +99,25 @@ function DirectionStatistics({
             ) : null}
             {value ? (
                 <>
-                    <dl className='grid grid-cols-2 gap-3 sm:grid-cols-3'>
+                    <dl className={componentStyles.metrics}>
                         {metrics.map(([name, count]) => (
                             <div key={name}>
-                                <dt className='text-xs text-text-secondary'>
+                                <dt className={componentStyles.metricLabel}>
                                     {name}
                                 </dt>
-                                <dd className='mt-1 text-lg font-semibold tabular-nums'>
+                                <dd className={componentStyles.metricValue}>
                                     {count}
                                 </dd>
                             </div>
                         ))}
                     </dl>
-                    <dl className='mt-4 grid grid-cols-2 gap-3 border-t border-border-default pt-3 sm:grid-cols-4'>
+                    <dl className={componentStyles.ratings}>
                         {ratings.map(([name, count]) => (
                             <div key={name}>
-                                <dt className='text-xs text-text-secondary'>
+                                <dt className={componentStyles.metricLabel}>
                                     {name}
                                 </dt>
-                                <dd className='mt-1 font-semibold tabular-nums'>
+                                <dd className={componentStyles.ratingValue}>
                                     {count}
                                 </dd>
                             </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useEffect } from 'react';
+import componentStyles from './sentence-library.module.css';
 import {
     rememberPreviewTrigger,
     restorePreviewTrigger,
@@ -103,77 +104,81 @@ export function SentenceLibrary(props: LibraryProps) {
         );
     return (
         <>
-            <div className='space-y-5 pb-28 lg:pb-16'>
+            <div className={componentStyles.root}>
                 <Breadcrumb
-                    className='[&_a:hover]:text-text-primary [&_a]:text-text-secondary'
+                    className={componentStyles.breadcrumbs}
                     items={breadcrumb}
                 />
                 <Card
                     variant='outlined'
                     padding='none'
-                    className='border-border-default bg-background-surface p-4 text-text-primary'
+                    className={componentStyles.header}
                 >
-                    <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
-                        <div className='min-w-0 space-y-1'>
-                            <h1 className='flex items-center gap-2 text-2xl font-semibold text-text-primary'>
+                    <div className={componentStyles.headerLayout}>
+                        <div className={componentStyles.headingGroup}>
+                            <h1 className={componentStyles.heading}>
                                 <MessageSquareTextIcon
                                     aria-hidden
-                                    className='h-6 w-6 shrink-0 text-text-secondary'
+                                    className={componentStyles.headingIcon}
                                 />
                                 {L('title')}
                             </h1>
-                            <div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-secondary'>
-                                <span className='font-medium text-text-primary'>
+                            <div className={componentStyles.metadata}>
+                                <span
+                                    className={componentStyles.dictionaryName}
+                                >
                                     {props.dictionary.name}
                                 </span>
-                                <span className='inline-flex items-center gap-1.5 text-sm text-text-secondary'>
+                                <span className={componentStyles.languagePair}>
                                     <span>
                                         {lang(props.dictionary.sourceLanguage)}
                                     </span>
                                     <ArrowRightIcon
                                         aria-hidden
-                                        className='h-3.5 w-3.5 shrink-0'
+                                        className={componentStyles.languageIcon}
                                     />
                                     <span>
                                         {lang(props.dictionary.targetLanguage)}
                                     </span>
                                 </span>
                             </div>
-                            <p className='max-w-2xl text-sm text-text-secondary'>
+                            <p className={componentStyles.description}>
                                 {L('intro')}
                             </p>
                             {props.preparationChip ? (
-                                <div className='pt-1'>
+                                <div className={componentStyles.ownership}>
                                     {props.preparationChip}
                                 </div>
                             ) : null}
                         </div>
-                        <div className='flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start lg:flex-col lg:items-end'>
+                        <div className={componentStyles.actions}>
                             <Button
                                 trailingIcon={
                                     <ArrowRightIcon
                                         aria-hidden
-                                        className='h-4 w-4 rtl:rotate-180'
+                                        className={componentStyles.backIcon}
                                     />
                                 }
                                 onClick={practice}
                             >
                                 {L('startPractice')}
                             </Button>
-                            <div className='flex flex-col gap-1 lg:items-end'>
+                            <div className={componentStyles.generationControl}>
                                 <Button
                                     variant='secondary'
                                     leadingIcon={
                                         <SparklesIcon
                                             aria-hidden
-                                            className='h-4 w-4'
+                                            className={componentStyles.icon}
                                         />
                                     }
                                     onClick={prepare}
                                 >
                                     {L('prepareAhead')}
                                 </Button>
-                                <span className='text-xs text-text-secondary'>
+                                <span
+                                    className={componentStyles.generationHelp}
+                                >
                                     {L('prepareAheadHint')}
                                 </span>
                             </div>
@@ -209,7 +214,10 @@ export function SentenceLibrary(props: LibraryProps) {
                     onChange={setFilter}
                     onReset={c.resetFilters}
                 />
-                <p aria-live='polite' className='sr-only'>
+                <p
+                    aria-live='polite'
+                    className={componentStyles.liveAnnouncement}
+                >
                     {announcement}
                 </p>
                 <LibraryList

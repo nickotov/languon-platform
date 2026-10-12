@@ -1,4 +1,5 @@
 import React from 'react';
+import componentStyles from './library-states.module.css';
 import {
     EyeOffIcon,
     FilterXIcon,
@@ -13,14 +14,15 @@ import { useInterfaceText } from '../../hooks/use-interface-text';
 export function LibrarySkeleton({ rows = 5 }: { rows?: number }) {
     const { L } = useInterfaceText();
     return (
-        <div role='status' aria-label={L('loading')} className='space-y-3'>
+        <div
+            role='status'
+            aria-label={L('loading')}
+            className={componentStyles.root}
+        >
             {Array.from({ length: rows }).map((_, i) => (
-                <div
-                    key={i}
-                    className='flex gap-3 rounded-xl border border-border-default bg-background-surface p-4'
-                >
+                <div key={i} className={componentStyles.skeletonRow}>
                     <Skeleton variant='rect' width={20} height={20} />
-                    <div className='flex-1 space-y-2'>
+                    <div className={componentStyles.skeletonContent}>
                         <Skeleton
                             variant='rect'
                             width={`${70 - (i % 3) * 12}%`}
@@ -82,14 +84,12 @@ export function LibraryEmpty({
               ? L('archiveEmptyBody')
               : L('noResultsBody');
     return (
-        <div className='flex flex-col items-center gap-3 rounded-xl border border-border-default bg-background-surface px-4 py-10 text-center'>
-            <span className='flex h-11 w-11 items-center justify-center rounded-xl bg-background-subtle text-text-secondary'>
-                <Icon aria-hidden className='h-5 w-5' />
+        <div className={componentStyles.emptyState}>
+            <span className={componentStyles.emptyIcon}>
+                <Icon aria-hidden className={componentStyles.icon} />
             </span>
-            <h2 className='text-base font-semibold text-text-primary'>
-                {title}
-            </h2>
-            <p className='max-w-md text-sm text-text-secondary'>{body}</p>
+            <h2 className={componentStyles.emptyHeading}>{title}</h2>
+            <p className={componentStyles.emptyDescription}>{body}</p>
             {kind === 'none' && onPractice ? (
                 <Button size='compact' onClick={onPractice}>
                     {L('startPractice')}
@@ -117,7 +117,7 @@ export function LoadMore({
 }) {
     const { L } = useInterfaceText();
     return (
-        <div className='space-y-3'>
+        <div className={componentStyles.root}>
             {status === 'error' ? (
                 <InlineAlert
                     tone='warning'
@@ -134,19 +134,16 @@ export function LoadMore({
                 />
             ) : null}
             {status === 'loading' ? (
-                <div
-                    role='status'
-                    className='flex items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong p-3 text-sm text-text-secondary'
-                >
+                <div role='status' className={componentStyles.loadingMore}>
                     <Loader2Icon
                         aria-hidden
-                        className='h-4 w-4 animate-spin motion-reduce:animate-none'
+                        className={componentStyles.spinner}
                     />
                     {L('loadingMore')}
                 </div>
             ) : null}
-            <div className='flex flex-col items-center gap-2'>
-                <p className='text-xs text-text-secondary'>
+            <div className={componentStyles.pagination}>
+                <p className={componentStyles.paginationHelp}>
                     {L('shownOf', { shown, total })}
                 </p>
                 {shown < total && status === 'idle' ? (
@@ -155,7 +152,7 @@ export function LoadMore({
                     </Button>
                 ) : null}
                 {shown >= total ? (
-                    <p className='text-xs text-text-tertiary'>
+                    <p className={componentStyles.secondaryHelp}>
                         {L('allShown')}
                     </p>
                 ) : null}

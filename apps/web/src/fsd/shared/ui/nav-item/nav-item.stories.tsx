@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './nav-item.stories.module.css';
 import { BookOpenIcon } from 'lucide-react';
 import { NavItem } from './nav-item';
 
@@ -8,7 +9,7 @@ export default { title: 'UI/Nav item', component: NavItem } satisfies Meta<
 
 export const States: StoryObj<typeof NavItem> = {
     render: () => (
-        <nav style={{ display: 'grid', gap: 4, width: 240 }}>
+        <nav className={storyStyles.examples}>
             <NavItem
                 href='#'
                 icon={BookOpenIcon}

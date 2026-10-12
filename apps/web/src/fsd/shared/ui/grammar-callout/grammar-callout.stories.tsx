@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './grammar-callout.stories.module.css';
 import { GrammarCallout } from './grammar-callout';
 
 export default {
@@ -8,7 +9,7 @@ export default {
 
 export const Variants: StoryObj<typeof GrammarCallout> = {
     render: () => (
-        <div style={{ display: 'grid', gap: 12, maxWidth: 680 }}>
+        <div className={storyStyles.examples}>
             {(['rule', 'tip', 'warning', 'example'] as const).map((variant) => (
                 <GrammarCallout
                     key={variant}

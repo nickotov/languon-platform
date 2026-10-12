@@ -7,7 +7,11 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StrictMode, type ReactNode } from 'react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import postcss from 'postcss';
 import { Flashcard } from '@/fsd/features/flashcard-training/ui/flashcard/flashcard';
+import flashcardStyles from '@/fsd/features/flashcard-training/ui/flashcard/flashcard.module.css';
 import { I18nProvider } from '@/fsd/shared/i18n';
 import { en } from '@/fsd/shared/i18n/messages/en';
 import { useCardInteraction } from '@/fsd/features/flashcard-training/hooks/use-card-interaction';
@@ -221,9 +225,31 @@ describe('training card drag and text interaction', () => {
             </I18nProvider>,
         );
         const face = screen.getByLabelText('Front of card 1 / 1');
-        expect(face).toHaveClass('overflow-y-auto');
-        expect(face).toHaveClass('touch-pan-y');
-        expect(screen.getByTestId('training-card')).toHaveClass('touch-pan-y');
+        expect(face).toHaveClass(flashcardStyles.face!);
+        expect(screen.getByTestId('training-card')).toHaveClass(
+            flashcardStyles.card!,
+        );
+        const css = postcss.parse(
+            readFileSync(
+                resolve(
+                    process.cwd(),
+                    'src/fsd/features/flashcard-training/ui/flashcard/flashcard.module.css',
+                ),
+                'utf8',
+            ),
+        );
+        const declarations = new Map<string, Map<string, string>>();
+        css.walkRules((rule) => {
+            const values =
+                declarations.get(rule.selector) ?? new Map<string, string>();
+            rule.walkDecls((declaration) => {
+                values.set(declaration.prop, declaration.value);
+            });
+            declarations.set(rule.selector, values);
+        });
+        expect(declarations.get('.face')?.get('overflow-y')).toBe('auto');
+        expect(declarations.get('.face')?.get('touch-action')).toBe('pan-y');
+        expect(declarations.get('.card')?.get('touch-action')).toBe('pan-y');
     });
     function start(disabled = false) {
         const onFlip = vi.fn();

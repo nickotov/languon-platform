@@ -1,3 +1,4 @@
+import styles from './setup-card-sides.module.css';
 import { useId } from 'react';
 import { Info } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -17,19 +18,14 @@ export function SetupCardSides({
     const disabled = setup.starting || setup.prefsStatus === 'loading';
 
     return (
-        <section aria-labelledby={id} className='flex flex-col gap-3'>
+        <section aria-labelledby={id} className={styles.section}>
             <div>
-                <h3
-                    id={id}
-                    className='text-base font-semibold text-text-primary'
-                >
+                <h3 id={id} className={styles.title}>
                     {t('training.sides')}
                 </h3>
-                <p className='text-sm text-text-secondary'>
-                    {t('training.sidesHelp')}
-                </p>
+                <p className={styles.description}>{t('training.sidesHelp')}</p>
             </div>
-            <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+            <div className={styles.sides}>
                 <FieldGroup
                     side='front'
                     selected={setup.front}
@@ -50,8 +46,8 @@ export function SetupCardSides({
                     {t('training.identicalHelp')}
                 </InlineAlert>
             )}
-            <p className='flex gap-2 text-sm text-text-secondary'>
-                <Info aria-hidden className='mt-0.5 h-4 w-4 shrink-0' />
+            <p className={styles.help}>
+                <Info aria-hidden className={styles.helpIcon} />
                 <span>{t('training.fallbackHelp')}</span>
             </p>
         </section>

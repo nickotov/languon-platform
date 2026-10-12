@@ -26,13 +26,10 @@ export function Skeleton({
     width,
     ...props
 }: SkeletonProps) {
-    const resolvedHeight =
-        height ?? (variant === 'text' ? '0.875rem' : undefined);
-
     const blockStyle = (
         blockWidth: number | string | undefined,
     ): CSSProperties => ({
-        height: resolvedHeight,
+        height,
         width: blockWidth,
         ...style,
     });
@@ -45,7 +42,7 @@ export function Skeleton({
                 aria-live='polite'
                 className={[styles.lines, className].filter(Boolean).join(' ')}
                 role='status'
-                style={{ width: width ?? '100%' }}
+                style={{ width }}
             >
                 {Array.from({ length: lines }, (_, index) => (
                     <span
@@ -79,9 +76,7 @@ export function Skeleton({
                 .filter(Boolean)
                 .join(' ')}
             role='status'
-            style={blockStyle(
-                width ?? (variant === 'text' ? '100%' : undefined),
-            )}
+            style={blockStyle(width)}
         >
             <span className={styles.srOnly}>Loading…</span>
         </div>
@@ -96,20 +91,17 @@ export function SkeletonCard({ className, lines = 3 }: SkeletonCardProps) {
             <div className={styles.cardHeader}>
                 <Skeleton
                     animation='shimmer'
-                    height={40}
+                    className={styles.cardAvatar}
                     variant='circle'
-                    width={40}
                 />
                 <div className={styles.cardHeading}>
                     <Skeleton
                         animation='shimmer'
-                        height='0.75rem'
-                        width='45%'
+                        className={styles.cardTitle}
                     />
                     <Skeleton
                         animation='shimmer'
-                        height='0.625rem'
-                        width='30%'
+                        className={styles.cardSubtitle}
                     />
                 </div>
             </div>

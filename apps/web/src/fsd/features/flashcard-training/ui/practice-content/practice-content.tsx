@@ -9,6 +9,7 @@ import { RatingButton } from '../rating-button/rating-button';
 import { ResultsPanel } from '../results-panel/results-panel';
 import { RetryButton } from '../retry-button/retry-button';
 import { SessionStatus } from '../session-status/session-status';
+import styles from './practice-content.module.css';
 
 export function PracticeContent({
     session,
@@ -31,7 +32,7 @@ export function PracticeContent({
 
     const cardPhase = state.phase === 'card';
 
-    const classes = `mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 pt-6 md:px-6 md:pt-8 ${contentClassName} ${cardPhase ? 'h-full' : 'min-h-full'}`;
+    const classes = `${styles.content} ${contentClassName} ${cardPhase ? styles.cardPhase : styles.otherPhase}`;
 
     const blocked = Boolean(
         state.pending || state.conflict || !session.currentItem,
@@ -57,7 +58,7 @@ export function PracticeContent({
             return (
                 <Button
                     variant='ghost'
-                    leadingIcon={<Undo2 className='h-4 w-4' />}
+                    leadingIcon={<Undo2 className={styles.icon} />}
                     onClick={session.undo}
                 >
                     {t('training.undo')}
@@ -81,7 +82,7 @@ export function PracticeContent({
     const flipDisabled = Boolean(state.pending);
 
     return (
-        <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden'>
+        <div className={styles.scroll}>
             <div className={classes}>
                 {display.notice && (
                     <InlineAlert
@@ -121,27 +122,21 @@ export function PracticeContent({
                     </InlineAlert>
                 )}
                 {state.pending?.status === 'saving' && (
-                    <p
-                        role='status'
-                        className='text-center text-sm text-text-secondary'
-                    >
+                    <p role='status' className={styles.saving}>
                         {t('training.saving')}
                     </p>
                 )}
                 {state.phase === 'loading' && <CardSkeleton />}
                 {cardPhase && (
                     <>
-                        <div
-                            dir='ltr'
-                            className='flex min-h-0 flex-1 items-center gap-2 lg:gap-4'
-                        >
+                        <div dir='ltr' className={styles.cardLayout}>
                             <RatingButton
                                 rating='again'
                                 onRate={session.rate}
                                 disabled={blocked}
                                 loading={saving === 'again'}
                             />
-                            <div className='mx-auto flex h-full min-h-0 w-full min-w-0 max-w-2xl flex-1 items-center'>
+                            <div className={styles.cardSlot}>
                                 {session.currentItem ? (
                                     <Flashcard
                                         key={`${state.round}-${state.index}-${session.currentItem.entryId}-${session.currentItem.learningVersion}`}
@@ -158,7 +153,7 @@ export function PracticeContent({
                                         )}
                                     />
                                 ) : (
-                                    <div className='w-full'>
+                                    <div className={styles.loadingSlot}>
                                         <CardSkeleton />
                                     </div>
                                 )}
@@ -170,10 +165,7 @@ export function PracticeContent({
                                 loading={saving === 'known'}
                             />
                         </div>
-                        <div
-                            dir='ltr'
-                            className='flex shrink-0 gap-3 md:hidden'
-                        >
+                        <div dir='ltr' className={styles.mobileRatings}>
                             <RatingButton
                                 mobile
                                 rating='again'
@@ -189,9 +181,7 @@ export function PracticeContent({
                                 loading={saving === 'known'}
                             />
                         </div>
-                        <div className='flex min-h-11 shrink-0 items-center justify-center'>
-                            {undo}
-                        </div>
+                        <div className={styles.undo}>{undo}</div>
                     </>
                 )}
                 {state.phase === 'results' && (
@@ -247,16 +237,14 @@ function CardSkeleton() {
     const { t } = useI18n();
 
     return (
-        <div className='flex flex-col gap-3'>
-            <div className='rounded-3xl border border-border-default bg-background-surface p-6 shadow-elevation-sm'>
+        <div className={styles.skeleton}>
+            <div className={styles.skeletonCard}>
                 <Skeleton width='30%' />
-                <div className='mt-8'>
+                <div className={styles.skeletonFields}>
                     <Skeleton lines={3} />
                 </div>
             </div>
-            <p className='text-center text-sm text-text-secondary'>
-                {t('training.preparing')}
-            </p>
+            <p className={styles.saving}>{t('training.preparing')}</p>
         </div>
     );
 }

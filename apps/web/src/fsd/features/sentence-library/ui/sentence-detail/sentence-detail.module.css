@@ -19,7 +19,144 @@
 
 @media (min-width: 1024px) {
     .drawer {
-        width: 30rem;
+        width: var(--size-480);
         border-inline-start: 1px solid var(--border-default);
     }
+}
+
+.loadingState > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-16);
+    margin-bottom: 0;
+}
+.loadingState {
+    padding: var(--space-16);
+}
+
+.statusContent {
+    padding: var(--space-16);
+}
+
+.content > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-24);
+    margin-bottom: 0;
+}
+.content {
+    padding: var(--space-16);
+}
+
+.sentenceSection > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
+
+.sentence {
+    overflow-wrap: break-word;
+    font-size: var(--size-20);
+    line-height: var(--size-28);
+    font-weight: 500;
+    line-height: 1.625;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.help {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.metadata {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.translationSection {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+}
+
+.translationToggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    border-radius: var(--radius-12);
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+    text-align: start;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.translationToggle:hover {
+    background-color: var(--background-subtle);
+}
+.translationToggle:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: var(--size-2);
+    box-shadow: 0 0 0 var(--size-2) var(--border-focus);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.translationContent > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-4);
+    margin-bottom: 0;
+}
+.translationContent {
+    border-top-width: 1px;
+    border-color: var(--border-default);
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+}
+
+.translation {
+    overflow-wrap: break-word;
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.secondaryHelp {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.drawerHeader {
+    position: sticky;
+    top: 0px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    border-bottom-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+}
+
+.drawerHeading {
+    min-width: 0px;
+    flex: 1 1 0%;
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    font-weight: 600;
+    color: var(--text-primary);
 }

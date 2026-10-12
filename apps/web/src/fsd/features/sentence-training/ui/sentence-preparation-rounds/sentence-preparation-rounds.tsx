@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-preparation-rounds.module.css';
 import { useState } from 'react';
 import {
     CheckCircle2Icon,
@@ -32,14 +33,11 @@ export function SentencePreparationRounds({
         void controller.loadMore();
     }
     return (
-        <section aria-labelledby='prep-rounds' className='space-y-2'>
-            <h3
-                id='prep-rounds'
-                className='text-sm font-semibold text-text-primary'
-            >
+        <section aria-labelledby='prep-rounds' className={styles.rounds}>
+            <h3 id='prep-rounds' className={styles.title}>
                 {P('roundsTitle')}
             </h3>
-            <ol className='space-y-2'>
+            <ol className={styles.rounds}>
                 {shown.map((round, index) => {
                     const done = round.preparedEntryIds.length;
                     const total = round.entryIds.length;
@@ -56,15 +54,15 @@ export function SentencePreparationRounds({
                         state === 'ready' ? (
                             <CheckCircle2Icon
                                 aria-hidden
-                                className='h-3.5 w-3.5'
+                                className={styles.icon}
                             />
                         ) : state === 'partial' ? (
                             <CircleDashedIcon
                                 aria-hidden
-                                className='h-3.5 w-3.5'
+                                className={styles.icon}
                             />
                         ) : (
-                            <Clock3Icon aria-hidden className='h-3.5 w-3.5' />
+                            <Clock3Icon aria-hidden className={styles.icon} />
                         );
                     const tone =
                         state === 'ready'
@@ -82,25 +80,22 @@ export function SentencePreparationRounds({
                               ? P('startReadyPartial', { done, total })
                               : P('startReadyFull');
                     return (
-                        <li
-                            key={round.id}
-                            className='rounded-lg border border-border-default bg-background-surface p-3'
-                        >
-                            <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
-                                <span className='text-sm font-semibold text-text-primary'>
+                        <li key={round.id} className={styles.round}>
+                            <div className={styles.roundMetadata}>
+                                <span className={styles.title}>
                                     {P('roundN', { i: index + 1 })}
                                 </span>
-                                <span className='text-sm text-text-secondary'>
+                                <span className={styles.roundTitle}>
                                     {P('roundWords', { n: total })}
                                 </span>
-                                <span className='text-sm text-text-secondary'>
+                                <span className={styles.roundTitle}>
                                     {P('roundCoverage', { done, total })}
                                 </span>
                                 <Badge size='sm' tone={tone} icon={icon}>
                                     {label}
                                 </Badge>
                             </div>
-                            <div className='mt-2 flex flex-wrap items-center gap-2'>
+                            <div className={styles.roundActions}>
                                 <Button
                                     size='compact'
                                     variant={
@@ -109,7 +104,7 @@ export function SentencePreparationRounds({
                                     leadingIcon={
                                         <PlayIcon
                                             aria-hidden
-                                            className='h-4 w-4'
+                                            className={styles.icon2}
                                         />
                                     }
                                     disabled={!usable}
@@ -118,10 +113,7 @@ export function SentencePreparationRounds({
                                 >
                                     {P('startReady')}
                                 </Button>
-                                <p
-                                    id={reasonId}
-                                    className='text-xs text-text-secondary'
-                                >
+                                <p id={reasonId} className={styles.roundHint}>
                                     {hint}
                                 </p>
                             </div>
@@ -134,7 +126,7 @@ export function SentencePreparationRounds({
                     type='button'
                     aria-expanded={expanded}
                     onClick={toggleExpanded}
-                    className='text-sm font-medium text-primary-default underline underline-offset-2 hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus'
+                    className={styles.expandAction}
                 >
                     {expanded
                         ? P('hideRounds')

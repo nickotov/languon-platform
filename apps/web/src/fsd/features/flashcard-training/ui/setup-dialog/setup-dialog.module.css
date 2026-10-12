@@ -1,0 +1,45 @@
+.actions {
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.dialog {
+    background-color: var(--background-elevated);
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.sectionTitle {
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.error {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+    color: var(--danger-default);
+}
+
+.hint {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-tertiary);
+}

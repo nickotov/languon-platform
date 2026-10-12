@@ -2,41 +2,41 @@
     align-items: flex-start;
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .handleField {
-    flex: 1 1 240px;
+    flex: 1 1 var(--size-240);
 }
 
 .handleSubmit {
-    margin-top: 25px;
+    margin-top: var(--space-25);
 }
 
 .confirmForm {
     display: grid;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .deletionDialog[open] {
-    max-height: calc(100dvh - 16px);
+    max-height: calc(100dvh - var(--size-16));
 }
 
 .warningList {
     list-style: disc;
-    margin: 4px 0 0;
-    padding-left: 20px;
+    margin: var(--space-4) 0 0;
+    padding-left: var(--space-20);
 }
 
 .warningItem + :where(.warningItem) {
-    margin-top: 4px;
+    margin-top: var(--space-4);
 }
 
 .confirmFooter {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: var(--space-12);
     justify-content: flex-end;
 }
 
@@ -46,14 +46,14 @@
     }
 
     .confirmForm {
-        gap: 12px;
+        gap: var(--space-12);
     }
 
     .deletionBody {
-        padding-block: 12px;
+        padding-block: var(--space-12);
     }
 
     .lossAlert {
-        padding: 12px;
+        padding: var(--space-12);
     }
 }

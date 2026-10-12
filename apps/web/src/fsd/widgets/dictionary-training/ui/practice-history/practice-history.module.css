@@ -1,0 +1,36 @@
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.notice {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.content {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    max-width: var(--size-768);
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+    padding-top: var(--space-20);
+    padding-bottom: var(--space-20);
+}
+.content > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-16);
+    margin-bottom: 0;
+}
+
+.heading {
+    font-size: var(--size-18);
+    line-height: var(--size-28);
+    font-weight: 600;
+}
+
+.statistics > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-20);
+    margin-bottom: 0;
+}

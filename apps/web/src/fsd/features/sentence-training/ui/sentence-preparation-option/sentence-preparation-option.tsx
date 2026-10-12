@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-preparation-option.module.css';
 import { CoinsIcon, LayersIcon, PauseIcon, PlayIcon } from 'lucide-react';
 import { Button, InlineAlert, Switch } from '@/fsd/shared/ui';
 import type { Configuration, SentencePreparationController } from '../../types';
@@ -62,7 +63,7 @@ export function SentencePreparationOption({
         void controller.resume();
     }
     const actions = (
-        <div className='flex flex-wrap gap-2'>
+        <div className={styles.actions}>
             <Button size='compact' onClick={onView}>
                 {P('viewProgress')}
             </Button>
@@ -70,7 +71,9 @@ export function SentencePreparationOption({
                 <Button
                     size='compact'
                     variant='secondary'
-                    leadingIcon={<PlayIcon aria-hidden className='h-4 w-4' />}
+                    leadingIcon={
+                        <PlayIcon aria-hidden className={styles.icon} />
+                    }
                     onClick={handleResume}
                     disabled={controller.busy || cooldown}
                 >
@@ -81,7 +84,9 @@ export function SentencePreparationOption({
                 <Button
                     size='compact'
                     variant='secondary'
-                    leadingIcon={<PauseIcon aria-hidden className='h-4 w-4' />}
+                    leadingIcon={
+                        <PauseIcon aria-hidden className={styles.icon} />
+                    }
                     disabled={stopping || controller.busy}
                     onClick={handleStop}
                 >
@@ -101,7 +106,7 @@ export function SentencePreparationOption({
             </InlineAlert>
         );
     return (
-        <div className='space-y-3'>
+        <div className={styles.option}>
             <Switch
                 label={P('switchLabel')}
                 description={P('switchDesc')}
@@ -109,37 +114,27 @@ export function SentencePreparationOption({
                 onCheckedChange={onChange}
             />
             {enabled ? (
-                <div className='space-y-3 rounded-xl border border-border-default bg-background-subtle p-3'>
-                    <div className='grid gap-2 sm:grid-cols-2'>
-                        <div className='rounded-lg border border-border-default bg-background-surface px-3 py-2 text-sm font-semibold text-text-primary'>
+                <div className={styles.plan}>
+                    <div className={styles.scopes}>
+                        <div className={styles.roundScope}>
                             {P('roundScope', { n: roundWords })}
                         </div>
-                        <div className='rounded-lg border border-primary-default bg-primary-subtle px-3 py-2 text-sm font-semibold text-text-primary'>
+                        <div className={styles.preparationScope}>
                             {P('prepScope', { n: totalWords ?? '…' })}
                         </div>
                     </div>
-                    <p className='text-xs text-text-secondary'>
-                        {P('roundVsPrep')}
-                    </p>
-                    <p className='flex items-start gap-2 text-xs text-text-primary'>
-                        <LayersIcon
-                            aria-hidden
-                            className='mt-0.5 h-3.5 w-3.5 shrink-0 text-text-secondary'
-                        />
+                    <p className={styles.note}>{P('roundVsPrep')}</p>
+                    <p className={styles.planDetail}>
+                        <LayersIcon aria-hidden className={styles.detailIcon} />
                         {roundPlan}
                     </p>
-                    <p className='flex items-start gap-2 text-xs text-text-primary'>
-                        <CoinsIcon
-                            aria-hidden
-                            className='mt-0.5 h-3.5 w-3.5 shrink-0 text-text-secondary'
-                        />
+                    <p className={styles.planDetail}>
+                        <CoinsIcon aria-hidden className={styles.detailIcon} />
                         <span>
                             {P(noteKeys[mode])} {P('noEstimate')}
                         </span>
                     </p>
-                    <p className='text-xs text-text-secondary'>
-                        {P('startWhenReady')}
-                    </p>
+                    <p className={styles.note}>{P('startWhenReady')}</p>
                 </div>
             ) : null}
         </div>

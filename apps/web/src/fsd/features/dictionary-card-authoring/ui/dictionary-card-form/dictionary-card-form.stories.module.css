@@ -1,0 +1,9 @@
+.container {
+    max-width: var(--size-320);
+    width: 100%;
+}
+
+.container2 {
+    max-width: var(--size-880);
+    width: 100%;
+}

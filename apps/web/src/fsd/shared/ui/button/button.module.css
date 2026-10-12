@@ -5,7 +5,7 @@
     cursor: pointer;
     display: inline-flex;
     font-weight: 500;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: center;
     text-decoration: none;
     transition:
@@ -21,22 +21,22 @@
 
 .compact,
 .small {
-    height: 36px;
-    padding-inline: 12px;
-    font-size: 14px;
+    height: var(--size-36);
+    padding-inline: var(--space-12);
+    font-size: var(--size-14);
 }
 
 .default,
 .medium {
-    height: 44px;
-    padding-inline: 16px;
-    font-size: 14px;
+    height: var(--size-44);
+    padding-inline: var(--space-16);
+    font-size: var(--size-14);
 }
 
 .large {
-    height: 52px;
-    padding-inline: 24px;
-    font-size: 16px;
+    height: var(--size-52);
+    padding-inline: var(--space-24);
+    font-size: var(--size-16);
 }
 
 .button:disabled {
@@ -95,8 +95,8 @@
     border: 2px solid currentColor;
     border-right-color: transparent;
     border-radius: 50%;
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 @keyframes spin {

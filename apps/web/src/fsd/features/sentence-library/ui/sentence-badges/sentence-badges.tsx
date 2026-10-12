@@ -1,4 +1,5 @@
 import React from 'react';
+import componentStyles from './sentence-badges.module.css';
 import {
     ArchiveIcon,
     ArrowRightIcon,
@@ -28,14 +29,11 @@ export function DirectionBadge({
             tone='info'
             title={label}
             aria-label={label}
-            className='shrink-0'
+            className={componentStyles.statusBadge}
         >
-            <span
-                aria-hidden
-                className='inline-flex items-center gap-1 font-semibold uppercase tracking-wide'
-            >
+            <span aria-hidden className={componentStyles.direction}>
                 {from}
-                <ArrowRightIcon className='h-3 w-3 rtl:rotate-180' />
+                <ArrowRightIcon className={componentStyles.arrow} />
                 {to}
             </span>
         </Badge>
@@ -82,11 +80,11 @@ export function OwnershipMeta({ sentence }: { sentence: SavedSentence }) {
     const { L, date } = useInterfaceText();
     const Icon = sentence.ownership === 'mine' ? UserIcon : UsersIcon;
     return (
-        <span className='inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-secondary'>
+        <span className={componentStyles.ownership}>
             <span>{L('savedOn', { date: date(sentence.createdAt) })}</span>
             <span aria-hidden>·</span>
-            <span className='inline-flex items-center gap-1'>
-                <Icon aria-hidden className='h-3.5 w-3.5' />
+            <span className={componentStyles.dictionaryLink}>
+                <Icon aria-hidden className={componentStyles.icon} />
                 {sentence.ownership === 'mine'
                     ? L('markerMine')
                     : L('markerShared')}

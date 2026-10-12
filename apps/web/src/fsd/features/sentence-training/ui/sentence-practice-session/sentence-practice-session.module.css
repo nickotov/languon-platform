@@ -1,0 +1,296 @@
+.practiceDialog {
+    background-color: var(--background-canvas) !important;
+}
+
+.practiceBody {
+    padding: 0px !important;
+    color: var(--text-primary) !important;
+}
+
+.practiceFooter {
+    background-color: var(--background-surface) !important;
+    padding-left: var(--space-16) !important;
+    padding-right: var(--space-16) !important;
+    padding-top: var(--space-12) !important;
+    padding-bottom: max(
+        var(--space-12),
+        env(safe-area-inset-bottom)
+    ) !important;
+}
+
+@media (min-width: 640px) {
+    .practiceFooter {
+        padding-left: var(--space-24) !important;
+        padding-right: var(--space-24) !important;
+    }
+}
+
+.stickyHeader {
+    position: sticky;
+    top: 0px;
+    z-index: 20;
+    background-color: var(--background-surface);
+}
+
+.practiceContent {
+    margin-left: auto;
+    margin-right: auto;
+    min-height: var(--size-256);
+    max-width: var(--size-768);
+}
+
+.practiceContent {
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+    padding-top: var(--space-20);
+    padding-bottom: var(--space-20);
+}
+
+@media (min-width: 640px) {
+    .practiceContent {
+        padding-left: var(--space-24);
+        padding-right: var(--space-24);
+    }
+}
+
+@media (min-width: 768px) {
+    .practiceContent {
+        padding-top: var(--space-32);
+        padding-bottom: var(--space-32);
+    }
+}
+
+.emptyState {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding: var(--space-24);
+    text-align: center;
+}
+
+.emptyTitle {
+    font-weight: 600;
+}
+
+.emptyDescription {
+    margin-top: var(--space-8);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.emptyActions {
+    margin-top: var(--space-12);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-8);
+}
+
+.loadingPanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-20);
+}
+
+.skeletonLine {
+    height: var(--size-30-4);
+    width: 88%;
+}
+
+@keyframes pulse {
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.skeletonLine {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    border-radius: var(--radius-4);
+    background-color: var(--background-subtle);
+}
+
+.skeletonShortLine {
+    margin-top: var(--space-12);
+    height: var(--size-30-4);
+    width: 54%;
+}
+
+.skeletonShortLine {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    border-radius: var(--radius-4);
+    background-color: var(--background-subtle);
+}
+
+.entryBadge {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-4);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.dictionaryNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-strong);
+    background-color: var(--background-surface);
+    padding: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-primary);
+}
+
+.dictionaryNoticeIcon {
+    margin-top: var(--space-2);
+    height: var(--size-16);
+    width: var(--size-16);
+    flex-shrink: 0;
+    color: var(--primary-default);
+}
+
+.answerPanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-16);
+}
+
+@media (min-width: 640px) {
+    .answerPanel {
+        padding: var(--space-24);
+    }
+}
+
+.answerInput {
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+}
+
+.answerError {
+    text-align: right;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--danger-default);
+}
+
+.answerCount {
+    text-align: right;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.referenceDetails {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding: var(--space-16);
+}
+
+.referenceAction {
+    cursor: pointer;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+}
+
+.referenceContent {
+    margin-top: var(--space-12);
+}
+
+.referenceNote {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.comparisonNotice {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-style: dashed;
+    border-color: var(--border-strong);
+    background-color: var(--background-subtle);
+    padding: var(--space-16);
+}
+
+.comparisonHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-12);
+}
+
+.comparisonDescription {
+    min-width: 0px;
+    max-width: 65ch;
+}
+
+.comparisonTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.icon2 {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.comparisonHint {
+    margin-top: var(--space-4);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.comparisonNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.comparisonActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-8);
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.practiceContent > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-20);
+    margin-bottom: 0;
+}
+
+.referenceContent > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+
+.comparisonNotice > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}

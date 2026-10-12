@@ -1,3 +1,4 @@
+import styles from './saved-progress.module.css';
 import { Check, Circle, RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -58,36 +59,28 @@ export function SavedProgress({
 
         return (
             <>
-                <div
-                    role='img'
-                    aria-label={summary}
-                    className='flex h-3 w-full overflow-hidden rounded-full bg-background-subtle'
-                >
-                    <div className='bg-success-default' style={knownStyle} />
-                    <div className='bg-warning-default' style={againStyle} />
+                <div role='img' aria-label={summary} className={styles.track}>
+                    <div className={styles.known} style={knownStyle} />
+                    <div className={styles.again} style={againStyle} />
                 </div>
-                <ul className='grid grid-cols-1 gap-2 text-sm sm:grid-cols-3'>
+                <ul className={styles.legend}>
                     <Legend
-                        icon={
-                            <Check className='h-4 w-4 text-success-default' />
-                        }
+                        icon={<Check className={styles.knownIcon} />}
                         label={t('training.known')}
                         value={progress.known}
                     />
                     <Legend
-                        icon={
-                            <RotateCcw className='h-4 w-4 text-warning-default' />
-                        }
+                        icon={<RotateCcw className={styles.againIcon} />}
                         label={t('training.again')}
                         value={progress.again}
                     />
                     <Legend
-                        icon={<Circle className='h-4 w-4 text-text-tertiary' />}
+                        icon={<Circle className={styles.unstudiedIcon} />}
                         label={t('training.unstudied')}
                         value={progress.unstudied}
                     />
                 </ul>
-                <p className='text-xs text-text-tertiary'>
+                <p className={styles.count}>
                     {count}
                     {status === 'loading' && ` · ${t('training.refreshing')}`}
                 </p>
@@ -98,12 +91,10 @@ export function SavedProgress({
     const resolvedSavedProgressContent = resolveSavedProgressContent();
 
     return (
-        <section aria-label={title} className='flex flex-col gap-3'>
+        <section aria-label={title} className={styles.progress}>
             <div>
-                <h4 className='text-base font-semibold text-text-primary'>
-                    {title}
-                </h4>
-                <p className='text-sm text-text-secondary'>
+                <h4 className={styles.title}>{title}</h4>
+                <p className={styles.description}>
                     {t('training.savedProgressHelp')}
                 </p>
             </div>
@@ -122,12 +113,10 @@ function Legend({
     value: number;
 }) {
     return (
-        <li className='flex items-center gap-2 rounded-lg border border-border-default px-3 py-2'>
+        <li className={styles.legendItem}>
             <span aria-hidden>{icon}</span>
-            <span className='text-text-secondary'>{label}</span>
-            <span className='ml-auto font-semibold tabular-nums text-text-primary'>
-                {value}
-            </span>
+            <span className={styles.legendLabel}>{label}</span>
+            <span className={styles.legendValue}>{value}</span>
         </li>
     );
 }

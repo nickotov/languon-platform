@@ -20,7 +20,7 @@ export type MenuProps = {
     label: string;
     trigger: ReactNode;
     triggerClassName?: string | undefined;
-    menuClassName?: string;
+    menuClassName?: string | undefined;
     placement?: 'top-end' | 'bottom-end';
     variant?: 'default' | 'secondary';
     showChevron?: boolean;

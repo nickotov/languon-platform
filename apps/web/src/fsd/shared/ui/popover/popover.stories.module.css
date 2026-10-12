@@ -1,0 +1,8 @@
+.viewport {
+    align-items: flex-end;
+    display: flex;
+    height: var(--size-260);
+    justify-content: flex-end;
+    overflow: hidden;
+    width: 100%;
+}

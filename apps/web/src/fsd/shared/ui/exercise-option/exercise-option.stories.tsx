@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './exercise-option.stories.module.css';
 import { ExerciseOption } from './exercise-option';
 
 export default {
@@ -8,10 +9,7 @@ export default {
 
 export const States: StoryObj<typeof ExerciseOption> = {
     render: () => (
-        <div
-            role='radiogroup'
-            style={{ display: 'grid', gap: 8, maxWidth: 560 }}
-        >
+        <div role='radiogroup' className={storyStyles.examples}>
             {(['default', 'selected', 'correct', 'incorrect'] as const).map(
                 (state, index) => (
                     <ExerciseOption

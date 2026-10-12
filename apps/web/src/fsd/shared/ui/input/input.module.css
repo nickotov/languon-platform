@@ -1,7 +1,7 @@
 .root {
     display: inline-flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--space-6);
 }
 
 .fullWidth {
@@ -10,9 +10,9 @@
 
 .label {
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    line-height: 20px;
+    line-height: var(--size-20);
 }
 
 .control {
@@ -26,7 +26,7 @@
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     font: inherit;
-    padding: 0 12px;
+    padding: 0 var(--space-12);
     transition:
         border-color var(--duration-fast),
         box-shadow var(--duration-fast);
@@ -36,21 +36,21 @@
 .sm,
 .compact,
 .small {
-    font-size: 14px;
-    min-height: 32px;
+    font-size: var(--size-14);
+    min-height: var(--size-32);
 }
 
 .md,
 .default,
 .medium {
-    font-size: 14px;
-    min-height: 40px;
+    font-size: var(--size-14);
+    min-height: var(--size-40);
 }
 
 .lg,
 .large {
-    font-size: 16px;
-    min-height: 48px;
+    font-size: var(--size-16);
+    min-height: var(--size-48);
 }
 
 .input::placeholder {
@@ -63,7 +63,7 @@
 
 .input:focus {
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px var(--primary-subtle);
+    box-shadow: 0 0 0 var(--size-3) var(--primary-subtle);
     outline: none;
 }
 
@@ -84,11 +84,11 @@
 }
 
 .withLeading {
-    padding-left: 40px;
+    padding-left: var(--space-40);
 }
 
 .withTrailing {
-    padding-right: 40px;
+    padding-right: var(--space-40);
 }
 
 .icon {
@@ -103,22 +103,22 @@
 }
 
 .icon :where(svg) {
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .leading {
-    left: 12px;
+    left: var(--size-12);
 }
 
 .trailing {
-    right: 12px;
+    right: var(--size-12);
 }
 
 .hint,
 .error {
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
 }
 
 .hint {

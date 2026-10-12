@@ -22,13 +22,9 @@ export function SentenceJobStatus({ job, onCancel }: Props) {
               : 'Preparing a sentence',
     );
     return (
-        <div
-            role='status'
-            aria-live='polite'
-            className='rounded-xl border border-border-default bg-background-surface p-3'
-        >
-            <div className='flex flex-wrap items-center justify-between gap-2'>
-                <p className='text-sm font-medium text-text-primary'>
+        <div role='status' aria-live='polite' className={styles.statusPanel}>
+            <div className={styles.statusHeader}>
+                <p className={styles.activity}>
                     {title}
                     {!stopping && job.state === 'queued'
                         ? ` — ${t('waiting to start')}`
@@ -48,20 +44,15 @@ export function SentenceJobStatus({ job, onCancel }: Props) {
                 </Button>
             </div>
             {stopping ? (
-                <p className='mt-1 text-xs text-text-secondary'>
+                <p className={styles.reason}>
                     {t('Work that already started may still use credits.')}
                 </p>
             ) : null}
-            <div
-                className='mt-2 h-1 overflow-hidden rounded-full bg-progress-track'
-                aria-hidden
-            >
-                <div
-                    className={`h-full w-1/3 rounded-full bg-progress-fill ${styles.indeterminate}`}
-                />
+            <div className={styles.track} aria-hidden>
+                <div className={`${styles.fill} ${styles.indeterminate}`} />
             </div>
             {checking ? (
-                <p className='mt-1 text-[11px] text-text-tertiary'>
+                <p className={styles.notice}>
                     {t(
                         'Uses the AI preference chosen when this check started.',
                     )}

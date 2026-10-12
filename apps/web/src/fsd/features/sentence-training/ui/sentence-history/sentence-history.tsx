@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-history.module.css';
 import { useSentenceCopy } from '../sentence-copy';
 import { useCompactPresentation } from '../use-compact-presentation';
 
@@ -31,9 +32,9 @@ export function SentenceHistory({
     const rows = tab === 'ai' ? c.attempts : c.reviews;
     const content = (
         <>
-            <div className='space-y-4'>
+            <div className={styles.historyContent}>
                 <div
-                    className='flex gap-2'
+                    className={styles.tabs}
                     role='group'
                     aria-label={t('History type')}
                 >
@@ -52,7 +53,7 @@ export function SentenceHistory({
                         {t('Manual reviews')}
                     </Button>
                 </div>
-                <p className='text-xs text-text-tertiary'>
+                <p className={styles.historyNote}>
                     {t(
                         'Only your own results appear here. Outdated sentences remain readable and cannot be used again.',
                     )}
@@ -73,13 +74,13 @@ export function SentenceHistory({
                     />
                 ) : null}
                 {!c.loading && !c.error && rows.length === 0 ? (
-                    <div className='rounded-xl border border-border-default p-6 text-center'>
-                        <p className='font-medium'>
+                    <div className={styles.emptyState}>
+                        <p className={styles.emptyTitle}>
                             {tab === 'ai'
                                 ? t('No AI checks yet')
                                 : t('No manual reviews yet')}
                         </p>
-                        <p className='mt-1 text-sm text-text-secondary'>
+                        <p className={styles.emptyDescription}>
                             {tab === 'ai'
                                 ? t(
                                       'Results appear after you check a translation with AI.',
@@ -90,13 +91,10 @@ export function SentenceHistory({
                         </p>
                     </div>
                 ) : null}
-                <ul className='space-y-3'>
+                <ul className={styles.historyList}>
                     {rows.map((row) => (
-                        <li
-                            key={row.id}
-                            className='rounded-xl border border-border-default p-3'
-                        >
-                            <div className='flex flex-wrap items-center gap-2 text-xs text-text-tertiary'>
+                        <li key={row.id} className={styles.historyItem}>
+                            <div className={styles.itemMetadata}>
                                 <time dateTime={row.createdAt}>
                                     {formatDate(row.createdAt)}
                                 </time>
@@ -112,7 +110,7 @@ export function SentenceHistory({
                                 ) : null}
                             </div>
                             <p
-                                className='mt-2 break-words font-medium'
+                                className={styles.sourceSentence}
                                 lang={row.exercise.sourceLanguage}
                                 dir={languageDirection(
                                     row.exercise.sourceLanguage,
@@ -120,11 +118,11 @@ export function SentenceHistory({
                             >
                                 {row.exercise.sourceText}
                             </p>
-                            <details className='mt-2'>
-                                <summary className='cursor-pointer text-sm text-primary-default'>
+                            <details className={styles.itemDetails}>
+                                <summary className={styles.detailsAction}>
                                     {t('View details')}
                                 </summary>
-                                <div className='mt-3'>
+                                <div className={styles.feedback}>
                                     {'feedback' in row ? (
                                         <AiResultPanel attempt={row} />
                                     ) : (
@@ -155,8 +153,8 @@ export function SentenceHistory({
     if (!open) return null;
     if (inline)
         return (
-            <section className='mx-auto max-w-3xl px-4 py-5'>
-                <h3 className='mb-4 text-lg font-semibold'>
+            <section className={styles.inlineHistory}>
+                <h3 className={styles.historyTitle}>
                     {t('My practice history')}
                 </h3>
                 {content}
@@ -165,9 +163,7 @@ export function SentenceHistory({
     return (
         <Dialog
             variant={compact ? 'sheet' : 'dialog'}
-            className={
-                compact ? '!mb-0 !w-full !max-w-none !rounded-b-none' : ''
-            }
+            className={compact ? styles.compactDialog : ''}
             open={open}
             onClose={onClose}
             size='lg'

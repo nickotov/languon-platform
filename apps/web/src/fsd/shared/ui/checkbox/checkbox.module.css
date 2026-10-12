@@ -1,13 +1,13 @@
 .root {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .row {
     align-items: flex-start;
     display: flex;
-    gap: 10px;
+    gap: var(--space-10);
 }
 
 .control {
@@ -30,23 +30,23 @@
 
 :where(.sm) .input,
 :where(.sm) .mark {
-    border-radius: 4px;
-    height: 16px;
-    width: 16px;
+    border-radius: var(--radius-4);
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 :where(.md) .input,
 :where(.md) .mark {
-    border-radius: 6px;
-    height: 20px;
-    width: 20px;
+    border-radius: var(--radius-6);
+    height: var(--size-20);
+    width: var(--size-20);
 }
 
 :where(.lg) .input,
 :where(.lg) .mark {
-    border-radius: 6px;
-    height: 24px;
-    width: 24px;
+    border-radius: var(--radius-6);
+    height: var(--size-24);
+    width: var(--size-24);
 }
 
 .input:hover:not(:disabled) {
@@ -61,7 +61,7 @@
 
 .input:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .input:disabled {
@@ -74,7 +74,7 @@
     align-items: center;
     color: var(--text-on-primary);
     display: flex;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 800;
     inset: 0;
     justify-content: center;
@@ -96,24 +96,24 @@
 .label {
     color: var(--text-primary);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    line-height: 20px;
+    line-height: var(--size-20);
 }
 
 :where(.lg + .copy) .label {
-    font-size: 16px;
+    font-size: var(--size-16);
 }
 
 .description {
     color: var(--text-tertiary);
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
 }
 
 .error {
     color: var(--danger-default);
-    font-size: 14px;
+    font-size: var(--size-14);
     margin: 0;
 }
 

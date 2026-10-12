@@ -1,0 +1,43 @@
+.statusBadge {
+    flex-shrink: 0;
+}
+
+.direction {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.arrow {
+    height: var(--size-12);
+    width: var(--size-12);
+}
+.arrow:where([dir='rtl'], [dir='rtl'] *) {
+    transform: translate(0, 0) rotate(180deg) skewX(0) skewY(0) scaleX(1)
+        scaleY(1);
+}
+
+.ownership {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-8);
+    row-gap: var(--space-2);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.dictionaryLink {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.icon {
+    height: var(--size-14);
+    width: var(--size-14);
+}

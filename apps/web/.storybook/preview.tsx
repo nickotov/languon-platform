@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import '@fontsource-variable/manrope';
 
 import '../src/app/globals.css';
+import styles from './preview.module.css';
 
 function ThemeCanvas({
     children,
@@ -15,7 +16,7 @@ function ThemeCanvas({
     useEffect(() => {
         document.documentElement.dataset.theme = theme;
     }, [theme]);
-    return <div style={{ maxWidth: 720, padding: 24 }}>{children}</div>;
+    return <div className={styles.canvas}>{children}</div>;
 }
 
 const preview: Preview = {

@@ -3,10 +3,10 @@
     border: 1px solid;
     border-radius: var(--radius-md);
     display: flex;
-    font-size: 14px;
-    gap: 12px;
-    line-height: 20px;
-    padding: 16px;
+    font-size: var(--size-14);
+    gap: var(--space-12);
+    line-height: var(--size-20);
+    padding: var(--space-16);
     width: 100%;
 }
 
@@ -61,12 +61,12 @@
     color: var(--alert-icon);
     display: flex;
     flex: none;
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 700;
-    height: 20px;
+    height: var(--size-20);
     justify-content: center;
-    margin-top: 2px;
-    width: 20px;
+    margin-top: var(--space-2);
+    width: var(--size-20);
 }
 
 .content {
@@ -85,7 +85,7 @@
 }
 
 :where(.title) + .body {
-    margin-top: 4px;
+    margin-top: var(--space-4);
 }
 
 .body :where(p) {
@@ -96,21 +96,21 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 12px;
+    gap: var(--space-12);
+    margin-top: var(--space-12);
 }
 
 .dismiss {
     background: transparent;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-4);
     color: var(--alert-icon);
     cursor: pointer;
     flex: none;
-    font-size: 20px;
-    line-height: 20px;
-    margin: -4px;
-    padding: 4px;
+    font-size: var(--size-20);
+    line-height: var(--size-20);
+    margin: calc(var(--space-4) * -1);
+    padding: var(--space-4);
 }
 
 .dismiss:hover {
@@ -119,5 +119,5 @@
 
 .dismiss:focus-visible {
     outline: 2px solid currentColor;
-    outline-offset: 1px;
+    outline-offset: var(--size-1);
 }

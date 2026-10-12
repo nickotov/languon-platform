@@ -6,11 +6,11 @@
     align-items: baseline;
     color: var(--neutral-700);
     display: flex;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    gap: 12px;
+    gap: var(--space-12);
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: var(--space-8);
 }
 
 .value {
@@ -20,26 +20,26 @@
 
 .track {
     background: var(--neutral-200);
-    border-radius: 999px;
+    border-radius: var(--radius-999);
     overflow: hidden;
     position: relative;
     width: 100%;
 }
 
 .sm {
-    height: 4px;
+    height: var(--size-4);
 }
 
 .md {
-    height: 8px;
+    height: var(--size-8);
 }
 
 .lg {
-    height: 12px;
+    height: var(--size-12);
 }
 
 .fill {
-    border-radius: 999px;
+    border-radius: var(--radius-999);
     display: block;
     height: 100%;
     transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);

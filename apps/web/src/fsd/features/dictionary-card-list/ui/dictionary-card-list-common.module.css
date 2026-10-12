@@ -1,14 +1,14 @@
 .list {
     container: dictionary-cards / inline-size;
     display: grid;
-    gap: 12px;
+    gap: var(--space-12);
     list-style: none;
     margin: 0;
     padding: 0;
 }
 
 .card {
-    padding: 16px;
+    padding: var(--space-16);
     background: var(--background-surface);
     border-color: var(--border-default);
     box-shadow: none;
@@ -18,7 +18,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .pair {
@@ -26,7 +26,7 @@
     min-width: 0;
     flex: 1;
     display: grid;
-    gap: 2px;
+    gap: var(--space-2);
     grid-template-columns: minmax(0, 1fr);
 }
 
@@ -38,7 +38,7 @@
 
 @container dictionary-cards (min-width: 40rem) {
     .pair {
-        gap: 16px 24px;
+        gap: var(--space-16) var(--space-24);
         grid-template-columns: repeat(2, minmax(0, 1fr));
         position: relative;
     }
@@ -46,16 +46,16 @@
 
 .menuTrigger {
     position: absolute;
-    top: -4px;
-    right: -8px;
+    top: calc(var(--size-4) * -1);
+    right: calc(var(--size-8) * -1);
 }
 
 .pairValue {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 2px 6px;
-    font-size: 18px;
+    gap: var(--space-2) var(--space-6);
+    font-size: var(--size-18);
     line-height: 1.375;
     font-weight: 600;
     overflow-wrap: anywhere;
@@ -63,23 +63,23 @@
 
 .translation {
     color: var(--text-secondary);
-    font-size: 16px;
-    line-height: 24px;
+    font-size: var(--size-16);
+    line-height: var(--size-24);
     font-weight: 400;
-    padding-right: 28px;
+    padding-right: var(--space-28);
 }
 
 .fields {
     overflow: hidden;
     border: 1px solid var(--border-default);
-    border-radius: 12px;
-    margin: 12px 0 0;
+    border-radius: var(--radius-12);
+    margin: var(--space-12) 0 0;
 }
 
 .fieldRow {
     grid-column: 1 / -1;
     min-width: 0;
-    padding: 8px 12px;
+    padding: var(--space-8) var(--space-12);
 }
 
 .fieldRow:not(:first-child) {
@@ -109,7 +109,7 @@
 
 .fieldLabel {
     color: var(--text-tertiary);
-    font-size: 11px;
+    font-size: var(--size-11);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.025em;
@@ -120,9 +120,9 @@
     align-items: center;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: 8px;
-    margin: 2px 0 0;
-    font-size: 14px;
+    gap: var(--space-8);
+    margin: var(--space-2) 0 0;
+    font-size: var(--size-14);
 }
 
 .fieldText {
@@ -139,8 +139,8 @@
 
 .transcription {
     display: block;
-    margin-top: 2px;
-    font-size: 12px;
+    margin-top: var(--space-2);
+    font-size: var(--size-12);
     line-height: 1.5;
     overflow-wrap: anywhere;
     font-family: var(--font-mono, monospace);
@@ -151,42 +151,42 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    margin-top: 12px;
+    gap: var(--space-8);
+    margin-top: var(--space-12);
 }
 
 .selectionToolbar {
     align-items: center;
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
-    border-radius: 12px;
+    border-radius: var(--radius-12);
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: var(--space-12);
     justify-content: space-between;
-    margin-bottom: 12px;
-    padding: 12px 16px;
+    margin-bottom: var(--space-12);
+    padding: var(--space-12) var(--space-16);
 }
 
 .selectionCount {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     margin-inline-end: auto;
 }
 
 .selectionActions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .deletionError {
-    margin-top: 16px;
+    margin-top: var(--space-16);
 }
 
 @media (max-width: 639px) {
     .card {
-        padding: 12px;
+        padding: var(--space-12);
     }
 
     .selectionToolbar,

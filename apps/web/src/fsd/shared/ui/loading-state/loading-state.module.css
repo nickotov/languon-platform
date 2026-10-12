@@ -3,5 +3,5 @@
     color: var(--sys-color-text-secondary);
     display: flex;
     gap: var(--sys-space-2);
-    min-height: 48px;
+    min-height: var(--size-48);
 }

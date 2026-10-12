@@ -1,0 +1,72 @@
+.blocked {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.skeletons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-12);
+}
+
+.summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-8);
+}
+
+@media (min-width: 640px) {
+    .metrics {
+        gap: var(--space-12);
+    }
+}
+
+.metric {
+    min-width: 0px;
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+}
+
+.metricLabel {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+    flex-shrink: 0;
+}
+
+.metricValue {
+    margin-top: var(--space-4);
+    font-size: var(--size-24);
+    line-height: var(--size-32);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.metricNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}

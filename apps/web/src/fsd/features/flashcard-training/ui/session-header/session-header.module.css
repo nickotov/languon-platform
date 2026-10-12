@@ -1,0 +1,66 @@
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.header {
+    flex-shrink: 0;
+    border-bottom-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+    padding-bottom: var(--space-12);
+    padding-top: var(--space-16);
+}
+
+@media (min-width: 768px) {
+    .header {
+        padding-left: var(--space-24);
+        padding-right: var(--space-24);
+    }
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-12);
+    row-gap: var(--space-8);
+}
+
+.heading {
+    min-width: 0px;
+    flex: 1 1 0%;
+    flex-basis: var(--size-160);
+}
+
+.title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.subtitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.progress {
+    margin-top: var(--space-12);
+}

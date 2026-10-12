@@ -1,0 +1,77 @@
+.title {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.icon {
+    height: var(--size-14);
+    width: var(--size-14);
+}
+
+.round {
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-12);
+}
+
+.roundMetadata {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-12);
+    row-gap: var(--space-4);
+}
+
+.roundTitle {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.roundActions {
+    margin-top: var(--space-8);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.icon2 {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.roundHint {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.expandAction {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+    color: var(--primary-default);
+    text-decoration-line: underline;
+    text-underline-offset: var(--size-2);
+}
+
+.expandAction:hover {
+    color: var(--primary-hover);
+}
+
+.expandAction:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: var(--size-2);
+    box-shadow: 0 0 0 var(--size-2) var(--border-focus);
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.rounds > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}

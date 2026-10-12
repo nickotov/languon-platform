@@ -8,9 +8,9 @@
     color: var(--text-primary);
     cursor: pointer;
     display: flex;
-    gap: 12px;
-    min-height: 52px;
-    padding: 12px 16px;
+    gap: var(--space-12);
+    min-height: var(--size-52);
+    padding: var(--space-12) var(--space-16);
     text-align: left;
     transition:
         background var(--duration-fast),
@@ -25,7 +25,7 @@
 
 .root:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .root:disabled {
@@ -37,21 +37,21 @@
     --tone: var(--primary-default);
     --surface: var(--state-selected-bg);
     border-color: var(--primary-default);
-    box-shadow: inset 0 0 0 1px var(--primary-default);
+    box-shadow: inset 0 0 0 var(--size-1) var(--primary-default);
 }
 
 .correct {
     --tone: var(--state-correct);
     --surface: var(--success-subtle);
     border-color: var(--state-correct);
-    box-shadow: inset 0 0 0 1px var(--state-correct);
+    box-shadow: inset 0 0 0 var(--size-1) var(--state-correct);
 }
 
 .incorrect {
     --tone: var(--state-incorrect);
     --surface: var(--danger-subtle);
     border-color: var(--state-incorrect);
-    box-shadow: inset 0 0 0 1px var(--state-incorrect);
+    box-shadow: inset 0 0 0 var(--size-1) var(--state-incorrect);
 }
 
 .shortcut {
@@ -62,11 +62,11 @@
     color: var(--tone);
     display: flex;
     flex: none;
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
-    height: 28px;
+    height: var(--size-28);
     justify-content: center;
-    width: 28px;
+    width: var(--size-28);
 }
 
 :where(.selected) .shortcut,
@@ -91,14 +91,14 @@
 }
 
 .label {
-    font-size: 16px;
+    font-size: var(--size-16);
     font-weight: 500;
 }
 
 .hint {
     color: var(--text-tertiary);
-    font-size: 14px;
-    margin-top: 2px;
+    font-size: var(--size-14);
+    margin-top: var(--space-2);
 }
 
 .status {
@@ -106,17 +106,17 @@
     color: var(--tone);
     display: flex;
     flex: none;
-    gap: 6px;
+    gap: var(--space-6);
 }
 
 .statusLabel {
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 .statusIcon {
-    height: 20px;
-    width: 20px;
+    height: var(--size-20);
+    width: var(--size-20);
 }

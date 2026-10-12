@@ -4,7 +4,7 @@
 
 .content {
     display: grid;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .footer,
@@ -12,7 +12,7 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .footer {
@@ -21,29 +21,29 @@
 
 .fields {
     display: grid;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .proposalField {
     border: 1px solid var(--border-default);
-    border-radius: 12px;
+    border-radius: var(--radius-12);
     min-width: 0;
-    padding: 12px;
+    padding: var(--space-12);
 }
 
 .fieldHeader {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
 }
 
 .fieldTitle {
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 600;
-    line-height: 20px;
+    line-height: var(--size-20);
     margin: 0;
 }
 
@@ -54,79 +54,79 @@
 
 .reason {
     color: var(--text-secondary);
-    font-size: 12px;
-    line-height: 16px;
-    margin: 4px 0 0;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    margin: var(--space-4) 0 0;
 }
 
 .fieldComparison {
     display: grid;
-    gap: 12px;
-    margin-top: 8px;
+    gap: var(--space-12);
+    margin-top: var(--space-8);
 }
 
 .savedValue {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
-    border-radius: 8px;
+    border-radius: var(--radius-8);
     min-width: 0;
-    padding: 10px;
+    padding: var(--space-10);
 }
 
 .savedParagraph {
     color: var(--text-primary);
-    font-size: 14px;
-    line-height: 20px;
-    margin: 4px 0 0;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    margin: var(--space-4) 0 0;
     overflow-wrap: anywhere;
 }
 
 .savedLabel {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 500;
     letter-spacing: 0.025em;
-    line-height: 16px;
+    line-height: var(--size-16);
     margin: 0;
     text-transform: uppercase;
 }
 
 .alternatives {
-    margin-top: 8px;
+    margin-top: var(--space-8);
 }
 
 .alternativesLabel {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 500;
-    line-height: 16px;
+    line-height: var(--size-16);
     margin: 0;
 }
 
 .alternativesList {
     display: grid;
-    gap: 4px;
+    gap: var(--space-4);
     list-style: none;
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
     padding: 0;
 }
 
 .alternative {
     align-items: center;
     border: 1px dashed var(--border-strong);
-    border-radius: 8px;
+    border-radius: var(--radius-8);
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
-    padding: 8px;
+    padding: var(--space-8);
 }
 
 .alternativeValue {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-style: italic;
-    line-height: 20px;
+    line-height: var(--size-20);
     min-width: 0;
     overflow-wrap: anywhere;
 }
@@ -134,9 +134,9 @@
 .progress {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
-    border-radius: 12px;
-    font-size: 14px;
-    padding: 12px;
+    border-radius: var(--radius-12);
+    font-size: var(--size-14);
+    padding: var(--space-12);
 }
 
 .progressDetail {
@@ -144,22 +144,22 @@
 }
 
 .warningList {
-    margin: 4px 0 0;
-    padding-inline-start: 20px;
+    margin: var(--space-4) 0 0;
+    padding-inline-start: var(--space-20);
 }
 
 .currentValues {
     display: grid;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .currentLabel {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
 }
 
 .currentValue {
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
     overflow-wrap: anywhere;
 }
 
@@ -172,7 +172,7 @@
 @media (max-width: 767px) {
     .dialog {
         border: 1px solid var(--border-default);
-        border-radius: 24px 24px 0 0;
+        border-radius: var(--radius-24) var(--radius-24) 0 0;
         margin-block-end: 0;
         max-height: 92dvh;
         max-width: none;
@@ -181,30 +181,30 @@
 
     .dialogHeader {
         border-bottom: 1px solid var(--border-default);
-        padding: 12px 16px;
+        padding: var(--space-12) var(--space-16);
     }
 
     .dialogTitle {
-        font-size: 16px;
-        line-height: 24px;
+        font-size: var(--size-16);
+        line-height: var(--size-24);
     }
 
     .dialogBody {
-        padding: 16px;
+        padding: var(--space-16);
     }
 
     .dialogFooter {
-        padding: 12px 16px;
+        padding: var(--space-12) var(--space-16);
     }
 }
 
 /* Keep the supplied dialog's row-based textarea geometry local to this feature. */
 .textarea {
-    border-radius: 6px;
-    line-height: 20px;
+    border-radius: var(--radius-6);
+    line-height: var(--size-20);
     min-height: 0;
 }
 
 .textareaLabel {
-    line-height: 14px;
+    line-height: var(--size-14);
 }

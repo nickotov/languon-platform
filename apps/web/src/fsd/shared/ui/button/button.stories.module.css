@@ -1,0 +1,11 @@
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+}
+
+.controls2 {
+    align-items: center;
+    display: flex;
+    gap: var(--space-12);
+}

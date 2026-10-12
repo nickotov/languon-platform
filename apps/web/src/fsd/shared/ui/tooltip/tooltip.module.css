@@ -9,8 +9,8 @@
     color: var(--text-primary-dark);
     inset: auto;
     margin: 0;
-    max-width: min(280px, calc(100vw - 32px));
-    padding: 4px 8px;
+    max-width: min(var(--size-280), calc(100vw - var(--size-32)));
+    padding: var(--space-4) var(--space-8);
     pointer-events: none;
     position: fixed;
     white-space: normal;
@@ -20,8 +20,8 @@
 
 .arrow {
     background: var(--background-surface-dark);
-    height: 8px;
+    height: var(--size-8);
     position: absolute;
     transform: rotate(45deg);
-    width: 8px;
+    width: var(--size-8);
 }

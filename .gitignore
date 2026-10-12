@@ -2,6 +2,7 @@
 node_modules/
 .pnpm-store/
 .next/
+.next-*/
 .next-e2e/
 .next-admin-e2e/
 .vite/

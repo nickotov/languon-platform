@@ -1,0 +1,218 @@
+.summaryNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    font-weight: 500;
+    color: var(--text-tertiary);
+}
+
+.title {
+    margin-top: var(--space-4);
+    font-size: var(--size-24);
+    line-height: var(--size-32);
+    font-weight: 600;
+    outline: 2px solid transparent;
+    outline-offset: var(--size-2);
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12);
+}
+
+@media (min-width: 640px) {
+    .metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .metrics {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+.metric {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-12);
+}
+
+.metricLabel {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.metricValue {
+    margin-top: var(--space-4);
+    font-size: var(--size-20);
+    line-height: var(--size-28);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.ratingList {
+    margin-top: var(--space-8);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
+}
+
+@media (min-width: 640px) {
+    .ratingList {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.ratingItem {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-8);
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+}
+
+.ratingCount {
+    font-variant-numeric: tabular-nums;
+}
+
+.privacyNote {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.historyNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}
+
+.reviewPanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding: var(--space-16);
+}
+
+.reviewHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+}
+
+.summaryTitle {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+}
+
+.reviewContent {
+    margin-top: var(--space-12);
+}
+
+.reviewSentence {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-size: var(--size-18);
+    line-height: var(--size-28);
+}
+
+.reviewNote {
+    margin-top: var(--space-8);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.reviewAnswer {
+    margin-top: var(--space-8);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.answerList {
+    margin-top: var(--space-12);
+}
+
+.answerItem {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding: var(--space-12);
+}
+
+.answerMetadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.answerText {
+    margin-top: var(--space-8);
+    overflow-wrap: break-word;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+}
+
+.nextActions {
+    display: grid;
+    gap: var(--space-12);
+}
+
+@media (min-width: 768px) {
+    .nextActions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.nextAction {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding: var(--space-16);
+}
+
+.nextButton {
+    width: 100%;
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.nextNote {
+    margin-top: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.results > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-24);
+    margin-bottom: 0;
+}
+
+.reviewContent > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+
+.answerList > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}

@@ -13,7 +13,8 @@
         "test": "vitest run --passWithNoTests",
         "test:e2e": "playwright test",
         "test:coverage": "vitest run --coverage --passWithNoTests",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "styles:check": "node --import tsx scripts/style-contract.ts"
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.20",
@@ -38,7 +39,6 @@
         "autoprefixer": "^10.6.0",
         "jsdom": "^30.0.1",
         "postcss": "^8.5.28",
-        "storybook": "^10.5.8",
-        "tailwindcss": "3.4.17"
+        "storybook": "^10.5.8"
     }
 }

@@ -1,3 +1,4 @@
+import styles from './field-group.module.css';
 import { useId } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Checkbox } from '@/fsd/shared/ui';
@@ -31,12 +32,10 @@ export function FieldGroup({
         <fieldset
             disabled={disabled}
             aria-describedby={invalid ? errorId : undefined}
-            className='min-w-0 rounded-2xl border border-border-default bg-background-surface p-4'
+            className={styles.group}
         >
-            <legend className='px-1 text-base font-semibold text-text-primary'>
-                {t(`training.${side}`)}
-            </legend>
-            <div className='mt-2 flex flex-col gap-1'>
+            <legend className={styles.legend}>{t(`training.${side}`)}</legend>
+            <div className={styles.fields}>
                 {FIELD_ORDER.map((field) => (
                     <FieldChoice
                         key={field}
@@ -47,15 +46,9 @@ export function FieldGroup({
                     />
                 ))}
             </div>
-            {ordered && (
-                <p className='mt-3 text-sm text-text-secondary'>{summary}</p>
-            )}
+            {ordered && <p className={styles.summary}>{summary}</p>}
             {invalid && (
-                <p
-                    id={errorId}
-                    role='alert'
-                    className='mt-2 text-sm font-medium text-danger-default'
-                >
+                <p id={errorId} role='alert' className={styles.error}>
                     {t('training.chooseField')}
                 </p>
             )}

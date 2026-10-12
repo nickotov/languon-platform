@@ -8,7 +8,7 @@
     color: currentColor;
     cursor: pointer;
     font: inherit;
-    min-height: 44px;
+    min-height: var(--size-44);
 }
 
 .content {
@@ -17,10 +17,10 @@
     border-radius: var(--radius-md);
     box-shadow: var(--elevation-lg);
     color: var(--neutral-900);
-    max-width: min(320px, calc(100vw - 32px));
-    min-width: 160px;
+    max-width: min(var(--size-320), calc(100vw - var(--size-32)));
+    min-width: var(--size-160);
     outline: none;
-    padding: 6px;
+    padding: var(--space-6);
     z-index: 50;
 }
 
@@ -28,20 +28,20 @@
     background: var(--background-surface);
     border: solid var(--neutral-200);
     border-width: 1px 0 0 1px;
-    height: 8px;
+    height: var(--size-8);
     left: 50%;
     position: absolute;
-    top: -5px;
+    top: calc(var(--size-5) * -1);
     transform: rotate(45deg);
-    width: 8px;
+    width: var(--size-8);
 }
 
 .header {
     color: var(--neutral-500);
-    font-size: 11px;
+    font-size: var(--size-11);
     font-weight: 600;
     letter-spacing: 0.05em;
-    padding: 4px 10px 6px;
+    padding: var(--space-4) var(--space-10) var(--space-6);
     text-transform: uppercase;
 }
 
@@ -54,10 +54,10 @@
     cursor: pointer;
     display: flex;
     font: inherit;
-    font-size: 14px;
-    gap: 12px;
+    font-size: var(--size-14);
+    gap: var(--space-12);
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: var(--space-6) var(--space-10);
     text-align: left;
     transition: background-color var(--duration-fast);
     width: 100%;
@@ -69,7 +69,7 @@
 
 .item:focus-visible {
     outline: 2px solid var(--neutral-900);
-    outline-offset: 1px;
+    outline-offset: var(--size-1);
 }
 
 .item:disabled {
@@ -90,6 +90,6 @@
 
 .separator {
     background: var(--neutral-200);
-    height: 1px;
-    margin: 4px 0;
+    height: var(--size-1);
+    margin: var(--space-4) 0;
 }

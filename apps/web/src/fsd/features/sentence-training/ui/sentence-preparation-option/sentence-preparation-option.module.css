@@ -1,0 +1,93 @@
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.plan {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding: var(--space-12);
+}
+
+.scopes {
+    display: grid;
+    gap: var(--space-8);
+}
+
+@media (min-width: 640px) {
+    .scopes {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.roundScope {
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.preparationScope {
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--primary-default);
+    background-color: var(--primary-subtle);
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.note {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.planDetail {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-primary);
+}
+
+.detailIcon {
+    margin-top: var(--space-2);
+    height: var(--size-14);
+    width: var(--size-14);
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.option > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+
+.plan > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}

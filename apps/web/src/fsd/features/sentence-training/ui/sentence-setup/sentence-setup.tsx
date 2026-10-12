@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-setup.module.css';
 import { SENTENCE_LIMITS } from '@languon/contracts';
 import { useEffect, useState } from 'react';
 import { MessageSquareTextIcon, SparklesIcon } from 'lucide-react';
@@ -108,9 +109,7 @@ export function SentenceSetup({
     return (
         <Dialog
             variant={compact ? 'sheet' : 'dialog'}
-            className={
-                compact ? '!mb-0 !w-full !max-w-none !rounded-b-none' : ''
-            }
+            className={compact ? styles.compactDialog : ''}
             open={open}
             onClose={onClose}
             size='md'
@@ -119,13 +118,13 @@ export function SentenceSetup({
             dismissOnOverlayClick={false}
             footer={
                 preparing ? (
-                    <div className='space-y-2'>
-                        <div className='flex flex-wrap items-center justify-end gap-2'>
+                    <div className={styles.footer}>
+                        <div className={styles.preparationActions}>
                             <Button
                                 leadingIcon={
                                     <SparklesIcon
                                         aria-hidden
-                                        className='h-4 w-4'
+                                        className={styles.icon}
                                     />
                                 }
                                 disabled={invalid || preparation?.busy}
@@ -134,12 +133,12 @@ export function SentenceSetup({
                                 {P('startPrep')}
                             </Button>
                         </div>
-                        <p className='text-end text-xs text-text-secondary'>
+                        <p className={styles.preparationNote}>
                             {P('startWhenReady')}
                         </p>
                     </div>
                 ) : (
-                    <div className='flex flex-wrap justify-end gap-2'>
+                    <div className={styles.footerActions}>
                         {!compact && (
                             <Button
                                 variant='secondary'
@@ -156,21 +155,21 @@ export function SentenceSetup({
                 )
             }
         >
-            <div className='space-y-5'>
+            <div className={styles.setupContent}>
                 {onOpenLibrary ? (
                     <button
                         type='button'
                         onClick={onOpenLibrary}
-                        className='inline-flex items-center gap-1.5 text-sm font-medium text-primary-default underline underline-offset-2 hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus'
+                        className={styles.aiSettingsAction}
                     >
                         <MessageSquareTextIcon
                             aria-hidden
-                            className='h-4 w-4'
+                            className={styles.icon}
                         />
                         {P('openLibrary')}
                     </button>
                 ) : null}
-                <p className='text-sm text-text-secondary'>
+                <p className={styles.setupNote}>
                     {t(
                         'Translate sentences using your dictionary words. Saved sentences and reference answers can be reused.',
                     )}
@@ -249,11 +248,9 @@ export function SentenceSetup({
                         { value: 'manual', label: t('Choose entries') },
                     ]}
                 />
-                <p className='text-sm text-text-secondary'>
-                    {batchDescription}
-                </p>
+                <p className={styles.setupNote}>{batchDescription}</p>
                 {c.configuration.scope.type === 'manual' ? (
-                    <div className='space-y-3 rounded-xl border border-border-default p-3'>
+                    <div className={styles.selectionPanel}>
                         <Input
                             label={t('Search entries')}
                             value={c.search}
@@ -261,8 +258,8 @@ export function SentenceSetup({
                                 c.setSearch(event.target.value)
                             }
                         />
-                        <div className='flex flex-wrap items-center gap-2'>
-                            <p className='text-sm text-text-secondary'>
+                        <div className={styles.selectionHeader}>
+                            <p className={styles.setupNote}>
                                 {c.selectedEntryIds.length} /{' '}
                                 {SENTENCE_LIMITS.selectedEntries}{' '}
                                 {t('selected')}
@@ -284,15 +281,12 @@ export function SentenceSetup({
                             </Button>
                         </div>
                         {c.selectedEntryIds.length === 0 ? (
-                            <p className='text-sm text-text-secondary'>
+                            <p className={styles.setupNote}>
                                 {t('Choose at least one entry to start.')}
                             </p>
                         ) : null}
                         {selectionFull ? (
-                            <p
-                                role='status'
-                                className='text-sm text-text-secondary'
-                            >
+                            <p role='status' className={styles.setupNote}>
                                 {t(
                                     'Batch limit reached. Deselect a word to choose another.',
                                 )}
@@ -304,7 +298,7 @@ export function SentenceSetup({
                                 onRetry={c.refresh}
                             />
                         ) : null}
-                        <ul className='max-h-52 space-y-2 overflow-y-auto'>
+                        <ul className={styles.selectionList}>
                             {c.entries.map((entry) => (
                                 <li key={entry.entryId}>
                                     <Checkbox
@@ -340,7 +334,7 @@ export function SentenceSetup({
                         {c.entriesLoading ? (
                             <LoadingState>{t('Loading entries')}</LoadingState>
                         ) : c.entries.length === 0 ? (
-                            <p className='text-sm text-text-secondary'>
+                            <p className={styles.setupNote}>
                                 {t('No entries match your search.')}
                             </p>
                         ) : null}
@@ -372,7 +366,7 @@ export function SentenceSetup({
                             label: (
                                 <>
                                     <strong>{t('Saved first')}</strong>
-                                    <p className='mt-1 text-sm text-text-secondary'>
+                                    <p className={styles.optionNote}>
                                         {t(
                                             'Reuse saved sentences, including completed ones; generate only for words without saved examples.',
                                         )}
@@ -387,7 +381,7 @@ export function SentenceSetup({
                                     <strong>
                                         {t('Generate new sentences')}
                                     </strong>
-                                    <p className='mt-1 text-sm text-text-secondary'>
+                                    <p className={styles.optionNote}>
                                         {t(
                                             'Add fresh sentences. Earlier generations stay saved.',
                                         )}
@@ -400,7 +394,7 @@ export function SentenceSetup({
                             label: (
                                 <>
                                     <strong>{t('Review saved only')}</strong>
-                                    <p className='mt-1 text-sm text-text-secondary'>
+                                    <p className={styles.optionNote}>
                                         {t(
                                             'Reuse saved sentences, including completed ones. No generation.',
                                         )}
@@ -417,8 +411,8 @@ export function SentenceSetup({
                     <SentenceErrorNotice error={c.error} onRetry={c.refresh} />
                 ) : null}
                 {prepared ? (
-                    <div className='rounded-xl border border-border-default bg-background-subtle p-4 text-sm'>
-                        <div className='grid grid-cols-2 gap-3'>
+                    <div className={styles.estimatePanel}>
+                        <div className={styles.estimateMetrics}>
                             <p>
                                 <strong>{prepared.eligibleCount}</strong>{' '}
                                 {t('eligible entries')}
@@ -441,24 +435,24 @@ export function SentenceSetup({
                             </p>
                         </div>
                         {prepared.skippedCount ? (
-                            <details className='mt-3 text-xs text-text-secondary'>
-                                <summary className='cursor-pointer'>
+                            <details className={styles.costDetails}>
+                                <summary className={styles.costAction}>
                                     {t('Why entries are skipped')}
                                 </summary>
-                                <p className='mt-2'>
+                                <p className={styles.costDescription}>
                                     {t(
                                         'Entries without a complete source and translation are skipped.',
                                     )}
                                 </p>
                             </details>
                         ) : null}
-                        <p className='mt-3 text-xs text-text-tertiary'>
+                        <p className={styles.costNote}>
                             {t(
                                 'Exposure counts are not mastery scores. Generating sentences and checking with AI use credits. Showing a saved reference answer is free.',
                             )}
                         </p>
                         {prepared.eligibleCount === 0 ? (
-                            <p className='mt-3 text-text-secondary'>
+                            <p className={styles.estimateNote}>
                                 {t(
                                     'No eligible entries. Add complete translations to your dictionary first.',
                                 )}
@@ -466,7 +460,7 @@ export function SentenceSetup({
                         ) : null}
                         {c.configuration.mode === 'review-only' &&
                         prepared.savedReviewCount === 0 ? (
-                            <p className='mt-3 text-text-secondary'>
+                            <p className={styles.estimateNote}>
                                 {t(
                                     'No saved sentences yet. Choose Saved first or Generate new sentences to create them.',
                                 )}
@@ -475,7 +469,7 @@ export function SentenceSetup({
                     </div>
                 ) : null}
                 {preparation ? (
-                    <div className='border-t border-border-default pt-4'>
+                    <div className={styles.preparationOption}>
                         <SentencePreparationOption
                             enabled={prepareAll}
                             onChange={setPrepareAll}

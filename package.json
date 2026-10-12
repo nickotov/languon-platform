@@ -18,7 +18,7 @@
         "browser:check": "node --test scripts/agent-browser.test.mjs scripts/agent-browser.integration.test.mjs && node scripts/agent-browser.mjs --doctor",
         "browser:install": "node scripts/agent-browser.mjs --install",
         "build": "turbo run build",
-        "check": "pnpm format:check && pnpm agent-skills:check && pnpm web-dev-panel:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+        "check": "pnpm format:check && pnpm agent-skills:check && pnpm styles:check && pnpm web-dev-panel:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
         "db:check": "pnpm --filter @languon/backend db:check",
         "db:generate": "pnpm --filter @languon/backend db:generate",
         "db:migrate": "pnpm --filter @languon/backend db:migrate",
@@ -71,7 +71,8 @@
         "test:e2e:user-ai-model-preferences-backend": "node scripts/run-user-ai-model-preferences-e2e.mjs",
         "test:e2e:sentence-practice-backend": "node scripts/run-sentence-practice-e2e.mjs",
         "search:ast": "ast-grep",
-        "test:code-search": "node --test scripts/code-search.test.mjs"
+        "test:code-search": "node --test scripts/code-search.test.mjs",
+        "styles:check": "pnpm --filter @languon/web styles:check"
     },
     "devDependencies": {
         "@ast-grep/cli": "0.45.3",

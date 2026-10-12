@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './icon-button.stories.module.css';
 import { IconButton } from './icon-button';
 
 const meta = { component: IconButton, title: 'UI/Icon button' } satisfies Meta<
@@ -14,7 +15,7 @@ export const Close: StoryObj<typeof meta> = {
 export const Sizes: StoryObj<typeof meta> = {
     args: { children: '×', label: 'Close' },
     render: () => (
-        <div style={{ alignItems: 'center', display: 'flex', gap: 12 }}>
+        <div className={storyStyles.controls}>
             <IconButton label='Small close' size='small'>
                 ×
             </IconButton>
@@ -49,15 +50,7 @@ export const NearViewportBottom: StoryObj<typeof meta> = {
     },
     decorators: [
         (Story) => (
-            <div
-                style={{
-                    alignItems: 'flex-end',
-                    display: 'flex',
-                    height: '100vh',
-                    justifyContent: 'center',
-                    padding: 8,
-                }}
-            >
+            <div className={storyStyles.viewport}>
                 <Story />
             </div>
         ),

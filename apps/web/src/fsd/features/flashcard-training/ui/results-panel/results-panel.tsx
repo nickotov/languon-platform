@@ -1,3 +1,4 @@
+import styles from './results-panel.module.css';
 import { Check, RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -55,20 +56,18 @@ export function ResultsPanel({
     const againDisabled = disabled || again === 0;
 
     return (
-        <div className='mx-auto flex w-full max-w-2xl flex-col gap-8'>
+        <div className={styles.results}>
             <header>
-                <h3 className='text-2xl font-semibold text-text-primary'>
-                    {title}
-                </h3>
-                <p className='mt-1 text-text-secondary'>
+                <h3 className={styles.title}>{title}</h3>
+                <p className={styles.summary}>
                     {t('training.roundCompleteHelp')}
                 </p>
             </header>
             <section aria-label={t('training.thisRound')}>
-                <h4 className='text-sm font-semibold uppercase tracking-wide text-text-tertiary'>
+                <h4 className={styles.sectionLabel}>
                     {t('training.thisRound')}
                 </h4>
-                <dl className='mt-3 grid grid-cols-2 gap-3 md:grid-cols-4'>
+                <dl className={styles.metrics}>
                     <Stat
                         label={t('training.reviewed')}
                         value={roundStats.reviewed}
@@ -76,12 +75,12 @@ export function ResultsPanel({
                     <Stat
                         label={t('training.known')}
                         value={roundStats.known}
-                        icon={<Check aria-hidden className='h-4 w-4' />}
+                        icon={<Check aria-hidden className={styles.icon} />}
                     />
                     <Stat
                         label={t('training.again')}
                         value={roundStats.again}
-                        icon={<RotateCcw aria-hidden className='h-4 w-4' />}
+                        icon={<RotateCcw aria-hidden className={styles.icon} />}
                     />
                     <Stat
                         label={t('training.markedKnown')}
@@ -90,11 +89,11 @@ export function ResultsPanel({
                     />
                 </dl>
             </section>
-            <section className='rounded-2xl border border-border-default bg-background-surface p-4'>
-                <h4 className='text-base font-semibold text-text-primary'>
+            <section className={styles.progress}>
+                <h4 className={styles.progressTitle}>
                     {t('training.thisSession')}
                 </h4>
-                <p className='mt-1 text-sm text-text-secondary'>{stats}</p>
+                <p className={styles.progressSummary}>{stats}</p>
             </section>
             {signedIn ? (
                 <SavedProgress
@@ -109,10 +108,10 @@ export function ResultsPanel({
                 </InlineAlert>
             )}
             {undo}
-            <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap'>
+            <div className={styles.actions}>
                 <Button
                     size='large'
-                    leadingIcon={<RotateCcw className='h-4 w-4' />}
+                    leadingIcon={<RotateCcw className={styles.icon} />}
                     onClick={onPractiseAgain}
                     disabled={againDisabled}
                 >
@@ -136,9 +135,7 @@ export function ResultsPanel({
                 </Button>
             </div>
             {again === 0 && (
-                <p className='-mt-5 text-sm text-text-tertiary'>
-                    {t('training.noAgain')}
-                </p>
+                <p className={styles.note}>{t('training.noAgain')}</p>
             )}
         </div>
     );
@@ -156,15 +153,13 @@ function Stat({
     note?: string;
 }) {
     return (
-        <div className='rounded-xl border border-border-default bg-background-surface px-4 py-3'>
-            <dt className='flex items-center gap-1 text-sm text-text-secondary'>
+        <div className={styles.metric}>
+            <dt className={styles.metricLabel}>
                 {icon}
                 {label}
             </dt>
-            <dd className='mt-1 text-2xl font-semibold tabular-nums text-text-primary'>
-                {value}
-            </dd>
-            {note && <dd className='text-xs text-text-tertiary'>{note}</dd>}
+            <dd className={styles.metricValue}>{value}</dd>
+            {note && <dd className={styles.metricNote}>{note}</dd>}
         </div>
     );
 }

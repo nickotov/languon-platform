@@ -1,4 +1,5 @@
 import { EyeOffIcon, RotateCcwIcon, XIcon } from 'lucide-react';
+import componentStyles from './library-list.module.css';
 import { Button, Checkbox, InlineAlert } from '@/fsd/shared/ui';
 import { useInterfaceText } from '../../hooks/use-interface-text';
 import type { LibraryController } from '../../hooks/use-sentence-library';
@@ -53,8 +54,8 @@ export function LibraryList({
         );
     else
         body = (
-            <section aria-label={L('title')} className='space-y-3'>
-                <div className='flex flex-wrap items-center justify-between gap-2 px-1'>
+            <section aria-label={L('title')} className={componentStyles.root}>
+                <div className={componentStyles.toolbar}>
                     <Checkbox
                         size='sm'
                         label={L(
@@ -76,7 +77,10 @@ export function LibraryList({
                             variant='secondary'
                             disabled={c.pending}
                             leadingIcon={
-                                <EyeOffIcon aria-hidden className='h-4 w-4' />
+                                <EyeOffIcon
+                                    aria-hidden
+                                    className={componentStyles.icon}
+                                />
                             }
                             onClick={removeAll}
                         >
@@ -84,7 +88,7 @@ export function LibraryList({
                         </Button>
                     ) : null}
                 </div>
-                <ul className='space-y-2'>
+                <ul className={componentStyles.rows}>
                     {c.items.map((sentence) => (
                         <SentenceRow
                             key={sentence.id}
@@ -98,16 +102,16 @@ export function LibraryList({
                     ))}
                 </ul>
                 {c.selected.length > 0 ? (
-                    <div className='sticky bottom-20 z-30 lg:bottom-4'>
+                    <div className={componentStyles.selectionDock}>
                         <div
                             role='region'
                             aria-label={L('selectionToolbar')}
-                            className='space-y-2 rounded-xl border border-primary-default bg-background-elevated p-3 shadow-lg'
+                            className={componentStyles.selectionPanel}
                         >
-                            <div className='flex flex-wrap items-center gap-x-3 gap-y-2'>
+                            <div className={componentStyles.selectionToolbar}>
                                 <p
                                     aria-live='polite'
-                                    className='text-sm font-semibold text-text-primary'
+                                    className={componentStyles.selectionCount}
                                 >
                                     {c.allMatching
                                         ? L('scopeAll')
@@ -117,7 +121,9 @@ export function LibraryList({
                                     <button
                                         type='button'
                                         onClick={c.chooseAllMatching}
-                                        className='text-sm font-medium text-primary-default underline underline-offset-2'
+                                        className={
+                                            componentStyles.selectionLink
+                                        }
                                     >
                                         {L('scopeAll')}
                                     </button>
@@ -126,12 +132,16 @@ export function LibraryList({
                                     <button
                                         type='button'
                                         onClick={c.onlyThisPage}
-                                        className='text-sm font-medium text-primary-default underline underline-offset-2'
+                                        className={
+                                            componentStyles.selectionLink
+                                        }
                                     >
                                         {L('onlyThisPage')}
                                     </button>
                                 ) : null}
-                                <div className='ms-auto flex flex-wrap items-center gap-2'>
+                                <div
+                                    className={componentStyles.selectionActions}
+                                >
                                     {selectedArchive ? (
                                         <Button
                                             size='compact'
@@ -139,7 +149,9 @@ export function LibraryList({
                                             leadingIcon={
                                                 <EyeOffIcon
                                                     aria-hidden
-                                                    className='h-4 w-4'
+                                                    className={
+                                                        componentStyles.icon
+                                                    }
                                                 />
                                             }
                                             onClick={archiveSelected}
@@ -154,7 +166,9 @@ export function LibraryList({
                                             leadingIcon={
                                                 <RotateCcwIcon
                                                     aria-hidden
-                                                    className='h-4 w-4'
+                                                    className={
+                                                        componentStyles.icon
+                                                    }
                                                 />
                                             }
                                             onClick={restoreSelected}
@@ -168,7 +182,7 @@ export function LibraryList({
                                         leadingIcon={
                                             <XIcon
                                                 aria-hidden
-                                                className='h-4 w-4'
+                                                className={componentStyles.icon}
                                             />
                                         }
                                         onClick={c.clearSelection}
@@ -180,7 +194,7 @@ export function LibraryList({
                         </div>
                     </div>
                 ) : null}
-                <div className='space-y-3'>
+                <div className={componentStyles.root}>
                     {c.query.isFetchNextPageError ? (
                         <InlineAlert
                             tone='warning'
@@ -196,8 +210,8 @@ export function LibraryList({
                             }
                         />
                     ) : null}
-                    <div className='flex flex-col items-center gap-2'>
-                        <p className='text-xs text-text-secondary'>
+                    <div className={componentStyles.pagination}>
+                        <p className={componentStyles.paginationHelp}>
                             {L('shownCount', { shown: c.items.length })}
                         </p>
                         {c.query.hasNextPage ? (
@@ -209,7 +223,7 @@ export function LibraryList({
                                 {L('showMore')}
                             </Button>
                         ) : (
-                            <p className='text-xs text-text-tertiary'>
+                            <p className={componentStyles.secondaryHelp}>
                                 {L('allShown')}
                             </p>
                         )}

@@ -22,11 +22,13 @@ hooks, state, API clients, shared UI, or imports between FSD slices. Its
 component folders, supported styling, native-element, and state-communication rules
 are the frontend implementation standard.
 
-For visual work, start from the exact accepted Magic Patterns runtime token
-names/values and Tailwind v3 semantic utilities (ADR-0017), shared primitives in
-`shared/ui`, their stories, and comparable screens. CSS Modules remain supported;
-`--sys-*` variables support legacy consumers through compatibility aliases.
-Do not approximate the accepted token contract or mass-rewrite existing styles.
+For visual work, use the accepted semantic color/font tokens, shared primitives
+and colocated CSS Modules under ADR-0029. Geometry uses canonical size/space/radius
+tokens and semantic aliases. Preserve low-specificity explicit class selectors.
+Do not ship Tailwind utilities or prototype configuration. For Magic Patterns
+implementation read `.agents/skills/magic-patterns-css-integration/SKILL.md` from
+the repository root; translate its complete responsive/state utility bundles
+into owned CSS. Preserve accepted design values instead of approximating them.
 `design/DESIGN_SYSTEM.md` and artifacts under `design/` are optional for ordinary
 UI work. When implementing a supplied design, use `$ui-ux-composition` fidelity
 mode: inspect that source, inventory required sections/controls/states before

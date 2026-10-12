@@ -4,6 +4,7 @@ import type {
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
+import storyStyles from './dictionary-generation-panel.stories.module.css';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
 import { I18nProvider } from '@/fsd/shared/i18n';
@@ -216,7 +217,7 @@ export const Compact320: Story = {
     args: EditableReview.args,
     decorators: [
         (Story) => (
-            <div style={{ width: 320 }}>
+            <div className={storyStyles.container}>
                 <Story />
             </div>
         ),

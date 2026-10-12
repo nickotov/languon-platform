@@ -1,0 +1,174 @@
+.hintPopover {
+    position: absolute;
+    z-index: 30;
+    width: min(var(--size-288), 100%);
+    border-radius: var(--radius-12);
+    border: 1px solid var(--border-strong);
+    background-color: var(--background-elevated);
+    padding: var(--space-12);
+    box-shadow:
+        0 var(--size-10) var(--size-15) calc(var(--size-3) * -1)
+            rgb(0 0 0 / 10%),
+        0 var(--size-4) var(--size-6) calc(var(--size-4) * -1) rgb(0 0 0 / 10%);
+}
+
+.hintKind {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    border-radius: var(--radius-6);
+    border-width: 1px;
+    padding: var(--space-2) var(--space-6);
+    font-size: var(--size-11);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.hintRoot {
+    position: relative;
+}
+
+.sentence {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-size: var(--size-24);
+    line-height: var(--size-32);
+    line-height: 1.9;
+    color: var(--text-primary);
+}
+
+@media (min-width: 640px) {
+    .sentence {
+        font-size: var(--size-28);
+    }
+}
+
+.hintWord {
+    cursor: pointer;
+    border-radius: var(--radius-2);
+    text-decoration-line: underline;
+    text-underline-offset: var(--size-6);
+    outline: 2px solid transparent;
+    outline-offset: var(--size-2);
+    box-decoration-break: clone;
+}
+
+.hintWord:focus-visible {
+    box-shadow: 0 0 0 var(--size-2) var(--border-focus);
+}
+
+.dictionaryWord {
+    font-weight: 600;
+    text-decoration-color: var(--primary-default);
+    text-decoration-thickness: var(--size-2);
+}
+
+.contextualWord {
+    text-decoration-color: var(--text-tertiary);
+    text-decoration-style: dashed;
+}
+
+.dictionaryRevealed {
+    background-color: var(--primary-subtle);
+}
+
+.contextualRevealed {
+    background-color: var(--background-subtle);
+}
+
+.wordOpen {
+    box-shadow: 0 0 0 var(--size-2) var(--border-focus);
+}
+
+.popoverHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    font-weight: 600;
+}
+
+.contextualKind {
+    border-style: dashed;
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+}
+
+.dictionaryKind {
+    border-color: var(--primary-default);
+    color: var(--primary-default);
+}
+
+.icon {
+    height: var(--size-14);
+    width: var(--size-14);
+}
+
+.icon2 {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.hintTranslation {
+    margin-top: var(--space-8);
+    overflow-wrap: break-word;
+}
+
+.hintNote {
+    margin-top: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.hintDisclaimer {
+    margin-top: var(--space-4);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}
+
+.legend {
+    margin-top: var(--space-16);
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--space-16);
+    row-gap: var(--space-8);
+    border-top-width: 1px;
+    border-color: var(--border-default);
+    padding-top: var(--space-12);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.legendItem {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+}
+
+.dictionaryIcon {
+    height: var(--size-14);
+    width: var(--size-14);
+    color: var(--primary-default);
+}
+
+.dictionaryLegend {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration-line: underline;
+    text-decoration-color: var(--primary-default);
+    text-decoration-thickness: var(--size-2);
+    text-underline-offset: var(--size-4);
+}
+
+.contextualLegend {
+    color: var(--text-primary);
+    text-decoration-line: underline;
+    text-decoration-color: var(--text-tertiary);
+    text-decoration-style: dashed;
+    text-underline-offset: var(--size-4);
+}

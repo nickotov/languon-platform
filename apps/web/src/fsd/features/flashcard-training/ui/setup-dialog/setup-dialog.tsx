@@ -1,3 +1,4 @@
+import styles from './setup-dialog.module.css';
 import { useId } from 'react';
 import { Play } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -103,7 +104,7 @@ export function SetupDialog({
     }
 
     const footer = (
-        <DialogActions align='between' className='flex-wrap gap-2'>
+        <DialogActions align='between' className={styles.actions}>
             <Button
                 variant='secondary'
                 onClick={handleClose}
@@ -115,7 +116,7 @@ export function SetupDialog({
                 onClick={handleStart}
                 loading={setup.starting}
                 disabled={!setup.canStart}
-                leadingIcon={<Play className='h-4 w-4' />}
+                leadingIcon={<Play className={styles.icon} />}
             >
                 {startLabel}
             </Button>
@@ -132,9 +133,9 @@ export function SetupDialog({
             size='lg'
             dismissible={!setup.starting}
             footer={footer}
-            className='bg-background-elevated'
+            className={styles.dialog}
         >
-            <div className='flex flex-col gap-6'>
+            <div className={styles.body}>
                 <SetupAlerts
                     setup={setup}
                     activeCount={activeCount}
@@ -163,14 +164,8 @@ export function SetupDialog({
                         {t('training.dictionaryOrder')}
                     </Radio>
                 </RadioGroup>
-                <section
-                    aria-labelledby={scopeId}
-                    className='flex flex-col gap-3'
-                >
-                    <h3
-                        id={scopeId}
-                        className='text-base font-semibold text-text-primary'
-                    >
+                <section aria-labelledby={scopeId} className={styles.section}>
+                    <h3 id={scopeId} className={styles.sectionTitle}>
                         {t('training.entries')}
                     </h3>
                     <RadioGroup
@@ -202,22 +197,13 @@ export function SetupDialog({
                         />
                     )}
                     {setup.scopeEmpty && (
-                        <p
-                            role='alert'
-                            className='text-sm font-medium text-danger-default'
-                        >
+                        <p role='alert' className={styles.error}>
                             {t('training.selectOne')}
                         </p>
                     )}
                 </section>
-                <section
-                    aria-labelledby={summaryId}
-                    className='flex flex-col gap-3'
-                >
-                    <h3
-                        id={summaryId}
-                        className='text-base font-semibold text-text-primary'
-                    >
+                <section aria-labelledby={summaryId} className={styles.section}>
+                    <h3 id={summaryId} className={styles.sectionTitle}>
                         {t('training.ready')}
                     </h3>
                     <PrepareSummary
@@ -225,7 +211,7 @@ export function SetupDialog({
                         onRetry={setup.retryPrepare}
                         blocked={blocked}
                     />
-                    <p className='text-sm text-text-tertiary'>{remembered}</p>
+                    <p className={styles.hint}>{remembered}</p>
                 </section>
             </div>
         </Dialog>

@@ -55,6 +55,11 @@ When saving/updating a design prompt or implementing its generated design, read
 [the versioned design handoff rules](.agent/DESIGN_HANDOFF.md) and the linked
 `DESIGN.md`; preserve revision history and the selected implementation target.
 
+When implementing a Magic Patterns design in the web app, read
+[the repository CSS integration skill](.agents/skills/magic-patterns-css-integration/SKILL.md)
+and apply ADR-0029. Installed prototype tools do not change the app's CSS Modules
+and token contract.
+
 When the user requests fidelity to a supplied design, its in-scope content,
 controls, hierarchy, and states are acceptance requirements. Use
 `$ui-ux-composition` fidelity mode to inventory them before implementation and

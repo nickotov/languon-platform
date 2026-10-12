@@ -31,25 +31,25 @@
 }
 
 .sm {
-    font-size: 12px;
-    gap: 4px;
-    padding: 2px 8px;
+    font-size: var(--size-12);
+    gap: var(--space-4);
+    padding: var(--space-2) var(--space-8);
 }
 
 :where(.sm) .icon {
-    height: 12px;
-    width: 12px;
+    height: var(--size-12);
+    width: var(--size-12);
 }
 
 .md {
-    font-size: 14px;
-    gap: 6px;
-    padding: 4px 10px;
+    font-size: var(--size-14);
+    gap: var(--space-6);
+    padding: var(--space-4) var(--space-10);
 }
 
 :where(.md) .icon {
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .count {
@@ -58,8 +58,8 @@
     font-size: 0.85em;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
-    min-width: 18px;
-    padding-inline: 5px;
+    min-width: var(--size-18);
+    padding-inline: var(--space-5);
     text-align: center;
 }
 
@@ -73,5 +73,5 @@
 
 .clickable:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }

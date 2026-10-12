@@ -26,9 +26,9 @@
 
 .handle {
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: var(--size-13);
     font-weight: 600;
-    max-width: 160px;
+    max-width: var(--size-160);
     overflow: hidden;
     text-decoration: none;
     text-overflow: ellipsis;
@@ -42,7 +42,7 @@
 .handle:focus-visible {
     border-radius: var(--radius-sm);
     outline: 2px solid var(--border-focus);
-    outline-offset: 3px;
+    outline-offset: var(--size-3);
 }
 
 @media (min-width: 640px) {
@@ -63,7 +63,7 @@
     }
 
     .handle {
-        max-width: 80px;
+        max-width: var(--size-80);
     }
 }
 

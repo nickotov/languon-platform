@@ -3,12 +3,12 @@
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
     display: inline-flex;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    gap: 12px;
-    min-height: 40px;
+    gap: var(--space-12);
+    min-height: var(--size-40);
     outline: 0;
-    padding: 8px 12px;
+    padding: var(--space-8) var(--space-12);
     position: relative;
     text-decoration: none;
     transition:
@@ -27,14 +27,14 @@
 
 .root:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .icon {
     color: var(--text-tertiary);
     flex: none;
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .active {
@@ -50,19 +50,19 @@
     background: var(--text-primary);
     border-radius: var(--radius-full);
     content: '';
-    inset-block: 6px;
+    inset-block: var(--size-6);
     left: 0;
     position: absolute;
-    width: 2px;
+    width: var(--size-2);
 }
 
 .horizontal:where(.active):after {
     background: var(--text-primary);
     border-radius: var(--radius-full);
-    bottom: -1px;
+    bottom: calc(var(--size-1) * -1);
     content: '';
-    height: 2px;
-    inset-inline: 12px;
+    height: var(--size-2);
+    inset-inline: var(--size-12);
     position: absolute;
 }
 
@@ -78,7 +78,7 @@
 
 .collapsed {
     justify-content: center;
-    padding-inline: 8px;
+    padding-inline: var(--space-8);
 }
 
 .label {
@@ -90,10 +90,10 @@
 .badge {
     background: var(--background-subtle);
     border-radius: var(--radius-full);
-    font-size: 12px;
+    font-size: var(--size-12);
     margin-left: auto;
-    min-width: 20px;
-    padding: 2px 6px;
+    min-width: var(--size-20);
+    padding: var(--space-2) var(--space-6);
     text-align: center;
 }
 

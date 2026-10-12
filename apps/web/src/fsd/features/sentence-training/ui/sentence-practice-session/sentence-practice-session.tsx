@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-practice-session.module.css';
 import { Flag, Scale } from 'lucide-react';
 import { restoreSentenceTopLayer } from '../restore-sentence-top-layer';
 import { useSentenceDisplay } from '../use-sentence-display';
@@ -271,9 +272,9 @@ export function SentencePracticeSession({
                 if (fullscreen) void leaveFullscreen();
                 else close();
             }}
-            className='!bg-background-canvas'
-            bodyClassName='!p-0 !text-text-primary'
-            footerClassName='!bg-background-surface !px-4 !pt-3 !pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:!px-6'
+            className={styles.practiceDialog}
+            bodyClassName={styles.practiceBody}
+            footerClassName={styles.practiceFooter}
             footer={
                 preferencesOpen ||
                 historyOpen ||
@@ -282,10 +283,7 @@ export function SentencePracticeSession({
                     : footer
             }
         >
-            <div
-                ref={frameRef}
-                className='sticky top-0 z-20 bg-background-surface'
-            >
+            <div ref={frameRef} className={styles.stickyHeader}>
                 <SentencePracticeHeader
                     title={headerTitle}
                     subtitle={headerSubtitle}
@@ -300,7 +298,7 @@ export function SentencePracticeSession({
             </div>
             <div
                 hidden={preferencesOpen || historyOpen}
-                className='mx-auto min-h-64 max-w-3xl space-y-5 px-4 py-5 sm:px-6 md:py-8'
+                className={styles.practiceContent}
             >
                 {c.phase === 'completed' ? (
                     <SentenceSessionResults controller={c} />
@@ -363,14 +361,16 @@ export function SentencePracticeSession({
                             </InlineAlert>
                         ) : null}
                         {c.phase === 'empty' ? (
-                            <div className='rounded-xl border border-border-default p-6 text-center'>
-                                <h3 className='font-semibold'>{emptyTitle}</h3>
-                                <p className='mt-2 text-sm text-text-secondary'>
+                            <div className={styles.emptyState}>
+                                <h3 className={styles.emptyTitle}>
+                                    {emptyTitle}
+                                </h3>
+                                <p className={styles.emptyDescription}>
                                     {t(
                                         'You have reached the end of this session. Start another session to change your words or sentence mode.',
                                     )}
                                 </p>
-                                <div className='mt-3 flex flex-wrap justify-center gap-2'>
+                                <div className={styles.emptyActions}>
                                     {c.emptyReason === 'review-exhausted' ? (
                                         <Button
                                             variant='secondary'
@@ -397,10 +397,10 @@ export function SentencePracticeSession({
                             <>
                                 <div
                                     aria-hidden
-                                    className='rounded-xl border border-border-default bg-background-surface p-5'
+                                    className={styles.loadingPanel}
                                 >
-                                    <div className='h-[1.9rem] w-[88%] animate-pulse rounded bg-background-subtle' />
-                                    <div className='mt-3 h-[1.9rem] w-[54%] animate-pulse rounded bg-background-subtle' />
+                                    <div className={styles.skeletonLine} />
+                                    <div className={styles.skeletonShortLine} />
                                 </div>
                                 <SentenceJobStatus
                                     job={c.job}
@@ -410,17 +410,19 @@ export function SentencePracticeSession({
                         ) : null}
                         {exercise ? (
                             <>
-                                <p className='inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-border-default bg-background-surface px-2 py-1 text-sm font-medium text-text-primary'>
+                                <p className={styles.entryBadge}>
                                     {`${languageName(exercise.sourceLanguage)} → ${languageName(exercise.targetLanguage)}${c.configuration ? ` · ${t(c.configuration.mode === 'saved-first' ? 'Saved first' : c.configuration.mode === 'new-only' ? 'New only' : 'Review only')} · ${t('Feedback in {language}').replace('{language}', languageName(c.configuration.explanationLanguage ?? 'en'))}` : ''}`}
                                 </p>
                                 {c.roundComplete ? (
                                     <div
                                         role='status'
-                                        className='flex items-start gap-2 rounded-xl border border-border-strong bg-background-surface p-3 text-sm text-text-primary'
+                                        className={styles.dictionaryNotice}
                                     >
                                         <Flag
                                             aria-hidden
-                                            className='mt-0.5 h-4 w-4 shrink-0 text-primary-default'
+                                            className={
+                                                styles.dictionaryNoticeIcon
+                                            }
                                         />
                                         <p>
                                             <strong>
@@ -432,7 +434,7 @@ export function SentencePracticeSession({
                                         </p>
                                     </div>
                                 ) : null}
-                                <div className='rounded-xl border border-border-default bg-background-surface p-4 sm:p-6'>
+                                <div className={styles.answerPanel}>
                                     <SentenceWithHints
                                         key={exercise.id}
                                         exercise={exercise}
@@ -457,7 +459,7 @@ export function SentencePracticeSession({
                                         c.setDraft(event.target.value)
                                     }
                                     rows={3}
-                                    className='text-base'
+                                    className={styles.answerInput}
                                     {...(draftOverLimit
                                         ? {
                                               error: t(
@@ -478,8 +480,8 @@ export function SentencePracticeSession({
                                         aria-live='polite'
                                         className={
                                             draftOverLimit
-                                                ? 'text-right text-xs text-danger-default'
-                                                : 'text-right text-xs text-text-secondary'
+                                                ? styles.answerError
+                                                : styles.answerCount
                                         }
                                     >
                                         {draftLength} /{' '}
@@ -505,11 +507,11 @@ export function SentencePracticeSession({
                         (previousAttempts.length > 0 ||
                             previousAttemptsLoading ||
                             previousAttemptsError) ? (
-                            <details className='rounded-xl border border-border-default p-4'>
-                                <summary className='cursor-pointer text-sm font-medium'>
+                            <details className={styles.referenceDetails}>
+                                <summary className={styles.referenceAction}>
                                     {t('Earlier attempts for this sentence')}
                                 </summary>
-                                <div className='mt-3 space-y-3'>
+                                <div className={styles.referenceContent}>
                                     {previousAttemptsLoading ? (
                                         <LoadingState>
                                             {t('Loading history')}
@@ -524,7 +526,7 @@ export function SentencePracticeSession({
                                     {!previousAttemptsLoading &&
                                     !previousAttemptsError &&
                                     !previousAttempts.length ? (
-                                        <p className='text-sm text-text-secondary'>
+                                        <p className={styles.referenceNote}>
                                             {t('No earlier attempts yet.')}
                                         </p>
                                     ) : null}
@@ -540,17 +542,33 @@ export function SentencePracticeSession({
                         {exercise ? (
                             <>
                                 {!c.reference ? (
-                                    <section className='space-y-3 rounded-xl border border-dashed border-border-strong bg-background-subtle p-4'>
-                                        <div className='flex flex-wrap items-start justify-between gap-3'>
-                                            <div className='min-w-0 max-w-prose'>
-                                                <h3 className='flex items-center gap-1.5 text-sm font-semibold text-text-primary'>
+                                    <section
+                                        className={styles.comparisonNotice}
+                                    >
+                                        <div
+                                            className={styles.comparisonHeader}
+                                        >
+                                            <div
+                                                className={
+                                                    styles.comparisonDescription
+                                                }
+                                            >
+                                                <h3
+                                                    className={
+                                                        styles.comparisonTitle
+                                                    }
+                                                >
                                                     <Scale
                                                         aria-hidden
-                                                        className='h-4 w-4'
+                                                        className={styles.icon2}
                                                     />
                                                     {t('Two ways to check')}
                                                 </h3>
-                                                <p className='mt-1 text-xs text-text-secondary'>
+                                                <p
+                                                    className={
+                                                        styles.comparisonHint
+                                                    }
+                                                >
                                                     {t(
                                                         'Check with AI evaluates meaning, grammar and required words — may need credits.',
                                                     )}{' '}
@@ -560,7 +578,9 @@ export function SentencePracticeSession({
                                                 </p>
                                                 <p
                                                     id='practice-compare-note'
-                                                    className='mt-1 text-xs text-text-secondary'
+                                                    className={
+                                                        styles.comparisonHint
+                                                    }
                                                 >
                                                     {t(
                                                         c.draft.trim()
@@ -575,7 +595,9 @@ export function SentencePracticeSession({
                                             {c.referenceLoading ? (
                                                 <p
                                                     role='status'
-                                                    className='text-xs font-medium text-text-secondary'
+                                                    className={
+                                                        styles.comparisonNote
+                                                    }
                                                 >
                                                     {t('Revealing…')}
                                                 </p>
@@ -621,7 +643,7 @@ export function SentencePracticeSession({
                 onClose={() => setConfirmClose(false)}
                 title={t('Leave practice?')}
                 footer={
-                    <div className='flex justify-end gap-2'>
+                    <div className={styles.comparisonActions}>
                         <Button
                             variant='secondary'
                             onClick={() => setConfirmClose(false)}
@@ -632,7 +654,7 @@ export function SentencePracticeSession({
                     </div>
                 }
             >
-                <p className='text-sm text-text-secondary'>
+                <p className={styles.referenceNote}>
                     {t(
                         'Your unsent draft will be discarded. An AI task or reference review already started may continue and be saved to your personal history. Leaving does not cancel pending work or guarantee a refund.',
                     )}

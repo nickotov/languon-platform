@@ -1,4 +1,5 @@
 import type { LanguageCatalogEntry, OwnedDictionary } from '@languon/contracts';
+import storyStyles from './dictionary-card-form.stories.module.css';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
 import { I18nProvider } from '@/fsd/shared/i18n';
@@ -108,7 +109,7 @@ export const Compact320: Story = {
     args: NewCard.args,
     decorators: [
         (Story) => (
-            <div style={{ maxWidth: 320, width: '100%' }}>
+            <div className={storyStyles.container}>
                 <Story />
             </div>
         ),
@@ -138,7 +139,7 @@ export const AutoFilledInputs320: Story = {
     },
     decorators: [
         (Story) => (
-            <div style={{ maxWidth: 320, width: '100%' }}>
+            <div className={storyStyles.container}>
                 <Story />
             </div>
         ),
@@ -149,7 +150,7 @@ export const AutoFilledInputsDesktop: Story = {
     args: AutoFilledInputs320.args,
     decorators: [
         (Story) => (
-            <div style={{ maxWidth: 880, width: '100%' }}>
+            <div className={storyStyles.container2}>
                 <Story />
             </div>
         ),

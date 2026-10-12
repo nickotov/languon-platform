@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './locked-content-state.stories.module.css';
 import { LockedContentState } from './locked-content-state';
 
 export default {
@@ -14,7 +15,7 @@ export const Overlay: StoryObj<typeof LockedContentState> = {
     args: {
         variant: 'overlay',
         children: (
-            <div style={{ padding: 32 }}>
+            <div className={storyStyles.inset}>
                 A preview of the lesson content behind the lock.
             </div>
         ),

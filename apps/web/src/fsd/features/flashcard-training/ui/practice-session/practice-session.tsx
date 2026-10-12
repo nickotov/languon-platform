@@ -166,7 +166,7 @@ export function PracticeSession({
                 onKeyDown={handleKey}
                 className={className}
             >
-                <div className='flex h-full min-h-0 flex-col'>
+                <div className={styles.layout}>
                     <SessionHeader
                         dictionaryTitle={dictionaryTitle}
                         subtitle={subtitle}
@@ -179,7 +179,7 @@ export function PracticeSession({
                         onEnd={handleEnd}
                     />
                     {!signedIn && (
-                        <p className='shrink-0 border-b border-border-default bg-background-subtle px-4 py-2 text-sm text-text-secondary md:px-6'>
+                        <p className={styles.anonymousNotice}>
                             {t('training.sessionOnlyNotice')}
                         </p>
                     )}
@@ -192,7 +192,11 @@ export function PracticeSession({
                         contentClassName={styles.content ?? ''}
                     />
                 </div>
-                <div className='sr-only' aria-live='polite' aria-atomic='true'>
+                <div
+                    className={styles.announcement}
+                    aria-live='polite'
+                    aria-atomic='true'
+                >
                     {announcement}
                 </div>
             </dialog>

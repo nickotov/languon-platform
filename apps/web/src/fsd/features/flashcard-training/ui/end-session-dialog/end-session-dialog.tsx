@@ -1,3 +1,4 @@
+import styles from './end-session-dialog.module.css';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, Dialog, DialogActions } from '@/fsd/shared/ui';
 
@@ -19,7 +20,7 @@ export function EndSessionDialog({
     const body = t(signedIn ? 'training.endSaved' : 'training.endAnonymous');
 
     const footer = (
-        <DialogActions className='flex-wrap gap-2'>
+        <DialogActions className={styles.actions}>
             <Button variant='secondary' onClick={onKeep}>
                 {t('training.keep')}
             </Button>
@@ -37,14 +38,12 @@ export function EndSessionDialog({
             dismissOnOverlayClick={false}
             footer={footer}
         >
-            <div className='flex flex-col gap-3 text-text-secondary'>
+            <div className={styles.body}>
                 <p>
                     {body} {t('training.endQueue')}
                 </p>
                 {saving && (
-                    <p className='font-medium text-warning-default'>
-                        {t('training.endSaving')}
-                    </p>
+                    <p className={styles.warning}>{t('training.endSaving')}</p>
                 )}
             </div>
         </Dialog>

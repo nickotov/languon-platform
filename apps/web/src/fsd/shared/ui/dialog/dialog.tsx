@@ -17,7 +17,7 @@ export type DialogSize =
 
 export type DialogProps = {
     children?: ReactNode;
-    className?: string;
+    className?: string | undefined;
     bodyClassName?: string | undefined;
     headerClassName?: string | undefined;
     titleClassName?: string | undefined;

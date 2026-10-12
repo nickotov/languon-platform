@@ -1,7 +1,7 @@
 .footer {
     border-top: 1px solid var(--border-default);
     flex: none;
-    padding: 12px;
+    padding: var(--space-12);
 }
 
 .trigger,
@@ -17,19 +17,19 @@
 
 .trigger {
     border-radius: var(--radius-md);
-    gap: 12px;
-    min-height: 52px;
-    padding: 6px 8px;
+    gap: var(--space-12);
+    min-height: var(--size-52);
+    padding: var(--space-6) var(--space-8);
     text-align: start;
     width: 100%;
 }
 
 .railTrigger {
     border-radius: var(--radius-full);
-    height: 44px;
+    height: var(--size-44);
     justify-content: center;
     margin: 0 auto;
-    width: 44px;
+    width: var(--size-44);
 }
 
 .trigger:hover,
@@ -44,7 +44,7 @@
 .menuRow:focus-visible,
 .themeOption:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .identity {
@@ -62,33 +62,33 @@
 }
 
 .identityHandle {
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 600;
 }
 
 .identityDescription {
     color: var(--text-secondary);
-    font-size: 12px;
-    margin-top: 2px;
+    font-size: var(--size-12);
+    margin-top: var(--space-2);
 }
 
 .popover {
-    max-width: min(272px, calc(100vw - 24px));
+    max-width: min(var(--size-272), calc(100vw - var(--size-24)));
     padding: 0;
-    width: 272px;
+    width: var(--size-272);
 }
 
 .inlineMenu {
     background: var(--background-elevated);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
-    margin-top: 8px;
+    margin-top: var(--space-8);
 }
 
 .menuContent {
     display: grid;
-    gap: 8px;
-    padding: 8px;
+    gap: var(--space-8);
+    padding: var(--space-8);
 }
 
 .menuRow {
@@ -100,11 +100,11 @@
     cursor: pointer;
     display: flex;
     font: inherit;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    gap: 10px;
-    min-height: 40px;
-    padding: 8px;
+    gap: var(--space-10);
+    min-height: var(--size-40);
+    padding: var(--space-8);
     text-align: start;
     text-decoration: none;
     width: 100%;
@@ -121,7 +121,7 @@
 
 .divider {
     background: var(--border-default);
-    height: 1px;
+    height: var(--size-1);
 }
 
 .themeFieldset {
@@ -132,18 +132,18 @@
 
 .themeLegend {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: var(--space-6);
 }
 
 .themeOptions {
     background: var(--background-subtle);
     border-radius: var(--radius-md);
     display: grid;
-    gap: 4px;
+    gap: var(--space-4);
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding: 4px;
+    padding: var(--space-4);
 }
 
 .themeOption {
@@ -156,12 +156,12 @@
     display: flex;
     flex-direction: column;
     font: inherit;
-    font-size: 11px;
-    gap: 2px;
+    font-size: var(--size-11);
+    gap: var(--space-2);
     justify-content: center;
-    min-height: 44px;
+    min-height: var(--size-44);
     min-width: 0;
-    padding: 4px 2px;
+    padding: var(--space-4) var(--space-2);
 }
 
 .themeLabel {

@@ -15,7 +15,7 @@ export type BreadcrumbProps = {
     showHomeIcon?: boolean;
     maxVisibleItems?: number;
     ariaLabel?: string;
-    className?: string;
+    className?: string | undefined;
 };
 
 export function Breadcrumb({

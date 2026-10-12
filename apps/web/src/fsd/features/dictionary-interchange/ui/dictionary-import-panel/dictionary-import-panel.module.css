@@ -25,13 +25,13 @@
 
 .heading {
     color: var(--text-primary);
-    font-size: 16px;
+    font-size: var(--size-16);
     font-weight: 600;
 }
 
 .eyebrow {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -40,7 +40,7 @@
 .fileInput {
     background: var(--background-subtle);
     padding: var(--spacing-12);
-    font-size: 14px;
+    font-size: var(--size-14);
     min-width: 0;
 }
 
@@ -53,7 +53,7 @@
     font: inherit;
     font-weight: 500;
     margin-inline-end: var(--spacing-12);
-    min-height: 40px;
+    min-height: var(--size-40);
     padding: var(--spacing-8) var(--spacing-12);
 }
 
@@ -85,7 +85,7 @@
     gap: var(--spacing-16);
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     border-radius: var(--radius-md);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.5;
 }
 

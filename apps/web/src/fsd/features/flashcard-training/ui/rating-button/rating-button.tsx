@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Spinner } from '@/fsd/shared/ui';
 import type { Rating } from '../../types';
+import styles from './rating-button.module.css';
 
 export function RatingButton({
     rating,
@@ -26,17 +27,21 @@ export function RatingButton({
 
     function resolveDisplay() {
         if (mobile) {
-            return 'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border-default bg-background-surface px-3 py-2 md:hidden' as const;
+            return styles.mobile;
         }
 
-        return 'hidden w-24 shrink-0 flex-col items-center justify-center gap-2 self-stretch rounded-2xl px-2 py-6 hover:bg-background-subtle hover:opacity-100 focus-visible:opacity-100 md:flex' as const;
+        return styles.desktop;
     }
 
     const display = resolveDisplay();
 
-    const opacity = mobile || loading ? 'opacity-100' : 'opacity-30';
+    const opacity = mobile || loading ? styles.visible : styles.muted;
 
-    const classes = `${display} ${opacity} text-text-secondary transition-opacity motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus disabled:cursor-not-allowed`;
+    const classes = `${styles.button} ${display} ${opacity}`;
+
+    const indicatorClass = mobile
+        ? styles.mobileIndicator
+        : styles.desktopIndicator;
 
     function handleClick() {
         onRate(rating);
@@ -51,20 +56,14 @@ export function RatingButton({
             aria-busy={loading || undefined}
             className={classes}
         >
-            <span
-                className={
-                    mobile
-                        ? 'flex items-center justify-center'
-                        : 'flex h-12 w-12 items-center justify-center rounded-full border border-border-strong bg-background-surface'
-                }
-            >
+            <span className={indicatorClass}>
                 {loading ? (
                     <Spinner />
                 ) : (
-                    <Icon aria-hidden className='h-5 w-5' />
+                    <Icon aria-hidden className={styles.icon} />
                 )}
             </span>
-            <span className='text-center text-sm font-medium'>{label}</span>
+            <span className={styles.label}>{label}</span>
         </button>
     );
 }

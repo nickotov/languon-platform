@@ -3,15 +3,15 @@
 }
 
 .narrow {
-    max-width: 640px;
+    max-width: var(--size-640);
 }
 
 .default {
-    max-width: 680px;
+    max-width: var(--size-680);
 }
 
 .wide {
-    max-width: 720px;
+    max-width: var(--size-720);
 }
 
 .center {
@@ -22,26 +22,26 @@
     background: var(--background-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
-    padding: 24px;
+    padding: var(--space-24);
 }
 
 .header {
-    margin-bottom: 24px;
+    margin-bottom: var(--space-24);
 }
 
 .eyebrow {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
     letter-spacing: 0.08em;
-    margin: 0 0 8px;
+    margin: 0 0 var(--space-8);
     text-transform: uppercase;
 }
 
 .title,
 :where(.body) :where(h2, h3, h4) {
     color: var(--text-primary);
-    font-size: clamp(24px, 4vw, 30px);
+    font-size: clamp(var(--size-24), 4vw, var(--size-30));
     letter-spacing: -0.025em;
     line-height: 1.25;
     margin: 0;
@@ -49,19 +49,19 @@
 
 .summary {
     color: var(--text-secondary);
-    font-size: 16px;
+    font-size: var(--size-16);
     line-height: 1.625;
-    margin: 12px 0 0;
+    margin: var(--space-12) 0 0;
 }
 
 .body {
     color: var(--text-secondary);
-    font-size: 17px;
+    font-size: var(--size-17);
     line-height: 1.88;
 }
 
 .body > :where(*) {
-    margin-block: 0 16px;
+    margin-block: 0 var(--space-16);
 }
 
 .body :where(a, strong, h3) {
@@ -70,28 +70,28 @@
 
 .body :where(a) {
     text-decoration: underline;
-    text-underline-offset: 4px;
+    text-underline-offset: var(--size-4);
 }
 
 .body :where(ul, ol) {
-    padding-left: 24px;
+    padding-left: var(--space-24);
 }
 
 .body :where(blockquote) {
     border-left: 2px solid var(--border-strong);
     font-style: italic;
     margin-left: 0;
-    padding-left: 16px;
+    padding-left: var(--space-16);
 }
 
 .body :where(code) {
     background: var(--background-subtle);
     border-radius: var(--radius-xs);
-    padding: 2px 6px;
+    padding: var(--space-2) var(--space-6);
 }
 
 @media (min-width: 640px) {
     .bordered {
-        padding: 32px;
+        padding: var(--space-32);
     }
 }

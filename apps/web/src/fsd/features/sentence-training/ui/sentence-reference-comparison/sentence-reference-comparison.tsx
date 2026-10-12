@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-reference-comparison.module.css';
 
 import { useState } from 'react';
 import type { SentenceExercise } from '@languon/contracts';
@@ -23,14 +24,12 @@ export function SentenceReferenceComparison({
     return (
         <section
             aria-label={t('Free comparison')}
-            className='rounded-xl border border-dashed border-border-strong bg-background-subtle p-4'
+            className={styles.comparison}
         >
-            <div className='flex flex-wrap items-center justify-between gap-2'>
+            <div className={styles.header}>
                 <div>
-                    <h3 className='text-sm font-semibold'>
-                        {t('Free comparison')}
-                    </h3>
-                    <p className='mt-1 text-xs text-text-secondary'>
+                    <h3 className={styles.title}>{t('Free comparison')}</h3>
+                    <p className={styles.subtitle}>
                         {t('Manually reviewed')} · {t('No AI score')}
                     </p>
                 </div>
@@ -43,7 +42,7 @@ export function SentenceReferenceComparison({
                     {t(open ? 'Hide reference' : 'Show reference')}
                 </Button>
             </div>
-            <p role='status' className='mt-3 text-sm font-medium'>
+            <p role='status' className={styles.status}>
                 {t(
                     comparison.kind === 'match'
                         ? 'Matches the saved example after normalization.'
@@ -52,21 +51,21 @@ export function SentenceReferenceComparison({
                           : 'Reference read without an answer.',
                 )}
             </p>
-            <p className='mt-1 text-xs text-text-secondary'>
+            <p className={styles.subtitle}>
                 {t(
                     'Comparison ignores case, spacing, punctuation and apostrophe style. Accents and word order matter.',
                 )}
             </p>
             {comparison.ignored.length ? (
-                <details className='mt-2 text-xs text-text-secondary'>
-                    <summary className='cursor-pointer'>
+                <details className={styles.normalization}>
+                    <summary className={styles.normalizationAction}>
                         {t('Ignored differences:')}
                     </summary>
-                    <ul className='mt-2 flex flex-wrap gap-2'>
+                    <ul className={styles.normalizationList}>
                         {comparison.ignored.map((difference) => (
                             <li
                                 key={difference}
-                                className='rounded border border-border-default px-2 py-1'
+                                className={styles.normalizationItem}
                             >
                                 {t(
                                     {
@@ -83,27 +82,27 @@ export function SentenceReferenceComparison({
                 </details>
             ) : null}
             {open ? (
-                <dl className='mt-4 grid gap-3 md:grid-cols-2'>
-                    <div className='min-w-0 rounded-lg border border-border-default bg-background-surface p-3'>
-                        <dt className='text-xs text-text-secondary'>
+                <dl className={styles.answers}>
+                    <div className={styles.answer}>
+                        <dt className={styles.answerLabel}>
                             {t('Your answer')}
                         </dt>
                         <dd
                             lang={exercise.targetLanguage}
                             dir={languageDirection(exercise.targetLanguage)}
-                            className='mt-2 whitespace-pre-wrap break-words'
+                            className={styles.answerValue}
                         >
                             {comparison.answer || t('No answer entered.')}
                         </dd>
                     </div>
-                    <div className='min-w-0 rounded-lg border border-border-default bg-background-surface p-3'>
-                        <dt className='text-xs text-text-secondary'>
+                    <div className={styles.answer}>
+                        <dt className={styles.answerLabel}>
                             {t('Reference translation — one valid answer')}
                         </dt>
                         <dd
                             lang={exercise.targetLanguage}
                             dir={languageDirection(exercise.targetLanguage)}
-                            className='mt-2 whitespace-pre-wrap break-words'
+                            className={styles.answerValue}
                         >
                             {comparison.reference}
                         </dd>
@@ -112,7 +111,7 @@ export function SentenceReferenceComparison({
             ) : null}
             {onRecompare ? (
                 <Button
-                    className='mt-3'
+                    className={styles.reviewAction}
                     variant='secondary'
                     size='compact'
                     onClick={onRecompare}
@@ -121,7 +120,7 @@ export function SentenceReferenceComparison({
                     {t('Compare current answer again')}
                 </Button>
             ) : null}
-            <p className='mt-3 text-xs text-text-tertiary'>
+            <p className={styles.statusNote}>
                 {t(
                     'Works without AI or credits. A match is a text comparison, not a language-quality grade.',
                 )}

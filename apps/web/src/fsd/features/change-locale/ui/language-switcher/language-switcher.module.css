@@ -1,32 +1,32 @@
 .field {
     align-items: center;
     display: flex;
-    gap: 0.55rem;
+    gap: var(--space-8-8);
 }
 
 .label {
     color: var(--sys-color-text-secondary);
-    font-size: 0.82rem;
+    font-size: var(--size-13-12);
     font-weight: 700;
 }
 
 .select {
     cursor: pointer;
-    min-width: 120px;
+    min-width: var(--size-120);
 }
 
 :where(.compact) .label {
     position: absolute;
     clip: rect(0 0 0 0);
     clip-path: inset(50%);
-    height: 1px;
+    height: var(--size-1);
     overflow: hidden;
     white-space: nowrap;
-    width: 1px;
+    width: var(--size-1);
 }
 
 :where(.compact) .select {
-    min-width: 104px;
+    min-width: var(--size-104);
 }
 
 @media (max-width: 32rem) {
@@ -34,9 +34,9 @@
         position: absolute;
         clip: rect(0 0 0 0);
         clip-path: inset(50%);
-        height: 1px;
+        height: var(--size-1);
         overflow: hidden;
         white-space: nowrap;
-        width: 1px;
+        width: var(--size-1);
     }
 }

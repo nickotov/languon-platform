@@ -122,3 +122,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Magic Patterns web integration
+
+Use `$magic-patterns-css-integration` when implementing a Magic Patterns design
+in the web app. This repository-owned skill translates prototype utilities into
+colocated CSS Modules and canonical app tokens under ADR-0029. The installed
+Magic Patterns plugin remains untouched; standalone prototype generation may
+still use its own Tailwind environment. App fidelity and delivery checks remain
+owned by the existing UI composition, frontend and verification skills.

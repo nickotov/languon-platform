@@ -1,0 +1,108 @@
+.comparison {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-style: dashed;
+    border-color: var(--border-strong);
+    background-color: var(--background-subtle);
+    padding: var(--space-16);
+}
+
+.header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+}
+
+.title {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+}
+
+.subtitle {
+    margin-top: var(--space-4);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.status {
+    margin-top: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+}
+
+.normalization {
+    margin-top: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.normalizationAction {
+    cursor: pointer;
+}
+
+.normalizationList {
+    margin-top: var(--space-8);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.normalizationItem {
+    border-radius: var(--radius-4);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-4);
+}
+
+.answers {
+    margin-top: var(--space-16);
+    display: grid;
+    gap: var(--space-12);
+}
+
+@media (min-width: 768px) {
+    .answers {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.answer {
+    min-width: 0px;
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-12);
+}
+
+.answerLabel {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.answerValue {
+    margin-top: var(--space-8);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.reviewAction {
+    margin-top: var(--space-12);
+}
+
+.statusNote {
+    margin-top: var(--space-12);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}

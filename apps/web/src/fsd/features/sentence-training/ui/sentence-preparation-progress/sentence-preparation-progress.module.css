@@ -1,0 +1,149 @@
+.languageMode {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.activity {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-primary);
+}
+
+.activityIcon {
+    margin-top: var(--space-2);
+    height: var(--size-16);
+    width: var(--size-16);
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.activityIcon {
+    animation: spin 1s linear infinite;
+    color: var(--primary-default);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .activityIcon {
+        animation: none;
+    }
+}
+
+.refundNote {
+    display: block;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.connectionNote {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    border-radius: var(--radius-8);
+    background-color: var(--background-subtle);
+    padding: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.connectionIcon {
+    height: var(--size-14);
+    width: var(--size-14);
+}
+
+.coveragePanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding: var(--space-12);
+}
+
+.coverageTitle {
+    font-size: var(--size-18);
+    line-height: var(--size-28);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.counts {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--space-16);
+    row-gap: var(--space-4);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-primary);
+}
+
+.countsNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.coverageHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+}
+
+.coverageLabel {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.coverageValue {
+    color: var(--text-secondary);
+}
+
+.track {
+    height: var(--size-8);
+    overflow: hidden;
+    border-radius: var(--radius-9999);
+    background-color: var(--progress-track);
+}
+
+.fill {
+    height: 100%;
+    border-radius: var(--radius-9999);
+    background-color: var(--progress-fill);
+    transition-property: width;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fill {
+        transition-property: none;
+    }
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.progressContent > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-16);
+    margin-bottom: 0;
+}
+
+.coveragePanel > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+
+.coverage > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-4);
+    margin-bottom: 0;
+}

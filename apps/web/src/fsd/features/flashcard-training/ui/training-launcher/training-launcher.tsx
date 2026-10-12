@@ -1,5 +1,7 @@
 'use client';
 
+import styles from './training-launcher.module.css';
+
 import {
     GraduationCap,
     Layers,
@@ -152,10 +154,10 @@ function Launcher({
 
     function resolveCardsIcon() {
         if (capability.status === 'error') {
-            return <RefreshCw className='h-4 w-4' />;
+            return <RefreshCw className={styles.icon} />;
         }
 
-        return <Layers className='h-4 w-4' />;
+        return <Layers className={styles.icon} />;
     }
 
     const cardsIcon = resolveCardsIcon();
@@ -176,7 +178,7 @@ function Launcher({
             {
                 label: t('training.sentenceLabel'),
                 hint: t('training.comingSoon'),
-                icon: <MessageSquareText className='h-4 w-4' />,
+                icon: <MessageSquareText className={styles.icon} />,
                 onSelect: ignore,
                 disabled: true,
             },
@@ -184,8 +186,8 @@ function Launcher({
     ];
 
     const trigger = (
-        <span className='inline-flex items-center gap-2'>
-            <GraduationCap aria-hidden className='h-4 w-4' />
+        <span className={styles.label}>
+            <GraduationCap aria-hidden className={styles.icon} />
             {t('training.train')}
         </span>
     );
@@ -202,7 +204,7 @@ function Launcher({
                 showChevron
                 allowDisabledItems
                 placement={placement === 'top' ? 'top-end' : 'bottom-end'}
-                menuClassName='min-w-56 shadow-elevation-md'
+                menuClassName={styles.menu}
             />
             <SetupDialog
                 open={setupOpen}

@@ -1,14 +1,14 @@
 .rule {
     border: 0;
     border-top: 1px solid var(--border-default);
-    margin: 16px 0;
+    margin: var(--space-16) 0;
     width: 100%;
 }
 
 .labelled {
     align-items: center;
     display: flex;
-    gap: 12px;
+    gap: var(--space-12);
     width: 100%;
 }
 
@@ -19,7 +19,7 @@
 
 .label {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 500;
     letter-spacing: 0.04em;
     text-transform: uppercase;

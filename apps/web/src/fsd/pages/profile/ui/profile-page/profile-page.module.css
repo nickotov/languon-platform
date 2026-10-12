@@ -2,16 +2,16 @@
     margin: 0 auto;
     max-width: var(--size-max-width-app);
     min-height: calc(100dvh - var(--size-topbar-height));
-    padding: 32px var(--size-page-padding-mobile) 64px;
+    padding: var(--space-32) var(--size-page-padding-mobile) var(--space-64);
     width: 100%;
 }
 
 .intro {
-    margin-bottom: 24px;
+    margin-bottom: var(--space-24);
 }
 
 .introTitle {
-    font-size: 24px;
+    font-size: var(--size-24);
     font-weight: 600;
     letter-spacing: -0.025em;
     line-height: 1.25;
@@ -20,9 +20,9 @@
 
 .introDescription {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.625;
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
     max-width: var(--size-max-width-reading);
 }
 
@@ -30,16 +30,16 @@
     align-items: center;
     background: var(--background-surface);
     display: flex;
-    gap: 24px;
+    gap: var(--space-24);
     justify-content: space-between;
-    margin-bottom: 24px;
-    padding: 20px 24px;
+    margin-bottom: var(--space-24);
+    padding: var(--space-20) var(--space-24);
 }
 
 .identity {
     align-items: center;
     display: flex;
-    gap: 16px;
+    gap: var(--space-16);
     min-width: 0;
 }
 
@@ -51,19 +51,19 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .identityHeading {
-    font-size: 20px;
+    font-size: var(--size-20);
     font-weight: 600;
     margin: 0;
 }
 
 .identityEmail {
     color: var(--text-secondary);
-    font-size: 14px;
-    margin: 4px 0 0;
+    font-size: var(--size-14);
+    margin: var(--space-4) 0 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -71,26 +71,26 @@
 
 .summaryFacts {
     display: flex;
-    gap: 40px;
+    gap: var(--space-40);
     margin: 0;
 }
 
 .summaryFact {
-    min-width: 96px;
+    min-width: var(--size-96);
 }
 
 .summaryLabel {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
 .summaryValue {
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 600;
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
 }
 
 .tabs {
@@ -105,8 +105,8 @@
 
 .sections {
     display: grid;
-    gap: 24px;
-    padding-top: 24px;
+    gap: var(--space-24);
+    padding-top: var(--space-24);
 }
 
 .section,
@@ -120,11 +120,11 @@
 
 .sectionHeader {
     border-bottom: 1px solid var(--border-default);
-    padding: 20px 24px;
+    padding: var(--space-20) var(--space-24);
 }
 
 .sectionTitle {
-    font-size: 16px;
+    font-size: var(--size-16);
     font-weight: 600;
     margin: 0;
 }
@@ -135,14 +135,14 @@
 
 .sectionDescription {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.6;
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
     max-width: var(--size-max-width-reading);
 }
 
 .sectionBody {
-    padding: 20px 24px;
+    padding: var(--space-20) var(--space-24);
 }
 
 .emailChange {
@@ -150,10 +150,10 @@
     border-top: 1px solid var(--border-default);
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 20px;
+    gap: var(--space-12) var(--space-20);
     justify-content: space-between;
-    margin-top: 20px;
-    padding-top: 16px;
+    margin-top: var(--space-20);
+    padding-top: var(--space-16);
 }
 
 .photoRow,
@@ -161,7 +161,7 @@
 .emptyBlock {
     align-items: center;
     display: flex;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .photoCopy,
@@ -173,23 +173,23 @@
 
 .photoRow {
     border-bottom: 1px solid var(--border-default);
-    padding-bottom: 24px;
+    padding-bottom: var(--space-24);
 }
 
 .profileGrid {
     display: grid;
-    gap: 16px;
+    gap: var(--space-16);
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 24px 0;
+    margin: var(--space-24) 0;
 }
 
 .handleForm {
-    margin-bottom: 16px;
+    margin-bottom: var(--space-16);
 }
 
 .emptyTitle,
 .rowTitle {
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 600;
     margin: 0;
 }
@@ -198,13 +198,13 @@
 .rowDescription,
 .emptyDescription {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.55;
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
 }
 
 .emailChangeDescription {
-    flex: 1 1 260px;
+    flex: 1 1 var(--size-260);
     margin: 0;
 }
 
@@ -215,46 +215,46 @@
     border-radius: var(--radius-md);
     color: var(--text-tertiary);
     display: inline-flex;
-    flex: 0 0 40px;
-    height: 40px;
+    flex: 0 0 var(--size-40);
+    height: var(--size-40);
     justify-content: center;
-    width: 40px;
+    width: var(--size-40);
 }
 
 .glyph {
-    height: 18px;
-    width: 18px;
+    height: var(--size-18);
+    width: var(--size-18);
 }
 
 .centered {
     display: grid;
     min-height: calc(100dvh - var(--size-topbar-height));
-    padding: 24px;
+    padding: var(--space-24);
     place-items: center;
 }
 
 .signedOut {
     display: grid;
-    gap: 12px;
+    gap: var(--space-12);
     justify-items: center;
-    max-width: 440px;
+    max-width: var(--size-440);
     text-align: center;
 }
 
 .signedOutTitle {
-    font-size: 20px;
+    font-size: var(--size-20);
     margin: 0;
 }
 
 .signedOutDescription {
     color: var(--text-secondary);
     line-height: 1.55;
-    margin: 0 0 8px;
+    margin: 0 0 var(--space-8);
 }
 
 @media (min-width: 640px) {
     .main {
-        padding: 40px var(--size-page-padding-tablet) 72px;
+        padding: var(--space-40) var(--size-page-padding-tablet) var(--space-72);
     }
 }
 
@@ -268,13 +268,13 @@
     .summary {
         align-items: stretch;
         flex-direction: column;
-        padding: 16px;
+        padding: var(--space-16);
     }
 
     .summaryFacts {
         border-top: 1px solid var(--border-default);
-        gap: 24px;
-        padding-top: 16px;
+        gap: var(--space-24);
+        padding-top: var(--space-16);
     }
 
     .summaryFact {
@@ -284,7 +284,7 @@
 
     .sectionHeader,
     .sectionBody {
-        padding: 16px;
+        padding: var(--space-16);
     }
 
     .photoRow,
@@ -300,6 +300,6 @@
 
     .rowAction,
     .emptyAction {
-        margin-left: 56px;
+        margin-left: var(--space-56);
     }
 }

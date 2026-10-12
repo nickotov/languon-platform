@@ -1,3 +1,4 @@
+import styles from './manual-selection.module.css';
 import type { ChangeEvent } from 'react';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -70,15 +71,9 @@ export function ManualSelection({
     }
 
     return (
-        <fieldset
-            disabled={disabled}
-            className='flex min-w-0 flex-col gap-3 rounded-2xl border border-border-default bg-background-surface p-4'
-        >
-            <div className='flex flex-wrap items-center justify-between gap-2'>
-                <p
-                    aria-live='polite'
-                    className='text-sm font-medium text-text-primary'
-                >
+        <fieldset disabled={disabled} className={styles.selection}>
+            <div className={styles.toolbar}>
+                <p aria-live='polite' className={styles.selectedCount}>
                     {selectedLabel}
                 </p>
                 <Button
@@ -96,7 +91,7 @@ export function ManualSelection({
                 value={selection.search}
                 onChange={handleSearch}
                 placeholder={t('training.searchPlaceholder')}
-                leadingIcon={<Search className='h-4 w-4' />}
+                leadingIcon={<Search className={styles.icon} />}
                 hint={t('training.selectionHelp')}
             />
             {selection.status === 'error' && (
@@ -118,9 +113,7 @@ export function ManualSelection({
             )}
             {selection.status === 'loading' && <Skeleton lines={6} />}
             {selection.status === 'ready' && selection.entries.length === 0 && (
-                <p className='py-4 text-center text-sm text-text-secondary'>
-                    {emptyLabel}
-                </p>
+                <p className={styles.empty}>{emptyLabel}</p>
             )}
             {selection.status === 'ready' && selection.entries.length > 0 && (
                 <>
@@ -130,7 +123,7 @@ export function ManualSelection({
                         indeterminate={mixed}
                         onChange={handlePage}
                     />
-                    <ul className='flex flex-col divide-y divide-border-default rounded-xl border border-border-default'>
+                    <ul className={styles.entries}>
                         {selection.entries.map((entry) => (
                             <SelectionRow
                                 key={entry.entryId}
@@ -144,24 +137,21 @@ export function ManualSelection({
                     </ul>
                 </>
             )}
-            <nav
-                aria-label={t('training.pages')}
-                className='flex items-center justify-between gap-2'
-            >
+            <nav aria-label={t('training.pages')} className={styles.pagination}>
                 <Button
                     variant='secondary'
                     size='compact'
-                    leadingIcon={<ChevronLeft className='h-4 w-4' />}
+                    leadingIcon={<ChevronLeft className={styles.icon} />}
                     disabled={previousDisabled}
                     onClick={selection.previous}
                 >
                     {t('training.previous')}
                 </Button>
-                <span className='text-sm text-text-secondary'>{pageLabel}</span>
+                <span className={styles.pageLabel}>{pageLabel}</span>
                 <Button
                     variant='secondary'
                     size='compact'
-                    trailingIcon={<ChevronRight className='h-4 w-4' />}
+                    trailingIcon={<ChevronRight className={styles.icon} />}
                     disabled={nextDisabled}
                     onClick={selection.next}
                 >
@@ -190,18 +180,18 @@ function SelectionRow({
     }
 
     const label = (
-        <span className='grid min-w-0 grid-cols-2 gap-3'>
+        <span className={styles.entryLabel}>
             <span
                 lang={sourceLanguage.code}
                 dir={sourceLanguage.direction}
-                className='truncate text-text-primary'
+                className={styles.source}
             >
                 {entry.source}
             </span>
             <span
                 lang={targetLanguage.code}
                 dir={targetLanguage.direction}
-                className='truncate text-text-secondary'
+                className={styles.translation}
             >
                 {entry.translation}
             </span>
@@ -209,7 +199,7 @@ function SelectionRow({
     );
 
     return (
-        <li className='min-w-0 px-3 py-1'>
+        <li className={styles.entry}>
             <Checkbox checked={checked} onChange={handleChange} label={label} />
         </li>
     );

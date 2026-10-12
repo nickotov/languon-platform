@@ -4,14 +4,14 @@
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
     display: flex;
-    gap: 12px;
-    padding: 10px 12px;
+    gap: var(--space-12);
+    padding: var(--space-10) var(--space-12);
     width: 100%;
 }
 
 .root:where(.sm) {
-    gap: 8px;
-    padding: 6px 8px;
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-8);
 }
 
 .disabled {
@@ -31,23 +31,23 @@
     background: var(--text-primary);
     border-radius: 50%;
     color: var(--background-surface);
-    height: 40px;
-    width: 40px;
+    height: var(--size-40);
+    width: var(--size-40);
 }
 
 :where(.sm) .play {
-    height: 32px;
-    width: 32px;
+    height: var(--size-32);
+    width: var(--size-32);
 }
 
 .playIcon {
-    height: 20px;
-    width: 20px;
+    height: var(--size-20);
+    width: var(--size-20);
 }
 
 :where(.sm) .playIcon {
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .play:disabled,
@@ -60,7 +60,7 @@
 .controlButton:focus-visible,
 .seek:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .main {
@@ -70,7 +70,7 @@
 
 .label {
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
     margin: 0;
     overflow: hidden;
@@ -79,19 +79,19 @@
 }
 
 :where(.sm) .label {
-    font-size: 12px;
+    font-size: var(--size-12);
 }
 
 .timeline {
     align-items: center;
     display: flex;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .time {
     color: var(--text-tertiary);
     font-family: var(--sys-font-mono);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
@@ -99,7 +99,7 @@
 .track {
     background: var(--border-default);
     border-radius: var(--radius-full);
-    height: 6px;
+    height: var(--size-6);
     position: relative;
     width: 100%;
 }
@@ -115,8 +115,8 @@
     appearance: none;
     background: transparent;
     cursor: pointer;
-    height: 20px;
-    inset: -7px 0;
+    height: var(--size-20);
+    inset: calc(var(--size-7) * -1) 0;
     position: absolute;
     width: 100%;
 }
@@ -125,24 +125,24 @@
     appearance: none;
     background: var(--text-primary);
     border-radius: 50%;
-    height: 12px;
-    width: 12px;
+    height: var(--size-12);
+    width: var(--size-12);
 }
 
 .controls {
     display: flex;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .controlButton {
     background: transparent;
     border-radius: var(--radius-full);
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
-    height: 36px;
-    min-width: 36px;
-    padding-inline: 8px;
+    height: var(--size-36);
+    min-width: var(--size-36);
+    padding-inline: var(--space-8);
 }
 
 .controlButton:hover:not(:disabled) {
@@ -151,8 +151,8 @@
 }
 
 .controlIcon {
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .speedActive {
@@ -162,7 +162,7 @@
 
 .error {
     color: var(--danger-default);
-    font-size: 12px;
+    font-size: var(--size-12);
     margin: 0;
 }
 

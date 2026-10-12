@@ -1,0 +1,102 @@
+.root > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.rows > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
+
+.selectionDock {
+    position: sticky;
+    bottom: var(--size-80);
+    z-index: 30;
+}
+@media (min-width: 1024px) {
+    .selectionDock {
+        bottom: var(--size-16);
+    }
+}
+
+.selectionPanel > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
+.selectionPanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--primary-default);
+    background-color: var(--background-elevated);
+    padding: var(--space-12);
+    box-shadow:
+        0 var(--size-10) var(--size-15) calc(var(--size-3) * -1)
+            rgb(0 0 0 / 0.1),
+        0 var(--size-4) var(--size-6) calc(var(--size-4) * -1) rgb(0 0 0 / 0.1);
+}
+
+.selectionToolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-12);
+    row-gap: var(--space-8);
+}
+
+.selectionCount {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.selectionLink {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+    color: var(--primary-default);
+    text-decoration-line: underline;
+    text-underline-offset: var(--size-2);
+}
+
+.selectionActions {
+    margin-inline-start: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.pagination {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.paginationHelp {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.secondaryHelp {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}

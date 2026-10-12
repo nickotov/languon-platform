@@ -1,3 +1,4 @@
+import styles from './setup-alerts.module.css';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import { orderFields } from '../../lib/flashcard-fields';
@@ -75,7 +76,7 @@ export function SetupAlerts({
                     tone='warning'
                     title={t('training.prefsConflict')}
                     actions={
-                        <div className='flex flex-wrap gap-2'>
+                        <div className={styles.actions}>
                             <Button
                                 variant='secondary'
                                 size='compact'

@@ -6,16 +6,16 @@
 
 .list {
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--space-6);
     list-style: none;
     margin: 0;
     padding: 0;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
 }
 
 .item {
-    gap: 6px;
+    gap: var(--space-6);
     min-width: 0;
 }
 
@@ -29,9 +29,9 @@
 }
 
 .link {
-    max-width: 256px;
+    max-width: var(--size-256);
     overflow: hidden;
-    padding: 2px;
+    padding: var(--space-2);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -46,10 +46,10 @@
     background: transparent;
     border: 0;
     display: flex;
-    height: 24px;
+    height: var(--size-24);
     justify-content: center;
     padding: 0;
-    width: 24px;
+    width: var(--size-24);
 }
 
 .ellipsis:hover {
@@ -60,15 +60,15 @@
 .link:focus-visible,
 .ellipsis:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .separator,
 .icon,
 .ellipsisIcon {
     flex: none;
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .separator {
@@ -81,7 +81,7 @@
 
 .current,
 .muted {
-    max-width: 256px;
+    max-width: var(--size-256);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

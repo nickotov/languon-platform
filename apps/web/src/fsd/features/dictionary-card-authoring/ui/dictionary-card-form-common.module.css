@@ -1,5 +1,5 @@
 .card {
-    padding: 20px;
+    padding: var(--space-20);
 }
 
 .embedded {
@@ -23,13 +23,13 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    margin-top: 20px;
+    margin-top: var(--space-20);
 }
 
 .body {
     container: card-authoring / inline-size;
     display: grid;
-    gap: 16px;
+    gap: var(--space-16);
     min-height: 0;
     min-width: 0;
     overflow-y: auto;
@@ -38,7 +38,7 @@
 .wordPair {
     align-items: start;
     display: grid;
-    gap: 16px;
+    gap: var(--space-16);
     grid-template-columns: minmax(0, 1fr);
     min-width: 0;
 }
@@ -62,13 +62,13 @@
 }
 
 :where(.embedded) .body {
-    padding: 20px 24px;
+    padding: var(--space-20) var(--space-24);
 }
 
 .fieldCount {
     color: var(--text-tertiary);
-    font-size: 12px;
-    margin: 4px 0 0;
+    font-size: var(--size-12);
+    margin: var(--space-4) 0 0;
     text-align: right;
 }
 
@@ -79,15 +79,15 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
 }
 
 .optionalFields {
     border-top: 1px solid var(--border-default);
     display: grid;
-    gap: 16px;
-    padding-top: 16px;
+    gap: var(--space-16);
+    padding-top: var(--space-16);
 }
 
 .optionalHeading {
@@ -95,45 +95,45 @@
     color: var(--text-tertiary);
     display: flex;
     flex-wrap: wrap;
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 500;
-    gap: 8px;
+    gap: var(--space-8);
     letter-spacing: 0.025em;
     margin: 0;
     text-transform: uppercase;
 }
 
 .optionalBadge {
-    border-radius: 6px;
+    border-radius: var(--radius-6);
     letter-spacing: normal;
 }
 
 .suggestions {
     background: var(--background-subtle);
     border: 1px dashed var(--border-strong);
-    border-radius: 12px;
+    border-radius: var(--radius-12);
     display: grid;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 12px;
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+    padding: var(--space-12);
 }
 
 .inlineSuggestion,
 .fieldProgress {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
-    border-radius: 8px;
-    min-height: 44px;
-    padding: 10px 12px;
+    border-radius: var(--radius-8);
+    min-height: var(--size-44);
+    padding: var(--space-10) var(--space-12);
 }
 
 .inlineSuggestion {
     display: grid;
-    gap: 10px;
+    gap: var(--space-10);
 }
 
 .inlineSuggestionValue {
-    font-size: 14px;
+    font-size: var(--size-14);
     margin: 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
@@ -143,7 +143,7 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
 }
 
@@ -151,9 +151,9 @@
     align-items: center;
     color: var(--text-secondary);
     display: inline-flex;
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
-    gap: 6px;
+    gap: var(--space-6);
     letter-spacing: 0.025em;
     text-transform: uppercase;
 }
@@ -161,36 +161,36 @@
 .inlineSuggestionDetail,
 .suggestionDependency {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
 }
 
 .fieldProgress {
     align-items: center;
     color: var(--text-secondary);
     display: flex;
-    font-size: 14px;
-    gap: 8px;
+    font-size: var(--size-14);
+    gap: var(--space-8);
 }
 
 .previousSuggestions {
-    margin-top: 8px;
+    margin-top: var(--space-8);
 }
 
 .previousSummary {
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 500;
     width: fit-content;
 }
 
 :where(.previousSuggestions[open]) .previousSummary {
-    margin-bottom: 8px;
+    margin-bottom: var(--space-8);
 }
 
 .suggestionTitle {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 500;
 }
 
@@ -206,7 +206,7 @@
 
 .suggestionList {
     display: grid;
-    gap: 8px;
+    gap: var(--space-8);
     list-style: none;
     margin: 0;
     padding: 0;
@@ -216,13 +216,13 @@
     align-items: flex-start;
     background: var(--background-surface);
     border: 1px solid var(--border-default);
-    border-radius: 8px;
+    border-radius: var(--radius-8);
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
     min-width: 0;
-    padding: 10px;
+    padding: var(--space-10);
 }
 
 .suggestion:where([data-selected]) {
@@ -230,26 +230,26 @@
 }
 
 .suggestionContent {
-    flex: 1 1 180px;
+    flex: 1 1 var(--size-180);
     min-width: 0;
 }
 
 .suggestionLabel {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
 }
 
 .suggestionValue {
-    font-size: 14px;
+    font-size: var(--size-14);
     font-style: italic;
-    margin: 2px 0 0;
+    margin: var(--space-2) 0 0;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
 
 .suggestionActions {
     align-items: start;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: flex-start;
 }
 
@@ -259,20 +259,20 @@
 
 .overrideDivider {
     border-top: 1px solid var(--border-default);
-    padding-top: 16px;
+    padding-top: var(--space-16);
 }
 
 .overridePanel {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
-    border-radius: 12px;
+    border-radius: var(--radius-12);
     display: grid;
-    gap: 12px;
-    padding: 12px;
+    gap: var(--space-12);
+    padding: var(--space-12);
 }
 
 .overrideTitle {
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
     margin: 0;
 }
@@ -280,15 +280,15 @@
 .overrideDescription {
     color: var(--text-secondary);
     display: block;
-    font-size: 12px;
-    margin-top: 2px;
+    font-size: var(--size-12);
+    margin-top: var(--space-2);
 }
 
 .overrideFields {
     border-top: 1px solid var(--border-default);
     display: grid;
-    gap: 12px;
-    padding-top: 12px;
+    gap: var(--space-12);
+    padding-top: var(--space-12);
 }
 
 .footer {
@@ -296,14 +296,14 @@
     border-top: 1px solid var(--border-default);
     display: grid;
     flex-shrink: 0;
-    gap: 8px;
-    padding: 16px 0;
+    gap: var(--space-8);
+    padding: var(--space-16) 0;
 }
 
 .footerRow {
     align-items: center;
     display: flex;
-    gap: 16px;
+    gap: var(--space-16);
     justify-content: space-between;
 }
 
@@ -311,14 +311,14 @@
     align-items: center;
     display: flex;
     flex: none;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .versionCounter {
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: var(--size-13);
     font-variant-numeric: tabular-nums;
-    min-width: 72px;
+    min-width: var(--size-72);
     text-align: center;
 }
 
@@ -328,7 +328,7 @@
 }
 
 :where(.embedded) .footer {
-    padding: 16px 24px;
+    padding: var(--space-16) var(--space-24);
 }
 
 .primaryAction:disabled {
@@ -340,11 +340,11 @@
 
 @media (max-width: 767px) {
     :where(.embedded) .body {
-        padding: 16px;
+        padding: var(--space-16);
     }
 
     :where(.embedded) .footer {
-        padding: 12px 16px;
+        padding: var(--space-12) var(--space-16);
     }
 
     .footerRow {
@@ -362,14 +362,14 @@
     }
 
     .versionButton {
-        height: 44px;
-        width: 44px;
+        height: var(--size-44);
+        width: var(--size-44);
     }
 }
 
 .saveHint {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
     margin: 0;
 }
 
@@ -377,14 +377,14 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    margin-top: 6px;
+    gap: var(--space-6);
+    margin-top: var(--space-6);
 }
 
 .suggestionTitle {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-6);
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
@@ -396,12 +396,12 @@
 
 /* Keep the supplied dialog's row-based textarea geometry local to this feature. */
 .textarea {
-    border-radius: 6px;
-    line-height: 20px;
+    border-radius: var(--radius-6);
+    line-height: var(--size-20);
     min-height: 0;
 }
 
 .fieldCount,
 .overrideDescription {
-    line-height: 16px;
+    line-height: var(--size-16);
 }

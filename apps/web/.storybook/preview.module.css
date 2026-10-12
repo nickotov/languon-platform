@@ -1,0 +1,4 @@
+.canvas {
+    max-width: var(--size-720);
+    padding: var(--space-24);
+}

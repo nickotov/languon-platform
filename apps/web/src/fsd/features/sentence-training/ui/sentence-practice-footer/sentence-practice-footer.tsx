@@ -1,3 +1,4 @@
+import styles from './sentence-practice-footer.module.css';
 import { ArrowRight, Scale, SkipForward, Sparkles } from 'lucide-react';
 import { Button } from '@/fsd/shared/ui';
 import { useSentenceCopy } from '../sentence-copy';
@@ -53,10 +54,10 @@ export function SentencePracticeFooter({
     const checkVariant = completed ? 'secondary' : 'primary';
     const nextVariant = completed ? 'primary' : 'secondary';
     const nextLeadingIcon = !completed ? (
-        <SkipForward aria-hidden className='h-4 w-4' />
+        <SkipForward aria-hidden className={styles.icon} />
     ) : undefined;
     const nextTrailingIcon = completed ? (
-        <ArrowRight aria-hidden className='h-4 w-4 rtl:rotate-180' />
+        <ArrowRight aria-hidden className={styles.nextIcon} />
     ) : undefined;
     const nextAction = showNext ? (
         <Button
@@ -71,16 +72,19 @@ export function SentencePracticeFooter({
     ) : null;
 
     return (
-        <div className='mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-2'>
+        <div className={styles.footer}>
             <div>{!completed ? nextAction : null}</div>
-            <div className='flex flex-wrap items-center gap-2'>
+            <div className={styles.actions}>
                 {hasExercise ? (
                     <>
                         {showComparison ? (
                             <Button
                                 variant='secondary'
                                 leadingIcon={
-                                    <Scale aria-hidden className='h-4 w-4' />
+                                    <Scale
+                                        aria-hidden
+                                        className={styles.icon}
+                                    />
                                 }
                                 loading={referenceLoading}
                                 disabled={compareDisabled}
@@ -93,7 +97,9 @@ export function SentencePracticeFooter({
                     </>
                 ) : null}
                 <Button
-                    leadingIcon={<Sparkles aria-hidden className='h-4 w-4' />}
+                    leadingIcon={
+                        <Sparkles aria-hidden className={styles.icon} />
+                    }
                     variant={checkVariant}
                     loading={checkLoading}
                     disabled={checkDisabled}

@@ -1,12 +1,12 @@
 .shell {
-    --app-sidebar-center-offset: 120px;
+    --app-sidebar-center-offset: var(--size-120);
     --app-sidebar-width: var(--size-nav-sidebar-width);
     background: var(--background-canvas);
     min-height: 100dvh;
 }
 
 .railShell {
-    --app-sidebar-center-offset: 36px;
+    --app-sidebar-center-offset: var(--size-36);
     --app-sidebar-width: var(--size-nav-rail-width);
 }
 
@@ -31,17 +31,17 @@
     background: var(--background-surface);
     border-bottom: 1px solid var(--border-default);
     display: flex;
-    gap: 8px;
-    height: 64px;
-    padding: 0 8px;
+    gap: var(--space-8);
+    height: var(--size-64);
+    padding: 0 var(--space-8);
     position: sticky;
     top: 0;
     z-index: 30;
 }
 
 .mobileMenuButton {
-    height: 44px;
-    width: 44px;
+    height: var(--size-44);
+    width: var(--size-44);
 }
 
 .mobileLogo {
@@ -50,13 +50,13 @@
 
 .mobileDivider {
     background: var(--border-default);
-    height: 20px;
-    width: 1px;
+    height: var(--size-20);
+    width: var(--size-1);
 }
 
 .mobileTitle {
     flex: 1;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 600;
     margin: 0;
     min-width: 0;
@@ -70,9 +70,9 @@
     border: 2px solid var(--border-focus);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
-    inset-block-start: 8px;
-    inset-inline-start: 8px;
-    padding: 10px 16px;
+    inset-block-start: var(--size-8);
+    inset-inline-start: var(--size-8);
+    padding: var(--space-10) var(--space-16);
     position: fixed;
     transform: translateY(-160%);
     z-index: 100;

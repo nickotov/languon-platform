@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './user-message.stories.module.css';
 import { UserMessage } from './user-message';
 
 export default {
@@ -8,7 +9,7 @@ export default {
 
 export const States: StoryObj<typeof UserMessage> = {
     render: () => (
-        <div role='list' style={{ display: 'grid', gap: 16, maxWidth: 576 }}>
+        <div role='list' className={storyStyles.examples}>
             <UserMessage
                 text='Buenos días, quisiera reservar una mesa.'
                 timestamp='9:41 AM'

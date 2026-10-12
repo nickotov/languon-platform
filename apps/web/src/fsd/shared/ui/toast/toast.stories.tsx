@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './toast.stories.module.css';
 import { useEffect } from 'react';
 
 import { Button } from '../button/button';
@@ -16,7 +17,7 @@ export default meta;
 
 export const Tones: StoryObj = {
     render: () => (
-        <div style={{ display: 'grid', gap: 8 }}>
+        <div className={storyStyles.examples}>
             {(['info', 'success', 'warning', 'danger'] as ToastTone[]).map(
                 (tone) => (
                     <Toast key={tone} tone={tone}>

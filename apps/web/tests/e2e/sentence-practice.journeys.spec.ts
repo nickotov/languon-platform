@@ -359,8 +359,15 @@ test.describe('sentence practice and model preferences', () => {
         const contextualHint = practice.getByRole('button', {
             name: 'is useful.: show hint · Extra help',
         });
-        await expect(requiredHint).toHaveClass(/decoration-2/);
-        await expect(contextualHint).toHaveClass(/decoration-dashed/);
+        await expect(requiredHint).toHaveCSS(
+            'text-decoration-thickness',
+            '2px',
+        );
+        await expect(requiredHint).toHaveCSS('text-decoration-style', 'solid');
+        await expect(contextualHint).toHaveCSS(
+            'text-decoration-style',
+            'dashed',
+        );
         await requiredHint.click();
         await expect(
             page.getByText('libro', { exact: true }).last(),

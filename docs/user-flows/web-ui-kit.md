@@ -2,14 +2,17 @@
 feature: web-ui-kit
 title: Web UI Kit
 status: current
-last_verified: 2026-09-14
+last_verified: 2026-10-12
 surfaces:
     - browser
 source_paths:
     - .agent/features/013-web-ui-kit/**
     - .agent/features/023-magic-patterns-ui-kit-auth-redesign/**
+    - .agent/features/040-web-css-modules-migration/**
     - apps/web/.storybook/**
     - apps/web/src/app/globals.css
+    - apps/web/src/app/styles/**
+    - apps/web/scripts/style-contract.ts
     - apps/web/src/app/layout.tsx
     - apps/web/src/fsd/features/change-theme/**
     - apps/web/src/fsd/shared/theme/**
@@ -96,10 +99,18 @@ catalog and both theme palettes are built through Storybook.
 
 ## Automated regression checks
 
+Component styling uses colocated CSS Modules, shared geometry tokens and an
+explicit native reset under [ADR-0029](../adr/0029-web-css-modules-and-geometry-tokens.md).
+Magic Patterns utilities are translated during integration; Tailwind is not a
+runtime/build dependency. The styling guard rejects utility/directive regression
+and eligible untokenized geometry while allowing runtime presentation and the
+ImageResponse icon's inline Satori styles.
+
 Run focused web and catalog checks:
 
 ```sh
 pnpm --filter @languon/web test
+pnpm --filter @languon/web styles:check
 pnpm --filter @languon/web typecheck
 pnpm --filter @languon/web storybook:build
 pnpm --filter @languon/web build

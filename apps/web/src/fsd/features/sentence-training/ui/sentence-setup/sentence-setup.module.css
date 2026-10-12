@@ -1,0 +1,161 @@
+.compactDialog {
+    margin-bottom: 0px !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-bottom-right-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+}
+
+.preparationActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-8);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.preparationNote {
+    text-align: end;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.footerActions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-8);
+}
+
+.aiSettingsAction {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+    color: var(--primary-default);
+    text-decoration-line: underline;
+    text-underline-offset: var(--size-2);
+}
+
+.aiSettingsAction:hover {
+    color: var(--primary-hover);
+}
+
+.aiSettingsAction:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: var(--size-2);
+    box-shadow: 0 0 0 var(--size-2) var(--border-focus);
+}
+
+.setupNote {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.selectionPanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding: var(--space-12);
+}
+
+.selectionHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.selectionList {
+    max-height: var(--size-208);
+}
+
+.selectionList {
+    overflow-y: auto;
+}
+
+.optionNote {
+    margin-top: var(--space-4);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.estimatePanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding: var(--space-16);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+}
+
+.estimateMetrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12);
+}
+
+.costDetails {
+    margin-top: var(--space-12);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.costAction {
+    cursor: pointer;
+}
+
+.costDescription {
+    margin-top: var(--space-8);
+}
+
+.costNote {
+    margin-top: var(--space-12);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}
+
+.estimateNote {
+    margin-top: var(--space-12);
+    color: var(--text-secondary);
+}
+
+.preparationOption {
+    border-top-width: 1px;
+    border-color: var(--border-default);
+    padding-top: var(--space-16);
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.footer > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
+
+.setupContent > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-20);
+    margin-bottom: 0;
+}
+
+.selectionPanel > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+
+.selectionList > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}

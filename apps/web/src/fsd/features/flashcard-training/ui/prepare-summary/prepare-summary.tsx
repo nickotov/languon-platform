@@ -1,3 +1,4 @@
+import styles from './prepare-summary.module.css';
 import { CheckCircle2, CornerDownRight, MinusCircle } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { InlineAlert, Skeleton } from '@/fsd/shared/ui';
@@ -17,8 +18,7 @@ export function PrepareSummary({
 }) {
     const { t } = useI18n();
 
-    if (blocked)
-        return <p className='text-sm text-text-secondary'>{blocked}</p>;
+    if (blocked) return <p className={styles.blocked}>{blocked}</p>;
 
     if (prepare.status === 'error')
         return (
@@ -37,7 +37,7 @@ export function PrepareSummary({
         return (
             <div
                 aria-label={t('training.checkEligible')}
-                className='grid grid-cols-3 gap-3'
+                className={styles.skeletons}
             >
                 <Skeleton height={72} variant='rect' />
                 <Skeleton height={72} variant='rect' />
@@ -69,21 +69,16 @@ export function PrepareSummary({
     ];
 
     return (
-        <div className='flex flex-col gap-3'>
-            <dl aria-live='polite' className='grid grid-cols-3 gap-2 sm:gap-3'>
+        <div className={styles.summary}>
+            <dl aria-live='polite' className={styles.metrics}>
                 {stats.map(({ label, value, icon: Icon, note }) => (
-                    <div
-                        key={label}
-                        className='min-w-0 rounded-xl border border-border-default bg-background-subtle px-3 py-3'
-                    >
-                        <dt className='flex items-center gap-1 text-xs font-medium text-text-secondary'>
-                            <Icon className='h-4 w-4 shrink-0' aria-hidden />
+                    <div key={label} className={styles.metric}>
+                        <dt className={styles.metricLabel}>
+                            <Icon className={styles.icon} aria-hidden />
                             <span>{label}</span>
                         </dt>
-                        <dd className='mt-1 text-2xl font-semibold tabular-nums text-text-primary'>
-                            {value}
-                        </dd>
-                        <dd className='text-xs text-text-tertiary'>{note}</dd>
+                        <dd className={styles.metricValue}>{value}</dd>
+                        <dd className={styles.metricNote}>{note}</dd>
                     </div>
                 ))}
             </dl>

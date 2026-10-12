@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-preparation-chip.module.css';
 import {
     AlertTriangleIcon,
     CheckCircle2Icon,
@@ -24,50 +25,30 @@ export function SentencePreparationChip({
         total: run?.eligibleCount ?? 0,
     };
     let label = P('chipAttention');
-    let icon = (
-        <AlertTriangleIcon
-            aria-hidden
-            className='h-4 w-4 text-warning-default'
-        />
-    );
-    let tone = 'border-border-strong bg-background-surface text-text-primary';
+    let icon = <AlertTriangleIcon aria-hidden className={styles.warningIcon} />;
+    let tone = styles.neutralTone;
     if (controller.uncertain) {
         label = P('uncertainTitle');
     } else if (run?.pauseReason === 'stale' || run?.pauseReason === 'access') {
         label = P('chipExpired');
-        icon = <Clock3Icon aria-hidden className='h-4 w-4' />;
+        icon = <Clock3Icon aria-hidden className={styles.icon} />;
     } else if (run?.state === 'queued' || run?.state === 'running' || !run) {
         label = P('chipRunning', vars);
-        icon = (
-            <Loader2Icon
-                aria-hidden
-                className='h-4 w-4 animate-spin text-primary-default motion-reduce:animate-none'
-            />
-        );
+        icon = <Loader2Icon aria-hidden className={styles.runningIcon} />;
     } else if (run.state === 'stopping') {
         label = P('chipStopping');
-        icon = (
-            <Loader2Icon
-                aria-hidden
-                className='h-4 w-4 animate-spin motion-reduce:animate-none'
-            />
-        );
+        icon = <Loader2Icon aria-hidden className={styles.stoppingIcon} />;
     } else if (run.state === 'completed') {
         label = P('chipDone');
-        icon = (
-            <CheckCircle2Icon
-                aria-hidden
-                className='h-4 w-4 text-success-default'
-            />
-        );
+        icon = <CheckCircle2Icon aria-hidden className={styles.successIcon} />;
     } else if (run.pauseReason === 'credits') {
         label = P('chipCredits');
-        tone = 'border-warning-default bg-warning-subtle text-text-primary';
+        tone = styles.warningTone;
     } else if (run.state === 'paused' && run.pauseReason === 'user') {
         label = P('chipPaused', vars);
-        icon = <PauseIcon aria-hidden className='h-4 w-4' />;
+        icon = <PauseIcon aria-hidden className={styles.icon} />;
     }
-    const className = `inline-flex min-h-[36px] max-w-full items-center gap-2 rounded-full border px-3 text-sm font-medium transition-colors hover:bg-background-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background-surface ${tone}`;
+    const className = `${styles.chip} ${tone}`;
     return (
         <button
             type='button'
@@ -76,7 +57,7 @@ export function SentencePreparationChip({
             className={className}
         >
             {icon}
-            <span className='truncate'>{label}</span>
+            <span className={styles.label}>{label}</span>
         </button>
     );
 }

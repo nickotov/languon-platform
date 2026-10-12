@@ -1,3 +1,4 @@
+import styles from './session-header.module.css';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, ProgressBar } from '@/fsd/shared/ui';
@@ -31,10 +32,10 @@ export function SessionHeader({
 
     function resolveModeIcon() {
         if (dialogMode) {
-            return <Maximize2 className='h-4 w-4' />;
+            return <Maximize2 className={styles.icon} />;
         }
 
-        return <Minimize2 className='h-4 w-4' />;
+        return <Minimize2 className={styles.icon} />;
     }
 
     const modeIcon = resolveModeIcon();
@@ -42,17 +43,13 @@ export function SessionHeader({
     const onMode = dialogMode ? onFullscreen : onDialog;
 
     return (
-        <header className='shrink-0 border-b border-border-default bg-background-surface px-4 pb-3 pt-4 md:px-6'>
-            <div className='flex flex-wrap items-center gap-x-3 gap-y-2'>
-                <div className='min-w-0 flex-1 basis-40'>
-                    <h2 className='truncate text-base font-semibold text-text-primary'>
-                        {title}
-                    </h2>
-                    <p className='truncate text-sm text-text-secondary'>
-                        {subtitle}
-                    </p>
+        <header className={styles.header}>
+            <div className={styles.toolbar}>
+                <div className={styles.heading}>
+                    <h2 className={styles.title}>{title}</h2>
+                    <p className={styles.subtitle}>{subtitle}</p>
                 </div>
-                <div className='ml-auto flex items-center gap-2'>
+                <div className={styles.actions}>
                     <Button
                         variant='secondary'
                         leadingIcon={modeIcon}
@@ -62,7 +59,7 @@ export function SessionHeader({
                     </Button>
                     <Button
                         variant='secondary'
-                        leadingIcon={<X className='h-4 w-4' />}
+                        leadingIcon={<X className={styles.icon} />}
                         onClick={onEnd}
                     >
                         {t('training.end')}
@@ -75,7 +72,7 @@ export function SessionHeader({
                     max={Math.max(1, total)}
                     ariaLabel={t('training.reviewedLabel')}
                     size='sm'
-                    className='mt-3'
+                    className={styles.progress}
                 />
             )}
         </header>

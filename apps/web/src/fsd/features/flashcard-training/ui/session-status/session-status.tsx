@@ -1,3 +1,4 @@
+import styles from './session-status.module.css';
 import { AlertTriangle, Lock } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button } from '@/fsd/shared/ui';
@@ -42,19 +43,16 @@ export function SessionStatus({
     const close = t(unavailable ? 'training.close' : 'training.endSession');
 
     return (
-        <div
-            role='alert'
-            className='mx-auto flex max-w-md flex-col items-center gap-4 py-12 text-center'
-        >
-            <span className='flex h-12 w-12 items-center justify-center rounded-full bg-background-subtle text-text-secondary'>
-                <Icon aria-hidden className='h-6 w-6' />
+        <div role='alert' className={styles.status}>
+            <span className={styles.symbol}>
+                <Icon aria-hidden className={styles.icon} />
             </span>
-            <h3 className='text-xl font-semibold text-text-primary'>{title}</h3>
-            <p className='text-text-secondary'>{body}</p>
+            <h3 className={styles.title}>{title}</h3>
+            <p className={styles.body}>{body}</p>
             {signedIn && state.savedCount > 0 && (
-                <p className='text-sm text-text-secondary'>{saved}</p>
+                <p className={styles.saved}>{saved}</p>
             )}
-            <div className='flex flex-wrap justify-center gap-3'>
+            <div className={styles.actions}>
                 {!unavailable && (
                     <RetryButton
                         retryAt={state.errorRetryAt}

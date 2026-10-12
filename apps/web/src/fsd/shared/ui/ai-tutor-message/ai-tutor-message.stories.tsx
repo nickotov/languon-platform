@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './ai-tutor-message.stories.module.css';
 import { AiTutorMessage } from './ai-tutor-message';
 
 export default {
@@ -8,7 +9,7 @@ export default {
 
 export const States: StoryObj<typeof AiTutorMessage> = {
     render: () => (
-        <div style={{ display: 'grid', gap: 20 }}>
+        <div className={storyStyles.examples}>
             <AiTutorMessage
                 tutorName='Sofía'
                 timestamp='2:14 PM'

@@ -1,14 +1,68 @@
+.statusPanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-12);
+}
+
+.statusHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+}
+
+.activity {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.reason {
+    margin-top: var(--space-4);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.track {
+    margin-top: var(--space-8);
+    height: var(--size-4);
+    overflow: hidden;
+    border-radius: var(--radius-9999);
+    background-color: var(--progress-track);
+}
+
+.fill {
+    height: 100%;
+    width: 33.333333%;
+    border-radius: var(--radius-9999);
+    background-color: var(--progress-fill);
+}
+
+.notice {
+    margin-top: var(--space-4);
+    font-size: var(--size-11);
+    color: var(--text-tertiary);
+}
+
 .indeterminate {
     animation: practice-indeterminate 1.4s var(--easing-standard) infinite;
 }
+
 @keyframes practice-indeterminate {
     from {
         transform: translateX(-100%);
     }
+
     to {
         transform: translateX(300%);
     }
 }
+
 @media (prefers-reduced-motion: reduce) {
     .indeterminate {
         animation: none !important;

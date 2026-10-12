@@ -1,0 +1,124 @@
+.root {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.group > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
+
+.heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.headingIcon {
+    height: var(--size-16);
+    width: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.count {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    font-weight: 400;
+    color: var(--text-tertiary);
+}
+
+.warning {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.warningIcon {
+    margin-top: var(--space-2);
+    height: var(--size-16);
+    width: var(--size-16);
+    flex-shrink: 0;
+}
+
+.hints > :where(:not([hidden]) ~ :not([hidden])) {
+    border-top-width: 1px;
+    border-bottom-width: 0;
+    border-color: var(--border-default);
+}
+.hints {
+    overflow: hidden;
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+}
+
+.hint {
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-10);
+}
+
+.hintWords {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-8);
+    row-gap: var(--space-4);
+}
+
+.sourceWord {
+    overflow-wrap: break-word;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.directionIcon {
+    height: var(--size-14);
+    width: var(--size-14);
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+}
+.directionIcon:where([dir='rtl'], [dir='rtl'] *) {
+    transform: translate(0, 0) rotate(180deg) skewX(0) skewY(0) scaleX(1)
+        scaleY(1);
+}
+
+.directionLabel {
+    position: absolute;
+    width: var(--size-1);
+    height: var(--size-1);
+    padding: 0;
+    margin: calc(var(--space-1) * -1);
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.translatedWord {
+    overflow-wrap: break-word;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.explanation {
+    margin-top: var(--space-2);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}

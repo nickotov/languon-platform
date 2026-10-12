@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './input.stories.module.css';
 import { Input } from './input';
 
 const meta = { component: Input, title: 'UI/Input' } satisfies Meta<
@@ -39,7 +40,7 @@ export const Disabled: StoryObj<typeof meta> = {
 export const ControlSizes: StoryObj<typeof meta> = {
     args: { 'aria-label': 'Email' },
     render: () => (
-        <div style={{ display: 'grid', gap: 12 }}>
+        <div className={storyStyles.examples}>
             <Input aria-label='Small input' controlSize='small' />
             <Input aria-label='Medium input' controlSize='medium' />
             <Input aria-label='Large input' controlSize='large' />

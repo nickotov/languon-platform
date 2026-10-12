@@ -18,7 +18,7 @@
     border-radius: var(--sys-radius-sm);
     box-shadow: var(--sys-shadow-raised);
     left: 0;
-    max-height: 240px;
+    max-height: var(--size-240);
     overflow-y: auto;
     padding: var(--sys-space-1);
     position: absolute;
@@ -30,8 +30,8 @@
 .option,
 .message {
     border-radius: var(--sys-radius-sm);
-    min-height: 44px;
-    padding: 11px var(--sys-space-3);
+    min-height: var(--size-44);
+    padding: var(--space-11) var(--sys-space-3);
 }
 
 .option {

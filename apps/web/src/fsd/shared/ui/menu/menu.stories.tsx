@@ -6,6 +6,7 @@ import {
     MoreHorizontal,
     Pencil,
 } from 'lucide-react';
+import storyStyles from './menu.stories.module.css';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Menu } from './menu';
 
@@ -50,7 +51,7 @@ export const Training: StoryObj<typeof meta> = {
         variant: 'secondary',
         showChevron: true,
         trigger: (
-            <span className='inline-flex items-center gap-2'>
+            <span className={storyStyles.trainingTrigger}>
                 <GraduationCap aria-hidden size={16} />
                 Train
             </span>

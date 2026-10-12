@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-preparation-sheet.module.css';
 import { PauseIcon, PlayIcon } from 'lucide-react';
 import type { SentencePreparationBatch } from '@languon/contracts';
 import { Button, Dialog } from '@/fsd/shared/ui';
@@ -82,18 +83,16 @@ export function SentencePreparationSheet({
         });
     }
     const footer = (
-        <div className='space-y-2'>
+        <div className={styles.footer}>
             {working ? (
-                <p className='text-xs text-text-secondary'>
-                    {P('backgroundNote')}
-                </p>
+                <p className={styles.footerNote}>{P('backgroundNote')}</p>
             ) : null}
-            <div className='flex flex-wrap items-center justify-end gap-2'>
+            <div className={styles.actions}>
                 {running || stopping ? (
                     <Button
                         variant='secondary'
                         leadingIcon={
-                            <PauseIcon aria-hidden className='h-4 w-4' />
+                            <PauseIcon aria-hidden className={styles.icon} />
                         }
                         loading={stopping}
                         disabled={stopping || controller.busy}
@@ -106,7 +105,7 @@ export function SentencePreparationSheet({
                     <Button
                         variant='secondary'
                         leadingIcon={
-                            <PlayIcon aria-hidden className='h-4 w-4' />
+                            <PlayIcon aria-hidden className={styles.icon} />
                         }
                         disabled={controller.busy || cooldown}
                         onClick={resume}
@@ -128,9 +127,7 @@ export function SentencePreparationSheet({
             open={open}
             onClose={onClose}
             variant={compact ? 'sheet' : 'dialog'}
-            className={
-                compact ? '!mb-0 !w-full !max-w-none !rounded-b-none' : ''
-            }
+            className={compact ? styles.compactDialog : ''}
             size='md'
             title={P('title')}
             description={dictionaryTitle}

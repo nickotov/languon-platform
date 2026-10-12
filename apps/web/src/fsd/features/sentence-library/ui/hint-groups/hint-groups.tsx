@@ -1,4 +1,5 @@
 import React from 'react';
+import componentStyles from './hint-groups.module.css';
 import {
     ArrowRightIcon,
     BookOpenIcon,
@@ -13,21 +14,21 @@ import type { LibraryHint, SavedSentence } from '../../types';
 export function HintGroups({ sentence }: { sentence: SavedSentence }) {
     const { L } = useInterfaceText();
     return (
-        <div className='grid gap-4'>
+        <div className={componentStyles.root}>
             <section
                 aria-labelledby={`${sentence.id}-dict`}
-                className='space-y-2'
+                className={componentStyles.group}
             >
                 <h3
                     id={`${sentence.id}-dict`}
-                    className='flex items-center gap-2 text-sm font-semibold text-text-primary'
+                    className={componentStyles.heading}
                 >
                     <BookOpenIcon
                         aria-hidden
-                        className='h-4 w-4 text-text-secondary'
+                        className={componentStyles.headingIcon}
                     />
                     {L('dictWords')}
-                    <span className='text-xs font-normal text-text-tertiary'>
+                    <span className={componentStyles.count}>
                         {sentence.dictionaryHints.length}
                     </span>
                 </h3>
@@ -39,18 +40,18 @@ export function HintGroups({ sentence }: { sentence: SavedSentence }) {
 
             <section
                 aria-labelledby={`${sentence.id}-ctx`}
-                className='space-y-2'
+                className={componentStyles.group}
             >
                 <h3
                     id={`${sentence.id}-ctx`}
-                    className='flex items-center gap-2 text-sm font-semibold text-text-primary'
+                    className={componentStyles.heading}
                 >
                     <LightbulbIcon
                         aria-hidden
-                        className='h-4 w-4 text-text-secondary'
+                        className={componentStyles.headingIcon}
                     />
                     {L('otherWords')}
-                    <span className='text-xs font-normal text-text-tertiary'>
+                    <span className={componentStyles.count}>
                         {sentence.contextHints.length}
                     </span>
                 </h3>
@@ -60,10 +61,10 @@ export function HintGroups({ sentence }: { sentence: SavedSentence }) {
                         sentence={sentence}
                     />
                 ) : (
-                    <p className='flex items-start gap-2 rounded-lg border border-border-default bg-background-subtle p-3 text-sm text-text-secondary'>
+                    <p className={componentStyles.warning}>
                         <InfoIcon
                             aria-hidden
-                            className='mt-0.5 h-4 w-4 shrink-0'
+                            className={componentStyles.warningIcon}
                         />
                         {L('noExtraHints')}
                     </p>
@@ -82,26 +83,28 @@ function HintList({
 }) {
     const { L } = useInterfaceText();
     return (
-        <ul className='divide-y divide-border-default overflow-hidden rounded-lg border border-border-default bg-background-surface'>
+        <ul className={componentStyles.hints}>
             {hints.map((hint) => (
-                <li key={hint.id} className='px-3 py-2.5'>
-                    <div className='flex flex-wrap items-center gap-x-2 gap-y-1'>
+                <li key={hint.id} className={componentStyles.hint}>
+                    <div className={componentStyles.hintWords}>
                         <span
                             lang={sentence.sentenceLanguage}
                             dir='auto'
-                            className='break-words font-medium text-text-primary [overflow-wrap:anywhere]'
+                            className={componentStyles.sourceWord}
                         >
                             {hint.source}
                         </span>
                         <ArrowRightIcon
                             aria-hidden
-                            className='h-3.5 w-3.5 shrink-0 text-text-tertiary rtl:rotate-180'
+                            className={componentStyles.directionIcon}
                         />
-                        <span className='sr-only'>→</span>
+                        <span className={componentStyles.directionLabel}>
+                            →
+                        </span>
                         <span
                             lang={sentence.answerLanguage}
                             dir='auto'
-                            className='break-words text-text-primary [overflow-wrap:anywhere]'
+                            className={componentStyles.translatedWord}
                         >
                             {hint.target}
                         </span>
@@ -114,7 +117,7 @@ function HintList({
                     {hint.note ? (
                         <p
                             lang={sentence.sentenceLanguage}
-                            className='mt-0.5 text-xs text-text-secondary'
+                            className={componentStyles.explanation}
                         >
                             — {hint.note}
                         </p>

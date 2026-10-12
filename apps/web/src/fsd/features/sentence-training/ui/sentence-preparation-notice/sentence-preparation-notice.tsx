@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-preparation-notice.module.css';
 import { Button, ButtonLink, InlineAlert } from '@/fsd/shared/ui';
 import type { SentencePreparationController } from '../../types';
 import { usePreparationCopy } from '../sentence-preparation-copy';
@@ -20,7 +21,7 @@ export function SentencePreparationNotice({
     const cooldown = usePreparationRetryCooldown(controller.error?.retryAt);
     const retryBlocked = controller.busy || cooldown;
     const restartActions = (
-        <div className='flex flex-wrap gap-2'>
+        <div className={styles.actions}>
             <Button
                 size='compact'
                 onClick={onStartAgain}
@@ -66,7 +67,7 @@ export function SentencePreparationNotice({
         </Button>
     );
     const modelActions = (
-        <div className='flex flex-wrap gap-2'>
+        <div className={styles.actions}>
             {run ? resumeButton : admissionRecovery}
             {onOpenAiSettings ? (
                 <Button

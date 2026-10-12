@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Magic Patterns CSS Integration'
+    short_description: 'Translate web designs into owned CSS and tokens'
+    default_prompt: 'Use $magic-patterns-css-integration to integrate this Magic Patterns design into Languon web.'

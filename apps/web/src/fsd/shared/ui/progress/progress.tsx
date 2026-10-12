@@ -6,7 +6,7 @@ export type ProgressTone = 'danger' | 'default' | 'success' | 'warning';
 
 export type ProgressProps = {
     ariaLabel?: string;
-    className?: string;
+    className?: string | undefined;
     indeterminate?: boolean;
     label?: string;
     max?: number;

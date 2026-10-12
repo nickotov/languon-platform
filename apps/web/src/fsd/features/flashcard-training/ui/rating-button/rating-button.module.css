@@ -1,0 +1,114 @@
+.icon {
+    height: var(--size-20);
+    width: var(--size-20);
+}
+
+.label {
+    text-align: center;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+}
+
+.button {
+    color: var(--text-secondary);
+    transition-property: opacity;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.button:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: var(--size-2);
+    box-shadow: 0 0 0 var(--size-2) var(--border-focus);
+}
+
+.button:disabled {
+    cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .button {
+        transition-property: none;
+    }
+}
+
+.mobile {
+    display: flex;
+    min-height: var(--size-44);
+    flex: 1 1 0%;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+}
+
+@media (min-width: 768px) {
+    .mobile {
+        display: none;
+    }
+}
+
+.desktop {
+    display: none;
+    width: var(--size-96);
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    align-self: stretch;
+    border-radius: var(--radius-16);
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+    padding-top: var(--space-24);
+    padding-bottom: var(--space-24);
+}
+
+.desktop:hover {
+    background-color: var(--background-subtle);
+    opacity: 1;
+}
+
+.desktop:focus-visible {
+    opacity: 1;
+}
+
+@media (min-width: 768px) {
+    .desktop {
+        display: flex;
+    }
+}
+
+.muted {
+    opacity: 0.3;
+}
+
+.visible {
+    opacity: 1;
+}
+
+.mobileIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.desktopIndicator {
+    display: flex;
+    height: var(--size-48);
+    width: var(--size-48);
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-9999);
+    border-width: 1px;
+    border-color: var(--border-strong);
+    background-color: var(--background-surface);
+}

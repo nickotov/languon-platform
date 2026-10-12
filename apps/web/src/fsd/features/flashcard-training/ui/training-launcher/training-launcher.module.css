@@ -1,0 +1,15 @@
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.menu {
+    min-width: var(--size-224);
+    box-shadow: var(--elevation-md);
+}

@@ -11,7 +11,7 @@
     display: none;
     border-right: 1px solid var(--border-default);
     background: var(--background-subtle);
-    padding: 48px;
+    padding: var(--space-48);
 }
 
 .storyContent {
@@ -21,7 +21,7 @@
 
 .storyTitle {
     margin: 0;
-    font-size: 2.25rem;
+    font-size: var(--size-36);
     font-weight: 600;
     letter-spacing: -0.025em;
     line-height: 1.12;
@@ -29,28 +29,28 @@
 
 .benefits {
     display: grid;
-    gap: 28px;
+    gap: var(--space-28);
     list-style: none;
-    margin: 40px 0 0;
+    margin: var(--space-40) 0 0;
     padding: 0;
 }
 
 .benefit {
     display: flex;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .benefitTitle {
     display: block;
-    font-size: 16px;
+    font-size: var(--size-16);
     font-weight: 500;
 }
 
 .benefitDescription {
     display: block;
-    margin-top: 4px;
+    margin-top: var(--space-4);
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.625;
 }
 
@@ -60,20 +60,20 @@
     border-radius: var(--radius-md);
     color: var(--primary-default);
     display: flex;
-    flex: 0 0 40px;
-    height: 40px;
+    flex: 0 0 var(--size-40);
+    height: var(--size-40);
     justify-content: center;
-    margin-top: 4px;
+    margin-top: var(--space-4);
 }
 
 .benefitGraphic {
-    height: 20px;
-    width: 20px;
+    height: var(--size-20);
+    width: var(--size-20);
 }
 
 .proof {
     color: var(--text-tertiary);
-    font-size: 14px;
+    font-size: var(--size-14);
     margin: 0;
 }
 
@@ -88,26 +88,26 @@
     display: flex;
     flex: 1;
     justify-content: center;
-    padding: 24px 16px 48px;
+    padding: var(--space-24) var(--space-16) var(--space-48);
 }
 
 .authSection {
     align-self: start;
     display: grid;
-    gap: 24px;
+    gap: var(--space-24);
     max-width: var(--size-max-width-form);
     width: 100%;
 }
 
 .card {
     display: grid;
-    gap: 24px;
+    gap: var(--space-24);
     width: 100%;
 }
 
 .headingGroup {
     display: grid;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .eyebrow {
@@ -116,7 +116,7 @@
 
 .title {
     color: var(--text-primary);
-    font-size: 24px;
+    font-size: var(--size-24);
     font-weight: 600;
     letter-spacing: -0.025em;
     line-height: 1.25;
@@ -126,7 +126,7 @@
 .description,
 .intro {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.625;
     margin: 0;
 }
@@ -134,7 +134,7 @@
 .form,
 .stack {
     display: grid;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .formButton {
@@ -146,20 +146,20 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .endRow {
     display: flex;
-    font-size: 14px;
+    font-size: var(--size-14);
     justify-content: flex-end;
-    margin-top: -8px;
+    margin-top: calc(var(--space-8) * -1);
 }
 
 .authLink {
     color: var(--primary-default);
     font-weight: 500;
-    text-underline-offset: 4px;
+    text-underline-offset: var(--size-4);
 }
 
 .authLink:hover {
@@ -168,21 +168,21 @@
 
 .switch {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     margin: 0;
     text-align: center;
 }
 
 .authFooter {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     text-align: center;
 }
 
 .footerLink {
     color: var(--primary-default);
     font-weight: 500;
-    text-underline-offset: 4px;
+    text-underline-offset: var(--size-4);
 }
 
 .footerLink:hover {
@@ -193,8 +193,8 @@
     align-items: center;
     color: var(--text-secondary);
     display: grid;
-    font-size: 14px;
-    gap: 12px;
+    font-size: var(--size-14);
+    gap: var(--space-12);
     text-align: center;
 }
 
@@ -204,12 +204,12 @@
 
 .fieldGroup {
     display: grid;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .label {
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
 }
 
@@ -219,19 +219,19 @@
 }
 
 .passwordInput {
-    padding-left: 40px;
-    padding-right: 48px;
+    padding-left: var(--space-40);
+    padding-right: var(--space-48);
 }
 
 .leadingIcon {
     color: var(--text-tertiary);
-    height: 16px;
-    left: 12px;
+    height: var(--size-16);
+    left: var(--size-12);
     pointer-events: none;
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 16px;
+    width: var(--size-16);
     z-index: 1;
 }
 
@@ -243,13 +243,13 @@
     color: var(--text-tertiary);
     cursor: pointer;
     display: flex;
-    height: 48px;
+    height: var(--size-48);
     justify-content: center;
     padding: 0;
     position: absolute;
     right: 0;
     top: 0;
-    width: 44px;
+    width: var(--size-44);
 }
 
 .passwordToggle:hover {
@@ -262,29 +262,29 @@
 }
 
 .passwordToggleIcon {
-    height: 20px;
-    width: 20px;
+    height: var(--size-20);
+    width: var(--size-20);
 }
 
 .fieldHint {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: var(--size-12);
     line-height: 1.5;
 }
 
 .code {
     font-family: var(--sys-font-mono);
-    font-size: 22px;
+    font-size: var(--size-22);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.5em;
-    max-width: 192px;
+    max-width: var(--size-192);
     text-align: center;
 }
 
 .accountLayout {
     display: grid;
     min-height: calc(100dvh - var(--size-topbar-height));
-    padding: 32px 16px;
+    padding: var(--space-32) var(--space-16);
     place-items: center;
 }
 
@@ -294,23 +294,23 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--elevation-sm);
     display: grid;
-    gap: 20px;
+    gap: var(--space-20);
     max-width: var(--size-max-width-form);
-    padding: 32px;
+    padding: var(--space-32);
     width: 100%;
 }
 
 @media (min-width: 640px) {
     .authMain {
-        padding-left: 24px;
-        padding-right: 24px;
+        padding-left: var(--space-24);
+        padding-right: var(--space-24);
     }
 
     .card {
         background: var(--background-surface);
         border: 1px solid var(--border-default);
         border-radius: var(--radius-lg);
-        padding: 32px;
+        padding: var(--space-32);
     }
 
     .switch {
@@ -318,7 +318,7 @@
     }
 
     .accountLayout {
-        padding-inline: 24px;
+        padding-inline: var(--space-24);
     }
 }
 
@@ -335,7 +335,7 @@
     }
 
     .storyTitle {
-        font-size: 2.25rem;
+        font-size: var(--size-36);
     }
 
     .formPanel {
@@ -344,7 +344,7 @@
 
     .authMain {
         align-items: center;
-        padding: 0 32px 64px;
+        padding: 0 var(--space-32) var(--space-64);
     }
 
     .authSection {
@@ -354,10 +354,10 @@
 
 @media (min-width: 1280px) {
     .story {
-        padding-inline: 64px;
+        padding-inline: var(--space-64);
     }
 
     .storyTitle {
-        font-size: 2.5rem;
+        font-size: var(--size-40);
     }
 }

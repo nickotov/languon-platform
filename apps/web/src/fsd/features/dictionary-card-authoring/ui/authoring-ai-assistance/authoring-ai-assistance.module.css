@@ -1,8 +1,8 @@
 .aiControls {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: var(--radius-12);
+    padding: var(--space-12);
 }
 
 .aiActionRow,
@@ -11,16 +11,16 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
 }
 
 .aiTitle {
     align-items: center;
     display: inline-flex;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    gap: 6px;
+    gap: var(--space-6);
 }
 
 .aiButtons {
@@ -29,28 +29,28 @@
 
 .aiHelp {
     color: var(--text-secondary);
-    font-size: 12px;
-    line-height: 16px;
-    margin: 8px 0 0;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    margin: var(--space-8) 0 0;
 }
 
 .sourceHint {
     align-items: center;
     color: var(--text-tertiary);
     display: inline-flex;
-    font-size: 12px;
-    gap: 6px;
-    line-height: 16px;
-    margin: 4px 0 0;
+    font-size: var(--size-12);
+    gap: var(--space-6);
+    line-height: var(--size-16);
+    margin: var(--space-4) 0 0;
 }
 
 .aiProgress {
     background: var(--background-surface);
     border: 1px solid var(--border-default);
-    border-radius: 8px;
-    font-size: 14px;
-    margin-top: 12px;
-    padding: 10px;
+    border-radius: var(--radius-8);
+    font-size: var(--size-14);
+    margin-top: var(--space-12);
+    padding: var(--space-10);
 }
 
 .primaryAction:disabled {

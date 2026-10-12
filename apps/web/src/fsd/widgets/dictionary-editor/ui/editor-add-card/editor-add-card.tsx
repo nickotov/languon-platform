@@ -11,7 +11,6 @@ export function EditorAddCard({
 
     return (
         <Button
-            className='shadow-elev-lg'
             leadingIcon={<Plus size={20} aria-hidden />}
             disabled={cardMutation.isPending}
             onClick={openCardDraft}

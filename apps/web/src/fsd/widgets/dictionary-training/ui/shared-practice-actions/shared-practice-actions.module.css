@@ -1,0 +1,15 @@
+.trigger {
+    /* Preserve the caller's existing size override of the shared icon trigger. */
+    height: var(--size-40) !important;
+    width: var(--size-40) !important;
+    min-height: var(--size-40) !important;
+    border: 1px solid var(--border-strong);
+    background: var(--background-surface);
+    color: var(--text-primary);
+}
+
+.menu {
+    background: var(--background-elevated);
+    color: var(--text-primary);
+    border-color: var(--border-default);
+}

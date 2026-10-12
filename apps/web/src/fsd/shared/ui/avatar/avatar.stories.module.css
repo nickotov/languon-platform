@@ -1,0 +1,5 @@
+.controls {
+    display: flex;
+    gap: var(--space-16);
+    align-items: center;
+}

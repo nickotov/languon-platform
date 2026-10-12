@@ -4,7 +4,7 @@
 
 .list {
     display: flex;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .underline {
@@ -17,7 +17,7 @@
     background: var(--neutral-100);
     border-radius: var(--radius-md);
     display: inline-flex;
-    padding: 4px;
+    padding: var(--space-4);
 }
 
 .fullWidth {
@@ -32,19 +32,19 @@
     cursor: pointer;
     display: inline-flex;
     font-weight: 500;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: center;
     white-space: nowrap;
 }
 
 .sm {
-    font-size: 14px;
-    padding: 6px 12px;
+    font-size: var(--size-14);
+    padding: var(--space-6) var(--space-12);
 }
 
 .md {
-    font-size: 16px;
-    padding: 10px 16px;
+    font-size: var(--size-16);
+    padding: var(--space-10) var(--space-16);
 }
 
 :where(.fullWidth) .tab {
@@ -54,7 +54,7 @@
 :where(.underline) .tab {
     border-bottom: 2px solid transparent;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-    margin-bottom: -1px;
+    margin-bottom: calc(var(--space-1) * -1);
 }
 
 :where(.underline) .active {
@@ -80,7 +80,7 @@
 .tab:focus-visible,
 .panel:focus-visible {
     outline: 2px solid var(--neutral-900);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .tab:disabled {
@@ -94,11 +94,11 @@
 
 .badge {
     background: var(--neutral-200);
-    border-radius: 999px;
-    font-size: 12px;
+    border-radius: var(--radius-999);
+    font-size: var(--size-12);
     font-weight: 600;
-    min-width: 20px;
-    padding: 2px 6px;
+    min-width: var(--size-20);
+    padding: var(--space-2) var(--space-6);
 }
 
 :where(.active) .badge {
@@ -107,5 +107,5 @@
 }
 
 .panel {
-    margin-top: 16px;
+    margin-top: var(--space-16);
 }

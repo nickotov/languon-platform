@@ -85,8 +85,8 @@ React state.
 
 Frontend slices use `api`, `hooks`, `lib`, `model`, and `ui` segments only when
 needed. Components live in one-component folders below `ui`. Web composition
-uses Tailwind v3 semantic utilities; CSS Modules remain supported for existing
-and component-specific styling under ADR-0017. Shared primitives live in `shared/ui`
+uses colocated CSS Modules and canonical size/space/radius tokens under ADR-0029.
+Global CSS is limited to reset, theme and app foundations. Shared primitives live in `shared/ui`
 and include colocated stories. Prefer semantic native elements, including
 `dialog` and popover primitives, before custom interaction machinery. Avoid
 prop drilling through unrelated components by selecting scoped context, shared
@@ -105,7 +105,7 @@ ADR-0010 defines the framework, persistent owner membership, per-request
 authorization, dedicated refresh cookie, and private-edge boundary.
 
 Public-web visual behavior uses the exact accepted Magic Patterns token names
-and values exposed through Tailwind v3 semantic utilities (ADR-0017), with
+and values consumed from CSS Modules (ADR-0029), with
 `--sys-*` compatibility aliases for legacy consumers. The SSR-resolved
 Light/Dark/System preference, app-local primitives in
 `apps/web/src/fsd/shared/ui`, colocated Storybook stories, and verified runtime

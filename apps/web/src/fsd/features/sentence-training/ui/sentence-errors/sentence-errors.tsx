@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-errors.module.css';
 import { useSentenceCopy } from '../sentence-copy';
 
 import { useEffect, useState } from 'react';
@@ -57,7 +58,7 @@ export function SentenceErrorNotice({
             tone='error'
             title={t('Practice needs your attention')}
             actions={
-                <div className='flex flex-wrap gap-2'>
+                <div className={styles.container}>
                     {onRetry && !accessLost ? (
                         <Button
                             size='compact'

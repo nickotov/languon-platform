@@ -6,22 +6,22 @@
 
 .label {
     color: var(--sys-color-text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 700;
 }
 
 .select {
-    min-width: 108px;
+    min-width: var(--size-108);
 }
 
 @media (max-width: 32rem) {
     .label {
         clip: rect(0 0 0 0);
         clip-path: inset(50%);
-        height: 1px;
+        height: var(--size-1);
         overflow: hidden;
         position: absolute;
         white-space: nowrap;
-        width: 1px;
+        width: var(--size-1);
     }
 }

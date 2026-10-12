@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './tooltip.stories.module.css';
 import { Tooltip } from './tooltip';
 
 const meta = { component: Tooltip, title: 'UI/Tooltip' } satisfies Meta<
@@ -47,16 +48,7 @@ export const RichContent: StoryObj<typeof meta> = {
     },
     decorators: [
         (Story) => (
-            <div
-                style={{
-                    alignItems: 'flex-start',
-                    display: 'flex',
-                    height: 180,
-                    justifyContent: 'flex-end',
-                    overflow: 'hidden',
-                    width: '100%',
-                }}
-            >
+            <div className={storyStyles.viewport}>
                 <Story />
             </div>
         ),

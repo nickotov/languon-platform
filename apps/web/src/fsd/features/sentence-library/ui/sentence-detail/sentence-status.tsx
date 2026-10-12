@@ -5,6 +5,7 @@ import {
     ClockIcon,
     CheckCircle2Icon,
 } from 'lucide-react';
+import componentStyles from './sentence-status.module.css';
 import type { ReactNode } from 'react';
 import { Button } from '@/fsd/shared/ui';
 import type { SavedSentence } from '../../types';
@@ -33,7 +34,7 @@ export function SentenceStatus({
             icon: (
                 <CheckCircle2Icon
                     aria-hidden
-                    className='h-4 w-4 text-success-default'
+                    className={componentStyles.successIcon}
                 />
             ),
         });
@@ -43,43 +44,40 @@ export function SentenceStatus({
             icon: (
                 <ClockIcon
                     aria-hidden
-                    className='h-4 w-4 text-warning-default'
+                    className={componentStyles.warningIcon}
                 />
             ),
         });
     if (sentence.archivedByMe)
         reasons.push({
             text: L('statusMineBody'),
-            icon: <EyeOffIcon aria-hidden className='h-4 w-4' />,
+            icon: <EyeOffIcon aria-hidden className={componentStyles.icon} />,
         });
     if (sentence.globallyArchived)
         reasons.push({
             text: L('statusGlobalBody'),
-            icon: <ArchiveIcon aria-hidden className='h-4 w-4' />,
+            icon: <ArchiveIcon aria-hidden className={componentStyles.icon} />,
         });
     const icon = sentence.archivedByMe ? (
-        <RotateCcwIcon aria-hidden className='h-4 w-4' />
+        <RotateCcwIcon aria-hidden className={componentStyles.icon} />
     ) : (
-        <EyeOffIcon aria-hidden className='h-4 w-4' />
+        <EyeOffIcon aria-hidden className={componentStyles.icon} />
     );
     return (
-        <section className='space-y-3 rounded-xl border border-border-default bg-background-subtle p-3'>
-            <h3 className='text-sm font-semibold text-text-primary'>
-                {L('statusTitle')}
-            </h3>
-            <ul className='space-y-2 text-sm'>
+        <section className={componentStyles.root}>
+            <h3 className={componentStyles.heading}>{L('statusTitle')}</h3>
+            <ul className={componentStyles.reasons}>
                 {reasons.map((reason) => (
-                    <li
-                        key={reason.text}
-                        className='flex items-start gap-2 text-text-primary'
-                    >
-                        <span className='mt-0.5 shrink-0'>{reason.icon}</span>
+                    <li key={reason.text} className={componentStyles.reason}>
+                        <span className={componentStyles.reasonIcon}>
+                            {reason.icon}
+                        </span>
                         <span>{reason.text}</span>
                     </li>
                 ))}
             </ul>
             {restoreWarning ? (
-                <p className='text-xs text-text-secondary'>
+                <p className={componentStyles.help}>
                     {L('restoreOnlyPersonal')}
                 </p>
             ) : null}

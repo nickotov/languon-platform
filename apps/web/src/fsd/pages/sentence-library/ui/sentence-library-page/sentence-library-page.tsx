@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import componentStyles from './sentence-library-page.module.css';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
@@ -127,13 +128,13 @@ export function SentenceLibraryPage({
     }
     if (status !== 'authenticated' || query.isPending)
         return (
-            <main className='mx-auto w-full max-w-[1248px] px-4 pt-6 pb-10 lg:px-6 lg:pt-8'>
+            <main className={componentStyles.page}>
                 <LoadingState>{t('dictionary.editor.loading')}</LoadingState>
             </main>
         );
     if (!query.data)
         return (
-            <main className='mx-auto w-full max-w-[1248px] px-4 pt-6 pb-10 lg:px-6 lg:pt-8'>
+            <main className={componentStyles.page}>
                 <ErrorState
                     title={t('dictionary.public.unavailable')}
                     action={
@@ -146,7 +147,7 @@ export function SentenceLibraryPage({
         );
     const identity = `${userId}:${dictionaryHref}:${capability?.revision ?? 0}`;
     return (
-        <main className='mx-auto w-full max-w-[1248px] px-4 pt-6 pb-10 lg:px-6 lg:pt-8'>
+        <main className={componentStyles.page}>
             <SentenceLibrary
                 key={identity}
                 target={target}

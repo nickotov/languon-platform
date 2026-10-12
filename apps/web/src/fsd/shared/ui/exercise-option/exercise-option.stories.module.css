@@ -1,0 +1,5 @@
+.examples {
+    display: grid;
+    gap: var(--space-8);
+    max-width: var(--size-560);
+}

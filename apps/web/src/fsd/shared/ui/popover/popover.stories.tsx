@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './popover.stories.module.css';
 import { Popover } from './popover';
 
 const meta = { component: Popover, title: 'UI/Popover' } satisfies Meta<
@@ -36,16 +37,7 @@ export const ViewportCollision: StoryObj<typeof meta> = {
     },
     decorators: [
         (Story) => (
-            <div
-                style={{
-                    alignItems: 'flex-end',
-                    display: 'flex',
-                    height: 260,
-                    justifyContent: 'flex-end',
-                    overflow: 'hidden',
-                    width: '100%',
-                }}
-            >
+            <div className={storyStyles.viewport}>
                 <Story />
             </div>
         ),

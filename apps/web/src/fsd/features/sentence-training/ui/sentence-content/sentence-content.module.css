@@ -1,0 +1,279 @@
+.feedbackLabel {
+    margin-top: var(--space-16);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: var(--text-tertiary);
+}
+
+.answerText {
+    margin-top: var(--space-4);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding: var(--space-12);
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    line-height: 1.625;
+}
+
+.highlight {
+    border-radius: var(--radius-2);
+    background-color: var(--warning-subtle);
+    color: var(--text-primary);
+    text-decoration-line: underline;
+    text-decoration-color: var(--warning-default);
+    text-decoration-style: wavy;
+    text-underline-offset: var(--size-4);
+}
+
+.annotation {
+    margin-inline-start: var(--space-2);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    font-weight: 600;
+}
+
+.visuallyHidden {
+    position: absolute;
+    width: var(--size-1);
+    height: var(--size-1);
+    padding: 0;
+    margin: calc(var(--space-1) * -1);
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.feedbackPanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-16);
+}
+
+.feedbackHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-12);
+}
+
+.score {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    border-radius: var(--radius-12);
+    border-width: 2px;
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-6);
+    font-size: var(--size-20);
+    line-height: var(--size-28);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.scoreSuccess {
+    border-color: var(--success-default);
+    color: var(--success-default);
+}
+
+.scoreWarning {
+    border-color: var(--warning-default);
+    color: var(--warning-default);
+}
+
+.scoreNeutral {
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+}
+
+.icon {
+    height: var(--size-20);
+    width: var(--size-20);
+}
+
+.ratingTitle {
+    font-weight: 600;
+}
+
+.scoreNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}
+
+.feedbackSummary {
+    margin-top: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    line-height: 1.625;
+    color: var(--text-primary);
+}
+
+.mistakes {
+    margin-top: var(--space-8);
+}
+
+.mistake {
+    display: flex;
+    gap: var(--space-8);
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding: var(--space-10);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+}
+
+.mistakeNumber {
+    display: inline-flex;
+    height: var(--size-20);
+    min-width: var(--size-20);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-9999);
+    background-color: var(--background-subtle);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.mistakeBody {
+    min-width: 0px;
+    overflow-wrap: break-word;
+}
+
+.mistakeExcerpt {
+    margin-top: var(--space-4);
+}
+
+.mistakeReason {
+    margin-top: var(--space-4);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}
+
+.mistakeExplanation {
+    margin-top: var(--space-4);
+    color: var(--text-secondary);
+}
+
+.noMistakes {
+    margin-top: var(--space-16);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.dictionaryWords {
+    margin-top: var(--space-8);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.dictionaryWord {
+    border-radius: var(--radius-8);
+    border-width: 1px;
+    border-color: var(--border-default);
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-4);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+}
+
+.wordSource {
+    margin-inline-end: var(--space-8);
+}
+
+.wordArrow {
+    margin-inline-start: var(--space-8);
+}
+
+.referenceAction {
+    margin-top: var(--space-16);
+}
+
+.feedbackNotice {
+    margin-top: var(--space-12);
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+}
+
+.feedbackDisclosure {
+    margin-top: var(--space-16);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}
+
+.referencePanel {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-style: dashed;
+    border-color: var(--border-strong);
+    background-color: var(--background-subtle);
+    padding: var(--space-16);
+}
+
+.referenceHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+}
+
+.referenceHeading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.referenceTitle {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+}
+
+.referenceAnswer {
+    margin-top: var(--space-12);
+    overflow-wrap: break-word;
+    font-size: var(--size-18);
+    line-height: var(--size-28);
+    line-height: 1.625;
+}
+
+.referenceInstructions {
+    margin-top: var(--space-8);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.referenceDisclaimer {
+    margin-top: var(--space-12);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.mistakes > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}

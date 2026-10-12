@@ -1,6 +1,7 @@
 'use client';
 
 import { Layers, MessageSquareText } from 'lucide-react';
+import componentStyles from './practice-history.module.css';
 import { useCallback, useEffect } from 'react';
 import {
     SavedProgress,
@@ -52,7 +53,7 @@ export function PracticeHistory({
         {
             value: 'flashcards',
             label: copy.flashcards,
-            icon: <Layers className='h-4 w-4' />,
+            icon: <Layers className={componentStyles.icon} />,
             content: (
                 <FlashcardStatistics
                     api={learningApi}
@@ -63,7 +64,7 @@ export function PracticeHistory({
         {
             value: 'sentences',
             label: copy.sentences,
-            icon: <MessageSquareText className='h-4 w-4' />,
+            icon: <MessageSquareText className={componentStyles.icon} />,
             content: sentencesEnabled ? (
                 <SentenceHistoryTab
                     api={sentenceApi}
@@ -74,9 +75,7 @@ export function PracticeHistory({
                     onAccessLoss={onAccessLoss}
                 />
             ) : (
-                <p className='text-sm text-text-secondary'>
-                    {copy.unavailable}
-                </p>
+                <p className={componentStyles.notice}>{copy.unavailable}</p>
             ),
         },
     ];
@@ -91,10 +90,10 @@ export function PracticeHistory({
     if (inline)
         return (
             <section
-                className='mx-auto w-full max-w-3xl space-y-4 px-4 py-5'
+                className={componentStyles.content}
                 aria-label={copy.title}
             >
-                <h3 className='text-lg font-semibold'>{copy.title}</h3>
+                <h3 className={componentStyles.heading}>{copy.title}</h3>
                 {content}
             </section>
         );
@@ -145,7 +144,7 @@ function SentenceHistoryTab({
             onAccessLoss?.();
     }, [history.error, onAccessLoss]);
     return (
-        <div className='space-y-5'>
+        <div className={componentStyles.statistics}>
             <SentenceStatistics
                 api={api}
                 sourceLanguage={sourceLanguage}

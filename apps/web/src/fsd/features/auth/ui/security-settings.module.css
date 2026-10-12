@@ -1,6 +1,6 @@
 .stack {
     display: grid;
-    gap: 24px;
+    gap: var(--space-24);
 }
 
 .panel {
@@ -9,24 +9,24 @@
 
 .panelHeader {
     border-bottom: 1px solid var(--border-default);
-    padding: 20px 24px;
+    padding: var(--space-20) var(--space-24);
 }
 
 .panelHeading {
-    font-size: 16px;
+    font-size: var(--size-16);
     font-weight: 600;
     margin: 0;
 }
 
 .panelDescription {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.6;
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
 }
 
 .panelBody {
-    padding: 20px 24px;
+    padding: var(--space-20) var(--space-24);
 }
 
 .panelForm {
@@ -37,12 +37,12 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: var(--space-16);
     justify-content: space-between;
 }
 
 .headerCopy {
-    flex: 1 1 240px;
+    flex: 1 1 var(--size-240);
 }
 
 .rowList,
@@ -55,9 +55,9 @@
 .dataRow {
     align-items: center;
     display: flex;
-    gap: 16px;
+    gap: var(--space-16);
     min-width: 0;
-    padding: 12px 0;
+    padding: var(--space-12) 0;
 }
 
 .dataRow + :where(.dataRow) {
@@ -78,8 +78,8 @@
     border-radius: var(--radius-md);
     color: var(--text-tertiary);
     display: flex;
-    flex: 0 0 40px;
-    height: 40px;
+    flex: 0 0 var(--size-40);
+    height: var(--size-40);
     justify-content: center;
 }
 
@@ -90,7 +90,7 @@
 
 .rowTitle,
 .rowName {
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 600;
     margin: 0;
 }
@@ -99,15 +99,15 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .rowDescription {
     color: var(--text-secondary);
     display: block;
-    font-size: 13px;
+    font-size: var(--size-13);
     line-height: 1.5;
-    margin: 4px 0 0;
+    margin: var(--space-4) 0 0;
     overflow-wrap: anywhere;
 }
 
@@ -121,8 +121,8 @@
     border-radius: var(--radius-md);
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 32px 20px;
+    gap: var(--space-8);
+    padding: var(--space-32) var(--space-20);
     text-align: center;
 }
 
@@ -133,44 +133,44 @@
     border-radius: var(--radius-md);
     color: var(--text-tertiary);
     display: flex;
-    height: 48px;
+    height: var(--size-48);
     justify-content: center;
-    width: 48px;
+    width: var(--size-48);
 }
 
 .emptyTitle {
-    font-size: 14px;
-    margin: 4px 0 0;
+    font-size: var(--size-14);
+    margin: var(--space-4) 0 0;
 }
 
 .emptyDescription {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.5;
     margin: 0;
-    max-width: 340px;
+    max-width: var(--size-340);
 }
 
 .emptyAction {
-    margin-top: 12px;
+    margin-top: var(--space-12);
 }
 
 .panelTitle {
-    font-size: 16px;
+    font-size: var(--size-16);
     font-weight: 600;
     margin: 0;
-    padding: 20px 24px 0;
+    padding: var(--space-20) var(--space-24) 0;
 }
 
 .panelSection {
     margin: 0;
-    padding: 20px 24px;
+    padding: var(--space-20) var(--space-24);
 }
 
 @media (max-width: 640px) {
     .panelHeader,
     .panelBody {
-        padding: 16px;
+        padding: var(--space-16);
     }
 
     .headerLine {
@@ -183,18 +183,18 @@
     }
 
     .rowButton {
-        margin-left: 56px;
+        margin-left: var(--space-56);
     }
 
     .rowActions {
-        margin-left: 56px;
+        margin-left: var(--space-56);
     }
 
     .panelTitle {
-        padding: 16px 16px 0;
+        padding: var(--space-16) var(--space-16) 0;
     }
 
     .panelSection {
-        padding: 16px;
+        padding: var(--space-16);
     }
 }

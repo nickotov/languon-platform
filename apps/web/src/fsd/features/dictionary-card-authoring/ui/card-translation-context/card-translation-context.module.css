@@ -1,30 +1,30 @@
 .section {
     background: var(--background-subtle);
     border: 1px solid var(--border-default);
-    border-radius: 12px;
+    border-radius: var(--radius-12);
     display: grid;
-    gap: 12px;
+    gap: var(--space-12);
     min-width: 0;
-    padding: 12px;
+    padding: var(--space-12);
 }
 
 .inherited {
     border-inline-start: 2px solid var(--border-strong);
     display: grid;
-    gap: 4px;
+    gap: var(--space-4);
     min-width: 0;
-    padding-inline-start: 12px;
+    padding-inline-start: var(--space-12);
 }
 
 .inheritedLabel {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 600;
 }
 
 .inheritedValue {
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--size-14);
     line-height: 1.45;
     margin: 0;
     overflow-wrap: anywhere;

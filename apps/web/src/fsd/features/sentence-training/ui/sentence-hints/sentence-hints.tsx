@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-hints.module.css';
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { SentenceExercise } from '@languon/contracts';
@@ -113,7 +114,7 @@ export function SentenceWithHints({
     }, [open]);
 
     return (
-        <div ref={root} className='relative'>
+        <div ref={root} className={styles.hintRoot}>
             <p
                 lang={exercise.sourceLanguage}
                 dir={
@@ -121,13 +122,29 @@ export function SentenceWithHints({
                         ? 'rtl'
                         : 'ltr'
                 }
-                className='whitespace-pre-wrap break-words text-2xl leading-[1.9] text-text-primary sm:text-[1.75rem]'
+                className={styles.sentence}
             >
                 {exercise.segments.map((item, index) => {
                     const itemHint = hintFor(index);
                     if (!itemHint)
                         return <span key={item.id}>{item.text}</span>;
                     const dictionary = itemHint.kind !== 'contextual';
+                    const wordClasses = [styles.hintWord];
+                    wordClasses.push(
+                        dictionary
+                            ? styles.dictionaryWord
+                            : styles.contextualWord,
+                    );
+                    if (revealedHintIds.includes(itemHint.id)) {
+                        wordClasses.push(
+                            dictionary
+                                ? styles.dictionaryRevealed
+                                : styles.contextualRevealed,
+                        );
+                    }
+                    if (open?.index === index)
+                        wordClasses.push(styles.wordOpen);
+                    const wordClassName = wordClasses.join(' ');
                     return (
                         <span
                             key={item.id}
@@ -175,7 +192,7 @@ export function SentenceWithHints({
                                     previous?.hover ? null : previous,
                                 );
                             }}
-                            className={`cursor-pointer rounded-sm underline underline-offset-[6px] outline-none [box-decoration-break:clone] focus-visible:ring-2 focus-visible:ring-border-focus ${dictionary ? 'font-semibold decoration-primary-default decoration-2' : 'decoration-text-tertiary decoration-dashed'} ${revealedHintIds.includes(itemHint.id) ? (dictionary ? 'bg-primary-subtle' : 'bg-background-subtle') : ''} ${open?.index === index ? 'ring-2 ring-border-focus' : ''}`}
+                            className={wordClassName}
                         >
                             {item.text}
                         </span>
@@ -188,7 +205,7 @@ export function SentenceWithHints({
                     ref={panel}
                     role='dialog'
                     aria-label={`${t('Hint')}: ${segment.text}`}
-                    style={{ ...position, width: 'min(18rem, 100%)' }}
+                    style={position}
                     onKeyDown={(event) => {
                         if (event.key === 'Escape') {
                             event.preventDefault();
@@ -196,19 +213,19 @@ export function SentenceWithHints({
                             close(true);
                         }
                     }}
-                    className='absolute z-30 rounded-xl border border-border-strong bg-background-elevated p-3 shadow-lg'
+                    className={styles.hintPopover}
                 >
-                    <div className='flex items-center justify-between gap-2 text-xs font-semibold'>
+                    <div className={styles.popoverHeader}>
                         <span
-                            className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] uppercase tracking-wide ${hint.kind === 'contextual' ? 'border-dashed border-border-strong text-text-secondary' : 'border-primary-default text-primary-default'}`}
+                            className={`${styles.hintKind} ${hint.kind === 'contextual' ? styles.contextualKind : styles.dictionaryKind}`}
                         >
                             {hint.kind === 'contextual' ? (
                                 <Lightbulb
                                     aria-hidden
-                                    className='h-3.5 w-3.5'
+                                    className={styles.icon}
                                 />
                             ) : (
-                                <Bookmark aria-hidden className='h-3.5 w-3.5' />
+                                <Bookmark aria-hidden className={styles.icon} />
                             )}
                             {t(
                                 hint.kind === 'contextual'
@@ -222,10 +239,10 @@ export function SentenceWithHints({
                             aria-label={t('Close hint')}
                             onClick={() => close(true)}
                         >
-                            <X aria-hidden className='h-4 w-4' />
+                            <X aria-hidden className={styles.icon2} />
                         </Button>
                     </div>
-                    <p className='mt-2 break-words'>
+                    <p className={styles.hintTranslation}>
                         <span lang={exercise.sourceLanguage}>
                             {segment.text}
                         </span>
@@ -243,36 +260,30 @@ export function SentenceWithHints({
                             {hint.text}
                         </strong>
                     </p>
-                    <p className='mt-2 text-xs text-text-secondary'>
+                    <p className={styles.hintNote}>
                         {t(
                             hint.kind === 'contextual'
                                 ? 'Support only — not required and not added to your dictionary.'
                                 : 'Use this dictionary word. Inflected forms are fine.',
                         )}
                     </p>
-                    <p className='mt-1 text-xs text-text-tertiary'>
+                    <p className={styles.hintDisclaimer}>
                         {t('Hints are free and never lower your score.')}
                     </p>
                 </div>
             ) : null}
-            <ul
-                aria-label={t('Hint legend')}
-                className='mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-border-default pt-3 text-xs text-text-secondary'
-            >
-                <li className='inline-flex items-center gap-1.5'>
-                    <Bookmark
-                        aria-hidden
-                        className='h-3.5 w-3.5 text-primary-default'
-                    />
-                    <span className='font-semibold text-text-primary underline decoration-primary-default decoration-2 underline-offset-4'>
+            <ul aria-label={t('Hint legend')} className={styles.legend}>
+                <li className={styles.legendItem}>
+                    <Bookmark aria-hidden className={styles.dictionaryIcon} />
+                    <span className={styles.dictionaryLegend}>
                         {t('Required word')}
                     </span>{' '}
                     · {required.length}
                 </li>
                 {contextual.length ? (
-                    <li className='inline-flex items-center gap-1.5'>
-                        <Lightbulb aria-hidden className='h-3.5 w-3.5' />
-                        <span className='text-text-primary underline decoration-text-tertiary decoration-dashed underline-offset-4'>
+                    <li className={styles.legendItem}>
+                        <Lightbulb aria-hidden className={styles.icon} />
+                        <span className={styles.contextualLegend}>
                             {t('Extra help')}
                         </span>{' '}
                         · {contextual.length}
@@ -287,7 +298,7 @@ export function SentenceWithHints({
                 </li>
             </ul>
             {opened.length ? (
-                <p className='mt-2 text-xs text-text-secondary'>
+                <p className={styles.hintNote}>
                     {t('Hints shown:')}{' '}
                     <span lang={exercise.targetLanguage}>
                         {opened.map((item) => item.text).join(', ')}

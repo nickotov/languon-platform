@@ -5,6 +5,7 @@ title: 'Magic Patterns Tailwind UI contract'
 status: accepted
 date: 2026-09-14
 supersedes: 'None'
+superseded_in_part_by: 'ADR-0029: Tailwind styling requirement only'
 ---
 
 # ADR-0017: Magic Patterns Tailwind UI contract

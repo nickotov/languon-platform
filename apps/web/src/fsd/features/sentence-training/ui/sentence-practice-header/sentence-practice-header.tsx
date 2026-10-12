@@ -1,3 +1,4 @@
+import styles from './sentence-practice-header.module.css';
 import {
     ArrowLeft,
     History,
@@ -37,20 +38,19 @@ export function SentencePracticeHeader({
         fullscreen ? 'Exit full screen' : 'Enter full screen',
     );
     const presentationIcon = fullscreen ? (
-        <Minimize aria-hidden className='h-4 w-4' />
+        <Minimize aria-hidden className={styles.icon} />
     ) : (
-        <Maximize aria-hidden className='h-4 w-4' />
+        <Maximize aria-hidden className={styles.icon} />
     );
-    const iconActionClassName =
-        'relative !rounded-full !border !border-border-strong !bg-background-surface !text-text-primary hover:!bg-background-subtle before:absolute before:-inset-2 before:content-[""] focus-visible:!outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background-surface';
-    const smallIconActionClassName = `${iconActionClassName} !h-8 !w-8`;
-    const presentationClassName = `${smallIconActionClassName} hidden md:inline-flex`;
+    const iconActionClassName = styles.iconAction;
+    const smallIconActionClassName = `${iconActionClassName} ${styles.smallIconAction}`;
+    const presentationClassName = `${smallIconActionClassName} ${styles.presentationAction}`;
     const showPreferences = !innerView && !!onOpenPreferences;
     const showHistory = !innerView && !!onOpenHistory;
 
     return (
-        <header className='border-b border-border-default pt-[env(safe-area-inset-top)]'>
-            <div className='mx-auto flex w-full max-w-5xl items-center gap-2 px-3 py-2.5 sm:px-6'>
+        <header className={styles.header}>
+            <div className={styles.headerContent}>
                 {innerView ? (
                     <IconButton
                         className={iconActionClassName}
@@ -60,7 +60,7 @@ export function SentencePracticeHeader({
                         icon={
                             <ArrowLeft
                                 aria-hidden
-                                className='h-[18px] w-[18px] rtl:rotate-180'
+                                className={styles.backIcon}
                             />
                         }
                         title={t('Back to practice')}
@@ -68,15 +68,11 @@ export function SentencePracticeHeader({
                         onClick={onBack}
                     />
                 ) : null}
-                <div className='min-w-0 flex-1'>
-                    <h2 className='truncate text-sm font-semibold text-text-primary sm:text-base'>
-                        {title}
-                    </h2>
-                    <p className='truncate text-xs text-text-secondary'>
-                        {subtitle}
-                    </p>
+                <div className={styles.heading}>
+                    <h2 className={styles.title}>{title}</h2>
+                    <p className={styles.subtitle}>{subtitle}</p>
                 </div>
-                <div className='flex shrink-0 items-center gap-1.5 sm:gap-2'>
+                <div className={styles.actions}>
                     {showPreferences ? (
                         <Button
                             variant='secondary'
@@ -85,12 +81,12 @@ export function SentencePracticeHeader({
                             leadingIcon={
                                 <SlidersHorizontal
                                     aria-hidden
-                                    className='h-4 w-4'
+                                    className={styles.icon}
                                 />
                             }
                             onClick={onOpenPreferences}
                         >
-                            <span className='hidden md:inline'>
+                            <span className={styles.preferencesLabel}>
                                 {t('AI settings')}
                             </span>
                         </Button>
@@ -100,7 +96,9 @@ export function SentencePracticeHeader({
                             className={smallIconActionClassName}
                             variant='outline'
                             size='sm'
-                            icon={<History aria-hidden className='h-4 w-4' />}
+                            icon={
+                                <History aria-hidden className={styles.icon} />
+                            }
                             title={t('History')}
                             label={t('My practice history')}
                             onClick={onOpenHistory}
@@ -119,10 +117,10 @@ export function SentencePracticeHeader({
                         variant='secondary'
                         size='compact'
                         aria-label={t('Close practice')}
-                        leadingIcon={<X aria-hidden className='h-4 w-4' />}
+                        leadingIcon={<X aria-hidden className={styles.icon} />}
                         onClick={onClose}
                     >
-                        <span className='hidden sm:inline'>{t('Close')}</span>
+                        <span className={styles.closeLabel}>{t('Close')}</span>
                     </Button>
                 </div>
             </div>

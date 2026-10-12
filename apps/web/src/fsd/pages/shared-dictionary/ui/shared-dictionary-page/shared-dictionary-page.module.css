@@ -2,8 +2,8 @@
     display: grid;
     gap: var(--sys-space-5);
     margin: 0 auto;
-    max-width: 920px;
-    padding: clamp(var(--sys-space-4), 5vw, 64px);
+    max-width: var(--size-920);
+    padding: clamp(var(--sys-space-4), 5vw, var(--space-64));
 }
 
 .title,
@@ -17,7 +17,7 @@
 
 .eyebrow {
     color: var(--sys-color-action-primary);
-    font-size: 0.875rem;
+    font-size: var(--size-14);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;

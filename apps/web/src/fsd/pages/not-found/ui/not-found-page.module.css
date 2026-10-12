@@ -1,18 +1,18 @@
 .main {
     display: grid;
     min-height: 100vh;
-    padding: clamp(16px, 5vw, 64px);
+    padding: clamp(var(--space-16), 5vw, var(--space-64));
     place-items: center;
 }
 
 .card {
-    max-width: 672px;
+    max-width: var(--size-672);
     width: 100%;
 }
 
 .eyebrow {
     color: var(--sys-color-action-primary);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;

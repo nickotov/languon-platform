@@ -10,6 +10,6 @@
 
 .status {
     color: var(--sys-color-text-secondary);
-    font-size: 0.875rem;
+    font-size: var(--size-14);
     overflow-wrap: anywhere;
 }

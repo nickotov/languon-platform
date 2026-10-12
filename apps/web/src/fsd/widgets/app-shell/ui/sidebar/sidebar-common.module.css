@@ -11,13 +11,13 @@
     border-bottom: 1px solid var(--border-default);
     display: flex;
     flex: none;
-    height: 64px;
+    height: var(--size-64);
 }
 
 .brand {
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
-    padding: 0 12px 0 16px;
+    padding: 0 var(--space-12) 0 var(--space-16);
 }
 
 .railBrand {
@@ -33,16 +33,16 @@
 .navigation {
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 16px 12px;
+    padding: var(--space-16) var(--space-12);
 }
 
 .railNavigation {
-    padding: 12px 8px;
+    padding: var(--space-12) var(--space-8);
 }
 
 .railControl {
     display: flex;
-    margin: 0 auto 12px;
+    margin: 0 auto var(--space-12);
 }
 
 .navList,
@@ -54,27 +54,27 @@
 
 .navList {
     display: grid;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .railItem {
     display: flex;
     justify-content: center;
-    min-height: 44px;
+    min-height: var(--size-44);
     position: relative;
 }
 
 .railItem + :where(.railItem) {
-    margin-top: 4px;
+    margin-top: var(--space-4);
 }
 
 .railMarker {
     background: var(--primary-default);
     border-radius: 0 var(--radius-full) var(--radius-full) 0;
-    inset-block: 8px;
-    inset-inline-start: -8px;
+    inset-block: var(--size-8);
+    inset-inline-start: calc(var(--size-8) * -1);
     position: absolute;
-    width: 4px;
+    width: var(--size-4);
 }
 
 .railLink {
@@ -82,10 +82,10 @@
     border-radius: var(--radius-md);
     color: var(--text-secondary);
     display: flex;
-    height: 44px;
+    height: var(--size-44);
     justify-content: center;
     text-decoration: none;
-    width: 44px;
+    width: var(--size-44);
 }
 
 .railLink[aria-current='page'] {
@@ -105,13 +105,13 @@
 .navLinkActive:focus-visible,
 .statusButton:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .groupHeader {
     align-items: center;
     display: flex;
-    gap: 4px;
+    gap: var(--space-4);
     position: relative;
 }
 
@@ -126,12 +126,12 @@
     display: flex;
     flex: 1;
     font: inherit;
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    gap: 10px;
-    min-height: 44px;
+    gap: var(--space-10);
+    min-height: var(--size-44);
     min-width: 0;
-    padding: 0 10px;
+    padding: 0 var(--space-10);
     text-align: start;
 }
 
@@ -168,16 +168,16 @@
 }
 
 .groupPanel {
-    margin-inline-start: 20px;
+    margin-inline-start: var(--space-20);
     overflow: hidden;
-    padding: 4px 0 0 8px;
+    padding: var(--space-4) 0 0 var(--space-8);
 }
 
 .dictionaryList {
     border-inline-start: 1px solid var(--border-default);
-    max-height: min(52vh, 520px);
+    max-height: min(52vh, var(--size-520));
     overflow-y: auto;
-    padding: 2px 2px 2px 8px;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-8);
     scrollbar-width: thin;
 }
 
@@ -187,9 +187,9 @@
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     display: flex;
-    gap: 10px;
-    min-height: 44px;
-    padding: 5px 10px;
+    gap: var(--space-10);
+    min-height: var(--size-44);
+    padding: var(--space-5) var(--space-10);
     position: relative;
     text-decoration: none;
 }
@@ -206,10 +206,10 @@
 .activeMarker {
     background: var(--primary-default);
     border-radius: var(--radius-full);
-    inset-block: 8px;
+    inset-block: var(--size-8);
     inset-inline-start: 0;
     position: absolute;
-    width: 3px;
+    width: var(--size-3);
 }
 
 .navCopy {
@@ -226,23 +226,23 @@
 }
 
 .navTitle {
-    font-size: 13px;
+    font-size: var(--size-13);
     font-weight: inherit;
 }
 
 .navDescription {
     color: var(--text-secondary);
-    font-size: 11px;
-    margin-top: 1px;
+    font-size: var(--size-11);
+    margin-top: var(--space-1);
 }
 
 .status {
-    padding: 10px;
+    padding: var(--space-10);
 }
 
 .statusText {
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: var(--size-13);
     line-height: 1.45;
     margin: 0;
 }
@@ -256,30 +256,30 @@
     cursor: pointer;
     display: flex;
     font: inherit;
-    font-size: 13px;
+    font-size: var(--size-13);
     font-weight: 600;
-    gap: 6px;
-    margin-top: 8px;
-    min-height: 36px;
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+    min-height: var(--size-36);
     padding: 0;
 }
 
 .loading {
     display: grid;
-    gap: 2px;
-    padding: 2px 0;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
 }
 
 .loadingItem {
     display: grid;
-    gap: 5px;
-    min-height: 44px;
-    padding: 8px 10px;
+    gap: var(--space-5);
+    min-height: var(--size-44);
+    padding: var(--space-8) var(--space-10);
 }
 
 .touchButton {
-    height: 44px;
-    width: 44px;
+    height: var(--size-44);
+    width: var(--size-44);
 }
 
 @media (prefers-reduced-motion: reduce) {

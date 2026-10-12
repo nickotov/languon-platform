@@ -1,0 +1,118 @@
+.root > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+
+.skeletonRow {
+    display: flex;
+    gap: var(--space-12);
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-16);
+}
+
+.skeletonContent {
+    flex: 1 1 0%;
+}
+.skeletonContent > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-12);
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+    padding-top: var(--space-40);
+    padding-bottom: var(--space-40);
+    text-align: center;
+}
+
+.emptyIcon {
+    display: flex;
+    height: var(--size-44);
+    width: var(--size-44);
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-12);
+    background-color: var(--background-subtle);
+    color: var(--text-secondary);
+}
+
+.icon {
+    height: var(--size-20);
+    width: var(--size-20);
+}
+
+.emptyHeading {
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.emptyDescription {
+    max-width: var(--size-448);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.loadingMore {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-style: dashed;
+    border-color: var(--border-strong);
+    padding: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.spinner {
+    height: var(--size-16);
+    width: var(--size-16);
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation: none;
+    }
+}
+
+.pagination {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.paginationHelp {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.secondaryHelp {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-tertiary);
+}

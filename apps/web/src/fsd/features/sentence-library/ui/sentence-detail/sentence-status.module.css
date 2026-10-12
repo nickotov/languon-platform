@@ -1,0 +1,62 @@
+.successIcon {
+    height: var(--size-16);
+    width: var(--size-16);
+    color: var(--success-default);
+}
+
+.warningIcon {
+    height: var(--size-16);
+    width: var(--size-16);
+    color: var(--warning-default);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.root > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-12);
+    margin-bottom: 0;
+}
+.root {
+    border-radius: var(--radius-12);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-subtle);
+    padding: var(--space-12);
+}
+
+.heading {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.reasons > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
+.reasons {
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+}
+
+.reason {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+    color: var(--text-primary);
+}
+
+.reasonIcon {
+    margin-top: var(--space-2);
+    flex-shrink: 0;
+}
+
+.help {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}

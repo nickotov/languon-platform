@@ -5,6 +5,7 @@ import {
     Badge,
     InlineAlert,
 } from '@/fsd/shared/ui';
+import componentStyles from './archive-confirmation.module.css';
 import { useInterfaceText } from '../../hooks/use-interface-text';
 import { LibraryApiError } from '../../api/library-api';
 import type { LibraryController } from '../../hooks/use-sentence-library';
@@ -94,22 +95,22 @@ export function ArchiveConfirmation({
             closeLabel={L('close')}
         >
             {value ? (
-                <div className='space-y-4 text-sm'>
-                    <div className='rounded-lg border border-border-default bg-background-subtle p-3'>
-                        <p className='text-xs font-medium uppercase tracking-wide text-text-tertiary'>
+                <div className={componentStyles.content}>
+                    <div className={componentStyles.preview}>
+                        <p className={componentStyles.previewLabel}>
                             {L('confirmScope')}
                         </p>
-                        <p className='mt-1 font-medium text-text-primary'>
+                        <p className={componentStyles.dictionaryName}>
                             {L(
                                 value.selection.type === 'all-matching'
                                     ? 'scopeAll'
                                     : 'scopeIds',
                             )}
                         </p>
-                        <p className='mt-0.5 text-text-secondary'>
+                        <p className={componentStyles.direction}>
                             {dictionary.name}
                         </p>
-                        <div className='mt-2 flex flex-wrap gap-1.5'>
+                        <div className={componentStyles.badges}>
                             <Badge size='sm' tone='info'>
                                 {label}
                             </Badge>
@@ -124,7 +125,7 @@ export function ArchiveConfirmation({
                             </Badge>
                         </div>
                     </div>
-                    <p className='text-text-secondary'>
+                    <p className={componentStyles.help}>
                         {L(
                             operation === 'archive'
                                 ? 'confirmRemoveBody'

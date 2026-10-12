@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-session-results.module.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { Repeat, Sparkles } from 'lucide-react';
@@ -31,21 +32,24 @@ export function SentenceSessionResults({
     }
     const last = c.roundItems.at(-1);
     return (
-        <section aria-labelledby='sentence-results-title' className='space-y-6'>
+        <section
+            aria-labelledby='sentence-results-title'
+            className={styles.results}
+        >
             <div>
-                <p className='text-xs font-medium text-text-tertiary'>
+                <p className={styles.summaryNote}>
                     {t(c.replaying ? 'Saved replay' : 'Practice round')}
                 </p>
                 <h2
                     ref={heading}
                     id='sentence-results-title'
                     tabIndex={-1}
-                    className='mt-1 text-2xl font-semibold outline-none'
+                    className={styles.title}
                 >
                     {t(c.replaying ? 'Replay complete' : 'Round complete')}
                 </h2>
             </div>
-            <dl className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5'>
+            <dl className={styles.metrics}>
                 {[
                     ['Examples presented', c.counts.presented],
                     [
@@ -56,31 +60,23 @@ export function SentenceSessionResults({
                     ['Manually reviewed', c.counts.manuallyReviewed],
                     ['Skipped', c.counts.skipped],
                 ].map(([label, value]) => (
-                    <div
-                        key={label}
-                        className='rounded-xl border border-border-default bg-background-surface p-3'
-                    >
-                        <dt className='text-xs text-text-secondary'>
+                    <div key={label} className={styles.metric}>
+                        <dt className={styles.metricLabel}>
                             {t(String(label))}
                         </dt>
-                        <dd className='mt-1 text-xl font-semibold tabular-nums'>
-                            {value}
-                        </dd>
+                        <dd className={styles.metricValue}>{value}</dd>
                     </div>
                 ))}
             </dl>
             {c.counts.checked ? (
                 <div>
-                    <h3 className='text-xs font-medium text-text-tertiary'>
+                    <h3 className={styles.summaryNote}>
                         {t('AI ratings this round')}
                     </h3>
-                    <ul className='mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4'>
+                    <ul className={styles.ratingList}>
                         {Object.entries(c.counts.ratings).map(
                             ([rating, count]) => (
-                                <li
-                                    key={rating}
-                                    className='flex justify-between gap-2 rounded-lg border border-border-default p-3 text-sm'
-                                >
+                                <li key={rating} className={styles.ratingItem}>
                                     <span>
                                         {t(
                                             {
@@ -94,7 +90,7 @@ export function SentenceSessionResults({
                                             ],
                                         )}
                                     </span>
-                                    <strong className='tabular-nums'>
+                                    <strong className={styles.ratingCount}>
                                         {count}
                                     </strong>
                                 </li>
@@ -103,7 +99,7 @@ export function SentenceSessionResults({
                     </ul>
                 </div>
             ) : (
-                <p className='text-sm text-text-secondary'>
+                <p className={styles.privacyNote}>
                     {t(
                         c.counts.skipped === c.counts.presented
                             ? 'Every example was skipped. The round is complete but ungraded.'
@@ -111,13 +107,13 @@ export function SentenceSessionResults({
                     )}
                 </p>
             )}
-            <p className='text-xs text-text-tertiary'>
+            <p className={styles.historyNote}>
                 {t(
                     'These counts describe this round, not mastery. AI checks and manual reviews are counted separately.',
                 )}
             </p>
             {c.progress ? (
-                <p className='text-xs text-text-tertiary'>
+                <p className={styles.historyNote}>
                     {t('Across your sessions: {seen} of {total} words seen.')
                         .replace('{seen}', String(c.progress.usedCount))
                         .replace('{total}', String(c.progress.eligibleCount))}
@@ -127,9 +123,9 @@ export function SentenceSessionResults({
                 </p>
             ) : null}
             {last ? (
-                <div className='rounded-xl border border-border-default bg-background-subtle p-4'>
-                    <div className='flex items-center justify-between gap-2'>
-                        <h3 className='text-sm font-semibold'>
+                <div className={styles.reviewPanel}>
+                    <div className={styles.reviewHeader}>
+                        <h3 className={styles.summaryTitle}>
                             {t('Last example')}
                         </h3>
                         <Button
@@ -142,13 +138,13 @@ export function SentenceSessionResults({
                         </Button>
                     </div>
                     {details ? (
-                        <div className='mt-3 space-y-3'>
+                        <div className={styles.reviewContent}>
                             <p
                                 lang={last.exercise.sourceLanguage}
                                 dir={languageDirection(
                                     last.exercise.sourceLanguage,
                                 )}
-                                className='whitespace-pre-wrap break-words text-lg'
+                                className={styles.reviewSentence}
                             >
                                 {last.exercise.sourceText}
                             </p>
@@ -166,7 +162,7 @@ export function SentenceSessionResults({
                             {last.skipped ? (
                                 <div>
                                     <Badge size='sm'>{t('Skipped')}</Badge>
-                                    <p className='mt-2 text-sm text-text-secondary'>
+                                    <p className={styles.reviewNote}>
                                         {t(
                                             'Skipped — no AI check or manual review.',
                                         )}
@@ -177,7 +173,7 @@ export function SentenceSessionResults({
                                             dir={languageDirection(
                                                 last.exercise.targetLanguage,
                                             )}
-                                            className='mt-2 whitespace-pre-wrap break-words'
+                                            className={styles.reviewAnswer}
                                         >
                                             {last.answer}
                                         </p>
@@ -198,13 +194,13 @@ export function SentenceSessionResults({
                     {t('This round’s examples')} ({c.roundItems.length})
                 </Button>
                 {all ? (
-                    <ol className='mt-3 space-y-2'>
+                    <ol className={styles.answerList}>
                         {c.roundItems.map((item, index) => (
                             <li
                                 key={`${item.exercise.id}-${index}`}
-                                className='rounded-xl border border-border-default p-3'
+                                className={styles.answerItem}
                             >
-                                <div className='flex flex-wrap gap-2 text-xs text-text-secondary'>
+                                <div className={styles.answerMetadata}>
                                     <span>{index + 1}</span>
                                     {item.attempt ? (
                                         <span>
@@ -224,7 +220,7 @@ export function SentenceSessionResults({
                                     dir={languageDirection(
                                         item.exercise.sourceLanguage,
                                     )}
-                                    className='mt-2 break-words text-sm'
+                                    className={styles.answerText}
                                 >
                                     {item.exercise.sourceText}
                                 </p>
@@ -259,11 +255,13 @@ export function SentenceSessionResults({
                     }
                 />
             ) : null}
-            <div className='grid gap-3 md:grid-cols-2'>
-                <div className='rounded-xl border border-border-default p-4'>
+            <div className={styles.nextActions}>
+                <div className={styles.nextAction}>
                     <Button
-                        className='w-full'
-                        leadingIcon={<Repeat aria-hidden className='h-4 w-4' />}
+                        className={styles.nextButton}
+                        leadingIcon={
+                            <Repeat aria-hidden className={styles.icon} />
+                        }
                         loading={c.replayLoading}
                         disabled={c.busy || c.uncertain || !c.roundItems.length}
                         onClick={() => {
@@ -272,18 +270,18 @@ export function SentenceSessionResults({
                     >
                         {t('Repeat these exact examples')}
                     </Button>
-                    <p className='mt-2 text-xs text-text-secondary'>
+                    <p className={styles.nextNote}>
                         {t(
                             'Same examples and order, with fresh answers. Examples and hints are free; AI checks may use credits.',
                         )}
                     </p>
                 </div>
-                <div className='rounded-xl border border-border-default p-4'>
+                <div className={styles.nextAction}>
                     <Button
-                        className='w-full'
+                        className={styles.nextButton}
                         variant='secondary'
                         leadingIcon={
-                            <Sparkles aria-hidden className='h-4 w-4' />
+                            <Sparkles aria-hidden className={styles.icon} />
                         }
                         disabled={c.busy || c.uncertain}
                         onClick={() => {
@@ -292,7 +290,7 @@ export function SentenceSessionResults({
                     >
                         {t('Generate new examples')}
                     </Button>
-                    <p className='mt-2 text-xs text-text-secondary'>
+                    <p className={styles.nextNote}>
                         {t(
                             'Fresh examples for the same words. Requires AI and may use credits. Previous examples are kept.',
                         )}

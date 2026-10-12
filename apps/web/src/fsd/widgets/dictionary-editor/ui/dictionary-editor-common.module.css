@@ -1,17 +1,17 @@
 .main {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--space-24);
     min-width: 0;
     margin: 0 auto;
-    max-width: 1232px;
-    padding: 24px 16px 112px;
+    max-width: var(--size-1232);
+    padding: var(--space-24) var(--space-16) var(--space-112);
 }
 
 .header {
     display: grid;
-    gap: 16px;
-    padding: 12px;
+    gap: var(--space-16);
+    padding: var(--space-12);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     background: var(--background-surface);
@@ -20,7 +20,7 @@
 .summaryContent {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .summaryCopy {
@@ -30,9 +30,9 @@
 .title {
     margin: 0;
     color: var(--text-primary);
-    font-size: 24px;
+    font-size: var(--size-24);
     font-weight: 600;
-    line-height: 32px;
+    line-height: var(--size-32);
     overflow-wrap: anywhere;
 }
 
@@ -40,37 +40,37 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 4px 12px;
-    margin-top: 4px;
+    gap: var(--space-4) var(--space-12);
+    margin-top: var(--space-4);
     color: var(--text-secondary);
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
 }
 
 .headerActions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-8);
     flex-shrink: 0;
 }
 
 .description {
-    max-width: 46rem;
-    margin: 8px 0 0;
+    max-width: var(--size-736);
+    margin: var(--space-8) 0 0;
     color: var(--text-secondary);
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
 }
 
 .cardsSection {
     display: grid;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .filters {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .search {
@@ -85,26 +85,26 @@
 .addCard {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-12);
     position: fixed;
-    bottom: 24px;
+    bottom: var(--size-24);
     inset-inline-start: 50%;
     transform: translateX(-50%);
     z-index: 40;
-    max-width: calc(100vw - 32px);
+    max-width: calc(100vw - var(--size-32));
 }
 
 .trainButton {
-    height: 52px;
-    font-size: 16px;
-    padding-inline: 24px;
+    height: var(--size-52);
+    font-size: var(--size-16);
+    padding-inline: var(--space-24);
 }
 
 .statusTabs {
     display: inline-flex;
     width: fit-content;
-    gap: 4px;
-    padding: 4px;
+    gap: var(--space-4);
+    padding: var(--space-4);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     background: var(--background-subtle);
@@ -113,15 +113,15 @@
 .statusTab {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-8);
     background: none;
     border: 1px solid transparent;
     color: var(--text-secondary);
     border-radius: var(--radius-md);
-    padding: 0 12px;
-    min-height: 36px;
+    padding: 0 var(--space-12);
+    min-height: var(--size-36);
     font: inherit;
-    font-size: 14px;
+    font-size: var(--size-14);
     cursor: pointer;
 }
 
@@ -132,31 +132,31 @@
 }
 
 .tabCount {
-    padding: 0 6px;
-    border-radius: 9999px;
+    padding: 0 var(--space-6);
+    border-radius: var(--radius-9999);
     background: var(--background-surface);
     color: var(--text-secondary);
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
 }
 
 .statusTab:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .settingsSheet {
-    max-width: 672px;
+    max-width: var(--size-672);
     max-height: 85vh;
     height: auto;
     margin: auto;
     inset: 0;
-    border-radius: 24px;
+    border-radius: var(--radius-24);
 }
 
 @media (min-width: 640px) {
     .header {
-        padding: 16px;
+        padding: var(--space-16);
     }
 
     .filters {
@@ -166,7 +166,7 @@
     }
 
     .search {
-        max-width: 320px;
+        max-width: var(--size-320);
     }
 }
 
@@ -176,7 +176,7 @@
         max-width: none;
         max-height: 92dvh;
         margin: auto 0 0;
-        border-radius: 24px 24px 0 0;
+        border-radius: var(--radius-24) var(--radius-24) 0 0;
         padding: 0;
     }
 }
@@ -191,8 +191,8 @@
 @media (min-width: 1024px) {
     .main {
         margin-inline: auto;
-        max-width: 1232px;
-        padding: 40px 48px 136px;
+        max-width: var(--size-1232);
+        padding: var(--space-40) var(--space-48) var(--space-136);
         width: 100%;
     }
 
@@ -203,7 +203,7 @@
     }
 
     .addCard {
-        bottom: 32px;
+        bottom: var(--size-32);
         inset-inline-start: calc(50% + var(--app-sidebar-center-offset, 0px));
     }
 }
@@ -219,7 +219,7 @@
 
 .emptyCards,
 .noMatches {
-    padding: 24px;
+    padding: var(--space-24);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     background: var(--background-surface);
@@ -229,41 +229,41 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-12);
     text-align: center;
 }
 
 .emptyTitle {
     margin: 0;
-    font-size: 18px;
-    line-height: 28px;
+    font-size: var(--size-18);
+    line-height: var(--size-28);
     font-weight: 600;
 }
 
 .emptyHelp {
-    max-width: 448px;
+    max-width: var(--size-448);
     margin: 0;
-    font-size: 14px;
+    font-size: var(--size-14);
     color: var(--text-secondary);
 }
 
 :where(.noMatches) .emptyTitle {
-    font-size: 16px;
+    font-size: var(--size-16);
 }
 
 :where(.noMatches) .emptyHelp {
-    margin-top: 4px;
+    margin-top: var(--space-4);
 }
 
 :where(.noMatches) .emptyAction {
-    margin-top: 12px;
+    margin-top: var(--space-12);
 }
 
 .emptyIcon {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: var(--size-48);
+    height: var(--size-48);
     border-radius: var(--radius-xl);
     background: var(--primary-subtle);
     color: var(--primary-default);
@@ -273,18 +273,18 @@
     text-align: center;
     margin: 0;
     color: var(--text-tertiary);
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
 }
 
 .settingsAction {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    min-height: 40px;
+    width: var(--size-40);
+    height: var(--size-40);
+    min-width: var(--size-40);
+    min-height: var(--size-40);
     padding: 0;
     border: 1px solid var(--border-strong);
-    border-radius: 9999px;
+    border-radius: var(--radius-9999);
     background: var(--background-surface);
     color: var(--text-primary);
 }
@@ -296,12 +296,12 @@
 @media (max-width: 767px) {
     .settingsHeader {
         border-bottom: 1px solid var(--border-default);
-        padding: 16px;
+        padding: var(--space-16);
     }
 
     .settingsTitle {
-        font-size: 16px;
-        line-height: 24px;
+        font-size: var(--size-16);
+        line-height: var(--size-24);
     }
 
     .settingsSheet::backdrop {

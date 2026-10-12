@@ -1,20 +1,20 @@
 .root {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--space-6);
     width: 100%;
 }
 
 .label {
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 500;
-    line-height: 20px;
+    line-height: var(--size-20);
 }
 
 .required {
     color: var(--danger-default);
-    margin-left: 2px;
+    margin-left: var(--space-2);
 }
 
 .textarea {
@@ -23,9 +23,9 @@
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     font: inherit;
-    font-size: 14px;
-    min-height: 96px;
-    padding: 8px 12px;
+    font-size: var(--size-14);
+    min-height: var(--size-96);
+    padding: var(--space-8) var(--space-12);
     transition:
         border-color var(--duration-fast),
         box-shadow var(--duration-fast);
@@ -42,7 +42,7 @@
 
 .textarea:focus {
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px var(--primary-subtle);
+    box-shadow: 0 0 0 var(--size-3) var(--primary-subtle);
     outline: none;
 }
 
@@ -77,15 +77,15 @@
 .meta {
     align-items: flex-start;
     display: flex;
-    gap: 12px;
+    gap: var(--space-12);
     justify-content: space-between;
 }
 
 .description,
 .error,
 .count {
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--size-12);
+    line-height: var(--size-16);
 }
 
 .description,

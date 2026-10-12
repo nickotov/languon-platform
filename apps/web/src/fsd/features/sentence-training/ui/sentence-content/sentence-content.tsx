@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-content.module.css';
 import { useSentenceCopy } from '../sentence-copy';
 
 import { useState } from 'react';
@@ -48,20 +49,20 @@ export function HighlightedAnswer({ attempt }: { attempt: SentenceAttempt }) {
         <p
             lang={attempt.exercise.targetLanguage}
             dir={languageDirection(attempt.exercise.targetLanguage)}
-            className='mt-1 whitespace-pre-wrap break-words rounded-lg border border-border-default bg-background-subtle p-3 text-base leading-relaxed'
+            className={styles.answerText}
         >
             {chunks.map((chunk, index) =>
                 chunk.issue === null ? (
                     <span key={index}>{chunk.text}</span>
                 ) : (
-                    <mark
-                        key={index}
-                        className='rounded-sm bg-warning-subtle text-text-primary underline decoration-warning-default decoration-wavy underline-offset-4'
-                    >
+                    <mark key={index} className={styles.highlight}>
                         {chunk.text}
-                        <sup className='ms-0.5 text-xs font-semibold'>
+                        <sup className={styles.annotation}>
                             {chunk.issue + 1}
-                            <span className='sr-only'> {t('correction')}</span>
+                            <span className={styles.visuallyHidden}>
+                                {' '}
+                                {t('correction')}
+                            </span>
                         </sup>
                     </mark>
                 ),
@@ -80,27 +81,26 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
         'not-bad': t('Not bad'),
         'practise-again-later': t('Practise again later'),
     }[result.rating];
+    let scoreTone = styles.scoreNeutral;
+    let ScoreIcon = Repeat;
+    if (result.percentage >= 80) {
+        scoreTone = styles.scoreSuccess;
+        ScoreIcon = CheckCircle2;
+    } else if (result.rating === 'not-bad') {
+        scoreTone = styles.scoreWarning;
+        ScoreIcon = CircleDashed;
+    }
+    const scoreClassName = `${styles.score} ${scoreTone}`;
     return (
-        <section
-            aria-label={t('AI feedback')}
-            className='rounded-xl border border-border-default bg-background-surface p-4'
-        >
-            <div className='flex flex-wrap items-center gap-3'>
-                <span
-                    className={`inline-flex items-center gap-2 rounded-xl border-2 px-3 py-1.5 text-xl font-semibold tabular-nums ${result.percentage >= 80 ? 'border-success-default text-success-default' : result.rating === 'not-bad' ? 'border-warning-default text-warning-default' : 'border-border-strong text-text-secondary'}`}
-                >
-                    {result.percentage >= 80 ? (
-                        <CheckCircle2 aria-hidden className='h-5 w-5' />
-                    ) : result.rating === 'not-bad' ? (
-                        <CircleDashed aria-hidden className='h-5 w-5' />
-                    ) : (
-                        <Repeat aria-hidden className='h-5 w-5' />
-                    )}
+        <section aria-label={t('AI feedback')} className={styles.feedbackPanel}>
+            <div className={styles.feedbackHeader}>
+                <span className={scoreClassName}>
+                    <ScoreIcon aria-hidden className={styles.icon} />
                     {result.percentage}%
                 </span>
                 <div>
-                    <h3 className='font-semibold'>{label}</h3>
-                    <p className='text-xs text-text-tertiary'>
+                    <h3 className={styles.ratingTitle}>{label}</h3>
+                    <p className={styles.scoreNote}>
                         {t('AI checks')} ·{' '}
                         {languageName(attempt.explanationLanguage)}
                     </p>
@@ -116,35 +116,28 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
                 ) : null}
             </div>
             <p
-                className='mt-3 text-sm leading-relaxed text-text-primary'
+                className={styles.feedbackSummary}
                 lang={attempt.explanationLanguage}
                 dir={languageDirection(attempt.explanationLanguage)}
             >
                 {result.explanation}
             </p>
-            <h4 className='mt-4 text-xs uppercase tracking-wide text-text-tertiary'>
-                {t('Your answer')}
-            </h4>
+            <h4 className={styles.feedbackLabel}>{t('Your answer')}</h4>
             <HighlightedAnswer attempt={attempt} />
             {result.issues.length ? (
                 <>
-                    <h4 className='mt-4 text-xs uppercase tracking-wide text-text-tertiary'>
-                        {t('Corrections')}
-                    </h4>
-                    <ol className='mt-2 space-y-2'>
+                    <h4 className={styles.feedbackLabel}>{t('Corrections')}</h4>
+                    <ol className={styles.mistakes}>
                         {result.issues.map((issue, index) => (
-                            <li
-                                key={issue.id}
-                                className='flex gap-2 rounded-lg border border-border-default p-2.5 text-sm'
-                            >
-                                <span className='inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-background-subtle text-xs font-semibold text-text-primary'>
+                            <li key={issue.id} className={styles.mistake}>
+                                <span className={styles.mistakeNumber}>
                                     {index + 1}
                                 </span>
-                                <div className='min-w-0 break-words'>
+                                <div className={styles.mistakeBody}>
                                     <Badge size='sm'>{t(issue.kind)}</Badge>
                                     {issue.span ? (
                                         <p
-                                            className='mt-1'
+                                            className={styles.mistakeExcerpt}
                                             lang={
                                                 attempt.exercise.targetLanguage
                                             }
@@ -161,12 +154,12 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
                                             ) : null}
                                         </p>
                                     ) : (
-                                        <p className='mt-1 text-xs text-text-tertiary'>
+                                        <p className={styles.mistakeReason}>
                                             {t('Applies to the whole answer')}
                                         </p>
                                     )}
                                     <p
-                                        className='mt-1 text-text-secondary'
+                                        className={styles.mistakeExplanation}
                                         lang={attempt.explanationLanguage}
                                     >
                                         {issue.explanation}
@@ -177,21 +170,16 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
                     </ol>
                 </>
             ) : (
-                <p className='mt-4 text-sm text-text-secondary'>
+                <p className={styles.noMistakes}>
                     {t('No corrections needed.')}
                 </p>
             )}
-            <h4 className='mt-4 text-xs uppercase tracking-wide text-text-tertiary'>
-                {t('Dictionary words')}
-            </h4>
-            <ul className='mt-2 flex flex-wrap gap-2'>
+            <h4 className={styles.feedbackLabel}>{t('Dictionary words')}</h4>
+            <ul className={styles.dictionaryWords}>
                 {result.targets.map((target) => (
-                    <li
-                        key={target.entryId}
-                        className='rounded-lg border border-border-default px-2 py-1 text-sm'
-                    >
+                    <li key={target.entryId} className={styles.dictionaryWord}>
                         <strong
-                            className='me-2'
+                            className={styles.wordSource}
                             lang={attempt.exercise.targetLanguage}
                         >
                             {
@@ -217,7 +205,7 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
                                 : t('Missing')}
                         </Badge>
                         <span
-                            className='ms-2'
+                            className={styles.wordArrow}
                             lang={attempt.explanationLanguage}
                         >
                             {target.explanation}
@@ -226,7 +214,7 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
                 ))}
             </ul>
             <Button
-                className='mt-4'
+                className={styles.referenceAction}
                 variant='secondary'
                 size='compact'
                 aria-expanded={expanded}
@@ -236,14 +224,14 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
             </Button>
             {expanded ? (
                 <p
-                    className='mt-3 text-base'
+                    className={styles.feedbackNotice}
                     lang={attempt.exercise.targetLanguage}
                     dir={languageDirection(attempt.exercise.targetLanguage)}
                 >
                     {result.improvedTranslation}
                 </p>
             ) : null}
-            <p className='mt-4 text-xs text-text-tertiary'>
+            <p className={styles.feedbackDisclosure}>
                 {t('Hints and reference use do not reduce your AI score.')}
             </p>
         </section>
@@ -256,11 +244,11 @@ export function ReferencePanel({ review }: { review: SentenceManualReview }) {
     return (
         <section
             aria-label={t('Reference translation')}
-            className='rounded-xl border border-dashed border-border-strong bg-background-subtle p-4'
+            className={styles.referencePanel}
         >
-            <div className='flex flex-wrap items-center justify-between gap-2'>
-                <div className='flex items-center gap-2'>
-                    <h3 className='text-sm font-semibold'>
+            <div className={styles.referenceHeader}>
+                <div className={styles.referenceHeading}>
+                    <h3 className={styles.referenceTitle}>
                         {t('Reference translation')}
                     </h3>
                     <Badge size='sm'>{t('Manually reviewed')}</Badge>
@@ -277,20 +265,20 @@ export function ReferencePanel({ review }: { review: SentenceManualReview }) {
             {open ? (
                 <>
                     <p
-                        className='mt-3 break-words text-lg leading-relaxed'
+                        className={styles.referenceAnswer}
                         lang={review.exercise.targetLanguage}
                         dir={languageDirection(review.exercise.targetLanguage)}
                     >
                         {review.referenceTranslation}
                     </p>
-                    <p className='mt-2 text-sm text-text-secondary'>
+                    <p className={styles.referenceInstructions}>
                         {t(
                             'One valid translation. Your answer may also be correct.',
                         )}
                     </p>
                 </>
             ) : null}
-            <p className='mt-3 text-xs text-text-tertiary'>
+            <p className={styles.referenceDisclaimer}>
                 {t(
                     'Recorded as manually reviewed. This sentence counts as completed for Saved first. AI statistics are unchanged. Hiding this panel does not remove the review.',
                 )}

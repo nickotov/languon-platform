@@ -14,25 +14,25 @@
 .sm,
 .compact,
 .small {
-    height: 32px;
-    width: 32px;
+    height: var(--size-32);
+    width: var(--size-32);
 }
 
 .md,
 .default,
 .medium {
-    height: 40px;
-    width: 40px;
+    height: var(--size-40);
+    width: var(--size-40);
 }
 
 .lg,
 .large {
-    height: 48px;
-    width: 48px;
+    height: var(--size-48);
+    width: var(--size-48);
 }
 
 .rounded {
-    border-radius: 999px;
+    border-radius: var(--radius-999);
 }
 
 .primary {
@@ -84,7 +84,7 @@
 
 .button:focus-visible {
     outline: 2px solid currentColor;
-    outline-offset: 2px;
+    outline-offset: var(--size-2);
 }
 
 .button:disabled {
@@ -99,20 +99,20 @@
 
 :where(.sm .icon) :where(svg),
 :where(.sm) .spinner {
-    height: 16px;
-    width: 16px;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 :where(.md .icon) :where(svg),
 :where(.md) .spinner {
-    height: 20px;
-    width: 20px;
+    height: var(--size-20);
+    width: var(--size-20);
 }
 
 :where(.lg .icon) :where(svg),
 :where(.lg) .spinner {
-    height: 24px;
-    width: 24px;
+    height: var(--size-24);
+    width: var(--size-24);
 }
 
 .spinner {

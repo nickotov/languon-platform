@@ -4,6 +4,7 @@ import {
     MoreHorizontalIcon,
     RotateCcwIcon,
 } from 'lucide-react';
+import componentStyles from './sentence-row.module.css';
 import type { MouseEvent } from 'react';
 import {
     Button,
@@ -39,11 +40,16 @@ export function SentenceRow({
     const preview = sentence.sentence.slice(0, 60);
     const archiveLabel = sentence.archivedByMe ? L('restore') : L('removeMine');
     const archiveIcon = sentence.archivedByMe ? (
-        <RotateCcwIcon aria-hidden className='h-4 w-4' />
+        <RotateCcwIcon aria-hidden className={componentStyles.icon} />
     ) : (
-        <EyeOffIcon aria-hidden className='h-4 w-4' />
+        <EyeOffIcon aria-hidden className={componentStyles.icon} />
     );
-    const rowClass = `flex gap-3 rounded-xl border p-3 transition-colors sm:p-4 ${selected ? 'border-primary-default bg-primary-subtle' : 'border-border-default bg-background-surface'}`;
+    const rowClass = [
+        componentStyles.row,
+        selected ? componentStyles.selected : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
     function toggle() {
         onToggle(sentence.id);
     }
@@ -55,7 +61,7 @@ export function SentenceRow({
     }
     return (
         <li className={rowClass} data-sentence-id={sentence.id}>
-            <div className='pt-0.5'>
+            <div className={componentStyles.checkbox}>
                 <Checkbox
                     size='md'
                     checked={selected}
@@ -64,15 +70,15 @@ export function SentenceRow({
                     aria-label={L('rowSelect', { sentence: preview })}
                 />
             </div>
-            <div className='min-w-0 flex-1'>
+            <div className={componentStyles.content}>
                 <p
                     lang={sentence.sentenceLanguage}
                     dir='auto'
-                    className='break-words text-base leading-relaxed text-text-primary [overflow-wrap:anywhere]'
+                    className={componentStyles.sentence}
                 >
                     {sentence.sentence}
                 </p>
-                <div className='mt-2 flex flex-wrap items-center gap-2'>
+                <div className={componentStyles.metadata}>
                     <DirectionBadge
                         from={sentence.sentenceLanguage}
                         to={sentence.answerLanguage}
@@ -81,11 +87,13 @@ export function SentenceRow({
                     <OwnershipMeta sentence={sentence} />
                 </div>
             </div>
-            <div className='hidden shrink-0 items-start gap-2 md:flex'>
+            <div className={componentStyles.desktopActions}>
                 <Button
                     size='compact'
                     variant='secondary'
-                    leadingIcon={<EyeIcon aria-hidden className='h-4 w-4' />}
+                    leadingIcon={
+                        <EyeIcon aria-hidden className={componentStyles.icon} />
+                    }
                     onClick={view}
                 >
                     {L('view')}
@@ -101,13 +109,16 @@ export function SentenceRow({
                     {sentence.archivedByMe ? L('restore') : L('removeShort')}
                 </Button>
             </div>
-            <div className='shrink-0 md:hidden'>
+            <div className={componentStyles.mobileActions}>
                 <Popover>
                     <PopoverTrigger
-                        className='inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-strong bg-background-surface text-text-primary'
+                        className={componentStyles.menuButton}
                         aria-label={L('rowActions', { sentence: preview })}
                     >
-                        <MoreHorizontalIcon aria-hidden className='h-4 w-4' />
+                        <MoreHorizontalIcon
+                            aria-hidden
+                            className={componentStyles.icon}
+                        />
                     </PopoverTrigger>
                     <PopoverContent>
                         <PopoverItem onClick={view}>{L('view')}</PopoverItem>

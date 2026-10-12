@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import storyStyles from './button.stories.module.css';
 import { Button } from './button';
 
 const meta = { component: Button, title: 'UI/Button' } satisfies Meta<
@@ -34,7 +35,7 @@ export const Destructive: Story = {
 export const PressedStates: Story = {
     args: { children: 'Pressed' },
     render: () => (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+        <div className={storyStyles.controls}>
             <Button data-state='pressed'>Primary pressed</Button>
             <Button data-state='pressed' variant='secondary'>
                 Secondary pressed
@@ -52,7 +53,7 @@ export const PressedStates: Story = {
 export const ControlSizes: Story = {
     args: { children: 'Continue' },
     render: () => (
-        <div style={{ alignItems: 'center', display: 'flex', gap: 12 }}>
+        <div className={storyStyles.controls2}>
             <Button size='compact'>Compact</Button>
             <Button size='default'>Default</Button>
             <Button size='large'>Large</Button>

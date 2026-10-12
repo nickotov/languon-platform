@@ -24,19 +24,19 @@
 }
 
 .sm {
-    height: 32px;
-    width: 32px;
-    font-size: 12px;
+    height: var(--size-32);
+    width: var(--size-32);
+    font-size: var(--size-12);
 }
 
 .md {
-    height: 40px;
-    width: 40px;
-    font-size: 14px;
+    height: var(--size-40);
+    width: var(--size-40);
+    font-size: var(--size-14);
 }
 
 .lg {
-    height: 56px;
-    width: 56px;
-    font-size: 16px;
+    height: var(--size-56);
+    width: var(--size-56);
+    font-size: var(--size-16);
 }

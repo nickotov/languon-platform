@@ -1,4 +1,5 @@
 import { Menu } from '@/fsd/shared/ui';
+import componentStyles from './editor-secondary-actions.module.css';
 import {
     BookOpen,
     ClipboardPaste,
@@ -106,13 +107,18 @@ export function EditorSecondaryActions({
     const items = [
         {
             label: t('dictionary.editor.savedSentences'),
-            icon: <MessageSquareText aria-hidden className='h-4 w-4' />,
+            icon: (
+                <MessageSquareText
+                    aria-hidden
+                    className={componentStyles.menuIcon}
+                />
+            ),
             onSelect: () =>
                 router.push(href(`/dictionaries/${current.id}/sentences`)),
         },
         {
             label: t('dictionary.editor.practiceHistory'),
-            icon: <BookOpen aria-hidden className='h-4 w-4' />,
+            icon: <BookOpen aria-hidden className={componentStyles.menuIcon} />,
             disabled: archived,
             onSelect: () =>
                 router.push(
@@ -121,7 +127,12 @@ export function EditorSecondaryActions({
         },
         {
             label: t('dictionary.batch.open'),
-            icon: <ClipboardPaste aria-hidden className='h-4 w-4' />,
+            icon: (
+                <ClipboardPaste
+                    aria-hidden
+                    className={componentStyles.menuIcon}
+                />
+            ),
             separatorBefore: true,
             headingBefore: t('dictionary.editor.bulkAndSharing'),
             onSelect: openBatch,
@@ -133,7 +144,7 @@ export function EditorSecondaryActions({
         },
         {
             label: t('dictionary.document.open'),
-            icon: <FileText aria-hidden className='h-4 w-4' />,
+            icon: <FileText aria-hidden className={componentStyles.menuIcon} />,
             onSelect: openDocument,
             disabled:
                 archived ||
@@ -143,13 +154,13 @@ export function EditorSecondaryActions({
         },
         {
             label: t('dictionary.interchange.openImport'),
-            icon: <Upload aria-hidden className='h-4 w-4' />,
+            icon: <Upload aria-hidden className={componentStyles.menuIcon} />,
             onSelect: openImport,
             disabled: archived || interchangeImportAction.isPending,
         },
         {
             label: t('dictionary.interchange.openExport'),
-            icon: <Download aria-hidden className='h-4 w-4' />,
+            icon: <Download aria-hidden className={componentStyles.menuIcon} />,
             separatorBefore: true,
             onSelect: openExport,
             disabled:
@@ -159,7 +170,7 @@ export function EditorSecondaryActions({
         },
         {
             label: t('dictionary.editor.sharing'),
-            icon: <Share2 aria-hidden className='h-4 w-4' />,
+            icon: <Share2 aria-hidden className={componentStyles.menuIcon} />,
             onSelect: openSharing,
             disabled: archived,
         },
@@ -168,8 +179,8 @@ export function EditorSecondaryActions({
     return (
         <Menu
             iconOnly
-            triggerClassName='!h-10 !w-10 !min-h-10 border border-border-strong bg-background-surface text-text-primary'
-            menuClassName='bg-background-elevated text-text-primary border-border-default'
+            triggerClassName={componentStyles.trigger}
+            menuClassName={componentStyles.menu}
             label={label}
             trigger={<MoreHorizontal size={18} aria-hidden />}
             items={items}

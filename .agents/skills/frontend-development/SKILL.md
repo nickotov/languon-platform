@@ -59,12 +59,15 @@ feature-name/
 ```
 
 - Put every component under `ui/`, one component folder per reusable component.
-- Web uses the exact accepted Magic token names/values and Tailwind v3 semantic
-  utilities under ADR-0017. CSS Modules remain supported for existing and
-  component-specific styling; do not add an empty module or mass-rewrite
-  consumers. Legacy `--sys-*` variables are compatibility aliases, not a reason
-  to approximate accepted tokens. Admin uses Ant Design theme mappings and
-  existing app-local styling conventions.
+- Web uses colocated CSS Modules and the accepted semantic color/font tokens under
+  ADR-0029. Dimensions, spacing and radii use canonical app geometry tokens.
+  Convert prototype utilities into meaningful element/variant classes; do not ship
+  Tailwind or recreate global utilities. Static styles belong in CSS, genuine runtime
+  geometry may remain inline. Use low specificity and zero-specificity contextual
+  conditions. For Magic Patterns integration, read
+  [the repository integration skill](../magic-patterns-css-integration/SKILL.md).
+  Legacy `--sys-*` variables remain compatibility aliases.
+  Admin uses Ant Design theme mappings and existing app-local styling conventions.
 - Keep the main component and a small number of private subcomponents in the
   same folder. If a complex component has many inseparable private parts, place
   them under that component's `ui/` subfolder. Promote a part to its own slice or

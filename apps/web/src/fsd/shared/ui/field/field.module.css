@@ -1,6 +1,6 @@
 .field {
     display: grid;
-    font-size: 14px;
+    font-size: var(--size-14);
     gap: var(--spacing-label-to-input);
 }
 
@@ -13,7 +13,7 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: space-between;
 }
 
@@ -30,17 +30,17 @@
 .optional,
 .hint {
     color: var(--sys-color-text-secondary);
-    font-size: 12px;
+    font-size: var(--size-12);
     font-weight: 400;
 }
 
 .error {
     color: var(--sys-color-danger);
-    font-size: 14px;
+    font-size: var(--size-14);
 }
 
 .success {
     color: var(--sys-color-success);
-    font-size: 14px;
+    font-size: var(--size-14);
     font-weight: 600;
 }

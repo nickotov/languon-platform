@@ -4,8 +4,8 @@
     border-radius: 50%;
     border-top-color: var(--sys-color-action-primary);
     display: inline-block;
-    height: 24px;
-    width: 24px;
+    height: var(--size-24);
+    width: var(--size-24);
 }
 
 @keyframes spin {

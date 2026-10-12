@@ -1,0 +1,103 @@
+.warningIcon {
+    height: var(--size-16);
+    width: var(--size-16);
+    color: var(--warning-default);
+}
+
+.neutralTone {
+    border-color: var(--border-strong);
+    background-color: var(--background-surface);
+    color: var(--text-primary);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.runningIcon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.runningIcon {
+    animation: spin 1s linear infinite;
+    color: var(--primary-default);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .runningIcon {
+        animation: none;
+    }
+}
+
+.stoppingIcon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.stoppingIcon {
+    animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stoppingIcon {
+        animation: none;
+    }
+}
+
+.successIcon {
+    height: var(--size-16);
+    width: var(--size-16);
+    color: var(--success-default);
+}
+
+.warningTone {
+    border-color: var(--warning-default);
+    background-color: var(--warning-subtle);
+    color: var(--text-primary);
+}
+
+.chip {
+    display: inline-flex;
+    min-height: var(--size-36);
+    max-width: 100%;
+    align-items: center;
+    gap: var(--space-8);
+    border-radius: var(--radius-9999);
+    border-width: 1px;
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    font-weight: 500;
+    transition-property:
+        color, background-color, border-color, text-decoration-color, fill,
+        stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.chip:hover {
+    background-color: var(--background-subtle);
+}
+
+.chip:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: var(--size-2);
+    box-shadow:
+        0 0 0 var(--size-2) var(--background-surface),
+        0 0 0 var(--size-4) var(--border-focus);
+}
+
+.label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

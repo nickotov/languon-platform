@@ -1,4 +1,5 @@
 'use client';
+import styles from './sentence-preparation-progress.module.css';
 import { Loader2Icon, WifiOffIcon } from 'lucide-react';
 import type { SentencePreparationBatch } from '@languon/contracts';
 import type { SentencePreparationController } from '../../types';
@@ -52,9 +53,9 @@ export function SentencePreparationProgress({
                   ? P('stopping')
                   : null;
     return (
-        <div className='space-y-4'>
+        <div className={styles.progressContent}>
             {run ? (
-                <p className='text-sm text-text-secondary'>
+                <p className={styles.languageMode}>
                     {languageName(read)} → {languageName(answer)} · {mode}
                 </p>
             ) : null}
@@ -65,18 +66,12 @@ export function SentencePreparationProgress({
                 onOpenAiSettings={onOpenAiSettings}
             />
             {activity ? (
-                <p
-                    role='status'
-                    className='flex items-start gap-2 text-sm text-text-primary'
-                >
-                    <Loader2Icon
-                        aria-hidden
-                        className='mt-0.5 h-4 w-4 shrink-0 animate-spin text-primary-default motion-reduce:animate-none'
-                    />
+                <p role='status' className={styles.activity}>
+                    <Loader2Icon aria-hidden className={styles.activityIcon} />
                     <span>
                         {activity}
                         {run?.state === 'stopping' ? (
-                            <span className='block text-xs text-text-secondary'>
+                            <span className={styles.refundNote}>
                                 {P('noRefund')}
                             </span>
                         ) : null}
@@ -84,18 +79,18 @@ export function SentencePreparationProgress({
                 </p>
             ) : null}
             {controller.error && run && !hideDetails ? (
-                <p className='flex items-center gap-2 rounded-lg bg-background-subtle p-2 text-xs text-text-secondary'>
-                    <WifiOffIcon aria-hidden className='h-3.5 w-3.5' />
+                <p className={styles.connectionNote}>
+                    <WifiOffIcon
+                        aria-hidden
+                        className={styles.connectionIcon}
+                    />
                     {P('slow')}
                 </p>
             ) : null}
             {!hideDetails && run ? (
                 <>
-                    <div className='space-y-3 rounded-xl border border-border-default bg-background-subtle p-3'>
-                        <p
-                            className='text-lg font-semibold text-text-primary'
-                            aria-live='polite'
-                        >
+                    <div className={styles.coveragePanel}>
+                        <p className={styles.coverageTitle} aria-live='polite'>
                             {P('readyWords', {
                                 done: run.preparedCount,
                                 total: run.eligibleCount,
@@ -113,7 +108,7 @@ export function SentencePreparationProgress({
                                 total={first.entryIds.length}
                             />
                         ) : null}
-                        <div className='flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-primary'>
+                        <div className={styles.counts}>
                             <span>
                                 {P('reused', { n: run.reusedExerciseCount })}
                             </span>
@@ -123,9 +118,7 @@ export function SentencePreparationProgress({
                                 })}
                             </span>
                         </div>
-                        <p className='text-xs text-text-secondary'>
-                            {P('countsNote')}
-                        </p>
+                        <p className={styles.countsNote}>{P('countsNote')}</p>
                     </div>
                     <SentencePreparationRounds
                         controller={controller}
@@ -152,10 +145,10 @@ function CoverageBar({
     const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
     const text = P('coverageBar', { done, total });
     return (
-        <div className='space-y-1'>
-            <div className='flex items-center justify-between gap-2 text-xs'>
-                <span className='font-medium text-text-primary'>{label}</span>
-                <span className='text-text-secondary'>{text}</span>
+        <div className={styles.coverage}>
+            <div className={styles.coverageHeader}>
+                <span className={styles.coverageLabel}>{label}</span>
+                <span className={styles.coverageValue}>{text}</span>
             </div>
             <div
                 role='progressbar'
@@ -164,12 +157,9 @@ function CoverageBar({
                 aria-valuemax={total}
                 aria-valuenow={done}
                 aria-valuetext={text}
-                className='h-2 overflow-hidden rounded-full bg-progress-track'
+                className={styles.track}
             >
-                <div
-                    className='h-full rounded-full bg-progress-fill transition-[width] duration-300 motion-reduce:transition-none'
-                    style={{ width: `${pct}%` }}
-                />
+                <div className={styles.fill} style={{ width: `${pct}%` }} />
             </div>
         </div>
     );

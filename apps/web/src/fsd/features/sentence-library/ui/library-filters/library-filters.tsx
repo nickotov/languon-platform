@@ -1,4 +1,5 @@
 import React, { useState, type ChangeEvent } from 'react';
+import componentStyles from './library-filters.module.css';
 import {
     ChevronDownIcon,
     ChevronUpIcon,
@@ -39,14 +40,14 @@ export function LibraryFilters(props: LibraryFiltersProps) {
     }
     if (compact) {
         return (
-            <div className='flex flex-wrap items-center gap-2'>
+            <div className={componentStyles.actions}>
                 <Button
                     variant='secondary'
                     size='compact'
                     leadingIcon={
                         <SlidersHorizontalIcon
                             aria-hidden
-                            className='h-4 w-4'
+                            className={componentStyles.icon}
                         />
                     }
                     onClick={openSheet}
@@ -60,7 +61,10 @@ export function LibraryFilters(props: LibraryFiltersProps) {
                         variant='secondary'
                         size='compact'
                         leadingIcon={
-                            <RotateCcwIcon aria-hidden className='h-4 w-4' />
+                            <RotateCcwIcon
+                                aria-hidden
+                                className={componentStyles.icon}
+                            />
                         }
                         onClick={props.onReset}
                     >
@@ -86,7 +90,7 @@ export function LibraryFilters(props: LibraryFiltersProps) {
     }
 
     return (
-        <div className='rounded-xl border border-border-default bg-background-surface p-3'>
+        <div className={componentStyles.card}>
             <FilterControls
                 {...props}
                 stacked={false}
@@ -138,12 +142,12 @@ function FilterControls({
     );
 
     return (
-        <div className='space-y-3'>
+        <div className={componentStyles.root}>
             <div
                 className={
                     stacked
-                        ? 'space-y-3'
-                        : 'grid gap-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)]'
+                        ? componentStyles.stackedFilters
+                        : componentStyles.filterGrid
                 }
             >
                 <Select
@@ -183,18 +187,24 @@ function FilterControls({
                 />
             </div>
 
-            <div className='flex flex-wrap items-center justify-between gap-2'>
+            <div className={componentStyles.advancedToolbar}>
                 <button
                     type='button'
                     aria-expanded={advanced}
                     aria-controls='library-advanced-filters'
                     onClick={toggleAdvanced}
-                    className='inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-1 text-sm font-medium text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus'
+                    className={componentStyles.advancedToggle}
                 >
                     {advanced ? (
-                        <ChevronUpIcon aria-hidden className='h-4 w-4' />
+                        <ChevronUpIcon
+                            aria-hidden
+                            className={componentStyles.icon}
+                        />
                     ) : (
-                        <ChevronDownIcon aria-hidden className='h-4 w-4' />
+                        <ChevronDownIcon
+                            aria-hidden
+                            className={componentStyles.icon}
+                        />
                     )}
                     {L('advanced')}
                     {filters.globalArchive !== 'active' ? (
@@ -208,7 +218,10 @@ function FilterControls({
                         variant='secondary'
                         size='compact'
                         leadingIcon={
-                            <RotateCcwIcon aria-hidden className='h-4 w-4' />
+                            <RotateCcwIcon
+                                aria-hidden
+                                className={componentStyles.icon}
+                            />
                         }
                         onClick={onReset}
                     >
@@ -220,9 +233,13 @@ function FilterControls({
             {advanced ? (
                 <div
                     id='library-advanced-filters'
-                    className='space-y-2 rounded-lg border border-dashed border-border-strong p-3'
+                    className={componentStyles.archiveFilters}
                 >
-                    <div className={stacked ? '' : 'max-w-sm'}>
+                    <div
+                        className={
+                            stacked ? undefined : componentStyles.archiveSelect
+                        }
+                    >
                         <Select
                             size='sm'
                             fullWidth
@@ -236,13 +253,13 @@ function FilterControls({
                             ]}
                         />
                     </div>
-                    <p className='flex items-start gap-1.5 text-xs text-text-secondary'>
+                    <p className={componentStyles.archiveHelp}>
                         <LockIcon
                             aria-hidden
-                            className='mt-0.5 h-3.5 w-3.5 shrink-0'
+                            className={componentStyles.helpIcon}
                         />
                         <span>
-                            <span className='font-medium text-text-primary'>
+                            <span className={componentStyles.helpLabel}>
                                 {L('readOnly')}.
                             </span>{' '}
                             {L('globalHelp')}

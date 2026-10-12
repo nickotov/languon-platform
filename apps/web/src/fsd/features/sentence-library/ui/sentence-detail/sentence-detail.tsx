@@ -67,7 +67,7 @@ export function SentenceDetail({
             <div
                 role='status'
                 aria-label={L('loading')}
-                className='space-y-4 p-4'
+                className={styles.loadingState}
             >
                 <Skeleton variant='rect' width='90%' height='1.75rem' />
                 <Skeleton variant='rect' width='50%' height='1rem' />
@@ -79,7 +79,7 @@ export function SentenceDetail({
         [401, 403, 404].includes(query.error.status)
     )
         content = (
-            <div className='p-4'>
+            <div className={styles.statusContent}>
                 <InlineAlert
                     tone='info'
                     title={L('detailRemovedTitle')}
@@ -99,7 +99,7 @@ export function SentenceDetail({
         );
     else if (query.isError)
         content = (
-            <div className='p-4'>
+            <div className={styles.statusContent}>
                 <InlineAlert
                     tone='error'
                     title={L('detailLoadFailed')}
@@ -119,22 +119,25 @@ export function SentenceDetail({
         );
     else if (sentence) {
         content = (
-            <div className='space-y-6 p-4'>
-                <section aria-label={L('sentenceLabel')} className='space-y-2'>
+            <div className={styles.content}>
+                <section
+                    aria-label={L('sentenceLabel')}
+                    className={styles.sentenceSection}
+                >
                     <p
                         lang={sentence.sentenceLanguage}
                         dir='auto'
-                        className='break-words text-xl font-medium leading-relaxed text-text-primary [overflow-wrap:anywhere]'
+                        className={styles.sentence}
                     >
                         {sentence.sentence}
                     </p>
-                    <p className='text-sm text-text-secondary'>
+                    <p className={styles.help}>
                         {L('langLine', {
                             from: lang(sentence.sentenceLanguage),
                             to: lang(sentence.answerLanguage),
                         })}
                     </p>
-                    <div className='flex flex-wrap items-center gap-2'>
+                    <div className={styles.metadata}>
                         <DirectionBadge
                             from={sentence.sentenceLanguage}
                             to={sentence.answerLanguage}
@@ -143,34 +146,40 @@ export function SentenceDetail({
                     </div>
                     <OwnershipMeta sentence={sentence} />
                 </section>
-                <section className='rounded-xl border border-border-default'>
+                <section className={styles.translationSection}>
                     <button
                         type='button'
                         aria-expanded={expanded}
                         aria-controls={`${id}-reference`}
                         onClick={toggle}
-                        className='flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-start text-sm font-semibold text-text-primary hover:bg-background-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus'
+                        className={styles.translationToggle}
                     >
                         {L('referenceToggle')}
                         {expanded ? (
-                            <ChevronUpIcon aria-hidden className='h-4 w-4' />
+                            <ChevronUpIcon
+                                aria-hidden
+                                className={styles.icon}
+                            />
                         ) : (
-                            <ChevronDownIcon aria-hidden className='h-4 w-4' />
+                            <ChevronDownIcon
+                                aria-hidden
+                                className={styles.icon}
+                            />
                         )}
                     </button>
                     {expanded ? (
                         <div
                             id={`${id}-reference`}
-                            className='space-y-1 border-t border-border-default px-3 py-3'
+                            className={styles.translationContent}
                         >
                             <p
                                 lang={sentence.answerLanguage}
                                 dir='auto'
-                                className='break-words text-base text-text-primary [overflow-wrap:anywhere]'
+                                className={styles.translation}
                             >
                                 {sentence.reference}
                             </p>
-                            <p className='text-xs text-text-secondary'>
+                            <p className={styles.secondaryHelp}>
                                 {L('referenceNote')}
                             </p>
                         </div>
@@ -186,9 +195,9 @@ export function SentenceDetail({
         );
     }
     const closeIcon = compact ? (
-        <ArrowLeftIcon aria-hidden className='h-4 w-4' />
+        <ArrowLeftIcon aria-hidden className={styles.icon} />
     ) : (
-        <XIcon aria-hidden className='h-4 w-4' />
+        <XIcon aria-hidden className={styles.icon} />
     );
     return (
         <Dialog
@@ -201,7 +210,7 @@ export function SentenceDetail({
             bodyClassName={styles.body}
             closeLabel={L('close')}
         >
-            <div className='sticky top-0 z-10 flex items-center gap-2 border-b border-border-default bg-background-surface px-4 py-3'>
+            <div className={styles.drawerHeader}>
                 {compact ? (
                     <IconButton
                         size='sm'
@@ -211,9 +220,7 @@ export function SentenceDetail({
                         onClick={onClose}
                     />
                 ) : null}
-                <h2 className='min-w-0 flex-1 text-base font-semibold text-text-primary'>
-                    {L('detailTitle')}
-                </h2>
+                <h2 className={styles.drawerHeading}>{L('detailTitle')}</h2>
                 {!compact ? (
                     <IconButton
                         size='sm'

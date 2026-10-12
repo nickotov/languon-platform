@@ -1,0 +1,117 @@
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.scroll {
+    min-height: 0px;
+    flex: 1 1 0%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.saving {
+    text-align: center;
+    font-size: var(--size-14);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.cardLayout {
+    display: flex;
+    min-height: 0px;
+    flex: 1 1 0%;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+@media (min-width: 1024px) {
+    .cardLayout {
+        gap: var(--space-16);
+    }
+}
+
+.cardSlot {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    height: 100%;
+    min-height: 0px;
+    width: 100%;
+    min-width: 0px;
+    max-width: var(--size-672);
+    flex: 1 1 0%;
+    align-items: center;
+}
+
+.loadingSlot {
+    width: 100%;
+}
+
+.mobileRatings {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--space-12);
+}
+
+@media (min-width: 768px) {
+    .mobileRatings {
+        display: none;
+    }
+}
+
+.undo {
+    display: flex;
+    min-height: var(--size-44);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.skeletonCard {
+    border-radius: var(--radius-24);
+    border-width: 1px;
+    border-color: var(--border-default);
+    background-color: var(--background-surface);
+    padding: var(--space-24);
+    box-shadow: var(--elevation-sm);
+}
+
+.skeletonFields {
+    margin-top: var(--space-32);
+}
+
+.content {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    width: 100%;
+    max-width: var(--size-896);
+    flex-direction: column;
+    gap: var(--space-16);
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+    padding-top: var(--space-24);
+}
+
+@media (min-width: 768px) {
+    .content {
+        padding-left: var(--space-24);
+        padding-right: var(--space-24);
+        padding-top: var(--space-32);
+    }
+}
+
+.cardPhase {
+    height: 100%;
+}
+
+.otherPhase {
+    min-height: 100%;
+}

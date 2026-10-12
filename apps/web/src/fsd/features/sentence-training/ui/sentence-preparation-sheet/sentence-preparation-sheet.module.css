@@ -1,0 +1,32 @@
+.footerNote {
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+    color: var(--text-secondary);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-8);
+}
+
+.icon {
+    height: var(--size-16);
+    width: var(--size-16);
+}
+
+.compactDialog {
+    margin-bottom: 0px !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-bottom-right-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+}
+
+/* Keep stack spacing after local child margins without increasing specificity. */
+.footer > :where(:not([hidden]) ~ :not([hidden])) {
+    margin-top: var(--space-8);
+    margin-bottom: 0;
+}
