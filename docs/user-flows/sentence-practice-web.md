@@ -6,6 +6,7 @@ last_verified: 2026-10-08
 surfaces:
     - browser
 source_paths:
+    - apps/web/src/fsd/features/speech-playback/**
     - .agent/features/037-sentence-practice-web/**
     - .agent/features/038-sentence-practice-assistance/**
     - .agent/features/039-sentence-library-management/**
@@ -34,6 +35,7 @@ e2e_scenarios:
     - saved-library-preview-archive-restore
     - background-preparation-ready-reconnect
 related_features:
+    - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - sentence-practice-backend
     - flashcard-training-web
@@ -353,3 +355,17 @@ they do not claim to execute those backend transitions. The first half of the
 scenario uses real preparation, reconnect and ready-batch APIs, with no generation
 when practice starts. Backend database/API evidence separately verifies transition
 and authorization semantics.
+
+## Related pronunciation playback
+
+When enabled, Play is available beside authorized saved prompts, revealed
+references, accessible library previews and completed checked answers. Play does
+not reveal a collapsed reference or grade an unchecked answer. Unsupported
+languages omit generation controls unless approved cached audio exists. A paid
+cache miss shows an exact confirmation; spinner/ready/stop behavior is shared with
+dictionary and flashcard playback. See
+[Shared pronunciation playback](shared-pronunciation-playback.md).
+
+The existing sentence scenarios above keep their baseline verification date and
+scope. Speech visibility and financial behavior have separate shared-playback and
+backend persistence evidence; they are not inferred from the existing design captures.

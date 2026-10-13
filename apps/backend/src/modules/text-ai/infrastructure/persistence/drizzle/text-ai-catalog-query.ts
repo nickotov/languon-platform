@@ -1,3 +1,5 @@
+import { DrizzleModelPriceParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant';
+import type { AiCreditTransaction } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import type { TextAiModelsResponse } from '@languon/contracts';
 import { desc, eq, gt } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -12,14 +14,30 @@ import { isTextAiSelectionCapableObservation } from './text-ai-worker-readiness'
 
 export interface TextAiAvailabilityPolicy {
     routingEnabled: boolean;
+    pricingAdmissionEnabled?: boolean;
     credentialConfigured(providerId: 'deepseek' | 'kie'): boolean;
 }
-export function defaultTextAiAvailabilityPolicy(): TextAiAvailabilityPolicy {
+export function defaultTextAiAvailabilityPolicy(
+    environment: Readonly<Record<string, string | undefined>> = process.env,
+): TextAiAvailabilityPolicy {
+    const supportsPriceVersion = (value: string | undefined) =>
+        value
+            ?.split(',')
+            .map((part) => part.trim())
+            .includes('1') === true;
     return {
+        pricingAdmissionEnabled:
+            !['staging', 'production'].includes(environment.APP_ENV ?? '') ||
+            (supportsPriceVersion(
+                environment.AI_MODEL_PRICE_API_ADMITTED_VERSIONS,
+            ) &&
+                supportsPriceVersion(
+                    environment.AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS,
+                )),
         routingEnabled:
-            process.env.DICTIONARY_AI_MANAGED_ROUTING_ENABLED === 'true',
+            environment.DICTIONARY_AI_MANAGED_ROUTING_ENABLED === 'true',
         credentialConfigured: (providerId) =>
-            process.env[
+            environment[
                 providerId === 'deepseek'
                     ? 'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED'
                     : 'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED'
@@ -51,10 +69,24 @@ export async function readTextAiCatalog(
         .from(dictionaryAiWorkerObservationsTable)
         .where(gt(dictionaryAiWorkerObservationsTable.expiresAt, at))
         .orderBy(desc(dictionaryAiWorkerObservationsTable.checkedAt));
+    const prices = await database.transaction(async (tx) =>
+        Promise.all(
+            textAiModelCatalog.map((model) =>
+                new DrizzleModelPriceParticipant(
+                    tx as AiCreditTransaction,
+                ).current({
+                    providerId: model.providerId,
+                    modelId: model.id,
+                    meter: 'text-tokens',
+                }),
+            ),
+        ),
+    );
     const enabledIds = configuration?.snapshot.enabledModelIds ?? [];
     return {
         defaultModelId: configuration?.snapshot.modelId ?? null,
-        models: textAiModelCatalog.map((model) => {
+        models: textAiModelCatalog.map((model, index) => {
+            const price = prices[index]!;
             const enabled = enabledIds.includes(model.id);
             const incompatible =
                 !model.supportedCapabilities.includes('structured-text');
@@ -68,6 +100,7 @@ export async function readTextAiCatalog(
             // Kie's bounded HEAD probe records 'unverified' when the endpoint is
             // reachable without claiming a paid completion has been exercised.
             const unavailable =
+                policy.pricingAdmissionEnabled === false ||
                 !policy.routingEnabled ||
                 !policy.credentialConfigured(model.providerId) ||
                 currentObservations.some(
@@ -106,9 +139,9 @@ export async function readTextAiCatalog(
                             : 'This model is temporarily unavailable. Choose another enabled model or try again later.',
                 creditRates: {
                     inputCreditsPerMillionTokens:
-                        model.creditPricing.inputCreditsPerMillionTokens,
+                        price.inputCreditsPerMillionTokens!,
                     outputCreditsPerMillionTokens:
-                        model.creditPricing.outputCreditsPerMillionTokens,
+                        price.outputCreditsPerMillionTokens!,
                 },
             };
         }),

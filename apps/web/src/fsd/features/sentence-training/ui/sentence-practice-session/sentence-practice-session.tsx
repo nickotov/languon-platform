@@ -7,6 +7,7 @@ import { useSentenceCopy } from '../sentence-copy';
 
 import {
     type ReactNode,
+    type SyntheticEvent,
     useEffect,
     useLayoutEffect,
     useRef,
@@ -21,7 +22,10 @@ import {
 } from '@/fsd/shared/ui';
 import { SENTENCE_LIMITS, type SentenceAttempt } from '@languon/contracts';
 import type { ApiError } from '../../lib/api-error';
-import type { SentenceSessionController } from '../../types';
+import type {
+    SentenceSessionController,
+    SentenceAudioRenderer,
+} from '../../types';
 import {
     AiResultPanel,
     ReferencePanel,
@@ -37,6 +41,7 @@ import { SentencePracticeHeader } from '../sentence-practice-header/sentence-pra
 import { SentencePracticeFooter } from '../sentence-practice-footer/sentence-practice-footer';
 
 export type SentencePracticeSessionProps = {
+    renderAudio?: SentenceAudioRenderer;
     controller: SentenceSessionController;
     open: boolean;
     onClose(): void;
@@ -58,6 +63,7 @@ export type SentencePracticeSessionProps = {
 
 export function SentencePracticeSession({
     controller: c,
+    renderAudio,
     open,
     onClose,
     dictionaryTitle,
@@ -80,6 +86,11 @@ export function SentencePracticeSession({
     const fullscreen = display.mode !== 'dialog';
     const fallback = display.notice;
     const [confirmClose, setConfirmClose] = useState(false);
+    const [earlierAttemptsOpen, setEarlierAttemptsOpen] = useState(false);
+    useEffect(() => setEarlierAttemptsOpen(false), [c.exercise?.id]);
+    function toggleEarlierAttempts(event: SyntheticEvent<HTMLDetailsElement>) {
+        setEarlierAttemptsOpen(event.currentTarget.open);
+    }
     const draftRef = useRef<HTMLTextAreaElement>(null);
     const frameRef = useRef<HTMLDivElement>(null);
     useLayoutEffect(() => {
@@ -182,6 +193,18 @@ export function SentencePracticeSession({
         onClose();
     }
     const exercise = c.exercise;
+    const sessionId = c.sessionId;
+    const promptAudio =
+        exercise && sessionId
+            ? renderAudio?.({ kind: 'prompt', id: exercise.id, sessionId })
+            : null;
+    const referenceAudio =
+        exercise && sessionId
+            ? renderAudio?.({ kind: 'reference', id: exercise.id, sessionId })
+            : null;
+    const checkedAudio = c.attempt
+        ? renderAudio?.({ kind: 'checked-answer', id: c.attempt.id })
+        : null;
     const jobPending = c.job && ['queued', 'running'].includes(c.job.state);
     const completed = !!(c.attempt || c.reference);
     const hasRoundCoverage = c.roundEligibleCount !== null;
@@ -301,7 +324,10 @@ export function SentencePracticeSession({
                 className={styles.practiceContent}
             >
                 {c.phase === 'completed' ? (
-                    <SentenceSessionResults controller={c} />
+                    <SentenceSessionResults
+                        controller={c}
+                        renderAudio={innerView ? undefined : renderAudio}
+                    />
                 ) : (
                     <>
                         {c.progressError ? (
@@ -441,6 +467,7 @@ export function SentencePracticeSession({
                                         revealedHintIds={c.revealedHintIds}
                                         onReveal={c.toggleHint}
                                     />
+                                    {!innerView ? promptAudio : null}
                                 </div>
                                 <Textarea
                                     ref={draftRef}
@@ -499,6 +526,7 @@ export function SentencePracticeSession({
                                     <AiResultPanel
                                         key={c.attempt.id}
                                         attempt={c.attempt}
+                                        audio={innerView ? null : checkedAudio}
                                     />
                                 ) : null}
                             </>
@@ -507,7 +535,11 @@ export function SentencePracticeSession({
                         (previousAttempts.length > 0 ||
                             previousAttemptsLoading ||
                             previousAttemptsError) ? (
-                            <details className={styles.referenceDetails}>
+                            <details
+                                key={exercise.id}
+                                className={styles.referenceDetails}
+                                onToggle={toggleEarlierAttempts}
+                            >
                                 <summary className={styles.referenceAction}>
                                     {t('Earlier attempts for this sentence')}
                                 </summary>
@@ -534,6 +566,15 @@ export function SentencePracticeSession({
                                         <AiResultPanel
                                             key={attempt.id}
                                             attempt={attempt}
+                                            audio={
+                                                innerView ||
+                                                !earlierAttemptsOpen
+                                                    ? null
+                                                    : renderAudio?.({
+                                                          kind: 'checked-answer',
+                                                          id: attempt.id,
+                                                      })
+                                            }
                                         />
                                     ))}
                                 </div>
@@ -614,6 +655,9 @@ export function SentencePracticeSession({
                                 {c.comparison ? (
                                     <SentenceReferenceComparison
                                         comparison={c.comparison}
+                                        audio={
+                                            innerView ? null : referenceAudio
+                                        }
                                         exercise={exercise}
                                         onRecompare={() => {
                                             void c.recompare();
@@ -629,6 +673,9 @@ export function SentencePracticeSession({
                                     <ReferencePanel
                                         key={c.reference.id}
                                         review={c.reference}
+                                        audio={
+                                            innerView ? null : referenceAudio
+                                        }
                                     />
                                 ) : null}
                             </>

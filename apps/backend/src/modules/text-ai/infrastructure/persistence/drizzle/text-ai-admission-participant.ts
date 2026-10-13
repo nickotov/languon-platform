@@ -1,3 +1,6 @@
+import { DrizzleModelPriceParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant';
+import { maximumTextPrice } from '../../../../ai-credits/domain/model-price';
+import type { TextAiExecutionSnapshot } from '../../../application/text-ai-provider-catalog';
 import { and, eq, gt } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
@@ -34,6 +37,10 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
     public constructor(
         private readonly transaction: Transaction,
         private readonly policy: TextAiAvailabilityPolicy = defaultTextAiAvailabilityPolicy(),
+        private readonly prices: Pick<
+            DrizzleModelPriceParticipant,
+            'current'
+        > = new DrizzleModelPriceParticipant(transaction),
     ) {}
     public async resolve(
         input: Parameters<TextAiAdmissionParticipant['resolve']>[0],
@@ -76,6 +83,8 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 selectionVersion: null,
             };
         }
+        if (this.policy.pricingAdmissionEnabled === false)
+            throw new TextAiSelectionUnavailableError();
         if (preference?.mode !== 'explicit' && !learning) {
             if (
                 !configured.snapshot.enabledModelIds.includes(
@@ -125,7 +134,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             return {
                 budget: configured.snapshot.aggregateBudget,
                 revisionId: configured.id,
-                snapshot: configured.snapshot,
+                snapshot: await this.withEffectivePricing(configured.snapshot),
                 selectionVersion: null,
             };
         }
@@ -225,8 +234,33 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         return {
             budget: snapshot.aggregateBudget,
             revisionId: configured.id,
-            snapshot,
+            snapshot: await this.withEffectivePricing(snapshot),
             selectionVersion: 1 as const,
+        };
+    }
+    private async withEffectivePricing(
+        snapshot: TextAiExecutionSnapshot,
+    ): Promise<TextAiExecutionSnapshot> {
+        const price = await this.prices.current({
+            providerId: snapshot.providerId,
+            modelId: snapshot.modelId,
+            meter: 'text-tokens',
+        });
+        const rates = {
+            inputCreditsPerMillionTokens: price.inputCreditsPerMillionTokens!,
+            outputCreditsPerMillionTokens: price.outputCreditsPerMillionTokens!,
+        };
+        return {
+            ...snapshot,
+            creditPricing: {
+                ...rates,
+                revision: 1,
+                rateRevisionId: price.rateRevisionId!,
+                maxCreditsPerAttempt: maximumTextPrice(
+                    snapshot.aggregateBudget,
+                    rates,
+                ),
+            },
         };
     }
 }

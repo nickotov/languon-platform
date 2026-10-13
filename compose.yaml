@@ -34,6 +34,42 @@ services:
         volumes:
             - redis-data:/data
 
+    minio:
+        image: minio/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
+        command: ['server', '/data', '--console-address', ':9001']
+        environment:
+            MINIO_ROOT_USER: ${SPEECH_DEV_MINIO_ROOT_USER:-languon-speech-root}
+            MINIO_ROOT_PASSWORD: ${SPEECH_DEV_MINIO_ROOT_PASSWORD:-languon-speech-root-local-only}
+        ports:
+            - '127.0.0.1:${SPEECH_DEV_MINIO_PORT:-9000}:9000'
+            - '127.0.0.1:${SPEECH_DEV_MINIO_CONSOLE_PORT:-9001}:9001'
+        volumes:
+            - speech-minio-data:/data
+
+    minio-init:
+        image: minio/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3
+        depends_on:
+            minio:
+                condition: service_started
+        environment:
+            MINIO_ROOT_USER: ${SPEECH_DEV_MINIO_ROOT_USER:-languon-speech-root}
+            MINIO_ROOT_PASSWORD: ${SPEECH_DEV_MINIO_ROOT_PASSWORD:-languon-speech-root-local-only}
+            SPEECH_ACCESS_KEY: ${SPEECH_DEV_MINIO_ACCESS_KEY:-languon-speech-api}
+            SPEECH_SECRET_KEY: ${SPEECH_DEV_MINIO_SECRET_KEY:-languon-speech-api-local-only}
+        entrypoint: ['/bin/sh', '-ec']
+        command:
+            - >-
+                until /usr/bin/mc alias set speech-dev http://minio:9000
+                "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 1; done;
+                /usr/bin/mc mb --ignore-existing speech-dev/languon-speech-dev;
+                /usr/bin/mc version enable speech-dev/languon-speech-dev;
+                /usr/bin/mc anonymous set none speech-dev/languon-speech-dev;
+                /usr/bin/mc admin policy create speech-dev speech-api /policies/speech-api.json;
+                /usr/bin/mc admin user add speech-dev "$${SPEECH_ACCESS_KEY}" "$${SPEECH_SECRET_KEY}";
+                /usr/bin/mc admin policy attach speech-dev speech-api --user "$${SPEECH_ACCESS_KEY}";
+        volumes:
+            - ./infra/dev/speech-storage-policy.json:/policies/speech-api.json:ro
+
     migrate:
         profiles: ['apps']
         build:
@@ -60,8 +96,20 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+            minio-init:
+                condition: service_completed_successfully
         environment:
             APP_ENV: development
+            SPEECH_PLAYBACK_ENABLED: ${SPEECH_PLAYBACK_ENABLED:-false}
+            SPEECH_GENERATION_ENABLED: ${SPEECH_GENERATION_ENABLED:-false}
+            DICTIONARY_AUDIO_STORAGE: s3
+            DICTIONARY_AUDIO_PROVIDER: fixture
+            DICTIONARY_AUDIO_S3_ENDPOINT: http://minio:9000
+            DICTIONARY_AUDIO_S3_BUCKET: languon-speech-dev
+            DICTIONARY_AUDIO_S3_REGION: us-east-1
+            DICTIONARY_AUDIO_S3_FORCE_PATH_STYLE: 'true'
+            DICTIONARY_AUDIO_S3_ACCESS_KEY_ID: ${SPEECH_DEV_MINIO_ACCESS_KEY:-languon-speech-api}
+            DICTIONARY_AUDIO_S3_SECRET_ACCESS_KEY: ${SPEECH_DEV_MINIO_SECRET_KEY:-languon-speech-api-local-only}
             AUTH_ALLOWED_ORIGINS: http://localhost:3333
             AUTH_CODE_HMAC_SECRET: development-only-code-secret-change-me-36a29d70c54e
             AUTH_JWT_SECRET: development-only-jwt-secret-change-me-9f87c82b4d31
@@ -108,3 +156,4 @@ services:
 volumes:
     postgres-data:
     redis-data:
+    speech-minio-data:

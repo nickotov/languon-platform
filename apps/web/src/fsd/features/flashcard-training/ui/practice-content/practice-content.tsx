@@ -1,3 +1,5 @@
+import type { FlashcardItem, Presentation } from '../../types';
+import type { ReactNode } from 'react';
 import { Undo2 } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, InlineAlert, Skeleton } from '@/fsd/shared/ui';
@@ -13,12 +15,16 @@ import styles from './practice-content.module.css';
 
 export function PracticeContent({
     session,
+    renderAudio,
     display,
     signedIn,
     dictionaryTitle,
     onClose,
     contentClassName,
 }: {
+    renderAudio?:
+        | ((item: FlashcardItem, presentation: Presentation) => ReactNode)
+        | undefined;
     session: ReturnType<typeof usePracticeSession>;
     display: ReturnType<typeof useTrainingDisplay>;
     signedIn: boolean;
@@ -140,6 +146,7 @@ export function PracticeContent({
                                 {session.currentItem ? (
                                     <Flashcard
                                         key={`${state.round}-${state.index}-${session.currentItem.entryId}-${session.currentItem.learningVersion}`}
+                                        renderAudio={renderAudio}
                                         item={session.currentItem}
                                         face={state.face}
                                         position={position}

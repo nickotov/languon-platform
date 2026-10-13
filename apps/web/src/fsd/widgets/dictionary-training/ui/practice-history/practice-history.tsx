@@ -2,7 +2,7 @@
 
 import { Layers, MessageSquareText } from 'lucide-react';
 import componentStyles from './practice-history.module.css';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, type ReactNode } from 'react';
 import {
     SavedProgress,
     type LearningApi,
@@ -32,6 +32,7 @@ export function PracticeHistory({
     inline = false,
     initialTab = 'flashcards',
     onAccessLoss,
+    renderAnswerAudio,
 }: {
     open: boolean;
     onClose(): void;
@@ -45,6 +46,7 @@ export function PracticeHistory({
     inline?: boolean;
     initialTab?: 'flashcards' | 'sentences';
     onAccessLoss?(): void;
+    renderAnswerAudio?: ((attemptId: string) => ReactNode) | undefined;
 }) {
     const { locale } = useI18n();
     const copy = historyCopy[locale];
@@ -72,6 +74,7 @@ export function PracticeHistory({
                     sourceLanguage={sourceLanguage}
                     targetLanguage={targetLanguage}
                     onClose={onClose}
+                    renderAnswerAudio={renderAnswerAudio}
                     onAccessLoss={onAccessLoss}
                 />
             ) : (
@@ -130,6 +133,7 @@ function SentenceHistoryTab({
     targetLanguage,
     onClose,
     onAccessLoss,
+    renderAnswerAudio,
 }: {
     api: SentenceApi;
     identity: string;
@@ -137,6 +141,7 @@ function SentenceHistoryTab({
     targetLanguage: string;
     onClose(): void;
     onAccessLoss?: (() => void) | undefined;
+    renderAnswerAudio?: ((attemptId: string) => ReactNode) | undefined;
 }) {
     const history = useSentenceHistory({ api, identity });
     useEffect(() => {
@@ -151,6 +156,7 @@ function SentenceHistoryTab({
                 targetLanguage={targetLanguage}
             />
             <SentenceHistory
+                renderAnswerAudio={renderAnswerAudio}
                 controller={history}
                 open
                 inline

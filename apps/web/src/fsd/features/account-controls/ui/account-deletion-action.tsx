@@ -167,6 +167,7 @@ export function AccountDeletionAction({
                         spellCheck={false}
                         value={confirmation}
                     />
+                    <p>{t('speech.retention')}</p>
                     <Checkbox
                         checked={acknowledged}
                         disabled={pending}

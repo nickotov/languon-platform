@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Speech Model Configuration'
+    short_description: 'Configure versioned speech models and language support'
+    default_prompt: 'Use $speech-model-configuration to add a speech model with explicit language mappings, historical-profile compatibility, and fixture-based tests.'

@@ -44,11 +44,44 @@ function database(results: unknown[][], overlap = false) {
         typeof DrizzleTextAiAdmissionParticipant
     >[0];
 }
-function participant(results: unknown[][], overlap = false) {
-    return new DrizzleTextAiAdmissionParticipant(database(results, overlap), {
-        routingEnabled: true,
-        credentialConfigured: () => true,
-    });
+function participant(
+    results: unknown[][],
+    overlap = false,
+    rates?: {
+        inputCreditsPerMillionTokens: number;
+        outputCreditsPerMillionTokens: number;
+    },
+) {
+    return new DrizzleTextAiAdmissionParticipant(
+        database(results, overlap),
+        {
+            routingEnabled: true,
+            credentialConfigured: () => true,
+        },
+        {
+            current: async (request) => {
+                const model = textAiModelCatalog.find(
+                    (model) =>
+                        model.providerId === request.providerId &&
+                        model.id === request.modelId,
+                )!;
+                return {
+                    ...request,
+                    version: 2,
+                    rateRevisionId: '11111111-1111-4111-8111-111111111111',
+                    creditsPer1000Characters: null,
+                    minimumCredits: null,
+                    inputCreditsPerMillionTokens:
+                        model.creditPricing.inputCreditsPerMillionTokens,
+                    outputCreditsPerMillionTokens:
+                        model.creditPricing.outputCreditsPerMillionTokens,
+                    ...rates,
+                    provisional: false,
+                    updatedAt: now.toISOString(),
+                };
+            },
+        },
+    );
 }
 const input = {
     userId: 'learner',
@@ -57,6 +90,32 @@ const input = {
     legacyBudget: defaultTextAiProviderBudgetPolicy,
 };
 describe('transactional text AI admission selection', () => {
+    it('pins published rates for Auto admissions independently of the configured catalog snapshot', async () => {
+        const published = {
+            inputCreditsPerMillionTokens: 2000000,
+            outputCreditsPerMillionTokens: 0,
+        };
+        const execution = await participant(
+            [[], [{ id: 'global-revision', snapshot: snapshot() }], []],
+            false,
+            published,
+        ).resolve(input);
+        expect(execution.snapshot?.creditPricing).toMatchObject({
+            ...published,
+            revision: 1,
+            rateRevisionId: '11111111-1111-4111-8111-111111111111',
+        });
+        expect(execution.snapshot?.creditPricing?.maxCreditsPerAttempt).toBe(
+            524288,
+        );
+        expect(
+            resolveTextAiExecutionSnapshot(
+                execution.snapshot!,
+                execution.budget,
+            ).id,
+        ).toBe(defaultModel!.id);
+    });
+
     it('uses platform default for missing preference and preserves legacy without configuration', async () => {
         const configured = await participant([
             [],
@@ -97,9 +156,14 @@ describe('transactional text AI admission selection', () => {
         expect(execution.selectionVersion).toBe(1);
         expect(execution.revisionId).toBe('global-revision');
         expect(execution.snapshot?.modelId).toBe(selectedModel!.id);
-        expect(execution.snapshot?.creditPricing).toEqual(
-            selectedModel!.creditPricing,
-        );
+        expect(execution.snapshot?.creditPricing).toMatchObject({
+            revision: 1,
+            rateRevisionId: '11111111-1111-4111-8111-111111111111',
+            inputCreditsPerMillionTokens:
+                selectedModel!.creditPricing.inputCreditsPerMillionTokens,
+            outputCreditsPerMillionTokens:
+                selectedModel!.creditPricing.outputCreditsPerMillionTokens,
+        });
         expect(execution.budget).toEqual(selectedModel!.aggregateBudget);
         expect(execution.snapshot?.supportedFormats).toEqual([input.format]);
         expect(execution.snapshot?.providerId).toBe(selectedModel!.providerId);
@@ -174,9 +238,14 @@ describe('transactional text AI admission selection', () => {
         ]).resolve({ ...input, format });
         expect(result.selectionVersion).toBe(1);
         expect(result.snapshot?.supportedFormats).toEqual([format]);
-        await expect(participant([[], [{ id: 'global', snapshot: snapshot() }], [observation],
-            [{ openUntil: new Date(now.getTime() + 60_000) }],
-        ]).resolve({ ...input, format })).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+        await expect(
+            participant([
+                [],
+                [{ id: 'global', snapshot: snapshot() }],
+                [observation],
+                [{ openUntil: new Date(now.getTime() + 60_000) }],
+            ]).resolve({ ...input, format }),
+        ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
         await expect(
             participant([
                 [],

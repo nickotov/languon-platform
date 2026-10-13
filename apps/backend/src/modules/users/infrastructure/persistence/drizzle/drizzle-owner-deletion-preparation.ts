@@ -1,3 +1,4 @@
+import { purgeSpeechActor } from '../../../../speech/infrastructure/drizzle-speech-store';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
@@ -17,6 +18,7 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
     public async requestCancellation(userId: string): Promise<void> {
         // Preserve live leases until their bounded external writes have quiesced.
         await this.database.transaction(async (tx) => {
+            await purgeSpeechActor(tx, userId, new Date());
             await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 76021941))`,
             );

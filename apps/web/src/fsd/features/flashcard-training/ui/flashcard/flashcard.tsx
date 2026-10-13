@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -12,6 +13,7 @@ import styles from './flashcard.module.css';
 
 export function Flashcard({
     item,
+    renderAudio,
     face,
     position,
     onFlip,
@@ -21,6 +23,9 @@ export function Flashcard({
     recoverSwipe = false,
 }: {
     item: FlashcardItem;
+    renderAudio?:
+        | ((item: FlashcardItem, presentation: Presentation) => ReactNode)
+        | undefined;
     face: Face;
     position: string;
     onFlip(): void;
@@ -93,6 +98,7 @@ export function Flashcard({
                             <CardField
                                 key={presentation.field}
                                 presentation={presentation}
+                                audio={renderAudio?.(item, presentation)}
                             />
                         ))}
                     </dl>
@@ -137,7 +143,13 @@ export function Flashcard({
     );
 }
 
-function CardField({ presentation }: { presentation: Presentation }) {
+function CardField({
+    presentation,
+    audio,
+}: {
+    presentation: Presentation;
+    audio?: ReactNode;
+}) {
     const { t, locale } = useI18n();
 
     const isWord =
@@ -169,6 +181,7 @@ function CardField({ presentation }: { presentation: Presentation }) {
                 className={textClasses}
             >
                 {presentation.text}
+                {audio}
             </dd>
             {presentation.fallback && (
                 <dd className={styles.fallback}>

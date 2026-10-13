@@ -7,6 +7,7 @@ surfaces:
     - api
     - system
 source_paths:
+    - apps/backend/src/modules/speech/**
     - apps/backend/src/modules/learning/**
     - apps/backend/src/modules/text-ai/**
     - apps/backend/src/modules/ai-credits/**
@@ -28,6 +29,7 @@ e2e_scenarios:
     - generate-check-reuse-private-and-shared
     - manage-saved-library-and-partial-preparation
 related_features:
+    - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - flashcard-training-backend
     - ai-credit-wallet
@@ -58,7 +60,7 @@ See the [sentence library plan](../sentence-library-implementation-plan.md).
 ## Start the development environment
 
 Use Node 24 and the repository pnpm version. Ordinary local startup is documented
-in README: start PostgreSQL/Redis with `pnpm dev:infra`, apply reviewed migrations
+in README: start PostgreSQL/Redis/MinIO with `pnpm dev:infra`, apply reviewed migrations
 with `pnpm --filter @languon/backend db:migrate`, and start with `pnpm dev`.
 Use fake local accounts and dictionaries. Deterministic dictionary-worker fixture
 mode does not advertise sentence generation/checking readiness and fails closed
@@ -335,3 +337,16 @@ fixtures through supported APIs. The journey resets only its explicitly confirme
 owned test schemas and Redis database. Destructive resets are restricted to that
 owned disposable target; ordinary development, shared, staging and production
 infrastructure must remain untouched. Keep branches and source evidence for review.
+
+## Related pronunciation capability
+
+[Shared pronunciation playback](shared-pronunciation-playback.md) resolves saved
+sentence sources through this module's live authorization. Prompt/library text,
+explicitly revealed references and completed checked answers are playable; hidden
+references, drafts and unchecked answers are not. Speech does not reveal answers,
+record exposure or alter AI grades. A learner answer is spoken as written.
+
+Source/account removal revokes bindings while successful speech derivatives remain
+indefinitely under ADR-0031. The mapped sentence scenarios above retain their prior
+baseline evidence; speech authorization, storage and settlement are independently
+covered by the new shared guide and its disposable database checks.

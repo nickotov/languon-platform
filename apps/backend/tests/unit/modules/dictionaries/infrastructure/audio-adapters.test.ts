@@ -40,6 +40,55 @@ const provider = (
     });
 
 describe('speech adapters', () => {
+    it('restricts fixture languages consistently for API and worker while defaults support all', () => {
+        const environment = loadDictionaryAudioEnvironment(
+            {
+                DICTIONARY_AUDIO_PROVIDER: 'fixture',
+                SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en, es, en',
+            },
+            { deployed: false },
+        );
+        for (const adapters of [
+            createDictionaryAudioAdapters({
+                environment,
+                database: { execute: vi.fn() } as never,
+                role: 'api',
+            }),
+            createDictionaryAudioAdapters({
+                environment,
+                database: { execute: vi.fn() } as never,
+                role: 'worker',
+            }),
+        ]) {
+            expect(adapters.provider.supports('en')).not.toBeNull();
+            expect(adapters.provider.supports('es')).not.toBeNull();
+            expect(adapters.provider.supports('he')).toBeNull();
+            adapters.close();
+        }
+        const defaults = createDictionaryAudioAdapters({
+            environment: loadDictionaryAudioEnvironment(
+                {},
+                { deployed: false },
+            ),
+            database: { execute: vi.fn() } as never,
+        });
+        expect(defaults.provider.supports('he')).not.toBeNull();
+        defaults.close();
+        expect(() =>
+            loadDictionaryAudioEnvironment(
+                { SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en,,private-text' },
+                { deployed: false },
+            ),
+        ).toThrow('Invalid test speech fixture language allowlist.');
+        const live = loadDictionaryAudioEnvironment(
+            {
+                DICTIONARY_AUDIO_PROVIDER: 'kie',
+                SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'invalid',
+            },
+            { deployed: false, role: 'api' },
+        );
+        expect(live.fixtureSupportedLanguages).toBeUndefined();
+    });
     it('emits a genuine deterministic audible WAV fixture', async () => {
         const fixture = new FixtureSpeechProvider();
         const result = await fixture.submit({

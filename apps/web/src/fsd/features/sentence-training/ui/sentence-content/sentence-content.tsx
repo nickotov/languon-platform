@@ -2,7 +2,7 @@
 import styles from './sentence-content.module.css';
 import { useSentenceCopy } from '../sentence-copy';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { CheckCircle2, CircleDashed, Repeat } from 'lucide-react';
 import type { SentenceAttempt, SentenceManualReview } from '@languon/contracts';
 import { Badge, Button } from '@/fsd/shared/ui';
@@ -71,7 +71,13 @@ export function HighlightedAnswer({ attempt }: { attempt: SentenceAttempt }) {
     );
 }
 
-export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
+export function AiResultPanel({
+    attempt,
+    audio,
+}: {
+    attempt: SentenceAttempt;
+    audio?: ReactNode;
+}) {
     const { t, languageName } = useSentenceCopy();
     const [expanded, setExpanded] = useState(false);
     const result = attempt.feedback;
@@ -124,6 +130,7 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
             </p>
             <h4 className={styles.feedbackLabel}>{t('Your answer')}</h4>
             <HighlightedAnswer attempt={attempt} />
+            {audio}
             {result.issues.length ? (
                 <>
                     <h4 className={styles.feedbackLabel}>{t('Corrections')}</h4>
@@ -238,7 +245,13 @@ export function AiResultPanel({ attempt }: { attempt: SentenceAttempt }) {
     );
 }
 
-export function ReferencePanel({ review }: { review: SentenceManualReview }) {
+export function ReferencePanel({
+    review,
+    audio,
+}: {
+    review: SentenceManualReview;
+    audio?: ReactNode;
+}) {
     const { t } = useSentenceCopy();
     const [open, setOpen] = useState(true);
     return (
@@ -271,6 +284,7 @@ export function ReferencePanel({ review }: { review: SentenceManualReview }) {
                     >
                         {review.referenceTranslation}
                     </p>
+                    {audio}
                     <p className={styles.referenceInstructions}>
                         {t(
                             'One valid translation. Your answer may also be correct.',

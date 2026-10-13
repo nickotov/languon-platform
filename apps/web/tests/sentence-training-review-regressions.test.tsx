@@ -601,3 +601,76 @@ describe('sentence practice reading order and free actions', () => {
         expect(c.check).not.toHaveBeenCalled();
     });
 });
+
+it('offers saved-answer playback after a completed round even for a low AI score, and stops rendering controls when details are hidden', () => {
+    const c = controller({
+        phase: 'completed',
+        sessionId: '10000000-0000-4000-8000-000000000004',
+    });
+    const exercise = c.exercise!;
+    const attempt = {
+        id: '10000000-0000-4000-8000-000000000003',
+        exercise,
+        contentState: 'current' as const,
+        sessionId: c.sessionId!,
+        answer: 'Incorrect answer',
+        explanationLanguage: 'en' as const,
+        revealedHintIds: [],
+        assisted: false,
+        referenceRevealed: false,
+        createdAt: '2026-10-05T00:00:00.000Z',
+        feedback: {
+            percentage: 0,
+            rating: 'practise-again-later' as const,
+            meaning: 'incorrect' as const,
+            grammar: 'substantive-errors' as const,
+            targets: [],
+            issues: [],
+            improvedTranslation: 'Hola',
+            explanation: 'Try again',
+        },
+    };
+    c.roundItems = [
+        {
+            exercise,
+            answer: attempt.answer,
+            attempt,
+            reference: null,
+            comparison: null,
+            revealedHintIds: [],
+            skipped: false,
+            outcome: 'ai-checked',
+        },
+    ];
+    render(
+        <I18nProvider locale='en' messages={en}>
+            <SentencePracticeSession
+                controller={c}
+                open
+                onClose={vi.fn()}
+                renderAudio={(content) => (
+                    <button>
+                        {content.kind === 'checked-answer'
+                            ? 'Play saved answer'
+                            : 'Play prompt'}
+                    </button>
+                )}
+            />
+        </I18nProvider>,
+    );
+    expect(
+        screen.getByRole('button', { name: 'Play saved answer', exact: true }),
+    ).toBeVisible();
+    expect(
+        screen.getByRole('button', { name: 'Play prompt', exact: true }),
+    ).toBeVisible();
+    fireEvent.click(
+        screen.getByRole('button', { name: 'Hide details', exact: true }),
+    );
+    expect(
+        screen.queryByRole('button', {
+            name: 'Play saved answer',
+            exact: true,
+        }),
+    ).toBeNull();
+});

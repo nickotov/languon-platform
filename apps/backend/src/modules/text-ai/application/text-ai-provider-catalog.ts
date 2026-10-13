@@ -68,6 +68,7 @@ export const textAiSentenceFormats = [
 export type TextAiProviderId = 'deepseek' | 'kie';
 
 export interface TextAiCreditPricing {
+    rateRevisionId?: string;
     inputCreditsPerMillionTokens: number;
     maxCreditsPerAttempt: number;
     outputCreditsPerMillionTokens: number;

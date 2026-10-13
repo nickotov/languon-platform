@@ -1,3 +1,4 @@
+import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
 import type { SentenceContext } from '../../../application/ports/sentence-practice-store';
@@ -228,7 +229,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
             input.creditSettlementRevision !== 1
         )
             return null;
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await lockTextAiCapacity(tx);
             await tx.execute(
                 sql`select set_config('languon.learning_execution_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
@@ -469,7 +470,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
         context: SentenceContext,
     ) {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             const [job] = await tx
                 .select()
                 .from(jobs)
@@ -496,7 +497,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
         context: SentenceContext,
     ): Promise<'dispatch' | 'terminalized' | 'lost'> {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await lockTextAiCapacity(tx);
             const locked = await this.locked(tx, lease, context.now);
             if (!locked) return 'lost';
@@ -532,7 +533,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
         write: (tx: SentenceTransaction, job: SentenceJobRow) => Promise<void>,
     ): Promise<SentenceWriteResult> {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await lockTextAiCapacity(tx);
             const locked = await this.locked(tx, lease, context.now);
             if (!locked) return 'lost';
@@ -692,7 +693,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
         context: SentenceContext,
     ): Promise<SentenceWriteResult> {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await lockTextAiCapacity(tx);
             const locked = await this.locked(tx, lease, context.now);
             if (!locked) return 'lost';

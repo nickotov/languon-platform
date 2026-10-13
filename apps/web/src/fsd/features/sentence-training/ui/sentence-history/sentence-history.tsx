@@ -3,7 +3,8 @@ import styles from './sentence-history.module.css';
 import { useSentenceCopy } from '../sentence-copy';
 import { useCompactPresentation } from '../use-compact-presentation';
 
-import { useState } from 'react';
+import { useState, type ReactNode, type SyntheticEvent } from 'react';
+import type { SentenceAttempt, SentenceManualReview } from '@languon/contracts';
 import { Badge, Button, Dialog, LoadingState } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import type { SentenceHistoryController } from '../../types';
@@ -19,11 +20,13 @@ export function SentenceHistory({
     open,
     onClose,
     inline = false,
+    renderAnswerAudio,
 }: {
     controller: SentenceHistoryController;
     open: boolean;
     onClose(): void;
     inline?: boolean;
+    renderAnswerAudio?: ((attemptId: string) => ReactNode) | undefined;
 }) {
     const { t, languageName } = useSentenceCopy();
     const compact = useCompactPresentation();
@@ -118,18 +121,10 @@ export function SentenceHistory({
                             >
                                 {row.exercise.sourceText}
                             </p>
-                            <details className={styles.itemDetails}>
-                                <summary className={styles.detailsAction}>
-                                    {t('View details')}
-                                </summary>
-                                <div className={styles.feedback}>
-                                    {'feedback' in row ? (
-                                        <AiResultPanel attempt={row} />
-                                    ) : (
-                                        <ReferencePanel review={row} />
-                                    )}
-                                </div>
-                            </details>
+                            <HistoryResult
+                                row={row}
+                                renderAnswerAudio={renderAnswerAudio}
+                            />
                         </li>
                     ))}
                 </ul>
@@ -171,5 +166,38 @@ export function SentenceHistory({
         >
             {content}
         </Dialog>
+    );
+}
+
+function HistoryResult({
+    row,
+    renderAnswerAudio,
+}: {
+    row: SentenceAttempt | SentenceManualReview;
+    renderAnswerAudio?: ((attemptId: string) => ReactNode) | undefined;
+}) {
+    const { t } = useSentenceCopy();
+    const [expanded, setExpanded] = useState(false);
+    function toggle(event: SyntheticEvent<HTMLDetailsElement>) {
+        setExpanded(event.currentTarget.open);
+    }
+    return (
+        <details className={styles.itemDetails} onToggle={toggle}>
+            <summary className={styles.detailsAction}>
+                {t('View details')}
+            </summary>
+            {expanded ? (
+                <div className={styles.feedback}>
+                    {'feedback' in row ? (
+                        <AiResultPanel
+                            attempt={row}
+                            audio={renderAnswerAudio?.(row.id)}
+                        />
+                    ) : (
+                        <ReferencePanel review={row} />
+                    )}
+                </div>
+            ) : null}
+        </details>
     );
 }

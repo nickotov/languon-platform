@@ -1,3 +1,8 @@
+---
+type: reference
+title: Release and deployment operations
+---
+
 # Release and deployment operations
 
 This directory is the human operations handbook for Languon. The core contract
@@ -28,8 +33,12 @@ Repository commands remain authoritative if prose and code diverge.
 
 ## Environment contract
 
-For pronunciation playback, see [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md)
-for local fixtures, worker-only TTS secrets, retained storage, cleanup and production gates.
+For pronunciation playback, use
+[Shared pronunciation operations](../shared-pronunciation-operations.md) for
+private MinIO/S3, immutable prices, retained text/audio, key rotation, guarded
+legacy cutover and production gates. The
+[dictionary compatibility reference](./dictionary-pronunciation-audio.md) records
+legacy adapter/configuration details.
 
 | Property           | Staging                                        | Production                                   |
 | ------------------ | ---------------------------------------------- | -------------------------------------------- |

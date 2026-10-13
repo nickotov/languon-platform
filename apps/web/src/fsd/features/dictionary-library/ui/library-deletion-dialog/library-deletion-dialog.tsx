@@ -104,6 +104,7 @@ export function LibraryDeletionDialog({ state }: { state: LibraryState }) {
             <p className={styles.deletionWarning}>
                 {t('dictionary.deletion.dictionaryConsequences')}
             </p>
+            <p className={styles.deletionWarning}>{t('speech.retention')}</p>
             <Input
                 autoComplete='off'
                 disabled={pending}

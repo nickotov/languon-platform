@@ -1,3 +1,4 @@
+// @user-flow-revision shared-pronunciation-playback sha256:0be740944c68bde6
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, resolve } from 'node:path';
@@ -14,8 +15,8 @@ import {
 import postgres from 'postgres';
 
 // @user-flow-revision admin-user-management sha256:8f1ff6e6a88850b6
-// @user-flow-revision ai-provider-management sha256:fff99a54c9d51797
-// @user-flow-revision ai-credit-wallet sha256:a7a27b2b83437c47
+// @user-flow-revision ai-provider-management sha256:9d0a0f62b235f0b2
+// @user-flow-revision ai-credit-wallet sha256:912c63845e283ad8
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(
@@ -283,6 +284,45 @@ async function waitForGenerationReview(
     throw new Error(`Generation ${jobId} did not reach review.`);
 }
 
+async function runSpeechFixture(
+    mode: 'seed' | 'join' | 'assert-deleted',
+    ...args: string[]
+) {
+    const { stdout } = await execFileAsync(
+        'pnpm',
+        [
+            '--filter',
+            '@languon/backend',
+            'exec',
+            'tsx',
+            'tests/support/admin-speech-fixture.ts',
+            mode,
+            ownerId,
+            ...args,
+        ],
+        {
+            cwd: repositoryRoot,
+            env: {
+                ...process.env,
+                APP_ENV: 'test',
+                ADMIN_E2E_SPEECH_FIXTURES: 'true',
+                ADMIN_E2E_DATABASE_URL: databaseUrl,
+            },
+        },
+    );
+    const jsonLine = stdout
+        .split('\n')
+        .findLast((line) => line.startsWith('{'));
+    if (!jsonLine) throw new Error('Speech fixture returned no JSON.');
+    return JSON.parse(jsonLine) as {
+        recordingId: string;
+        dictionaryId: string;
+        cardId: string;
+        text: string;
+        deleted?: boolean;
+    };
+}
+
 async function passwordLogin(
     page: Page,
     email = ownerEmail,
@@ -328,6 +368,264 @@ test.describe.serial('admin user management journeys', () => {
             targetEmail,
             ownerPassword,
         );
+    });
+
+    // @user-flow shared-pronunciation-playback/admin-private-preview-and-impact-removal
+    test('owner previews private speech bytes and confirms removal after changed impact', async ({
+        page,
+    }, info) => {
+        const fixture = await runSpeechFixture('seed', runId);
+        await passwordLogin(page);
+        const assertErrors = captureBrowserErrors(page, {
+            '/api/admin/speech/recordings/delete': 409,
+        });
+        await page.getByRole('menuitem', { name: 'Speech recordings' }).click();
+        await page.getByLabel('Normalized text search').fill(fixture.text);
+        const inventory = page.waitForResponse(
+            (response) =>
+                response.url().includes('/admin/speech/recordings?') &&
+                new URL(response.url()).searchParams.get('search') ===
+                    fixture.text,
+        );
+        await page.getByRole('button', { name: 'Apply filters' }).click();
+        expect((await inventory).status()).toBe(200);
+        const row = page.getByRole('row').filter({ hasText: fixture.text });
+        await expect(row).toHaveCount(1);
+        await expect(row).toContainText('fixture');
+        await page.setViewportSize({ width: 390, height: 844 });
+        await row.getByRole('button', { name: 'Preview', exact: true }).click();
+        const preview = page.getByRole('dialog', {
+            name: 'Preview',
+            exact: true,
+        });
+        await expect(preview).toContainText(fixture.text);
+        const bytes = page.waitForResponse((response) =>
+            response
+                .url()
+                .endsWith(
+                    `/admin/speech/recordings/${fixture.recordingId}/content`,
+                ),
+        );
+        await preview
+            .getByRole('button', { name: 'Load audio preview' })
+            .click();
+        const audioResponse = await bytes;
+        expect(audioResponse.status()).toBe(200);
+        expect(audioResponse.headers()['cache-control']).toContain('no-store');
+        expect(audioResponse.headers()['content-type']).toBe('audio/wav');
+        const adminToken = (await audioResponse.request().allHeaders())
+            .authorization!;
+        await expect(preview.locator('audio')).toHaveAttribute('src', /^blob:/);
+        await page.screenshot({
+            path: info.outputPath('admin-private-speech-preview-narrow.png'),
+            fullPage: true,
+        });
+        await preview
+            .getByRole('button', { name: 'Close', exact: true })
+            .click();
+        await row.getByRole('checkbox').check();
+        await page.getByRole('button', { name: 'Delete selected (1)' }).click();
+        const removal = page.getByRole('dialog', {
+            name: 'Delete these recordings?',
+        });
+        await expect(removal).toContainText(
+            'Remove 1 recordings affecting 1 saved-content links.',
+        );
+        await removal
+            .getByRole('button', { name: 'Confirm permanent removal' })
+            .click();
+        await expect(
+            removal.getByRole('textbox', { name: 'Reason' }),
+        ).toHaveAttribute('aria-invalid', 'true');
+        await runSpeechFixture('join', fixture.dictionaryId, fixture.cardId);
+        await removal
+            .getByRole('textbox', { name: 'Reason' })
+            .fill('Remove synthetic fixture after reviewing saved links');
+        const conflict = page.waitForResponse(
+            (response) =>
+                response.url().endsWith('/admin/speech/recordings/delete') &&
+                response.request().method() === 'POST',
+        );
+        await removal
+            .getByRole('button', { name: 'Confirm permanent removal' })
+            .click();
+        expect((await conflict).status()).toBe(409);
+        await expect(
+            removal.getByRole('button', { name: 'Confirm permanent removal' }),
+        ).toBeDisabled();
+        await removal
+            .getByRole('button', { name: 'Reload and review impact' })
+            .click();
+        await expect(removal).not.toBeVisible();
+        await row.getByRole('checkbox').check();
+        await page.getByRole('button', { name: 'Delete selected (1)' }).click();
+        await expect(removal).toContainText(
+            'Remove 1 recordings affecting 2 saved-content links.',
+        );
+        await removal
+            .getByRole('textbox', { name: 'Reason' })
+            .fill('Confirm removal with the refreshed two-link impact');
+        const deleted = page.waitForResponse(
+            (response) =>
+                response.url().endsWith('/admin/speech/recordings/delete') &&
+                response.request().method() === 'POST',
+        );
+        await removal
+            .getByRole('button', { name: 'Confirm permanent removal' })
+            .click();
+        expect((await deleted).status()).toBe(200);
+        await expect(removal).not.toBeVisible();
+        await expect(row).toHaveCount(0);
+        expect(
+            (await runSpeechFixture('assert-deleted', fixture.recordingId))
+                .deleted,
+        ).toBe(true);
+        const removedContent = await page.request.get(
+            `${adminOrigin}/api/admin/speech/recordings/${fixture.recordingId}/content`,
+            { headers: { Authorization: adminToken } },
+        );
+        expect(removedContent.status()).toBe(404);
+        expect(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+        ).toBe(true);
+        assertErrors();
+    });
+
+    // @user-flow shared-pronunciation-playback/admin-library-filters
+    test('owner searches the retained speech inventory without exposing object URLs', async ({
+        page,
+    }, info) => {
+        await passwordLogin(page);
+        const assertErrors = captureBrowserErrors(page);
+        await page.getByRole('menuitem', { name: 'Speech recordings' }).click();
+        await expect(
+            page.getByRole('heading', { name: 'Speech recordings' }),
+        ).toBeVisible();
+        await page
+            .getByLabel('Normalized text search')
+            .fill(`no-such-recording-${runId}`);
+        await page.getByLabel('Language', { exact: true }).fill('fr');
+        await page.getByLabel('Created from (UTC)').fill('2026-01-01');
+        const loaded = page.waitForResponse(
+            (response) =>
+                response.url().includes('/admin/speech/recordings?') &&
+                new URL(response.url()).searchParams.get('language') === 'fr',
+        );
+        await page
+            .getByRole('button', { name: 'Apply filters', exact: true })
+            .click();
+        expect((await loaded).status()).toBe(200);
+        await expect(
+            page.getByRole('button', { name: 'Delete selected (0)' }),
+        ).toBeDisabled();
+        await expect(page.locator('.ant-empty-description')).toHaveText('No data');
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.screenshot({
+            path: info.outputPath('admin-speech-library-narrow.png'),
+            fullPage: true,
+        });
+        expect(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+        ).toBe(true);
+        assertErrors();
+    });
+
+    // @user-flow shared-pronunciation-playback/admin-model-price-publication
+    test('owner publishes an immutable speech price revision and reviews stale edits', async ({
+        page,
+        browser,
+    }, info) => {
+        await passwordLogin(page);
+        const assertErrors = captureBrowserErrors(page, {
+            '/api/admin/ai/model-prices': 409,
+        });
+        await page.getByRole('menuitem', { name: 'AI settings' }).click();
+        const panel = page.locator('.ant-card').filter({
+            has: page.getByText('Model credit pricing', { exact: true }),
+        });
+        const row = panel
+            .getByRole('row')
+            .filter({ hasText: 'speech-characters' })
+            .first();
+        await expect(row).toBeVisible();
+        await row
+            .getByRole('button', { name: 'Edit price', exact: true })
+            .click();
+        const staleDialog = page.getByRole('dialog', {
+            name: 'Publish model price',
+        });
+        await expect(staleDialog).toBeVisible();
+        const secondContext = await browser.newContext({
+            baseURL: adminOrigin,
+        });
+        try {
+            const second = await secondContext.newPage();
+            await passwordLogin(second);
+            const secondErrors = captureBrowserErrors(second);
+            await second.getByRole('menuitem', { name: 'AI settings' }).click();
+            const secondPanel = second.locator('.ant-card').filter({
+                has: second.getByText('Model credit pricing', {
+                    exact: true,
+                }),
+            });
+            await secondPanel
+                .getByRole('row')
+                .filter({ hasText: 'speech-characters' })
+                .first()
+                .getByRole('button', { name: 'Edit price', exact: true })
+                .click();
+            const dialog = second.getByRole('dialog', {
+                name: 'Publish model price',
+            });
+            await dialog.getByLabel('Credits per 1,000 characters').fill('101');
+            await dialog
+                .getByLabel('Reason', { exact: true })
+                .fill('Publish a deterministic test price revision');
+            const published = second.waitForResponse(
+                (response) =>
+                    response.url().includes('/admin/ai/model-prices') &&
+                    response.request().method() === 'POST',
+            );
+            await dialog
+                .getByRole('button', { name: 'Publish price revision' })
+                .click();
+            expect((await published).status()).toBe(200);
+            await expect(dialog).not.toBeVisible();
+            secondErrors();
+            await staleDialog
+                .getByLabel('Reason', { exact: true })
+                .fill('Attempt an intentionally stale price revision');
+            const conflict = page.waitForResponse(
+                (response) =>
+                    response.url().includes('/admin/ai/model-prices') &&
+                    response.request().method() === 'POST',
+            );
+            await staleDialog
+                .getByRole('button', { name: 'Publish price revision' })
+                .click();
+            expect((await conflict).status()).toBe(409);
+            await expect(
+                staleDialog.getByRole('button', {
+                    name: 'Publish price revision',
+                }),
+            ).toBeDisabled();
+            await page.setViewportSize({ width: 390, height: 844 });
+            await page.screenshot({
+                path: info.outputPath('admin-price-revision-conflict.png'),
+                fullPage: true,
+            });
+            await staleDialog
+                .getByRole('button', { name: 'Refresh', exact: true })
+                .click();
+            await expect(staleDialog).not.toBeVisible();
+        } finally {
+            await secondContext.close();
+        }
+        assertErrors();
     });
 
     // @user-flow admin-user-management/admin-sentence-library-management

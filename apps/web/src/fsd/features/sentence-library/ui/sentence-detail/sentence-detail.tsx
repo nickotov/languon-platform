@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
     ArrowLeftIcon,
     XIcon,
@@ -33,6 +33,7 @@ export function SentenceDetail({
     onClose,
     onArchiveToggle,
     locked,
+    renderAudio,
 }: {
     api: LibraryApi;
     id: string;
@@ -40,6 +41,9 @@ export function SentenceDetail({
     onClose(): void;
     onArchiveToggle(sentence: SavedSentence): void;
     locked: boolean;
+    renderAudio?:
+        | ((exerciseId: string, field: 'prompt' | 'reference') => ReactNode)
+        | undefined;
 }) {
     const { L, lang } = useInterfaceText();
     const compact = useIsCompact();
@@ -131,6 +135,7 @@ export function SentenceDetail({
                     >
                         {sentence.sentence}
                     </p>
+                    {renderAudio?.(id, 'prompt')}
                     <p className={styles.help}>
                         {L('langLine', {
                             from: lang(sentence.sentenceLanguage),
@@ -179,6 +184,7 @@ export function SentenceDetail({
                             >
                                 {sentence.reference}
                             </p>
+                            {renderAudio?.(id, 'reference')}
                             <p className={styles.secondaryHelp}>
                                 {L('referenceNote')}
                             </p>

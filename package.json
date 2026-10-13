@@ -31,7 +31,7 @@
         "dev:backend": "turbo run dev --filter=@languon/backend",
         "dev:dictionary-worker": "pnpm --filter @languon/backend dictionary:worker",
         "dev:account-purge-worker": "pnpm --filter @languon/backend account:purge:worker",
-        "dev:infra": "docker compose up -d postgres redis",
+        "dev:infra": "docker compose up -d postgres redis minio minio-init",
         "dev:mastra": "turbo run dev:mastra --filter=@languon/backend",
         "dev:mobile": "turbo run dev --filter=@languon/mobile",
         "dev:mobile:docker": "turbo run dev:docker --filter=@languon/mobile",
@@ -72,7 +72,9 @@
         "test:e2e:sentence-practice-backend": "node scripts/run-sentence-practice-e2e.mjs",
         "search:ast": "ast-grep",
         "test:code-search": "node --test scripts/code-search.test.mjs",
-        "styles:check": "pnpm --filter @languon/web styles:check"
+        "styles:check": "pnpm --filter @languon/web styles:check",
+        "speech:migrate": "pnpm --filter @languon/backend exec tsx src/cli/speech-migration-command.ts",
+        "test:e2e:shared-pronunciation": "node scripts/run-shared-pronunciation-e2e.mjs"
     },
     "devDependencies": {
         "@ast-grep/cli": "0.45.3",

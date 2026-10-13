@@ -114,6 +114,14 @@ const RawEnvironmentSchema = z
             .enum(['true', 'false'])
             .default('false')
             .transform((value) => value === 'true'),
+        SPEECH_PLAYBACK_ENABLED: z
+            .enum(['true', 'false'])
+            .default('false')
+            .transform((value) => value === 'true'),
+        SPEECH_GENERATION_ENABLED: z
+            .enum(['true', 'false'])
+            .default('false')
+            .transform((value) => value === 'true'),
         LEARNING_FLASHCARDS_ENABLED: z
             .enum(['true', 'false'])
             .default('true')

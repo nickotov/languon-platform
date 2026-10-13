@@ -1,6 +1,7 @@
 import {
     AuditOutlined,
     CloudServerOutlined,
+    SoundOutlined,
     DashboardOutlined,
     LogoutOutlined,
     MenuOutlined,
@@ -36,13 +37,15 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
     const selected = useMemo(
         () =>
-            location.pathname.startsWith('/users')
-                ? '/users'
-                : location.pathname.startsWith('/audit')
-                  ? '/audit'
-                  : location.pathname.startsWith('/ai-settings')
-                    ? '/ai-settings'
-                    : '/',
+            location.pathname.startsWith('/speech-recordings')
+                ? '/speech-recordings'
+                : location.pathname.startsWith('/users')
+                  ? '/users'
+                  : location.pathname.startsWith('/audit')
+                    ? '/audit'
+                    : location.pathname.startsWith('/ai-settings')
+                      ? '/ai-settings'
+                      : '/',
         [location.pathname],
     );
     const navigationItems = [
@@ -65,6 +68,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             icon: <CloudServerOutlined />,
             key: '/ai-settings',
             label: translate('shell.aiSettings'),
+        },
+        {
+            icon: <SoundOutlined />,
+            key: '/speech-recordings',
+            label: translate('speech.title'),
         },
     ];
     const navigation = (closeAfterNavigate = false) => (

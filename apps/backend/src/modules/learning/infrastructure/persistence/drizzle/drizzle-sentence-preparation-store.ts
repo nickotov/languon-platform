@@ -1,3 +1,4 @@
+import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import { createHash, randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
 import {
@@ -252,7 +253,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
         context: SentenceContext,
     ) {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             const { dictionary } = await authorizeSentence(tx, access, true);
             const learnerId = sentenceLearner(access);
             await lockSentenceLearner(tx, learnerId);
@@ -398,7 +399,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
     }
     async get(access: LearningAccess, id: string, context: SentenceContext) {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             const { dictionary } = await authorizeSentence(tx, access);
             const [row] = await tx
                 .select()
@@ -431,7 +432,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
         context: SentenceContext,
     ) {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await lockTextAiCapacity(tx);
             const { dictionary } = await authorizeSentence(tx, access, true);
             const learnerId = sentenceLearner(access);
@@ -565,7 +566,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
             direction: _direction,
             preparationId: _preparationId,
             ...batch
-        } = await this.database.transaction((tx) =>
+        } = await modelPricingTransaction(this.database, (tx) =>
             this.resolvePreparedBatch(tx, access, id, context),
         );
         return batch;
@@ -577,7 +578,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
         context: SentenceContext,
     ) {
         context.signal.throwIfAborted();
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             const { dictionary } = await authorizeSentence(tx, access);
             const [row] = await tx
                 .select()
@@ -660,7 +661,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
     }
     async tick(context: SentenceContext): Promise<boolean> {
         context.signal.throwIfAborted();
-        await this.database.transaction((tx) =>
+        await modelPricingTransaction(this.database, (tx) =>
             pruneSentenceLibrarySnapshots(tx, context.now),
         );
         const deadline = new Date(
@@ -681,7 +682,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
             .orderBy(asc(preparations.updatedAt), asc(preparations.id))
             .limit(1);
         if (expired)
-            await this.database.transaction(async (tx) => {
+            await modelPricingTransaction(this.database, async (tx) => {
                 await lockSentenceLearner(tx, expired.learnerId);
                 await this.pruneInactive(tx, expired.learnerId, context.now);
             });
@@ -694,7 +695,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
             .orderBy(asc(preparations.updatedAt), asc(preparations.id))
             .limit(1);
         if (!candidate) return !!expired;
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await lockTextAiCapacity(tx);
             // Actor/dictionary locks precede the preparation row, matching normal admission.
             let accessValid = true;

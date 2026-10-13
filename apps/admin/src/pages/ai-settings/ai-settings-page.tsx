@@ -10,6 +10,8 @@ import {
 import { Alert, App, Button, Card, Empty, Skeleton, Typography } from 'antd';
 import { useState } from 'react';
 
+import { ModelPricesPanel } from './ui/model-prices/model-prices-panel';
+
 import sharedStyles from '../shared/page.module.css';
 import type { AiSettingsMutationRequest, AiSettingsResponse } from './types';
 import { AiSettingsForm } from './ui/ai-settings-form/ai-settings-form';
@@ -122,6 +124,7 @@ export function AiSettingsPage() {
                     </>
                 ) : null}
             </Skeleton>
+            <ModelPricesPanel />
         </main>
     );
 }

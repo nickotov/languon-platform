@@ -569,7 +569,7 @@
             "kind": "service",
             "outputProtocol": "plain",
             "source": {
-                "revision": "sha256:a1d041b8cd1c4b7164d14f765f778eaa081bb41ed49a40a3148a83e978eba1d8",
+                "revision": "sha256:05350f763e87df0cbbdadf6934f1bba9ecb88002453d7144fa5bd69986c2ca32",
                 "script": "dev:infra",
                 "type": "package-script"
             },

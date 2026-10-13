@@ -104,7 +104,13 @@ export const AdminAiCreditHistoryEntrySchema = z
             .enum(['admin', 'subscription', 'purchase', 'migration'])
             .nullable(),
         measurementSource: z
-            .enum(['provider_reported', 'estimated', 'unmetered'])
+            .enum([
+                'provider_reported',
+                'estimated',
+                'unmetered',
+                'speech_success',
+                'speech_no_charge',
+            ])
             .nullable(),
         reason: z.string().trim().min(5).max(500).nullable(),
         occurredAt: AdminTimestampSchema,

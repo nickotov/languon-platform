@@ -236,6 +236,7 @@ export function SentenceLibrary(props: LibraryProps) {
                     onClose={closeDetail}
                     onArchiveToggle={singleToggle}
                     locked={c.pending}
+                    renderAudio={props.renderAudio}
                 />
             ) : null}
         </>

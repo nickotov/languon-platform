@@ -11,6 +11,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Shared pronunciation playback](./shared-pronunciation-playback.md) — shared audio, explicit paid generation, retained recordings and editable model prices.
+
 - [Global App Shell](./global-app-shell.md) — session-aware navigation, guest settings, preference persistence, responsive drawer focus, and the WIP home page.
 
 - [Sentence Practice and Model Preferences Web](./sentence-practice-web.md) —
@@ -45,7 +47,7 @@ evidence with a repeatable manual/browser/API/device recipe.
   sessions, passwords, recovery, logout, and passkeys through the browser and
   HTTP API.
 - [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md) — private
-  owner playback, on-demand generation and cached audio.
+  saved-field playback for authenticated learners, on-demand generation and cached audio.
 - [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
   card authoring, lifecycle recovery, unlisted reading, and private forks.
 - [Flashcard training backend](./flashcard-training-backend.md) — bounded card

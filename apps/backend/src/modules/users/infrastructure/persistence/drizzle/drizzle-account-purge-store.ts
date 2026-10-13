@@ -1,3 +1,4 @@
+import { purgeSpeechActor } from '../../../../speech/infrastructure/drizzle-speech-store';
 import { and, eq, gt, inArray, lte, or, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
@@ -397,6 +398,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 ...sentenceScope,
                 now: input.now,
             });
+            await purgeSpeechActor(tx, input.userId, input.now);
             await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                 input.userId,
             );

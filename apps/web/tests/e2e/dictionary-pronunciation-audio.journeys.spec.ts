@@ -1,6 +1,11 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
-// @user-flow-revision dictionary-pronunciation-audio sha256:a41d88bcb8a500f2
+import {
+    installSpeechAudioProbe,
+    browserAudioEvidence,
+} from './support/speech-browser-audio';
+
+// @user-flow-revision dictionary-pronunciation-audio sha256:08d1f323622a76ae
 const runId = process.env.AUTH_E2E_RUN_ID ?? String(Date.now());
 let context: BrowserContext;
 let page: Page;
@@ -19,14 +24,18 @@ async function createCard(name: string) {
     ).toBeVisible();
     await page.getByRole('button', { name: 'Add card', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Add card' });
-    await editor.getByLabel(/^Source word or phrase \(/u).fill('casa');
+    await editor
+        .getByLabel(/^Source word or phrase \(/u)
+        .fill(`casa ${name} ${runId}`);
     await editor.getByLabel(/^Translation \(/u).fill('house');
     await editor.getByLabel(/^Context example \(/u).fill('La casa es grande.');
     await editor
         .getByLabel(/^Example translation \(/u)
         .fill('The house is large.');
-    await editor.getByRole('button', { name: 'Save card' }).click();
-    await expect(page.getByText('casa', { exact: true })).toBeVisible();
+    await editor.getByRole('button', { name: 'Create card' }).click();
+    await expect(
+        page.getByText(`casa ${name} ${runId}`, { exact: true }),
+    ).toBeVisible();
 }
 
 async function playedCount() {
@@ -36,22 +45,30 @@ async function playedCount() {
 }
 
 async function play(field: string) {
+    const control = page.getByRole('button', {
+        name: `Play ${field}`,
+        exact: true,
+    });
+    await expect(control).toBeVisible();
     const before = await playedCount();
     const content = page.waitForResponse(
         (response) =>
-            response.url().includes('/audio/') &&
-            response.url().includes('/content?') &&
+            response.url().includes('/speech/playbacks/') &&
+            response.url().endsWith('/content') &&
             response.status() === 200,
     );
-    await page
-        .getByRole('button', { name: `Play ${field}`, exact: true })
-        .click();
+    const preparation = page.waitForResponse(
+        (response) =>
+            response.url().endsWith('/speech/prepare') &&
+            [200, 202].includes(response.status()),
+    );
+    await control.click();
     const response = await content;
     await expect
         .poll(async () => {
             if (
                 await page
-                    .getByText('Ready — press Play', { exact: false })
+                    .getByText('Audio is ready. Press Play.', { exact: false })
                     .isVisible()
             ) {
                 await page
@@ -61,22 +78,29 @@ async function play(field: string) {
             return playedCount();
         })
         .toBeGreaterThan(before);
-    expect((await response.body()).byteLength).toBeGreaterThan(44);
+    const evidence = await browserAudioEvidence(page, response.url());
     expect(response.headers()['cache-control']).toContain('no-store');
-    await expect(
-        page.getByText('Development sound — not a pronunciation recording.', {
-            exact: false,
-        }),
-    ).toBeVisible();
+    const preparedResponse = await preparation;
+    expect(
+        preparedResponse.request().postDataJSON().source
+            .expectedDictionaryVersion,
+    ).toBeGreaterThan(0);
+    expect(
+        preparedResponse.request().postDataJSON().source
+            .expectedSettingsVersion,
+    ).toBeGreaterThan(0);
+    const prepared = await preparedResponse.json();
+    expect(prepared.fixture).toBe(true);
     await expect(
         page.getByRole('button', { name: `Play ${field}`, exact: true }),
     ).toBeVisible();
-    return response;
+    return { response, evidence, initialState: prepared.state };
 }
 
 test.describe.serial('dictionary pronunciation audio', () => {
     test.beforeAll(async ({ browser }) => {
         context = await browser.newContext();
+        await installSpeechAudioProbe(context);
         await context.addInitScript(() => {
             const play = HTMLMediaElement.prototype.play;
             HTMLMediaElement.prototype.play = function () {
@@ -148,21 +172,22 @@ test.describe.serial('dictionary pronunciation audio', () => {
         await createCard('cache');
         const first = await play('Source phrase');
         const second = await play('Source phrase');
-        expect(new URL(first.url()).searchParams.get('assetId')).toBe(
-            new URL(second.url()).searchParams.get('assetId'),
-        );
+        expect(second.initialState).toBe('ready');
+        expect(second.evidence.checksum).toBe(first.evidence.checksum);
         await page
             .getByRole('button', { name: 'Card actions, card 1' })
             .click();
         await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
         const editor = page.getByRole('dialog', { name: 'Edit card' });
-        await editor.getByLabel(/^Source word or phrase \(/u).fill('hogar');
+        await editor
+            .getByLabel(/^Source word or phrase \(/u)
+            .fill(`hogar cache ${runId}`);
         await editor.getByRole('button', { name: 'Save card' }).click();
-        await expect(page.getByText('hogar', { exact: true })).toBeVisible();
+        await expect(
+            page.getByText(`hogar cache ${runId}`, { exact: true }),
+        ).toBeVisible();
         const edited = await play('Source phrase');
-        expect(new URL(edited.url()).searchParams.get('assetId')).not.toBe(
-            new URL(first.url()).searchParams.get('assetId'),
-        );
+        expect(edited.initialState).toBe('queued');
     });
 
     // @user-flow dictionary-pronunciation-audio/audio-failure-retry-and-selection-cancellation
@@ -170,7 +195,7 @@ test.describe.serial('dictionary pronunciation audio', () => {
         await createCard('failure');
         const cached = await play('Source phrase');
         await page.route(
-            '**/audio/source/content?*',
+            '**/speech/playbacks/*/content',
             (route) =>
                 route.fulfill({
                     status: 503,
@@ -186,18 +211,19 @@ test.describe.serial('dictionary pronunciation audio', () => {
             })
             .click();
         await expect(
-            page.getByText('Audio failed. Press Play to retry.', {
+            page.getByText('Pronunciation could not be prepared. Try again.', {
                 exact: false,
             }),
         ).toBeVisible();
         const retried = await play('Source phrase');
-        expect(retried.url()).toBe(cached.url());
+        expect(retried.initialState).toBe('ready');
+        expect(retried.evidence.checksum).toBe(cached.evidence.checksum);
         let release!: () => void;
         const held = new Promise<void>((resolve) => {
             release = resolve;
         });
         await page.route(
-            '**/audio/source/content?*',
+            '**/speech/playbacks/*/content',
             async (route) => {
                 const response = await route.fetch();
                 await held;
@@ -214,18 +240,20 @@ test.describe.serial('dictionary pronunciation audio', () => {
             .click();
         await expect(
             page.getByRole('button', {
-                name: 'Stop Source phrase',
+                name: 'Stop waiting',
                 exact: true,
             }),
         ).toBeVisible();
         await page
             .getByRole('button', {
-                name: 'Stop Source phrase',
+                name: 'Stop waiting',
                 exact: true,
             })
             .click();
         release();
-        await expect(page.getByText('Stopped', { exact: false })).toBeVisible();
+        await expect(
+            page.getByText('Preparing pronunciation…', { exact: true }),
+        ).toHaveCount(0);
         await play('Translation');
         expect(await playedCount()).toBe(before + 1);
     });
@@ -234,7 +262,9 @@ test.describe.serial('dictionary pronunciation audio', () => {
     test('denies previously ready bytes after card archive', async () => {
         await createCard('archive');
         const cached = await play('Source phrase');
-        const authorization = cached.request().headers()['authorization']!;
+        const authorization = cached.response.request().headers()[
+            'authorization'
+        ]!;
         await page
             .getByRole('button', { name: 'Card actions, card 1' })
             .click();
@@ -244,7 +274,7 @@ test.describe.serial('dictionary pronunciation audio', () => {
         await expect(
             page.getByRole('button', { name: 'Play Source phrase' }),
         ).toHaveCount(0);
-        const denied = await context.request.get(cached.url(), {
+        const denied = await context.request.get(cached.response.url(), {
             headers: { authorization },
         });
         expect(denied.status()).toBe(404);

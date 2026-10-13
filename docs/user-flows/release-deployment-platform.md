@@ -43,6 +43,7 @@ e2e_tests:
 e2e_scenarios:
     - local-deploy-verify-rollback
 related_features:
+    - shared-pronunciation-playback
     - user-authentication
 ---
 
@@ -160,6 +161,21 @@ with dormant audio-capable API, worker and purge versions; activate only when th
 rollback floor also understands audio jobs and physical-object cleanup. Audio is
 hosted in the existing worker process and does not add an image identity. Never
 reuse proposal token budgets or document-quarantine storage credentials for audio.
+
+Shared pronunciation adds separate `sharedSpeech` and `modelPricing` namespaces.
+First publish compatibility readers/workers, then admit version one only when
+both active and rollback-floor releases understand speech settlement and immutable
+rate revisions. Missing namespaces fail closed. The four version-list environment
+fields are derived from the manifest; operational flags alone cannot admit work.
+Worker grants restrict recording/job mutation and tariff access; migration guards
+prevent unauthorized erasure of ready recordings and unversioned execution.
+Two-phase fingerprint rotation distributes aliases to all API/worker/rollback
+nodes before switching the writer. See [shared speech operations](../shared-pronunciation-operations.md).
+
+The local rehearsal scenarios below retain their prior verification date. New
+speech namespace/grant/rotation behavior is verified through dedicated deployment
+unit tests, real transactional PostgreSQL roles and the shared playback journeys;
+those checks are not a claim that a new production rehearsal was executed.
 
 While a local deployment is active:
 

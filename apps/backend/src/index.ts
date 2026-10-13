@@ -8,6 +8,12 @@ import { serve } from '@hono/node-server';
 import { S3Client } from '@aws-sdk/client-s3';
 
 import { createApp } from './app';
+import { createSpeechInfrastructure } from './modules/speech/infrastructure/composition';
+import {
+    createSpeechRoutes,
+    createAdminSpeechRoutes,
+} from './modules/speech/interface/http/speech.routes';
+import { createModelPriceRoutes } from './modules/ai-credits/interface/http/model-prices.routes';
 import { loadEnvironment } from './config/environment';
 import { createGracefulShutdown } from './infrastructure/server/graceful-shutdown';
 import { createAdministrationComposition } from './modules/administration/infrastructure/administration-composition';
@@ -85,9 +91,11 @@ const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
     deployed,
     role: 'api',
 });
+
 if (
     deployed &&
     audioEnvironment.generationEnabled &&
+    !environment.SPEECH_GENERATION_ENABLED &&
     !process.env.DICTIONARY_AUDIO_API_ENQUEUED_VERSIONS?.split(',').includes(
         '1',
     )
@@ -96,10 +104,38 @@ if (
         'Pronunciation generation requires release-compatible API enqueue metadata.',
     );
 }
+if (
+    ['staging', 'production'].includes(environment.APP_ENV) &&
+    environment.SPEECH_GENERATION_ENABLED &&
+    (!process.env.SPEECH_API_ENQUEUED_VERSIONS?.split(',').includes('1') ||
+        !process.env.SPEECH_WORKER_PROCESSABLE_VERSIONS?.split(',').includes(
+            '1',
+        ) ||
+        !process.env.AI_MODEL_PRICE_API_ADMITTED_VERSIONS?.split(',').includes(
+            '1',
+        ) ||
+        !process.env.AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS?.split(
+            ',',
+        ).includes('1'))
+) {
+    throw new Error(
+        'Shared speech requires release-compatible admission and pricing revisions.',
+    );
+}
 const audioAdapters = createDictionaryAudioAdapters({
     role: 'api',
     environment: audioEnvironment,
     database: authentication.productDependencies.database,
+});
+const speech = createSpeechInfrastructure({
+    database: authentication.productDependencies.database,
+    dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
+    environment: audioEnvironment,
+    storage: audioAdapters.storage,
+    provider: audioAdapters.provider,
+    providers: audioAdapters.providers,
+    playbackEnabled: environment.SPEECH_PLAYBACK_ENABLED,
+    generationEnabled: environment.SPEECH_GENERATION_ENABLED,
 });
 const dictionaries = createDictionaryComposition({
     ...authentication.productDependencies,
@@ -111,8 +147,11 @@ const dictionaries = createDictionaryComposition({
         storage: audioAdapters.storage,
         provider: audioAdapters.provider,
         budget: dictionaryAudioBudget(audioEnvironment),
-        playbackEnabled: audioEnvironment.playbackEnabled,
-        generationEnabled: audioEnvironment.generationEnabled,
+        playbackEnabled:
+            process.env.DICTIONARY_AUDIO_PLAYBACK_ENABLED === 'true',
+        generationEnabled:
+            audioEnvironment.generationEnabled &&
+            !environment.SPEECH_GENERATION_ENABLED,
     },
     generation: {
         acceptableFormats: environment.DICTIONARY_JOB_API_ACCEPTABLE_FORMATS,
@@ -163,6 +202,38 @@ const app = createApp({
         policy: authentication.options.policy,
     }).routes,
     administration,
+    speech: createSpeechRoutes({
+        service: speech.service,
+        policy: authentication.options.policy,
+        authenticate: async (accessToken) => {
+            const claims =
+                await authentication.productDependencies.accessTokens.verify(
+                    accessToken,
+                );
+            await authentication.productDependencies.authentication.requireActiveSession(
+                { sessionId: claims.sessionId, userId: claims.userId },
+            );
+            return claims.userId;
+        },
+    }).route(
+        '/',
+        createAdminSpeechRoutes({
+            store: speech.store,
+            storage: audioAdapters.storage,
+            administration: administration.administration,
+            policy: authentication.options.policy,
+        }),
+    ),
+    modelPrices: createModelPriceRoutes({
+        database: authentication.productDependencies.database,
+        administration: administration.administration,
+        policy: authentication.options.policy,
+        publishingEnabled:
+            !deployed ||
+            process.env.AI_MODEL_PRICE_API_ADMITTED_VERSIONS?.split(
+                ',',
+            ).includes('1') === true,
+    }),
     authentication: authentication.options,
     userProfiles: {
         accessTokens: authentication.productDependencies.accessTokens,

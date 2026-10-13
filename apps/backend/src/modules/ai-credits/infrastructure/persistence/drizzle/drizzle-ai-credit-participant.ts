@@ -9,7 +9,7 @@ import type {
     AiCreditHistoryEntry,
     AiCreditJobKind,
     AiCreditSettlementResult,
-    AiCreditTransactionParticipant,
+    SpeechCreditTransactionParticipant,
 } from '../../../application/ai-credit-participant';
 import {
     AiCreditIdempotencyConflictError,
@@ -44,7 +44,7 @@ export type AiCreditTransaction = Parameters<
 // aggregate locks. This separate namespace serializes wallet operations last.
 export const aiCreditOwnerLockNamespace = 1_920_424_381;
 
-export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactionParticipant {
+export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransactionParticipant {
     public constructor(private readonly transaction: AiCreditTransaction) {}
 
     public async accountSummary(ownerId: string, at: Date) {
@@ -329,6 +329,7 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
                 'dictionary-generation',
                 'sentence-generation',
                 'sentence-check',
+                'speech-generation',
             ].includes(jobKind)
         ) {
             throw new AiCreditReservationStateError();
@@ -449,27 +450,59 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
         reservationId: string;
         settledAt: Date;
     }): Promise<AiCreditSettlementResult> {
+        return this.settleReservation(input);
+    }
+
+    private async settleReservation(input: {
+        measuredCredits: bigint | null;
+        measurement: AiCreditMeasurement;
+        ownerId: string;
+        reservationId: string;
+        settledAt: Date;
+        speechOutcome?: boolean;
+    }): Promise<AiCreditSettlementResult> {
         await this.lockOwner(input.ownerId);
         const [reservation] = await this.reservation(
             input.ownerId,
             input.reservationId,
         );
         if (!reservation) throw new AiCreditReservationStateError();
+        if (
+            (reservation.jobKind === 'speech-generation') !==
+            Boolean(input.speechOutcome)
+        )
+            throw new AiCreditReservationStateError();
         if (reservation.state === 'released') {
             throw new AiCreditReservationStateError();
         }
         if (reservation.state === 'settled') {
             return settlementResult(reservation);
         }
-        if (reservation.dispatchedAt === null) {
+        if (
+            reservation.dispatchedAt === null &&
+            input.measurement !== 'speech_no_charge'
+        ) {
             throw new AiCreditReservationStateError();
         }
-        const settlement = settleAiCreditReservation({
-            measuredCredits: input.measuredCredits,
-            measurement: input.measurement,
-            policyMode: reservation.policyMode,
-            reservedCredits: reservation.reservedCredits,
-        });
+        const settlement = input.speechOutcome
+            ? {
+                  chargedCredits:
+                      input.measurement === 'speech_success'
+                          ? reservation.reservedCredits
+                          : 0n,
+                  measuredCredits: null,
+                  measurement: input.measurement,
+                  releasedCredits:
+                      input.measurement === 'speech_success'
+                          ? 0n
+                          : reservation.reservedCredits,
+              }
+            : settleAiCreditReservation({
+                  measuredCredits: input.measuredCredits,
+                  measurement: input.measurement,
+                  policyMode: reservation.policyMode,
+                  reservedCredits: reservation.reservedCredits,
+              });
         const { chargedCredits } = settlement;
         if (chargedCredits > 0n) {
             const allocations = await this.reservationAllocations(
@@ -535,6 +568,26 @@ export class DrizzleAiCreditTransactionParticipant implements AiCreditTransactio
             measurement: input.measurement,
             releasedCredits,
         };
+    }
+
+    public async settleSpeechAttempt(input: {
+        ownerId: string;
+        reservationId: string;
+        settledAt: Date;
+        billingDeadline?: Date;
+        outcome: 'success' | 'failure' | 'deadline';
+    }): Promise<AiCreditSettlementResult> {
+        const success =
+            input.outcome === 'success' &&
+            (!input.billingDeadline || input.settledAt < input.billingDeadline);
+        return this.settleReservation({
+            ownerId: input.ownerId,
+            reservationId: input.reservationId,
+            settledAt: input.settledAt,
+            measuredCredits: null,
+            measurement: success ? 'speech_success' : 'speech_no_charge',
+            speechOutcome: true,
+        });
     }
 
     public async releaseUndispatchedAttempt(input: {

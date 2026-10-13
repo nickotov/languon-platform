@@ -23,12 +23,15 @@ export function resolveTextAiExecutionSnapshot(
         !isStringSubset(snapshot.supportedFormats, model.supportedFormats) ||
         (snapshot.creditPricing !== undefined &&
             (snapshot.creditPricing.revision !== 1 ||
+                !Number.isSafeInteger(
+                    snapshot.creditPricing.maxCreditsPerAttempt,
+                ) ||
+                snapshot.creditPricing.maxCreditsPerAttempt <= 0 ||
                 ![
                     snapshot.creditPricing.inputCreditsPerMillionTokens,
                     snapshot.creditPricing.outputCreditsPerMillionTokens,
-                    snapshot.creditPricing.maxCreditsPerAttempt,
                 ].every(
-                    (value) => Number.isSafeInteger(value) && value > 0,
+                    (value) => Number.isSafeInteger(value) && value >= 0,
                 ))) ||
         !sameBudget(snapshot.aggregateBudget, budget)
     )

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type {
     SentencePreparation,
     SentencePreparationBatch,
@@ -205,3 +206,10 @@ export interface SentenceHistoryController {
     refresh(): void;
     invalidate(): void;
 }
+
+export type SentenceAudioTarget = {
+    kind: 'prompt' | 'reference' | 'checked-answer';
+    id: string;
+    sessionId?: string;
+};
+export type SentenceAudioRenderer = (content: SentenceAudioTarget) => ReactNode;

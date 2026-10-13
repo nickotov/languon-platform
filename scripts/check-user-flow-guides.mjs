@@ -27,6 +27,7 @@ export const e2eCommands = new Map([
     ],
     ['mastra-playground-vitest', 'node scripts/run-mastra-playground-e2e.mjs'],
     ['web-dev-panel-playwright', 'pnpm test:e2e:web-dev-panel'],
+    ['shared-pronunciation-playback', 'pnpm test:e2e:shared-pronunciation'],
     ['web-playwright', 'pnpm --filter @languon/web test:e2e'],
 ]);
 const allowedKeys = new Set([

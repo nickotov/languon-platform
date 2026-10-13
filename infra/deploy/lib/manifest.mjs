@@ -1,3 +1,8 @@
+import {
+    normalizeSharedSpeech,
+    normalizeModelPricing,
+    assertSharedSpeechOverlap,
+} from './shared-speech.mjs';
 import { readFile } from 'node:fs/promises';
 import {
     assertPronunciationAudioCompatibility,
@@ -252,6 +257,7 @@ export function assertDictionaryJobRollbackCompatibility(
     assertPronunciationAudioCompatibility(candidate, rollbackFloor, {
         direction,
     });
+    assertSharedSpeechOverlap(rollbackFloor, candidate);
     if (!['forward', 'rollback'].includes(direction)) {
         throw new Error('Dictionary job compatibility direction is invalid.');
     }
@@ -421,6 +427,21 @@ export function validateReleaseManifest(input, expectations = {}) {
         input.dictionaryJobs,
         input.schemaVersion,
     );
+    const sharedSpeech =
+        input.sharedSpeech === undefined
+            ? undefined
+            : normalizeSharedSpeech(input.sharedSpeech);
+    const modelPricing =
+        input.modelPricing === undefined
+            ? undefined
+            : normalizeModelPricing(input.modelPricing);
+    if (
+        sharedSpeech?.apiEnqueued.length &&
+        !modelPricing?.apiAdmitted.includes(1)
+    )
+        throw new Error(
+            'Shared speech admission requires revision-aware model pricing admission',
+        );
     return {
         schemaVersion: input.schemaVersion,
         identity: input.identity,
@@ -431,6 +452,8 @@ export function validateReleaseManifest(input, expectations = {}) {
         createdAt: input.createdAt,
         migration: { compatibility, ledger: input.migration.ledger },
         dictionaryJobs,
+        ...(input.sharedSpeech === undefined ? {} : { sharedSpeech }),
+        ...(input.modelPricing === undefined ? {} : { modelPricing }),
         ...(input.pronunciationAudio === undefined
             ? {}
             : {

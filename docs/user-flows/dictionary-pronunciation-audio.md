@@ -7,15 +7,16 @@ surfaces:
     - api
     - system
 source_paths:
-    - apps/backend/src/modules/dictionaries/application/dictionary-audio-service.ts
-    - apps/backend/src/modules/dictionaries/application/dictionary-audio-worker.ts
-    - apps/backend/src/modules/dictionaries/infrastructure/audio
+    - apps/web/src/fsd/features/speech-playback/**
+    - apps/backend/src/modules/speech/**
+    - apps/backend/src/modules/speech/infrastructure/audio/**
     - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/audio-schema.ts
     - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-store.ts
     - apps/backend/src/modules/dictionaries/interface/http/dictionary-audio.routes.ts
     - apps/web/src/fsd/features/dictionary-audio
     - packages/contracts/src/dictionaries/audio.ts
 related_features:
+    - shared-pronunciation-playback
     - dictionary-platform
     - profile-account-controls
     - release-deployment-platform
@@ -27,7 +28,7 @@ e2e_scenarios:
     - repeat-play-reuses-audio-and-edits-refresh
     - audio-failure-retry-and-selection-cancellation
     - archived-or-removed-owner-cannot-play-audio
-last_verified: 2026-09-21
+last_verified: 2026-10-14
 ---
 
 # Dictionary pronunciation audio
@@ -35,18 +36,24 @@ last_verified: 2026-09-21
 ## What this verifies
 
 Listen to a saved card's source, translation, example or example translation.
-First use prepares audio; subsequent plays reuse it. This release supports the
-owner web dictionary on desktop and mobile browsers, not native dictionary
-screens or shared-reader playback. Standard configured voices have no accent UI.
+First use prepares audio; subsequent plays reuse it. Owners and authenticated
+shared readers can play accessible saved fields on desktop and mobile browsers.
+Native screens are deferred. Standard configured voices have no accent selector.
+The shared pipeline also supports flashcards and sentences; pricing, global reuse
+and retention are described in [Shared pronunciation playback](shared-pronunciation-playback.md).
+The four migrated scenarios passed initially on 2026-10-13 and again on
+2026-10-14 after final source-authorization guards and retention copy changes,
+through the shared API and private playback handles in desktop/narrow Chromium. The separate
+shared guide records cross-user reuse and paid confirmation/settlement evidence.
 
 ## Prerequisites
 
-- Start local PostgreSQL/Redis, the backend, web and dictionary worker using the
+- Start local PostgreSQL/Redis/MinIO, the backend, web and dictionary worker using the
   root README command index. Use synthetic local accounts only.
-- Set `DICTIONARY_AUDIO_PLAYBACK_ENABLED=true` and
-  `DICTIONARY_AUDIO_GENERATION_ENABLED=true` consistently on backend and worker.
-  Local `DICTIONARY_AUDIO_PROVIDER=fixture` and
-  `DICTIONARY_AUDIO_STORAGE=postgres` require neither S3 nor paid services.
+- Set `SPEECH_PLAYBACK_ENABLED=true` and `SPEECH_GENERATION_ENABLED=true`
+  consistently on backend and worker. Keep `DICTIONARY_AUDIO_PROVIDER=fixture`
+  and `DICTIONARY_AUDIO_STORAGE=s3` with the private local MinIO configuration
+  from `.env.example`. These flags do not enable paid Kie calls.
 - Fixture sound is a short decodable tone; the UI labels it as a development
   sound. It verifies playback plumbing, not pronunciation of arbitrary text.
 - Real Kie mode requires explicit credentials, model/voice/language mapping,
@@ -81,13 +88,16 @@ provider evaluation and dedicated Selectel verification meet the feature gates.
 The server resolves each field's language from current dictionary/card settings.
 Audio does not change authorship or create card revisions. Cached playback works
 when new generation is disabled; unsupported configured languages show unavailable.
-Accounts, card visibility and current content are rechecked on status and byte
-access. Already delivered bytes cannot be retracted from a client.
+The shared `/api/speech` API resolves saved field references; learner handles
+expose no S3/provider URL or originating account. Accounts, card visibility and
+current content are rechecked on status and byte access. Already delivered bytes cannot be retracted from a client.
 
 ## Expected failure and edge cases
 
-- No Play actions: check playback capability, active owner/card, saved content
-  and backend configuration. Shared-reader and native screens are out of scope.
+- No Play actions: check playback capability, authenticated source access,
+  saved content and configured language/voice support. Native screens are deferred.
+- Long uncached text requires an exact quote and confirmation; cancelling creates
+  no reservation. Cached playback and joined generation are free.
 - Preparing persists: check dictionary worker readiness and isolated audio queue;
   do not assume restarting requires another paid submission.
 - Ready — press Play: the browser needs another user gesture. Retry playback.
@@ -97,8 +107,8 @@ access. Already delivered bytes cannot be retracted from a client.
   known task or unknown outcome before allowing a new generation attempt.
 - Provider output is copied into private application storage. Kie result URLs
   are temporary and are never exposed as permanent playback URLs.
-- PostgreSQL development bytes do not prove S3 behavior. Production uses private
-  S3, with Selectel and live provider activation checks recorded separately.
+- Standard development uses private MinIO; byte-storage compatibility tests do
+  not prove S3 behavior. Selectel and live Kie activation need separate evidence.
 
 ## Automated regression checks
 
@@ -134,6 +144,7 @@ audio flags as the API. Do not log card text, credentials or temporary result UR
 
 Use fake text/accounts only. The disposable test harness owns its database/Redis
 namespace; clean up only those explicitly named resources. Application retention
-cleans obsolete audio; account purge removes its inventoried physical objects and
-development bytes before SQL finalization. Production provider retention is a
-separate policy from removing local/Selectel audio.
+removes failed/temporary uploads only. Successful normalized text and recordings
+remain indefinitely after content/account removal; bindings and associations are
+removed. Audited admin removal is the successful-recording deletion mechanism.
+Provider-side retention is separate from this application policy.

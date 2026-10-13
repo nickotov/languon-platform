@@ -38,6 +38,8 @@ export function createApp(options?: {
     dictionaries?: OpenAPIHono;
     learning?: OpenAPIHono;
     sentenceLearning?: OpenAPIHono;
+    speech?: OpenAPIHono;
+    modelPrices?: OpenAPIHono;
     operational?: AppOperationalOptions;
     textAi?: OpenAPIHono;
     userProfiles?: UserProfileRouteDependencies;
@@ -70,6 +72,8 @@ export function createApp(options?: {
     if (options?.sentenceLearning) {
         app.route('/', options.sentenceLearning);
     }
+    if (options?.speech) app.route('/', options.speech);
+    if (options?.modelPrices) app.route('/', options.modelPrices);
     if (options?.learning) {
         app.route('/', options.learning);
     }

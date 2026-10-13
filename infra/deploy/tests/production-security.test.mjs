@@ -183,7 +183,13 @@ test('account purge worker has isolated database and version-delete credentials'
         role,
         /GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs/,
     );
-    assert.doesNotMatch(role, /GRANT ALL|GRANT INSERT/);
+    assert.doesNotMatch(role, /GRANT ALL|GRANT INSERT ON/);
+    assert.match(
+        role,
+        /GRANT UPDATE \(payer_id, reservation_id, billing_state\)/,
+    );
+    assert.doesNotMatch(role, /GRANT[^;]*ON TABLE speech_recordings/);
+    assert.doesNotMatch(role, /GRANT[^;]*ON TABLE model_price_revisions/);
 });
 
 test('paid speech authority belongs only to the dictionary worker and retained storage uses per-role credentials', async () => {

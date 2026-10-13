@@ -9,6 +9,7 @@ surfaces:
     - api
     - system
 source_paths:
+    - apps/backend/src/modules/speech/**
     - .agent/features/029-ai-credit-wallet/**
     - apps/admin/src/pages/users/**
     - apps/backend/src/modules/text-ai/**
@@ -25,6 +26,7 @@ e2e_tests:
 e2e_scenarios:
     - admin-grants-and-generation-consumes-ai-credits
 related_features:
+    - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - admin-user-management
     - ai-provider-management
@@ -37,12 +39,17 @@ related_features:
 
 This guide verifies that an active administration owner can inspect and adjust a user's normalized AI credits, configure limited or expiring/permanent unlimited access, and see immutable ledger activity. With credit enforcement activated after rollout preflight, each new managed dictionary text job reserves one attempt atomically and settles reported use or a labeled conservative estimate. Operational provider and concurrency limits remain separate.
 
-New explicit learner preferences pin the selected model credit rate, while Auto
-uses the configured default. Replays/retries retain the admitted pricing and do
+Explicit and Auto selection both use the effective published model tariff;
+admission pins its immutable revision together with the selected provider/model. Replays/retries retain the admitted pricing and do
 not follow later preference or rate changes. See
 [the preference backend journey](./user-ai-model-preferences-backend.md).
 
-The release does not add subscriptions, checkout, purchased-credit UI, a learner balance page, audio charging, or editable model rates. Subscription and purchase grant sources exist only as future idempotent ledger inputs.
+Subscriptions, checkout, purchased-credit UI and a standalone learner balance page
+remain deferred. [Shared pronunciation playback](shared-pronunciation-playback.md)
+adds paid confirmation for long uncached speech and editable immutable model-rate
+revisions. Speech settles only after usable audio publication; its failure/deadline
+releases are distinct from existing text-model estimated settlement. Subscription
+and purchase grant sources remain future idempotent ledger inputs.
 
 ## Start the development environment
 
@@ -84,7 +91,9 @@ Before production activation, confirm migrations are applied, all running worker
 - A retry reserves only its next attempt. Insufficient retry credit terminalizes before another provider call.
 - Cancellation or failure before provider dispatch releases the reservation. Ambiguous failure after dispatch charges the conservative attempt bound as `estimated`.
 - Provider-reported usage settles as `provider_reported`; unlimited work records `unmetered` usage without consuming finite grants.
-- Deletion-pending and purged targets reject admin mutations. Account purge waits for active work and then removes credit data in the purge transaction.
+- Deletion-pending and purged targets reject admin mutations. Account purge closes
+  speech holds without late debit before removing wallet/association data; successful
+  retained speech text/audio remains. Existing text work keeps its established drain policy.
 - Legacy jobs and provider revisions are not retroactively charged.
 
 ## Automated regression checks

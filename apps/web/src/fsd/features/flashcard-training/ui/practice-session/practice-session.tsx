@@ -1,9 +1,11 @@
+import type { FlashcardItem, Presentation } from '../../types';
 import {
     useEffect,
     useRef,
     useState,
     type KeyboardEvent,
     type SyntheticEvent,
+    type ReactNode,
 } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { usePracticeSession } from '../../hooks/use-practice-session';
@@ -16,6 +18,7 @@ import styles from './practice-session.module.css';
 
 export function PracticeSession({
     api,
+    renderAudio,
     sessionId,
     payload,
     signedIn,
@@ -24,6 +27,9 @@ export function PracticeSession({
     onClose,
 }: {
     api: LearningApi;
+    renderAudio?:
+        | ((item: FlashcardItem, presentation: Presentation) => ReactNode)
+        | undefined;
     sessionId: string;
     payload: StartPayload;
     signedIn: boolean;
@@ -184,6 +190,7 @@ export function PracticeSession({
                         </p>
                     )}
                     <PracticeContent
+                        renderAudio={renderAudio}
                         session={session}
                         display={display}
                         signedIn={signedIn}

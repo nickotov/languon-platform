@@ -6,7 +6,7 @@
     "scripts": {
         "admin:membership": "tsx src/infrastructure/administration/admin-command.ts",
         "admin:membership:built": "node dist/infrastructure/administration/admin-command.js",
-        "build": "tsup src/index.ts src/infrastructure/database/migrate-command.ts src/infrastructure/administration/admin-command.ts src/infrastructure/playground/playground-command.ts src/infrastructure/worker/dictionary-worker-command.ts src/infrastructure/worker/dictionary-document-parser-command.ts src/infrastructure/worker/account-purge-command.ts src/modules/users/infrastructure/recovery/account-recovery-gate-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
+        "build": "tsup src/index.ts src/cli/speech-migration-command.ts src/infrastructure/database/migrate-command.ts src/infrastructure/administration/admin-command.ts src/infrastructure/playground/playground-command.ts src/infrastructure/worker/dictionary-worker-command.ts src/infrastructure/worker/dictionary-document-parser-command.ts src/infrastructure/worker/account-purge-command.ts src/modules/users/infrastructure/recovery/account-recovery-gate-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
         "db:check": "drizzle-kit check",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "tsx src/infrastructure/database/migrate-command.ts",
@@ -28,7 +28,8 @@
         "start": "node dist/index.js",
         "test": "vitest run",
         "test:coverage": "vitest run --coverage",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "speech:migrate:built": "node dist/cli/speech-migration-command.js"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.1118.0",

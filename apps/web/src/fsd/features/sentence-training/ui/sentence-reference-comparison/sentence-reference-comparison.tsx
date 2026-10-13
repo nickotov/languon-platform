@@ -1,7 +1,7 @@
 'use client';
 import styles from './sentence-reference-comparison.module.css';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { SentenceExercise } from '@languon/contracts';
 import { Button } from '@/fsd/shared/ui';
 import type { ReferenceComparison } from '../../types';
@@ -13,11 +13,13 @@ export function SentenceReferenceComparison({
     exercise,
     onRecompare,
     disabled = false,
+    audio,
 }: {
     comparison: ReferenceComparison;
     exercise: Pick<SentenceExercise, 'targetLanguage'>;
     onRecompare?: () => void;
     disabled?: boolean;
+    audio?: ReactNode;
 }) {
     const { t } = useSentenceCopy();
     const [open, setOpen] = useState(true);
@@ -105,6 +107,7 @@ export function SentenceReferenceComparison({
                             className={styles.answerValue}
                         >
                             {comparison.reference}
+                            {audio}
                         </dd>
                     </div>
                 </dl>

@@ -161,6 +161,8 @@ export const es = {
     'profile.exportDescription':
         'La exportación aún no está disponible. No se ha solicitado ningún archivo.',
     'profile.requestExport': 'Solicitar exportación',
+    'speech.retention':
+        'La pronunciación ya solicitada puede terminar después de la eliminación. El audio generado y su texto normalizado se conservan indefinidamente para su reutilización. Solo los administradores pueden eliminarlos.',
     'profile.deleteTitle': 'Eliminar cuenta',
     'profile.deleteDescription':
         'El acceso termina de inmediato; los datos activos se borran después de 30 días.',
@@ -171,7 +173,7 @@ export const es = {
     'profile.deleteLossTitle': 'Lo que perderás',
     'profile.deleteLossAccess': 'El acceso termina de inmediato.',
     'profile.deleteLossData':
-        'Los datos de estudio y cuenta se borrarán en 30 días.',
+        'Los datos de la cuenta y el resto del contenido de estudio se borrarán en 30 días.',
     'profile.deleteLossRecovery':
         'Solo un administrador puede cancelar antes de la limpieza.',
     'profile.deleteConfirmHint': 'Escribe «DELETE» exactamente.',

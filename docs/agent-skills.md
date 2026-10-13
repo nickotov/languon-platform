@@ -47,6 +47,16 @@ questions. They do not start implementation, accept ADRs, or authorize vendor
 outreach or paid experiments. This is an original Languon-owned skill; no
 external upstream package is incorporated.
 
+### Speech provider and model configuration
+
+Use [`$speech-model-configuration`](../.agents/skills/speech-model-configuration/SKILL.md)
+when adding or updating curated pronunciation models, voices, supported-language
+mappings or versioned synthesis profiles. The skill requires exact official API
+evidence, preserves pending historical profiles and existing reusable audio, and
+keeps provider operational cost separate from editable customer-credit tariffs.
+It uses deterministic fixtures for local checks; it does not authorize paid probes
+or production activation. This is an original Languon-owned skill.
+
 ### Design briefs for backend-first delivery
 
 `$design-brief` is a Languon-owned, explicit-only skill for creating or updating

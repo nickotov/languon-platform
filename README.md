@@ -38,6 +38,8 @@ The default local endpoints are:
 - Web dev command panel (when started separately): `http://127.0.0.1:4400`
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
+- MinIO speech storage: `http://127.0.0.1:9000`
+- MinIO development console: `http://127.0.0.1:9001`
 
 Backend, Next.js, PostgreSQL, and Redis development endpoints are loopback-only
 by default. This keeps the public local secrets and verification code `0000`
@@ -166,6 +168,13 @@ providers use the provider-specific readiness behavior above. Restart
 `pnpm dev:all` or `pnpm dev:dictionary-worker` after changing these values;
 running `pnpm dev:mastra` does not change the dictionary worker provider.
 
+Standard development pronunciation storage uses the private, versioned MinIO
+bucket initialized by `pnpm dev:infra`. Keep the fixture provider for local work;
+shared playback/generation remain disabled until explicitly configured. See
+[shared pronunciation operations](docs/shared-pronunciation-operations.md) for
+host/container endpoints, scoped credentials, retained-text policy and live
+activation evidence.
+
 Provider-specific TTS settings such as `DICTIONARY_AUDIO_KIE_API_KEY` only power
 pronunciation audio. Kie's text models use `KIE_API_KEY`. Additional text providers
 require a reviewed catalog entry and compatibility tests; admins cannot enter
@@ -183,7 +192,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | --------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `pnpm dev:all`                                | Prepare infra/migrations and run apps plus workers                                 |
 | `pnpm dev`                                    | Run backend, web, and admin development servers                                    |
-| `pnpm dev:infra`                              | Start PostgreSQL and Redis                                                         |
+| `pnpm dev:infra`                              | Start PostgreSQL, Redis and private development MinIO                              |
 | `pnpm dev:mastra`                             | Provision and run isolated Mastra Studio                                           |
 | `pnpm dev:backend`                            | Run only the backend                                                               |
 | `pnpm dev:web`                                | Run only the user-facing web application                                           |
@@ -199,6 +208,8 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm db:generate`                            | Generate reviewed Drizzle SQL migrations                                           |
 | `pnpm db:check`                               | Validate Drizzle migration history                                                 |
 | `pnpm db:migrate`                             | Explicitly apply pending PostgreSQL migrations                                     |
+| `pnpm speech:migrate`                         | Guarded legacy-audio transfer; follow shared pronunciation cutover instructions    |
+| `pnpm test:e2e:shared-pronunciation`          | Run guarded learner/admin pronunciation and pricing journeys                       |
 | `pnpm db:studio`                              | Inspect the local database with Drizzle Studio                                     |
 | `pnpm mastra:playground:reset`                | Guarded destructive Mastra playground reset                                        |
 | `pnpm lint`                                   | Run repository lint rules                                                          |

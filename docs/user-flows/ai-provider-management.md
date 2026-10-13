@@ -8,6 +8,7 @@ surfaces:
     - admin
     - api
 source_paths:
+    - apps/backend/src/modules/speech/**
     - .agent/features/028-ai-provider-management/**
     - apps/admin/src/pages/ai-settings/**
     - apps/admin/src/shared/api/**
@@ -23,6 +24,7 @@ e2e_tests:
 e2e_scenarios:
     - admin-configures-dictionary-ai-default
 related_features:
+    - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - admin-user-management
     - ai-credit-wallet
@@ -36,7 +38,10 @@ related_features:
 This guide verifies that an owner can select a curated DeepSeek or Kie text model
 for Mastra-backed dictionary generation. Configuration is versioned and audited;
 credentials remain server-side; text and pronunciation-audio settings remain
-separate. A saved default applies to new Auto jobs; an enabled compatible explicit learner
+separate. Editable character/token prices and speech inventory are documented in
+[Shared pronunciation playback](shared-pronunciation-playback.md). Curated speech
+model/voice setup remains code/configuration work rather than arbitrary endpoint
+administration. A saved default applies to new Auto jobs; an enabled compatible explicit learner
 preference selects that model for new work instead. An admitted job retains its
 provider, model, adapter revision, and budget.
 
@@ -75,8 +80,10 @@ then restart the API and worker once. Later admin default changes need no restar
    available after its authenticated model-list probe. Kie's route-only probe
    remains unverified because it does not prove the key or structured output.
 3. Select an enabled provider, enable at least one selectable model, choose an
-   enabled default, review its read-only input/output credit rates and maximum
-   attempt reservation, enter a reason, and save.
+   enabled default, review its effective input/output credit rates and maximum
+   attempt reservation, enter a reason, and save. Price editing publishes a separate
+   immutable tariff revision through the pricing controls; it does not rewrite this
+   provider configuration or admitted work.
 4. Reload the page. Confirm the saved provider/model and incremented version
    remain selected. Check keyboard focus, a narrow viewport, and light/dark modes.
 

@@ -8,6 +8,7 @@ surfaces:
     - api
     - system
 source_paths:
+    - apps/backend/src/modules/speech/**
     - .agent/features/026-profile-account-controls/**
     - apps/web/src/fsd/features/account-controls/**
     - apps/web/src/fsd/pages/profile/**
@@ -28,6 +29,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-handle-security-and-removal
 related_features:
+    - shared-pronunciation-playback
     - flashcard-training-backend
     - user-authentication
     - magic-profile-page
@@ -80,7 +82,8 @@ journal; it is never a staging or production restore guarantee.
    current address is unchanged. `/security` redirects to this tab.
 4. In Account choose **Delete account**. The alert dialog explains immediate
    loss of account and shared-dictionary access, 30-day live purge, and
-   administrator-only cancellation in a warning block. Submission stays
+   administrator-only cancellation in a warning block. It also states that
+   generated audio and normalized text remain until administrative removal. Submission stays
    disabled until `DELETE` is typed exactly and the acknowledgement checkbox
    is checked. Escape/cancel keeps the account.
 5. Submit with a recently authenticated account that has no active admin
@@ -111,13 +114,16 @@ journal; it is never a staging or production restore guarantee.
 
 ## System verification
 
-When pronunciation audio is enabled, deletion also cancels audio work, waits for
-bounded local writer leases, and removes inventoried bytea/S3 audio (including
-physical versions) before dropping its SQL inventory. The audio and document
-namespaces are dispatched separately. Provider-side retention is separate from
-application erasure; a provider outage does not authorize new downloads or
-indefinitely block removal of already inventoried local objects. Disposable
-audio-purge integration tests cover this alongside the browser account journey.
+Shared successful pronunciation text/audio remains indefinitely after account
+removal. The confirmation explains this retention. Purge removes saved-source
+bindings, quotes and account associations, closes reserved speech credit holds
+without a late debit, and preserves global recordings for authorized reuse.
+Only audited administrative recording removal erases successful audio and its
+normalized text. Failed/temporary and legacy cleanup retain their separate
+inventory/recovery rules. See [Shared pronunciation playback](shared-pronunciation-playback.md)
+and [ADR-0031](../adr/0031-shared-pronunciation-and-retained-recordings.md).
+The existing browser scenario below verifies scheduling; retained-audio and
+restricted-purge-role semantics have separate disposable database evidence.
 
 The account purge worker is required in staging and production, not just
 development. Its dedicated database and storage credentials are distinct from

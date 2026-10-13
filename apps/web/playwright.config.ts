@@ -154,9 +154,12 @@ export default defineConfig({
                     : 'sentence-generation:v1',
                 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED:
                     sentenceServicesEnabled ? 'true' : 'false',
+                SPEECH_PLAYBACK_ENABLED: 'true',
+                SPEECH_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
                 DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
+                SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en,es,fr',
                 DICTIONARY_AUDIO_STORAGE: 'postgres',
                 DICTIONARY_AUDIO_FINGERPRINT_SECRET:
                     'audio-e2e-only-fingerprint-secret-32bytes',
@@ -227,9 +230,12 @@ export default defineConfig({
                 DICTIONARY_DOCUMENT_STORAGE_WORKER_SECRET_ACCESS_KEY:
                     documentWorkerSecretKey,
                 DICTIONARY_WORKER_DATABASE_URL: databaseUrl,
+                SPEECH_PLAYBACK_ENABLED: 'true',
+                SPEECH_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
                 DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
+                SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en,es,fr',
                 DICTIONARY_AUDIO_STORAGE: 'postgres',
                 DICTIONARY_AUDIO_FINGERPRINT_SECRET:
                     'audio-e2e-only-fingerprint-secret-32bytes',

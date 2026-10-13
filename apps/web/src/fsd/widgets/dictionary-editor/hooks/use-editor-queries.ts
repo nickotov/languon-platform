@@ -1,5 +1,4 @@
 import { dictionaryApi } from '@/fsd/entities/dictionary';
-import { useDictionaryAudio } from '@/fsd/features/dictionary-audio';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import type { useEditorState } from './use-editor-state';
@@ -7,8 +6,6 @@ import type { useEditorState } from './use-editor-state';
 export function useEditorQueries({
     search,
     cardLifecycle,
-    editing,
-    generationTarget,
     cardsQueryKey,
     dictionaryId,
     requestWithSession,
@@ -66,28 +63,7 @@ export function useEditorQueries({
         staleTime: 30_000,
     });
 
-    const audio = useDictionaryAudio(
-        dictionaryId,
-        requestWithSession,
-        JSON.stringify([
-            dictionary.data?.dictionary.version,
-            dictionary.data?.dictionary.settingsVersion,
-            dictionary.data?.dictionary.lifecycle,
-            cardLifecycle,
-            search,
-            editing === 'new' ? 'new' : editing?.id,
-            generationTarget?.cardId,
-            generationCapabilities.data?.pronunciationAudio?.playbackAvailable,
-            cards.data?.pages.flatMap((page) =>
-                page.data.map((card) => [
-                    card.id,
-                    card.version,
-                    card.settingsVersion,
-                    card.lifecycle,
-                ]),
-            ),
-        ]),
-    );
+    const audio = { requestWithSession };
 
     return { languages, dictionary, cards, generationCapabilities, audio };
 }

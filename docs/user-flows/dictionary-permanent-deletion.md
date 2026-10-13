@@ -8,6 +8,7 @@ surfaces:
     - api
     - system
 source_paths:
+    - apps/backend/src/modules/speech/**
     - .agent/features/030-dictionary-permanent-deletion/**
     - apps/backend/src/modules/dictionaries/**
     - apps/web/src/fsd/entities/dictionary/**
@@ -22,6 +23,7 @@ e2e_scenarios:
     - owner-deletes-selected-and-all-archived-cards
     - stale-or-busy-deletion-preserves-content
 related_features:
+    - shared-pronunciation-playback
     - flashcard-training-backend
     - dictionary-platform
     - dictionary-pronunciation-audio
@@ -32,13 +34,14 @@ related_features:
 
 ## What this verifies
 
-This guide verifies that a dictionary owner can irreversibly delete one, selected, or all archived dictionaries and cards. Selection and confirmation include records outside the loaded page or current search only through an exact server preview. Deletion removes learning content while preserving content-free provider and AI-credit accounting and tracked pronunciation-object cleanup.
+This guide verifies that a dictionary owner can irreversibly delete one, selected, or all archived dictionaries and cards. Selection and confirmation include records outside the loaded page or current search only through an exact server preview. Deletion removes learning content while preserving content-free provider and AI-credit accounting and indefinitely retained successful pronunciation text/audio. Deletion revokes its
+saved-source bindings; successful recordings are erased only by audited admin removal.
 
 Archive remains the reversible action. **Delete permanently** appears only for archived targets and has no restore path.
 
 ## Start the development environment
 
-Start the normal disposable local PostgreSQL and Redis infrastructure, apply current migrations, then start the backend, web app, and dictionary worker with the commands registered in the repository command index. Use deterministic generation and pronunciation adapters. Do not contact paid providers for this journey.
+Start the normal disposable local PostgreSQL, Redis and MinIO infrastructure, apply current migrations, then start the backend, web app, and dictionary worker with the commands registered in the repository command index. Use deterministic generation and pronunciation adapters. Do not contact paid providers for this journey.
 
 Create a fresh synthetic owner account. Give it enough AI credits only if generation is used to prepare dependent records.
 
@@ -46,7 +49,8 @@ Create a fresh synthetic owner account. Give it enough AI credits only if genera
 
 1. Create three dictionaries. Add an active and an archived card to the first dictionary. Archive two dictionaries and leave one active.
 2. Open **Archived** in the library. Confirm each archived row has a labelled checkbox and **Delete permanently** menu action, while active rows have neither control.
-3. Start single-dictionary deletion. Confirm the alert dialog names the dictionary, explains that every card and generated item will be removed, and keeps the destructive button disabled until the exact dictionary name is entered. Cancel and confirm nothing changes.
+3. Start single-dictionary deletion. Confirm the alert dialog names the dictionary, explains that every card and source-linked generated item will be removed while successful
+   pronunciation text/audio remains until administrative removal, and keeps the destructive button disabled until the exact dictionary name is entered. Cancel and confirm nothing changes.
 4. Select archived dictionaries across loaded pages. Confirm the toolbar announces the selected count, can clear selection, and deletes only the selected set after the required typed phrase.
 5. Use **Delete all archived dictionaries** with search text present. Confirm the dialog uses the server preview count for every archived dictionary, not only visible matches. After success, confirm the archived library is empty and announces the exact deleted count.
 6. In the remaining active dictionary, switch cards to **Archived**. Repeat single, selected, and all-archived deletion. Confirm the card dialog identifies source and translation, bulk deletion requires acknowledgement, active cards remain, and the dictionary version/list refreshes.
@@ -69,7 +73,10 @@ Prepare completed dictionary generation, revision/proposal, import idempotency, 
 - dictionary/card content, settings, revisions, proposals, completed generation payloads, document metadata, and share access are gone;
 - create/fork/import retry records are payload-free and invalidated, so replay cannot recreate erased content;
 - settled provider usage still contributes to its rolling limit and AI-credit ledger totals remain unchanged;
-- pronunciation bindings are gone, job text is scrubbed, object inventory remains until the cleanup worker deletes every physical version, and then inventory reaches its terminal cleanup outcome;
+- pronunciation bindings for deleted content are gone; successful normalized text,
+  recording metadata and private audio remain reusable indefinitely. Failed/temporary
+  upload cleanup is separate; successful physical-version erasure requires audited
+  administrator removal, not content deletion;
 - an independent fork still exists and no longer references the deleted source dictionary.
 
 ## Expected failure and edge cases
@@ -89,7 +96,9 @@ Run the mapped Playwright journey, focused contracts/backend/web tests, disposab
 
 ## Troubleshooting
 
-If deletion reports busy, let the dictionary worker finish or cancel work through the existing generation UI, and wait for document capability/object cleanup to complete before retrying. If an all-archived command conflicts, reload the archived view and open a new confirmation so it uses a fresh preview. If audio remains temporarily after logical deletion, inspect the existing pronunciation cleanup queue; do not delete its inventory row manually.
+If deletion reports busy, let the dictionary worker finish or cancel work through the existing generation UI, and wait for document capability/object cleanup to complete before retrying. If an all-archived command conflicts, reload the archived view and open a new confirmation so it uses a fresh preview. Successful pronunciation audio remaining after logical deletion is expected
+under the retained-recording policy. Use authorized admin inventory removal when
+erasure is intended; do not delete SQL inventory rows manually.
 
 ## Cleanup
 

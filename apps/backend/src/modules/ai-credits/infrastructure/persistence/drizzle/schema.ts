@@ -33,6 +33,8 @@ export const aiCreditMeasurementEnum = pgEnum('ai_credit_measurement', [
     'provider_reported',
     'estimated',
     'unmetered',
+    'speech_success',
+    'speech_no_charge',
 ]);
 export const aiCreditHistoryKindEnum = pgEnum('ai_credit_history_kind', [
     'grant',
@@ -168,7 +170,7 @@ export const aiCreditReservationsTable = pgTable(
     (table) => [
         check(
             'ai_credit_reservations_job_kind_closed',
-            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check')`,
+            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check', 'speech-generation')`,
         ),
         check(
             'ai_credit_reservations_attempt_positive',
@@ -192,7 +194,7 @@ export const aiCreditReservationsTable = pgTable(
         ),
         check(
             'ai_credit_reservations_terminal_state',
-            sql`(${table.state} = 'active' and ${table.settledAt} is null and ${table.measurement} is null and ${table.chargedCredits} is null and ${table.measuredCredits} is null) or (${table.state} = 'released' and ${table.settledAt} is not null and ${table.measurement} is null and ${table.chargedCredits} = 0 and ${table.measuredCredits} is null) or (${table.state} = 'settled' and ${table.settledAt} is not null and ${table.measurement} is not null and ${table.chargedCredits} between 0 and 9007199254740991 and ((${table.measurement} = 'provider_reported' and ${table.measuredCredits} between 0 and 9007199254740991) or (${table.measurement} in ('estimated', 'unmetered') and ${table.measuredCredits} is null)))`,
+            sql`(${table.state} = 'active' and ${table.settledAt} is null and ${table.measurement} is null and ${table.chargedCredits} is null and ${table.measuredCredits} is null) or (${table.state} = 'released' and ${table.settledAt} is not null and ${table.measurement} is null and ${table.chargedCredits} = 0 and ${table.measuredCredits} is null) or (${table.state} = 'settled' and ${table.settledAt} is not null and ${table.measurement} is not null and ${table.chargedCredits} between 0 and 9007199254740991 and ((${table.measurement} = 'provider_reported' and ${table.measuredCredits} between 0 and 9007199254740991) or (${table.measurement} in ('estimated', 'unmetered', 'speech_success', 'speech_no_charge') and ${table.measuredCredits} is null)))`,
         ),
         uniqueIndex('ai_credit_reservations_job_attempt_unique').on(
             table.jobId,

@@ -289,3 +289,33 @@ This document describes the current structure and boundaries. ADRs under
 relevant accepted ADRs before changing a boundary. Keep feature-local choices in
 the active `EXEC_PLAN.md`; promote choices that future features must respect to
 an ADR before implementation diverges from the documented architecture.
+
+## Shared pronunciation and pricing
+
+The speech module owns canonical normalized text, immutable recordings,
+generation coordination and private object inventory. Dictionary and learning
+modules resolve saved references and enforce live source access, including hidden
+reference-answer and checked-attempt boundaries. Provider/storage adapters stay
+behind application ports. Root worker composition retains bounded execution.
+
+Approved equivalent text/language recordings are reused across actors before
+resolving a new default synthesis profile. Successful text/audio is retained
+indefinitely; account/content removal revokes bindings and removes associations
+without erasing these derivatives. Privileged administrative deletion confirms
+link impact and removes every object version through durable inventory. Private
+text may remain in retained derivatives. See
+[ADR-0031](adr/0031-shared-pronunciation-and-retained-recordings.md).
+
+The credit module owns immutable editable tariff revisions, independent of
+provider operational estimates and pricing-schema versions. New admissions pin
+effective rates; existing text jobs preserve their usage settlement semantics.
+Paid speech reserves an exact confirmed quote and settles only after successful
+publication, with permanent billing closure after release/deadline. Cached/joined
+playback is free. See
+[ADR-0032](adr/0032-model-price-revisions-and-speech-settlement.md).
+
+Standard development storage is separate persistent MinIO with a private,
+versioned bucket and scoped application credentials. Production uses private S3
+with independently verified Selectel behavior; disposable test storage does not
+share development or production data. Operational activation and rollback gates
+are documented in [shared pronunciation operations](shared-pronunciation-operations.md).

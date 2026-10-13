@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision sentence-practice-backend sha256:bf3394d7a0503c39
+// @user-flow-revision sentence-practice-backend sha256:afbbf2170d969bb0
 
 import {
     AuthenticationSuccessResponseSchema,

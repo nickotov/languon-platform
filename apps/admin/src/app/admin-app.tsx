@@ -22,6 +22,11 @@ const AiSettingsPage = lazy(() =>
         default: module.AiSettingsPage,
     })),
 );
+const SpeechRecordingsPage = lazy(() =>
+    import('@/pages/speech-recordings/speech-recordings-page').then(
+        (module) => ({ default: module.SpeechRecordingsPage }),
+    ),
+);
 const DashboardPage = lazy(() =>
     import('@/pages/dashboard/dashboard-page').then((module) => ({
         default: module.DashboardPage,
@@ -69,6 +74,7 @@ function RefineApplication() {
                 { name: 'users', list: '/users', show: '/users/:id' },
                 { name: 'audit-events', list: '/audit' },
                 { name: 'ai-settings', list: '/ai-settings' },
+                { name: 'speech-recordings', list: '/speech-recordings' },
             ]}
             routerProvider={routerProvider}
             options={{
@@ -95,6 +101,10 @@ function RefineApplication() {
                         <Route path='users' element={<UsersPage />} />
                         <Route path='users/:id' element={<UserDetailPage />} />
                         <Route path='audit' element={<AuditPage />} />
+                        <Route
+                            path='speech-recordings'
+                            element={<SpeechRecordingsPage />}
+                        />
                         <Route
                             path='ai-settings'
                             element={<AiSettingsPage />}

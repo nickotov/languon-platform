@@ -4,7 +4,10 @@ import styles from './sentence-session-results.module.css';
 import { useEffect, useRef, useState } from 'react';
 import { Repeat, Sparkles } from 'lucide-react';
 import { Badge, Button, InlineAlert, LoadingState } from '@/fsd/shared/ui';
-import type { SentenceSessionController } from '../../types';
+import type {
+    SentenceSessionController,
+    SentenceAudioRenderer,
+} from '../../types';
 import {
     AiResultPanel,
     languageDirection,
@@ -17,8 +20,10 @@ import { useSentenceCopy } from '../sentence-copy';
 
 export function SentenceSessionResults({
     controller: c,
+    renderAudio,
 }: {
     controller: SentenceSessionController;
+    renderAudio?: SentenceAudioRenderer | undefined;
 }) {
     const { t } = useSentenceCopy();
     const heading = useRef<HTMLHeadingElement>(null);
@@ -31,6 +36,25 @@ export function SentenceSessionResults({
         void c.cancel();
     }
     const last = c.roundItems.at(-1);
+    const promptAudio =
+        last && c.sessionId
+            ? renderAudio?.({
+                  kind: 'prompt',
+                  id: last.exercise.id,
+                  sessionId: c.sessionId,
+              })
+            : null;
+    const referenceAudio =
+        last && c.sessionId
+            ? renderAudio?.({
+                  kind: 'reference',
+                  id: last.exercise.id,
+                  sessionId: c.sessionId,
+              })
+            : null;
+    const answerAudio = last?.attempt
+        ? renderAudio?.({ kind: 'checked-answer', id: last.attempt.id })
+        : null;
     return (
         <section
             aria-labelledby='sentence-results-title'
@@ -148,16 +172,24 @@ export function SentenceSessionResults({
                             >
                                 {last.exercise.sourceText}
                             </p>
+                            {promptAudio}
                             {last.attempt ? (
-                                <AiResultPanel attempt={last.attempt} />
+                                <AiResultPanel
+                                    attempt={last.attempt}
+                                    audio={answerAudio}
+                                />
                             ) : null}
                             {last.comparison ? (
                                 <SentenceReferenceComparison
+                                    audio={referenceAudio}
                                     comparison={last.comparison}
                                     exercise={last.exercise}
                                 />
                             ) : last.reference ? (
-                                <ReferencePanel review={last.reference} />
+                                <ReferencePanel
+                                    review={last.reference}
+                                    audio={referenceAudio}
+                                />
                             ) : null}
                             {last.skipped ? (
                                 <div>

@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AiCreditHistory } from '../src/pages/users/ui/ai-credits-panel/ai-credit-history';
 import { AiCreditsPanel } from '../src/pages/users/ui/ai-credits-panel/ai-credits-panel';
 import { accessTokenStore } from '../src/shared/auth/access-token-store';
 import { adminI18nProvider } from '../src/shared/i18n/admin-i18n-provider';
@@ -41,6 +42,41 @@ beforeEach(() => {
 });
 
 describe('AI credits panel', () => {
+    it('renders human pronunciation settlement labels in credit history', () => {
+        const base = {
+            id: '00000000-0000-4000-8000-000000000042',
+            kind: 'settlement' as const,
+            amountCredits: 0,
+            sourceKind: null,
+            reason: null,
+            occurredAt: '2026-01-01T00:00:00.000Z',
+            expiresAt: null,
+        };
+        render(
+            <AiCreditHistory
+                entries={[
+                    { ...base, measurementSource: 'speech_success' },
+                    {
+                        ...base,
+                        id: '00000000-0000-4000-8000-000000000043',
+                        measurementSource: 'speech_no_charge',
+                    },
+                ]}
+                onPageChange={vi.fn()}
+                page={1}
+                pageSize={25}
+                total={2}
+            />,
+        );
+        expect(screen.getByText('Pronunciation generated')).toBeInTheDocument();
+        expect(
+            screen.getByText('Pronunciation not charged'),
+        ).toBeInTheDocument();
+        expect(
+            screen.queryByText('aiCredits.measurement.speech_success'),
+        ).not.toBeInTheDocument();
+    });
+
     it('shows inactive enforcement and the exhausted limited state', async () => {
         vi.stubGlobal(
             'fetch',

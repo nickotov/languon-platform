@@ -3,7 +3,11 @@ export const maximumAiCreditAmount = BigInt(Number.MAX_SAFE_INTEGER);
 
 export type AiCreditPolicyMode = 'limited' | 'unlimited';
 export type AiCreditMeasurement =
-    'provider_reported' | 'estimated' | 'unmetered';
+    | 'provider_reported'
+    | 'estimated'
+    | 'unmetered'
+    | 'speech_success'
+    | 'speech_no_charge';
 export type AiCreditGrantSource =
     'admin' | 'subscription' | 'purchase' | 'migration';
 
@@ -127,6 +131,13 @@ export function settleAiCreditReservation(input: {
             'Settlement credit amount is invalid.',
         );
     }
+    if (
+        input.measurement === 'speech_success' ||
+        input.measurement === 'speech_no_charge'
+    )
+        throw new AiCreditInvalidAmountError(
+            'Speech uses success-only settlement.',
+        );
     if (input.measurement === 'provider_reported') {
         if (input.measuredCredits === null || input.measuredCredits < 0n) {
             throw new AiCreditInvalidAmountError(

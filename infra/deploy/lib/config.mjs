@@ -113,7 +113,43 @@ export async function validateAdminPasswordFile(path) {
     }
 }
 
+export function normalizeRetainedSpeechFingerprintSecrets(value) {
+    try {
+        const parsed = JSON.parse(
+            value === undefined || value === '' ? '[]' : value,
+        );
+        if (
+            !Array.isArray(parsed) ||
+            parsed.length > 16 ||
+            parsed.some(
+                (secret) =>
+                    typeof secret !== 'string' ||
+                    secret.length < 32 ||
+                    secret.length > 4096,
+            )
+        )
+            throw new Error('invalid');
+        return JSON.stringify(parsed);
+    } catch {
+        throw new Error('Invalid retained speech fingerprint configuration.');
+    }
+}
+
 export function assertDeployConfig(environment, config) {
+    const retainedSpeechFingerprintSecrets =
+        normalizeRetainedSpeechFingerprintSecrets(
+            config.DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS,
+        );
+    for (const key of [
+        'SPEECH_PLAYBACK_ENABLED',
+        'SPEECH_GENERATION_ENABLED',
+    ]) {
+        if (
+            config[key] !== undefined &&
+            !['true', 'false'].includes(config[key])
+        )
+            throw new Error(`${key} must be true or false`);
+    }
     const common = [
         'ADMIN_BASE_URL',
         'ADMIN_HTPASSWD_PATH',
@@ -484,5 +520,9 @@ export function assertDeployConfig(environment, config) {
             }
         }
     }
-    return config;
+    return {
+        ...config,
+        DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS:
+            retainedSpeechFingerprintSecrets,
+    };
 }

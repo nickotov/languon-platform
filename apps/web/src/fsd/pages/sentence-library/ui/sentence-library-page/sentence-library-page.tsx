@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { SpeechControl } from '@/fsd/features/speech-playback';
 import componentStyles from './sentence-library-page.module.css';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -145,12 +146,26 @@ export function SentenceLibraryPage({
                 </ErrorState>
             </main>
         );
+    function renderAudio(exerciseId: string, field: 'prompt' | 'reference') {
+        return (
+            <SpeechControl
+                source={{
+                    kind: 'sentence-library',
+                    access: target,
+                    exerciseId,
+                    field,
+                }}
+                requestWithSession={requestWithSession}
+            />
+        );
+    }
     const identity = `${userId}:${dictionaryHref}:${capability?.revision ?? 0}`;
     return (
         <main className={componentStyles.page}>
             <SentenceLibrary
                 key={identity}
                 target={target}
+                renderAudio={renderAudio}
                 dictionary={query.data}
                 requestWithSession={requestWithSession}
                 identity={identity}

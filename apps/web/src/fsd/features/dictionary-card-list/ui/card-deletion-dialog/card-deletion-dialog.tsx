@@ -110,6 +110,7 @@ export function CardDeletionDialog({
             size='sm'
             title={t('dictionary.deletion.cardTitle', { count })}
         >
+            <p>{t('speech.retention')}</p>
             <Checkbox
                 checked={deletion.acknowledged}
                 disabled={pending}

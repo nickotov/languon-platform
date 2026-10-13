@@ -1,3 +1,4 @@
+// @user-flow-revision shared-pronunciation-playback sha256:0be740944c68bde6
 // @user-flow-revision sentence-practice-web sha256:30e6921701e3a8f5
 
 import {
@@ -7,6 +8,11 @@ import {
     type Locator,
     type TestInfo,
 } from '@playwright/test';
+
+import {
+    installSpeechAudioProbe,
+    playSpeechControl,
+} from './support/speech-browser-audio';
 
 const password = 'E2e!Sentence-password-2026';
 const runId = process.env.AUTH_E2E_RUN_ID!;
@@ -342,17 +348,33 @@ test.describe('sentence practice and model preferences', () => {
     });
 
     // @user-flow sentence-practice-web/owner-reader-reference-practice
+    // @user-flow shared-pronunciation-playback/sentence-surfaces-playback
     test('checks owner practice and gives a zero-credit reader a free personal saved reference', async ({
         browser,
         page,
     }, info) => {
         test.setTimeout(120_000);
         const assertErrors = observeErrors(page);
+        await installSpeechAudioProbe(page.context());
         const token = await signup(page, email(info, 'practice-owner'));
         const name = `Sentence practice ${runId}`;
         const dictionaryId = await createDictionary(page, name);
         await setDarkTheme(page);
         const practice = await startSentence(page, info);
+        await expect(
+            practice.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+        ).toHaveCount(1);
+        await playSpeechControl(
+            page,
+            practice.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+            'sentence-practice',
+        );
         const requiredHint = practice.getByRole('button', {
             name: 'book: show hint · Required word',
         });
@@ -523,6 +545,43 @@ test.describe('sentence practice and model preferences', () => {
         await expect(
             practice.getByRole('region', { name: 'Reference translation' }),
         ).not.toBeVisible();
+        await playSpeechControl(
+            page,
+            practice
+                .getByRole('region', { name: 'AI feedback' })
+                .getByRole('button', {
+                    name: 'Play pronunciation',
+                    exact: true,
+                }),
+            'checked-answer',
+        );
+        await practice
+            .getByRole('button', { name: 'My practice history', exact: true })
+            .click();
+        const ownerHistory = page.getByRole('dialog', {
+            name: 'My practice history',
+            exact: true,
+        });
+        await ownerHistory
+            .getByRole('button', { name: 'AI checks', exact: true })
+            .click();
+        await ownerHistory
+            .locator('summary')
+            .filter({ hasText: 'View details' })
+            .click();
+        await playSpeechControl(
+            page,
+            ownerHistory
+                .getByRole('region', { name: 'AI feedback' })
+                .getByRole('button', {
+                    name: 'Play pronunciation',
+                    exact: true,
+                }),
+            'checked-answer',
+        );
+        await ownerHistory
+            .getByRole('button', { name: 'Back to practice', exact: true })
+            .click();
         const ownerBase = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences`;
         const ownerHeaders = { Authorization: `Bearer ${token}` };
         const attempts = await page.request.get(`${ownerBase}/attempts`, {
@@ -555,6 +614,7 @@ test.describe('sentence practice and model preferences', () => {
         const readerContext = await browser.newContext({
             viewport: { width: 390, height: 844 },
         });
+        await installSpeechAudioProbe(readerContext);
         const reader = await readerContext.newPage();
         const refreshPaths =
             /\/learning\/shared-dictionaries\/[^/]+\/sentences\/(?:attempts|reviews|prepare|progress)/;
@@ -619,6 +679,50 @@ test.describe('sentence practice and model preferences', () => {
             reader.getByText('book is useful.', { exact: true }),
         ).toBeVisible();
         await capture(reader, info, 'shared-sentence-library-mobile');
+        await reader.setViewportSize({ width: 1280, height: 720 });
+        await reader.getByRole('button', { name: 'View', exact: true }).click();
+        const preview = reader.getByRole('dialog', {
+            name: 'Sentence preview',
+            exact: true,
+        });
+        await expect(
+            preview.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+        ).toHaveCount(1);
+        await playSpeechControl(
+            reader,
+            preview.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+            'sentence-library',
+        );
+        await preview
+            .getByRole('button', { name: 'Example translation', exact: true })
+            .click();
+        await expect(
+            preview.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+        ).toHaveCount(2);
+        await playSpeechControl(
+            reader,
+            preview
+                .getByRole('button', {
+                    name: 'Play pronunciation',
+                    exact: true,
+                })
+                .last(),
+            'sentence-library',
+        );
+        await preview
+            .getByRole('button', { name: 'Close', exact: true })
+            .click();
+        await reader.setViewportSize({ width: 390, height: 844 });
+
         await reader
             .getByRole('navigation', { name: 'Breadcrumb', exact: true })
             .getByRole('link', { name, exact: true })
@@ -724,6 +828,16 @@ test.describe('sentence practice and model preferences', () => {
         await expect(
             readerPractice.getByRole('region', { name: 'Free comparison' }),
         ).toContainText(reference.review.referenceTranslation);
+        await playSpeechControl(
+            reader,
+            readerPractice
+                .getByRole('region', { name: 'Free comparison' })
+                .getByRole('button', {
+                    name: 'Play pronunciation',
+                    exact: true,
+                }),
+            'sentence-practice',
+        );
         await expect(
             readerPractice.getByText(
                 'Matches the saved example after normalization.',

@@ -1,3 +1,4 @@
+import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import {
     textAiProviderBudgetAllows as dictionaryGenerationProviderBudgetAllows,
     type TextAiProviderBudgetUsage as DictionaryGenerationProviderBudgetUsage,
@@ -726,7 +727,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async enqueue(
         input: Parameters<DictionaryGenerationStore['enqueue']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             await lockTextAiCapacity(tx);
             abort(input.context);
@@ -971,7 +972,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async enqueueCardAuthoring(
         input: Parameters<DictionaryGenerationStore['enqueueCardAuthoring']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             const format =
                 input.format ?? dictionaryCardAuthoringGenerationFormatV1;
             const target = input.target ?? { kind: 'create' as const };
@@ -1344,7 +1345,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async enqueuePastedTerms(
         input: Parameters<DictionaryGenerationStore['enqueuePastedTerms']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             await lockTextAiCapacity(tx);
             await tx
@@ -1583,7 +1584,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async enqueueImportPairs(
         input: Parameters<DictionaryGenerationStore['enqueueImportPairs']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             await lockTextAiCapacity(tx);
             const [owner] = await tx
@@ -1957,7 +1958,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             DictionaryGenerationStore['enqueueImportPairsRetry']
         >[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             await lockTextAiCapacity(tx);
             const [owner] = await tx
@@ -2169,7 +2170,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     }
 
     public async read(input: Parameters<DictionaryGenerationStore['read']>[0]) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             const [job] = await tx
                 .select()
@@ -2193,7 +2194,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async latestForCard(
         input: Parameters<DictionaryGenerationStore['latestForCard']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             const [job] = await tx
                 .select()
@@ -2225,7 +2226,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async cancel(
         input: Parameters<DictionaryGenerationStore['cancel']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await tx.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
@@ -2334,7 +2335,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async discard(
         input: Parameters<DictionaryGenerationStore['discard']>[0],
     ) {
-        const result = await this.database.transaction(async (tx) => {
+        const result = await modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             const job = await this.lockOwnedJob(tx, input.ownerId, input.jobId);
             const proposal = await this.lockProposal(tx, job.id);
@@ -2381,7 +2382,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async acceptSingleCard(
         input: Parameters<DictionaryGenerationStore['acceptSingleCard']>[0],
     ) {
-        const result = await this.database.transaction(async (tx) => {
+        const result = await modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             await lockTextAiCapacity(tx);
             abort(input.context);
@@ -2660,7 +2661,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async acceptCardAuthoring(
         input: Parameters<DictionaryGenerationStore['acceptCardAuthoring']>[0],
     ) {
-        const result = await this.database.transaction(async (tx) => {
+        const result = await modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             await lockTextAiCapacity(tx);
             await tx
@@ -3119,7 +3120,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         const selected = [...input.selected].sort(
             (left, right) => left.rowIndex - right.rowIndex,
         );
-        const result = await this.database.transaction(async (tx) => {
+        const result = await modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             await lockTextAiCapacity(tx);
             await tx
@@ -3483,7 +3484,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async claim(
         input: Parameters<DictionaryGenerationStore['claim']>[0],
     ): Promise<ClaimedDictionaryGenerationJob | null> {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             if (input.creditSettlementRevision === 1)
                 await tx.execute(
@@ -3997,7 +3998,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async markProviderDispatch(
         input: Parameters<DictionaryGenerationStore['markProviderDispatch']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             abort(input.context);
             const [job] = await tx
                 .select()
@@ -4028,7 +4029,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async complete(
         input: Parameters<DictionaryGenerationStore['complete']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await tx.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
@@ -4401,7 +4402,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     }
 
     public async fail(input: Parameters<DictionaryGenerationStore['fail']>[0]) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             await tx.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
@@ -4519,7 +4520,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async releaseWorkerLeases(
         input: Parameters<DictionaryGenerationStore['releaseWorkerLeases']>[0],
     ) {
-        await this.database.transaction(async (tx) => {
+        await modelPricingTransaction(this.database, async (tx) => {
             await tx.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
@@ -4623,7 +4624,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async expireReviewPayloads(
         input: Parameters<DictionaryGenerationStore['expireReviewPayloads']>[0],
     ) {
-        return this.database.transaction(async (tx) => {
+        return modelPricingTransaction(this.database, async (tx) => {
             const rows = await tx
                 .select({ jobId: dictionaryGenerationProposalsTable.jobId })
                 .from(dictionaryGenerationProposalsTable)

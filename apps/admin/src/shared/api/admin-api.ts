@@ -4,6 +4,13 @@ import {
     isAuthenticationRequiredError,
 } from '@languon/browser-auth';
 import {
+    AdminSpeechListQuerySchema,
+    AdminSpeechListResponseSchema,
+    AdminSpeechDeleteRequestSchema,
+    AdminSpeechDeleteResponseSchema,
+    ModelPricesResponseSchema,
+    ModelPricePublishRequestSchema,
+    ModelPriceSchema,
     AdminAuditEventsResponseSchema,
     AdminSentenceDictionariesQuerySchema,
     AdminSentenceDictionariesResponseSchema,
@@ -324,6 +331,44 @@ export const adminApi = {
             'POST',
             signal,
         ),
+    speechRecordings: (
+        query: (typeof AdminSpeechListQuerySchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorized(
+            `/admin/speech/recordings?${queryString(AdminSpeechListQuerySchema.parse(query))}`,
+            AdminSpeechListResponseSchema,
+            signal,
+        ),
+    deleteSpeechRecordings: (
+        body: (typeof AdminSpeechDeleteRequestSchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorizedSingleRequest(
+            '/admin/speech/recordings/delete',
+            AdminSpeechDeleteRequestSchema.parse(body),
+            AdminSpeechDeleteRequestSchema,
+            AdminSpeechDeleteResponseSchema,
+            signal,
+        ),
+    speechRecordingContent: (id: string, signal?: AbortSignal) =>
+        authorizedAudio(
+            `/admin/speech/recordings/${encodeURIComponent(id)}/content`,
+            signal,
+        ),
+    modelPrices: (signal?: AbortSignal) =>
+        authorized('/admin/ai/model-prices', ModelPricesResponseSchema, signal),
+    publishModelPrice: (
+        body: (typeof ModelPricePublishRequestSchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorizedSingleRequest(
+            '/admin/ai/model-prices',
+            ModelPricePublishRequestSchema.parse(body),
+            ModelPricePublishRequestSchema,
+            ModelPriceSchema,
+            signal,
+        ),
     apiUrl,
 };
 
@@ -392,4 +437,66 @@ function queryString(values: object): string {
         if (value !== undefined && value !== '') query.set(key, String(value));
     }
     return query.toString();
+}
+
+// Security-state changes must be reviewed again after reauthentication; never replay them.
+async function authorizedSingleRequest<TBody, TResponse>(
+    path: string,
+    body: TBody,
+    bodySchema: { parse(value: unknown): TBody },
+    responseSchema: { parse(value: unknown): TResponse },
+    signal?: AbortSignal,
+) {
+    const accessToken =
+        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+    return client.request(path, {
+        accessToken,
+        body,
+        bodySchema,
+        method: 'POST',
+        responseSchema,
+        signal,
+    });
+}
+
+async function authorizedAudio(
+    path: string,
+    signal?: AbortSignal,
+): Promise<Blob> {
+    const accessToken =
+        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+    const response = await fetch(`${apiUrl}${path}`, {
+        headers: {
+            [resolveAdminAccessTokenHeader(import.meta.env.PROD)]:
+                `Bearer ${accessToken}`,
+        },
+        credentials: 'include',
+        ...(signal ? { signal } : {}),
+        redirect: 'error',
+        cache: 'no-store',
+    });
+    if (!response.ok) {
+        const detail = AdminErrorResponseSchema.safeParse(
+            await response.json().catch(() => null),
+        );
+        throw new AdminApiError(
+            response.status,
+            detail.success
+                ? detail.data.error
+                : {
+                      code: 'admin_access_denied',
+                      correlationId: 'audio-preview',
+                      message:
+                          'Audio preview is unavailable. Refresh the page or sign in again.',
+                  },
+        );
+    }
+    const blob = await response.blob();
+    if (
+        !blob.type.startsWith('audio/') ||
+        blob.size > 5 * 1024 * 1024 ||
+        blob.size === 0
+    )
+        throw new Error('The recording response is invalid.');
+    return blob;
 }

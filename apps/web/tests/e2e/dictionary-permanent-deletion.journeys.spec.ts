@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision dictionary-permanent-deletion sha256:d13617b45d9dd4aa
+// @user-flow-revision dictionary-permanent-deletion sha256:79ffe4e1bfd70c3a
 
 const password = 'E2e!Dictionary-password-2026';
 const runId =

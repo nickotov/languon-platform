@@ -1,4 +1,6 @@
 'use client';
+import type { FlashcardItem, Presentation } from '../../types';
+import type { ReactNode } from 'react';
 
 import styles from './training-launcher.module.css';
 
@@ -23,6 +25,7 @@ import { PracticeSession } from '../practice-session/practice-session';
 import { SetupDialog } from '../setup-dialog/setup-dialog';
 
 export interface TrainingLauncherProps {
+    renderAudio?(item: FlashcardItem, presentation: Presentation): ReactNode;
     target: TrainingTarget;
     requestWithSession: RequestWithSession;
     signedIn: boolean;
@@ -64,6 +67,7 @@ export function TrainingLauncher(props: TrainingLauncherProps) {
 function Launcher({
     target,
     requestWithSession,
+    renderAudio,
     signedIn,
     dictionaryTitle,
     sourceLanguage,
@@ -221,6 +225,7 @@ function Launcher({
                 <PracticeSession
                     key={running.id}
                     api={api}
+                    renderAudio={renderAudio}
                     sessionId={running.id}
                     payload={running.payload}
                     fullscreenRequest={running.fullscreen}

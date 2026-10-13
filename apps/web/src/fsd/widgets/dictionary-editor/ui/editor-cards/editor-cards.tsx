@@ -2,11 +2,12 @@ import {
     DictionaryApiError,
     dictionaryErrorMessage,
 } from '@/fsd/entities/dictionary';
-import { DictionaryAudioControl } from '@/fsd/features/dictionary-audio';
+import { SpeechControl } from '@/fsd/features/speech-playback';
 import { DictionaryCardList } from '@/fsd/features/dictionary-card-list';
 import { Button, ErrorState } from '@/fsd/shared/ui';
 import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
+import { dictionarySpeechSource } from '../../lib/dictionary-speech-source';
 import { syncGenerationUrl } from '../../lib/generation-url';
 import styles from '../dictionary-editor-common.module.css';
 import { EditorEmptyCards } from '../editor-empty-cards/editor-empty-cards';
@@ -87,8 +88,6 @@ export function EditorCards({
 
     const renderAudio: ListProps['renderAudio'] = (card, field) => {
         const available =
-            generationCapabilities.data?.pronunciationAudio
-                ?.playbackAvailable &&
             !archived &&
             card.lifecycle === 'active' &&
             cardLifecycle === 'active' &&
@@ -96,10 +95,11 @@ export function EditorCards({
 
         if (available) {
             return (
-                <DictionaryAudioControl
-                    card={card}
-                    field={field}
-                    playback={audio}
+                <SpeechControl
+                    key={`${card.id}:${card.version}:${card.settingsVersion}:${current.version}:${current.settingsVersion}`}
+                    source={dictionarySpeechSource(current, card, field)}
+                    fieldLabel={t(`dictionary.field.${field}`)}
+                    requestWithSession={audio.requestWithSession}
                 />
             );
         }

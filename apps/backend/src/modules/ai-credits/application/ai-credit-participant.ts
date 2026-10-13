@@ -1,5 +1,8 @@
 export type AiCreditJobKind =
-    'dictionary-generation' | 'sentence-generation' | 'sentence-check';
+    | 'dictionary-generation'
+    | 'sentence-generation'
+    | 'sentence-check'
+    | 'speech-generation';
 
 import type {
     AiCreditGrantSource,
@@ -114,4 +117,14 @@ export interface AiCreditTransactionParticipant {
         reservationId: string;
     }): Promise<void>;
     purgeOwner(ownerId: string): Promise<void>;
+}
+
+export interface SpeechCreditTransactionParticipant extends AiCreditTransactionParticipant {
+    settleSpeechAttempt(input: {
+        ownerId: string;
+        reservationId: string;
+        settledAt: Date;
+        billingDeadline?: Date;
+        outcome: 'success' | 'failure' | 'deadline';
+    }): Promise<AiCreditSettlementResult>;
 }

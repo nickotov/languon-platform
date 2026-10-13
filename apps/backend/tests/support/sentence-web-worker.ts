@@ -16,6 +16,9 @@ import {
     dictionaryAiWorkerObservationsTable,
 } from '../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { sentenceExecutionObservationId } from '../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import { loadDictionaryAudioEnvironment } from '../../src/modules/speech/infrastructure/audio/dictionary-audio-environment';
+import { createDictionaryAudioAdapters } from '../../src/modules/speech/infrastructure/audio/dictionary-audio-adapters';
+import { createSpeechInfrastructure } from '../../src/modules/speech/infrastructure/composition';
 
 const databaseUrl = process.env.AUTH_E2E_DATABASE_URL;
 const runId = process.env.AUTH_E2E_RUN_ID;
@@ -42,6 +45,42 @@ if (
 }
 const sql = createPostgresClient({ databaseUrl, maxConnections: 3 });
 const database = createDrizzleDatabase(sql, databaseSchema);
+// This guarded fixture must never create a live provider or external storage client.
+if (
+    (process.env.DICTIONARY_AUDIO_PROVIDER ?? 'fixture') !== 'fixture' ||
+    (process.env.DICTIONARY_AUDIO_STORAGE ?? 'postgres') !== 'postgres' ||
+    [
+        'DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS',
+        'DICTIONARY_AUDIO_RETAINED_S3_CONFIGURATIONS',
+    ].some((name) => {
+        const value = process.env[name]?.trim();
+        return value !== undefined && value !== '' && value !== '[]';
+    })
+)
+    throw new Error(
+        'Sentence speech fixtures require local fixture audio storage and provider.',
+    );
+const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
+    deployed: false,
+    role: 'worker',
+});
+const audioAdapters = createDictionaryAudioAdapters({
+    environment: audioEnvironment,
+    database,
+    role: 'worker',
+});
+const speech = createSpeechInfrastructure({
+    database,
+    dictionaryHmacSecret:
+        process.env.DICTIONARY_HMAC_SECRET ??
+        audioEnvironment.fingerprintSecret,
+    environment: audioEnvironment,
+    storage: audioAdapters.storage,
+    provider: audioAdapters.provider,
+    providers: audioAdapters.providers,
+    playbackEnabled: process.env.SPEECH_PLAYBACK_ENABLED === 'true',
+    generationEnabled: process.env.SPEECH_GENERATION_ENABLED === 'true',
+});
 const workerId = `sentence-web-e2e:${runId}`;
 const model = textAiModelCatalog[0]!;
 const controller = new AbortController();
@@ -280,8 +319,10 @@ try {
         await prepareFixtures();
         await preparation.tick({ now: new Date(), signal: controller.signal });
         await worker.processNext(controller.signal);
+        await speech.worker.runOnce(controller.signal);
         await delay(50);
     }
 } finally {
+    audioAdapters.close();
     await sql.end({ timeout: 5 });
 }

@@ -211,6 +211,8 @@ export const profileFeatureMessages = {
     'profile.exportDescription':
         'Exports are not available yet. No archive has been requested.',
     'profile.requestExport': 'Request export',
+    'speech.retention':
+        'Pronunciation already requested may finish after deletion. Generated audio and its normalized text are retained indefinitely for reuse. Only administrators can remove them.',
     'profile.deleteTitle': 'Delete account',
     'profile.deleteDescription':
         'Access ends immediately; live account data is scheduled for purge after 30 days.',
@@ -220,7 +222,8 @@ export const profileFeatureMessages = {
     'profile.deleteConfirmTitle': 'Delete your account?',
     'profile.deleteLossTitle': 'What you will lose',
     'profile.deleteLossAccess': 'Access ends immediately.',
-    'profile.deleteLossData': 'Learning and account data purge after 30 days.',
+    'profile.deleteLossData':
+        'Your account data and other learning content are purged after 30 days.',
     'profile.deleteLossRecovery':
         'Only an administrator can cancel before cleanup starts.',
     'profile.deleteConfirmHint': 'Enter “DELETE” exactly as shown.',

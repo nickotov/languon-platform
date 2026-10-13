@@ -1,3 +1,4 @@
+import { createSpeechInfrastructure } from '../../modules/speech/infrastructure/composition';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
@@ -153,6 +154,20 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const audioDeployed = ['staging', 'production'].includes(
         process.env.APP_ENV ?? 'development',
     );
+    if (
+        audioDeployed &&
+        process.env.SPEECH_GENERATION_ENABLED === 'true' &&
+        (!process.env.SPEECH_WORKER_PROCESSABLE_VERSIONS?.split(',').includes(
+            '1',
+        ) ||
+            !process.env.AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS?.split(
+                ',',
+            ).includes('1'))
+    ) {
+        throw new Error(
+            'Shared speech worker requires compatible processing and pricing revisions.',
+        );
+    }
     const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
         deployed: audioDeployed,
         role: 'worker',
@@ -162,6 +177,20 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         environment: audioEnvironment,
         database,
     });
+    const sharedSpeech = createSpeechInfrastructure({
+        database,
+        dictionaryHmacSecret:
+            process.env.DICTIONARY_HMAC_SECRET ??
+            audioEnvironment.fingerprintSecret ??
+            'languon-local-speech-worker-hmac-secret',
+        environment: audioEnvironment,
+        storage: audioAdapters.storage,
+        provider: audioAdapters.provider,
+        providers: audioAdapters.providers,
+        playbackEnabled: process.env.SPEECH_PLAYBACK_ENABLED === 'true',
+        generationEnabled: process.env.SPEECH_GENERATION_ENABLED === 'true',
+    });
+
     const audioWorker = new DictionaryAudioWorker({
         store: new DrizzleDictionaryAudioStore(
             database,
@@ -171,7 +200,9 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         providers: audioAdapters.providers,
         clock: { now: () => new Date() },
         budget: dictionaryAudioBudget(audioEnvironment),
-        generationEnabled: audioEnvironment.generationEnabled,
+        generationEnabled:
+            audioEnvironment.generationEnabled &&
+            process.env.SPEECH_GENERATION_ENABLED !== 'true',
     });
     const legacyMastraOptions =
         environment.provider.mode === 'mastra'
@@ -325,11 +356,40 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         process.env.DICTIONARY_AUDIO_WORKER_PROCESSABLE_VERSIONS?.split(
             ',',
         ).includes('1');
-    const coordinator = new DictionaryWorkerCoordinator(service, audioWorker);
+    const speechSupported =
+        !audioDeployed ||
+        (process.env.SPEECH_WORKER_PROCESSABLE_VERSIONS?.split(',').includes(
+            '1',
+        ) &&
+            process.env.AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS?.split(
+                ',',
+            ).includes('1'));
+    let speechFirst = true;
+    const coordinator = new DictionaryWorkerCoordinator(service, {
+        runOnce: async (signal?: AbortSignal) => {
+            speechFirst = !speechFirst;
+            if (
+                speechFirst &&
+                speechSupported &&
+                (await sharedSpeech.worker.runOnce(signal))
+            )
+                return true;
+            if (
+                audioSupported &&
+                (await audioWorker.runOnce(
+                    signal ?? new AbortController().signal,
+                ))
+            )
+                return true;
+            return !speechFirst && speechSupported
+                ? sharedSpeech.worker.runOnce(signal)
+                : false;
+        },
+    });
     const audioMeasurements = new DrizzleDictionaryAudioMeasurements(database);
     const coordinatedService = {
         processNext: (input: Parameters<typeof service.processNext>[0]) =>
-            audioSupported
+            audioSupported || speechSupported
                 ? coordinator.processNext(input)
                 : service.processNext(input),
         readiness: service.readiness.bind(service),

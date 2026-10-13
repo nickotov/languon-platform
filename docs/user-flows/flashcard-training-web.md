@@ -6,6 +6,7 @@ last_verified: 2026-10-08
 surfaces:
     - browser
 source_paths:
+    - apps/web/src/fsd/features/speech-playback/**
     - .agent/features/034-flashcard-training-web/**
     - apps/web/src/fsd/features/flashcard-training/**
     - apps/web/src/fsd/widgets/dictionary-editor/**
@@ -24,6 +25,7 @@ e2e_scenarios:
     - anonymous-practice-does-not-persist
     - rtl-touch-reduced-motion-training
 related_features:
+    - shared-pronunciation-playback
     - sentence-practice-web
     - flashcard-training-backend
     - dictionary-platform
@@ -158,3 +160,15 @@ Close only the task-owned browser session and stop only processes/containers
 created for this verification. Dispose of their synthetic test data. Preserve
 existing development services and unrelated sessions; never use broad cleanup
 commands or delete shared/staging/production data. Record exact cleanup in evidence.
+
+## Related pronunciation playback
+
+Authenticated learners may play eligible saved fields on the currently visible
+card side. Flipping/rating/navigation invalidates pending selection so a late
+recording does not start unexpectedly. One clip plays globally across learning
+surfaces. Anonymous local practice does not request speech. Price confirmation,
+cached reuse, configured-language support and retained audio follow
+[Shared pronunciation playback](shared-pronunciation-playback.md).
+
+The mapped rating/progress scenarios above retain their previous verification date;
+pronunciation coverage is recorded in the shared guide and focused playback tests.

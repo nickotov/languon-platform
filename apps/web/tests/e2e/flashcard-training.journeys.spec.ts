@@ -1,3 +1,4 @@
+// @user-flow-revision shared-pronunciation-playback sha256:0be740944c68bde6
 import {
     expect,
     test,
@@ -6,6 +7,11 @@ import {
     type Page,
     type TestInfo,
 } from '@playwright/test';
+
+import {
+    installSpeechAudioProbe,
+    playSpeechControl,
+} from './support/speech-browser-audio';
 
 // @user-flow-revision flashcard-training-web sha256:73e4ead5a65dfd25
 
@@ -178,11 +184,13 @@ async function signedInSharedPage(
 
 test.describe('flashcard training journeys', () => {
     // @user-flow flashcard-training-web/owner-sets-up-rates-and-undo
+    // @user-flow shared-pronunciation-playback/visible-flashcard-playback
     test('owner configures a session, rates a card, undoes it, and preserves preferences', async ({
         page,
     }, testInfo) => {
         const assertNoBrowserErrors = captureBrowserErrors(page);
         const name = `Owner cards ${runId}`;
+        await installSpeechAudioProbe(page.context());
         await signUpAndVerify(
             page,
             syntheticEmail(testInfo, 'owner'),
@@ -213,10 +221,38 @@ test.describe('flashcard training journeys', () => {
         expect(bounds?.width).toBe(page.viewportSize()!.width);
         expect(bounds?.height).toBe(page.viewportSize()!.height);
         await expect(practice).toBeVisible();
+        await expect(
+            practice.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+        ).toHaveCount(1);
+        await playSpeechControl(
+            page,
+            practice.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+            'flashcard-field',
+        );
         await practice.getByRole('button', { name: 'Show back' }).click();
         await expect(
             practice.getByRole('button', { name: 'Show front' }),
         ).toBeVisible();
+        await expect(
+            practice.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+        ).toHaveCount(1);
+        await playSpeechControl(
+            page,
+            practice.getByRole('button', {
+                name: 'Play pronunciation',
+                exact: true,
+            }),
+            'flashcard-field',
+        );
         await practice.getByRole('button', { name: 'Dialog view' }).click();
         await expect(practice).toBeVisible();
         const dialogBounds = await practice.boundingBox();
@@ -366,6 +402,7 @@ test.describe('flashcard training journeys', () => {
     });
 
     // @user-flow flashcard-training-web/anonymous-practice-does-not-persist
+    // @user-flow shared-pronunciation-playback/anonymous-playback-hidden
     test('anonymous shared practice stays local and does not write learning state', async ({
         browser,
         page,
@@ -396,6 +433,9 @@ test.describe('flashcard training journeys', () => {
             }
         });
         await anonymous.goto(`/shared/dictionaries/${shareId}#${shareKey}`);
+        await expect(
+            anonymous.getByRole('button', { name: /^Play / }),
+        ).toHaveCount(0);
         await startPractice(anonymous);
         const practice = anonymous.getByRole('dialog', {
             name: `Card practice · ${name}`,
@@ -410,6 +450,9 @@ test.describe('flashcard training journeys', () => {
             .getByRole('button', { name: /Practise again \(1\)/ })
             .click();
         await expect(practice).toBeVisible();
+        await expect(
+            practice.getByRole('button', { name: /^Play / }),
+        ).toHaveCount(0);
         await practice
             .getByRole('button', { name: 'Known', exact: true })
             .click();

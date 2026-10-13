@@ -33,6 +33,8 @@ export const adminAuditActionEnum = pgEnum('admin_audit_action', [
     'access_denied',
     'audit_pruned',
     'ai_settings_updated',
+    'ai_model_price_published',
+    'speech_recordings_deleted',
     'ai_credit_policy_updated',
     'ai_credits_adjusted',
     'sentence_personally_archived',

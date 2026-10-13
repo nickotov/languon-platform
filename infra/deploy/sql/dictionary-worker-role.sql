@@ -124,3 +124,13 @@ TO :"dictionary_worker_role";
 -- PostgreSQL requires UPDATE on one column for FOR UPDATE SKIP LOCKED.
 GRANT UPDATE (expires_at) ON TABLE sentence_library_snapshots
 TO :"dictionary_worker_role";
+
+-- Shared speech: update durable execution/inventory, never publish tariffs or erase inventory.
+GRANT SELECT ON TABLE speech_recordings, speech_jobs TO :"dictionary_worker_role";
+GRANT UPDATE (state, storage, checksum, byte_length, duration_ms, version,
+    last_accessed_at, deleted_at, text)
+    ON TABLE speech_recordings TO :"dictionary_worker_role";
+GRANT UPDATE (state, task_id, lease_token, lease_expires_at, next_poll_at,
+    error, billing_state)
+    ON TABLE speech_jobs TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE model_price_revisions TO :"dictionary_worker_role";

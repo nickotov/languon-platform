@@ -1,0 +1,2 @@
+ALTER TABLE "speech_jobs" ADD COLUMN "eligibility_revision" text DEFAULT 'intl-word-codepoint-v1' NOT NULL;--> statement-breakpoint
+ALTER TABLE "speech_quotes" ADD COLUMN "eligibility_revision" text DEFAULT 'intl-word-codepoint-v1' NOT NULL;

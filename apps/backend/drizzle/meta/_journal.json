@@ -400,6 +400,48 @@
       "when": 1791316721917,
       "tag": "0056_nice_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1791920135021,
+      "tag": "0057_complete_captain_universe",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1791920204859,
+      "tag": "0058_shared_speech_credit_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791920467027,
+      "tag": "0059_speech_binding_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1791920916485,
+      "tag": "0060_jazzy_peter_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1791921141985,
+      "tag": "0061_speech_worker_fencing",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791922862834,
+      "tag": "0062_sturdy_scorpion",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ id: ADR-0023
 title: 'Archived dictionary content deletion'
 status: accepted
 date: 2026-09-26
+superseded_in_part_by: 'ADR-0031 successful pronunciation derivatives retained after content removal'
 supersedes: 'None'
 ---
 

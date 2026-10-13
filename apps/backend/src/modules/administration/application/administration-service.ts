@@ -70,6 +70,28 @@ export class AdministrationService {
         private readonly dependencies: AdministrationServiceDependencies,
     ) {}
 
+    public async authorizeOperation(
+        accessToken: string,
+        correlationId: string,
+    ) {
+        const principal = await this.authorize(accessToken, correlationId);
+        if (principal.actor.role !== 'owner')
+            throw new AdminAccessDeniedError();
+        return principal;
+    }
+
+    public async authorizeSensitiveOperation(
+        accessToken: string,
+        correlationId: string,
+    ) {
+        const principal = await this.authorizeOperation(
+            accessToken,
+            correlationId,
+        );
+        await this.requireRecent(principal);
+        return principal;
+    }
+
     public async currentActor(accessToken: string): Promise<AdminActor> {
         return (await this.authorize(accessToken)).actor;
     }

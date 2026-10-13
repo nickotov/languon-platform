@@ -3,6 +3,7 @@
 import type {
     LanguageCatalogEntry,
     PublicDictionary,
+    SpeechSource,
 } from '@languon/contracts';
 import {
     useInfiniteQuery,
@@ -11,7 +12,7 @@ import {
     useQueryClient,
 } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import {
     authorshipMessageKey,
@@ -23,6 +24,7 @@ import {
 } from '@/fsd/entities/dictionary';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
+import { SpeechControl } from '@/fsd/features/speech-playback';
 import { DictionaryTraining } from '@/fsd/widgets/dictionary-training';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
@@ -184,6 +186,27 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
         direction: languageDirection(catalog, dictionary.targetLanguage),
     };
 
+    function renderAudio(
+        card: PublicDictionary['cards'][number],
+        field: 'source' | 'translation' | 'example' | 'exampleTranslation',
+    ) {
+        if (sessionStatus !== 'authenticated' || !shareKey) return null;
+        const source: SpeechSource = {
+            kind: 'dictionary-field',
+            access: { kind: 'shared', shareId, shareKey },
+            cardId: card.id,
+            expectedVersion: card.version,
+            expectedDictionaryVersion: dictionary.version,
+            field,
+        };
+        return (
+            <SpeechControl
+                source={source}
+                fieldLabel={t(`dictionary.field.${field}`)}
+                requestWithSession={requestWithSession}
+            />
+        );
+    }
     return (
         <main className={styles.main}>
             <header>
@@ -258,6 +281,7 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
                             card={card}
                             dictionary={dictionary}
                             languages={catalog}
+                            renderAudio={renderAudio}
                         />
                     </li>
                 ))}
@@ -300,7 +324,12 @@ function PublicCard({
     card,
     dictionary,
     languages,
+    renderAudio,
 }: {
+    renderAudio(
+        card: PublicDictionary['cards'][number],
+        field: 'source' | 'translation' | 'example' | 'exampleTranslation',
+    ): ReactNode;
     card: PublicDictionary['cards'][number];
     dictionary: PublicDictionary;
     languages: readonly LanguageCatalogEntry[];
@@ -381,6 +410,7 @@ function PublicCard({
                     lang={dictionary.sourceLanguage}
                 >
                     {card.values.source}
+                    {renderAudio(card, 'source')}
                 </strong>
                 <span aria-hidden='true' className={styles.pairArrow}>
                     →
@@ -391,6 +421,7 @@ function PublicCard({
                     lang={dictionary.targetLanguage}
                 >
                     {card.values.translation}
+                    {renderAudio(card, 'translation')}
                 </strong>
             </div>
             {optional.length ? (
@@ -404,6 +435,10 @@ function PublicCard({
                                 lang={field.lang}
                             >
                                 {field.value}
+                                {field.key === 'example' ||
+                                field.key === 'exampleTranslation'
+                                    ? renderAudio(card, field.key)
+                                    : null}
                             </dd>
                         </div>
                     ))}

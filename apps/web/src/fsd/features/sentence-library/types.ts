@@ -58,6 +58,7 @@ export interface LibraryApi {
     ): Promise<SentenceLibraryMutationResponse>;
 }
 export interface LibraryProps {
+    renderAudio?(exerciseId: string, field: 'prompt' | 'reference'): ReactNode;
     target: LibraryTarget;
     dictionary: LibraryDictionary;
     requestWithSession: RequestWithSession;

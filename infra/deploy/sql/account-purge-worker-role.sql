@@ -88,3 +88,16 @@ GRANT SELECT (actor_id) ON TABLE sentence_personal_visibility,
     sentence_global_visibility TO :"account_purge_role";
 GRANT UPDATE (actor_id) ON TABLE sentence_personal_visibility,
     sentence_global_visibility TO :"account_purge_role";
+
+-- Retained successful speech is not account-owned data: no recording/text grants.
+GRANT SELECT ON TABLE speech_jobs TO :"account_purge_role";
+GRANT UPDATE (payer_id, reservation_id, billing_state)
+    ON TABLE speech_jobs TO :"account_purge_role";
+GRANT SELECT (actor_id), DELETE ON TABLE speech_bindings, speech_quotes
+    TO :"account_purge_role";
+-- Close speech holds before erasing the wallet; failure settlement debits zero.
+GRANT UPDATE (charged_credits, measured_credits, measurement, settled_at, state)
+    ON TABLE ai_credit_reservations TO :"account_purge_role";
+GRANT INSERT (id, owner_id, kind, amount, measurement, created_at,
+    expires_at, grant_source, reason)
+    ON TABLE ai_credit_history TO :"account_purge_role";

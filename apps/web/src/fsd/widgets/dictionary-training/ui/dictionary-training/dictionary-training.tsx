@@ -1,4 +1,6 @@
 'use client';
+import type { SpeechSource, FlashcardItem } from '@languon/contracts';
+import { SpeechControl } from '@/fsd/features/speech-playback';
 
 import { MessageSquareText, RefreshCw } from 'lucide-react';
 import componentStyles from './dictionary-training.module.css';
@@ -116,6 +118,63 @@ export function DictionaryTraining(props: TrainingLauncherProps) {
 }
 
 function TrainingComposition(props: TrainingLauncherProps) {
+    function renderFlashcardAudio(
+        item: FlashcardItem,
+        presentation: FlashcardItem['front'][number],
+    ) {
+        if (
+            !props.signedIn ||
+            presentation.field === 'definition' ||
+            presentation.field === 'transcription'
+        )
+            return null;
+        const source: SpeechSource = {
+            kind: 'flashcard-field',
+            access: props.target,
+            cardId: item.entryId,
+            field: presentation.field,
+            expectedLearningVersion: item.learningVersion,
+        };
+        return (
+            <SpeechControl
+                source={source}
+                requestWithSession={props.requestWithSession}
+            />
+        );
+    }
+    function renderAnswerAudio(attemptId: string) {
+        return renderSentenceAudio({ kind: 'checked-answer', id: attemptId });
+    }
+    function renderSentenceAudio(content: {
+        kind: 'prompt' | 'reference' | 'checked-answer';
+        id: string;
+        sessionId?: string;
+    }) {
+        if (!props.signedIn) return null;
+        let source: SpeechSource;
+        if (content.kind === 'checked-answer')
+            source = {
+                kind: 'checked-answer',
+                access: props.target,
+                attemptId: content.id,
+            };
+        else {
+            if (!content.sessionId) return null;
+            source = {
+                kind: 'sentence-practice',
+                access: props.target,
+                exerciseId: content.id,
+                sessionId: content.sessionId,
+                field: content.kind,
+            };
+        }
+        return (
+            <SpeechControl
+                source={source}
+                requestWithSession={props.requestWithSession}
+            />
+        );
+    }
     const { locale, href, t } = useI18n();
     const copy = labels[locale];
     const pathname = usePathname();
@@ -479,7 +538,11 @@ function TrainingComposition(props: TrainingLauncherProps) {
                         {copy.unavailable}
                     </p>
                 ) : null}
-                <TrainingLauncher {...props} additionalItems={items} />
+                <TrainingLauncher
+                    {...props}
+                    additionalItems={items}
+                    renderAudio={renderFlashcardAudio}
+                />
                 <p className={componentStyles.notice}>{copy.unavailable}</p>
                 <ButtonLink href={href('/dictionaries')}>
                     {copy.back}
@@ -498,7 +561,11 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 onOpen={() => setPreparationOpen(true)}
             />
             <div className={componentStyles.actions}>
-                <TrainingLauncher {...props} additionalItems={items} />
+                <TrainingLauncher
+                    {...props}
+                    additionalItems={items}
+                    renderAudio={renderFlashcardAudio}
+                />
                 {props.target.kind === 'shared' ? (
                     <SharedPracticeActions
                         signedIn={props.signedIn}
@@ -551,6 +618,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
             {running && (
                 <SentencePracticeSession
                     controller={session}
+                    renderAudio={renderSentenceAudio}
                     open={running}
                     dictionaryTitle={props.dictionaryTitle}
                     {...(fullscreen ? { initialFullscreen: fullscreen } : {})}
@@ -564,6 +632,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
                     onHistoryClose={() => setHistoryOpen(false)}
                     historyContent={
                         <PracticeHistory
+                            renderAnswerAudio={renderAnswerAudio}
                             inline
                             initialTab='sentences'
                             open={historyOpen}
@@ -588,6 +657,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
             )}
             {!running && (
                 <PracticeHistory
+                    renderAnswerAudio={renderAnswerAudio}
                     open={historyOpen}
                     onClose={() => {
                         setHistoryOpen(false);

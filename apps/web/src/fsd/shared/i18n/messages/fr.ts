@@ -161,6 +161,8 @@ export const fr = {
     'profile.exportDescription':
         'L’export n’est pas encore disponible. Aucune archive n’a été demandée.',
     'profile.requestExport': 'Demander un export',
+    'speech.retention':
+        'Une prononciation déjà demandée peut se terminer après la suppression. Les sons générés et leur texte normalisé sont conservés indéfiniment pour être réutilisés. Seuls les administrateurs peuvent les supprimer.',
     'profile.deleteTitle': 'Supprimer le compte',
     'profile.deleteDescription':
         'L’accès cesse immédiatement ; les données actives seront effacées après 30 jours.',
@@ -171,7 +173,7 @@ export const fr = {
     'profile.deleteLossTitle': 'Ce que vous perdrez',
     'profile.deleteLossAccess': 'L’accès cesse immédiatement.',
     'profile.deleteLossData':
-        'Les données d’apprentissage et du compte seront effacées dans 30 jours.',
+        'Les données du compte et les autres contenus d’apprentissage seront effacés dans 30 jours.',
     'profile.deleteLossRecovery':
         'Seul un administrateur peut annuler avant le nettoyage.',
     'profile.deleteConfirmHint': 'Saisissez « DELETE » exactement.',
