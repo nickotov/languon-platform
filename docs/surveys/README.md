@@ -12,6 +12,7 @@ accepted architecture decisions or proof of provider quality.
 | Survey                                                                                    | Research date | Scope                                                                                                           |
 | ----------------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
 | [Voice answers and pronunciation assessment](./voice-answers-pronunciation-assessment.md) | 2026-10-12    | Multilingual sentence practice, provider selection, credits, recording storage, and future standalone training. |
+| [Multilingual text-to-speech playback](./multilingual-text-to-speech-playback.md)         | 2026-10-13    | Russia-access provider selection, web/native playback, multilingual voices, S3 audio reuse, and costs.          |
 
 Use the repository [`$survey` skill](../../.agents/skills/survey/SKILL.md) with a
 short description, for example:
