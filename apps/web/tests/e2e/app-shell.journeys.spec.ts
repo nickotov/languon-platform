@@ -26,17 +26,18 @@ function observeBrowser(page: Page) {
     page.on('request', (request) => {
         const url = new URL(request.url());
         if (
-            url.origin ===
-                (process.env.AUTH_E2E_BACKEND_ORIGIN ??
-                    'http://localhost:4000') &&
-            url.pathname === '/dictionaries' &&
+            url.origin === new URL(page.url()).origin &&
+            url.pathname === '/api/dictionaries' &&
             request.method() === 'GET'
         )
             privateRequests.push(request.url());
     });
     page.on('response', (response) => {
         if (response.status() < 400) return;
-        const path = new URL(response.url()).pathname;
+        const path = new URL(response.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         if (path === '/auth/refresh' && response.status() === 401) return;
         if (missingRoutes.includes(path) && response.status() === 404) return;
         errors.push(`${response.status()} ${path}`);

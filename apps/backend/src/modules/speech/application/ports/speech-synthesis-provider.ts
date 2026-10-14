@@ -41,7 +41,10 @@ export class SpeechSubmissionError extends Error {
 }
 
 export class SpeechTaskFailedError extends Error {
-    constructor() {
+    constructor(
+        public readonly reason:
+            'generation_failed' | 'provider_unavailable' = 'generation_failed',
+    ) {
         super('Speech task failed.');
         this.name = 'SpeechTaskFailedError';
     }

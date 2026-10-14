@@ -57,3 +57,23 @@ The implementation repair is complete and independently reviewed. Live Kie audio
 verification remains externally blocked: the explicitly approved tracked sample
 returned provider error 500 before producing an audio URL. This does not relax
 production activation, listening-quality, result-host or Selectel gates.
+
+## Provider failure and API-path repair (2026-10-14)
+
+The reported saved request failed upstream at Kie with terminal 500 before audio
+was returned. Failed recording cleanup hid its error/billing behind a storage
+unavailable response. Preserve safe failed-job error and caller-specific billing
+through cleanup; map only known numeric provider failure codes to safe temporary
+provider unavailability and show a localized tooltip/live announcement. Never
+expose vendor messages, raw prompts, result URLs or initiator billing to joiners.
+No new paid retry, model fallback, or synthetic tone substitutes for real audio.
+
+Make browser routing in development match the established production `/api` entry:
+all seven web clients use the shared default, Next's development-only loopback
+proxy strips the prefix toward internal backend routes, and explicit URL overrides
+remain supported. Backend internal routes/production proxy strategy are unchanged.
+
+The failure-reporting and browser-path repair is implemented and verified. Existing
+failed requests remain terminal; future safe provider failures retain their reason
+and billing outcome. Working live pronunciation still depends on Kie recovering
+from its terminal 500, or on separately validated model/provider activation.

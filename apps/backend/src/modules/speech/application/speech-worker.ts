@@ -122,9 +122,19 @@ export class SpeechWorker {
                 error instanceof SpeechTaskFailedError ||
                 (error instanceof SpeechSubmissionError &&
                     error.outcome === 'not_submitted')
-            )
-                await this.options.store.fail(job, 'failure', this.now());
-            else if (!submissionResolved)
+            ) {
+                if (
+                    error instanceof SpeechTaskFailedError &&
+                    error.reason === 'provider_unavailable'
+                )
+                    await this.options.store.fail(
+                        job,
+                        'failure',
+                        this.now(),
+                        'speech_provider_unavailable',
+                    );
+                else await this.options.store.fail(job, 'failure', this.now());
+            } else if (!submissionResolved)
                 await this.options.store.fail(job, 'unknown', this.now());
             else await this.options.store.pending(job, 5000, this.now());
         }

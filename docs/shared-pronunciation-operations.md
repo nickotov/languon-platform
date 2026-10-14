@@ -264,3 +264,19 @@ Already admitted shared generation can finish under its pinned provider identity
 after the initiating account is removed. Purge removes associations and closes
 holds permanently, so completion may retain reusable audio but cannot debit the
 removed account or restore its access.
+
+## Terminal provider failures
+
+Kie can accept submission, then mark the known task as failed with `failCode` 500.
+No result URL or audio exists in that case. Only safe classification is persisted:
+429/500/502/503/504 map to `speech_provider_unavailable`; other terminal codes map
+to `speech_generation_failed`. Raw provider messages/URLs/prompts are never exposed
+or stored as the learner error. Failure cleanup removes recording bytes/text but
+preserves the request's safe cause and caller-specific billing: refunded payer
+sees `released_no_charge`, joining actors see `free`.
+
+Inspect only the already-known task when diagnosing; do not create a replacement
+paid task or change model/voice blindly. Current Turbo/Bella/French request matches
+the documented contract. Successful Kie generation remains externally blocked by
+its terminal internal error in the verified request. Another model/provider needs
+separate capability, voice, price and pronunciation evidence before activation.

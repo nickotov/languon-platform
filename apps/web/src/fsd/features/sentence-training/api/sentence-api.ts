@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '@/fsd/shared/api/api-url';
 import {
     DictionaryIdParamsSchema,
     DictionaryShareKeyHeadersSchema,
@@ -57,13 +58,10 @@ function queryString(query: object): string {
 /** Authenticated, no-store access only; references are never prefetched. */
 export function createSentenceApi(options: Options): SentenceApi {
     const { target, signedIn, requestWithSession } = options;
-    const base = (
-        options.baseUrl ??
-        process.env.NEXT_PUBLIC_API_URL ??
-        (process.env.NODE_ENV === 'production'
-            ? '/api'
-            : 'http://localhost:4000')
-    ).replace(/\/$/, '');
+    const base = resolveApiUrl(
+        process.env.NODE_ENV,
+        options.baseUrl ?? process.env.NEXT_PUBLIC_API_URL,
+    );
     const root =
         target.kind === 'owner'
             ? `/learning/dictionaries/${encodeURIComponent(target.dictionaryId)}`

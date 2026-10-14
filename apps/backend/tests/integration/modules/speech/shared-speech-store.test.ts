@@ -41,6 +41,7 @@ import {
 import { FixtureSpeechProvider } from '../../../../src/modules/speech/infrastructure/audio/speech-providers';
 import { PostgresAudioObjectStorage } from '../../../../src/modules/speech/infrastructure/audio/audio-object-storages';
 import { SpeechWorker } from '../../../../src/modules/speech/application/speech-worker';
+import { SpeechTaskFailedError } from '../../../../src/modules/speech/application/ports/speech-synthesis-provider';
 import { createFixtureAudio } from '../../../../src/modules/speech/domain/audio-integrity';
 import {
     SpeechError,
@@ -191,6 +192,153 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now,
                 ),
             );
+
+        const failProviderTaskAndCleanUp = async (
+            reason:
+                | 'generation_failed'
+                | 'provider_unavailable' = 'generation_failed',
+        ) => {
+            const failingProvider = {
+                configurationId: provider.configurationId,
+                supports: provider.supports.bind(provider),
+                submit: vi.fn().mockResolvedValue({
+                    state: 'pending',
+                    taskId: 'synthetic-failed-provider-task',
+                    retryAfterMs: 2500,
+                }),
+                poll: vi
+                    .fn()
+                    .mockRejectedValue(new SpeechTaskFailedError(reason)),
+            };
+            const worker = new SpeechWorker({
+                store,
+                storage,
+                providers: new Map([['fixture-v1', failingProvider]]),
+                now: () => now,
+            });
+            expect(await worker.runOnce()).toBe(true);
+            await db.update(speechJobsTable).set({
+                nextPollAt: sql`clock_timestamp() - interval '1 millisecond'`,
+            });
+            expect(await worker.runOnce()).toBe(true);
+            expect(failingProvider.submit).toHaveBeenCalledOnce();
+            expect(failingProvider.poll).toHaveBeenCalledOnce();
+            expect((await db.select().from(speechJobsTable))[0]).toMatchObject({
+                state: 'failed',
+                error:
+                    reason === 'provider_unavailable'
+                        ? 'speech_provider_unavailable'
+                        : 'speech_generation_failed',
+            });
+            expect(
+                (await db.select().from(speechRecordingsTable))[0],
+            ).toMatchObject({
+                state: 'deleting',
+                text: '',
+            });
+            await worker.runOnce();
+            expect(
+                (await db.select().from(speechRecordingsTable))[0]?.state,
+            ).toBe('deleted');
+        };
+
+        it('preserves a free provider failure after deleting its recording inventory', async () => {
+            const prepared = await prepare(actors[0]!);
+            await failProviderTaskAndCleanUp();
+            const { response } = await store.request(
+                actors[0]!,
+                prepared.requestId!,
+                now,
+            );
+            expect(response).toMatchObject({
+                state: 'failed',
+                requestId: prepared.requestId,
+                playbackId: null,
+                error: 'speech_generation_failed',
+                billingState: 'free',
+                retryAfterMs: null,
+            });
+            expect((await wallet(actors[0]!)).consumedCredits).toBe(0n);
+            await expect(
+                store.adminPlayback(
+                    (await db.select().from(speechRecordingsTable))[0]!.id,
+                ),
+            ).rejects.toThrow('speech_recording_unavailable');
+        });
+
+        it.each(['generation_failed', 'provider_unavailable'] as const)(
+            'preserves refunded %s for its payer without exposing that billing state to a joiner',
+            async (reason) => {
+                text =
+                    'This longer sentence has more than ten distinct words and requires paid pronunciation.';
+                const quote = await prepare(actors[0]!);
+                const payer = await confirm(actors[0]!, quote);
+                const joiner = await prepare(actors[1]!);
+                expect(joiner.state).toBe('queued');
+                await failProviderTaskAndCleanUp(reason);
+                for (const [actor, requestId, billingState] of [
+                    [actors[0]!, payer.requestId!, 'released_no_charge'],
+                    [actors[1]!, joiner.requestId!, 'free'],
+                ] as const) {
+                    expect(
+                        (await store.request(actor, requestId, now)).response,
+                    ).toMatchObject({
+                        state: 'failed',
+                        playbackId: null,
+                        error:
+                            reason === 'provider_unavailable'
+                                ? 'speech_provider_unavailable'
+                                : 'speech_generation_failed',
+                        billingState,
+                    });
+                    expect((await wallet(actor)).consumedCredits).toBe(0n);
+                    expect((await wallet(actor)).reservedCredits).toBe(0n);
+                }
+            },
+        );
+
+        it('reports administrative deletion of successful audio as recording unavailable', async () => {
+            const prepared = await prepare(actors[0]!);
+            await new SpeechWorker({
+                store,
+                storage,
+                providers: new Map([['fixture-v1', provider]]),
+                now: () => now,
+            }).runOnce();
+            const snapshot = (
+                await store.listRecordings({ page: 1, pageSize: 25 })
+            ).recordings[0]!;
+            const selected = await store.markDeleting({
+                recordings: [
+                    {
+                        id: snapshot.id,
+                        expectedVersion: snapshot.version,
+                        expectedBindingCount: snapshot.bindingCount,
+                    },
+                ],
+                audit: {
+                    actorId: actors[0]!,
+                    correlationId: randomUUID(),
+                    reason: 'Delete synthetic pronunciation',
+                    occurredAt: now,
+                },
+            });
+            for (const cleanup of [false, true]) {
+                if (cleanup) {
+                    await storage.delete(selected[0]!.storage);
+                    await store.deleted(snapshot.id, now);
+                }
+                expect(
+                    (await store.request(actors[0]!, prepared.requestId!, now))
+                        .response,
+                ).toMatchObject({
+                    state: 'failed',
+                    playbackId: null,
+                    error: 'speech_recording_unavailable',
+                    billingState: null,
+                });
+            }
+        });
 
         it('joins concurrent free requests globally and preserves audio after association purge', async () => {
             const results = await Promise.all(

@@ -774,16 +774,6 @@ export class DrizzleSpeechStore implements SpeechStore {
                 .where(eq(recordings.id, binding.recordingId))
                 .limit(1)
         )[0];
-        if (
-            !recording ||
-            ['deleting', 'deleted', 'failed'].includes(recording.state)
-        )
-            return {
-                ...emptyResponse(),
-                state: 'failed',
-                requestId: binding.id,
-                error: 'speech_recording_unavailable',
-            };
         const job = binding.jobId
             ? (
                   await tx
@@ -793,6 +783,31 @@ export class DrizzleSpeechStore implements SpeechStore {
                       .limit(1)
               )[0]
             : null;
+        // Failed-job cleanup removes inventory, not the caller's safe outcome.
+        if (job?.state === 'failed') {
+            return {
+                ...emptyResponse(),
+                state: 'failed',
+                requestId: binding.id,
+                fixture: recording?.profile.provider === 'fixture',
+                error: job.error ?? 'speech_generation_failed',
+                billingState:
+                    job.payerId === binding.actorId
+                        ? (job.billingState as SpeechResponse['billingState'])
+                        : 'free',
+            };
+        }
+        if (
+            !recording ||
+            ['deleting', 'deleted', 'failed'].includes(recording.state)
+        ) {
+            return {
+                ...emptyResponse(),
+                state: 'failed',
+                requestId: binding.id,
+                error: 'speech_recording_unavailable',
+            };
+        }
         const state =
             recording.state === 'ready'
                 ? 'ready'
@@ -1165,6 +1180,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         job: SpeechJob,
         outcome: 'failure' | 'unknown',
         _now: Date,
+        reason?: 'speech_provider_unavailable',
     ) {
         await this.workerTransaction(async (tx, now) => {
             const [row] = await tx
@@ -1205,7 +1221,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                     error:
                         outcome === 'unknown'
                             ? 'speech_submission_unknown'
-                            : 'speech_generation_failed',
+                            : (reason ?? 'speech_generation_failed'),
                     leaseToken: null,
                     leaseExpiresAt: null,
                 })

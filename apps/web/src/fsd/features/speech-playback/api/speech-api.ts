@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '@/fsd/shared/api/api-url';
 import { BrowserApiError } from '@languon/browser-auth';
 import {
     SpeechAvailabilityRequestSchema,
@@ -9,10 +10,10 @@ import {
 } from '@languon/contracts';
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
 
-const apiUrl = (
-    process.env.NEXT_PUBLIC_API_URL ??
-    (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:4000')
-).replace(/\/$/, '');
+const apiUrl = resolveApiUrl(
+    process.env.NODE_ENV,
+    process.env.NEXT_PUBLIC_API_URL,
+);
 
 async function response(
     requestWithSession: RequestWithSession,

@@ -2,7 +2,7 @@
 
 Feature: [FEATURE.md](./FEATURE.md)
 Last updated: 2026-10-14
-Branch: feature/shared-pronunciation-controls-repair
+Branch: feature/shared-pronunciation-failure-repair
 
 ## Goal and specification
 
@@ -113,3 +113,31 @@ No implementation or deterministic verification work remains. Independent
 completion/security reviews have no open material findings. Local feature squash
 handoff follows. Restart API and dictionary worker together to load prepared local
 configuration; successful Kie generation still depends on provider availability.
+
+## Provider failure and API-path repair (2026-10-14)
+
+Reactivated feature scope for concrete failed request and browser prefix consistency.
+Read only job/inventory/provider status for supplied request; no private text read,
+no user data mutation, and no new paid submission. Kie returned terminal fail/500
+“Internal Error, Please try again later.” Exact model/voice/fr payload matches
+current official contract; omitted controls have documented defaults. No evidence
+supports a payload or voice fix, and fallback would require separate model/price
+capability decisions. Upstream successful pronunciation remains an external gate.
+
+Root owns store/provider/worker failure classification, docs/env/durable state.
+Bounded test worker owns failure/refund/cleanup regressions and verifies real
+PostgreSQL. Browser-routing worker owns shared resolver, dev proxy, clients and
+network-observer tests. UI worker owns safe error persistence/localization and
+rendered tooltip evidence. Changes preserve quote/reservation/unknown-outcome
+fences, source authority, client credentials, cookies and production NGINX routing.
+
+No implementation or verification work remains for this repair. Latest backend
+74/74 (34 PG +40 worker/adapter units), web576+Node proxy check, final speech4/auth3
+browser evidence and affected static/build checks pass. Shared/auth guide revisions
+are synchronized and all documentation checks pass. Independent completion and
+security reviews found no open material issue after Docker/guide remediation.
+Extra CSV exploration stopped at an unchanged narrow-layout assertion; it is
+recorded as nonblocking and no pass is claimed or assertion weakened. Current API
+clients do not use SSE/multipart, and binary audio/JSON proxy transport is verified.
+Required local squash handoff follows. No new paid call occurred; supplier 500
+remains an external successful-audio gate.

@@ -133,7 +133,7 @@ test.describe.serial('dictionary pronunciation audio', () => {
         page.on('requestfailed', (request) => {
             if (!request.failure()?.errorText.includes('ERR_ABORTED'))
                 failedRequests.push(
-                    `${new URL(request.url()).pathname}: ${request.failure()?.errorText}`,
+                    `${new URL(request.url()).pathname.replace(/^\/api(?=\/)/, '')}: ${request.failure()?.errorText}`,
                 );
         });
         await page.goto('/signup?returnTo=%2Fdictionaries');

@@ -83,6 +83,8 @@ export async function browserAudioEvidence(page: Page, url: string) {
             'The real browser did not receive pronunciation bytes.',
         );
     expect(result.byteLength).toBeGreaterThan(44);
+    expect(new URL(result.url).origin).toBe(new URL(page.url()).origin);
+    expect(new URL(result.url).pathname).toMatch(/^\/api\/speech\/playbacks\//);
     return result;
 }
 

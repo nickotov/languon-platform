@@ -8,6 +8,8 @@ export const speechCopy = {
         stopWaiting: 'Stop waiting',
         ready: 'Audio is ready. Press Play.',
         failed: 'Pronunciation could not be prepared. Try again.',
+        providerUnavailable:
+            'The pronunciation service is temporarily unavailable. Try again later.',
         unavailable: 'Pronunciation is unavailable.',
         fixture: 'Development test tone',
         title: 'Generate pronunciation?',
@@ -31,6 +33,8 @@ export const speechCopy = {
         stopWaiting: 'Не ждать завершения',
         ready: 'Аудио готово. Нажмите «Воспроизвести».',
         failed: 'Не удалось подготовить произношение. Попробуйте ещё раз.',
+        providerUnavailable:
+            'Сервис произношения временно недоступен. Попробуйте позже.',
         unavailable: 'Произношение недоступно.',
         fixture: 'Тестовый звук для разработки',
         title: 'Создать произношение?',
@@ -55,6 +59,8 @@ export const speechCopy = {
         stopWaiting: 'Arrêter d’attendre',
         ready: 'Le son est prêt. Appuyez sur Écouter.',
         failed: 'La prononciation n’a pas pu être préparée. Réessayez.',
+        providerUnavailable:
+            'Le service de prononciation est temporairement indisponible. Réessayez plus tard.',
         unavailable: 'Prononciation indisponible.',
         fixture: 'Son de test de développement',
         title: 'Générer la prononciation ?',
@@ -79,6 +85,8 @@ export const speechCopy = {
         stopWaiting: 'Dejar de esperar',
         ready: 'El audio está listo. Pulsa Escuchar.',
         failed: 'No se pudo preparar la pronunciación. Inténtalo de nuevo.',
+        providerUnavailable:
+            'El servicio de pronunciación no está disponible temporalmente. Inténtalo más tarde.',
         unavailable: 'Pronunciación no disponible.',
         fixture: 'Sonido de prueba de desarrollo',
         title: '¿Generar pronunciación?',

@@ -78,6 +78,46 @@ afterEach(() => {
 });
 
 describe('shared speech playback', () => {
+    it('retains a provider failure from polling and clears it for a new selection', async () => {
+        vi.useFakeTimers();
+        const api = transport();
+        vi.mocked(api.prepare).mockResolvedValueOnce({
+            ...ready,
+            state: 'queued',
+            playbackId: null,
+            requestId: ready.playbackId,
+            retryAfterMs: 500,
+        });
+        vi.mocked(api.status).mockResolvedValue({
+            ...ready,
+            state: 'failed',
+            playbackId: null,
+            requestId: ready.playbackId,
+            error: 'speech_provider_unavailable',
+            billingState: 'released_no_charge',
+        });
+        const player = new SpeechPlayer();
+        const observed: ReturnType<SpeechPlayer['snapshot']>[] = [];
+        player.subscribe(() => observed.push(player.snapshot()));
+        const operation = player.play(source, api);
+        await vi.advanceTimersByTimeAsync(500);
+        await operation;
+        expect(player.snapshot()).toMatchObject({
+            phase: 'failed',
+            error: 'speech_provider_unavailable',
+            billingState: 'released_no_charge',
+        });
+        expect(observed.at(-1)?.phase).toBe('failed');
+        expect(api.prepare).toHaveBeenCalledOnce();
+        expect(api.bytes).not.toHaveBeenCalled();
+        await player.play({ ...source, field: 'translation' }, api);
+        expect(player.snapshot()).toMatchObject({
+            phase: 'playing',
+            error: null,
+        });
+        player.reset();
+        expect(player.snapshot().error).toBeNull();
+    });
     it('does not confirm or download paid generation before an explicit action; cancellation submits nothing', async () => {
         const api = transport();
         vi.mocked(api.prepare).mockResolvedValue(paid);

@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '@/fsd/shared/api/api-url';
 import { BrowserApiError } from '@languon/browser-auth';
 import {
     DictionaryAudioFieldSchema,
@@ -128,15 +129,7 @@ export class DictionaryDocumentUploadError extends Error {
     public override readonly name = 'DictionaryDocumentUploadError';
 }
 
-export function resolveDictionaryApiUrl(
-    nodeEnvironment: string | undefined,
-    configuredUrl: string | undefined,
-): string {
-    return (
-        configuredUrl ??
-        (nodeEnvironment === 'production' ? '/api' : 'http://localhost:4000')
-    ).replace(/\/$/, '');
-}
+export const resolveDictionaryApiUrl = resolveApiUrl;
 
 const apiUrl = resolveDictionaryApiUrl(
     process.env.NODE_ENV,

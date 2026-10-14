@@ -8,11 +8,9 @@ import {
 } from '@/fsd/shared/api/auth-api';
 
 describe('auth API boundary', () => {
-    it('uses environment-neutral same-origin routing in production', () => {
+    it('uses environment-neutral same-origin routing in every environment', () => {
         expect(resolveApiUrl('production', undefined)).toBe('/api');
-        expect(resolveApiUrl('development', undefined)).toBe(
-            'http://localhost:4000',
-        );
+        expect(resolveApiUrl('development', undefined)).toBe('/api');
         expect(resolveApiUrl('production', 'https://api.example.test/')).toBe(
             'https://api.example.test',
         );
@@ -71,7 +69,7 @@ describe('auth API boundary', () => {
 
         await authApi.capabilities();
         expect(fetchMock).toHaveBeenCalledWith(
-            'http://localhost:4000/auth/capabilities',
+            '/api/auth/capabilities',
             expect.objectContaining({ credentials: 'include' }),
         );
         expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain('token');
@@ -100,9 +98,7 @@ describe('auth API boundary', () => {
             password: 'a very secure password',
         });
 
-        expect(fetchMock.mock.calls[0]?.[0]).toBe(
-            'http://localhost:4000/auth/sign-up',
-        );
+        expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/auth/sign-up');
     });
 
     it('renders safe retry metadata for throttled operations', () => {
@@ -148,7 +144,7 @@ describe('auth API boundary', () => {
         ).resolves.toMatchObject({ status: 'deletion_scheduled' });
         expect(fetchMock).toHaveBeenNthCalledWith(
             1,
-            'http://localhost:4000/users/me/handle',
+            '/api/users/me/handle',
             expect.objectContaining({
                 body: '{"handle":"learner_42"}',
                 method: 'PATCH',
@@ -159,7 +155,7 @@ describe('auth API boundary', () => {
         );
         expect(fetchMock).toHaveBeenNthCalledWith(
             2,
-            'http://localhost:4000/users/me/deletion',
+            '/api/users/me/deletion',
             expect.objectContaining({
                 body: '{}',
                 method: 'POST',

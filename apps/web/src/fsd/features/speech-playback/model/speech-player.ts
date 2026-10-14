@@ -20,6 +20,7 @@ export type SpeechPlayerState = {
     fixture: boolean;
     requestId: string | null;
     billingState: SpeechResponse['billingState'];
+    error: SpeechResponse['error'];
 };
 const idle: SpeechPlayerState = {
     selection: null,
@@ -28,6 +29,7 @@ const idle: SpeechPlayerState = {
     fixture: false,
     requestId: null,
     billingState: null,
+    error: null,
 };
 
 export function speechSourceKey(source: SpeechSource) {
@@ -134,6 +136,7 @@ export class SpeechPlayer {
             fixture: false,
             requestId: null,
             billingState: null,
+            error: null,
         });
         const revision = this.revision;
         const abort = new AbortController();
@@ -190,6 +193,7 @@ export class SpeechPlayer {
         this.publish({
             requestId: result.requestId,
             billingState: result.billingState,
+            error: result.error,
         });
         const deadline = Date.now() + 10 * 60_000;
         while (result.state === 'queued' || result.state === 'processing') {
@@ -205,6 +209,7 @@ export class SpeechPlayer {
             this.publish({
                 requestId: result.requestId,
                 billingState: result.billingState,
+                error: result.error,
             });
         }
         if (revision !== this.revision) return;

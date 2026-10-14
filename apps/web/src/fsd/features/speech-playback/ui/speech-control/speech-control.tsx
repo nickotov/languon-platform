@@ -42,8 +42,12 @@ export function SpeechControl({
     let status = '';
     if (loading) status = copy.loading;
     else if (phase === 'ready') status = copy.ready;
-    else if (phase === 'failed') status = copy.failed;
-    else if (phase === 'unavailable') status = copy.unavailable;
+    else if (phase === 'failed') {
+        status =
+            c.state.error === 'speech_provider_unavailable'
+                ? copy.providerUnavailable
+                : copy.failed;
+    } else if (phase === 'unavailable') status = copy.unavailable;
     if (c.selected && c.state.fixture) {
         status = [status, copy.fixture].filter(Boolean).join(' ');
     }

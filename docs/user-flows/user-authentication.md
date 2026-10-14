@@ -2,7 +2,7 @@
 feature: user-authentication
 title: User Authentication
 status: current
-last_verified: 2026-10-12
+last_verified: 2026-10-14
 surfaces:
     - browser
     - api
@@ -107,7 +107,8 @@ file. Keep these values for the guide:
 ```dotenv
 APP_ENV=development
 BACKEND_HOST=127.0.0.1
-NEXT_PUBLIC_API_URL=http://localhost:4000
+NEXT_PUBLIC_API_URL=/api
+WEB_API_PROXY_TARGET=http://localhost:4000
 AUTH_ALLOWED_ORIGINS=http://localhost:3333
 AUTH_WEBAUTHN_RP_ID=localhost
 ```
@@ -138,8 +139,14 @@ pnpm dev:web
 Expected endpoints:
 
 - Web: `http://localhost:3333`
+- Browser API: `http://localhost:3333/api/*` (development proxy)
 - Backend health: `http://localhost:4000/health`
 - OpenAPI: `http://localhost:4000/openapi.json`
+
+Browser requests use `/api/auth/...` through the web development proxy. Direct
+backend health/OpenAPI and the API verification commands below intentionally use
+unprefixed internal routes. Docker app development sets the same browser `/api`
+base and proxies to its exact trusted `http://backend:4000` Compose service.
 
 The backend, web app, PostgreSQL, and Redis are loopback-only by default. Do not
 expose this development authentication stack to a LAN: it intentionally uses

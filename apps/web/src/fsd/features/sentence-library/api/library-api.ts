@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '@/fsd/shared/api/api-url';
 import {
     SentenceLibraryListResponseSchema,
     SentenceErrorResponseSchema,
@@ -25,12 +26,10 @@ export function createLibraryApi(
     target: LibraryTarget,
     requestWithSession: RequestWithSession,
 ): LibraryApi {
-    const base = (
-        process.env.NEXT_PUBLIC_API_URL ??
-        (process.env.NODE_ENV === 'production'
-            ? '/api'
-            : 'http://localhost:4000')
-    ).replace(/\/$/, '');
+    const base = resolveApiUrl(
+        process.env.NODE_ENV,
+        process.env.NEXT_PUBLIC_API_URL,
+    );
     const root =
         target.kind === 'owner'
             ? `/learning/dictionaries/${encodeURIComponent(target.dictionaryId)}/sentences/library`

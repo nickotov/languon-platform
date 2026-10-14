@@ -4,6 +4,7 @@ import type { SpeechSource } from '@languon/contracts';
 import { SpeechControl } from '@/fsd/features/speech-playback/ui/speech-control/speech-control';
 import { useSpeechControl } from '@/fsd/features/speech-playback/hooks/use-speech-control';
 import { render } from './render';
+import { speechCopy } from '@/fsd/features/speech-playback/lib/copy';
 
 vi.mock('@/fsd/features/speech-playback/hooks/use-speech-control', () => ({
     useSpeechControl: vi.fn(),
@@ -24,11 +25,13 @@ const stop = vi.fn();
 function control(
     phase: ReturnType<typeof useSpeechControl>['state']['phase'],
     fixture = false,
+    error: string | null = null,
+    locale: 'en' | 'ru' | 'fr' | 'es' = 'en',
 ) {
     vi.mocked(useSpeechControl).mockReturnValue({
         available: true,
         selected: true,
-        state: { selection: 'selected', phase, fixture },
+        state: { selection: 'selected', phase, fixture, error },
         play,
         stop,
         confirm: vi.fn(),
@@ -39,6 +42,7 @@ function control(
             requestWithSession={vi.fn()}
             fieldLabel='Source phrase'
         />,
+        { locale },
     );
 }
 
@@ -68,6 +72,22 @@ it('keeps retry instructions in a tooltip and announces failures without inline 
         'Pronunciation could not be prepared. Try again.',
     );
 });
+
+it.each(['en', 'ru', 'fr', 'es'] as const)(
+    'localizes provider failure in the %s tooltip and live announcement',
+    (locale) => {
+        control('failed', false, 'speech_provider_unavailable', locale);
+        const button = screen.getByRole('button');
+        expect(button).toHaveTextContent('');
+        expect(screen.getByRole('status')).toHaveTextContent(
+            speechCopy[locale].providerUnavailable,
+        );
+        fireEvent.focus(button);
+        expect(screen.getByRole('tooltip')).toHaveTextContent(
+            speechCopy[locale].providerUnavailable,
+        );
+    },
+);
 
 it('shows a loading spinner and keeps cancellation available through an icon', () => {
     control('loading');

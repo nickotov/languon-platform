@@ -46,6 +46,10 @@ const statusSchema = taskSchema.extend({
     model: z.string(),
     state: z.enum(['waiting', 'queuing', 'generating', 'success', 'fail']),
     resultJson: z.string().max(16384).nullable().optional(),
+    failCode: z
+        .union([z.string().max(64), z.number().int()])
+        .nullable()
+        .optional(),
 });
 const resultSchema = z.object({
     resultUrls: z.array(z.string().url().max(4096)).length(1),
@@ -185,7 +189,14 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
         const data = statusSchema.parse(result.data);
         if (data.taskId !== input.taskId || data.model !== input.profile.model)
             throw new Error('Mismatched speech task.');
-        if (data.state === 'fail') throw new SpeechTaskFailedError();
+        if (data.state === 'fail') {
+            const unavailable = ['429', '500', '502', '503', '504'].includes(
+                String(data.failCode),
+            );
+            throw new SpeechTaskFailedError(
+                unavailable ? 'provider_unavailable' : 'generation_failed',
+            );
+        }
         if (data.state !== 'success')
             return {
                 state: 'pending',

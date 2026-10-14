@@ -61,7 +61,7 @@ describe('dictionary API', () => {
 
         const [url, init] = vi.mocked(fetch).mock.calls[0]!;
         expect(String(url)).toBe(
-            'http://localhost:4000/shared/dictionaries/share-locator-1234?limit=25',
+            '/api/shared/dictionaries/share-locator-1234?limit=25',
         );
         expect(String(url)).not.toContain(shareKey);
         expect(new Headers(init?.headers).get('x-languon-share-key')).toBe(

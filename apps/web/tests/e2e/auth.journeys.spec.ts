@@ -6,7 +6,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision user-authentication sha256:9d5a8788ec677677
+// @user-flow-revision user-authentication sha256:1b3b7d7393c4523c
 
 const initialPassword = 'E2e!Initial-password-2026';
 const replacementPassword = 'E2e!Replacement-password-2026';
@@ -33,7 +33,10 @@ function captureBrowserErrors(
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
         if (response.status() < 400) return;
-        const path = new URL(response.url()).pathname;
+        const path = new URL(response.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         const expected =
             (path === '/auth/refresh' && response.status() === 401) ||
             expectedFailures[path] === response.status();

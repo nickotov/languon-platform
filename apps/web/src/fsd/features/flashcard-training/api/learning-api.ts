@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '@/fsd/shared/api/api-url';
 import {
     FlashcardAttemptRequestSchema,
     FlashcardAttemptResponseSchema,
@@ -35,13 +36,10 @@ interface Schema<T> {
 /** Content is held only by the mounted feature, never in shared-key cache/storage. */
 export function createLearningApi(options: Options): LearningApi {
     const { target, signedIn, requestWithSession } = options;
-    const base = (
-        options.baseUrl ??
-        process.env.NEXT_PUBLIC_API_URL ??
-        (process.env.NODE_ENV === 'production'
-            ? '/api'
-            : 'http://localhost:4000')
-    ).replace(/\/$/, '');
+    const base = resolveApiUrl(
+        process.env.NODE_ENV,
+        options.baseUrl ?? process.env.NEXT_PUBLIC_API_URL,
+    );
     let prefix: string;
     if (target.kind === 'owner') {
         prefix = `/learning/dictionaries/${encodeURIComponent(target.dictionaryId)}`;

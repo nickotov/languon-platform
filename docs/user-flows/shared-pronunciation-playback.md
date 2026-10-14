@@ -9,6 +9,8 @@ surfaces:
     - api
     - system
 source_paths:
+    - apps/web/next.config.mjs
+    - apps/web/src/fsd/shared/api/api-url.ts
     - apps/backend/src/modules/speech/**
     - apps/backend/src/modules/ai-credits/**
     - apps/web/src/fsd/features/speech-playback/**
@@ -101,7 +103,12 @@ confirmation. Never point these checks at staging/production wallets or storage.
    then plays one clip or exposes ready Play if the browser blocks delayed
    autoplay. Status and fixture-tone notices appear in the tooltip and are
    announced accessibly. A fixture tone proves transport, not pronunciation.
-3. Play another field while one is playing; only the newly selected clip remains
+3. Inspect browser Network: requests and protected audio use same-origin
+   `/api/speech/...`; internal backend `/speech/...` paths sit behind the proxy.
+   A provider task failure retains its safe cause after failed-inventory cleanup.
+   Temporary provider failure appears in the tooltip/live status; failed paid work
+   releases its hold and joiners do not see the initiator's billing state.
+   Play another field while one is playing; only the newly selected clip remains
    active. Navigate away during preparation; a late result must not autoplay.
 4. Save equivalent text with surrounding/repeated horizontal spaces in another
    synthetic actor's dictionary. Play and verify cached reuse without another
@@ -270,3 +277,12 @@ remove only their own isolated containers, database and bucket. Administrative
 recording deletion is intentional destructive product behavior and requires the
 in-app reason/impact confirmation. Never use shared/staging/production storage for
 test resets or delete retained successful audio as ordinary age-based cleanup.
+
+Provider failure diagnostics: a failed request with `speech_provider_unavailable`
+means the provider reported a terminal temporary/internal error, not missing S3
+bytes. `speech_generation_failed` is another terminal generation failure. Failed
+inventory cleanup preserves these safe outcomes. `speech_recording_unavailable`
+continues to mean an otherwise usable recording was removed/unavailable. The UI
+never displays vendor fail messages or task/result URLs; operators can inspect an
+already known provider task without resubmitting it. No automatic fallback or paid
+resubmission occurs. Successful live Kie pronunciation depends on provider health.

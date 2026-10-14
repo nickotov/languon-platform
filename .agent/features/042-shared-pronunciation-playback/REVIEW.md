@@ -117,3 +117,39 @@ this to `SpeechTaskFailedError`, releases/fails work and never replays a fixture
 as pronunciation. Review update found no new defect. Successful live synthesis,
 pronunciation quality and result-host exercise remain external activation gates;
 production Selectel/IAM and commercial/retention gates are unchanged.
+
+## Provider failure and API-prefix repair review (2026-10-14)
+
+Initial independent completion and security review from base `b9de213`, followed
+by focused remediation of FPR-1. Final source/test boundary captured tracked binary
+diff SHA-256 `4d2b60b30c61455d7843e3338ba61e7443fd5ec196052bb6b359091dc56c3ed5`
+plus new API resolver/proxy/client tests. Later edits only finalize durable records.
+No open material implementation or Critical/High/Medium security findings.
+
+- FPR-1 Medium: Docker development and authentication guide still supplied the
+  old direct backend browser URL. Fixed Compose `/api` plus exact trusted internal
+  `http://backend:4000`, tightly scoped proxy validation/tests, guide settings and
+  auth revision marker. Effective Compose metadata and final guide checks passed.
+- Root cause verified without paid generation: existing task was accepted then
+  failed upstream with Kie500. Its request/voice/language match the official
+  contract. Failed inventory cleanup had erased safe error/billing response;
+  PostgreSQL regressions reproduced that exact result then passed after repair.
+- Actor/request scope, fresh source authorization, joining billing privacy, failed
+  reservation release/text scrub and unknown-submission fences remain intact.
+  Typed/validated provider codes map to bounded internal reasons. Raw failure
+  messages, prompts, task/result identifiers and URLs never enter learner status.
+- All web clients share same-origin `/api`; production NGINX strategy/internal
+  backend paths unchanged. Proxy origins are trusted operator configuration,
+  development-only and restricted to loopback or exact Compose backend4000.
+  Credential/path/query/hash/other-host rejection, cookies/Origin/auth/private
+  bytes and bounded downloads remain covered. Node config check runs in normal
+  web unit script. Independent reviewers verified web576+Node and accepted backend
+  74/74, auth/speech Chromium and affected static/build/documentation evidence.
+
+Additional CSV exploration stopped at an unchanged unrelated import-dialog narrow
+layout assertion before export; no success claim or assertion weakening. Review
+accepted this as nonblocking for actual auth7/speech4 proxy/body/binary evidence.
+Live Kie success/quality/result-host exercise remains an external gate; no new
+paid request was made. Explicit API URL overrides remain trusted deployment config,
+and speech_jobs.error is DB text with fixed safe repository writers. Existing
+shared exact-text cache-membership inference/production activation gates unchanged.

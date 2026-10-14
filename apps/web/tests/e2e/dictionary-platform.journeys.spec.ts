@@ -10,9 +10,6 @@ import { readFile } from 'node:fs/promises';
 // @user-flow-revision dictionary-platform sha256:7bf7da62fcf1de05
 
 const password = 'E2e!Dictionary-password-2026';
-const backendPort = new URL(
-    process.env.AUTH_E2E_BACKEND_ORIGIN ?? 'http://localhost:4000',
-).port;
 const runId =
     process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
 
@@ -36,7 +33,10 @@ function captureBrowserErrors(
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
         if (response.status() < 400) return;
-        const path = new URL(response.url()).pathname;
+        const path = new URL(response.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         const expected =
             (path === '/auth/refresh' && response.status() === 401) ||
             (path.startsWith('/shared/dictionaries/') &&
@@ -850,8 +850,8 @@ test.describe('dictionary platform journeys', () => {
         const sharedResponse = page.waitForResponse((response) => {
             const url = new URL(response.url());
             return (
-                url.port === backendPort &&
-                url.pathname === `/shared/dictionaries/${shareId}` &&
+                url.origin === new URL(page.url()).origin &&
+                url.pathname === `/api/shared/dictionaries/${shareId}` &&
                 response.status() === 200
             );
         });

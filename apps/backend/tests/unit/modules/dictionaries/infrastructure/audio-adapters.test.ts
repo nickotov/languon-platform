@@ -14,6 +14,7 @@ import {
     FixtureSpeechProvider,
     KieSpeechProvider,
 } from '../../../../../src/modules/dictionaries/infrastructure/audio/speech-providers';
+import { SpeechTaskFailedError } from '../../../../../src/modules/speech/application/ports/speech-synthesis-provider';
 
 const profile = {
     configurationId: 'kie-v1',
@@ -205,6 +206,62 @@ describe('speech adapters', () => {
             provider(fetcher).poll({ taskId: 'task', profile }),
         ).rejects.toThrow('Mismatched');
     });
+    it.each([429, '429', 500, '500', 502, '502', 503, '503', 504, '504'])(
+        'classifies failed Kie task code %s as provider unavailability without retaining private diagnostics',
+        async (failCode) => {
+            const privateMessage =
+                'synthetic confidential diagnostic https://invalid.example/private-output';
+            const fetcher = vi.fn().mockResolvedValue(
+                response({
+                    code: 200,
+                    data: {
+                        taskId: 'task',
+                        model: profile.model,
+                        state: 'fail',
+                        failCode,
+                        failMsg: privateMessage,
+                    },
+                }),
+            );
+            const download = vi.fn();
+            const error = await provider(fetcher, download)
+                .poll({ taskId: 'task', profile })
+                .catch((failure: unknown) => failure);
+            expect(error).toBeInstanceOf(SpeechTaskFailedError);
+            expect(error).toMatchObject({
+                reason: 'provider_unavailable',
+                message: 'Speech task failed.',
+            });
+            expect(JSON.stringify(error)).not.toContain(privateMessage);
+            expect(error).not.toHaveProperty('failMsg');
+            expect(download).not.toHaveBeenCalled();
+            expect(fetcher).toHaveBeenCalledOnce();
+            expect(fetcher.mock.calls[0]![1].method).toBe('GET');
+        },
+    );
+    it.each([400, 'unknown', null, undefined])(
+        'keeps failed Kie task code %s as a safe generic generation failure',
+        async (failCode) => {
+            const fetcher = vi.fn().mockResolvedValue(
+                response({
+                    code: 200,
+                    data: {
+                        taskId: 'task',
+                        model: profile.model,
+                        state: 'fail',
+                        failCode,
+                        failMsg: 'synthetic private provider diagnostic',
+                    },
+                }),
+            );
+            await expect(
+                provider(fetcher).poll({ taskId: 'task', profile }),
+            ).rejects.toMatchObject({
+                reason: 'generation_failed',
+                message: 'Speech task failed.',
+            });
+        },
+    );
 });
 
 describe('audio download trust boundary', () => {

@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:56b7a5103be1a668
+// @user-flow-revision shared-pronunciation-playback sha256:09ac5b0e00c9fcea
 import {
     expect,
     test,
@@ -98,6 +98,12 @@ test.describe.serial('shared pronunciation playback', () => {
 
     // @user-flow shared-pronunciation-playback/free-generation-and-shared-reuse
     test('reuses normalized saved text across authenticated accounts without another generation', async () => {
+        const speechRequests: string[] = [];
+        const observe = (request: Request) => {
+            if (new URL(request.url()).pathname.includes('/speech/'))
+                speechRequests.push(request.url());
+        };
+        first.page.on('request', observe);
         const text = `palabra ${runId} ${test.info().workerIndex}`;
         await savedWord(first.page, text, 'first');
         const bytes = first.page.waitForResponse(
@@ -116,6 +122,14 @@ test.describe.serial('shared pronunciation playback', () => {
         expect(cached.billingState).toBe('free');
         expect(cached.quote).toBeNull();
         expect(cached.playbackId).not.toBe(initial.requestId);
+        first.page.off('request', observe);
+        expect(speechRequests.length).toBeGreaterThan(2);
+        for (const request of speechRequests) {
+            expect(new URL(request).origin).toBe(
+                new URL(first.page.url()).origin,
+            );
+            expect(new URL(request).pathname).toMatch(/^\/api\/speech\//);
+        }
         await second.page.setViewportSize({ width: 390, height: 844 });
         expect(
             await second.page.evaluate(
@@ -124,6 +138,49 @@ test.describe.serial('shared pronunciation playback', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+        // Exercise a provider outage at the browser API boundary without a paid request.
+        await second.page.reload();
+        const failureRequestId = '00000000-0000-4000-8000-000000000042';
+        await second.page.route('**/api/speech/**', async (route) => {
+            const path = new URL(route.request().url()).pathname;
+            const preparing = path === '/api/speech/prepare';
+            if (
+                !preparing &&
+                path !== `/api/speech/requests/${failureRequestId}`
+            ) {
+                await route.continue();
+                return;
+            }
+            await route.fulfill({
+                json: {
+                    state: preparing ? 'queued' : 'failed',
+                    requestId: failureRequestId,
+                    playbackId: null,
+                    quote: null,
+                    fixture: false,
+                    retryAfterMs: preparing ? 500 : null,
+                    error: preparing ? null : 'speech_provider_unavailable',
+                    billingState: null,
+                },
+            });
+        });
+        expect((await preparation(second.page)).state).toBe('queued');
+        const retry = second.page.getByRole('button', {
+            name: 'Play Source phrase',
+            exact: true,
+        });
+        await expect(retry).toBeVisible();
+        await expect(retry).toHaveText('');
+        const outage =
+            'The pronunciation service is temporarily unavailable. Try again later.';
+        await expect(
+            second.page.getByRole('status').filter({ hasText: outage }),
+        ).toHaveText(outage);
+        await retry.hover();
+        await expect(second.page.getByRole('tooltip')).toHaveText(
+            `Play Source phrase. ${outage}`,
+        );
+        await second.page.unroute('**/api/speech/**');
     });
 
     // @user-flow shared-pronunciation-playback/paid-generation-confirmation-cancellation

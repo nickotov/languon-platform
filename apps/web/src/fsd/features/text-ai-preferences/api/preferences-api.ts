@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '@/fsd/shared/api/api-url';
 import { BrowserApiError } from '@languon/browser-auth';
 import {
     TextAiErrorResponseSchema,
@@ -28,12 +29,10 @@ async function request<T>(
     schema: { parse(value: unknown): T },
     body?: UpdateTextAiPreferenceRequest,
 ): Promise<T> {
-    const base = (
-        process.env.NEXT_PUBLIC_API_URL ??
-        (process.env.NODE_ENV === 'production'
-            ? '/api'
-            : 'http://localhost:4000')
-    ).replace(/\/$/, '');
+    const base = resolveApiUrl(
+        process.env.NODE_ENV,
+        process.env.NEXT_PUBLIC_API_URL,
+    );
     const response = await fetch(`${base}${path}`, {
         method: body ? 'PUT' : 'GET',
         headers: {

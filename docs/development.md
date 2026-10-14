@@ -253,3 +253,24 @@ Keep shared build and quality tooling at the repository root. Commit
 The prompt package does not require Langfuse credentials for local tests: it
 uses checked-in local prompt definitions. Never silently use production
 credentials from development or test code.
+
+### Browser API paths in development
+
+Web browser requests use the same-origin `/api` base in development and production.
+`NEXT_PUBLIC_API_URL=/api` is the sanitized default. Next's development-only rewrite
+forwards `/api/*` to `WEB_API_PROXY_TARGET=http://localhost:4000`, stripping `/api`.
+The server-only target accepts a credential-free loopback HTTP origin or the
+exact trusted Compose service `http://backend:4000`; it rejects arbitrary remote
+hosts, credentials, paths and queries. Docker app development sets `/api` and that
+Compose target, keeping browser paths identical to host development. Production still uses NGINX's existing
+`/api` proxy. Internal backend health/debug/service requests therefore keep their
+unprefixed routes, while browser speech requests look like
+`http://localhost:3333/api/speech/requests/<request-id>`.
+
+Restart web after changing its environment or Next proxy configuration. Restart
+backend and dictionary worker together to load provider changes. Explicit browser
+API URL overrides remain supported for controlled deployments and must include
+the intended public base path. A Kie terminal 500 is a supplier generation failure;
+changing an API URL cannot repair it. Safe failed-job errors and billing outcomes
+remain available after failed recording cleanup. Never retry a potentially accepted
+paid submission merely because its status is unavailable.

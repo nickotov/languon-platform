@@ -42,6 +42,7 @@ describe('speech API boundary', () => {
         );
         expect(results.every(Boolean)).toBe(true);
         expect(fetcher).toHaveBeenCalledTimes(2);
+        expect(fetcher.mock.calls[0]?.[0]).toBe('/api/speech/availability');
         expect(
             JSON.parse(String(fetcher.mock.calls[0]?.[1].body)).sources,
         ).toHaveLength(50);

@@ -72,15 +72,8 @@ import {
     type SignUpResponse,
 } from '@languon/contracts';
 
-export function resolveApiUrl(
-    nodeEnvironment: string | undefined,
-    configuredUrl: string | undefined,
-): string {
-    return (
-        configuredUrl ??
-        (nodeEnvironment === 'production' ? '/api' : 'http://localhost:4000')
-    ).replace(/\/$/, '');
-}
+export { resolveApiUrl } from './api-url';
+import { resolveApiUrl } from './api-url';
 
 const apiUrl = resolveApiUrl(
     process.env.NODE_ENV,

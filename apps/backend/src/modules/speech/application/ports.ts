@@ -120,6 +120,7 @@ export interface SpeechStore {
         job: SpeechJob,
         outcome: 'failure' | 'unknown',
         now: Date,
+        reason?: 'speech_provider_unavailable',
     ): Promise<void>;
     releaseDeadlines(now: Date): Promise<void>;
     listRecordings(query: {

@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:56b7a5103be1a668
+// @user-flow-revision shared-pronunciation-playback sha256:09ac5b0e00c9fcea
 import {
     expect,
     test,
@@ -36,7 +36,10 @@ function captureBrowserErrors(page: Page) {
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
         if (response.status() < 400) return;
-        const path = new URL(response.url()).pathname;
+        const path = new URL(response.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         // Initial anonymous-session probing is an expected application boundary.
         if (path === '/auth/refresh' && response.status() === 401) return;
         errors.push(`${response.status()} ${path}`);

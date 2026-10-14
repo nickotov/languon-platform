@@ -15,7 +15,10 @@ function captureBrowserErrors(page: Page) {
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
         if (response.status() < 400) return;
-        const path = new URL(response.url()).pathname;
+        const path = new URL(response.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         if (path === '/auth/refresh' && response.status() === 401) return;
         errors.push(`${response.status()} ${path}`);
     });

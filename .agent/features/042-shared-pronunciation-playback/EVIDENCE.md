@@ -178,3 +178,71 @@ by the existing typed application worker/provider path; fixtures are never used 
 a substitute. Local ignored configuration remains prepared; deployment must pause
 admission and restart both API/worker before generation. Manual diagnostic task
 metadata and scripts were removed after recording only safe result summaries.
+
+## E-9 — Safe provider failures and same-origin API routing (2026-10-14)
+
+For the user's exact reported local request, read-only diagnosis queried only job,
+inventory and provider metadata. Recording was deleted by failure cleanup; job
+was failed with `speech_generation_failed`, free billing, known task ID. Read-only
+status lookup of that existing task returned terminal Kie failCode 500 / internal
+error, without audio. No private source text, credential or provider identifier was
+printed or saved in evidence. No paid submission, data mutation or retry occurred.
+Independent contract analysis confirmed current model/Bella/fr payload matches
+Kie's documented contract; absent stability/style fields have valid defaults.
+There is no evidence that changing model, voice or payload fixes the external error.
+
+- RED real PostgreSQL regressions reproduced the exact misleading response after
+  failure cleanup: `speech_recording_unavailable` and null billing. GREEN latest
+  backend **74/74**: 34 store PostgreSQL cases, 12 worker units and 28 adapter units.
+  Safe generic/temporary provider failures survive inventory deletion; refunded
+  payer sees `released_no_charge`, joiners see `free`; administrative removal of
+  successful audio remains unavailable. Known numeric/string failure codes are
+  classified, unknown failures stay generic, raw vendor diagnostics never persist,
+  and definitive task failure never resubmits. Latest backend typecheck, scoped
+  ESLint/format/diff and build passed. Owned PG55432 / dedicated
+  `languon_auth_speech_failure_test` container and volume removed.
+- Web full suite **64 files / 576 tests passed** after safe failure UI changes.
+  Final targeted player/control/routing tests and the Node development-proxy
+  configuration test pass; the Node check is now included in the normal workspace
+  test script. All seven browser clients share `/api` by default and explicit URL
+  overrides remain compatible. Proxy tests cover development loopback target,
+  credential/path/query/fragment/remote-target rejection and production bypass.
+- Real Chromium on disposable web/API3335/4005, PG55433 and Redis56380: initial
+  **7/7** authentication and speech journeys passed with same-origin `/api` request
+  and protected-byte assertions. Final **4/4** shared speech journeys passed with
+  added controlled provider-error response, localized tooltip/live status and
+  icon-only retry; normalized shared reuse, narrow view, paid consent/settlement,
+  free replay and unsupported controls also pass. Fixtures only. Owned application
+  processes and disposable containers cleaned; normal development data/services
+  preserved. No unexpected console/page/network errors in verified journeys.
+- Web typecheck, lint, production build and backend build passed; generated Next
+  declaration restored, final canonical typecheck passed. Shared guide revision
+  `sha256:09ac5b0e00c9fcea` synchronized across mapped tests; documentation/traceability
+  checks pass. Authentication guide behavior/scenario inventory stays unchanged.
+
+Ignored `.env.local` and sanitized example now use `NEXT_PUBLIC_API_URL=/api`, with
+server-only `WEB_API_PROXY_TARGET=http://localhost:4000`. Development Next proxy
+strips `/api`; internal backend routes and production NGINX strategy are unchanged.
+HTTP-only cookie Path=/, authorization and origin checks passed. Current app
+clients use job polling, not SSE/multipart API routes; document bytes upload
+directly to a presigned storage URL and therefore bypass the API proxy. Successful live Kie audio, quality/host exercise and production
+Selectel/retention/commercial gates remain external; supplier failure is not waived.
+
+Final review remediation: canonical `dev:apps:docker` now also uses browser `/api`
+with server-only exact target `http://backend:4000`. Node validation accepts that
+single trusted Compose origin and rejects other host/port variants plus credentials,
+paths, query/hash. Read-only effective Compose config confirmed only the two safe
+web settings. Production rewrites remain disabled. The authentication guide's old
+direct API override was corrected; revision `sha256:1b3b7d7393c4523c` synchronized.
+All 21 guide checks, auth/shared E2E traceability, formatting/diff checks passed.
+Independent completion/security remediation verdicts: no open material findings.
+
+An additional exploratory Quizlet/CSV journey reached its unchanged 320px/200%
+import-dialog overflow assertion and stopped before export (dictionary-platform
+journey line1551). No legitimate assertion was weakened. Existing responsive CSS
+and that layout assertion are outside this repair; no CSV success is claimed.
+Passing authentication/speech journeys verify actual proxied JSON and protected
+binary bytes. Current client routes have no SSE/multipart; presigned document PUT
+bypasses the API proxy. This exploratory stop is recorded as a nonblocking unrelated
+limitation, accepted by independent review. All owned extra PG/Redis containers
+were removed; generated Next declarations restored and final typecheck passed.

@@ -7,7 +7,10 @@ import type {
     AudioObjectStorage,
 } from '../../../../src/modules/speech/application/ports';
 import { createFixtureAudio } from '../../../../src/modules/speech/domain/audio-integrity';
-import { SpeechSubmissionError } from '../../../../src/modules/speech/application/ports/speech-synthesis-provider';
+import {
+    SpeechSubmissionError,
+    SpeechTaskFailedError,
+} from '../../../../src/modules/speech/application/ports/speech-synthesis-provider';
 
 function harness(overrides: Partial<SpeechJob> = {}) {
     const job: SpeechJob = {
@@ -128,6 +131,40 @@ describe('shared speech worker recovery', () => {
         expect(h.provider.submit).not.toHaveBeenCalled();
         expect(h.store.pending).toHaveBeenCalled();
         expect(h.store.fail).not.toHaveBeenCalled();
+    });
+    it('settles definitive provider-task failure without resubmitting or persisting provider diagnostics', async () => {
+        const h = harness({ state: 'processing', taskId: 'provider-task' });
+        const failure = new SpeechTaskFailedError();
+        Object.assign(failure, {
+            failMsg: 'synthetic private provider diagnostic',
+            outputUrl: 'https://invalid.example/synthetic-private-output',
+        });
+        vi.mocked(h.provider.poll).mockRejectedValue(failure);
+        await h.worker.runOnce();
+        expect(h.provider.submit).not.toHaveBeenCalled();
+        expect(h.store.pending).not.toHaveBeenCalled();
+        expect(h.store.complete).not.toHaveBeenCalled();
+        expect(h.store.fail).toHaveBeenCalledExactlyOnceWith(
+            h.job,
+            'failure',
+            expect.any(Date),
+        );
+    });
+    it('settles typed provider unavailability with a safe reason and no resubmission', async () => {
+        const h = harness({ state: 'processing', taskId: 'provider-task' });
+        vi.mocked(h.provider.poll).mockRejectedValue(
+            new SpeechTaskFailedError('provider_unavailable'),
+        );
+        await h.worker.runOnce();
+        expect(h.provider.submit).not.toHaveBeenCalled();
+        expect(h.store.pending).not.toHaveBeenCalled();
+        expect(h.store.complete).not.toHaveBeenCalled();
+        expect(h.store.fail).toHaveBeenCalledExactlyOnceWith(
+            h.job,
+            'failure',
+            expect.any(Date),
+            'speech_provider_unavailable',
+        );
     });
     it('retries physical deletions from durable inventory', async () => {
         const h = harness();

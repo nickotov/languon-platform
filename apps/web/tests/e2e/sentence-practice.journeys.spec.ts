@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:56b7a5103be1a668
+// @user-flow-revision shared-pronunciation-playback sha256:09ac5b0e00c9fcea
 // @user-flow-revision sentence-practice-web sha256:30e6921701e3a8f5
 
 import {
@@ -36,7 +36,10 @@ function observeErrors(
             failures.push(message.text());
     });
     page.on('requestfailed', (request) => {
-        const path = new URL(request.url()).pathname;
+        const path = new URL(request.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         if (
             typeof expectedBlocked === 'function'
                 ? expectedBlocked(path)
@@ -45,11 +48,14 @@ function observeErrors(
             return;
         if (!request.failure()?.errorText.includes('ERR_ABORTED'))
             failures.push(
-                `${request.method()} ${new URL(request.url()).pathname}`,
+                `${request.method()} ${new URL(request.url()).pathname.replace(/^\/api(?=\/)/, '')}`,
             );
     });
     page.on('response', (response) => {
-        const path = new URL(response.url()).pathname;
+        const path = new URL(response.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         if (response.status() >= 500)
             failures.push(`${response.status()} ${path}`);
     });
@@ -761,10 +767,12 @@ test.describe('sentence practice and model preferences', () => {
             if (
                 request.method() === 'POST' &&
                 /\/sentences\/(next|exercises\/[^/]+\/checks)$/.test(
-                    new URL(request.url()).pathname,
+                    new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''),
                 )
             )
-                paidRequests.push(new URL(request.url()).pathname);
+                paidRequests.push(
+                    new URL(request.url()).pathname.replace(/^\/api(?=\/)/, ''),
+                );
         });
         const savedNext = reader.waitForResponse(
             (response) =>
@@ -1036,7 +1044,11 @@ test('finishes a five-word Russian to French round and reuses completed examples
     page.on('response', async (response) => {
         if (response.url().endsWith('/sentences/next') && response.ok())
             admissions.push(await response.json());
-        if (!/\/sentences\/jobs\/[^/]+$/.test(new URL(response.url()).pathname))
+        if (
+            !/\/sentences\/jobs\/[^/]+$/.test(
+                new URL(response.url()).pathname.replace(/^\/api(?=\/)/, ''),
+            )
+        )
             return;
         const job = (await response.json()) as {
             state?: string;
@@ -1050,7 +1062,10 @@ test('finishes a five-word Russian to French round and reuses completed examples
             generatedExerciseIds.push(job.result.exercise.id);
     });
     page.on('request', (request) => {
-        const path = new URL(request.url()).pathname;
+        const path = new URL(request.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
         if (request.method() !== 'POST') return;
         const body = request.postDataJSON() as {
             replayExerciseIds?: string[];
