@@ -51,6 +51,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0030](./0030-global-web-shell-and-preference-placement.md)     | Global web shell and preference placement           | Accepted               |
 | [ADR-0031](./0031-shared-pronunciation-and-retained-recordings.md)  | Shared pronunciation and retained recordings        | Accepted               |
 | [ADR-0032](./0032-model-price-revisions-and-speech-settlement.md)   | Model price revisions and speech settlement         | Accepted               |
+| [ADR-0033](./0033-additive-enum-migration-commit-boundaries.md)     | Additive enum migration commit boundaries           | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

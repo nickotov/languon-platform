@@ -2,7 +2,7 @@
 
 Feature: [FEATURE.md](./FEATURE.md)
 Last updated: 2026-10-14
-Branch: feature/shared-pronunciation-playback
+Branch: feature/shared-pronunciation-migration-repair
 
 ## Goal and specification
 
@@ -45,6 +45,28 @@ Unit normalization/pricing/state tests; disposable PostgreSQL admission/ledger/r
 
 [EVIDENCE.md](./EVIDENCE.md) owns checks/proof. [REVIEW.md](./REVIEW.md) owns review/remediation.
 
+## Upgrade repair (2026-10-14)
+
+The existing development database rejected migration 0057 with PostgreSQL 55P04:
+new enum labels were referenced by CHECK constraints before their transaction
+committed. Earlier full-history fresh-install evidence did not cover this upgrade.
+Reactivated the already authorized feature scope, preserving canonical migration
+SQL, metadata, hashes, and all user data.
+
+The reserved-session runner precommits only complete additive statements for
+existing types under the existing advisory lock after validating history. Only
+those statements are rewritten idempotently during Drizzle execution. Duplicate
+pending bare additions and incompatible ordering are rejected. Fully simulated
+order is checked before and after precommit, including partial failed-run residue.
+Ordinary DDL and migration history remain transactional. ADR-0033 documents the
+narrow exception and unused-label residue on failure.
+
 ## Remaining work
 
-No implementation or verification work remains. Required local feature commit/squash delivery follows the repository workflow. Live provider/Selectel activation remains a separately documented release gate; default generation flags stay off.
+No implementation or verification work remains. Upgrade repair passed all 16
+real PostgreSQL cases, five database unit tests, affected static/build checks,
+documentation checks, independent completion review, and security review.
+The actual local migration and final idempotent retry completed successfully.
+The feature-owned disposable PostgreSQL container and temporary volume were removed;
+ordinary development PostgreSQL and Redis remain intact. Required local squash
+handoff follows. Live provider/Selectel activation remains the documented release gate.

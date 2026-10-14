@@ -121,6 +121,8 @@ requested Drizzle approach stays close to SQL and the existing driver.
 
 ## Related
 
+- [ADR-0033: Additive enum migration commit boundaries](0033-additive-enum-migration-commit-boundaries.md)
+
 - [Architecture](../architecture.md)
 - [Development](../development.md)
 - [User Authentication feature](../../.agent/features/001-user-authentication/FEATURE.md)

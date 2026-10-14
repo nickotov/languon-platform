@@ -50,3 +50,34 @@ Reviewed base:35534de273975275c8403f0a52ae556bb2c87872. Captured tracked plus97 
 Evidence accepted:856 backend unit tests and final lint/typecheck/ESM+DTS build;88 real-PG cases including migration8/source7/concurrency/accounting/purge; real MinIO and exact production-role proof; all563 web cases have passing executions (latest full562/563 timeout, unchanged file isolated4/4), final build then typecheck/lint; admin43;14 unique actual browser journeys; docs16/21 mappings, deployment78/rotation15 and styling/FSD checks. See EVIDENCE.md for limitations and exact chronology.
 
 Live Kie/Selectel connectivity, voices/language quality, commercial terms/pricing/caching and production IAM remain activation gates. Accepted retention/cache-membership and complete retained-key assumptions remain explicit. New direct migration/E2E scripts stay unreviewed/disabled in the dev-panel catalog alongside baseline drift; no full pnpm check success is claimed. These do not block local feature completion.
+
+## Migration repair review (2026-10-14)
+
+Reactivated authorized feature repair on `feature/shared-pronunciation-migration-repair`,
+base `b7b5cb636ae2b91eb126d45bb3e6fbd8cf0c3d16`. Author preflight and independent
+completion/security reviews passed; no open material findings. The read-only
+completion reviewer captured the implementation/test patch SHA-256
+`fa9ec386a6d7b1a985d23679df1bc787d4bbde66030e571ee33a61e7e879c1df`.
+Subsequent status/evidence/verdict edits only; no source or test changes.
+
+- MR-1 Medium: document the enum precommit exception to migration atomicity.
+  Resolved by accepted ADR-0033 and development/ADR relationship links.
+- MR-2 Medium: reject duplicate bare additions to an existing enum before any
+  mutation. Explicitly authored IF NOT EXISTS repeats preserve their intent.
+  Resolved by decoded-label/OID duplicate preflight and real PostgreSQL regression.
+- MR-3 Medium: prevent changed pending SQL from certifying wrong enum order,
+  including shared BEFORE/AFTER anchors and partial failed-run residue.
+  Resolved by full per-type replay, compatible initial projection, and exact final
+  catalog comparison before Drizzle/history execution. Full/partial retry proofs pass.
+- Two initial security findings, order drift and overly broad statement rewriting,
+  are resolved. Only exact precommitted additions are rewritten; fresh duplicate
+  additions retain PostgreSQL rollback/errors. An intermediate parser capture-index
+  regression was caught by unit/review checks and fixed before final verification.
+
+Separate bounded test worker reproduced the original 55P04 and verified the final
+16-case PostgreSQL suite; package unit/static/build and backend static/build checks
+passed. Actual local development migration and final idempotent retry succeeded
+without reset or private-data inspection. Final focused security reviewer reports
+no open critical/high/medium findings. No production or paid provider was used.
+Residual: a failed ordinary migration can leave unused additive enum labels;
+ordinary schema/data/history roll back. ADR-0033 documents the explicit tradeoff.

@@ -238,6 +238,8 @@ GitHub-hosted job preserves a smaller trust boundary.
 
 ## Related
 
+- [ADR-0033: Additive enum migration commit boundaries](0033-additive-enum-migration-commit-boundaries.md)
+
 - [Release and deployment feature](../../.agent/features/015-release-deployment-platform/FEATURE.md)
 - [Release and deployment ExecPlan](../../.agent/features/015-release-deployment-platform/EXEC_PLAN.md)
 - [ADR-0002: Drizzle schema and migration strategy](./0002-drizzle-schema-and-migration-strategy.md)

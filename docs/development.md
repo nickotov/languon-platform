@@ -221,6 +221,13 @@ the runner also holds a PostgreSQL advisory lock. Backend HTTP startup never
 mutates schema. Do not use `drizzle-kit push` for the ordinary development,
 staging, or production database.
 
+For pending additive enum values, the runner commits additions to existing types
+under that same advisory lock before applying constraints that reference them.
+Migration files/hashes remain unchanged. Ordinary DDL/history still rolls back on
+failure; unused additive labels can remain, and the same command safely retries.
+Do not reset data or edit the migration ledger to recover. Verify existing-schema
+upgrades as well as empty installs; see [ADR-0033](adr/0033-additive-enum-migration-commit-boundaries.md).
+
 ## Dependencies
 
 Add a dependency only to the workspace that imports it:

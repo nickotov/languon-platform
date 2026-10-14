@@ -78,3 +78,38 @@ Live activation requires Kie connectivity/credentials/languages/voices/quality, 
 Approved successful normalized text/audio retention and authenticated exact-text cache-membership inference include private saved text. Learners cannot enumerate the cache or obtain origin/payer/source, canonical keys or object URLs. Retained text can itself contain personal information; retention is not anonymization. Already admitted work can finish after deletion with payer links/holds erased and no late debit. Rotation requires every active/rollback node to know the complete retained-key set.
 
 Cleanup completed: feature-owned PostgreSQL/Redis containers and anonymous volumes removed; dedicated browser-test ports have no listeners. Ordinary development PostgreSQL5432/Redis6379 services and volumes preserved. Review verdict and patch boundary: REVIEW.md.
+
+## E-7 — Existing-schema migration repair (2026-10-14)
+
+The user reported PostgreSQL 55P04 during `dev:all`: migration 0057 used newly
+added labels of an existing enum inside CHECK constraints before commit. The
+previous fresh-install migration evidence did not establish upgrade compatibility.
+A disposable database at migration 0056 reproduced the same failure with the old
+runner. Canonical SQL, journal metadata, hashes, and timestamps remain unchanged.
+
+- Final PostgreSQL 17 migration integration suite: **16/16 passed** on the
+  feature-owned disposable database at localhost:55432, fake data only. Coverage:
+  fresh schema, actual 0056 upgrade preserving saved users/dictionaries and credit
+  accounts/grants plus the applied ledger, idempotence, older learning upgrade,
+  ordinary-DDL rollback and additive-label retry, concurrent advisory lock,
+  tampered history rejection, wrong placement/append order, fresh duplicate labels,
+  existing-type duplicate additions rejected before mutation, multiple append
+  retries, same-anchor BEFORE/AFTER statement drift and valid retries, and partial
+  precommit residue rejected before ordinary schema/history writes.
+- Database package: five unit tests, ESLint, TypeScript, ESM/declaration build passed.
+  Backend TypeScript, build, and scoped integration-test ESLint passed.
+- Prettier, `git diff --check`, and `pnpm docs:user-flows:check` passed. No learner
+  UI or public journey changed; existing commands and expected guide behavior stay
+  the same, so browser/mobile journey evidence from the feature remains applicable.
+- The actual migration target was safely verified as development localhost:5432
+  without printing credentials or reading private rows. `pnpm db:migrate` completed
+  successfully and repeated successfully using the final runner. No reset, ledger
+  modification, or user-data inspection was performed. Initial sandbox tsx IPC
+  restriction was resolved using authorized local execution.
+
+ADR-0033 records that failed ordinary migrations can leave unused additive enum
+labels, with schema/data/history transaction rollback and validated retries.
+Independent completion and focused security remediation verdicts are in REVIEW.md.
+
+The feature-owned PostgreSQL regression container and anonymous volume were removed
+after the final 16-case suite. Existing development PostgreSQL/Redis were preserved.
