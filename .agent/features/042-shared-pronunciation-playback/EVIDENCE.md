@@ -113,3 +113,68 @@ Independent completion and focused security remediation verdicts are in REVIEW.m
 
 The feature-owned PostgreSQL regression container and anonymous volume were removed
 after the final 16-case suite. Existing development PostgreSQL/Redis were preserved.
+
+## E-8 — Playback controls and fixture isolation repair (2026-10-14)
+
+User-reported regressions: verbose play controls, playback beside example fields,
+and a beep for French `alarmer`. Discovery safely verified `.env.local` selected
+fixture with no Kie configuration; the fixture deliberately synthesizes a WAV tone.
+
+- Backend: **30 real PostgreSQL store cases + seven policy units passed**. Eight
+  new cases cover fixture/live ready-cache exclusion in both directions, legacy
+  and scoped keys, pending-job separation, and approved legacy live reuse when new
+  model support is absent. Existing normalized cross-account reuse and credit/race
+  cases passed. Fake synthesis only; strict persistence guards remain enabled.
+  Disposable PostgreSQL localhost:55432 / `languon_auth_playback_controls_test`;
+  owned container/anonymous volume removed, normal dev infrastructure preserved.
+- Web: early full suite **63 files / 567 tests passed**; final focused three files /
+  **19 tests passed**, including actual shared-page composition, two dictionary
+  actions, tooltip/hidden live status, spinner, and retained fixture warning.
+- Real Chromium: **six journeys passed** in isolated API/web ports 4005/3335,
+  PostgreSQL 55433 / `languon_controls_e2e`, Redis 56380. All four mapped dictionary
+  journeys plus normalized shared reuse and Hebrew availability. Owner/authenticated
+  shared reader have exactly source/translation icon actions; examples remain text.
+  Tooltip focus/Escape, accessible status, narrow overflow, real worker bytes,
+  edits/reuse, retry/cancel and archive denial passed. Assertions found no unexpected
+  page/console/network errors (intentional 503 and cancellation aborts are explicit).
+  Playwright-owned processes and both disposable containers were removed.
+- Backend TypeScript/build/scoped ESLint, web TypeScript/build/scoped ESLint/style
+  contract, formatting/diff checks and guide traceability passed. Generated Next.js
+  declarations were restored. Final guide revisions: dictionary
+  `sha256:eee1e8b11828995b`; shared speech `sha256:56b7a5103be1a668`. Last guide edits
+  clarified existing assertions; final passing runtime assertions are unchanged.
+
+The user's ignored local key is now configured; no credential was printed or
+committed. Prepared `kie-turbo-bella-v1` and Bella voice `hpp4J3VqNfWAUOO0d1Us` for
+all 16 existing curated app languages. The current official voice contract lists
+this voice; pronunciation quality per language remains provisional. Turbo pricing
+now explicitly lists six Kie credits per 1,000 characters; the survey and local
+budget estimate were reconciled to that model-specific source. Spend caps are
+100 Kie credits per owner/day and 1000 globally/day, separate from learner tariffs.
+Allowlist is exactly `tempfile.aiquickdraw.com,file.aiquickdraw.com`; provider result
+host verification through the safe adapter remains part of the live check.
+Official pages fetched read-only via curl because web search/open tools failed:
+https://docs.kie.ai/market/elevenlabs/text-to-speech-turbo-2-5.md and
+https://kie.ai/elevenlabs-tts?model=elevenlabs/text-to-speech-turbo-2-5.
+
+Manual live verification: the first probe validated configuration and Kie accepted
+one public `alarmer` task. A temporary diagnostic script used the wrong discriminant
+(`kind` vs `state`) and exited without retrieving/persisting its task ID. This is
+separate from the correctly typed application adapter and deterministic tests.
+No application recording/job or user-wallet operation was created. A corrected
+additional paid sample was rejected by automatic approval review due to potential
+repeat charges; no bypass or second submission occurred. User approval was requested and subsequently granted for exactly one further
+tracked `alarmer` sample. That request persisted its task identity before polling;
+Kie returned terminal `fail` with code 500 and “Internal Error, Please try again
+later.” Read-only lookup of the same task confirmed failure and no result URL.
+No further generation call was made. Thus credentials/submission/polling are
+verified, while successful audio download and listening quality remain externally
+blocked and are not claimed as verified.
+Production activation gates and coordinated pause/restart instructions remain active.
+
+Final completion and focused security reviews report no open material code or
+critical/high/medium security findings. The provider’s terminal failure is handled
+by the existing typed application worker/provider path; fixtures are never used as
+a substitute. Local ignored configuration remains prepared; deployment must pause
+admission and restart both API/worker before generation. Manual diagnostic task
+metadata and scripts were removed after recording only safe result summaries.

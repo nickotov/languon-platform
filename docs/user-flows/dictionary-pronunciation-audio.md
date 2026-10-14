@@ -35,7 +35,8 @@ last_verified: 2026-10-14
 
 ## What this verifies
 
-Listen to a saved card's source, translation, example or example translation.
+Listen to a saved card's source or translation. Examples and their translations
+remain readable text and never display playback controls.
 First use prepares audio; subsequent plays reuse it. Owners and authenticated
 shared readers can play accessible saved fields on desktop and mobile browsers.
 Native screens are deferred. Standard configured voices have no accent selector.
@@ -71,17 +72,23 @@ provider evaluation and dedicated Selectel verification meet the feature gates.
 
 1. Sign in as a verified owner and create a Spanish → English dictionary.
 2. Add source “casa”, translation “house”, example “La casa es grande.” and
-   example translation “The house is large.” Save the card.
-3. Press the speaker icon beside a field (accessible label **Play [field]**). Preparing audio indicates the durable job is pending.
+   example translation “The house is large.” Save the card. Open its sharing link
+   as an authenticated reader: only source and translation have Play controls,
+   while both examples remain visible as text.
+3. Verify that exactly source and translation have speaker icons; neither example
+   has one. The icon-only control exposes **Play [field]** through its tooltip and
+   accessible label. Preparing audio shows a spinner while the durable job is pending.
    When ready, audio plays; if the browser blocks delayed autoplay, press Play
-   again using the same field control. The development fixture label appears for fixture recordings.
+   again using the same field control. Ready/error and development fixture notices
+   appear in the tooltip and accessible live status, without inline button text.
 4. Press Stop to cancel listening or select another field. Only one clip plays.
    Playback uses normal speed; the design does not expose a speed selector.
 5. Play the same field again: it uses cached audio. Edit the source to “hogar”,
-   save, and play: the new text gets a new asset. Changing providers does not
-   discard a ready recording for unchanged content.
+   save, and play: the new text gets a new asset. Changing live providers does not
+   discard ready pronunciation for unchanged content. Fixture tones cannot be
+   reused as real pronunciation when switching to Kie.
 6. Archive the card: its Play actions disappear and old private byte requests
-   are denied. Disabled or empty examples never have a Play action.
+   are denied. Examples never have a Play action, regardless of whether they are populated.
 
 ## API verification
 
@@ -120,12 +127,12 @@ against shared/production data or a paid provider.
 
 ## E2E coverage
 
-| Scenario                                         | Observable proof                                                                                                                                              |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `owner-plays-four-card-fields`                   | Four saved fields return private decodable bytes through the actual worker and play in the browser; speed/reorder controls are absent and narrow layout works |
-| `repeat-play-reuses-audio-and-edits-refresh`     | Repeated playback reuses asset identity; changed saved source selects new audio                                                                               |
-| `audio-failure-retry-and-selection-cancellation` | Failed byte delivery can retry cached audio; stopped delayed selection does not play unexpectedly                                                             |
-| `archived-or-removed-owner-cannot-play-audio`    | Archived card loses controls and previously ready byte URL is denied; removed-owner purge is additionally tested at the database layer                        |
+| Scenario                                         | Observable proof                                                                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `owner-plays-four-card-fields`                   | Owner and authenticated shared reader have exactly source/translation icon actions and tooltips; examples remain text; private bytes play through the actual worker and narrow layout works |
+| `repeat-play-reuses-audio-and-edits-refresh`     | Repeated playback reuses asset identity; changed saved source selects new audio                                                                                                             |
+| `audio-failure-retry-and-selection-cancellation` | Failed byte delivery can retry cached audio; stopped delayed selection does not play unexpectedly                                                                                           |
+| `archived-or-removed-owner-cannot-play-audio`    | Archived card loses controls and previously ready byte URL is denied; removed-owner purge is additionally tested at the database layer                                                      |
 
 ## System verification
 

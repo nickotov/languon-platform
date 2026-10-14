@@ -84,6 +84,7 @@ export interface DrizzleSpeechStoreOptions {
     fingerprintSecret: string;
     retainedFingerprintSecrets?: readonly string[];
     profileResolver: SpeechProfileResolver;
+    fixtureMode?: boolean;
     storageIdentity: { backend: 'postgres' | 's3'; namespace: string };
     generationEnabled: boolean;
     playbackEnabled: boolean;
@@ -140,20 +141,50 @@ export class DrizzleSpeechStore implements SpeechStore {
             inspected.characterCount > (this.options.maxCharacters ?? 2000)
         )
             throw new SpeechError('speech_text_unavailable', 400);
-        const keys = [
+        const fixture =
+            this.options.fixtureMode ??
+            this.options.profileResolver.supports(resolved.language)
+                ?.provider === 'fixture';
+        const secrets = [
             this.options.fingerprintSecret,
             ...(this.options.retainedFingerprintSecrets ?? []),
-        ].map((secret) =>
+        ];
+        const keys = secrets.map((secret) =>
+            speechTextIdentity(
+                secret,
+                resolved.language,
+                inspected.normalized,
+                fixture ? 'fixture' : 'pronunciation',
+            ),
+        );
+        // Old canonical keys remain readable only within their recording class.
+        const legacyKeys = secrets.map((secret) =>
             speechTextIdentity(secret, resolved.language, inspected.normalized),
         );
-        return { ...inspected, keys, key: keys[0]! };
+        return {
+            ...inspected,
+            keys: [...keys, ...legacyKeys],
+            key: keys[0]!,
+            fixture,
+        };
     }
+
+    private profileClass(fixture: boolean) {
+        return fixture
+            ? sql`${recordings.profile}->>'provider' = 'fixture'`
+            : sql`${recordings.profile}->>'provider' <> 'fixture'`;
+    }
+
     private async lock(transaction: AiCreditTransaction, key: string) {
         await transaction.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${key}, 1920424383))`,
         );
     }
-    private async ready(transaction: AiCreditTransaction, keys: string[]) {
+    private async ready(
+        transaction: AiCreditTransaction,
+        keys: string[],
+        fixture: boolean,
+    ) {
         return (
             await transaction
                 .select()
@@ -162,25 +193,32 @@ export class DrizzleSpeechStore implements SpeechStore {
                     and(
                         inArray(recordings.canonicalKey, keys),
                         eq(recordings.state, 'ready'),
+                        this.profileClass(fixture),
                     ),
                 )
                 .orderBy(asc(recordings.createdAt))
                 .limit(1)
         )[0];
     }
-    private async active(transaction: AiCreditTransaction, keys: string[]) {
+    private async active(
+        transaction: AiCreditTransaction,
+        keys: string[],
+        fixture: boolean,
+    ) {
         return (
             await transaction
-                .select()
+                .select({ job: jobs })
                 .from(jobs)
+                .innerJoin(recordings, eq(recordings.id, jobs.recordingId))
                 .where(
                     and(
                         inArray(jobs.canonicalKey, keys),
                         inArray(jobs.state, activeStates),
+                        this.profileClass(fixture),
                     ),
                 )
                 .limit(1)
-        )[0];
+        )[0]?.job;
     }
     public async availability(
         _actorId: string,
@@ -196,7 +234,11 @@ export class DrizzleSpeechStore implements SpeechStore {
             return { playable: false, generationAvailable: false };
         }
         return this.options.database.transaction(async (tx) => {
-            const cached = await this.ready(tx, identity.keys);
+            const cached = await this.ready(
+                tx,
+                identity.keys,
+                identity.fixture,
+            );
             const generationAvailable =
                 this.options.generationEnabled &&
                 this.options.profileResolver.supports(resolved.language) !==
@@ -247,10 +289,18 @@ export class DrizzleSpeechStore implements SpeechStore {
                     throw new SpeechError('speech_operation_conflict');
                 return this.response(tx, existing, input.now);
             }
-            const cached = await this.ready(tx, identity.keys);
+            const cached = await this.ready(
+                tx,
+                identity.keys,
+                identity.fixture,
+            );
             if (cached)
                 return this.bind(tx, admittedInput, resolved, cached.id, null);
-            const active = await this.active(tx, identity.keys);
+            const active = await this.active(
+                tx,
+                identity.keys,
+                identity.fixture,
+            );
             if (active)
                 return this.bind(
                     tx,
@@ -417,8 +467,16 @@ export class DrizzleSpeechStore implements SpeechStore {
                 if (binding) return this.response(tx, binding, input.now);
             }
             const bindInput = { ...input, source: quote.source };
-            const cached = await this.ready(tx, identity.keys);
-            const active = await this.active(tx, identity.keys);
+            const cached = await this.ready(
+                tx,
+                identity.keys,
+                identity.fixture,
+            );
+            const active = await this.active(
+                tx,
+                identity.keys,
+                identity.fixture,
+            );
             let response: SpeechResponse;
             if (cached)
                 response = await this.bind(
@@ -572,9 +630,9 @@ export class DrizzleSpeechStore implements SpeechStore {
         // Recheck all configured identities after the cross-key budget lock:
         // another admitted request may have filled the cache while we waited.
         await this.lock(tx, 'operational-budget');
-        const cached = await this.ready(tx, identity.keys);
+        const cached = await this.ready(tx, identity.keys, identity.fixture);
         if (cached) return this.bind(tx, input, resolved, cached.id, null);
-        const active = await this.active(tx, identity.keys);
+        const active = await this.active(tx, identity.keys, identity.fixture);
         if (active)
             return this.bind(
                 tx,

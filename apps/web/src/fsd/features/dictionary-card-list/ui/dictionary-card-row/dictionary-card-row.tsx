@@ -218,7 +218,6 @@ export function DictionaryCardRow({
                     card={card}
                     dictionary={dictionary}
                     languages={languages}
-                    renderAudio={renderAudio}
                 />
                 <div className={styles.metadata}>
                     <Badge

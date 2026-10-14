@@ -41,6 +41,48 @@ Disposable storage tests must use separate projects, buckets and credentials;
 the document-test project and production backup/deletion-journal stores are not
 speech development storage.
 
+## Real pronunciation in development
+
+A beep with `DICTIONARY_AUDIO_PROVIDER=fixture` is intentional test audio: no model
+is called. Set the following in ignored `.env.local`, consistently for API and worker:
+
+- `DICTIONARY_AUDIO_PROVIDER=kie` and `DICTIONARY_AUDIO_KIE_API_KEY`.
+- A new immutable `DICTIONARY_AUDIO_CONFIGURATION_ID` for the voice/model settings.
+- `DICTIONARY_AUDIO_VOICE_MAP`: JSON entries keyed by configured app language with
+  `model`, `voice`, `estimatedCostUnitsPerCharacter` and `settingsVersion`.
+- `DICTIONARY_AUDIO_DOWNLOAD_HOSTS`: a comma-separated allowlist of trusted provider
+  result hosts; unrestricted URLs are rejected. The provisional local allowlist is
+  `tempfile.aiquickdraw.com,file.aiquickdraw.com`; validate the actual result host
+  through the guarded adapter, never allow a host merely because a task returns it.
+- Keep `SPEECH_PLAYBACK_ENABLED=true` and `SPEECH_GENERATION_ENABLED=true`, private
+  S3/MinIO storage and spend budgets. Paid-length synthesis also requires a valid
+  speech tariff; its quote/confirmation behavior is unchanged.
+
+For an initial evaluation, Kie lists Bella (`hpp4J3VqNfWAUOO0d1Us`) as a warm,
+professional voice for the currently curated `elevenlabs/text-to-speech-turbo-2-5`.
+This is a provisional starting voice, not a pronunciation-quality certification.
+The official Turbo price is six Kie credits per 1,000 characters; an estimate of
+`0.006` budget units per character measures these budgets in Kie credits. Learner
+credits remain a separately configured tariff.
+[Official voice contract](https://docs.kie.ai/market/elevenlabs/text-to-speech-turbo-2-5),
+[official model pricing](https://kie.ai/elevenlabs-tts?model=elevenlabs/text-to-speech-turbo-2-5).
+
+Every configured language must already be in the curated app/model capability set;
+Hungarian is not currently an app language. Do not add a language solely by editing
+environment JSON. Review actual pronunciation per language before production use.
+
+Fixture and real pronunciation have separate canonical identities and class-filtered
+legacy lookup. Existing test tones remain retained for development evidence but
+are never reused for new live requests. Real recordings remain reusable across
+live provider/model changes and if their language is no longer generatable. No
+bucket reset or audio deletion is necessary. Historical requests keep their pinned
+recording; changing providers does not retarget an already issued playback handle.
+
+Pause admission and restart API and dictionary worker together when deploying
+this identity repair or switching providers. Do not overlap older and repaired API
+writers: older binaries cannot recognize the new scoped canonical keys and may
+otherwise admit duplicate generation. Then enable generation on repaired processes.
+
 ## Retention and administration
 
 Successful normalized text and audio remain indefinitely, even after originating

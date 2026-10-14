@@ -9,6 +9,8 @@ import { SharedDictionaryPage } from '@/fsd/pages/shared-dictionary';
 
 import { render } from './render';
 
+const session = vi.hoisted(() => ({ status: 'anonymous' }));
+
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: vi.fn() }),
     usePathname: () => '/shared/example',
@@ -16,7 +18,16 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/fsd/entities/session', () => ({
     useSessionStore: (selector: (state: { status: string }) => unknown) =>
-        selector({ status: 'anonymous' }),
+        selector(session),
+}));
+vi.mock('@/fsd/features/speech-playback/hooks/use-speech-control', () => ({
+    useSpeechControl: () => ({
+        available: true,
+        selected: false,
+        state: { phase: 'idle' },
+        play: vi.fn(),
+        stop: vi.fn(),
+    }),
 }));
 vi.mock('@/fsd/features/auth', () => ({
     useAuth: () => ({
@@ -121,12 +132,47 @@ function renderPage() {
 describe('shared dictionary page', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
+        session.status = 'anonymous';
         window.history.replaceState(
             {},
             '',
             '/shared/dictionaries/share-locator-1234',
         );
         vi.spyOn(dictionaryApi, 'listLanguages').mockResolvedValue(languages);
+    });
+
+    it('offers pronunciation only for source and translation to authenticated shared readers', async () => {
+        session.status = 'authenticated';
+        window.history.replaceState({}, '', '#valid-key');
+        const dictionary = publicDictionary(
+            '20000000-0000-4000-8000-000000000001',
+        );
+        const card = dictionary.cards[0]!;
+        card.effectiveSettings.exampleEnabled = true;
+        card.effectiveSettings.exampleTranslationEnabled = true;
+        card.values.example = 'Saved context example';
+        card.values.exampleTranslation = 'Saved translated example';
+        vi.spyOn(dictionaryApi, 'readSharedDictionary').mockResolvedValue({
+            dictionary,
+            nextCursor: null,
+        });
+        renderPage();
+        expect(
+            await screen.findByRole('button', { name: 'Play Source phrase' }),
+        ).toHaveTextContent('');
+        expect(
+            screen.getByRole('button', { name: 'Play Translation' }),
+        ).toHaveTextContent('');
+        expect(
+            screen.queryByRole('button', { name: 'Play Context example' }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'Play Example translation' }),
+        ).not.toBeInTheDocument();
+        expect(screen.getByText('Saved context example')).toBeInTheDocument();
+        expect(
+            screen.getByText('Saved translated example'),
+        ).toBeInTheDocument();
     });
 
     it('shows the unavailable state immediately when the fragment key is absent', async () => {

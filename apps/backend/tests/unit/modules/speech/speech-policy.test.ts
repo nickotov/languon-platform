@@ -39,6 +39,25 @@ describe('shared pronunciation normalization and pricing', () => {
         expect(key('pain', 'fr')).not.toBe(key('pain', 'en'));
         expect(key('hello!')).not.toBe(key('hello'));
     });
+    it('separates fixture tones from pronunciation while preserving normalized sharing and legacy identity', () => {
+        const key = (
+            text: string,
+            recordingClass?: 'fixture' | 'pronunciation',
+        ) =>
+            speechTextIdentity(
+                'synthetic-secret',
+                'fr',
+                normalizeSpeechText(text),
+                recordingClass,
+            );
+        expect(key('  e\u0301tude  ', 'pronunciation')).toBe(
+            key('étude', 'pronunciation'),
+        );
+        expect(key('  e\u0301tude  ', 'fixture')).toBe(key('étude', 'fixture'));
+        expect(key('étude', 'fixture')).not.toBe(key('étude', 'pronunciation'));
+        expect(key('étude')).not.toBe(key('étude', 'pronunciation'));
+        expect(key('étude')).not.toBe(key('étude', 'fixture'));
+    });
     it('preserves vertical separators as line breaks in normalized text and cache identity', () => {
         const key = (text: string) =>
             speechTextIdentity(

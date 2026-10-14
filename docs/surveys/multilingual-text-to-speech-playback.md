@@ -1,9 +1,11 @@
 ---
 type: survey
 title: Multilingual text-to-speech playback
-research_date: 2026-10-13
+research_date: 2026-10-14
 summary: Russia-access provider selection, multilingual speech synthesis, shared web/mobile playback, reusable audio, and pronunciation validation.
 source_paths:
+    - apps/backend/src/modules/speech
+    - apps/web/src/fsd/features/speech-playback
     - apps/backend/src/modules/dictionaries/application/dictionary-audio-service.ts
     - apps/backend/src/modules/dictionaries/application/ports/speech-synthesis-provider.ts
     - apps/backend/src/modules/dictionaries/infrastructure/audio
@@ -298,19 +300,19 @@ refreshed as part of the regional-access update. They exclude taxes, storage,
 delivery, free allowances, subscriptions, and discounts, and **are not reseller
 price quotes**:
 
-| Candidate                     | Published generation unit/rate                  | Limitation                                                                                                                 |
-| ----------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Google WaveNet                | $4 per million characters                       | Current rate differs from older $16/M references.                                                                          |
-| Google Chirp 3 HD             | $30 per million characters                      | Model-specific language/control coverage still needs testing.                                                              |
-| ElevenLabs direct Flash/Turbo | $0.04 per 1,000 characters, equivalent to $40/M | Pricing page also has subscription allowances and other model promotions; recheck the selected paid plan.                  |
-| Azure neural                  | Per million characters                          | Paid regional dollar amounts rendered as placeholders; no verified numeric quote.                                          |
-| Kie Turbo 2.5                 | Exact model-specific rate unverified            | Its page displays $0.06/1,000 for **Multilingual v2**; do not reuse that quote for Turbo.                                  |
-| OpenAI TTS                    | Consult selected model's billing units          | No numeric quote established in this survey; avoid comparing token/audio-duration pricing directly with character pricing. |
+| Candidate                     | Published generation unit/rate                           | Limitation                                                                                                                                |
+| ----------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Google WaveNet                | $4 per million characters                                | Current rate differs from older $16/M references.                                                                                         |
+| Google Chirp 3 HD             | $30 per million characters                               | Model-specific language/control coverage still needs testing.                                                                             |
+| ElevenLabs direct Flash/Turbo | $0.04 per 1,000 characters, equivalent to $40/M          | Pricing page also has subscription allowances and other model promotions; recheck the selected paid plan.                                 |
+| Azure neural                  | Per million characters                                   | Paid regional dollar amounts rendered as placeholders; no verified numeric quote.                                                         |
+| Kie Turbo 2.5                 | 6 Kie credits per 1,000 characters (approximately $0.03) | Updated 2026-10-14: official model-specific Turbo entry now publishes this rate; Multilingual v2 remains a separate 12-credit/$0.06 rate. |
+| OpenAI TTS                    | Consult selected model's billing units                   | No numeric quote established in this survey; avoid comparing token/audio-duration pricing directly with character pricing.                |
 
 Sources: [Google pricing](https://cloud.google.com/text-to-speech/pricing),
 [ElevenLabs API pricing](https://elevenlabs.io/pricing/api),
 [Azure pricing](https://azure.microsoft.com/en-us/pricing/details/speech/),
-[Kie displayed pricing](https://kie.ai/elevenlabs-tts),
+[Kie Turbo-specific pricing](https://kie.ai/elevenlabs-tts?model=elevenlabs/text-to-speech-turbo-2-5),
 [OpenAI pricing](https://developers.openai.com/api/docs/pricing).
 
 No comparable model-specific launch price for Zvukogram, APIHOST, SonnaLabs or
@@ -391,3 +393,20 @@ a separate problem covered by the [voice-assessment survey](./voice-answers-pron
   Russia-support claim; added APIHOST, intermediary WaveNet/Google routes,
   regional policy evidence and the access gate. Preserved earlier engine research
   as background. No Russian-origin reachability or paid speech quality measured.
+
+## 2026-10-14 implementation verification update
+
+The official Turbo playground configuration now exposes six Kie credits per 1,000
+characters (approximately $0.03 at 200 Kie credits per dollar); this supersedes
+the earlier unverified Turbo quote. Do not substitute Multilingual v2 pricing.
+[Official model-specific pricing](https://kie.ai/elevenlabs-tts?model=elevenlabs/text-to-speech-turbo-2-5).
+
+Kie’s current voice contract lists Bella (`hpp4J3VqNfWAUOO0d1Us`) as professional,
+bright and warm. It is configured as a provisional starting voice for existing
+curated app languages, not a demonstrated native-pronunciation benchmark.
+[Official Turbo voice contract](https://docs.kie.ai/market/elevenlabs/text-to-speech-turbo-2-5).
+
+Development `fixture` produces a test tone, never synthesized speech. The app now
+isolates fixture and live recording/job identities, including older cache entries.
+Changing to Kie therefore cannot reuse a fixture tone for a new live play request.
+Credentials and deployment connectivity remain separate from deterministic tests.

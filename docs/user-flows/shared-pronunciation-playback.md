@@ -66,6 +66,8 @@ admin journeys passed on 2026-10-13. Desktop and 390-pixel layouts were exercise
 Native clients, unsaved drafts, hidden references, unchecked answers and live
 provider pronunciation quality are outside these local journeys. Deterministic
 fixture sound proves storage/playback, not correct spoken pronunciation.
+Fixture and real pronunciation caches are isolated: switching to Kie never reuses
+a test tone, including older retained recordings and in-flight fixture jobs.
 
 ## Start the development environment
 
@@ -93,16 +95,19 @@ confirmation. Never point these checks at staging/production wallets or storage.
 
 1. Save an existing-language dictionary card with source `casa`, translation
    `house`, example `La casa es grande.`, and matching translated example.
-2. Play each populated field. The control shows loading while work is pending,
+2. Only source and translation have icon-only Play buttons; examples and example
+   translations remain text. Focus or hover reveals an action tooltip. The control
+   shows a spinner while work is pending,
    then plays one clip or exposes ready Play if the browser blocks delayed
-   autoplay. A fixture label identifies the tone.
+   autoplay. Status and fixture-tone notices appear in the tooltip and are
+   announced accessibly. A fixture tone proves transport, not pronunciation.
 3. Play another field while one is playing; only the newly selected clip remains
    active. Navigate away during preparation; a late result must not autoplay.
 4. Save equivalent text with surrounding/repeated horizontal spaces in another
    synthetic actor's dictionary. Play and verify cached reuse without another
    provider submission or credit debit. Case/accent/punctuation/language changes
    must remain different identities.
-5. Save an example exceeding 10 language-aware words or 100 Unicode code points.
+5. Save a source phrase exceeding 10 language-aware words or 100 Unicode code points.
    Play and confirm that the dialog gives an exact price and says payment occurs
    only after successful storage, with generation continuing after departure.
    Cancel once (no reservation), then confirm. Successful publication charges once;

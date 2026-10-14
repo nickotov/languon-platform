@@ -42,3 +42,18 @@ Create shared-pronunciation-playback guide; update dictionary-pronunciation-audi
 ## Open decisions
 
 None in product scope. External activation requires configured credentials, reviewed voice/language support, provider access/terms/pricing and Selectel conformance evidence.
+
+## Playback controls repair (2026-10-14)
+
+User requests icon-only controls with explanatory text in tooltips; dictionary cards
+play only source and translation, never examples or their translations. Existing
+fixture configuration is a test tone, not synthesized pronunciation. Keep fixture
+recordings and in-flight jobs isolated from live pronunciation, including legacy
+canonical keys, without deleting cached audio or changing provider/model cache reuse
+within the live class. Prepare explicit Kie activation instructions; credentials
+are entered only in the ignored local environment, never in chat or evidence.
+
+The implementation repair is complete and independently reviewed. Live Kie audio
+verification remains externally blocked: the explicitly approved tracked sample
+returned provider error 500 before producing an audio URL. This does not relax
+production activation, listening-quality, result-host or Selectel gates.

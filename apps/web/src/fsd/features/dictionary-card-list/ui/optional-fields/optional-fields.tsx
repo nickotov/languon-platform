@@ -3,7 +3,6 @@ import type {
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
-import type { ReactNode } from 'react';
 import {
     languageDirection,
     languageForRole,
@@ -16,17 +15,10 @@ export function OptionalFields({
     card,
     dictionary,
     languages,
-    renderAudio,
 }: {
     card: DictionaryCard;
     dictionary: OwnedDictionary;
     languages: readonly LanguageCatalogEntry[];
-    renderAudio?:
-        | ((
-              card: DictionaryCard,
-              field: 'example' | 'exampleTranslation',
-          ) => ReactNode)
-        | undefined;
 }) {
     const { locale, t } = useI18n();
 
@@ -86,27 +78,20 @@ export function OptionalFields({
 
         const direction = languageDirection(languages, field.lang);
 
-        let audio: ReactNode = null;
-
         const classes = [styles.fieldRow];
 
         if (field.key === 'example') {
             classes.push(styles.exampleRow);
-
-            audio = renderAudio?.(card, field.key);
         }
 
         if (field.key === 'exampleTranslation') {
             classes.push(styles.exampleTranslationRow);
-
-            audio = renderAudio?.(card, field.key);
         }
 
         return {
             ...field,
             label,
             direction,
-            audio,
             rowClassName: classes.join(' '),
         };
     });
@@ -141,11 +126,6 @@ export function OptionalFields({
                         >
                             {field.value}
                         </span>
-                        {field.audio ? (
-                            <span className={styles.fieldAudio}>
-                                {field.audio}
-                            </span>
-                        ) : null}
                     </dd>
                 </div>
             ))}

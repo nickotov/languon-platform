@@ -42,7 +42,10 @@ import { FixtureSpeechProvider } from '../../../../src/modules/speech/infrastruc
 import { PostgresAudioObjectStorage } from '../../../../src/modules/speech/infrastructure/audio/audio-object-storages';
 import { SpeechWorker } from '../../../../src/modules/speech/application/speech-worker';
 import { createFixtureAudio } from '../../../../src/modules/speech/domain/audio-integrity';
-import { SpeechError } from '../../../../src/modules/speech/domain/speech-policy';
+import {
+    SpeechError,
+    speechTextIdentity,
+} from '../../../../src/modules/speech/domain/speech-policy';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
@@ -58,6 +61,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             store: DrizzleSpeechStore,
             storage: PostgresAudioObjectStorage;
         let actors: string[], text: string, revoked: boolean, voice: string;
+        let providerKind: 'fixture' | 'kie', supported: boolean;
         const now = new Date('2026-10-13T12:00:00Z');
         const provider = new FixtureSpeechProvider();
         const source: SpeechSource = {
@@ -77,6 +81,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             text = 'bonjour';
             revoked = false;
             voice = 'fixture';
+            providerKind = 'fixture';
+            supported = true;
             await db.insert(usersTable).values(
                 actors.map((id) => ({
                     id,
@@ -108,10 +114,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 database: db,
                 fingerprintSecret: 'synthetic-shared-speech-secret',
                 profileResolver: {
-                    supports: (language) => ({
-                        ...provider.supports(language),
-                        voice,
-                    }),
+                    supports: (language) =>
+                        supported
+                            ? {
+                                  ...provider.supports(language),
+                                  provider: providerKind,
+                                  voice,
+                              }
+                            : null,
                 },
                 storageIdentity: storage.identity,
                 generationEnabled: true,
@@ -213,6 +223,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).toBe('ready');
             expect(await db.select().from(speechBindingsTable)).toHaveLength(1);
+            text = '  bonjour\t  ';
             expect((await prepare(actors[1]!)).state).toBe('ready');
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             await Promise.all(
@@ -479,6 +490,137 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await db.select().from(speechRecordingsTable))[0]?.profile
                     .voice,
             ).toBe('fixture');
+        });
+        const finishRecording = async () => {
+            expect(
+                await new SpeechWorker({
+                    store,
+                    storage,
+                    // Deterministic audio only; the synthetic profile's provider class
+                    // exercises cache policy without contacting any paid provider.
+                    providers: new Map([['fixture-v1', provider]]),
+                    now: () => now,
+                }).runOnce(),
+            ).toBe(true);
+        };
+        const seedLegacy = async (ready: boolean) => {
+            // Represent pre-isolation rows directly at INSERT, preserving the
+            // real immutable-recording and worker-transition guards.
+            const id = randomUUID();
+            const canonicalKey = speechTextIdentity(
+                'synthetic-shared-speech-secret',
+                'fr',
+                text,
+            );
+            const audio = createFixtureAudio();
+            const reference = await storage.put(`speech/legacy/${id}`, audio);
+            await db.insert(speechRecordingsTable).values({
+                id,
+                canonicalKey,
+                text,
+                language: 'fr',
+                normalizationRevision: 'nfc-horizontal-whitespace-v1',
+                profile: { ...provider.supports('fr'), provider: providerKind },
+                state: ready ? 'ready' : 'pending',
+                storage: reference,
+                checksum: ready ? audio.checksum : null,
+                byteLength: ready ? audio.bytes.length : null,
+                durationMs: ready ? 1000 : null,
+                readyAt: ready ? now : null,
+                createdAt: now,
+                lastAccessedAt: now,
+            });
+            if (!ready)
+                await db.insert(speechJobsTable).values({
+                    id: randomUUID(),
+                    recordingId: id,
+                    canonicalKey,
+                    payerId: actors[0]!,
+                    credits: 0n,
+                    billingState: 'free',
+                    state: 'queued',
+                    nextPollAt: now,
+                    createdAt: now,
+                    billingDeadline: new Date(now.getTime() + 600_000),
+                    recoveryDeadline: new Date(now.getTime() + 86_400_000),
+                });
+        };
+        for (const legacy of [false, true]) {
+            for (const firstProvider of ['fixture', 'kie'] as const) {
+                it(`isolates ${legacy ? 'legacy' : 'scoped'} ${firstProvider} cached audio from the other recording class`, async () => {
+                    providerKind = firstProvider;
+                    if (legacy) await seedLegacy(true);
+                    else {
+                        await prepare(actors[0]!);
+                        await finishRecording();
+                    }
+                    providerKind =
+                        firstProvider === 'fixture' ? 'kie' : 'fixture';
+                    expect((await prepare(actors[1]!)).state).toBe('queued');
+                    expect(
+                        await db.select().from(speechJobsTable),
+                    ).toHaveLength(legacy ? 1 : 2);
+                    await finishRecording();
+                    expect((await prepare(actors[1]!)).state).toBe('ready');
+                    const recordings = await db
+                        .select()
+                        .from(speechRecordingsTable);
+                    expect(
+                        recordings.map((row) => row.profile.provider).sort(),
+                    ).toEqual(['fixture', 'kie']);
+                    expect(
+                        new Set(recordings.map((row) => row.canonicalKey)).size,
+                    ).toBe(2);
+                    expect((await wallet(actors[1]!)).consumedCredits).toBe(0n);
+                });
+            }
+            it(`does not join ${legacy ? 'legacy' : 'scoped'} pending fixture jobs when live pronunciation is requested`, async () => {
+                if (legacy) await seedLegacy(false);
+                else await prepare(actors[0]!);
+                providerKind = 'kie';
+                const prepared = await prepare(actors[1]!);
+                expect(prepared.state).toBe('queued');
+                const jobs = await db.select().from(speechJobsTable);
+                expect(jobs).toHaveLength(2);
+                expect(new Set(jobs.map((row) => row.canonicalKey)).size).toBe(
+                    2,
+                );
+                const bindings = await db.select().from(speechBindingsTable);
+                expect(new Set(bindings.map((row) => row.jobId)).size).toBe(
+                    legacy ? 1 : 2,
+                );
+                expect(
+                    bindings.find((row) => row.actorId === actors[1]!)!.jobId,
+                ).not.toBe(jobs.find((row) => row.payerId === actors[0]!)!.id);
+            });
+        }
+        it('reuses legacy pronunciation audio even when the current model no longer supports its language', async () => {
+            providerKind = 'kie';
+            await seedLegacy(true);
+            supported = false;
+            expect(
+                await store.availability(actors[1]!, source, {
+                    text,
+                    language: 'fr',
+                    revision: 'v1',
+                }),
+            ).toEqual({ playable: true, generationAvailable: false });
+            expect((await prepare(actors[1]!)).state).toBe('ready');
+            expect(await db.select().from(speechJobsTable)).toHaveLength(0);
+        });
+        it('does not advertise legacy fixture audio as pronunciation for unsupported languages', async () => {
+            await seedLegacy(true);
+            providerKind = 'kie';
+            supported = false;
+            expect(
+                await store.availability(actors[1]!, source, {
+                    text,
+                    language: 'fr',
+                    revision: 'v1',
+                }),
+            ).toEqual({ playable: false, generationAvailable: false });
+            expect((await prepare(actors[1]!)).state).toBe('unavailable');
+            expect(await db.select().from(speechJobsTable)).toHaveLength(0);
         });
         it('publishes paid-length audio for an unlimited wallet without consuming grants', async () => {
             const before = await wallet(actors[0]!);

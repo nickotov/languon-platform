@@ -188,7 +188,7 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
 
     function renderAudio(
         card: PublicDictionary['cards'][number],
-        field: 'source' | 'translation' | 'example' | 'exampleTranslation',
+        field: 'source' | 'translation',
     ) {
         if (sessionStatus !== 'authenticated' || !shareKey) return null;
         const source: SpeechSource = {
@@ -328,7 +328,7 @@ function PublicCard({
 }: {
     renderAudio(
         card: PublicDictionary['cards'][number],
-        field: 'source' | 'translation' | 'example' | 'exampleTranslation',
+        field: 'source' | 'translation',
     ): ReactNode;
     card: PublicDictionary['cards'][number];
     dictionary: PublicDictionary;
@@ -435,10 +435,6 @@ function PublicCard({
                                 lang={field.lang}
                             >
                                 {field.value}
-                                {field.key === 'example' ||
-                                field.key === 'exampleTranslation'
-                                    ? renderAudio(card, field.key)
-                                    : null}
                             </dd>
                         </div>
                     ))}

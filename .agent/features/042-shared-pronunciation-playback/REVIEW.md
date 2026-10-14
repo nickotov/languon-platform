@@ -81,3 +81,39 @@ without reset or private-data inspection. Final focused security reviewer report
 no open critical/high/medium findings. No production or paid provider was used.
 Residual: a failed ordinary migration can leave unused additive enum labels;
 ordinary schema/data/history roll back. ADR-0033 documents the explicit tradeoff.
+
+## Playback controls repair review (2026-10-14)
+
+Author preflight and independent completion/security reviews passed on
+`feature/shared-pronunciation-controls-repair`, base `1976e30`. Completion review
+captured tracked patch SHA-256
+`73391e0f9b4a1d2a34e98914a916833fd0bbc09e9fbd0ca9644b806af3aec3b2`
+and new speech-control unit SHA-256
+`4fddf465c7eaba157dcea7899e6334080dacb2803f31b3c990dc70f26d2873e1`.
+Subsequent changes are final state/evidence/verdict documentation only.
+
+- CR-1 Low: guide still claimed all four card fields played. Fixed description
+  while preserving stable scenario ID; source/translation-only assertions and
+  final guide revision are synchronized. No open material implementation findings.
+- Controls use shared Tooltip and icon-only Button contracts with accessible
+  labels, hidden live announcements, spinner, stop and retry behavior. Owner and
+  authenticated shared reader examples remain text without audio controls.
+- New fixture/live identity domains, retained-secret legacy aliases and immutable
+  recording-profile filters correctly separate ready and active caches. Live
+  providers still share pronunciation identity; source authorization and billing
+  remain unchanged. Reviewer verified 30 real PostgreSQL cases/seven policy units,
+  six real Chromium journeys and web/backend static/unit/build evidence in E-8.
+- Security review reports no open Critical/High/Medium finding. SQL remains
+  parameterized; untrusted text stays React-rendered. Ignored credentials are not
+  in diff. Existing exact-host/public-DNS-pinned/HTTPS/bounded MP3 download guard
+  remains intact. Pause/restart instructions address older/newer writer overlap.
+
+Manual live probe disclosure: the first public `alarmer` task was accepted, but a
+probe-only response-discriminant bug lost its identity before download. Automatic
+approval review rejected another paid submission until the user explicitly granted
+one further sample. The approved tracked task failed upstream with Kie error 500;
+no result URL/audio and no further paid submission. The correctly typed app maps
+this to `SpeechTaskFailedError`, releases/fails work and never replays a fixture
+as pronunciation. Review update found no new defect. Successful live synthesis,
+pronunciation quality and result-host exercise remain external activation gates;
+production Selectel/IAM and commercial/retention gates are unchanged.

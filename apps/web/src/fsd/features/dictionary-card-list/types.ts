@@ -19,7 +19,7 @@ export type DictionaryCardListProps = {
     pending: boolean;
     renderAudio?(
         card: DictionaryCard,
-        field: 'source' | 'translation' | 'example' | 'exampleTranslation',
+        field: 'source' | 'translation',
     ): ReactNode;
     deletion?: DictionaryCardDeletionController;
 };

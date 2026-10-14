@@ -37,6 +37,7 @@ export function createSpeechInfrastructure(input: {
         fingerprintSecret:
             input.environment.fingerprintSecret ?? input.dictionaryHmacSecret,
         profileResolver: input.provider,
+        fixtureMode: input.environment.provider === 'fixture',
         storageIdentity: input.storage.identity,
         generationEnabled: input.generationEnabled,
         playbackEnabled: input.playbackEnabled,

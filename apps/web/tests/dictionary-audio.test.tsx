@@ -310,6 +310,15 @@ it('preserves exact saved field text when pronunciation controls are present', (
             )}
         />,
     );
+    expect(
+        screen.queryByRole('button', { name: 'Play Context example' }),
+    ).not.toBeInTheDocument();
+    expect(
+        screen.queryByRole('button', { name: 'Play Example translation' }),
+    ).not.toBeInTheDocument();
+    expect(
+        screen.getByRole('button', { name: 'Play Translation' }),
+    ).toBeInTheDocument();
     for (const value of Object.values(card.values)) {
         expect(screen.getByText(value!, { exact: true })).toBeInTheDocument();
     }

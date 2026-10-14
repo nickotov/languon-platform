@@ -2,7 +2,7 @@
 import type { SpeechSource } from '@languon/contracts';
 import { Volume2, Square } from 'lucide-react';
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
-import { Button } from '@/fsd/shared/ui';
+import { Button, Tooltip } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useSpeechControl } from '../../hooks/use-speech-control';
 import { speechCopy } from '../../lib/copy';
@@ -44,30 +44,43 @@ export function SpeechControl({
     else if (phase === 'ready') status = copy.ready;
     else if (phase === 'failed') status = copy.failed;
     else if (phase === 'unavailable') status = copy.unavailable;
-    else if (c.selected && c.state.fixture) status = copy.fixture;
+    if (c.selected && c.state.fixture) {
+        status = [status, copy.fixture].filter(Boolean).join(' ');
+    }
+    const tooltip = status ? `${accessibleLabel}. ${status}` : accessibleLabel;
     const handler = playing ? c.stop : c.play;
     return (
         <span className={styles.control} dir='ltr' lang={locale}>
-            <Button
-                type='button'
-                variant='ghost'
-                size='compact'
-                aria-label={accessibleLabel}
-                loading={loading}
-                leadingIcon={icon}
-                onClick={handler}
-            >
-                {label}
-            </Button>
-            {loading ? (
+            <Tooltip content={tooltip}>
                 <Button
                     type='button'
                     variant='ghost'
                     size='compact'
-                    onClick={c.stop}
+                    className={styles.button}
+                    aria-label={accessibleLabel}
+                    loading={loading}
+                    leadingIcon={icon}
+                    onClick={handler}
                 >
-                    {copy.stopWaiting}
+                    {null}
                 </Button>
+            </Tooltip>
+            {loading ? (
+                <Tooltip content={copy.stopWaiting}>
+                    <Button
+                        type='button'
+                        variant='ghost'
+                        size='compact'
+                        className={styles.button}
+                        aria-label={copy.stopWaiting}
+                        leadingIcon={
+                            <Square aria-hidden className={styles.icon} />
+                        }
+                        onClick={c.stop}
+                    >
+                        {null}
+                    </Button>
+                </Tooltip>
             ) : null}
             <span role='status' aria-live='polite' className={styles.status}>
                 {status}

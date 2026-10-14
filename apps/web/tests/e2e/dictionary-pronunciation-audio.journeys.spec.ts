@@ -5,10 +5,13 @@ import {
     browserAudioEvidence,
 } from './support/speech-browser-audio';
 
-// @user-flow-revision dictionary-pronunciation-audio sha256:08d1f323622a76ae
+// @user-flow-revision dictionary-pronunciation-audio sha256:eee1e8b11828995b
 const runId = process.env.AUTH_E2E_RUN_ID ?? String(Date.now());
 let context: BrowserContext;
 let page: Page;
+let pageErrors: string[] = [];
+let consoleErrors: string[] = [];
+let failedRequests: string[] = [];
 
 async function createCard(name: string) {
     await page.goto('/dictionaries');
@@ -67,9 +70,10 @@ async function play(field: string) {
     await expect
         .poll(async () => {
             if (
-                await page
-                    .getByText('Audio is ready. Press Play.', { exact: false })
-                    .isVisible()
+                (await page
+                    .getByRole('status')
+                    .filter({ hasText: 'Audio is ready. Press Play.' })
+                    .count()) > 0
             ) {
                 await page
                     .getByRole('button', { name: `Play ${field}`, exact: true })
@@ -118,6 +122,20 @@ test.describe.serial('dictionary pronunciation audio', () => {
             };
         });
         page = await context.newPage();
+        page.on('pageerror', (error) => pageErrors.push(error.message));
+        page.on('console', (message) => {
+            if (
+                message.type() === 'error' &&
+                !message.text().includes('503 (Service Unavailable)')
+            )
+                consoleErrors.push(message.text());
+        });
+        page.on('requestfailed', (request) => {
+            if (!request.failure()?.errorText.includes('ERR_ABORTED'))
+                failedRequests.push(
+                    `${new URL(request.url()).pathname}: ${request.failure()?.errorText}`,
+                );
+        });
         await page.goto('/signup?returnTo=%2Fdictionaries');
         await page.getByLabel('Email').fill(`audio-${runId}@example.test`);
         await page
@@ -129,20 +147,52 @@ test.describe.serial('dictionary pronunciation audio', () => {
         await page.getByRole('button', { name: 'Verify email' }).click();
         await expect(page).toHaveURL(/\/dictionaries$/);
     });
+    test.beforeEach(() => {
+        pageErrors = [];
+        consoleErrors = [];
+        failedRequests = [];
+    });
+    test.afterEach(() => {
+        expect(pageErrors).toEqual([]);
+        expect(consoleErrors).toEqual([]);
+        expect(failedRequests).toEqual([]);
+    });
     test.afterAll(async () => {
         await context?.close();
     });
 
     // @user-flow dictionary-pronunciation-audio/owner-plays-four-card-fields
-    test('plays four saved fields through real worker and private byte storage', async () => {
+    test('plays only source and translation with icon-only tooltip controls', async () => {
         await createCard('fields');
-        for (const field of [
-            'Source phrase',
-            'Translation',
-            'Context example',
-            'Example translation',
-        ])
-            await play(field);
+        for (const field of ['Source phrase', 'Translation']) await play(field);
+        for (const field of ['Context example', 'Example translation']) {
+            await expect(
+                page.getByRole('button', {
+                    name: `Play ${field}`,
+                    exact: true,
+                }),
+            ).toHaveCount(0);
+        }
+        const sourceControl = page.getByRole('button', {
+            name: 'Play Source phrase',
+            exact: true,
+        });
+        await expect(page.getByRole('button', { name: /^Play /u })).toHaveCount(
+            2,
+        );
+        await expect(sourceControl).toHaveText('');
+        await expect(page.getByRole('status').first()).toHaveCSS(
+            'clip-path',
+            'inset(50%)',
+        );
+        await sourceControl.focus();
+        await expect(
+            page.getByRole('tooltip', { name: /^Play Source phrase/u }),
+        ).toContainText('Play Source phrase');
+        await page.keyboard.press('Escape');
+        await expect(
+            page.getByRole('tooltip', { name: /^Play Source phrase/u }),
+        ).toBeHidden();
         await expect(
             page.getByRole('combobox', { name: 'Playback speed' }),
         ).toHaveCount(0);
@@ -165,6 +215,42 @@ test.describe.serial('dictionary pronunciation audio', () => {
             ),
         ).toBe(true);
         await page.setViewportSize({ width: 1280, height: 720 });
+        const sharing = page.waitForResponse(
+            (response) =>
+                response.url().endsWith('/share-key/rotate') &&
+                response.status() === 200,
+        );
+        await page
+            .getByRole('button', { name: 'More dictionary actions' })
+            .click();
+        await page
+            .getByRole('menuitem', { name: 'Sharing', exact: true })
+            .click();
+        await page.getByRole('button', { name: 'Create sharing link' }).click();
+        const { capability } = await (await sharing).json();
+        await page.goto(
+            `/shared/dictionaries/${capability.shareId}#${capability.shareKey}`,
+        );
+        await expect(page.getByRole('button', { name: /^Play /u })).toHaveCount(
+            2,
+        );
+        await expect(
+            page.getByRole('button', { name: 'Play Source phrase' }),
+        ).toHaveText('');
+        await expect(
+            page.getByText('La casa es grande.', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('The house is large.', { exact: true }),
+        ).toBeVisible();
+        for (const field of ['Context example', 'Example translation']) {
+            await expect(
+                page.getByRole('button', {
+                    name: `Play ${field}`,
+                    exact: true,
+                }),
+            ).toHaveCount(0);
+        }
     });
 
     // @user-flow dictionary-pronunciation-audio/repeat-play-reuses-audio-and-edits-refresh
@@ -211,10 +297,16 @@ test.describe.serial('dictionary pronunciation audio', () => {
             })
             .click();
         await expect(
-            page.getByText('Pronunciation could not be prepared. Try again.', {
-                exact: false,
+            page.getByRole('status').filter({
+                hasText: 'Pronunciation could not be prepared. Try again.',
             }),
-        ).toBeVisible();
+        ).toHaveCount(1);
+        await page
+            .getByRole('button', { name: 'Play Source phrase', exact: true })
+            .focus();
+        await expect(
+            page.getByRole('tooltip', { name: /^Play Source phrase/u }),
+        ).toContainText('Pronunciation could not be prepared. Try again.');
         const retried = await play('Source phrase');
         expect(retried.initialState).toBe('ready');
         expect(retried.evidence.checksum).toBe(cached.evidence.checksum);
@@ -240,19 +332,27 @@ test.describe.serial('dictionary pronunciation audio', () => {
             .click();
         await expect(
             page.getByRole('button', {
-                name: 'Stop waiting',
+                name: 'Play Source phrase',
                 exact: true,
             }),
-        ).toBeVisible();
+        ).toHaveAttribute('aria-busy', 'true');
+        await expect(
+            page.getByRole('button', { name: 'Stop waiting', exact: true }),
+        ).toHaveText('');
         await page
             .getByRole('button', {
                 name: 'Stop waiting',
                 exact: true,
             })
             .click();
+        await expect(
+            page.getByRole('button', { name: 'Stop waiting', exact: true }),
+        ).toHaveCount(0);
         release();
         await expect(
-            page.getByText('Preparing pronunciation…', { exact: true }),
+            page
+                .getByRole('status')
+                .filter({ hasText: 'Preparing pronunciation…' }),
         ).toHaveCount(0);
         await play('Translation');
         expect(await playedCount()).toBe(before + 1);

@@ -31,9 +31,17 @@ export function speechTextIdentity(
     secret: string,
     language: string,
     normalized: string,
+    recordingClass?: 'fixture' | 'pronunciation',
 ): string {
     return createHmac('sha256', secret)
-        .update(JSON.stringify([NORMALIZATION_REVISION, language, normalized]))
+        .update(
+            JSON.stringify([
+                NORMALIZATION_REVISION,
+                language,
+                normalized,
+                ...(recordingClass ? [recordingClass] : []),
+            ]),
+        )
         .digest('hex');
 }
 
