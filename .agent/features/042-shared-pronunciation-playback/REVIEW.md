@@ -153,3 +153,25 @@ Live Kie success/quality/result-host exercise remains an external gate; no new
 paid request was made. Explicit API URL overrides remain trusted deployment config,
 and speech_jobs.error is DB text with fixed safe repository writers. Existing
 shared exact-text cache-membership inference/production activation gates unchanged.
+
+## Gemini adapter security review (2026-10-14)
+
+Independent security reviewer audited the final source against `7cfbdb5`:
+tracked-diff digest `e90abf46bd8e5befed8b0bec985b1a93f6af67dcc972fedaf4a023385380f2f0`.
+No material findings. Verified fixed provider endpoint, worker-only credentials,
+closed capability/request registries, exact host/public DNS/pinned connections,
+redirect refusal, bounded provider bodies/downloads, complete PCM16 WAV validation,
+safe errors and existing authenticated private playback. Reviewer ran 71 focused
+adapter/downloader tests. Remaining gates: per-language listening quality, token
+cost calibration, regional access and production Selectel delivery; none claims
+production activation. Existing auth/source policy is unchanged.
+
+## Gemini adapter completion review (2026-10-14)
+
+Independent initial completion review covered the implementation, tests, new
+ADR, operations guidance and flow traceability against base `7cfbdb5` (reviewed
+tracked-patch digest `fd3259e35ee0a1a1e827c57494d1aac7c41a04fae04aedc984aa2e7a67a659be`,
+plus four new files). No material findings. Reviewer independently reran 71
+adapter/downloader tests and accepted the disposable PostgreSQL tariff and
+default-switch evidence, backend typecheck/build, Chromium tariff journey and
+documentation checks. Residual production gates are recorded in EVIDENCE.md.

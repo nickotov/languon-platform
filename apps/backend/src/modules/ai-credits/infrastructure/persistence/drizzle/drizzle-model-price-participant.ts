@@ -19,14 +19,14 @@ import type { z } from 'zod';
 import type { AiCreditTransaction } from './drizzle-ai-credit-participant';
 import { modelPriceRevisionsTable } from './model-price-schema';
 import { textAiModelCatalog } from '../../../../text-ai/application/text-ai-provider-catalog';
+import { SPEECH_MODEL_CATALOG } from '../../../../speech/domain/speech-models';
 
 export class ModelPriceConflictError extends Error {}
 export class ModelPriceUnavailableError extends Error {}
 type Publish = z.infer<typeof ModelPricePublishRequestSchema>;
-export const initialSpeechModels = [
-    { providerId: 'kie', modelId: 'elevenlabs/text-to-speech-turbo-2-5' },
-    { providerId: 'fixture', modelId: 'tone-v1' },
-];
+export const initialSpeechModels = SPEECH_MODEL_CATALOG.map(
+    ({ providerId, modelId }) => ({ providerId, modelId }),
+);
 export class DrizzleModelPriceParticipant {
     public constructor(private readonly transaction: AiCreditTransaction) {}
     public async current(input: {

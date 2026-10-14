@@ -62,6 +62,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             store: DrizzleSpeechStore,
             storage: PostgresAudioObjectStorage;
         let actors: string[], text: string, revoked: boolean, voice: string;
+        let configurationId: string;
         let providerKind: 'fixture' | 'kie', supported: boolean;
         const now = new Date('2026-10-13T12:00:00Z');
         const provider = new FixtureSpeechProvider();
@@ -82,6 +83,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             text = 'bonjour';
             revoked = false;
             voice = 'fixture';
+            configurationId = 'fixture-v1';
             providerKind = 'fixture';
             supported = true;
             await db.insert(usersTable).values(
@@ -119,6 +121,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         supported
                             ? {
                                   ...provider.supports(language),
+                                  configurationId,
                                   provider: providerKind,
                                   voice,
                               }
@@ -639,6 +642,65 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .voice,
             ).toBe('fixture');
         });
+        it('reuses ready live pronunciation after the configured default model changes', async () => {
+            providerKind = 'kie';
+            configurationId = 'kie-turbo-bella-v1';
+            voice = 'bella';
+            await prepare(actors[0]!);
+            await new SpeechWorker({
+                store,
+                storage,
+                providers: new Map([[configurationId, provider]]),
+                now: () => now,
+            }).runOnce();
+
+            configurationId = 'kie-gemini-zephyr-v1';
+            voice = 'Zephyr';
+            expect((await prepare(actors[1]!)).state).toBe('ready');
+            expect(await db.select().from(speechJobsTable)).toHaveLength(1);
+            expect(
+                (await db.select().from(speechRecordingsTable))[0]?.profile,
+            ).toMatchObject({
+                configurationId: 'kie-turbo-bella-v1',
+                provider: 'kie',
+                voice: 'bella',
+            });
+        });
+        it('uses the pinned profile configuration for work queued before a default switch', async () => {
+            providerKind = 'kie';
+            configurationId = 'kie-turbo-bella-v1';
+            voice = 'bella';
+            await prepare(actors[0]!);
+            configurationId = 'kie-gemini-zephyr-v1';
+            voice = 'Zephyr';
+            const retainedProvider = {
+                configurationId: 'kie-turbo-bella-v1',
+                supports: provider.supports.bind(provider),
+                submit: vi.fn(provider.submit.bind(provider)),
+                poll: vi.fn(provider.poll.bind(provider)),
+            };
+            expect(
+                await new SpeechWorker({
+                    store,
+                    storage,
+                    providers: new Map([
+                        ['kie-turbo-bella-v1', retainedProvider],
+                    ]),
+                    now: () => now,
+                }).runOnce(),
+            ).toBe(true);
+            expect(retainedProvider.submit).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    profile: expect.objectContaining({
+                        configurationId: 'kie-turbo-bella-v1',
+                        voice: 'bella',
+                    }),
+                }),
+            );
+            expect(
+                (await db.select().from(speechRecordingsTable))[0]?.profile,
+            ).toMatchObject({ configurationId: 'kie-turbo-bella-v1' });
+        });
         const finishRecording = async () => {
             expect(
                 await new SpeechWorker({
@@ -668,7 +730,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 text,
                 language: 'fr',
                 normalizationRevision: 'nfc-horizontal-whitespace-v1',
-                profile: { ...provider.supports('fr'), provider: providerKind },
+                profile: {
+                    ...provider.supports('fr'),
+                    configurationId,
+                    provider: providerKind,
+                },
                 state: ready ? 'ready' : 'pending',
                 storage: reference,
                 checksum: ready ? audio.checksum : null,

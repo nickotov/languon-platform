@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { KIE_TURBO_LANGUAGE_CODES } from '../../domain/speech-models';
+import { findSpeechModel } from '../../domain/speech-models';
 import type { SpeechProfile } from '../../application/ports/speech-synthesis-provider';
 
 const optional = z.preprocess(
@@ -45,18 +45,15 @@ const schema = z.object({
         .default('false'),
 });
 const voicesSchema = z.record(
+    z.string().min(1).max(32),
     z
-        .string()
-        .refine(
-            (language) => language in KIE_TURBO_LANGUAGE_CODES,
-            'Unsupported curated speech language',
-        ),
-    z.object({
-        model: z.literal('elevenlabs/text-to-speech-turbo-2-5'),
-        voice: z.string().min(1).max(128),
-        estimatedCostUnitsPerCharacter: z.number().finite().positive(),
-        settingsVersion: z.string().min(1).default('1'),
-    }),
+        .object({
+            model: z.string().min(1).max(128),
+            voice: z.string().min(1).max(128),
+            estimatedCostUnitsPerCharacter: z.number().finite().positive(),
+            settingsVersion: z.string().min(1).max(128).optional(),
+        })
+        .strict(),
 );
 const downloadHostSchema = z
     .string()
@@ -155,13 +152,32 @@ export function loadDictionaryAudioEnvironment(
     if (env.DICTIONARY_AUDIO_VOICE_MAP) {
         for (const [language, profile] of Object.entries(
             voicesSchema.parse(JSON.parse(env.DICTIONARY_AUDIO_VOICE_MAP)),
-        ))
+        )) {
+            const model = findSpeechModel(
+                env.DICTIONARY_AUDIO_PROVIDER,
+                profile.model,
+            );
+            const settingsVersion =
+                profile.settingsVersion ?? model?.defaultSettingsVersion;
+            if (
+                !model ||
+                !Object.hasOwn(model.languageCodes, language) ||
+                !settingsVersion ||
+                (model.settingsVersions !== null &&
+                    !model.settingsVersions.includes(settingsVersion)) ||
+                (model.voices !== null && !model.voices.includes(profile.voice))
+            )
+                throw new Error(
+                    'Unsupported curated speech model, language, voice, or settings.',
+                );
             profiles[language] = {
                 ...profile,
-                language: KIE_TURBO_LANGUAGE_CODES[language]!,
-                provider: 'kie',
+                settingsVersion,
+                language: model.languageCodes[language]!,
+                provider: env.DICTIONARY_AUDIO_PROVIDER,
                 configurationId: env.DICTIONARY_AUDIO_CONFIGURATION_ID,
             };
+        }
     }
     const allowedDownloadHosts = (env.DICTIONARY_AUDIO_DOWNLOAD_HOSTS ?? '')
         .split(',')

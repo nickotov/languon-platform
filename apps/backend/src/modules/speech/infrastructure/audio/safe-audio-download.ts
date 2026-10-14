@@ -61,7 +61,7 @@ export async function downloadAudioResult(
     value: string,
     allowedHosts: readonly string[],
     parentSignal?: AbortSignal,
-): Promise<AudioBytes & { mimeType: 'audio/mpeg' }> {
+): Promise<AudioBytes> {
     const signal = AbortSignal.any([
         AbortSignal.timeout(20_000),
         ...(parentSignal ? [parentSignal] : []),
@@ -80,9 +80,13 @@ export async function downloadAudioResult(
             url,
             {
                 signal,
-                lookup: (_hostname, _options, callback) =>
-                    callback(null, pinned.address, pinned.family),
-                headers: { accept: 'audio/mpeg' },
+                lookup: (_hostname, options, callback) => {
+                    // Node's family selection requests the all-address callback shape.
+                    // Both forms return only the address already checked above.
+                    if (options.all) callback(null, [pinned]);
+                    else callback(null, pinned.address, pinned.family);
+                },
+                headers: { accept: 'audio/mpeg, audio/wav' },
             },
             (response) => {
                 // Redirects are deliberately rejected; no credential or URL forwarding.
@@ -91,6 +95,8 @@ export async function downloadAudioResult(
                     ![
                         'audio/mpeg',
                         'audio/mp3',
+                        'audio/wav',
+                        'audio/x-wav',
                         'application/octet-stream',
                     ].includes(
                         (response.headers['content-type'] ?? '').split(';')[0]!,
@@ -122,13 +128,73 @@ export async function downloadAudioResult(
         req.on('error', () => reject(new Error('Audio download failed.')));
         req.end();
     });
-    const durationMs = validateMp3(bytes);
+    const wav = bytes.subarray(0, 4).toString('ascii') === 'RIFF';
+    const durationMs = wav ? validateWav(bytes) : validateMp3(bytes);
     return {
         bytes,
-        mimeType: 'audio/mpeg' as const,
+        mimeType: wav ? 'audio/wav' : 'audio/mpeg',
         checksum: audioChecksum(bytes),
         durationMs,
     };
+}
+
+/** Validate the complete RIFF container and PCM16 format, without trusting MIME. */
+export function validateWav(input: Uint8Array): number {
+    const bytes = Buffer.from(input.buffer, input.byteOffset, input.byteLength);
+    if (
+        bytes.length < 44 ||
+        bytes.length > maximumAudioBytes ||
+        bytes.toString('ascii', 0, 4) !== 'RIFF' ||
+        bytes.toString('ascii', 8, 12) !== 'WAVE' ||
+        bytes.readUInt32LE(4) !== bytes.length - 8
+    )
+        throw new Error('Invalid WAV.');
+    let offset = 12;
+    let byteRate = 0;
+    let blockAlign = 0;
+    let dataSize: number | undefined;
+    while (offset < bytes.length) {
+        if (offset + 8 > bytes.length) throw new Error('Invalid WAV chunk.');
+        const id = bytes.toString('ascii', offset, offset + 4);
+        const size = bytes.readUInt32LE(offset + 4);
+        const start = offset + 8;
+        const end = start + size;
+        const next = end + (size % 2);
+        if (next > bytes.length) throw new Error('Invalid WAV chunk.');
+        if (id === 'fmt ') {
+            if (
+                byteRate ||
+                ![16, 18].includes(size) ||
+                bytes.readUInt16LE(start) !== 1 ||
+                (size === 18 && bytes.readUInt16LE(start + 16) !== 0)
+            )
+                throw new Error('Unsupported WAV format.');
+            const channels = bytes.readUInt16LE(start + 2);
+            const sampleRate = bytes.readUInt32LE(start + 4);
+            byteRate = bytes.readUInt32LE(start + 8);
+            blockAlign = bytes.readUInt16LE(start + 12);
+            if (
+                ![1, 2].includes(channels) ||
+                sampleRate < 8000 ||
+                sampleRate > 96000 ||
+                bytes.readUInt16LE(start + 14) !== 16 ||
+                blockAlign !== channels * 2 ||
+                byteRate !== sampleRate * blockAlign
+            )
+                throw new Error('Unsupported WAV format.');
+        } else if (id === 'data') {
+            if (!byteRate || dataSize !== undefined || !size || size % blockAlign)
+                throw new Error('Invalid WAV data.');
+            dataSize = size;
+        } else if (!['LIST', 'JUNK', 'PAD '].includes(id)) {
+            // Reject alternate codec/container chunks and unrecognized payloads.
+            throw new Error('Unsupported WAV chunk.');
+        }
+        offset = next;
+    }
+    if (dataSize === undefined || dataSize / byteRate > 120)
+        throw new Error('Audio duration or WAV data exceeds limit.');
+    return Math.max(1, Math.round((dataSize / byteRate) * 1000));
 }
 
 /** Walk complete MPEG Layer III frames; reject non-audio, truncation, and >120s. */

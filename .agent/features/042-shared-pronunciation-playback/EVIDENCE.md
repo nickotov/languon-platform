@@ -246,3 +246,38 @@ binary bytes. Current client routes have no SSE/multipart; presigned document PU
 bypasses the API proxy. This exploratory stop is recorded as a nonblocking unrelated
 limitation, accepted by independent review. All owned extra PG/Redis containers
 were removed; generated Next declarations restored and final typecheck passed.
+
+## Gemini adapter activation (2026-10-14)
+
+One explicitly authorized public `alarmer` sample submitted to Kie
+`google/gemini-3-8-flash-lite-tts`, Zephyr, single speaker, French style, temperature 1.
+Task identity was persisted privately before polling; no repeated submission.
+Provider succeeded. Initial guarded download exposed Node24 `lookup(all:true)`
+callback incompatibility. After regression fix, the same task returned validated
+PCM16 mono/24kHz WAV, 57,644 bytes, duration 1,200 ms, trusted host file.aiquickdraw.com.
+No secrets, task ID or signed URL are recorded. This proves generation and guarded
+delivery, not an all-language pronunciation benchmark or Russia connectivity.
+Ignored local defaults switched to `kie-gemini-zephyr-v1` with 15 curated languages;
+prior Turbo credential/config retained. Ukrainian is unsupported by this Gemini
+version. Existing real recordings remain reusable. No production activation.
+
+Official sources: [Kie exact model API](https://docs.kie.ai/market/google/gemini-3-8-flash-lite-tts),
+[Google exact speech language table](https://ai.google.dev/gemini-api/docs/speech-generation),
+[Kie token pricing](https://kie.ai/gemini-3-8-flash-lite-tts).
+
+Verification for this adapter extension:
+
+- Backend adapter/downloader/storage/worker focused tests: 87 passed; speech
+  policy tests: 7 passed. Independent security reviewer reran 71 adapter and
+  downloader tests.
+- Gemini model tariff catalog, lazy initial revision and immutable publication:
+  disposable PostgreSQL integration 1/1 passed. Cache reuse after default model
+  switch and queued job polling through the pinned previous configuration/voice:
+  PostgreSQL integration 2/2 passed.
+- Backend typecheck/build, backend scoped ESLint, admin typecheck/ESLint and the
+  real Chromium Gemini tariff publication journey passed. User-flow guide and
+  mapped E2E revision checks passed; `git diff --check` is clean.
+- The `0.02` Kie-credit-per-character operational estimate does not measure the
+  model's token-priced bill. One French sample does not establish quality for
+  the other enabled languages. Production regional access, billing calibration
+  and Selectel delivery remain unverified.

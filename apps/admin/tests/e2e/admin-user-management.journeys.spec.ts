@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:09ac5b0e00c9fcea
+// @user-flow-revision shared-pronunciation-playback sha256:29f2d2b9405ea161
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, resolve } from 'node:path';
@@ -520,7 +520,9 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByRole('button', { name: 'Delete selected (0)' }),
         ).toBeDisabled();
-        await expect(page.locator('.ant-empty-description')).toHaveText('No data');
+        await expect(page.locator('.ant-empty-description')).toHaveText(
+            'No data',
+        );
         await page.setViewportSize({ width: 390, height: 844 });
         await page.screenshot({
             path: info.outputPath('admin-speech-library-narrow.png'),
@@ -549,7 +551,7 @@ test.describe.serial('admin user management journeys', () => {
         });
         const row = panel
             .getByRole('row')
-            .filter({ hasText: 'speech-characters' })
+            .filter({ hasText: 'google/gemini-3-8-flash-lite-tts' })
             .first();
         await expect(row).toBeVisible();
         await row
@@ -574,7 +576,7 @@ test.describe.serial('admin user management journeys', () => {
             });
             await secondPanel
                 .getByRole('row')
-                .filter({ hasText: 'speech-characters' })
+                .filter({ hasText: 'google/gemini-3-8-flash-lite-tts' })
                 .first()
                 .getByRole('button', { name: 'Edit price', exact: true })
                 .click();

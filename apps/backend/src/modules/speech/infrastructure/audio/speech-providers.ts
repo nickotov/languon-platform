@@ -9,6 +9,8 @@ import {
 } from '../../application/ports/speech-synthesis-provider';
 import { createFixtureAudio } from '../../domain/audio-integrity';
 import { downloadAudioResult } from './safe-audio-download';
+import { resolveKieModelStrategy } from './kie-model-strategies';
+import { findSpeechModel } from '../../domain/speech-models';
 
 export class FixtureSpeechProvider implements SpeechSynthesisProvider {
     public readonly configurationId = 'fixture-v1';
@@ -64,25 +66,30 @@ export interface KieSpeechProviderOptions {
     download?: typeof downloadAudioResult;
 }
 
+export function findConfiguredSpeechProfile(
+    profiles: Readonly<Record<string, SpeechProfile>>,
+    language: string,
+): SpeechProfile | null {
+    for (const key of [language, language.split('-')[0]!])
+        if (Object.hasOwn(profiles, key)) return profiles[key] ?? null;
+    return null;
+}
+
 export class KieSpeechProvider implements SpeechSynthesisProvider {
     readonly configurationId: string;
     constructor(private readonly options: KieSpeechProviderOptions) {
         this.configurationId = options.configurationId;
     }
     supports(language: string): SpeechProfile | null {
-        return (
-            this.options.profiles[language] ??
-            this.options.profiles[language.split('-')[0]!] ??
-            null
-        );
+        return findConfiguredSpeechProfile(this.options.profiles, language);
     }
     private assertProfile(profile: SpeechProfile) {
         if (
             profile.configurationId !== this.configurationId ||
-            profile.provider !== 'kie' ||
-            profile.model !== 'elevenlabs/text-to-speech-turbo-2-5'
+            profile.provider !== 'kie'
         )
             throw new Error('Unsupported speech configuration.');
+        return resolveKieModelStrategy(profile);
     }
     private async request(
         path: string,
@@ -135,7 +142,8 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
             if (
                 !input.text.trim() ||
                 input.text.length > 5000 ||
-                Array.from(input.text).length > 2000
+                Array.from(input.text).length >
+                    findSpeechModel('kie', input.profile.model)!.maxCharacters
             )
                 throw new Error('Invalid input.');
             input.signal?.throwIfAborted();
@@ -145,13 +153,10 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
         try {
             const result = await this.request('createTask', input.signal, {
                 model: input.profile.model,
-                input: {
-                    text: input.text,
-                    voice: input.profile.voice,
-                    language_code: input.profile.language,
-                    speed: 1,
-                    timestamps: false,
-                },
+                input: this.assertProfile(input.profile).createInput(
+                    input.text,
+                    input.profile,
+                ),
             });
             if (
                 [400, 401, 402, 404, 422, 429, 433, 455, 505].includes(

@@ -460,3 +460,255 @@ describe('audio configuration', () => {
         ).toThrow();
     });
 });
+
+describe('curated model strategies', () => {
+    const gemini = {
+        ...profile,
+        configurationId: 'gemini-v1',
+        model: 'google/gemini-3-8-flash-lite-tts',
+        voice: 'Zephyr',
+        settingsVersion: 'gemini-pronunciation-1',
+        language: 'fr',
+    };
+    it.each([
+        ['fr', 'French', 'alarmer'],
+        ['tr', 'Turkish', 'merhaba'],
+        ['ar', 'Arabic', 'مرحبا'],
+        ['zh', 'Chinese (Simplified)', '你好'],
+    ])(
+        'uses a separate language instruction for %s without changing spoken text',
+        async (language, name, text) => {
+            const fetcher = vi
+                .fn()
+                .mockResolvedValue(
+                    response({ code: 200, data: { taskId: 'tracked-task' } }),
+                );
+            const selected = { ...gemini, language };
+            const adapter = new KieSpeechProvider({
+                configurationId: selected.configurationId,
+                apiKey: 'fake',
+                profiles: { [language]: selected },
+                allowedDownloadHosts: [],
+                fetch: fetcher,
+            });
+            expect(
+                await adapter.submit({
+                    text,
+                    profile: selected,
+                    requestId: 'request',
+                }),
+            ).toMatchObject({ state: 'pending', taskId: 'tracked-task' });
+            const body = JSON.parse(fetcher.mock.calls[0]![1].body);
+            expect(body.model).toBe(gemini.model);
+            expect(body.input).toEqual({
+                temperature: 1,
+                speakers: [{ speaker_id: 'Speaker 1', voice_name: 'Zephyr' }],
+                dialogue_turns: [
+                    {
+                        speaker_id: 'Speaker 1',
+                        text,
+                        style: expect.stringContaining(name),
+                    },
+                ],
+            });
+            expect(fetcher).toHaveBeenCalledOnce();
+        },
+    );
+    it('preserves pre-existing operator-versioned Turbo profiles and voice IDs for polling', async () => {
+        const legacy = {
+            ...profile,
+            settingsVersion: 'bella-2026-10-14',
+            voice: 'hpp4J3VqNfWAUOO0d1Us',
+        };
+        const fetcher = vi.fn().mockResolvedValue(
+            response({
+                code: 200,
+                data: {
+                    taskId: 'old-task',
+                    model: profile.model,
+                    state: 'generating',
+                },
+            }),
+        );
+        const adapter = provider(fetcher);
+        expect(
+            await adapter.poll({ taskId: 'old-task', profile: legacy }),
+        ).toMatchObject({ state: 'pending' });
+        expect(
+            loadDictionaryAudioEnvironment(
+                {
+                    DICTIONARY_AUDIO_PROVIDER: 'kie',
+                    DICTIONARY_AUDIO_VOICE_MAP: JSON.stringify({
+                        en: {
+                            model: legacy.model,
+                            voice: legacy.voice,
+                            settingsVersion: legacy.settingsVersion,
+                            estimatedCostUnitsPerCharacter: 1,
+                        },
+                    }),
+                },
+                { deployed: false },
+            ).profiles.en,
+        ).toEqual(legacy);
+    });
+    it('keeps the original Turbo payload and settings exactly', async () => {
+        const fetcher = vi
+            .fn()
+            .mockResolvedValue(
+                response({ code: 200, data: { taskId: 'task' } }),
+            );
+        await provider(fetcher).submit({
+            text: 'hello',
+            profile,
+            requestId: 'request',
+        });
+        expect(JSON.parse(fetcher.mock.calls[0]![1].body)).toEqual({
+            model: profile.model,
+            input: {
+                text: 'hello',
+                voice: 'Rachel',
+                language_code: 'en',
+                speed: 1,
+                timestamps: false,
+            },
+        });
+    });
+    it.each([
+        { language: 'hu' },
+        { language: 'uk' },
+        { voice: 'cloned-voice' },
+        { settingsVersion: '1' },
+        { model: 'arbitrary/model' },
+        { configurationId: 'other' },
+    ])(
+        'rejects unsupported persisted Gemini profiles before HTTP: %j',
+        async (override) => {
+            const fetcher = vi.fn();
+            const adapter = new KieSpeechProvider({
+                configurationId: 'gemini-v1',
+                apiKey: 'fake',
+                profiles: {},
+                allowedDownloadHosts: [],
+                fetch: fetcher,
+            });
+            const selected = { ...gemini, ...override };
+            await expect(
+                adapter.submit({
+                    text: 'alarmer',
+                    profile: selected,
+                    requestId: 'request',
+                }),
+            ).rejects.toMatchObject({ outcome: 'not_submitted' });
+            await expect(
+                adapter.poll({ taskId: 'task', profile: selected }),
+            ).rejects.toThrow('Unsupported speech configuration');
+            expect(fetcher).not.toHaveBeenCalled();
+        },
+    );
+    it('polls retained Gemini profiles independently of current Turbo defaults and validates identity', async () => {
+        const download = vi.fn().mockResolvedValue(createFixtureAudio());
+        const fetcher = vi.fn().mockResolvedValue(
+            response({
+                code: 200,
+                data: {
+                    taskId: 'old-task',
+                    model: gemini.model,
+                    state: 'success',
+                    resultJson: JSON.stringify({
+                        resultUrls: ['https://cdn.example.com/audio.wav'],
+                    }),
+                },
+            }),
+        );
+        const adapter = new KieSpeechProvider({
+            configurationId: gemini.configurationId,
+            apiKey: 'fake',
+            profiles: {},
+            allowedDownloadHosts: ['cdn.example.com'],
+            fetch: fetcher,
+            download,
+        });
+        expect(adapter.supports('fr')).toBeNull();
+        expect(
+            await adapter.poll({ taskId: 'old-task', profile: gemini }),
+        ).toMatchObject({ state: 'ready' });
+        expect(download).toHaveBeenCalledWith(
+            'https://cdn.example.com/audio.wav',
+            ['cdn.example.com'],
+            undefined,
+        );
+        expect(fetcher.mock.calls[0]![1].method).toBe('GET');
+        fetcher.mockResolvedValue(
+            response({
+                code: 200,
+                data: {
+                    taskId: 'old-task',
+                    model: profile.model,
+                    state: 'success',
+                },
+            }),
+        );
+        await expect(
+            adapter.poll({ taskId: 'old-task', profile: gemini }),
+        ).rejects.toThrow('Mismatched');
+    });
+    it('validates selected model language, voice, settings and rejects arbitrary synthesis options', () => {
+        const values = (language: string, entry: unknown) => ({
+            DICTIONARY_AUDIO_PROVIDER: 'kie',
+            DICTIONARY_AUDIO_CONFIGURATION_ID: 'gemini-v1',
+            DICTIONARY_AUDIO_VOICE_MAP: JSON.stringify({ [language]: entry }),
+        });
+        const entry = {
+            model: gemini.model,
+            voice: gemini.voice,
+            estimatedCostUnitsPerCharacter: 1,
+        };
+        expect(
+            loadDictionaryAudioEnvironment(values('fr', entry), {
+                deployed: false,
+            }).profiles.fr,
+        ).toMatchObject(gemini);
+        for (const [language, override] of [
+            ['hu', {}],
+            ['constructor', {}],
+            ['fr', { model: 'arbitrary/model' }],
+            ['fr', { voice: 'Bella' }],
+            ['fr', { settingsVersion: '1' }],
+            ['fr', { temperature: 2 }],
+        ] as const)
+            expect(() =>
+                loadDictionaryAudioEnvironment(
+                    values(language, { ...entry, ...override }),
+                    { deployed: false },
+                ),
+            ).toThrow();
+    });
+    it('resolves the same Gemini language capabilities for metadata and executable providers without API credentials', () => {
+        const environment = loadDictionaryAudioEnvironment(
+            {
+                DICTIONARY_AUDIO_PROVIDER: 'kie',
+                DICTIONARY_AUDIO_CONFIGURATION_ID: 'gemini-v1',
+                DICTIONARY_AUDIO_VOICE_MAP: JSON.stringify({
+                    fr: {
+                        model: gemini.model,
+                        voice: 'Zephyr',
+                        estimatedCostUnitsPerCharacter: 1,
+                    },
+                }),
+            },
+            { deployed: false, role: 'api' },
+        );
+        for (const role of ['api', 'worker'] as const) {
+            const adapters = createDictionaryAudioAdapters({
+                environment,
+                database: { execute: vi.fn() } as never,
+                role,
+            } as never);
+            expect(adapters.provider.supports('fr')).toEqual(gemini);
+            expect(adapters.provider.supports('tr')).toBeNull();
+            expect(adapters.provider.supports('constructor')).toBeNull();
+            expect('submit' in adapters.provider).toBe(role === 'worker');
+            adapters.close();
+        }
+    });
+});

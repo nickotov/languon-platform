@@ -77,3 +77,15 @@ The failure-reporting and browser-path repair is implemented and verified. Exist
 failed requests remain terminal; future safe provider failures retain their reason
 and billing outcome. Working live pronunciation still depends on Kie recovering
 from its terminal 500, or on separately validated model/provider activation.
+
+## Gemini model adapter extension (2026-10-14)
+
+User explicitly authorizes trying Kie `google/gemini-3-8-flash-lite-tts` and
+extensible provider/model adapters. Add curated model capabilities and language
+mappings, separate request strategies and provider factories, validate WAV output,
+and discover speech tariffs from the same model catalog. Preserve historical
+profiles, pending tasks, cached live pronunciation, unknown-submission fences and
+success-only credits. No new application languages, automatic fallback or cloning.
+One public French sample is authorized separately from deterministic tests; local
+default activation requires successful validated audio, not merely task acceptance.
+Production activation and per-language listening quality remain release gates.

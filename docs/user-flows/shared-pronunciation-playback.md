@@ -124,7 +124,7 @@ confirmation. Never point these checks at staging/production wallets or storage.
    unavailable, explicitly reveal the reference, then play it.
 7. Complete an AI check and play the saved learner answer as written. Draft or
    unchecked answers cannot use saved-answer playback.
-8. Choose a language lacking a configured model/voice. No generation control
+8. Choose a language lacking a configured and model-supported voice. No generation control
    appears, unless an approved reusable recording is already available.
 
 ## Admin verification

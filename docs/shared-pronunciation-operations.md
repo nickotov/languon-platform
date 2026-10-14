@@ -83,6 +83,61 @@ this identity repair or switching providers. Do not overlap older and repaired A
 writers: older binaries cannot recognize the new scoped canonical keys and may
 otherwise admit duplicate generation. Then enable generation on repaired processes.
 
+## Model and provider adapters
+
+The model catalog in `speech/domain/speech-models.ts` owns reviewed capabilities
+and feeds configuration validation and administrative tariff discovery. Add a
+model definition plus its request strategy in `kie-model-strategies.ts` when the
+Kie submit/poll protocol applies. A new provider implements `SpeechSynthesisProvider`,
+adds a factory/metadata resolver in `speech-provider-registry.ts`, and adds reviewed
+credential validation in the environment adapter. HTTP/SDKs remain infrastructure;
+learners never supply endpoints, voices or settings. No automatic paid fallback.
+
+Kie `google/gemini-3-8-flash-lite-tts` uses one preset speaker, `dialogue_turns`,
+fixed temperature 1 and a separate language/pronunciation style. Only saved text
+is spoken. The initial tutor preset is `Zephyr`, with settings revision
+`gemini-pronunciation-1`. WAV output is documented as PCM16/24 kHz/mono. The guarded
+downloader validates bounded PCM16 WAV or MP3 before private storage.
+[Exact Kie API contract](https://docs.kie.ai/market/google/gemini-3-8-flash-lite-tts),
+[upstream language table](https://ai.google.dev/gemini-api/docs/speech-generation).
+
+Enabled Gemini mappings intersect the current app catalog and documented support:
+`ar,de,en,es,fr,he,hi,it,ja,ko,pl,pt,ru,tr,zh-Hans`. Ukrainian is absent from the
+current Flash-Lite table and cannot be configured for this model; Turbo retains
+its existing Ukrainian support. Existing approved Ukrainian audio remains playable.
+Hungarian is supported upstream but requires a separate app-language addition.
+Language coverage is distinct from reviewed pronunciation quality.
+
+Example voice-map entry (repeat only for verified supported app languages):
+
+```json
+{
+    "fr": {
+        "model": "google/gemini-3-8-flash-lite-tts",
+        "voice": "Zephyr",
+        "settingsVersion": "gemini-pronunciation-1",
+        "estimatedCostUnitsPerCharacter": 0.02
+    }
+}
+```
+
+The `0.02` is a conservative local planning estimate in Kie-credit budget units,
+not a published per-character price or guaranteed spend bound. Gemini is billed
+by input and audio-output tokens: currently 70 and 840 Kie credits per million
+respectively, with promotional pricing through December 31, 2026. Measure actual
+usage before production activation. Customer speech tariffs remain independent,
+starting with the existing provisional 100 app credits/1,000 characters.
+[Model-specific pricing](https://kie.ai/gemini-3-8-flash-lite-tts).
+
+Change `DICTIONARY_AUDIO_CONFIGURATION_ID` when changing defaults. Preserve the old
+identity in ignored `DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS`, containing its
+`configurationId`, credential and exact `allowedDownloadHosts`, before restarting
+API and worker together. Retained jobs poll their pinned model/voice/settings; they
+never use replacement defaults. Ready live recordings are reused first, even if
+the new model cannot generate that language. Existing quotes may require refresh.
+A new catalog model receives an immutable provisional tariff on first discovery;
+old revisions and admitted charges are not rewritten.
+
 ## Retention and administration
 
 Successful normalized text and audio remain indefinitely, even after originating

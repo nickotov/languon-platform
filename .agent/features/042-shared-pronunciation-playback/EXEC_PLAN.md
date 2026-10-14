@@ -2,7 +2,7 @@
 
 Feature: [FEATURE.md](./FEATURE.md)
 Last updated: 2026-10-14
-Branch: feature/shared-pronunciation-failure-repair
+Branch: feature/shared-pronunciation-gemini-adapters
 
 ## Goal and specification
 
@@ -14,7 +14,7 @@ Feature 027 provides dictionary-owned private audio, Kie/fixture ports, worker l
 
 ## Test and review strategy
 
-Unit normalization/pricing/state tests; disposable PostgreSQL admission/ledger/race/migration tests; actual MinIO adapter conformance; web/admin E2E and real browser desktop/narrow proof. Independent completion and security reviews required. Separate bounded tester reviews the accounting/concurrency harness. No native tests or paid provider calls; record live production activation separately.
+Unit normalization/pricing/state tests; disposable PostgreSQL admission/ledger/race/migration tests; actual MinIO adapter conformance; web/admin E2E and real browser desktop/narrow proof. Independent completion and security reviews required. Separate bounded tester reviews the accounting/concurrency harness. Automated tests use deterministic providers and never paid calls. Explicitly authorized live samples are tracked separately; production activation remains separate.
 
 ## Milestones
 
@@ -141,3 +141,30 @@ recorded as nonblocking and no pass is claimed or assertion weakened. Current AP
 clients do not use SSE/multipart, and binary audio/JSON proxy transport is verified.
 Required local squash handoff follows. No new paid call occurred; supplier 500
 remains an external successful-audio gate.
+
+## Gemini adapters (active, 2026-10-14)
+
+Scope maps AC-2/4/5/6/8/11/12: exact Kie Gemini protocol, model-language-voice
+capabilities, provider factory and model strategy seams, validated PCM16 WAV/MP3,
+catalog-driven tariff discovery, retained Turbo configuration and one live sample.
+Compared scattered provider/model conditionals with a shared semantic catalog plus
+infrastructure strategy/factory registries; choose the latter to keep HTTP,
+credentials and model payloads behind the existing port. No new public API, schema
+or dependency. Registration remains reviewed code, never arbitrary learner URLs.
+
+Adapter worker owns catalog/config/provider strategies; WAV worker owns downloader
+and binary regressions. Root owns billing catalog discovery, docs, live sample and
+integration. A separate tester assesses binary validation and historical/default
+switch evidence; completion and security reviewers audit final patch after preflight.
+Unit tests cover payloads, capability intersections, historical task identity and
+malformed audio; existing disposable PostgreSQL cases establish cache and billing
+invariants, supplemented with Gemini tariff discovery. No UI behavior changes.
+
+Official model-specific sources verified 15 enabled app languages; Ukrainian is
+excluded for Gemini, with the prior Turbo profile retained. One tracked French
+sample produced validated WAV and local ignored configuration now defaults to
+Gemini/Zephyr. Tariff discovery, cache/default-switch/pending-profile PostgreSQL
+tests, backend build/typecheck, admin tariff browser journey, guide checks and
+independent completion/security reviews passed. Production listening, billing
+calibration, regional reachability and Selectel proof remain release gates.
+Feature implementation is complete; local squash handoff remains.

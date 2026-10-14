@@ -6,7 +6,11 @@ import {
     S3AudioObjectStorage,
 } from './audio-object-storages';
 import type { DictionaryAudioEnvironment } from './dictionary-audio-environment';
-import { FixtureSpeechProvider, KieSpeechProvider } from './speech-providers';
+import { KieSpeechProvider } from './speech-providers';
+import {
+    createSpeechProvider,
+    resolveSpeechProvider,
+} from './speech-provider-registry';
 import type { SpeechSynthesisProvider } from '../../application/ports/speech-synthesis-provider';
 import type { AudioObjectStorage } from '../../application/ports/audio-object-storage';
 
@@ -37,9 +41,6 @@ export function createDictionaryAudioAdapters(
     options: AdapterOptions,
 ): AdapterResult<ProfileResolver> {
     const env = options.environment;
-    const fixtureSupports = (language: string) =>
-        !env.fixtureSupportedLanguages ||
-        env.fixtureSupportedLanguages.includes(language);
     const clients: S3Client[] = [];
     const createS3 = (
         configuration: NonNullable<DictionaryAudioEnvironment['s3']>,
@@ -73,48 +74,17 @@ export function createDictionaryAudioAdapters(
     };
     if (options.role === 'api' || options.role === 'purge') {
         // Metadata resolution cannot execute paid work and holds no provider credentials.
-        const provider: ProfileResolver = {
-            configurationId:
-                env.provider === 'fixture' ? 'fixture-v1' : env.configurationId,
-            supports: (language) =>
-                options.role === 'purge'
-                    ? null
-                    : env.provider === 'fixture' && !fixtureSupports(language)
-                      ? null
-                      : env.provider === 'fixture'
-                        ? {
-                              configurationId: 'fixture-v1',
-                              provider: 'fixture',
-                              model: 'tone-v1',
-                              voice: 'fixture',
-                              language,
-                              settingsVersion: '1',
-                              estimatedCostUnitsPerCharacter: 0,
-                          }
-                        : (env.profiles[language] ??
-                          env.profiles[language.split('-')[0]!] ??
-                          null),
-        };
+        const resolved = resolveSpeechProvider(env);
+        const provider: ProfileResolver =
+            options.role === 'purge'
+                ? {
+                      configurationId: resolved.configurationId,
+                      supports: () => null,
+                  }
+                : resolved;
         return { storage, provider, providers: new Map(), close };
     }
-    const fixture = new FixtureSpeechProvider();
-    const provider: SpeechSynthesisProvider =
-        env.provider === 'fixture'
-            ? {
-                  configurationId: fixture.configurationId,
-                  supports: (language) =>
-                      fixtureSupports(language)
-                          ? fixture.supports(language)
-                          : null,
-                  submit: fixture.submit.bind(fixture),
-                  poll: fixture.poll.bind(fixture),
-              }
-            : new KieSpeechProvider({
-                  configurationId: env.configurationId,
-                  apiKey: env.apiKey ?? '',
-                  profiles: env.profiles,
-                  allowedDownloadHosts: env.allowedDownloadHosts,
-              });
+    const provider = createSpeechProvider(env);
     const providers = new Map<string, SpeechSynthesisProvider>([
         [provider.configurationId, provider],
     ]);
