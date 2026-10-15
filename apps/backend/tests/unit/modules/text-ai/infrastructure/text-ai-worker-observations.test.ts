@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { publishTextAiWorkerObservations } from '../../../../../src/modules/text-ai/infrastructure/ai/text-ai-worker-observations';
 import {
     isSentenceExecutionCapableObservation,
+    isTextsExecutionCapableObservation,
+    isTextsCapacityCapableObservation,
     isTextAiCapacityCapableObservation,
     isTextAiSelectionCapableObservation,
     textAiSelectionObservationId,
@@ -179,6 +181,74 @@ describe('shared worker capability publication', () => {
                 );
             }
         }
+    });
+    it('isolates Texts capabilities from legacy workers and publishes capacity separately', async () => {
+        const f = fixture();
+        await publishTextAiWorkerObservations({
+            database: f.database,
+            credentials: {},
+            now,
+            readinessTimeoutMs: 20,
+            supportedFormats: ['single-card:v1', 'text-translation:v1'],
+            workerId: 'worker',
+            textsCapacityEnabled: true,
+            textsExecutionEnabled: true,
+        });
+        expect(f.rows).toHaveLength(6);
+        const execution = f.rows.filter((row) =>
+            row.id.startsWith('texts-execution:'),
+        );
+        const capacity = f.rows.filter((row) =>
+            row.id.startsWith('texts-capacity:'),
+        );
+        expect(execution).toHaveLength(2);
+        expect(capacity).toHaveLength(2);
+        for (const row of execution) {
+            expect(
+                isTextsExecutionCapableObservation(row, 'text-translation:v1'),
+            ).toBe(true);
+            expect(
+                isTextsExecutionCapableObservation(
+                    { ...row, creditSettlementRevision: null },
+                    'text-translation:v1',
+                ),
+            ).toBe(false);
+            expect(
+                isTextsExecutionCapableObservation(
+                    {
+                        ...row,
+                        id: row.id.replace(
+                            'texts-execution:',
+                            'sentence-execution:',
+                        ),
+                    },
+                    'text-translation:v1',
+                ),
+            ).toBe(false);
+        }
+        for (const row of capacity) {
+            expect(
+                isTextsCapacityCapableObservation(row, 'single-card:v1'),
+            ).toBe(true);
+            expect(
+                isTextsExecutionCapableObservation(row, 'text-translation:v1'),
+            ).toBe(false);
+        }
+        const old = fixture();
+        await publishTextAiWorkerObservations({
+            database: old.database,
+            credentials: {},
+            now,
+            readinessTimeoutMs: 20,
+            supportedFormats: ['single-card:v1', 'text-translation:v1'],
+            workerId: 'worker',
+        });
+        expect(
+            old.rows.every((row) => !isTextsCapacityCapableObservation(row)),
+        ).toBe(true);
+        expect(
+            old.rows.every((row) => !isTextsExecutionCapableObservation(row)),
+        ).toBe(true);
     });
     it('does not refresh any namespace when no registered requested formats apply', async () => {
         const f = fixture();

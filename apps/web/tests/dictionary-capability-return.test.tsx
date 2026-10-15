@@ -108,3 +108,20 @@ describe('shared dictionary capability return', () => {
         );
     });
 });
+
+describe('Texts capability authentication continuation', () => {
+    it.each([
+        '/shared/texts/share-locator-1234',
+        '/shared/text-folders/share-locator-1234',
+        '/shared/text-folders/share-locator-1234/texts/123e4567-e89b-42d3-a456-426614174000',
+    ])('preserves a secret only in the fragment for %s', (path) => {
+        const key = 'S'.repeat(43);
+        const target = `/login?returnTo=${encodeURIComponent(path)}`;
+        expect(preserveCapabilityReturnFragment(target, path, `#${key}`)).toBe(
+            `${target}#${key}`,
+        );
+        expect(capabilityReturnFragment(`${path}?key=${key}`, `#${key}`)).toBe(
+            '',
+        );
+    });
+});

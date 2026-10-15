@@ -19,11 +19,19 @@ import {
     isTextAiSelectionCapableObservation,
     isTextAiCapacityCapableObservation,
     isSentenceExecutionCapableObservation,
+    isTextsExecutionCapableObservation,
+    isTextsCapacityCapableObservation,
 } from './text-ai-worker-readiness';
 import { isTextAiCircuitOpen } from '../../../../../infrastructure/text-ai/text-ai-circuit';
-import { hasSentenceCapacityOverlap } from '../../../../../infrastructure/text-ai/text-ai-capacity';
+import {
+    hasSentenceCapacityOverlap,
+    hasTextsCapacityOverlap,
+} from '../../../../../infrastructure/text-ai/text-ai-capacity';
 import { sql } from 'drizzle-orm';
-import { textAiSentenceFormats } from '../../../application/text-ai-provider-catalog';
+import {
+    textAiSentenceFormats,
+    textAiTextsFormats,
+} from '../../../application/text-ai-provider-catalog';
 import {
     defaultTextAiAvailabilityPolicy,
     type TextAiAvailabilityPolicy,
@@ -49,9 +57,15 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         const learning = textAiSentenceFormats.some(
             (format) => format === input.format,
         );
-        const overlap = learning
-            ? true
-            : await hasSentenceCapacityOverlap(tx, input.now);
+        const texts = textAiTextsFormats.some(
+            (format) => format === input.format,
+        );
+        const textsOverlap =
+            texts || (await hasTextsCapacityOverlap(tx, input.now));
+        const overlap =
+            learning || textsOverlap
+                ? true
+                : await hasSentenceCapacityOverlap(tx, input.now);
         const [preference] = await tx
             .select()
             .from(textAiPreferencesTable)
@@ -74,7 +88,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             .where(eq(dictionaryAiConfigurationTable.id, 'global'))
             .limit(1);
         if (!configured) {
-            if (learning || preference?.mode === 'explicit')
+            if (learning || texts || preference?.mode === 'explicit')
                 throw new TextAiSelectionUnavailableError();
             return {
                 budget: input.legacyBudget,
@@ -85,7 +99,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         }
         if (this.policy.pricingAdmissionEnabled === false)
             throw new TextAiSelectionUnavailableError();
-        if (preference?.mode !== 'explicit' && !learning) {
+        if (preference?.mode !== 'explicit' && !learning && !texts) {
             if (
                 !configured.snapshot.enabledModelIds.includes(
                     configured.snapshot.modelId,
@@ -124,7 +138,9 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                     !observations.some(
                         (observation) =>
                             observation.status !== 'unavailable' &&
-                            isTextAiCapacityCapableObservation(
+                            (textsOverlap
+                                ? isTextsCapacityCapableObservation
+                                : isTextAiCapacityCapableObservation)(
                                 observation,
                                 input.requiredWorkerFormat ?? input.format,
                             ),
@@ -177,27 +193,43 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             observations.some(
                 (observation) => observation.status === 'unavailable',
             ) ||
+            (textsOverlap &&
+                !observations.some(
+                    (observation) =>
+                        observation.status !== 'unavailable' &&
+                        isTextsCapacityCapableObservation(
+                            observation,
+                            input.requiredWorkerFormat ?? input.format,
+                        ),
+                )) ||
             !observations.some(
                 (observation) =>
-                    (learning
-                        ? isSentenceExecutionCapableObservation(
+                    (texts
+                        ? isTextsExecutionCapableObservation(
                               observation,
                               input.requiredWorkerFormat ?? input.format,
                           )
-                        : overlap
-                          ? isTextAiCapacityCapableObservation(
+                        : learning
+                          ? isSentenceExecutionCapableObservation(
                                 observation,
                                 input.requiredWorkerFormat ?? input.format,
                             )
-                          : isTextAiSelectionCapableObservation(
-                                observation,
-                                input.requiredWorkerFormat ?? input.format,
-                            )) && observation.status !== 'unavailable',
+                          : overlap
+                            ? (textsOverlap
+                                  ? isTextsCapacityCapableObservation
+                                  : isTextAiCapacityCapableObservation)(
+                                  observation,
+                                  input.requiredWorkerFormat ?? input.format,
+                              )
+                            : isTextAiSelectionCapableObservation(
+                                  observation,
+                                  input.requiredWorkerFormat ?? input.format,
+                              )) && observation.status !== 'unavailable',
             )
         )
             throw new TextAiSelectionUnavailableError();
         if (
-            learning &&
+            (learning || texts) &&
             (await isTextAiCircuitOpen(tx, {
                 execution: { providerId: model.providerId, modelId: model.id },
                 format: input.format,
@@ -205,6 +237,11 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             }))
         )
             throw new TextAiSelectionUnavailableError();
+        if (texts) {
+            await tx.execute(
+                sql`select set_config('languon.texts_execution_revision','1',true), set_config('languon.text_ai_selection_revision','1',true), set_config('languon.ai_credit_settlement_revision','1',true)`,
+            );
+        }
         if (learning) {
             await tx.execute(
                 sql`select set_config('languon.learning_execution_revision','1',true), set_config('languon.text_ai_selection_revision','1',true), set_config('languon.ai_credit_settlement_revision','1',true)`,

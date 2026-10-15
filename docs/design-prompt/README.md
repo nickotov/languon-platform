@@ -56,3 +56,5 @@ The two selected v001 designs were implemented and verified on 2026-10-05 in
 [feature 037](../../.agent/features/037-sentence-practice-web/FEATURE.md).
 The handoffs retain unchanged frozen prompt/source identities and record final
 implementation proof and mechanical backlog-path mappings.
+
+| [Texts](./texts.md) | Folders, whole-text AI translation, aligned reading/editing, contextual vocabulary, sharing and independent copies | v002 backend verified; awaiting generated design ([handoff](../../.agent/features/043-texts/DESIGN.md)) |

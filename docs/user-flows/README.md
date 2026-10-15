@@ -48,6 +48,7 @@ evidence with a repeatable manual/browser/API/device recipe.
   HTTP API.
 - [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md) — private
   saved-field playback for authenticated learners, on-demand generation and cached audio.
+- [Texts folders and aligned reading](./texts.md) — private folders, whole-text translation, contextual vocabulary, sharing and independent copies; frontend awaits design.
 - [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
   card authoring, lifecycle recovery, unlisted reading, and private forks.
 - [Flashcard training backend](./flashcard-training-backend.md) — bounded card

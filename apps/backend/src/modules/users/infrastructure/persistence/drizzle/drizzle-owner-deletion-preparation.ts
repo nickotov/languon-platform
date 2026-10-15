@@ -1,3 +1,4 @@
+import { requestTextsCancellation } from '../../../../texts/infrastructure/persistence/drizzle/texts-deletion-participant';
 import { purgeSpeechActor } from '../../../../speech/infrastructure/drizzle-speech-store';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -22,6 +23,7 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
             await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 76021941))`,
             );
+            await requestTextsCancellation(tx, userId, new Date());
             const ownedDictionaries = await tx
                 .select({ id: dictionariesTable.id })
                 .from(dictionariesTable)

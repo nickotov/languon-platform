@@ -1,0 +1,239 @@
+.page {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--background-canvas);
+    color: var(--text-primary);
+}
+
+.header {
+    min-height: var(--size-64);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: var(--space-12);
+    padding-inline: var(--space-16);
+    border-bottom: 1px solid var(--border-default);
+    background: var(--background-surface);
+}
+
+.sharedBadge {
+    display: none;
+    align-items: center;
+    gap: var(--space-4);
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.account {
+    margin-inline-start: auto;
+}
+
+.signedIn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+}
+
+.signedIn span:last-child {
+    display: none;
+}
+
+.folder {
+    width: 100%;
+    max-width: var(--size-896);
+    margin-inline: auto;
+    padding: var(--space-32) var(--space-16);
+}
+
+.folderHeading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+    align-items: flex-start;
+}
+
+.folderInfo {
+    min-width: 0;
+    flex: 1;
+    overflow-wrap: anywhere;
+}
+
+.folderInfo h1 {
+    margin-block: var(--space-4) 0;
+    font-size: var(--size-24);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.folderInfo p {
+    margin-block: var(--space-8) 0;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.eyebrow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    font-size: var(--size-12);
+}
+
+.muted {
+    color: var(--text-tertiary);
+    font-size: var(--size-14);
+}
+
+.list {
+    padding: 0;
+    margin-block: var(--space-32) 0;
+    list-style: none;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-16);
+    overflow: hidden;
+    background: var(--background-surface);
+}
+
+.row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+    padding: var(--space-16);
+}
+
+.row + .row {
+    border-top: 1px solid var(--border-default);
+}
+
+.rowInfo {
+    min-width: 0;
+    flex: 1;
+}
+
+.rowInfo h2 {
+    margin: 0;
+    font-size: var(--size-16);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.languages {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-block: var(--space-4) 0;
+    font-size: var(--size-12);
+    color: var(--text-secondary);
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.empty {
+    padding: var(--space-32) var(--space-20);
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.more {
+    margin: 0 auto var(--space-24);
+}
+
+.readerHeader {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+    padding: var(--space-12) var(--space-16);
+    background: var(--background-surface);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.readerTitle {
+    min-width: 0;
+}
+
+.readerTitle h1 {
+    margin: 0;
+    font-size: var(--size-18);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.reader {
+    flex: 1;
+    min-height: 0;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.notice {
+    margin: 0;
+    padding: var(--space-12) var(--space-16);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-subtle);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+    .header {
+        padding-inline: var(--space-24);
+    }
+
+    .sharedBadge {
+        display: inline-flex;
+    }
+
+    .signedIn span:last-child {
+        display: inline;
+    }
+
+    .folder {
+        padding-inline: var(--space-24);
+    }
+
+    .folderHeading {
+        flex-direction: row;
+    }
+
+    .folderInfo h1 {
+        font-size: var(--size-30);
+    }
+
+    .row {
+        flex-direction: row;
+        align-items: center;
+        padding-inline: var(--space-20);
+    }
+
+    .readerHeader {
+        padding-inline: var(--space-24);
+    }
+}
+
+@media (min-width: 768px) {
+    .readerHeader {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+@media (min-width: 1024px) {
+    .folder {
+        padding-block: var(--space-48);
+    }
+}

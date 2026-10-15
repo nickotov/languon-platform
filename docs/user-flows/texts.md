@@ -1,0 +1,266 @@
+---
+feature: texts
+title: Texts folders and aligned reading
+status: current
+last_verified: 2026-10-16
+surfaces:
+    - api
+    - system
+    - browser
+source_paths:
+    - .agent/features/043-texts/**
+    - apps/backend/src/modules/texts/**
+    - apps/backend/src/modules/dictionaries/application/text-selection-*.ts
+    - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/*text-selection*.ts
+    - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema.ts
+    - apps/backend/src/modules/dictionaries/interface/http/text-selection.routes.ts
+    - apps/backend/src/modules/text-ai/**
+    - apps/backend/src/modules/ai-credits/**
+    - apps/backend/src/infrastructure/text-ai/**
+    - apps/backend/src/infrastructure/worker/**
+    - apps/backend/src/modules/users/infrastructure/persistence/drizzle/**
+    - apps/backend/src/app.ts
+    - apps/backend/src/index.ts
+    - apps/backend/drizzle/**
+    - apps/backend/tests/integration/modules/texts/**
+    - packages/contracts/src/texts/**
+    - packages/prompts/src/local/texts.ts
+    - scripts/run-texts-e2e.mjs
+    - scripts/run-texts-web-e2e.mjs
+    - scripts/run-texts-all-e2e.mjs
+    - apps/backend/tests/support/texts-web-server.ts
+    - apps/web/src/app/texts/**
+    - apps/web/src/app/shared/texts/**
+    - apps/web/src/app/shared/text-folders/**
+    - apps/web/src/fsd/pages/texts/**
+    - apps/web/src/fsd/features/text-reading/**
+    - apps/web/src/fsd/features/text-management/**
+    - apps/web/src/fsd/entities/texts/**
+    - apps/web/src/fsd/widgets/app-shell/**
+    - apps/web/src/fsd/shared/lib/capability-return.ts
+    - apps/web/src/fsd/shared/i18n/messages/texts-*.ts
+e2e_command: texts
+e2e_tests:
+    - apps/backend/tests/integration/modules/texts/texts.journeys.test.ts
+    - apps/web/tests/e2e/texts.journeys.spec.ts
+e2e_scenarios:
+    - owner-translates-edits-and-collects
+    - shared-reading-copy-and-revocation
+    - web-owner-reading-and-collection
+    - web-public-copy-and-revocation
+    - web-phone-reading-selection
+related_features:
+    - dictionary-platform
+    - user-ai-model-preferences-backend
+    - ai-credit-wallet
+    - profile-account-controls
+---
+
+# Texts folders and aligned reading
+
+## What this verifies
+
+The web Texts section sits beside Dictionaries and organizes passages in flat
+folders. A fullscreen workspace explicitly detects/confirms languages, translates
+whole passages, saves drafts/proposals and edits paired sentences. Readers enable
+matching, select contextual vocabulary into dictionaries, and share/copy saved
+translations. Backend journeys also verify versioning, capacity and privacy.
+The selected Magic Patterns source and control inventory live in feature 043
+FEATURE.md/UI-01–UI-40 and DESIGN.md/v003.
+
+## Start the development environment
+
+Use only the dedicated loopback PostgreSQL port 55443 and database
+`languon_auth_texts_ui_web_test`. Set `ALLOW_DISPOSABLE_DATABASE_TESTS=true`,
+`AUTH_TEST_DATABASE_URL` to that local target and `AUTH_TEST_DATABASE_CONFIRM` to
+that exact database name. Use Redis on loopback port 56443, database 1, with
+`ALLOW_DISPOSABLE_REDIS_TESTS=true`, `AUTH_TEST_REDIS_URL` pointing to that target
+and matching `AUTH_TEST_REDIS_CONFIRM=127.0.0.1:56443/1` (or the equivalent localhost
+host if used consistently). Combined verification rejects any other database/port
+before invoking tests and requires local application ports 3335 and 4005 to be free.
+Stop only your owned debug fixture processes first; do not stop unrelated services.
+
+```sh
+pnpm test:e2e:texts
+pnpm user-flow:e2e -- check texts
+pnpm docs:user-flows:check
+```
+
+The journey fixture uses real authentication, API routes, PostgreSQL/Redis and
+production admission/credit infrastructure with deterministic model providers. It
+resets only its confirmed disposable database and uses synthetic accounts. Do not
+run another resetting suite against that target concurrently. No paid model calls
+or shared/staging/production data are used.
+
+## API verification
+
+### Owner journey
+
+1. Sign in as an active learner and create a named folder, optionally with a short
+   description. List folders and open its text list.
+2. Provide a nonblank source up to 20,000 Unicode code points, optional title, and
+   distinct supported source/target languages. Explicit Save creates a draft.
+3. Optionally submit language detection and poll its job. The result is advisory;
+   the client must explicitly accept a suggestion and submit the chosen pair.
+4. Submit translation with an operation ID and poll its durable job. The worker
+   translates the complete submitted content, producing ordered source/translation
+   arrays linked by stable pair IDs. Completion alone does not change the draft.
+5. Save the returned proposal against the current text version. Paragraph whitespace
+   and the complete source remain intact. Editing either side of a linked pair and
+   saving marks its provenance edited-after-translation. A stale version conflicts.
+6. Select a word/phrase within one sentence on either side. Its language direction
+   determines eligible dictionaries. The request identifies exact UTF-16 offsets;
+   the server derives the phrase and surrounding context from authorized content.
+7. Add to an existing dictionary or supply a new dictionary name. Poll the durable
+   collection job. On success, the generated full card and destination identities
+   are returned. New dictionary/card/revision creation is atomic. Exact operation
+   replay returns the same result; changed input under the same key conflicts.
+
+### Shared reading and copying
+
+1. Create a link for a saved translated text or a folder. Keep the secret in the
+   client URL fragment and forward it only in `x-languon-share-key`; never put it in
+   request paths or queries. Public responses are no-store/no-referrer/no-index.
+2. Anonymous readers see translated active content. A shared folder is live and
+   includes later saved translations and edits, but excludes untranslated drafts.
+3. After signing in, copy one text into an owned active folder or copy the entire
+   shared folder privately. Copies have independent IDs and editing/lifecycle.
+   Collecting vocabulary requires an authenticated active learner and uses their
+   own dictionary and AI credits.
+4. Rotate/revoke the share or archive the source and retry the old capability.
+   It becomes unavailable without revealing owner identity or existence details.
+   Archiving a folder also hides its children. Restoring does not reactivate old
+   sharing links. Previously completed copies and cards remain independent.
+
+## Expected failure and edge cases
+
+- Missing/inactive authentication rejects private mutations and AI work.
+- Invalid languages, oversized input, unsupported selection and malformed mappings
+  reject before publication. The 20,000-character input cap is distinct from the
+  selected model’s complete-input/output limit; choose a suitable model or shorter
+  text when preflight rejects the request. No implicit model switch/truncation.
+- Insufficient credits, unavailable compatible workers/configuration, provider
+  failure and rate limits return bounded safe codes. Existing saved text remains.
+- Retry ambiguous HTTP admission with the same operation ID. Card creation must
+  not be inferred from a timed-out request; poll the existing job.
+- Known rate-limited provider work may retry within pinned attempt bounds; an
+  unknown dispatched selection attempt is terminalized without blind publication.
+- Cancellation and stale leases fence late completion. Source/destination edits,
+  sharing revocation, archive or account deletion prevent pending publication.
+- Duplicate vocabulary requires explicit confirmation. Folder copies are bounded
+  at 500 visible translations; copy individual texts when that limit is exceeded.
+- Temporary proposals expire after 24 hours. Save needed content before expiry;
+  expired raw input/results are scrubbed while safe operation receipts remain.
+
+## System verification
+
+### Deployment boundary
+
+New AI admissions default off via `TEXTS_AI_ENABLED`. Activate only after the
+existing expand/activate process proves API and rollback-floor worker compatibility
+for `text-detection:v1`, `text-translation:v1`, and `text-selection-card:v1`.
+Publish a compatible immutable AI configuration revision with those formats and
+confirm fresh namespaced execution/capacity observations. Existing jobs retain their
+pinned model/pricing; workers continue draining even when admission is disabled.
+Apply reviewed worker/account-purge roles after migrations. This guide authorizes
+no production activation. Backend startup does not automatically deploy changes.
+
+## Browser verification
+
+### Owner: saved aligned reading and contextual vocabulary
+
+Scenario `texts/web-owner-reading-and-collection`:
+
+1. Sign up and verify a synthetic local account. Open Texts, create a named folder,
+   open it and choose Add text. Confirm English→Spanish and enter a passage.
+2. Translate via AI, observe the complete unsaved preview, then explicitly Save.
+   Reload the canonical saved text route; both sides remain visible in read mode.
+3. Enter Edit text, edit a paired source/translation block and Save changes.
+   Reload and verify edited provenance and both persisted values.
+4. Select one source occurrence, open Add to dictionary, name a new dictionary
+   and explicitly Create and add. Observe processing and success with Open dictionary.
+5. Follow the toast link and verify the generated full card is persisted. Return
+   to Texts and verify the real saved/translated folder count.
+
+### Public reading, independent copy and revocation
+
+Scenario `texts/web-public-copy-and-revocation`:
+
+1. Owner uses the saved text menu Share text and Create link. The unlisted key
+   remains in the URL fragment and request header, never query/server logs.
+2. An anonymous browser reads the link with public header and matching controls.
+   Copy to my folders requires actual sign-in; it does not fake authenticated state.
+3. Another authenticated user copies into a newly named folder. Observe success
+   and Open folder; the copied source/translation is saved independently.
+4. Owner revokes through the share dialog confirmation. Reloading the public link
+   gives the uniform unavailable state; the saved independent copy still reads.
+
+### Phone reading and selection
+
+Scenario `texts/web-phone-reading-selection`:
+
+1. At 390 px create/translate/explicitly save a passage. Source/Translation tabs
+   replace squeezed columns; actions remain reachable.
+2. Enable Match sentences and tap/focus a sentence. The counterpart sheet contains
+   both language labels and previous/next/back controls.
+3. Return to reading, select a word and collect it through the phone sheet into
+   a new dictionary. Observe success and the persisted card.
+4. At 320 px verify no document overflow, clipped menus or hidden primary controls.
+   Capture phone reading, counterpart and creation states. Console/page errors,
+   failed requests and 5xx responses fail every journey.
+
+## Automated regression checks
+
+Run the registered `texts-backend` journey command with the disposable target
+variables above. Use the contracts and backend unit suites for validation/provider
+bounds, and the `tests/integration/modules/texts/` suites with separate disposable
+databases for persistence, migration, account purge, roles and concurrency.
+
+## E2E coverage
+
+The combined registered command covers the existing backend scenarios and these
+real browser scenarios in `apps/web/tests/e2e/texts.journeys.spec.ts`:
+
+- `web-owner-reading-and-collection`: explicit proposal/save/edit and contextual card.
+- `web-public-copy-and-revocation`: actual unlisted sharing, independent copy, revoke.
+- `web-phone-reading-selection`: tabs/counterpart/collection at 390 px and 320 px.
+
+| Scenario                              | Test file                                                             | Outcome                                                                                         |
+| ------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `owner-translates-edits-and-collects` | `apps/backend/tests/integration/modules/texts/texts.journeys.test.ts` | Authenticated draft, translation proposal, explicit save/edit and atomic contextual collection. |
+| `shared-reading-copy-and-revocation`  | `apps/backend/tests/integration/modules/texts/texts.journeys.test.ts` | Anonymous shared read, private copy and live capability revocation.                             |
+
+Repository, contract, provider and worker tests add exact source reconstruction,
+version/concurrency, credit settlement, cleanup, role and purge coverage. Browser scenarios
+add rendered desktop/mobile coverage and retained screenshots; source fidelity
+evidence lives in the feature record.
+
+## Troubleshooting
+
+If the runner rejects the environment, correct the disposable database name,
+loopback port and exact confirmation values; do not bypass its safeguards.
+For unavailable AI admission, verify compatible configuration and fresh worker
+observations with the new formats. A stale-version conflict requires reloading the
+saved text or dictionary before retrying; retain the user’s unsaved content.
+
+## Cleanup
+
+The tests close clients and remove their own Redis namespaces. Stop/remove only
+the disposable containers created for this verification; never remove development
+volumes or another worker’s active test database.
+
+## Combined fixture lifecycle and cleanup
+
+The registered command runs guarded backend journeys first, then starts real
+local web 3335/API 4005 processes for the browser journeys. Both ports must be free
+before the command starts; it refuses debug-server reuse before any database reset.
+It uses only the exact dedicated `languon_auth_texts_ui_web_test` database and a
+unique Redis key prefix inside the confirmed local test DB. Existing development
+containers and user data must not be used. External AI and email delivery are
+replaced deterministically; real auth/session/HTTP/database/Redis/credits/jobs and
+UI remain in the journey. No API interception or forced clicks substitute for UI.
+
+The runner stops its owned fixture/web processes. Remove only explicitly labelled
+Text UI disposable containers after the checks; preserve unrelated development
+infrastructure. Screenshots/traces use ignored `.next/playwright/texts-results/`
+run directories with synthetic data; do not publish bearer keys or auth traces.

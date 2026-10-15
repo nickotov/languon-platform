@@ -1,0 +1,2 @@
+ALTER TABLE "dictionary_text_selection_jobs" ADD COLUMN "source_owner_id" uuid;--> statement-breakpoint
+CREATE INDEX "dictionary_text_selection_source_owner_idx" ON "dictionary_text_selection_jobs" USING btree ("source_owner_id");

@@ -41,6 +41,12 @@ export function textAiProviderMaximumPricedCostMicros(
     });
 }
 
+export const textAiTextsFormats = [
+    'text-detection:v1',
+    'text-translation:v1',
+    'text-selection-card:v1',
+] as const;
+
 export const textAiTextFormats = [
     'single-card:v1',
     'single-card:v2',
@@ -56,6 +62,7 @@ export const textAiTextFormats = [
     'sentence-generation:v1',
     'sentence-generation:v2',
     'sentence-check:v1',
+    ...textAiTextsFormats,
 ] as const;
 
 export type TextAiWorkFormat = (typeof textAiTextFormats)[number];

@@ -1,7 +1,18 @@
+import { textsLibraryEs } from './texts-library';
+import { textsReadingEs } from './texts-reading';
+import { textsPublicEs } from './texts-public';
+import { textsWorkspaceEs } from './texts-workspace';
+import { textsManageEs } from './texts-management';
 import { profileFeatureMessages, type Messages } from './en';
 import { trainingEs } from './training';
 
 export const es = {
+    ...textsLibraryEs,
+    ...textsReadingEs,
+    ...textsPublicEs,
+    ...textsWorkspaceEs,
+    ...textsManageEs,
+
     ...trainingEs,
     'dictionary.audio.playField': 'Escuchar {field}',
     'dictionary.audio.stopField': 'Detener {field}',

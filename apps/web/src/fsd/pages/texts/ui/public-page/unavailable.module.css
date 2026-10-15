@@ -1,0 +1,37 @@
+.unavailable {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: var(--space-48) var(--space-16);
+}
+
+.unavailableCard {
+    width: 100%;
+    max-width: var(--size-448);
+    padding: var(--space-32);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-16);
+    background: var(--background-surface);
+    text-align: center;
+}
+
+.unavailableCard h1 {
+    margin-block: var(--space-16) var(--space-8);
+    font-size: var(--size-20);
+}
+
+.unavailableCard p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-block: 0 var(--space-24);
+}
+
+.unavailableIcon {
+    display: grid;
+    place-items: center;
+    margin-inline: auto;
+    width: var(--size-48);
+    height: var(--size-48);
+    background: var(--background-subtle);
+    border-radius: var(--radius-12);
+}

@@ -1,0 +1,17 @@
+.destinations {
+    display: grid;
+    gap: var(--space-8);
+    padding: 0;
+    border: 0;
+    margin: 0;
+}
+
+.destinations label {
+    display: flex;
+    gap: var(--space-12);
+    align-items: center;
+    min-height: var(--size-44);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    padding-inline: var(--space-12);
+}

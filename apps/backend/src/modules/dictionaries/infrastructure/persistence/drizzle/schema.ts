@@ -1300,6 +1300,9 @@ export const dictionaryGenerationProviderUsageArchiveTable = pgTable(
                 | 'dictionary-generation'
                 | 'sentence-generation'
                 | 'sentence-check'
+                | 'text-detection'
+                | 'text-translation'
+                | 'text-selection-card'
             >()
             .notNull()
             .default('dictionary-generation'),
@@ -1329,7 +1332,7 @@ export const dictionaryGenerationProviderUsageArchiveTable = pgTable(
     (table) => [
         check(
             'text_ai_usage_archive_kind',
-            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check')`,
+            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check', 'text-detection', 'text-translation', 'text-selection-card')`,
         ),
         check(
             'dictionary_generation_provider_usage_archive_nonnegative',

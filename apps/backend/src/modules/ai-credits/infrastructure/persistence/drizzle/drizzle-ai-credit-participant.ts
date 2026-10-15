@@ -329,6 +329,9 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
                 'dictionary-generation',
                 'sentence-generation',
                 'sentence-check',
+                'text-detection',
+                'text-translation',
+                'text-selection-card',
                 'speech-generation',
             ].includes(jobKind)
         ) {

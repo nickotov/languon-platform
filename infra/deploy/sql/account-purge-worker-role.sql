@@ -101,3 +101,22 @@ GRANT UPDATE (charged_credits, measured_credits, measurement, settled_at, state)
 GRANT INSERT (id, owner_id, kind, amount, measurement, created_at,
     expires_at, grant_source, reason)
     ON TABLE ai_credit_history TO :"account_purge_role";
+
+-- Text erasure requires only opaque ownership, lifecycle, and numerical accounting.
+-- Never grant source/translation, revision snapshot, capability digest, job input,
+-- result payload, or selection authority access to this worker.
+GRANT DELETE ON TABLE texts_ai_jobs, dictionary_text_selection_jobs,
+    text_idempotency, text_shares, text_revisions, texts, text_folders
+    TO :"account_purge_role";
+GRANT SELECT (owner_id) ON TABLE text_idempotency, text_shares,
+    text_revisions, texts, text_folders TO :"account_purge_role";
+GRANT SELECT (id, owner_id, execution_state, provider_reservation_state,
+    ai_credit_reservation_id, lease_deadline, job_kind,
+    provider_actual_cost_micros, provider_actual_input_tokens,
+    provider_actual_output_tokens, provider_input_cost_micros_per_million_tokens,
+    provider_output_cost_micros_per_million_tokens, provider_max_cost_micros_per_attempt,
+    provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt,
+    provider_reservation_settled_at)
+    ON TABLE texts_ai_jobs, dictionary_text_selection_jobs TO :"account_purge_role";
+GRANT SELECT (source_owner_id), UPDATE (source_owner_id)
+    ON TABLE dictionary_text_selection_jobs TO :"account_purge_role";

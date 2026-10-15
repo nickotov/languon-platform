@@ -54,6 +54,13 @@ describe('CSS-only styling contract', () => {
         );
     });
 
+    it('allows the text-folders API discriminator while still checking class attributes', () => {
+        expect(inspectMarkup('const resource = "text-folders";')).toEqual([]);
+        expect(inspectMarkup('<div className="text-folders" />')).toEqual([
+            'Tailwind utility: text-folders',
+        ]);
+    });
+
     it('rejects variants and arbitrary utility values without splitting their internal colon', () => {
         expect(
             inspectMarkup(

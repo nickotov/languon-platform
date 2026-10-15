@@ -1,7 +1,18 @@
+import { textsLibraryRu } from './texts-library';
+import { textsReadingRu } from './texts-reading';
+import { textsPublicRu } from './texts-public';
+import { textsWorkspaceRu } from './texts-workspace';
+import { textsManageRu } from './texts-management';
 import { profileFeatureMessages, type Messages } from './en';
 import { trainingRu } from './training';
 
 export const ru = {
+    ...textsLibraryRu,
+    ...textsReadingRu,
+    ...textsPublicRu,
+    ...textsWorkspaceRu,
+    ...textsManageRu,
+
     ...trainingRu,
     ...profileFeatureMessages,
     'dictionary.authoring.sourceActionName': 'Исходный текст',

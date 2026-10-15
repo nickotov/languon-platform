@@ -1,3 +1,8 @@
+import { textsLibraryEn } from './texts-library';
+import { textsReadingEn } from './texts-reading';
+import { textsPublicEn } from './texts-public';
+import { textsWorkspaceEn } from './texts-workspace';
+import { textsManageEn } from './texts-management';
 import { trainingEn } from './training';
 
 export const profileFeatureMessages = {
@@ -293,6 +298,12 @@ export const profileFeatureMessages = {
 } as const;
 
 export const en = {
+    ...textsLibraryEn,
+    ...textsReadingEn,
+    ...textsPublicEn,
+    ...textsWorkspaceEn,
+    ...textsManageEn,
+
     ...trainingEn,
     'dictionary.audio.playField': 'Play {field}',
     'dictionary.audio.stopField': 'Stop {field}',

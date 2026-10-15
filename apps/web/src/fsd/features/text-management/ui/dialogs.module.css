@@ -1,0 +1,108 @@
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-20);
+}
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+.notice {
+    display: flex;
+    gap: var(--space-12);
+    padding: var(--space-16);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-subtle);
+}
+.notice > svg {
+    flex: none;
+    width: var(--size-20);
+    height: var(--size-20);
+    margin-top: var(--space-2);
+    color: var(--text-secondary);
+}
+.notice p,
+.copy {
+    margin: 0;
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+.notice strong {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.consequences {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+.consequences li {
+    display: flex;
+    gap: var(--space-12);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+    overflow-wrap: anywhere;
+}
+.consequences svg {
+    flex: none;
+    width: var(--size-16);
+    height: var(--size-16);
+    margin-top: var(--space-4);
+    color: var(--text-tertiary);
+}
+.url {
+    display: flex;
+    gap: var(--space-8);
+    min-width: 0;
+}
+.url > div {
+    flex: 1;
+    min-width: 0;
+}
+.preview {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: var(--size-44);
+    color: var(--primary-default);
+    font-size: var(--size-14);
+    font-weight: 500;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+.preview svg {
+    width: var(--size-16);
+    height: var(--size-16);
+}
+.preview:hover {
+    text-decoration: underline;
+}
+.danger {
+    color: var(--danger-default);
+}
+@media (max-width: 639px) {
+    .url {
+        flex-direction: column;
+    }
+}
+
+.visuallyHidden {
+    position: absolute;
+    width: var(--size-1);
+    height: var(--size-1);
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}

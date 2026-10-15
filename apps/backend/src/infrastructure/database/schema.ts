@@ -1,3 +1,6 @@
+import * as dictionaryTextSelectionSchema from '../../modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema';
+import * as textsJobSchema from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-schema';
+import * as textsContentSchema from '../../modules/texts/infrastructure/persistence/drizzle/schema';
 import * as sentenceLibrarySchema from '../../modules/learning/infrastructure/persistence/drizzle/sentence-library-schema';
 import * as sentencePreparationSchema from '../../modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema';
 import * as sentenceSchema from '../../modules/learning/infrastructure/persistence/drizzle/sentence-schema';
@@ -140,6 +143,9 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
 
 export const databaseSchema = {
+    ...dictionaryTextSelectionSchema,
+    ...textsJobSchema,
+    ...textsContentSchema,
     ...speechSchema,
     modelPriceRevisions: modelPriceRevisionsTable,
     ...sentenceSchema,
@@ -207,3 +213,9 @@ export * from '../../modules/learning/infrastructure/persistence/drizzle/sentenc
 export * from '../../modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema';
 export * from '../../modules/speech/infrastructure/schema';
 export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/model-price-schema';
+
+export * from '../../modules/texts/infrastructure/persistence/drizzle/schema';
+
+export * from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-schema';
+
+export * from '../../modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema';

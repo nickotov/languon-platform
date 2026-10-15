@@ -1,3 +1,7 @@
+import {
+    eraseTextsOwnedContent,
+    textsDeletionBusy,
+} from '../../../../texts/infrastructure/persistence/drizzle/texts-deletion-participant';
 import { purgeSpeechActor } from '../../../../speech/infrastructure/drizzle-speech-store';
 import { and, eq, gt, inArray, lte, or, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -125,6 +129,9 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
     }
 
     public async inspectOwner(input: ClaimedAccountPurge) {
+        const textsBusy = await this.database.transaction((tx) =>
+            textsDeletionBusy(tx, input.userId),
+        );
         const sentenceBusy = await this.database.transaction(async (tx) => {
             const ownedDictionaries = await tx
                 .select({ id: dictionariesTable.id })
@@ -200,6 +207,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             activeJobs:
                 (active[0]?.count ?? 0) +
                 (sentenceBusy ? 1 : 0) +
+                (textsBusy ? 1 : 0) +
                 (audioActive[0]?.count ?? 0) +
                 (audioWriters[0]?.count ?? 0),
             objects: [
@@ -285,6 +293,8 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                     (dictionary) => dictionary.id,
                 ),
             };
+            if (await textsDeletionBusy(tx, input.userId))
+                throw new Error('Text work is not quiescent');
             if (await sentenceDeletionBusy(tx, sentenceScope))
                 throw new Error('Sentence work is not quiescent');
             const [activeAudio] = await tx
@@ -394,6 +404,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await tx
                 .delete(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.ownerId, input.userId));
+            await eraseTextsOwnedContent(tx, input.userId, input.now);
             await eraseSentenceDerivedContent(tx, {
                 ...sentenceScope,
                 now: input.now,

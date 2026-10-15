@@ -1,0 +1,418 @@
+{
+  "sourceUrl": "https://www.magicpatterns.com/c/3bkwp6aroumx9kbdrfpju5",
+  "editorId": "3bkwp6aroumx9kbdrfpju5",
+  "artifactId": "1d26e57d-ae12-4537-8e01-45e75e40456b",
+  "files": [
+    {
+      "name": "App.tsx",
+      "sha256": "e9e128d55a39bb11404f2eec39529b50aab2b876e9e786d5b9cc03c1f07f7132",
+      "bytes": 3133
+    },
+    {
+      "name": "components/Avatar.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Badge.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Breadcrumb.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Button.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Dialog.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/DropdownMenu.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/IconButton.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/InlineAlert.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Input.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Logo.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/NavItem.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Popover.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Select.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Skeleton.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Switch.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Tabs.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Textarea.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/Toast.tsx",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "components/public/CopyDialog.tsx",
+      "sha256": "d009f542542edc40912c124703fb455d9d18755177115973fb8317ef4ea9525a",
+      "bytes": 5838
+    },
+    {
+      "name": "components/public/PublicFolderView.tsx",
+      "sha256": "705f7f5256da40b6c8e8bce4c13b143c323b1be6c7724b550ee4937a706e7c24",
+      "bytes": 3411
+    },
+    {
+      "name": "components/public/PublicHeader.tsx",
+      "sha256": "358618a175d0f18e8e515f050a80882277aaddef8a476139bcf208a4ebdb53ce",
+      "bytes": 1232
+    },
+    {
+      "name": "components/public/SignInDialog.tsx",
+      "sha256": "16c49a3bbee617b7e758b0bfdc979ff619187fe92bfa087c955b1cd4d940404b",
+      "bytes": 1305
+    },
+    {
+      "name": "components/public/UnavailableState.tsx",
+      "sha256": "2826c18160e2c8c1ba9fbed1deab3265abe44174a264740ae45b9c9a1eb0e847",
+      "bytes": 1539
+    },
+    {
+      "name": "components/reading/CounterpartSheet.tsx",
+      "sha256": "8cfbe142bfb333fd5516c219cf044ce0a4e38896eb1f3caaa1418d6e670dd40c",
+      "bytes": 2391
+    },
+    {
+      "name": "components/reading/ReadingView.tsx",
+      "sha256": "1b10554862991c7106a33f4c8b6cd12575b288efd3b59870f16ce152b4b524bf",
+      "bytes": 9899
+    },
+    {
+      "name": "components/reading/SentenceText.tsx",
+      "sha256": "ddfabd9d3e06c9f76f75eef62b737e2d7229d50ac175ab02526f03e97620897a",
+      "bytes": 1227
+    },
+    {
+      "name": "components/shell/AppShell.tsx",
+      "sha256": "405c0b4d29eb138ecf89885105cfab42db83e1f60032f6a6b52912021cfd1c22",
+      "bytes": 2731
+    },
+    {
+      "name": "components/shell/SidebarNav.tsx",
+      "sha256": "347987e8430cd7ec69286b7831c20f152d7f25f2acbecefed40c9fdeccf8c126",
+      "bytes": 3647
+    },
+    {
+      "name": "components/texts/ArchiveDialog.tsx",
+      "sha256": "5e1c7efe55f74ff1a9e37081d25dd55253783191a02e84ff6a7b3e4731d77915",
+      "bytes": 2196
+    },
+    {
+      "name": "components/texts/FolderCard.tsx",
+      "sha256": "346f60b8ac036d4bfde370cabe1049acadf4fd788d6136ed50c7415880100dbe",
+      "bytes": 4620
+    },
+    {
+      "name": "components/texts/FolderFormDialog.tsx",
+      "sha256": "9fc62937d9cfcca38054382ad68f41652b61bb0b9d18480c398e224b7fb592d8",
+      "bytes": 2664
+    },
+    {
+      "name": "components/texts/RenameTextDialog.tsx",
+      "sha256": "54cb182e02f454d8876de9f7739f9b592e3bf164971fff9ef0c24f377bd46f2c",
+      "bytes": 1791
+    },
+    {
+      "name": "components/texts/ShareDialog.tsx",
+      "sha256": "a710aae627aa02bcba0a53b9386693b1998ffc0cfd661b41370e96fed7583292",
+      "bytes": 7112
+    },
+    {
+      "name": "components/texts/TextRow.tsx",
+      "sha256": "0ecd51b33c6f3eaabda2cefc629172f48db77413097ba534fc308ef033ae7456",
+      "bytes": 3620
+    },
+    {
+      "name": "components/texts/TextStatusBadge.tsx",
+      "sha256": "e1601776f670a40ae15b3ead434ec491527315eefe973936916aaf70c9ebad94",
+      "bytes": 711
+    },
+    {
+      "name": "components/ui/BottomSheet.tsx",
+      "sha256": "1520fe032863133a22e4ba4defed4cf591af81ce483ad74099da343ef998ef3c",
+      "bytes": 2503
+    },
+    {
+      "name": "components/ui/EmptyState.tsx",
+      "sha256": "64857f37fc8b409a37f183b1bd6842a92c086ac74b94464a6924c5d42bab492d",
+      "bytes": 790
+    },
+    {
+      "name": "components/vocab/CollectLayer.tsx",
+      "sha256": "3d7f77d15c2fa8493880789b5856c5d33133b49a5d49b95c514bc8a116e208b3",
+      "bytes": 5712
+    },
+    {
+      "name": "components/vocab/CollectPanel.tsx",
+      "sha256": "b85cdd68d47f064443ea78a121c29ef4b31f97efd09d3c7cdbf96b30a8e7a129",
+      "bytes": 8077
+    },
+    {
+      "name": "components/vocab/CollectableReading.tsx",
+      "sha256": "cc3079871effe5ecca5cd6752d320f71b2474ab9eca4ecca6b21dcafd5132449",
+      "bytes": 1451
+    },
+    {
+      "name": "components/vocab/ContextPreview.tsx",
+      "sha256": "53f531d214fd194ff17f1c03bfb910b7aa06882bae9f9ba818fc1bdbe713a063",
+      "bytes": 1780
+    },
+    {
+      "name": "components/vocab/DictionaryChoiceList.tsx",
+      "sha256": "158e13e2d9dbca20ab24e43a6ed1bcfe3a392691e4f3aabe05753cbe3f87c5e9",
+      "bytes": 3121
+    },
+    {
+      "name": "components/workspace/ComposePane.tsx",
+      "sha256": "15a9df236efbcd9f0b316e506de62ced0371ace1c2142540c8941ef6230062bc",
+      "bytes": 5770
+    },
+    {
+      "name": "components/workspace/JobErrorAlert.tsx",
+      "sha256": "19c12ee6900cc1a4af9a7fec63b5b46d50364c067fa573824f7a8e99bfddac3e",
+      "bytes": 2380
+    },
+    {
+      "name": "components/workspace/JobProgress.tsx",
+      "sha256": "571ebb076f2b052025fc52e8769eeca31a6b8ffe6a7ff92c6ba9ee24346d90bd",
+      "bytes": 2006
+    },
+    {
+      "name": "components/workspace/LanguageBar.tsx",
+      "sha256": "04b11378ab0960f2212fa9c63583846034bb3ea87d351bee073c3b447e2c414a",
+      "bytes": 5584
+    },
+    {
+      "name": "components/workspace/PairEditor.tsx",
+      "sha256": "cecafa391b6d643c1298c1a2e8946ddc4aa3f4690e729181d5060ca8783449f7",
+      "bytes": 3184
+    },
+    {
+      "name": "components/workspace/ReadingBanners.tsx",
+      "sha256": "149c8e6300d599248ac2cd268aabdf70b246025aab773242a8a1a4549034312f",
+      "bytes": 4039
+    },
+    {
+      "name": "components/workspace/WorkspaceActions.tsx",
+      "sha256": "01d3b6ac63c3d81e65046514ee5f41fc11d5c71eed1411618d2c63be532a1ce4",
+      "bytes": 2668
+    },
+    {
+      "name": "components/workspace/WorkspaceDialogs.tsx",
+      "sha256": "7f28f3150ddba67dd8efdc1ed16eed00e3d553e3886b5f075823f9c33557f1df",
+      "bytes": 4715
+    },
+    {
+      "name": "components/workspace/WorkspaceHeader.tsx",
+      "sha256": "f7e06440c94cdbb836f78033e70a10c329d4978265a2814f8bc5ee30f98ef800",
+      "bytes": 4117
+    },
+    {
+      "name": "contexts/DemoSettings.tsx",
+      "sha256": "60b98d6f00842eb6a08220c5805eb559d794f1901aed7338c1cf345ab605d96b",
+      "bytes": 587
+    },
+    {
+      "name": "contexts/TextsStore.tsx",
+      "sha256": "a6444116a50486e155fecb723860c49dac70c9b9be0317dbfc24d9fe9bf833b0",
+      "bytes": 7603
+    },
+    {
+      "name": "contexts/ToastContext.tsx",
+      "sha256": "9d77ab915434ca7a1cc2f7b9ffd9fea1687ca6fa27ddbcf38948865a74996213",
+      "bytes": 2372
+    },
+    {
+      "name": "data/cardGlossary.ts",
+      "sha256": "6a5529d5654f5f10e57270ee6bea241f95cd5d03893087ccc9e66d58ffc116ad",
+      "bytes": 3395
+    },
+    {
+      "name": "data/dictionaries.ts",
+      "sha256": "bf12fa208057cb62496f727acbf6fb0b94cea83ff5090ff67deca17629f5e778",
+      "bytes": 2651
+    },
+    {
+      "name": "data/folders.ts",
+      "sha256": "cf6a0ad0fe52233ea58fb0f673b9ac925fc3f06e70eb6fb73cca46a700e5866d",
+      "bytes": 973
+    },
+    {
+      "name": "data/languages.ts",
+      "sha256": "db4774e0dcc2baa97516a24c1fcbae3bcc9b0270a053e0290ddfcede97b100e0",
+      "bytes": 332
+    },
+    {
+      "name": "data/samplePassages.ts",
+      "sha256": "2951700308e6d72c1a8971a862def88d9554b4fcadb2799166c1bce45c8d1689",
+      "bytes": 122
+    },
+    {
+      "name": "data/sharedFixtures.ts",
+      "sha256": "906d62cc874fedc39c4f8fe6b13b1e12a5eb8b3585815de33c895872411185f5",
+      "bytes": 1413
+    },
+    {
+      "name": "data/texts.ts",
+      "sha256": "d3fbec9994085b21ee5de5692a0db518e447d8dde3df1bc6af46d411335b7436",
+      "bytes": 5281
+    },
+    {
+      "name": "data/translationMemory.ts",
+      "sha256": "31656f80f99c10af9128f7e16493e8bd3b8e51c2a468345db8063c1394876800",
+      "bytes": 747
+    },
+    {
+      "name": "hooks/useCollect.ts",
+      "sha256": "650058a378eb25237889cca3fe5f9082a98225650cfb7e554fd1705b0142991d",
+      "bytes": 9894
+    },
+    {
+      "name": "hooks/useFocusTrap.ts",
+      "sha256": "2990276f3d6ae9a80411fb0fa82eb96aae670875a8b6eca00ff1a01ae8b75cec",
+      "bytes": 1509
+    },
+    {
+      "name": "hooks/useMediaQuery.ts",
+      "sha256": "7178de1155c35c96ee5ece094a53db89b8d8340dc1a9862c9f2dc34ce5b2ea17",
+      "bytes": 665
+    },
+    {
+      "name": "hooks/useWorkspace.ts",
+      "sha256": "63fdacf7e0fecda53985cb38ecc08941bf49d5c80378c7cdcada13a2b1517c98",
+      "bytes": 14906
+    },
+    {
+      "name": "index.css",
+      "sha256": "248eaba345dbd7eb9f84760a8c2fc64162549c544071576085c2330189369401",
+      "bytes": 7803
+    },
+    {
+      "name": "index.tsx",
+      "sha256": "0d59765d219c351a31b10785f0180d9272524c7b0f742363a103d21964f3dd52",
+      "bytes": 231
+    },
+    {
+      "name": "package.json",
+      "sha256": "8432d1e1fd710932cab34458bed820f40a6f4e2640c5a49672ebecc3a2ba6c46",
+      "bytes": 363
+    },
+    {
+      "name": "pages/DictionaryDetail.tsx",
+      "sha256": "3ff8178b0a4bd200893411bb71d0fa4e01cabe83edcf029b2ccf6cbd0d624ad2",
+      "bytes": 4386
+    },
+    {
+      "name": "pages/FolderContents.tsx",
+      "sha256": "3498fa0fc05cb7040a4d290c3a01defe30fe3470ac30270d161cf103b53c040b",
+      "bytes": 11479
+    },
+    {
+      "name": "pages/PublicShare.tsx",
+      "sha256": "0f6839710b47ebad60a8cabb3f760dff10c8ac883b49dc49add8abde2b86c1e6",
+      "bytes": 7591
+    },
+    {
+      "name": "pages/TextWorkspace.tsx",
+      "sha256": "94b908943f2b85427b0b1fab27dd9984d4ef1d64f84165657239b304a4d6a372",
+      "bytes": 13375
+    },
+    {
+      "name": "pages/TextsLibrary.tsx",
+      "sha256": "0b03a01e9ddd03bc4a3b565b2bd561609fea9fff08c47e9b0f7f3aeef3ef345a",
+      "bytes": 8976
+    },
+    {
+      "name": "tailwind.config.js",
+      "sha256": "a9ffbe7683c6ca62a27ee94ad305980e29e4deac10032317038c6133acbc63c7",
+      "bytes": 7144
+    },
+    {
+      "name": "types/demo.ts",
+      "sha256": "9f1b8eb39016464c33e6ba9eeaaf09277ab73e08d7263274d62aaa851976827b",
+      "bytes": 717
+    },
+    {
+      "name": "types/texts.ts",
+      "sha256": "b867c1ef7ec57f621a3a42d43e855a771556f48fcdcb807f0c7e02aedd4af294",
+      "bytes": 2087
+    },
+    {
+      "name": "utils/languages.ts",
+      "sha256": "fd20eb61841ff97cfbb34558b9b2a719e874869cb208922353d9deb7d1ecde13",
+      "bytes": 1166
+    },
+    {
+      "name": "utils/mockAi.ts",
+      "sha256": "dbaf227b9e0a2d79b4e0619fcaa31d0dd17544b0b1ae76dd18235e1e8aa7f48e",
+      "bytes": 2204
+    },
+    {
+      "name": "utils/selection.ts",
+      "sha256": "815510916c399197d301627b7b4b4d45a2e1832923c35ec59ddd72effc08c6b0",
+      "bytes": 1887
+    },
+    {
+      "name": "utils/sentences.ts",
+      "sha256": "338898a77e933f24797cbcd01434454b143dea66928804dc2247ac5aac958433",
+      "bytes": 2312
+    }
+  ],
+  "note": "Exact MCP read_artifact_files content. Eighteen inherited design-system primitive files were returned empty; they are placeholders, not invented source. Existing runtime primitives used as implementation authority."
+}

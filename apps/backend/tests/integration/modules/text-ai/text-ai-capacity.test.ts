@@ -13,6 +13,7 @@ import {
     readTextAiCapacity,
     archiveSentenceProviderUsage,
     hasSentenceCapacityOverlap,
+    hasTextsCapacityOverlap,
 } from '../../../../src/infrastructure/text-ai/text-ai-capacity';
 import { DrizzleDictionaryGenerationStore } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
 import { DrizzleDictionaryStore } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
@@ -204,7 +205,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 sessionId: randomUUID(),
                 requestFingerprint: 'fixture',
-                inputPayload: {} as never,
+                inputPayload: { generationPolicyVersion: 1 } as never,
                 selectedExecutionSnapshot: snapshot,
                 executionRevisionId: revisionId,
                 providerMaxCostMicrosPerAttempt: budget.maxCostMicrosPerAttempt,
@@ -533,6 +534,104 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expect(result).toMatchObject({ cause: { code: '55000' } });
                 else expect(result).toBeNull();
             });
+        it.each([
+            'text-detection',
+            'text-translation',
+            'text-selection-card',
+        ] as const)(
+            'retains %s numerical usage and rejects old capacity-aware admissions until expiry',
+            async (jobKind) => {
+                const { row } = await template();
+                const now = instant();
+                await database
+                    .insert(dictionaryGenerationProviderUsageArchiveTable)
+                    .values({
+                        id: randomUUID(),
+                        ownerId,
+                        jobKind,
+                        actualCostMicros: 17,
+                        actualInputTokens: 23,
+                        actualOutputTokens: 11,
+                        inputCostMicrosPerMillionTokens:
+                            budget.inputCostMicrosPerMillionTokens,
+                        outputCostMicrosPerMillionTokens:
+                            budget.outputCostMicrosPerMillionTokens,
+                        maxCostMicrosPerAttempt: budget.maxCostMicrosPerAttempt,
+                        maxInputTokensPerAttempt:
+                            budget.maxInputTokensPerAttempt,
+                        maxOutputTokensPerAttempt:
+                            budget.maxOutputTokensPerAttempt,
+                        settledAt: now,
+                        archivedAt: now,
+                    });
+                await database.transaction(async (tx) => {
+                    expect(await hasTextsCapacityOverlap(tx, now)).toBe(true);
+                    const current = await readTextAiCapacity(tx, {
+                        actorId: ownerId,
+                        now,
+                        budget,
+                    });
+                    expect(current.providerUsage.globalSettledCostMicros).toBe(
+                        17,
+                    );
+                    expect(current.providerUsage.ownerSettledInputTokens).toBe(
+                        23,
+                    );
+                    expect(
+                        current.providerUsage.globalSettledOutputTokens,
+                    ).toBe(11);
+                });
+                await expect(
+                    otherDatabase.transaction(async (tx) => {
+                        await tx.execute(
+                            sql`select set_config('languon.text_ai_capacity_revision','1',true)`,
+                        );
+                        await tx
+                            .insert(dictionaryGenerationJobsTable)
+                            .values(oldRow(row));
+                    }),
+                ).rejects.toMatchObject({ cause: { code: '55000' } });
+                await database.transaction(async (tx) => {
+                    await lockTextAiCapacity(tx);
+                    await tx
+                        .insert(dictionaryGenerationJobsTable)
+                        .values(oldRow(row));
+                });
+                const expired = new Date(now.getTime() + 86_400_001);
+                await database.transaction(async (tx) => {
+                    expect(await hasTextsCapacityOverlap(tx, expired)).toBe(
+                        false,
+                    );
+                    const current = await readTextAiCapacity(tx, {
+                        actorId: ownerId,
+                        now: expired,
+                        budget,
+                    });
+                    expect(current.providerUsage.globalSettledCostMicros).toBe(
+                        0,
+                    );
+                });
+                await database
+                    .update(dictionaryGenerationProviderUsageArchiveTable)
+                    .set({ settledAt: new Date(now.getTime() - 86_400_001) })
+                    .where(
+                        eq(
+                            dictionaryGenerationProviderUsageArchiveTable.ownerId,
+                            ownerId,
+                        ),
+                    );
+                await expect(
+                    otherDatabase.transaction(async (tx) => {
+                        await tx.execute(
+                            sql`select set_config('languon.text_ai_capacity_revision','1',true)`,
+                        );
+                        await tx
+                            .insert(dictionaryGenerationJobsTable)
+                            .values(oldRow(row));
+                    }),
+                ).resolves.toBeUndefined();
+            },
+        );
         it('blocks legacy claims and takeover while allowing legacy completion and drain', async () => {
             const { seeded, row } = await template();
             const old = oldRow(row);

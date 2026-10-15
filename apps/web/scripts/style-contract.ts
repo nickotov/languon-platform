@@ -130,6 +130,8 @@ function utilityClass(value: string, classContext: boolean): string[] {
                 )
             )
                 return false;
+            // This domain resource name is an API/query discriminator, not a color utility.
+            if (base === 'text-folders') return false;
             if (/^text-ai-(?:request|preference|catalog)$/.test(base))
                 return false;
         }

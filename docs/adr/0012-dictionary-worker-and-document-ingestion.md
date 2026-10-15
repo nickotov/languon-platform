@@ -5,6 +5,7 @@ title: 'Dictionary worker and document ingestion'
 status: accepted
 date: 2026-08-21
 supersedes: 'None'
+superseded_in_part_by: 'ADR-0035 explicit selected-phrase Add publication; other generation remains review-first'
 ---
 
 # ADR-0012: Dictionary worker and document ingestion

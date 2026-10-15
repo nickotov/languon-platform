@@ -4,6 +4,8 @@ title: Languon architecture
 source_paths:
     - apps/backend/src/modules
     - packages/contracts/src
+  - apps/web/src/fsd/pages/texts
+  - apps/web/src/fsd/features/text-reading
 ---
 
 # Architecture
@@ -319,3 +321,23 @@ versioned bucket and scoped application credentials. Production uses private S3
 with independently verified Selectel behavior; disposable test storage does not
 share development or production data. Operational activation and rollback gates
 are documented in [shared pronunciation operations](shared-pronunciation-operations.md).
+
+## Texts and contextual vocabulary
+
+The `texts` module owns private folders/texts, bounded aligned sentence values,
+manual-edit provenance, capability sharing, independent copies and durable language
+identification/translation proposals. Dictionaries own contextual selection jobs
+and generated vocabulary publication. Both use shared text-AI model selection,
+credits, immutable execution snapshots and the existing bounded worker slots.
+An explicit Add authorizes atomic card publication (including a newly named
+dictionary); translation still requires explicit Save. Temporary occurrence context
+is redacted separately from persistent dictionary semantic hints. See
+[ADR-0035](adr/0035-texts-and-contextual-vocabulary-publication.md) and
+[the Texts feature](../.agent/features/043-texts/FEATURE.md). The web app exposes
+Texts beside Dictionaries, with pages-first FSD library/folder/workspace/public
+pages and focused reading/management features. Explicit saves preserve aligned
+sentence identities and paragraph separators; translated content enters edit mode
+only through its edit action. Public capabilities remain in URL fragments and
+ephemeral client state; authentication continuation retains only supported share
+paths. The selected Magic Patterns source is adapted through existing primitives,
+CSS Modules and runtime tokens (ADR-0029).

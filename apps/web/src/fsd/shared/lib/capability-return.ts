@@ -1,7 +1,7 @@
 import { safeReturnPath } from './return-path';
 
-const SHARED_DICTIONARY_PATH =
-    /^\/shared\/dictionaries\/[A-Za-z0-9_-]{16,128}$/;
+const SHARED_READING_PATH =
+    /^\/shared\/(?:dictionaries\/[A-Za-z0-9_-]{16,128}|texts\/[A-Za-z0-9_-]{16,128}|text-folders\/[A-Za-z0-9_-]{16,128}(?:\/texts\/[0-9a-fA-F-]{36})?)$/;
 const SHARE_KEY = /^[A-Za-z0-9_-]{43,128}$/;
 
 export function capabilityReturnFragment(
@@ -11,7 +11,7 @@ export function capabilityReturnFragment(
     const destination = safeReturnPath(returnTo);
     if (
         destination !== returnTo ||
-        !SHARED_DICTIONARY_PATH.test(destination) ||
+        !SHARED_READING_PATH.test(destination) ||
         !hash.startsWith('#')
     ) {
         return '';

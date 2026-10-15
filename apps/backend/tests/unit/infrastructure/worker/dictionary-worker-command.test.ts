@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
     createWorkerSentenceProvider,
+    createWorkerTextsProvider,
     publishWorkerTextAiObservations,
     dictionaryWorkerLocalEnvironmentFile,
 } from '../../../../src/infrastructure/worker/dictionary-worker-command';
@@ -38,6 +39,8 @@ describe('dictionary worker command', () => {
         for (const [options] of publishObservation.mock.calls)
             expect(options).toMatchObject({
                 learningExecutionEnabled: true,
+                textsCapacityEnabled: true,
+                textsExecutionEnabled: true,
                 sentencePreparationExecutionEnabled: true,
                 supportedFormats: ['sentence-generation:v2'],
             });
@@ -62,5 +65,25 @@ describe('dictionary worker command', () => {
         await expect(
             provider.check({} as SentenceProviderCall<SentenceCheckInput>),
         ).rejects.toThrow('Sentence provider fixtures are unavailable.');
+    });
+});
+
+it('uses synthetic local translation without invoking the provider or dropping sentence identities', async () => {
+    const provider = createWorkerTextsProvider({
+        providerFixtureMode: 'deterministic',
+        providerCredentials: {},
+    });
+    const result = await provider.run({
+        input: {
+            kind: 'text-translation',
+            sourceText: 'Hello.',
+            targetLanguage: 'fr',
+            segments: [{ pairId: 'pair', text: 'Hello.' }],
+        },
+        signal: new AbortController().signal,
+    } as never);
+    expect(result).toEqual({
+        draft: { translation: [{ pairId: 'pair', text: '[fr] Hello.' }] },
+        usage: { inputTokens: 1, outputTokens: 1 },
     });
 });

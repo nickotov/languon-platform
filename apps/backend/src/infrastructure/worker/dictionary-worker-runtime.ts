@@ -49,6 +49,14 @@ export interface DictionaryWorkerRuntimeOptions {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
     };
+    textsService?: {
+        processNext(signal: AbortSignal): Promise<boolean>;
+        releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
+    };
+    selectionService?: {
+        processNext(signal: AbortSignal): Promise<boolean>;
+        releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
+    };
     supportedFormats: readonly string[];
     workerId: string;
     logger?: DictionaryWorkerLogger;
@@ -230,15 +238,19 @@ export class DictionaryWorkerRuntime {
                             workerId: this.#options.workerId,
                         }),
                     ),
-                    ...(this.#options.sentenceService
-                        ? [
-                              Promise.resolve().then(() =>
-                                  this.#options.sentenceService!.releaseWorkerLeases(
-                                      releaseController.signal,
-                                  ),
-                              ),
-                          ]
-                        : []),
+                    ...[
+                        this.#options.sentenceService,
+                        this.#options.textsService,
+                        this.#options.selectionService,
+                    ]
+                        .filter((service) => service !== undefined)
+                        .map((service) =>
+                            Promise.resolve().then(() =>
+                                service.releaseWorkerLeases(
+                                    releaseController.signal,
+                                ),
+                            ),
+                        ),
                 ]).then((results) => {
                     if (results.some((result) => result.status === 'rejected'))
                         throw new Error('Worker lease release failed.');
@@ -260,10 +272,8 @@ export class DictionaryWorkerRuntime {
 
     async #poll(index: number): Promise<void> {
         const signal = this.#controller.signal;
-        let preferSentence = index % 2 === 1;
+        let turn = index;
         while (!signal.aborted) {
-            const sentenceFirst = preferSentence;
-            preferSentence = !preferSentence;
             try {
                 const dictionary = () =>
                     this.#options.service.processNext({
@@ -286,19 +296,37 @@ export class DictionaryWorkerRuntime {
                     if (signal.aborted) return false;
                     return this.#options.sentenceService!.processNext(signal);
                 };
-                const first =
-                    this.#options.sentenceService && sentenceFirst
-                        ? sentence
-                        : dictionary;
-                const second = this.#options.sentenceService
-                    ? sentenceFirst
-                        ? dictionary
-                        : sentence
-                    : undefined;
-                let processed = await first();
-                // Fallback is sequential in the same slot and is skipped after shutdown.
-                if (!processed && second && !signal.aborted)
-                    processed = await second();
+                const services = [
+                    dictionary,
+                    ...(this.#options.sentenceService ? [sentence] : []),
+                    ...(this.#options.textsService
+                        ? [
+                              () =>
+                                  this.#options.textsService!.processNext(
+                                      signal,
+                                  ),
+                          ]
+                        : []),
+                    ...(this.#options.selectionService
+                        ? [
+                              () =>
+                                  this.#options.selectionService!.processNext(
+                                      signal,
+                                  ),
+                          ]
+                        : []),
+                ];
+                const first = turn++ % services.length;
+                let processed = false;
+                // Each slot rotates the first domain and tries idle fallbacks sequentially.
+                for (
+                    let offset = 0;
+                    offset < services.length && !processed && !signal.aborted;
+                    offset++
+                ) {
+                    processed =
+                        await services[(first + offset) % services.length]!();
+                }
                 if (!processed && !signal.aborted) {
                     await delay(this.#options.pollIntervalMs, signal);
                 }

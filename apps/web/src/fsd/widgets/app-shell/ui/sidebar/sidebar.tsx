@@ -10,6 +10,7 @@ import type { AppShellState } from '../../hooks/use-app-shell-state';
 import type { NavigationVariant } from '../../types';
 import { AccountArea } from '../account-area/account-area';
 import { GuestArea } from '../guest-area/guest-area';
+import { TextsNavigation } from './texts-navigation';
 import { DictionariesNavigation } from './dictionaries-navigation';
 import styles from './sidebar-common.module.css';
 
@@ -101,6 +102,9 @@ export function Sidebar({
                             shell={shell}
                             variant={variant}
                         />
+                    ) : null}
+                    {authenticated ? (
+                        <TextsNavigation rail={rail} onNavigate={onNavigate} />
                     ) : null}
                 </ul>
             </nav>

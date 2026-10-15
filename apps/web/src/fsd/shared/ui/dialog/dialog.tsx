@@ -1,5 +1,7 @@
 'use client';
 
+import { XIcon } from 'lucide-react';
+
 import {
     createContext,
     type HTMLAttributes,
@@ -207,7 +209,7 @@ export function Dialog({
                                 onClick={() => onClose()}
                                 type='button'
                             >
-                                ×
+                                <XIcon size={20} aria-hidden />
                             </button>
                         ) : null}
                     </header>

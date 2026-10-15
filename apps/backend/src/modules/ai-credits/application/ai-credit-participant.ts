@@ -2,6 +2,9 @@ export type AiCreditJobKind =
     | 'dictionary-generation'
     | 'sentence-generation'
     | 'sentence-check'
+    | 'text-detection'
+    | 'text-translation'
+    | 'text-selection-card'
     | 'speech-generation';
 
 import type {
