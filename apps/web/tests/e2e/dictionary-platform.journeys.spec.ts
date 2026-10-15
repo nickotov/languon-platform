@@ -7,7 +7,7 @@ import {
 } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:7bf7da62fcf1de05
+// @user-flow-revision dictionary-platform sha256:47e6dbade87df4bb
 
 const password = 'E2e!Dictionary-password-2026';
 const runId =

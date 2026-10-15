@@ -13,9 +13,16 @@ pnpm dev:panel
 Open the unguessable private launch URL printed in the terminal. It authorizes a
 process-scoped browser session and redirects to `http://127.0.0.1:4400`; visiting
 the bare origin without that session cannot mint control access. The fixed
-loopback address and port define the singleton server, so a second instance
-fails instead of creating another process state. Browser tabs in the authorized
-profile share command status and latest logs through that server.
+loopback address and port define the singleton server. On macOS/Linux, rerunning
+`pnpm dev:panel` gracefully stops this checkout's existing panel, waits for its
+owned commands to stop, and starts a replacement. Restart discards in-memory
+logs and sessions: open the newly printed private launch URL. The launcher uses
+the system `ps` and `lsof` tools to verify the listener's user, entrypoint,
+working directory and start time; install `lsof` if your Linux system lacks it.
+It refuses unrelated listeners and never force-kills a stalled shutdown.
+Direct `node src/main.mjs` startup (and Windows startup) still fails on an
+occupied port. Browser tabs in the authorized profile share command status and
+latest logs through the singleton server.
 
 Use the section sidebar to open a command category. Categories start collapsed
 and remember their expansion only in the current tab. Every command card also

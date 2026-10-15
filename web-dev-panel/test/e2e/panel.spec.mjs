@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// @user-flow-revision web-dev-panel sha256:7cb188017be95b83
+// @user-flow-revision web-dev-panel sha256:9a072f7ad1102d8d
 // @user-flow web-dev-panel/parallel-command-control-and-isolated-logs
 test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     await page.goto('/?launch=web-dev-panel-fixture-launch');

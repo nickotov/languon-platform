@@ -9,7 +9,7 @@
     "scripts": {
         "catalog:check": "node src/catalog-check.mjs",
         "catalog:update": "node scripts/reconcile-catalog.mjs",
-        "dev": "node src/main.mjs",
+        "dev": "node src/dev.mjs",
         "lint": "eslint .",
         "test": "node --test test/*.test.mjs ../scripts/dev-all.test.mjs",
         "test:e2e": "playwright test"

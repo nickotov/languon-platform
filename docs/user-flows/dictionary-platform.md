@@ -246,10 +246,12 @@ silently overwrite or replay a stale edit.
    symbol; populated fields expose **Regenerate**, with a field-specific
    accessible label. Generate Source alone and expect queued, generating, and
    validating progress for Source only, then an automatically filled editable
-   input. For an isolated count noun in a language with grammatical gender,
+   input. For an isolated common noun in a language with grammatical gender,
    expect the normalized value to expose gender through its natural article or
    a compact gender marker when an article is unavailable or ambiguous; for
-   example, French `but` becomes `le but` and `parasol` becomes `le parasol`.
+   example, French `but` becomes `le but`, `parasol` becomes `le parasol`, and
+   informal `taf` becomes `le taf`. Include mass nouns when a dictionary-entry
+   article is natural, preserving meaning and register.
    Resolve ambiguous spellings using the configured Source language. Already
    canonical Sources report that they are unchanged.
 2. Generate Translation and expect one coherent request for Translation plus
@@ -331,6 +333,13 @@ resolved language and writing direction.
    provide a custom instruction of at most 1,000 characters and start generation.
    Expect known queued, generating, and validating stages with a cancel action;
    the source card remains unchanged.
+   Review corrects grammar in enabled fields, including missing or wrong noun
+   articles in Source and Translation. Article-bearing dictionary conventions
+   require isolated common nouns to include their natural article with matching
+   gender, number and elision; French `taf` becomes `le taf`, retaining its
+   informal meaning. Keep a correct article once. Do not force noun-entry
+   articles onto verbs, adjectives, proper names, full sentences or languages
+   without that convention. Sentence articles follow normal grammar.
 2. Reload or leave and return to the review URL. Expect the same persisted job
    and reviewable proposal from the server, with no prompt or proposal payload in
    browser storage.

@@ -128,8 +128,11 @@ configure providers. Automated verification below uses synthetic commands only.
    commands and exits successfully.
 2. Start `pnpm dev:panel`. It prints a private URL on the exact
    `http://127.0.0.1:4400` origin; the URL authorizes and redirects the browser.
-   A second attempted instance reports that the panel is already running rather
-   than choosing another port.
+   On macOS/Linux, rerun the command: it gracefully stops this checkout's old
+   panel and its owned commands, waits for exit, and starts one replacement on
+   port 4400. Open the replacement's new private URL; old sessions and in-memory
+   logs are discarded. System `ps` and `lsof` must be available for verification.
+   An unrelated listener or another checkout is refused without signalling it.
 3. Stop the server with Ctrl+C. It stops accepting work, terminates panel-owned
    fixture process trees, and exits after bounded cleanup.
 
@@ -164,8 +167,9 @@ configure providers. Automated verification below uses synthetic commands only.
   rollback with a persistent alert when browser storage rejects a mutation.
 
 Closed request validation, source drift, racing duplicate requests, stale run
-IDs, bounded/redacted logs, and structured Codex event projection stay at the
-faster unit and native HTTP integration layers.
+IDs, bounded/redacted logs, structured Codex event projection, and verified
+launcher restart/refusal/timeout stay at the faster unit and native HTTP/process
+integration layers.
 
 - `whole-app-command-control`: the individually runnable **Start whole app**
   command can start, survive a browser reload and stop through the panel. The
@@ -176,8 +180,11 @@ faster unit and native HTTP integration layers.
 
 ## Expected failure and edge cases
 
-- A second production server fails on `EADDRINUSE`; it never creates a second
-  source of process truth.
+- Direct `node src/main.mjs` startup still fails on `EADDRINUSE`. The macOS/Linux
+  development launcher restarts only a verified panel from this checkout and
+  fails safely on missing inspection tools, inspection errors or shutdown
+  timeout. It never force-kills a listener or chooses a fallback port. Windows
+  retains occupied-port failure without automatic restart.
 - A bare bootstrap request without the private launch token cannot obtain the
   process-scoped session cookie.
 - Unknown, disabled, missing, changed, unreviewed, duplicate, already-running,
@@ -235,13 +242,18 @@ browser/cross-tab journeys.
 
 ## Troubleshooting
 
-- If port 4400 is occupied, reuse the existing panel tab or stop the owning
-  local process; production intentionally has no port override.
+- Rerun `pnpm dev:panel` to restart this checkout's panel on macOS/Linux. If it
+  refuses port 4400, inspect and stop the unrelated owning process manually.
+  Install `lsof` if inspection reports it missing. A shutdown timeout requires
+  investigating the old panel; the launcher never escalates to SIGKILL.
+  Production intentionally has no port override. On Windows, stop the old
+  panel manually before starting another instance.
 - If a command is disabled after a package change, inspect the source diff and
   explicitly invoke `$web-dev-panel` to reconcile its safety metadata and
   revision. Do not hand-bypass the drift check.
 - If Connected changes to Reconnecting, confirm the singleton server is still
-  running and reload `/` to establish its current process-scoped session.
+  running. After a restart, open its newly printed private launch URL to
+  establish the new process-scoped session; reloading `/` cannot authorize it.
 - If imported quick access cannot be reproduced, inspect the alert's missing
   command IDs. Reconcile the reviewed catalog or remove those memberships in the
   source layout; never paste executable definitions into the JSON.

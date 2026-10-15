@@ -13,6 +13,22 @@ describe('local prompts', () => {
         const prompt = getLocalPrompt('dictionary-card-generation-agent');
 
         expect(prompt).toContain('review-only');
+        expect(prompt).toContain('enabled Source and Translation noun entries');
+        expect(prompt).toContain('not an optional stylistic addition');
+        expect(prompt).toContain('count nouns and mass nouns');
+        expect(prompt).toContain(
+            'taf meaning informal work should become le taf',
+        );
+        expect(prompt).toContain('preserve its meaning and informal register');
+        expect(prompt).toContain('gender, number, and elision');
+        expect(prompt).toContain(
+            'Keep an existing correct article exactly once',
+        );
+        expect(prompt).toContain(
+            'verbs, adjectives, proper names, full sentences',
+        );
+        expect(prompt).toContain('dictionary convention omits them');
+        expect(prompt).toContain('For languages with grammatical gender');
         expect(prompt).toContain('untrusted learner content');
         expect(prompt).toContain('Do not use tools');
         expect(prompt).toContain('explicitly accept');
@@ -35,10 +51,21 @@ describe('local prompts', () => {
             'Do not reinterpret a Source token as another language',
         );
         expect(prompt).toContain(
-            'A bare isolated count noun is not already suitable',
+            'A bare isolated common noun is not already suitable',
         );
         expect(prompt).toContain('`(m)` or `(f)`');
-        expect(prompt).toContain('proper nouns, mass nouns');
+        expect(prompt).toContain('verbs, proper nouns');
+        expect(prompt).toContain('both count nouns and mass nouns');
+        expect(prompt).toContain(
+            'French `taf` meaning informal work must become `le taf`',
+        );
+        expect(prompt).toContain(
+            'preserving its meaning and informal register',
+        );
+        expect(prompt).toContain(
+            'Keep an existing correct article exactly once',
+        );
+        expect(prompt).not.toContain('proper nouns, mass nouns');
         expect(prompt).toContain('translate the newly generated Example');
         expect(prompt).toContain('server assigns stable identities');
         expect(prompt).toContain(
