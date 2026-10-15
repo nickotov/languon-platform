@@ -319,3 +319,17 @@ versioned bucket and scoped application credentials. Production uses private S3
 with independently verified Selectel behavior; disposable test storage does not
 share development or production data. Operational activation and rollback gates
 are documented in [shared pronunciation operations](shared-pronunciation-operations.md).
+
+## Texts and contextual vocabulary
+
+The `texts` module owns private folders/texts, bounded aligned sentence values,
+manual-edit provenance, capability sharing, independent copies and durable language
+identification/translation proposals. Dictionaries own contextual selection jobs
+and generated vocabulary publication. Both use shared text-AI model selection,
+credits, immutable execution snapshots and the existing bounded worker slots.
+An explicit Add authorizes atomic card publication (including a newly named
+dictionary); translation still requires explicit Save. Temporary occurrence context
+is redacted separately from persistent dictionary semantic hints. See
+[ADR-0035](adr/0035-texts-and-contextual-vocabulary-publication.md) and
+[the backend-first feature](../.agent/features/043-texts/FEATURE.md). The frontend
+and its navigation remain deferred until the returned Magic Patterns design.

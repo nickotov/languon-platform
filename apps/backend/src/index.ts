@@ -1,3 +1,16 @@
+import { createTextsContentComposition } from './modules/texts/infrastructure/texts-composition';
+import { createTextsAiComposition } from './modules/texts/infrastructure/texts-ai-composition';
+import { createTextsJobRoutes } from './modules/texts/interface/http/texts-job.routes';
+import {
+    loadTextTranslationProposal,
+    resolveTextTranslationProposal,
+} from './modules/texts/infrastructure/persistence/drizzle/texts-job-support';
+import { createTextSelectionApiModule } from './modules/dictionaries/infrastructure/text-selection-composition';
+import { createTextSelectionRoutes } from './modules/dictionaries/interface/http/text-selection.routes';
+import { BoundedDictionaryRateLimiter } from './modules/dictionaries/infrastructure/rate-limit/bounded-dictionary-rate-limiter';
+import { textsAiAdmissionsEnabled } from './modules/text-ai/infrastructure/text-ai-composition';
+import { defaultTextAiAvailabilityPolicy } from './modules/text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
+import { DrizzleTextAiAdmissionParticipant } from './modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { DrizzleSentenceLibraryStore } from './modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-library-store';
 import { createSentenceLibraryAdministrationHooks } from './modules/administration/infrastructure/sentence-library-administration-hooks';
 import { createSentenceComposition } from './modules/learning/infrastructure/sentence-composition';
@@ -186,7 +199,59 @@ const learning = createLearningComposition({
     enabled: environment.LEARNING_FLASHCARDS_ENABLED,
     policy: authentication.options.policy,
 });
+const authenticateTextActor = async (token: string) => {
+    const claims =
+        await authentication.productDependencies.accessTokens.verify(token);
+    await authentication.productDependencies.authentication.requireActiveSession(
+        {
+            userId: claims.userId,
+            sessionId: claims.sessionId,
+        },
+    );
+    return { userId: claims.userId, sessionId: claims.sessionId };
+};
+const textsEnabled = textsAiAdmissionsEnabled(process.env);
+const textsSelectionPolicy = defaultTextAiAvailabilityPolicy();
+const texts = createTextsContentComposition({
+    ...authentication.productDependencies,
+    dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
+    policy: authentication.options.policy,
+    loadProposal: loadTextTranslationProposal,
+});
+const textsAi = createTextsAiComposition({
+    database: authentication.productDependencies.database,
+    enabled: textsEnabled,
+    fingerprintSecret: environment.DICTIONARY_HMAC_SECRET,
+    authenticate: authenticateTextActor,
+    clock: authentication.productDependencies.clock,
+    budget: environment.DICTIONARY_GENERATION_PROVIDER_BUDGET,
+    admissionParticipant: (tx) =>
+        new DrizzleTextAiAdmissionParticipant(tx, textsSelectionPolicy),
+});
+const textSelections = createTextSelectionApiModule({
+    database: authentication.productDependencies.database,
+    authentication: { authenticate: authenticateTextActor },
+    admissionsEnabled: textsEnabled,
+    selectionPolicy: textsSelectionPolicy,
+    globalConcurrency: 10,
+    ownerConcurrency: 1,
+    leaseMs: 30_000,
+    verifyShare: (key, digest) => texts.cryptography.verifyShare(key, digest),
+    proposal: resolveTextTranslationProposal,
+});
 const app = createApp({
+    texts: texts.routes,
+    textsAi: createTextsJobRoutes({
+        service: textsAi.service,
+        policy: authentication.options.policy,
+    }),
+    textSelections: createTextSelectionRoutes({
+        service: textSelections.service,
+        policy: authentication.options.policy,
+        rateLimiter: new BoundedDictionaryRateLimiter(
+            authentication.productDependencies.rateLimiter,
+        ),
+    }),
     textAi: createTextAiModule({
         ...authentication.productDependencies,
         policy: authentication.options.policy,

@@ -1,3 +1,4 @@
+import { createTextsAgents } from '../modules/texts/infrastructure/ai/texts-agents';
 import { Mastra } from '@mastra/core/mastra';
 
 import type { DevelopmentVerificationService } from '../modules/development-harness/application/development-verification-service';
@@ -21,6 +22,7 @@ import {
 } from './development-server-policy';
 
 export interface CanonicalMastraOptions {
+    textsAi?: Parameters<typeof createTextsAgents>[0];
     dictionaryCardAuthoring?: DictionaryCardAuthoringAgentOptions;
     dictionaryCardGeneration?: DictionaryCardGenerationAgentOptions;
     dictionaryImportPairsGeneration?: Parameters<
@@ -44,6 +46,9 @@ export function createCanonicalMastra(
 ): ReturnType<typeof createDevelopmentMastra>;
 export function createCanonicalMastra(options?: CanonicalMastraOptions): Mastra;
 export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
+    const textsAgents = options.textsAi
+        ? createTextsAgents(options.textsAi)
+        : undefined;
     const development = options.developmentHarness
         ? createDevelopmentHarnessPrimitives(options.developmentHarness)
         : undefined;
@@ -82,6 +87,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 
     if (
         !development &&
+        !textsAgents &&
         !dictionaryCardAuthoringAgent &&
         !dictionaryCardGenerationAgent &&
         !dictionaryImportPairsGenerationAgent &&
@@ -93,6 +99,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
     if (!development) {
         return new Mastra({
             agents: {
+                ...textsAgents,
                 ...(dictionaryCardAuthoringAgent
                     ? { dictionaryCardAuthoringAgent }
                     : {}),
@@ -113,6 +120,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 
     return createDevelopmentMastra({
         development,
+        textsAgents,
         dictionaryCardAuthoringAgent,
         dictionaryCardGenerationAgent,
         dictionaryImportPairsGenerationAgent,
@@ -122,6 +130,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 }
 
 function createDevelopmentMastra(options: {
+    textsAgents: ReturnType<typeof createTextsAgents> | undefined;
     development: ReturnType<typeof createDevelopmentHarnessPrimitives>;
     dictionaryCardGenerationAgent:
         ReturnType<typeof createDictionaryCardGenerationAgent> | undefined;
@@ -147,6 +156,7 @@ function createDevelopmentMastra(options: {
 }) {
     return new Mastra({
         agents: {
+            ...options.textsAgents,
             ...(options.dictionaryCardAuthoringAgent
                 ? {
                       dictionaryCardAuthoringAgent:

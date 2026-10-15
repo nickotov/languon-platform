@@ -26,7 +26,7 @@ export interface TextAiProviderBudgetUsage {
 export async function lockTextAiCapacity(tx: Transaction): Promise<void> {
     await tx.execute(sql`select pg_advisory_xact_lock(${textAiCapacityLock})`);
     await tx.execute(
-        sql`select set_config('languon.text_ai_capacity_revision', '1', true)`,
+        sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true)`,
     );
 }
 
@@ -48,7 +48,32 @@ export async function hasSentenceCapacityOverlap(
     return rows[0]?.overlap === true;
 }
 
-/** Closed typed union: dictionary jobs and sentence jobs share existing limits.
+/** New domains require a capacity-aware worker until their numerical usage ages out. */
+export async function hasTextsCapacityOverlap(
+    tx: Transaction,
+    now: Date,
+): Promise<boolean> {
+    const windowStart = new Date(now.getTime() - 86_400_000).toISOString();
+    const rows = await tx.execute(sql`select exists (
+        select 1 from texts_ai_jobs where execution_state in ('queued','running')
+            or provider_reservation_state='active'
+            or (provider_reservation_state='settled' and provider_reservation_settled_at>${windowStart}::timestamptz
+                and (provider_actual_cost_micros>0 or provider_actual_input_tokens>0 or provider_actual_output_tokens>0))
+        union all
+        select 1 from dictionary_text_selection_jobs where execution_state in ('queued','running')
+            or provider_reservation_state='active'
+            or (provider_reservation_state='settled' and provider_reservation_settled_at>${windowStart}::timestamptz
+                and (provider_actual_cost_micros>0 or provider_actual_input_tokens>0 or provider_actual_output_tokens>0))
+        union all
+        select 1 from dictionary_generation_provider_usage_archive
+            where job_kind in ('text-detection','text-translation','text-selection-card')
+            and settled_at>${windowStart}::timestamptz
+            and (actual_cost_micros>0 or actual_input_tokens>0 or actual_output_tokens>0)
+    ) as overlap`);
+    return rows[0]?.overlap === true;
+}
+
+/** Closed typed union: dictionaries, sentences and Texts share existing limits.
  * Provider usage remains grouped by the immutable five-field budget cohort. */
 export async function readTextAiCapacity(
     tx: Transaction,
@@ -68,6 +93,10 @@ export async function readTextAiCapacity(
         select owner_id as actor_id, execution_state::text as execution_state, created_at, next_attempt_at, (input_payload->>'awaitingUpload') is distinct from 'true' as runnable from dictionary_generation_jobs
         union all
         select learner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from sentence_ai_jobs
+        union all
+        select owner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from texts_ai_jobs
+        union all
+        select owner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from dictionary_text_selection_jobs
     ) select
         count(*) filter (where execution_state='queued') as global_queued,
         count(*) filter (where execution_state='queued' and actor_id=${actorId}::uuid) as actor_queued,
@@ -86,6 +115,18 @@ export async function readTextAiCapacity(
             provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
             provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
             provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from sentence_ai_jobs
+        union all
+        select id, owner_id as actor_id, provider_reservation_state, provider_reservation_settled_at,
+            provider_reserved_cost_micros, provider_reserved_input_tokens, provider_reserved_output_tokens,
+            provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
+            provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
+            provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from texts_ai_jobs
+        union all
+        select id, owner_id as actor_id, provider_reservation_state, provider_reservation_settled_at,
+            provider_reserved_cost_micros, provider_reserved_input_tokens, provider_reserved_output_tokens,
+            provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
+            provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
+            provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from dictionary_text_selection_jobs
     ), cohorts as (
         select * from live_jobs where provider_input_cost_micros_per_million_tokens=${budget.inputCostMicrosPerMillionTokens}
             and provider_output_cost_micros_per_million_tokens=${budget.outputCostMicrosPerMillionTokens}

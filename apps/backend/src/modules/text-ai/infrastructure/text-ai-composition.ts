@@ -20,3 +20,32 @@ export function createTextAiModule(
         routes: createTextAiRoutes({ ...input, preferences }),
     };
 }
+
+/** API admission gate; workers must continue draining already admitted jobs. */
+export function textsAiAdmissionsEnabled(
+    environment: Record<string, string | undefined>,
+): boolean {
+    if (environment.TEXTS_AI_ENABLED !== 'true') return false;
+    if (
+        !['staging', 'production'].includes(
+            environment.APP_ENV ?? 'development',
+        )
+    )
+        return true;
+    const required = [
+        'text-detection:v1',
+        'text-translation:v1',
+        'text-selection-card:v1',
+    ];
+    const api = (environment.DICTIONARY_JOB_API_ENQUEUED_FORMATS ?? '')
+        .split(',')
+        .map((value) => value.trim());
+    const workers = (
+        environment.DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS ?? ''
+    )
+        .split(',')
+        .map((value) => value.trim());
+    return required.every(
+        (format) => api.includes(format) && workers.includes(format),
+    );
+}

@@ -1,0 +1,186 @@
+import { describe, expect, it } from 'vitest';
+import {
+    CreateTextRequestSchema,
+    EnqueueTextTranslationRequestSchema,
+    EnqueueTextSelectionRequestSchema,
+    TextAlignmentSchema,
+    TextAiJobSchema,
+    TextPairEditsSchema,
+    TextSourceSchema,
+    TextTranslationProposalSchema,
+} from '../src/texts';
+const id = '00000000-0000-4000-8000-000000000001';
+const other = '00000000-0000-4000-8000-000000000002';
+const content = {
+    sourceText: 'Hello.',
+    sourceLanguage: 'en',
+    targetLanguage: 'es',
+};
+const alignment = {
+    source: [
+        {
+            pairId: id,
+            text: 'Hello.',
+            startOffset: 0,
+            endOffset: 6,
+            paragraphIndex: 0,
+        },
+    ],
+    translation: [{ pairId: id, text: 'Hola.' }],
+    editedPairIds: [],
+};
+describe('Texts contracts', () => {
+    it('counts Unicode code points and preserves source whitespace', () => {
+        expect(TextSourceSchema.parse(' \nHello.\n ')).toBe(' \nHello.\n ');
+        expect(TextSourceSchema.safeParse('😀'.repeat(20_000)).success).toBe(
+            true,
+        );
+        expect(TextSourceSchema.safeParse('😀'.repeat(20_001)).success).toBe(
+            false,
+        );
+        expect(TextSourceSchema.safeParse('\ud800')).toMatchObject({
+            success: false,
+        });
+        expect(TextSourceSchema.safeParse('\u0000')).toMatchObject({
+            success: false,
+        });
+    });
+    it('requires supported distinct languages and paired existing text references', () => {
+        expect(
+            CreateTextRequestSchema.safeParse({ folderId: id, ...content })
+                .success,
+        ).toBe(true);
+        expect(
+            CreateTextRequestSchema.safeParse({
+                folderId: id,
+                ...content,
+                targetLanguage: 'en',
+            }).success,
+        ).toBe(false);
+        expect(
+            EnqueueTextTranslationRequestSchema.safeParse({
+                folderId: id,
+                operationId: other,
+                ...content,
+                textId: id,
+            }).success,
+        ).toBe(false);
+    });
+    it('rejects reordered pairs, fabricated edited IDs, gaps, and truncated mappings', () => {
+        expect(TextAlignmentSchema.parse(alignment)).toEqual(alignment);
+        expect(
+            TextAlignmentSchema.safeParse({
+                ...alignment,
+                translation: [{ pairId: other, text: 'Hola.' }],
+            }).success,
+        ).toBe(false);
+        expect(
+            TextAlignmentSchema.safeParse({
+                ...alignment,
+                editedPairIds: [other],
+            }).success,
+        ).toBe(false);
+        expect(
+            TextAlignmentSchema.safeParse({ ...alignment, translation: [] })
+                .success,
+        ).toBe(false);
+        expect(
+            TextAlignmentSchema.safeParse({
+                ...alignment,
+                source: [{ ...alignment.source[0], startOffset: 1 }],
+            }).success,
+        ).toBe(false);
+    });
+    it('rejects proposal source rewriting and client assigned edit provenance', () => {
+        const proposal = {
+            id,
+            ...content,
+            alignment,
+            textId: null,
+            expectedTextVersion: null,
+        };
+        expect(TextTranslationProposalSchema.safeParse(proposal).success).toBe(
+            true,
+        );
+        expect(
+            TextTranslationProposalSchema.safeParse({
+                ...proposal,
+                sourceText: 'Changed.',
+            }).success,
+        ).toBe(false);
+        expect(
+            TextTranslationProposalSchema.safeParse({
+                ...proposal,
+                alignment: { ...alignment, editedPairIds: [id] },
+            }).success,
+        ).toBe(false);
+    });
+    it('never accepts a capability key or raw context in collection requests', () => {
+        const request = {
+            operationId: id,
+            source: {
+                kind: 'shared-text',
+                shareId: 'abcdefghijklmnop',
+                textId: id,
+                expectedTextVersion: 1,
+            },
+            selection: {
+                side: 'source',
+                pairId: id,
+                startOffset: 0,
+                endOffset: 5,
+            },
+            target: { kind: 'new', name: 'Words' },
+        };
+        expect(
+            EnqueueTextSelectionRequestSchema.safeParse(request).success,
+        ).toBe(true);
+        expect(
+            EnqueueTextSelectionRequestSchema.safeParse({
+                ...request,
+                source: { ...request.source, key: 'secret' },
+            }).success,
+        ).toBe(false);
+        expect(
+            EnqueueTextSelectionRequestSchema.safeParse({
+                ...request,
+                context: 'Forged context',
+            }).success,
+        ).toBe(false);
+    });
+});
+
+it('rejects impossible job state/result combinations and mismatched proposal identity', () => {
+    const job = {
+        id,
+        kind: 'text-detection',
+        state: 'completed',
+        result: { language: 'en', confidence: 'high' },
+        failureCode: null,
+        createdAt: '2026-10-15T00:00:00Z',
+        completedAt: '2026-10-15T00:00:01Z',
+    };
+    expect(TextAiJobSchema.safeParse(job).success).toBe(true);
+    expect(
+        TextAiJobSchema.safeParse({ ...job, state: 'running' }).success,
+    ).toBe(false);
+    expect(TextAiJobSchema.safeParse({ ...job, result: null }).success).toBe(
+        false,
+    );
+    expect(
+        TextAiJobSchema.safeParse({ ...job, kind: 'text-translation' }).success,
+    ).toBe(false);
+});
+it('bounds cumulative manual edits and rejects duplicate pair identities', () => {
+    const pair = { pairId: id, source: 'A'.repeat(11_000), translation: 'B' };
+    expect(
+        TextPairEditsSchema.safeParse([pair, { ...pair, pairId: other }])
+            .success,
+    ).toBe(false);
+    expect(
+        TextPairEditsSchema.safeParse([
+            { ...pair, source: 'A' },
+            { ...pair, source: 'A' },
+        ]).success,
+    ).toBe(false);
+});

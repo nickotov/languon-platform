@@ -7,7 +7,11 @@ import { TextAiSelectionUnavailableError } from '../../../../../src/modules/text
 import { DrizzleTextAiAdmissionParticipant } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { resolveTextAiExecutionSnapshot } from '../../../../../src/modules/text-ai/infrastructure/ai/text-ai-provider-resolver';
 
-import { sentenceExecutionObservationId } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import {
+    sentenceExecutionObservationId,
+    textsExecutionObservationId,
+    textsCapacityObservationId,
+} from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 
 const now = new Date('2026-10-04T10:00:00Z');
 const [defaultModel, selectedModel] = textAiModelCatalog;
@@ -272,6 +276,96 @@ describe('transactional text AI admission selection', () => {
                             textAiSupportedFormats: [input.format],
                         },
                     ],
+                ],
+                true,
+            ).resolve(input),
+        ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+    });
+    it.each([
+        'text-detection:v1',
+        'text-translation:v1',
+        'text-selection-card:v1',
+    ])(
+        'requires isolated capability and pins effective price for %s',
+        async (format) => {
+            const model = defaultModel!;
+            const workerId = 'texts-worker';
+            const observation = {
+                id: textsExecutionObservationId(
+                    workerId,
+                    model.providerId,
+                    model.id,
+                ),
+                workerId,
+                providerId: model.providerId,
+                modelId: model.id,
+                status: 'available',
+                textAiSelectionRevision: 1,
+                textAiCapacityRevision: 1,
+                textsCapacityRevision: 1,
+                textsExecutionRevision: 1,
+                creditSettlementRevision: 1,
+                textAiSupportedFormats: [format],
+            };
+            const resolve = (row: object) =>
+                participant([
+                    [],
+                    [{ id: 'global', snapshot: snapshot() }],
+                    [row],
+                ]).resolve({ ...input, format });
+            const result = await resolve(observation);
+            expect(result.selectionVersion).toBe(1);
+            expect(result.snapshot?.supportedFormats).toEqual([format]);
+            expect(result.snapshot?.creditPricing?.rateRevisionId).toBe(
+                '11111111-1111-4111-8111-111111111111',
+            );
+            for (const changed of [
+                { textsExecutionRevision: null },
+                { textsCapacityRevision: null },
+                { creditSettlementRevision: null },
+                {
+                    id: sentenceExecutionObservationId(
+                        workerId,
+                        model.providerId,
+                        model.id,
+                    ),
+                },
+                { textAiSupportedFormats: ['single-card:v1'] },
+            ])
+                await expect(
+                    resolve({ ...observation, ...changed }),
+                ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+        },
+    );
+    it('admits dictionary Auto during Texts overlap only with new capacity proof', async () => {
+        const model = defaultModel!;
+        const workerId = 'new-worker';
+        const observation = {
+            id: textsCapacityObservationId(
+                workerId,
+                model.providerId,
+                model.id,
+            ),
+            workerId,
+            providerId: model.providerId,
+            modelId: model.id,
+            status: 'available',
+            textAiSelectionRevision: 1,
+            textAiCapacityRevision: 1,
+            textsCapacityRevision: 1,
+            textAiSupportedFormats: [input.format],
+        };
+        const result = await participant(
+            [[], [{ id: 'global', snapshot: snapshot() }], [observation]],
+            true,
+        ).resolve(input);
+        expect(result.snapshot?.modelId).toBe(model.id);
+        await expect(
+            participant(
+                [
+                    [],
+                    [{ id: 'global', snapshot: snapshot() }],
+                    [{ ...observation, textsCapacityRevision: null }],
                 ],
                 true,
             ).resolve(input),

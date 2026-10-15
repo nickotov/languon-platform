@@ -134,3 +134,15 @@ GRANT UPDATE (state, task_id, lease_token, lease_expires_at, next_poll_at,
     error, billing_state)
     ON TABLE speech_jobs TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE model_price_revisions TO :"dictionary_worker_role";
+
+-- Texts jobs share the bounded worker and accounting infrastructure. Selection
+-- publication is an explicit user-authorized operation, including new dictionary
+-- creation; these rights never permit sharing, account mutation or deletion.
+GRANT SELECT ON TABLE text_folders, texts, text_shares TO :"dictionary_worker_role";
+GRANT UPDATE (updated_at) ON TABLE text_folders, texts TO :"dictionary_worker_role";
+GRANT SELECT, UPDATE ON TABLE texts_ai_jobs, dictionary_text_selection_jobs TO :"dictionary_worker_role";
+GRANT SELECT, INSERT ON TABLE dictionaries, dictionary_settings, dictionary_cards, dictionary_card_revisions TO :"dictionary_worker_role";
+GRANT UPDATE (version, updated_at) ON TABLE dictionaries TO :"dictionary_worker_role";
+
+-- PostgreSQL requires one UPDATE grant for a capability row lock.
+GRANT UPDATE (created_at) ON TABLE text_shares TO :"dictionary_worker_role";

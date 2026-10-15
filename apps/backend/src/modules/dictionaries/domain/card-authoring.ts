@@ -337,6 +337,16 @@ const DictionaryCardAuthoringProviderFieldContextSchema = z
 
 export const DictionaryCardAuthoringProviderInputSchema = z
     .object({
+        occurrenceContext: z
+            .object({
+                sentence: z.string().min(1).max(160_000),
+                previousSentence: z.string().max(160_000).nullable(),
+                nextSentence: z.string().max(160_000).nullable(),
+                startOffset: z.number().int().nonnegative(),
+                endOffset: z.number().int().positive(),
+            })
+            .strict()
+            .optional(),
         sourceLanguage: z.string().min(2).max(35),
         targetLanguage: z.string().min(2).max(35),
         source: boundedText(dictionaryLimits.requiredCardValueCodePoints),

@@ -35,6 +35,20 @@ export function sentenceExecutionObservationId(
 ): string {
     return `sentence-execution:v1/${identity(workerId, providerId, modelId)}`;
 }
+export function textsCapacityObservationId(
+    workerId: string,
+    providerId: string,
+    modelId: string,
+): string {
+    return `texts-capacity:v1/${identity(workerId, providerId, modelId)}`;
+}
+export function textsExecutionObservationId(
+    workerId: string,
+    providerId: string,
+    modelId: string,
+): string {
+    return `texts-execution:v1/${identity(workerId, providerId, modelId)}`;
+}
 interface WorkerCapabilityObservation {
     id: string;
     workerId: string;
@@ -43,6 +57,8 @@ interface WorkerCapabilityObservation {
     textAiSelectionRevision: number | null;
     textAiSupportedFormats: string[] | null;
     textAiCapacityRevision?: number | null;
+    textsCapacityRevision?: number | null;
+    textsExecutionRevision?: number | null;
     learningExecutionRevision?: number | null;
     creditSettlementRevision?: number | null;
 }
@@ -71,6 +87,44 @@ export function isTextAiCapacityCapableObservation(
         observation.textAiCapacityRevision === 1 &&
         observation.id ===
             textAiCapacityObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            )
+    );
+}
+export function isTextsCapacityCapableObservation(
+    observation: WorkerCapabilityObservation,
+    format?: string,
+): boolean {
+    return (
+        supports(observation, format) &&
+        observation.textAiCapacityRevision === 1 &&
+        observation.textsCapacityRevision === 1 &&
+        [
+            textsCapacityObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+            textsExecutionObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+        ].includes(observation.id)
+    );
+}
+export function isTextsExecutionCapableObservation(
+    observation: WorkerCapabilityObservation,
+    format?: string,
+): boolean {
+    return (
+        isTextsCapacityCapableObservation(observation, format) &&
+        observation.textsExecutionRevision === 1 &&
+        observation.creditSettlementRevision === 1 &&
+        observation.id ===
+            textsExecutionObservationId(
                 observation.workerId,
                 observation.providerId,
                 observation.modelId,
@@ -119,6 +173,7 @@ export function isTextAiSelectionCapableObservation(
                 observation.modelId,
             ) ||
             isTextAiCapacityCapableObservation(observation, format) ||
-            isSentenceExecutionCapableObservation(observation, format))
+            isSentenceExecutionCapableObservation(observation, format) ||
+            isTextsCapacityCapableObservation(observation, format))
     );
 }

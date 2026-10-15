@@ -1,3 +1,12 @@
+import { createTextSelectionWorkerComposition } from '../../modules/dictionaries/infrastructure/text-selection-composition';
+import { createTextsCryptography } from '../../modules/texts/infrastructure/texts-composition';
+import { resolveTextTranslationProposal } from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-support';
+import { defaultTextAiAvailabilityPolicy } from '../../modules/text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
+import { createTextsWorkerComposition } from '../../modules/texts/infrastructure/texts-ai-composition';
+import {
+    createTextsAiProvider,
+    DeterministicTextsAiProvider,
+} from '../../modules/texts/infrastructure/ai/texts-ai-provider';
 import { createSpeechInfrastructure } from '../../modules/speech/infrastructure/composition';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -83,6 +92,31 @@ export function createWorkerSentenceProvider(
     });
 }
 
+/** Synthetic local fixtures exercise durable execution without calling a paid provider. */
+export function createWorkerTextsProvider(
+    environment: Pick<
+        DictionaryWorkerEnvironment,
+        'providerFixtureMode' | 'providerCredentials'
+    >,
+) {
+    return environment.providerFixtureMode === 'deterministic'
+        ? new DeterministicTextsAiProvider((input) => ({
+              draft:
+                  input.kind === 'text-detection'
+                      ? { language: 'en', confidence: 'high' }
+                      : {
+                            translation: input.segments.map((segment) => ({
+                                pairId: segment.pairId,
+                                text: `[${input.targetLanguage}] ${segment.text}`,
+                            })),
+                        },
+              usage: { inputTokens: 1, outputTokens: 1 },
+          }))
+        : createTextsAiProvider({
+              credentials: environment.providerCredentials,
+          });
+}
+
 /** Both initial and recurring publication use this reviewed executor capability seam. */
 export function publishWorkerTextAiObservations(
     environment: Pick<
@@ -96,6 +130,8 @@ export function publishWorkerTextAiObservations(
     workerId: string,
 ) {
     return publishTextAiWorkerObservations({
+        textsCapacityEnabled: true,
+        textsExecutionEnabled: true,
         learningExecutionEnabled:
             environment.providerFixtureMode !== 'deterministic',
         sentencePreparationExecutionEnabled:
@@ -458,6 +494,56 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         maxAttempts: 3,
         retryDelayMs: 5_000,
     });
+    const textsFormats = environment.supportedFormats.filter(
+        (format): format is 'text-detection:v1' | 'text-translation:v1' =>
+            format === 'text-detection:v1' || format === 'text-translation:v1',
+    );
+    const textsWorker = textsFormats.length
+        ? createTextsWorkerComposition({
+              database,
+              provider: createWorkerTextsProvider(environment),
+              supportedFormats: textsFormats,
+              clock: { now: () => new Date() },
+              workerId,
+              leaseMs: 30_000,
+              heartbeatMs: 10_000,
+              timeoutMs: 20_000,
+              globalConcurrency: 10,
+              userConcurrency: 1,
+              maxAttempts: 3,
+              retryDelayMs: 5_000,
+          }).worker
+        : undefined;
+    const selectionEnabled = environment.supportedFormats.includes(
+        'text-selection-card:v1',
+    );
+    const textsHmacSecret = process.env.DICTIONARY_HMAC_SECRET;
+    if (
+        selectionEnabled &&
+        (!textsHmacSecret || Buffer.byteLength(textsHmacSecret, 'utf8') < 32)
+    ) {
+        throw new DictionaryWorkerConfigurationError(
+            'Texts vocabulary execution requires the API DICTIONARY_HMAC_SECRET (at least 32 bytes).',
+        );
+    }
+    const textsCryptography = selectionEnabled
+        ? createTextsCryptography(textsHmacSecret!, { randomBytes })
+        : undefined;
+    const selectionWorker = selectionEnabled
+        ? createTextSelectionWorkerComposition({
+              database,
+              generator: routedProviders.cardAuthoring,
+              workerId,
+              selectionPolicy: defaultTextAiAvailabilityPolicy(),
+              globalConcurrency: 10,
+              ownerConcurrency: 1,
+              leaseMs: 30_000,
+              verifyShare: (key, digest) =>
+                  textsCryptography!.verifyShare(key, digest),
+              proposal: (tx, input) =>
+                  resolveTextTranslationProposal(tx, input),
+          }).worker
+        : undefined;
     const observationWorkerId = `${environment.releaseSha}:${hostname().slice(0, 64)}`;
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
@@ -467,6 +553,8 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
         sentenceService: sentenceWorker,
+        ...(textsWorker ? { textsService: textsWorker } : {}),
+        ...(selectionWorker ? { selectionService: selectionWorker } : {}),
         sentencePreparation,
         supportedFormats: environment.supportedFormats,
         workerId,

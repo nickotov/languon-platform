@@ -2,12 +2,17 @@ import { dictionaryAiWorkerObservationsTable } from '../persistence/drizzle/conf
 import {
     textAiCapacityObservationId,
     sentenceExecutionObservationId,
+    textsCapacityObservationId,
+    textsExecutionObservationId,
 } from '../persistence/drizzle/text-ai-worker-readiness';
 import { lte } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../infrastructure/database/schema';
-import { textAiModelCatalog } from '../../application/text-ai-provider-catalog';
+import {
+    textAiModelCatalog,
+    textAiTextsFormats,
+} from '../../application/text-ai-provider-catalog';
 
 import {
     createTextAiProviderReadiness,
@@ -27,6 +32,8 @@ export async function publishTextAiWorkerObservations(options: {
     now?: Date;
     readinessTimeoutMs: number;
     learningExecutionEnabled?: boolean;
+    textsExecutionEnabled?: boolean;
+    textsCapacityEnabled?: boolean;
     sentencePreparationExecutionEnabled?: boolean;
     supportedFormats: readonly string[];
     ttlMs?: number;
@@ -89,6 +96,8 @@ export async function publishTextAiWorkerObservations(options: {
         const publish = async (
             formats: readonly string[],
             learning: boolean,
+            texts: boolean = false,
+            capacity: boolean = false,
         ) => {
             if (formats.length === 0) return;
             await options.database
@@ -97,14 +106,22 @@ export async function publishTextAiWorkerObservations(options: {
                     adapterRevision: model.adapterRevision,
                     textAiSelectionRevision: 1,
                     textAiCapacityRevision: 1,
+                    textsCapacityRevision: options.textsCapacityEnabled
+                        ? 1
+                        : null,
+                    textsExecutionRevision: texts ? 1 : null,
                     learningExecutionRevision: learning ? 1 : null,
-                    creditSettlementRevision: learning ? 1 : null,
+                    creditSettlementRevision: learning || texts ? 1 : null,
                     textAiSupportedFormats: [...formats],
                     checkedAt,
                     expiresAt,
-                    id: (learning
-                        ? sentenceExecutionObservationId
-                        : textAiCapacityObservationId)(
+                    id: (texts
+                        ? textsExecutionObservationId
+                        : capacity
+                          ? textsCapacityObservationId
+                          : learning
+                            ? sentenceExecutionObservationId
+                            : textAiCapacityObservationId)(
                         options.workerId,
                         model.providerId,
                         model.id,
@@ -120,8 +137,12 @@ export async function publishTextAiWorkerObservations(options: {
                         adapterRevision: model.adapterRevision,
                         textAiSelectionRevision: 1,
                         textAiCapacityRevision: 1,
+                        textsCapacityRevision: options.textsCapacityEnabled
+                            ? 1
+                            : null,
+                        textsExecutionRevision: texts ? 1 : null,
                         learningExecutionRevision: learning ? 1 : null,
-                        creditSettlementRevision: learning ? 1 : null,
+                        creditSettlementRevision: learning || texts ? 1 : null,
                         textAiSupportedFormats: [...formats],
                         checkedAt,
                         expiresAt,
@@ -147,10 +168,37 @@ export async function publishTextAiWorkerObservations(options: {
         ];
         await publish(
             supportedFormats.filter(
-                (format) => !sentenceFormats.includes(format),
+                (format) =>
+                    !sentenceFormats.includes(format) &&
+                    !textAiTextsFormats.some(
+                        (candidate) => candidate === format,
+                    ),
             ),
             false,
         );
+        if (options.textsCapacityEnabled)
+            await publish(
+                supportedFormats.filter(
+                    (format) =>
+                        !textAiTextsFormats.some(
+                            (candidate) => candidate === format,
+                        ),
+                ),
+                false,
+                false,
+                true,
+            );
+        if (options.textsExecutionEnabled)
+            if (options.textsCapacityEnabled)
+                await publish(
+                    supportedFormats.filter((format) =>
+                        textAiTextsFormats.some(
+                            (candidate) => candidate === format,
+                        ),
+                    ),
+                    false,
+                    true,
+                );
         if (options.learningExecutionEnabled)
             await publish(
                 supportedFormats.filter((format) =>

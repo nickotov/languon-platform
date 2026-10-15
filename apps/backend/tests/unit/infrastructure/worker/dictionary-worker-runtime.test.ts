@@ -688,3 +688,57 @@ describe('shared dictionary and sentence slot pool', () => {
         expect(vi.getTimerCount()).toBe(0);
     });
 });
+
+it('shares one polling slot fairly among dictionary, sentence, texts and selection work', async () => {
+    const order: string[] = [];
+    const run = (kind: string) => async () => {
+        order.push(kind);
+        if (order.length === 8) void runtime.shutdown('SIGTERM');
+        return true;
+    };
+    const release = vi.fn(async () => undefined);
+    const runtime = new DictionaryWorkerRuntime({
+        concurrency: 1,
+        drainTimeoutMs: 100,
+        includeProviderReadiness: false,
+        pollIntervalMs: 1,
+        readinessTimeoutMs: 100,
+        supportedFormats: [
+            'single-card:v1',
+            'sentence-check:v1',
+            'text-translation:v1',
+            'text-selection-card:v1',
+        ],
+        workerId: 'worker',
+        service: {
+            readiness: async () => undefined,
+            processNext: run('dictionary'),
+            releaseWorkerLeases: release,
+        },
+        sentenceService: {
+            processNext: run('sentence'),
+            releaseWorkerLeases: release,
+        },
+        textsService: {
+            processNext: run('texts'),
+            releaseWorkerLeases: release,
+        },
+        selectionService: {
+            processNext: run('selection'),
+            releaseWorkerLeases: release,
+        },
+    });
+    await runtime.run();
+    expect(order).toEqual([
+        'dictionary',
+        'sentence',
+        'texts',
+        'selection',
+        'dictionary',
+        'sentence',
+        'texts',
+        'selection',
+    ]);
+    await runtime.shutdown('SIGTERM');
+    expect(release).toHaveBeenCalledTimes(4);
+});

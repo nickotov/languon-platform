@@ -42,6 +42,9 @@ export function createApp(options?: {
     modelPrices?: OpenAPIHono;
     operational?: AppOperationalOptions;
     textAi?: OpenAPIHono;
+    texts?: OpenAPIHono;
+    textsAi?: OpenAPIHono;
+    textSelections?: OpenAPIHono;
     userProfiles?: UserProfileRouteDependencies;
 }): OpenAPIHono {
     const app = new OpenAPIHono();
@@ -66,6 +69,10 @@ export function createApp(options?: {
     if (options?.administration) {
         app.route('/', createAdministrationRoutes(options.administration));
     }
+    if (options?.textsAi) app.route('/', options.textsAi);
+    if (options?.textSelections) app.route('/', options.textSelections);
+    if (options?.texts) app.route('/', options.texts);
+
     if (options?.dictionaries) {
         app.route('/', options.dictionaries);
     }

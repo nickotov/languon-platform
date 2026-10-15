@@ -210,6 +210,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm db:migrate`                             | Explicitly apply pending PostgreSQL migrations                                     |
 | `pnpm speech:migrate`                         | Guarded legacy-audio transfer; follow shared pronunciation cutover instructions    |
 | `pnpm test:e2e:shared-pronunciation`          | Run guarded learner/admin pronunciation and pricing journeys                       |
+| `pnpm test:e2e:texts-backend`                 | Run guarded Texts API journeys against disposable PostgreSQL and Redis             |
 | `pnpm db:studio`                              | Inspect the local database with Drizzle Studio                                     |
 | `pnpm mastra:playground:reset`                | Guarded destructive Mastra playground reset                                        |
 | `pnpm lint`                                   | Run repository lint rules                                                          |
