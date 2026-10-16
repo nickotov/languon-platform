@@ -495,8 +495,15 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         retryDelayMs: 5_000,
     });
     const textsFormats = environment.supportedFormats.filter(
-        (format): format is 'text-detection:v1' | 'text-translation:v1' =>
-            format === 'text-detection:v1' || format === 'text-translation:v1',
+        (
+            format,
+        ): format is
+            | 'text-detection:v1'
+            | 'text-translation:v1'
+            | 'text-translation:v2' =>
+            format === 'text-detection:v1' ||
+            format === 'text-translation:v1' ||
+            format === 'text-translation:v2',
     );
     const textsWorker = textsFormats.length
         ? createTextsWorkerComposition({
@@ -507,7 +514,8 @@ async function main(values = process.argv.slice(2)): Promise<void> {
               workerId,
               leaseMs: 30_000,
               heartbeatMs: 10_000,
-              timeoutMs: 20_000,
+              // Whole-text output needs a longer bounded attempt than a card.
+              timeoutMs: 180_000,
               globalConcurrency: 10,
               userConcurrency: 1,
               maxAttempts: 3,

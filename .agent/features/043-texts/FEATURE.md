@@ -1,6 +1,6 @@
 # Texts translation and vocabulary collection
 
-Status: Complete — selected v003 UI implemented and verified
+Status: Complete — v003 UI and authorized Texts capacity follow-up verified
 Owner: Root
 Created: 2026-10-15
 
@@ -179,3 +179,44 @@ completion/security findings are closed; final tests, runtime captures and
 source identity are in EVIDENCE.md and REVIEW.md. No unresolved product defect
 or acceptance gap remains. No backlog task applies. Production activation remains
 the documented explicit TEXTS_AI_ENABLED rollout, outside this local delivery.
+
+## Capacity follow-up authorization — 2026-10-16
+
+The user explicitly requested fixing preflight rejection and extending Texts model
+limits. This reuses the authorized whole-text feature scope (AC-01/02/07); it is
+not a new product journey. Immutable model snapshots, credit envelopes and
+old-worker exclusion require feature-level verification. Follow-up branch:
+`feature/texts-capacity`, from verified main `15eaeb9`. Existing v003 UI and source
+provenance remain unchanged.
+
+- AC-11: New whole-text translations use a reviewed, task-specific capacity
+  profile within the exact provider model's supported limits, while dictionary
+  limits and existing queued snapshots remain unchanged. Existing aggregate
+  reservation ceilings remain authoritative. Meaningful multilingual article
+  requests use the task profile and exact aligned JSON framing in conservative
+  complete-request preflight (without claiming a foreign tokenizer is exact);
+  genuine capacity overflow fails before provider dispatch, with no truncation
+  or partial publication. Older workers cannot claim the new internal format.
+
+Live DeepSeek's non-billable catalog currently lists deepseek-flash and
+deepseek-v4-pro, not the configured legacy deepseek-chat. The current official
+completion schema permits max_tokens through393216 for supported currentmodels.
+Legacy DeepSeek/Kie routes have no newly verified higher cap and retain their
+base profile. Adding a reviewed current DeepSeekFlash profile is implementation
+scope; changing the user's current default/preference is pending their choice.
+
+### Capacity follow-up completion — 2026-10-16
+
+AC-11 is implemented and independently approved. The user selected DeepSeek
+Flash for new jobs. New translation v2 work pins 128,000 input / 32,768 output
+tokens; dictionary calls remain 64,000 / 8,192, and existing queued snapshots
+are untouched. Texts attempts have a bounded 180-second deadline, renewed leases
+and existing cancellation/fencing; other worker deadlines are unchanged. Exact
+JSON framing replaces the fixed per-pair preflight penalty. Conservative model
+fit checks remain, without an unsupported tokenizer claim or silent truncation.
+
+The local model default is activated through a reviewed, audited operator
+transaction after compatible migration/worker startup. Custom rates and aggregate
+ceilings were preserved; the owner's preference was Auto and needed no update.
+Backend and web auth health are 200. Production rollout remains separate and
+must respect both the v2 and Flash shared-worker floors in ADR-0036.

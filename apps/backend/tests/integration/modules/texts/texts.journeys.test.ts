@@ -1,4 +1,4 @@
-// @user-flow-revision texts sha256:acf772fc455606f8
+// @user-flow-revision texts sha256:3bd497f7f68d42fa
 import { randomUUID } from 'node:crypto';
 import {
     AuthenticationSuccessResponseSchema,
@@ -142,7 +142,11 @@ run('Texts real composed authenticated HTTP journeys', () => {
             userConcurrency: 2,
             maxAttempts: 2,
             retryDelayMs: 1,
-            supportedFormats: ['text-detection:v1', 'text-translation:v1'],
+            supportedFormats: [
+                'text-detection:v1',
+                'text-translation:v1',
+                'text-translation:v2',
+            ],
             provider: {
                 async run({ input }) {
                     return {
@@ -728,7 +732,10 @@ run('Texts real composed authenticated HTTP journeys', () => {
                     leaseMs: 30000,
                     globalConcurrency: 10,
                     userConcurrency: 2,
-                    supportedFormats: ['text-translation:v1'],
+                    supportedFormats: [
+                        'text-translation:v1',
+                        'text-translation:v2',
+                    ],
                 },
                 { now: new Date(), signal },
             );

@@ -1,0 +1,2 @@
+ALTER TABLE "texts_ai_jobs" DROP CONSTRAINT "texts_ai_jobs_kind_format";--> statement-breakpoint
+ALTER TABLE "texts_ai_jobs" ADD CONSTRAINT "texts_ai_jobs_kind_format" CHECK (("texts_ai_jobs"."job_kind"='text-detection' and "texts_ai_jobs"."format"='text-detection:v1') or ("texts_ai_jobs"."job_kind"='text-translation' and "texts_ai_jobs"."format" in ('text-translation:v1','text-translation:v2')));

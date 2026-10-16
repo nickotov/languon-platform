@@ -60,10 +60,21 @@ export function preflightTextsRequest(
         Buffer.byteLength(prompt, 'utf8') +
         Buffer.byteLength(JSON.stringify(z.toJSONSchema(schema)), 'utf8') +
         1024;
+    // Count the actual aligned JSON framing rather than a fixed per-sentence
+    // penalty. Byte bounds remain deliberately conservative without pretending
+    // that a different model's tokenizer is exact for this provider.
     const outputBound =
         input.kind === 'text-translation'
             ? Buffer.byteLength(input.sourceText, 'utf8') * 2 +
-              input.segments.length * 100 +
+              Buffer.byteLength(
+                  JSON.stringify({
+                      translation: input.segments.map(({ pairId }) => ({
+                          pairId,
+                          text: '',
+                      })),
+                  }),
+                  'utf8',
+              ) +
               256
             : 256;
     if (
@@ -79,7 +90,7 @@ export function preflightTextsRequest(
             )
     )
         throw new TextsAiError(
-            'model_request_too_large',
+            'model_capacity_exceeded',
             'This model cannot safely translate the complete text. Choose a model with larger limits or shorten the text.',
         );
 }
@@ -142,6 +153,16 @@ export function createTextsAiProvider(options: {
                             maxOutputTokens: limits.maxOutputTokens,
                             maxRetries: 0,
                         },
+                        ...(call.execution.providerId === 'deepseek' &&
+                        call.execution.modelId === 'deepseek-flash'
+                            ? {
+                                  providerOptions: {
+                                      openaiCompatible: {
+                                          reasoningEffort: 'none',
+                                      },
+                                  },
+                              }
+                            : {}),
                         structuredOutput: {
                             schema,
                             ...(resolved.structuredOutputMode ===
@@ -170,7 +191,11 @@ export function createTextsAiProvider(options: {
             }
             call.signal.throwIfAborted();
             const usage = usageOf(result.usage, limits);
-            if (result.error || result.tripwire)
+            if (
+                result.error ||
+                result.tripwire ||
+                result.finishReason === 'length'
+            )
                 throw new TextsProviderInvalidOutputError(usage);
             const parsed = schema.safeParse(result.object);
             if (!parsed.success)

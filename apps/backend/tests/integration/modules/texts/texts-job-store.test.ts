@@ -1,6 +1,7 @@
-import { randomUUID } from 'node:crypto';
+import { EnqueueTextTranslationRequestSchema } from '@languon/contracts';
+import { createHmac, randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
-import { eq, isNotNull, or } from 'drizzle-orm';
+import { eq, isNotNull, or, sql } from 'drizzle-orm';
 import { beforeAll, beforeEach, afterAll, describe, it, expect } from 'vitest';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
@@ -46,6 +47,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             supportedFormats: [
                 'text-detection:v1',
                 'text-translation:v1',
+                'text-translation:v2',
             ] as const,
         };
         const context = () => ({ now, signal: new AbortController().signal });
@@ -194,6 +196,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 context(),
             );
+            const [admittedRow] = await db
+                .select()
+                .from(jobs)
+                .where(eq(jobs.id, job.id));
+            expect(admittedRow?.format).toBe('text-translation:v2');
+            expect(
+                await store.claimNext(
+                    {
+                        ...claimOptions,
+                        supportedFormats: [
+                            'text-detection:v1',
+                            'text-translation:v1',
+                        ],
+                    },
+                    context(),
+                ),
+            ).toBeNull();
             const worker = new TextsWorkerService({
                 ...claimOptions,
                 supportedFormats: [...claimOptions.supportedFormats],
@@ -226,6 +245,89 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceText: 'Hello world.\nNext sentence.',
                 sourceLanguage: 'en',
                 targetLanguage: 'es',
+            });
+        });
+        it('preserves legacy translation replay and claims while rejecting unsupported kind formats', async () => {
+            const request = {
+                folderId: folder,
+                operationId: randomUUID(),
+                sourceText: 'Hello world.',
+                sourceLanguage: 'en' as const,
+                targetLanguage: 'es' as const,
+            };
+            const admitted = await store.enqueue(
+                owner,
+                'text-translation',
+                request,
+                context(),
+            );
+            const [template] = await db
+                .select()
+                .from(jobs)
+                .where(eq(jobs.id, admitted.id));
+            expect(template).toBeDefined();
+            await store.cancel(owner, admitted.id, context());
+            const legacyRequest = { ...request, operationId: randomUUID() };
+            const legacyId = randomUUID();
+            const legacy = {
+                ...template!,
+                id: legacyId,
+                operationId: legacyRequest.operationId,
+                format: 'text-translation:v1',
+                requestFingerprint: createHmac(
+                    'sha256',
+                    'synthetic-texts-jobs-secret',
+                )
+                    .update('texts-job:v1:')
+                    .update(
+                        JSON.stringify({
+                            kind: 'text-translation',
+                            request:
+                                EnqueueTextTranslationRequestSchema.parse(
+                                    legacyRequest,
+                                ),
+                        }),
+                    )
+                    .digest('hex'),
+            };
+            const insertFixture = (row: typeof jobs.$inferInsert) =>
+                db.transaction(async (tx) => {
+                    await tx.execute(
+                        sql`select set_config('languon.texts_execution_revision','1',true),set_config('languon.texts_capacity_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
+                    );
+                    await tx.insert(jobs).values(row);
+                });
+            await insertFixture(legacy);
+            const replay = await store.enqueue(
+                owner,
+                'text-translation',
+                legacyRequest,
+                context(),
+            );
+            expect(replay.id).toBe(legacyId);
+            const [replayedRow] = await db
+                .select()
+                .from(jobs)
+                .where(eq(jobs.id, replay.id));
+            expect(replayedRow?.format).toBe('text-translation:v1');
+            const claimed = await store.claimNext(
+                { ...claimOptions, supportedFormats: ['text-translation:v1'] },
+                context(),
+            );
+            expect(claimed?.lease.jobId).toBe(legacyId);
+            await expect(
+                insertFixture({
+                    ...legacy,
+                    id: randomUUID(),
+                    operationId: randomUUID(),
+                    jobKind: 'text-detection',
+                    format: 'text-detection:v2',
+                }),
+            ).rejects.toMatchObject({
+                cause: {
+                    code: '23514',
+                    constraint_name: 'texts_ai_jobs_kind_format',
+                },
             });
         });
         it('cancels a running attempt and fences its late completion', async () => {

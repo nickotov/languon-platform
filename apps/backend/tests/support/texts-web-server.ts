@@ -33,7 +33,6 @@ import { DrizzleTextAiAdmissionParticipant } from '../../src/modules/text-ai/inf
 import {
     defaultTextAiProviderBudgetPolicy,
     textAiModelCatalog,
-    textAiTextsFormats,
 } from '../../src/modules/text-ai/application/text-ai-provider-catalog';
 import {
     dictionaryAiConfigurationRevisionsTable,
@@ -144,9 +143,25 @@ async function start() {
         userConcurrency: 2,
         maxAttempts: 2,
         retryDelayMs: 1,
-        supportedFormats: ['text-detection:v1', 'text-translation:v1'],
+        supportedFormats: [
+            'text-detection:v1',
+            'text-translation:v1',
+            'text-translation:v2',
+        ],
         provider: {
-            async run({ input }) {
+            async run({ input, execution }) {
+                if (
+                    input.kind === 'text-translation' &&
+                    (execution.modelId !== 'deepseek-flash' ||
+                        execution.supportedFormats.length !== 1 ||
+                        execution.supportedFormats[0] !==
+                            'text-translation:v2' ||
+                        execution.perCallMaxInputTokens !== 128000 ||
+                        execution.perCallMaxOutputTokens !== 32768)
+                )
+                    throw new Error(
+                        'Texts translation must use the admitted Flash v2 execution profile',
+                    );
                 return {
                     draft:
                         input.kind === 'text-detection'
@@ -155,16 +170,19 @@ async function start() {
                                   translation: input.segments.map((p) => ({
                                       pairId: p.pairId,
                                       text:
-                                          ((
-                                              {
-                                                  'The river flows quietly.':
-                                                      'El río fluye tranquilamente.',
-                                                  'We rested on the bank.':
-                                                      'Descansamos en la orilla.',
-                                                  'Birds sang nearby.':
-                                                      'Los pájaros cantaban cerca.',
-                                              } as Record<string, string>
-                                          )[p.text.trim()] ?? 'Hola mundo.') +
+                                          (input.targetLanguage === 'ru'
+                                              ? 'Река спокойно течёт по долине.'
+                                              : ((
+                                                    {
+                                                        'The river flows quietly.':
+                                                            'El río fluye tranquilamente.',
+                                                        'We rested on the bank.':
+                                                            'Descansamos en la orilla.',
+                                                        'Birds sang nearby.':
+                                                            'Los pájaros cantaban cerca.',
+                                                    } as Record<string, string>
+                                                )[p.text.trim()] ??
+                                                'Hola mundo.')) +
                                           (p.text.match(/\s*$/u)?.[0] ?? ''),
                                   })),
                               },
@@ -266,7 +284,9 @@ async function start() {
     });
     const administrator = await signup();
     const creator = await d.accessTokens.verify(administrator);
-    const model = textAiModelCatalog[0]!;
+    const model = textAiModelCatalog.find(
+        (model) => model.id === 'deepseek-flash',
+    )!;
     const revisionId = randomUUID();
     const now = new Date();
     const [latestRevision] = await d.database
@@ -290,7 +310,7 @@ async function start() {
             perCallMaxInputTokens: model.perCallMaxInputTokens,
             perCallMaxOutputTokens: model.perCallMaxOutputTokens,
             providerId: model.providerId,
-            supportedFormats: [...textAiTextsFormats],
+            supportedFormats: [...model.supportedFormats],
         },
     });
     await d.database
@@ -326,7 +346,7 @@ async function start() {
             textsCapacityRevision: 1,
             textsExecutionRevision: 1,
             creditSettlementRevision: 1,
-            textAiSupportedFormats: [...textAiTextsFormats],
+            textAiSupportedFormats: [...model.supportedFormats],
         })
         .onConflictDoNothing();
 }

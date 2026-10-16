@@ -34,7 +34,7 @@ export function textsAiAdmissionsEnabled(
         return true;
     const required = [
         'text-detection:v1',
-        'text-translation:v1',
+        'text-translation:v2',
         'text-selection-card:v1',
     ];
     const api = (environment.DICTIONARY_JOB_API_ENQUEUED_FORMATS ?? '')

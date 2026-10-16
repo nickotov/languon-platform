@@ -56,7 +56,9 @@ export interface TextsWorkerStore {
             globalConcurrency: number;
             userConcurrency: number;
             supportedFormats: readonly (
-                'text-detection:v1' | 'text-translation:v1'
+                | 'text-detection:v1'
+                | 'text-translation:v1'
+                | 'text-translation:v2'
             )[];
         },
         context: TextJobContext,

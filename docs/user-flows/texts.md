@@ -134,6 +134,12 @@ or shared/staging/production data are used.
 
 ## Expected failure and edge cases
 
+- Translation uses immutable task-specific limits. The reviewed DeepSeekFlash v2
+  profile permits128000input/32768output tokens; dictionary calls remain8192output.
+  No queued model/limit/pricing snapshot is rewritten. Overflow returns400
+  model_capacity_exceeded before dispatch; incomplete/length-stopped output never
+  publishes. Source limit remains20000Unicodecodepoints and is not a model-fit guarantee.
+
 - Missing/inactive authentication rejects private mutations and AI work.
 - Invalid languages, oversized input, unsupported selection and malformed mappings
   reject before publication. The 20,000-character input cap is distinct from the
@@ -155,6 +161,18 @@ or shared/staging/production data are used.
 ## System verification
 
 ### Deployment boundary
+
+Apply migration0068 before v2 admissions. Compatible workers must process
+text-translation:v1 and text-translation:v2; v1 remains for queued work. In local
+development addv2 to DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS. Do not append new
+formats to API_ENQUEUED alone: every enqueued format must also appear in API
+readable/acceptable/cancellable/discardable lists. Deployed releases update all
+five API vectors consistently, start ready workers, then enable admission. Drain
+v2 work before rolling workers back. Before selecting Flash as a shared default,
+upgrade every shared AI worker to a build that knows Flash. Before rolling back
+to a pre-Flash build, drain all Flash jobs (including dictionary/learning jobs)
+and select a model supported by that build. Select the enabled DeepSeekFlash model for
+the extended profile; legacy models keep their historical caps.
 
 New AI admissions default off via `TEXTS_AI_ENABLED`. Activate only after the
 existing expand/activate process proves API and rollback-floor worker compatibility

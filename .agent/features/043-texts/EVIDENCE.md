@@ -313,3 +313,71 @@ Verified implementation source commit: `c6aa380a62260242a454d775dc782dd78cd82b13
 contain no source change after that revision; source identity remains the final
 227-file manifest. Local integration uses one squash commit on main and retains
 the feature branch without pushing or deploying.
+
+## Active capacity follow-up — 2026-10-16
+
+Baseline15eaeb9 and v003 evidence remain valid for unchanged surfaces. Local
+read-only diagnostics confirmed active DeepSeek legacy model64000input/8192output
+with aggregate262144input/40960output. Official current DeepSeek documentation
+and non-billable GET/models confirm currentFlash/Pro IDs; raising a legacy ID's
+cap would be unsupported. New follow-up evidence will be appended separately.
+
+### E10 — Extended Texts capacity completion, 2026-10-16
+
+Baseline:15eaeb9; follow-up source identity is capacity-verified.sha256, 28 files,
+manifest SHA256fc2b9dc2fb0d89ffd0b740af099a8a085c4e91c81d5e9f531b0e131c1844616b.
+Original v003 source/reference/captures remain unchanged and separately identified.
+
+- Full backend unit suite:116 files/956 tests pass. Final Texts timeout-only
+  adjustment subsequently passed both affected worker files/13 tests.
+- Production adapter2files/9tests include full11,700-byte French article, genuine
+  mapping overflow, unchanged source, no publication on length termination, and
+  actual mocked SDK wire proving max_tokens32768/reasoning_effort:none. No real
+  provider generation ran. The old fixed100/pair penalty exceeds32768 on the
+  article fixture; exact serialized framing stays within the pinned profile.
+- Shared profile/admission18 and readiness/gate9 targeted tests pass; legacy
+  dictionary/queued caps remain8,192 and forged arbitrary profiles are rejected.
+- Contracts100 tests pass. Backend/web typechecks and scoped lint pass. Backend
+  ESM/DTS and web production builds pass.
+- Real PostgreSQL17 on the exclusive labelled capacity_test database:2files/12
+  tests pass,22.48s. New v2 cannot be claimed by v1-only worker, v2worker completes,
+  v1 replay/claim preserves identity; upgrade retains queued v1 snapshots and
+  supports repeated migration; detectionv2 rejects with exact23514 constraint.
+- Real API5 pass4.87s and browser3 pass31.4s on a separate ui_web_test database
+  with Redis8. Browser owner verifies real Flash/v2 profile,11,700 UTF8bytes/100
+  French source sentences to Russian, complete proposal, explicit save/reload,
+  and existing contextual bank/card flow. Public/phone cases also pass. External
+  AI/email only are deterministic. Erased satisfies/type imports and formatting
+  followed the final run without changing runtime request bodies.
+- Guide finalrevision3bd497f7f68d42fa, both mapped markers synchronized. The last
+  delta clarified all-shared-worker Flash rollout/rollback, with no changed
+  runtime journey. Validator22guides/16tests and Texts mapping check pass. Other
+  shared-AI guides use generic model-selection steps and need no prose change.
+
+Independent reports: review-capacity-correctness.md and
+review-capacity-security.md approve with no material open finding. Both reviewed
+the final bounded timeout and shared-worker rollout clarification.
+
+Local activation: the user explicitly chose Flash. Read-only live/modelmetadata
+confirmed current provider IDs. Applied only backwards-compatible0068 to local
+development; safely replaced the worker with v2-capable code and180second Texts
+deadline. The separately reviewed operator transaction (source retained as
+evidence/capacity-local-activation.mjs.txt, SHA256
+d6406ce6bcce7a0337b2d4471000a568d9eb55b219f422c80058ef77458b430d)
+checks local/dev target, sole current owner, shared lock/version, preserved
+aggregate/custom tariffs and fresh Flashv2 readiness. It inserted a new immutable
+configuration revision and truthful local-operator audit; the owner's Auto
+preference required no change. Historical jobs/revisions/prices and other users
+were untouched. Local API/worker environment validations pass; backend health
+and web auth capabilities both return200. No credentials/raw user text logged.
+
+The 20,000-code-point source limit remains. Conservative complete-request fit can
+still reject pathological mappings or a lower-capacity selected model. Provider
+length/schema/alignment failures cannot publish partial results. Production
+activation, nondeterministic generation and rollback execution are not claimed.
+
+Capacity cleanup: removed only the two labelled capacity-disposable test
+containers/volumes after verification. Development database, Redis and restored
+web/backend/worker remain running. Temporary executable activation source was
+removed after preserving its reviewed bytes as non-executable evidence. Final
+28-file source hashes, retained operator hash, formatter and diff checks pass.

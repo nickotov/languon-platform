@@ -9,7 +9,10 @@ import {
     dictionaryAiConfigurationTable,
     dictionaryAiWorkerObservationsTable,
 } from './configuration-schema';
-import { textAiModelCatalog } from '../../../application/text-ai-provider-catalog';
+import {
+    textAiModelCatalog,
+    textAiExecutionLimits,
+} from '../../../application/text-ai-provider-catalog';
 import {
     TextAiSelectionUnavailableError,
     type TextAiAdmissionParticipant,
@@ -263,8 +266,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             },
             enabledModelIds: [...configured.snapshot.enabledModelIds],
             modelId: model.id,
-            perCallMaxInputTokens: model.perCallMaxInputTokens,
-            perCallMaxOutputTokens: model.perCallMaxOutputTokens,
+            ...textAiExecutionLimits(model, [input.format]),
             providerId: model.providerId,
             supportedFormats: [input.format],
         };

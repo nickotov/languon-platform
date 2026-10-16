@@ -25,7 +25,9 @@ export interface TextsWorkerDependencies {
     userConcurrency: number;
     maxAttempts: number;
     retryDelayMs: number;
-    supportedFormats: readonly ('text-detection:v1' | 'text-translation:v1')[];
+    supportedFormats: readonly (
+        'text-detection:v1' | 'text-translation:v1' | 'text-translation:v2'
+    )[];
 }
 export class TextsWorkerService {
     constructor(private readonly dependencies: TextsWorkerDependencies) {}

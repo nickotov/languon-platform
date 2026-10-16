@@ -142,7 +142,8 @@ export function createTextsJobRoutes({
                           ? 409
                           : code === 'rate_limited'
                             ? 429
-                            : code === 'invalid_request'
+                            : code === 'invalid_request' ||
+                                code === 'model_capacity_exceeded'
                               ? 400
                               : 503;
             return c.json(

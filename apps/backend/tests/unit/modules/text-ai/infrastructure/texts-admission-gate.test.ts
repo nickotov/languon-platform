@@ -14,7 +14,7 @@ describe('Texts rollout admissions', () => {
         'requires every API and worker format in %s',
         (APP_ENV) => {
             const formats =
-                'text-detection:v1,text-translation:v1,text-selection-card:v1';
+                'text-detection:v1,text-translation:v1,text-translation:v2,text-selection-card:v1';
             const environment = {
                 APP_ENV,
                 TEXTS_AI_ENABLED: 'true',
@@ -22,6 +22,20 @@ describe('Texts rollout admissions', () => {
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: formats,
             };
             expect(textsAiAdmissionsEnabled(environment)).toBe(true);
+            const legacyFormats =
+                'text-detection:v1,text-translation:v1,text-selection-card:v1';
+            expect(
+                textsAiAdmissionsEnabled({
+                    ...environment,
+                    DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: legacyFormats,
+                }),
+            ).toBe(false);
+            expect(
+                textsAiAdmissionsEnabled({
+                    ...environment,
+                    DICTIONARY_JOB_API_ENQUEUED_FORMATS: legacyFormats,
+                }),
+            ).toBe(false);
             expect(
                 textsAiAdmissionsEnabled({
                     ...environment,

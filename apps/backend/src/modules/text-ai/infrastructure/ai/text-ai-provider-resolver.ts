@@ -4,6 +4,7 @@ import {
 } from './text-ai-provider-catalog';
 import {
     findTextAiModel,
+    textAiExecutionLimits,
     type TextAiExecutionSnapshot,
     type TextAiProviderBudgetPolicy,
 } from '../../application/text-ai-provider-catalog';
@@ -13,12 +14,16 @@ export function resolveTextAiExecutionSnapshot(
     budget: TextAiProviderBudgetPolicy,
 ) {
     const model = findTextAiModel(snapshot.providerId, snapshot.modelId);
+    const limits = model
+        ? textAiExecutionLimits(model, snapshot.supportedFormats)
+        : null;
     if (
         !model ||
+        !limits ||
         snapshot.adapterRevision !== model.adapterRevision ||
         snapshot.credentialReference !== model.credentialReference ||
-        snapshot.perCallMaxInputTokens !== model.perCallMaxInputTokens ||
-        snapshot.perCallMaxOutputTokens !== model.perCallMaxOutputTokens ||
+        snapshot.perCallMaxInputTokens !== limits.perCallMaxInputTokens ||
+        snapshot.perCallMaxOutputTokens !== limits.perCallMaxOutputTokens ||
         !snapshot.enabledModelIds.includes(snapshot.modelId) ||
         !isStringSubset(snapshot.supportedFormats, model.supportedFormats) ||
         (snapshot.creditPricing !== undefined &&
@@ -84,7 +89,13 @@ export function resolveTextAiProviderOptions(input: {
         throw new Error('Text AI provider credential is unavailable.');
     return createTextAiMastraGeneratorOptions({
         apiKey: credential,
-        model,
+        model: {
+            ...model,
+            requestLimits: {
+                maxInputTokens: input.snapshot.perCallMaxInputTokens,
+                maxOutputTokens: input.snapshot.perCallMaxOutputTokens,
+            },
+        },
         providerBudget: input.budget,
         ...(input.fetchProvider ? { fetchProvider: input.fetchProvider } : {}),
     });

@@ -1,0 +1,50 @@
+import {readFile} from 'node:fs/promises';
+import {parseEnv} from 'node:util';
+import {randomUUID} from 'node:crypto';
+import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const root=resolve(process.cwd(),'../..');
+if(root!=='/Users/nickkotov/projects/languon')throw Error('Wrong workspace');
+const env=parseEnv(await readFile(resolve(root,'.env.local'),'utf8'));
+const target=new URL(env.DATABASE_URL);
+if(!['localhost','127.0.0.1','[::1]'].includes(target.hostname)||!['development',undefined].includes(env.APP_ENV))throw Error('Local development only');
+const {createPostgresClient}=await import(pathToFileURL(resolve(root,'packages/database/src/index.ts')));
+const {textAiModelCatalog}=await import(pathToFileURL(resolve(root,'apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts')));
+const {activeOwnerMutationLock}=await import(pathToFileURL(resolve(root,'apps/backend/src/modules/administration/infrastructure/persistence/drizzle/owner-lock.ts')));
+const model=textAiModelCatalog.find(x=>x.id==='deepseek-flash');
+const sql=createPostgresClient({databaseUrl:env.DATABASE_URL,maxConnections:1});
+const apply=process.argv.includes('--apply');
+try {await sql.begin(async tx=>{
+ await tx`select pg_advisory_xact_lock(${activeOwnerMutationLock})`;
+ const [current]=await tx`select c.version,c.active_revision_id,r.catalog_snapshot,r.created_by_user_id from dictionary_ai_configuration c join dictionary_ai_configuration_revisions r on r.id=c.active_revision_id where c.id='global' for update of c`;
+ if(!current)throw Error('No active configuration');
+ const admins=await tx`select m.user_id from admin_memberships m join users u on u.id=m.user_id where m.revoked_at is null and u.status='active'`;
+ if(admins.length!==1||admins[0].user_id!==current.created_by_user_id)throw Error('Ambiguous local owner; use authenticated administration');
+ const prior=current.catalog_snapshot;
+ if(!['deepseek-chat','deepseek-flash'].includes(prior.modelId))throw Error('Default changed outside approved scope');
+ const owner=current.created_by_user_id;
+ const [preference]=await tx`select mode,model_id,version from user_text_ai_preferences where user_id=${owner} for update`;
+ const preferencesNeedChange=preference?.mode==='explicit'&&preference.model_id==='deepseek-chat';
+ const {aggregateBudget}=prior;
+ if(aggregateBudget.maxOutputTokensPerAttempt<32768||aggregateBudget.maxInputTokensPerAttempt<128000)throw Error('Existing budget too small');
+ const rates=prior.creditPricing??model.creditPricing;
+ for(const key of ['inputCreditsPerMillionTokens','outputCreditsPerMillionTokens'])if(!Number.isSafeInteger(rates[key])||rates[key]<0)throw Error('Invalid existing tariff');
+ const snapshot={adapterRevision:model.adapterRevision,aggregateBudget,credentialReference:model.credentialReference,
+  creditPricing:{revision:1,inputCreditsPerMillionTokens:rates.inputCreditsPerMillionTokens,outputCreditsPerMillionTokens:rates.outputCreditsPerMillionTokens,maxCreditsPerAttempt:rates.maxCreditsPerAttempt},
+  enabledModelIds:[...new Set([...prior.enabledModelIds.filter(x=>x!=='deepseek-chat'),model.id])],modelId:model.id,
+  perCallMaxInputTokens:model.perCallMaxInputTokens,perCallMaxOutputTokens:model.perCallMaxOutputTokens,providerId:model.providerId,supportedFormats:[...model.supportedFormats]};
+ const needsChange=JSON.stringify(snapshot)!==JSON.stringify(prior);
+ console.log(JSON.stringify({mode:apply?'apply':'dry-run',previousModel:prior.modelId,newModel:model.id,configurationChange:needsChange,ownerPreferenceChange:preferencesNeedChange,otherPreferencesUntouched:true,dictionaryOutput:8192,translationOutput:32768,aggregateOutput:aggregateBudget.maxOutputTokensPerAttempt}));
+ if(!apply)return;
+ const ready=await tx`select 1 from dictionary_ai_worker_observations where model_id=${model.id} and provider_id=${model.providerId} and status='available' and expires_at>clock_timestamp() and texts_execution_revision=1 and texts_capacity_revision=1 and credit_settlement_revision=1 and text_ai_supported_formats @> '["text-translation:v2"]'::jsonb and id like 'texts-execution:v1/%' limit 1`;
+ if(!ready.length)throw Error('No current Flash v2 worker readiness');
+ if(needsChange){
+  const revision=randomUUID();
+  await tx`insert into dictionary_ai_configuration_revisions(id,version,catalog_snapshot,created_by_user_id) values(${revision},${current.version+1},${tx.json(snapshot)},${owner})`;
+  const updated=await tx`update dictionary_ai_configuration set version=version+1,active_revision_id=${revision},updated_at=clock_timestamp() where id='global' and version=${current.version} returning version`;
+  if(updated.length!==1)throw Error('Configuration conflict');
+  await tx`insert into admin_audit_events(id,action,actor_user_id,before_version,after_version,correlation_id,expires_at,metadata,outcome,reason) values(${randomUUID()},'ai_settings_updated',${owner},${current.version},${current.version+1},${randomUUID()},clock_timestamp()+interval '365 days',${tx.json({source:'user-authorized-local-operator',activeProvider:model.providerId,defaultModel:model.id,enabledModels:snapshot.enabledModelIds,ownerPreferenceChange:preferencesNeedChange})},'success','User requested DeepSeek Flash and extended Texts capacity')`;
+ }
+ if(preferencesNeedChange){const updated=await tx`update user_text_ai_preferences set model_id=${model.id},version=version+1,updated_at=clock_timestamp() where user_id=${owner} and version=${preference.version} and mode='explicit' and model_id='deepseek-chat' returning version`;if(updated.length!==1)throw Error('Preference conflict');}
+ console.log('Local configuration activated; historical jobs/revisions and other preferences unchanged.');
+});}finally{await sql.end();}

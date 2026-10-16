@@ -132,3 +132,31 @@ content DB14, API5, full browser3 plus compact CSS phone1; production builds,
 typechecks, lint/styles, formatting and guide traceability pass. Runtime evidence
 and precise remaining operational boundary are recorded in EVIDENCE.md. Required
 local feature integration follows; no push/deploy/branch deletion is authorized.
+
+## Active capacity follow-up
+
+- [x] M7: AC-11 — reviewed per-task limits, immutable versioned dispatch,
+      preflight fix, provider boundary tests, real DB/E2E and independent reviews.
+
+The user authorized this existing-feature repair. Currentbranchfeature/texts-capacity
+startsfrom15eaeb9; preservepriorcompletedv003evidence. Rootownsproviderpreflight,
+fixtures/docs/integration; GPT-6.1Solworkers own sharedprofile/resolver/admission
+and internalv2format/schema/migration respectively. Original providerselection
+andlocalconfigmutations waitforuser'spendingexplicitmodelchoice. No paid AI
+call is authorized as verification; externalmodel/ emailservicesremain synthetic.
+
+Verification: red-first provider tests for realisticmultilingualarticle, larger
+profile andgenuineoverflow; sharedsnapshot/legacy/providerpayload tests; realPG
+v1/v2claimisolation +fresh/upgrademigration +creditenvelopes; mappedAPI/browser
+translationjourneys; affectedcontracts/backend/webtypes/lint/build. Independent
+completion+security reviewafterauthorpreflight; reportprofile/selectionlimits honestly.
+
+M7 complete, 2026-10-16: profile/admission/resolver and actual SDK payload
+verified; generated migration0068 preserves v1 and isolates v2 claims. Final
+evidence: backend956 tests, contracts100, real PG12, API5, browser3 including
+11,700-byte French/Russian 100-pair proposal/save/reload, plus focused worker13
+after the 180-second deadline adjustment. Typechecks, lint, builds, formatting
+and guide traceability pass. Correctness/security and concrete local activation
+reviews approve with no open finding. Local Flash default, worker and migration
+are active; services remain healthy. Only final local squash integration and
+cleanup of capacity-test infrastructure follow. No paid AI test or deployment.

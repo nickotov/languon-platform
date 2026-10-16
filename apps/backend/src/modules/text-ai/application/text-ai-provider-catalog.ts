@@ -44,6 +44,7 @@ export function textAiProviderMaximumPricedCostMicros(
 export const textAiTextsFormats = [
     'text-detection:v1',
     'text-translation:v1',
+    'text-translation:v2',
     'text-selection-card:v1',
 ] as const;
 
@@ -162,6 +163,29 @@ export const textAiModelCatalog: readonly TextAiModelDefinition[] = [
         supportedCapabilities: ['structured-text'],
         supportedFormats: textAiTextFormats,
     },
+    {
+        adapterRevision: 'openai-compatible:v1',
+        aggregateBudget: {
+            ...commonAggregateBudget,
+            inputCostMicrosPerMillionTokens: 1_000_000,
+            maxCostMicrosPerAttempt: 400_000,
+            outputCostMicrosPerMillionTokens: 3_000_000,
+        },
+        creditPricing: {
+            inputCreditsPerMillionTokens: 1_000_000,
+            maxCreditsPerAttempt: 400_000,
+            outputCreditsPerMillionTokens: 3_000_000,
+            revision: 1,
+        },
+        credentialReference: 'DEEPSEEK_API_KEY',
+        id: 'deepseek-flash',
+        label: 'DeepSeek Flash',
+        perCallMaxInputTokens: 64_000,
+        perCallMaxOutputTokens: 8_192,
+        providerId: 'deepseek',
+        supportedCapabilities: ['structured-text'],
+        supportedFormats: textAiTextFormats,
+    },
 ] as const;
 
 export function findTextAiModel(
@@ -187,4 +211,28 @@ export function textAiCreditPricingMatches(
             right.outputCreditsPerMillionTokens &&
         left.maxCreditsPerAttempt === right.maxCreditsPerAttempt
     );
+}
+
+/** Reviewed request caps, distinct from aggregate accounting and provider maxima.
+ * https://api-docs.deepseek.com/quick_start/pricing
+ * Legacy model routes retain their historical caps.
+ */
+export function textAiExecutionLimits(
+    model: TextAiModelDefinition,
+    formats: readonly string[],
+): { perCallMaxInputTokens: number; perCallMaxOutputTokens: number } {
+    if (
+        model.providerId === 'deepseek' &&
+        model.id === 'deepseek-flash' &&
+        formats.length === 1 &&
+        formats[0] === 'text-translation:v2'
+    )
+        return {
+            perCallMaxInputTokens: 128_000,
+            perCallMaxOutputTokens: 32_768,
+        };
+    return {
+        perCallMaxInputTokens: model.perCallMaxInputTokens,
+        perCallMaxOutputTokens: model.perCallMaxOutputTokens,
+    };
 }

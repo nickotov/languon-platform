@@ -11,6 +11,7 @@ export type TextAiProviderId = (typeof textAiProviderIds)[number];
 
 export const textAiModelIds = [
     'deepseek/deepseek-chat',
+    'deepseek/deepseek-flash',
     'kie/gemini-2.5-pro',
 ] as const;
 export type TextAiModelId = (typeof textAiModelIds)[number];
@@ -66,6 +67,7 @@ function requiredModel(
 }
 
 const deepSeekChat = requiredModel('deepseek', 'deepseek-chat');
+const deepSeekFlash = requiredModel('deepseek', 'deepseek-flash');
 const kieGemini25Pro = requiredModel('kie', 'gemini-2.5-pro');
 
 export const textAiModelCatalog = {
@@ -98,6 +100,36 @@ export const textAiModelCatalog = {
         // returned object locally.
         structuredOutput: 'prompt-injection',
         supportedFormats: deepSeekChat.supportedFormats,
+    },
+    'deepseek/deepseek-flash': {
+        apiBaseUrl: 'https://api.deepseek.com',
+        credentialEnvironmentVariable: deepSeekFlash.credentialReference,
+        credentialReference: `env:${deepSeekFlash.credentialReference}`,
+        id: 'deepseek/deepseek-flash',
+        label: deepSeekFlash.label,
+        modelId: deepSeekFlash.id,
+        pricing: {
+            // Conservative admission bounds; actual usage remains provider
+            // reported and pricing revisions are immutable when persisted.
+            inputCostMicrosPerMillionTokens: 1_000_000,
+            outputCostMicrosPerMillionTokens: 3_000_000,
+        },
+        providerId: deepSeekFlash.providerId,
+        readiness: {
+            acceptedStatuses: [200],
+            method: 'GET',
+            url: 'https://api.deepseek.com/models',
+        },
+        // These are request caps, not the five-call batch/job allowance.
+        requestLimits: {
+            maxInputTokens: deepSeekFlash.perCallMaxInputTokens,
+            maxOutputTokens: deepSeekFlash.perCallMaxOutputTokens,
+        },
+        // DeepSeek currently rejects response_format.type=json_schema. Mastra
+        // injects the schema into the prompt and still parses and validates the
+        // returned object locally.
+        structuredOutput: 'prompt-injection',
+        supportedFormats: deepSeekFlash.supportedFormats,
     },
     'kie/gemini-2.5-pro': {
         apiBaseUrl: 'https://api.kie.ai/gemini-2.5-pro/v1',

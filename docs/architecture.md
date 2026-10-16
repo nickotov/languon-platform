@@ -341,3 +341,10 @@ only through its edit action. Public capabilities remain in URL fragments and
 ephemeral client state; authentication continuation retains only supported share
 paths. The selected Magic Patterns source is adapted through existing primitives,
 CSS Modules and runtime tokens (ADR-0029).
+
+Translation v2 pins a task-specific reviewed capacity profile into the existing
+immutable model snapshot; dictionary and legacy request caps remain unchanged.
+The worker format filter isolates new work from v1-only workers. Profile limits
+stay inside existing aggregate token/cost reservations. See
+[ADR-0036](adr/0036-task-specific-text-translation-capacity.md) for profile
+validation, conservative preflight and shared-model rollout/rollback floors.

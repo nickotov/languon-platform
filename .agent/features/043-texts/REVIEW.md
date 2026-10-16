@@ -99,3 +99,19 @@ Final author source identity is227 files in ui-preflight.sha256, manifest SHA-25
 `3894b0517afc36d9d4e47d748ab2fed4b9adbd264ffe12402dbb850df5f76fea`.
 The reports preserve initial findings and bounded closure history; the source
 reference is the pinned v003 export, with source-based fidelity limits explicit.
+
+## Active capacity follow-up
+
+Prior v003 completion/security approvals remain historical. New task-specific
+capacity, internalformatmigration, estimates and providerprofile changes require
+authorpreflight and bounded independentcompletion/security reviews beforeclosure.
+
+## Capacity follow-up final decision — 2026-10-16
+
+Approved: [correctness](review-capacity-correctness.md) and
+[security](review-capacity-security.md) report no material finding. The concrete
+local activation transaction was separately approved before application. Final
+worker deadline and all-Flash-job rollback clarification were bounded reviewed.
+Evidence E10 records current unit, real DB/API/browser, SDK wire, build and
+traceability results. Capacity manifest identifies the exact final source; original
+v003 review/source history remains preserved. No unresolved acceptance gap.

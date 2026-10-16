@@ -1,7 +1,13 @@
-// @user-flow-revision texts sha256:acf772fc455606f8
+// @user-flow-revision texts sha256:3bd497f7f68d42fa
 
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
-import type { TextDocument } from '@languon/contracts';
+import type {
+    TextDocument,
+    CreateTextFolderRequest,
+    CreateTextRequest,
+    EnqueueTextTranslationRequest,
+    SaveTextRequest,
+} from '@languon/contracts';
 
 const runId = process.env.AUTH_E2E_RUN_ID ?? 'local';
 async function signup(page: Page, info: TestInfo, role: string) {
@@ -177,11 +183,129 @@ async function selectWord(page: Page, word = 'Hello') {
         .click();
 }
 
+async function verifyLongTranslationCapacity(page: Page, token: string) {
+    const headers = { Authorization: `Bearer ${token}` };
+    const folderResponse = await page.request.post(
+        'http://127.0.0.1:4005/text-folders',
+        {
+            headers,
+            data: {
+                name: `Capacity ${runId}`,
+            } satisfies CreateTextFolderRequest,
+        },
+    );
+    expect(folderResponse.status(), await folderResponse.text()).toBe(201);
+    const { folder } = (await folderResponse.json()) as {
+        folder: { id: string };
+    };
+    const sourceText =
+        'La rivière traverse lentement la vallée française, où les enfants regardent les oiseaux depuis la rive paisible. '.repeat(
+            100,
+        );
+    expect(new TextEncoder().encode(sourceText).length).toBeGreaterThan(11000);
+    const created = await page.request.post('http://127.0.0.1:4005/texts', {
+        headers,
+        data: {
+            folderId: folder.id,
+            sourceText,
+            sourceLanguage: 'fr',
+            targetLanguage: 'ru',
+        } satisfies CreateTextRequest,
+    });
+    expect(created.status(), await created.text()).toBe(201);
+    const { text } = (await created.json()) as { text: TextDocument };
+    const queued = await page.request.post(
+        'http://127.0.0.1:4005/texts/ai/translation',
+        {
+            headers,
+            data: {
+                folderId: folder.id,
+                textId: text.id,
+                expectedTextVersion: text.version,
+                sourceText,
+                sourceLanguage: 'fr',
+                targetLanguage: 'ru',
+                operationId: crypto.randomUUID(),
+            } satisfies EnqueueTextTranslationRequest,
+        },
+    );
+    expect(queued.status(), await queued.text()).toBe(202);
+    const { job } = (await queued.json()) as {
+        job: { id: string; state: string };
+    };
+    expect(['queued', 'running']).toContain(job.state);
+    let completed:
+        | {
+              state: string;
+              failureCode: string | null;
+              result: TextDocument & { textId: string };
+          }
+        | undefined;
+    await expect
+        .poll(
+            async () => {
+                const response = await page.request.get(
+                    `http://127.0.0.1:4005/texts/ai/jobs/${job.id}`,
+                    { headers },
+                );
+                expect(response.status()).toBe(200);
+                completed = (await response.json()).job;
+                return completed!.state;
+            },
+            { timeout: 30000 },
+        )
+        .toBe('completed');
+    expect(completed!.failureCode).toBeNull();
+    const proposal = completed!.result;
+    expect(proposal.sourceText).toBe(sourceText);
+    expect(proposal.sourceLanguage).toBe('fr');
+    expect(proposal.targetLanguage).toBe('ru');
+    expect(proposal.alignment!.source.length).toBeGreaterThanOrEqual(100);
+    expect(proposal.alignment!.translation.map((pair) => pair.pairId)).toEqual(
+        proposal.alignment!.source.map((pair) => pair.pairId),
+    );
+    expect(proposal.alignment!.source.map((pair) => pair.text).join('')).toBe(
+        sourceText,
+    );
+    expect(
+        proposal.alignment!.translation.every((pair) =>
+            pair.text.includes('Река спокойно течёт по долине.'),
+        ),
+    ).toBe(true);
+    const saved = await page.request.put(
+        `http://127.0.0.1:4005/texts/${text.id}`,
+        {
+            headers,
+            data: {
+                kind: 'proposal',
+                expectedVersion: text.version,
+                jobId: job.id,
+            } satisfies SaveTextRequest,
+        },
+    );
+    expect(saved.status(), await saved.text()).toBe(200);
+    const reloaded = await page.request.get(
+        `http://127.0.0.1:4005/texts/${text.id}`,
+        {
+            headers,
+        },
+    );
+    const persisted = (await reloaded.json()).text as TextDocument;
+    expect(persisted.sourceText).toBe(sourceText);
+    expect(persisted.alignment).toEqual(proposal.alignment);
+}
+
 // @user-flow texts/web-owner-reading-and-collection
 test('owner translates, saves, reloads, edits and collects a contextual word', async ({
     page,
 }, info) => {
     const assertErrors = errors(page);
+    let currentToken = '';
+    page.on('request', (request) => {
+        const authorization = request.headers()['authorization'];
+        if (authorization?.startsWith('Bearer '))
+            currentToken = authorization.slice(7);
+    });
     const original = await translated(page, info, 'owner');
     await capture(page, info, 'owner-saved-reader-desktop');
     await expect(
@@ -269,9 +393,11 @@ test('owner translates, saves, reloads, edits and collects a contextual word', a
     ])
         await expect(page.getByText(value, { exact: true })).toBeVisible();
     await capture(page, info, 'owner-contextual-bank-card');
+    expect(currentToken).not.toBe('');
+    await verifyLongTranslationCapacity(page, currentToken);
     await page.goto('/texts');
     await expect(
-        page.getByText('1 texts · 1 translated', { exact: true }),
+        page.getByText('1 texts · 1 translated', { exact: true }).first(),
     ).toBeVisible();
     await noOverflow(page);
     assertErrors();

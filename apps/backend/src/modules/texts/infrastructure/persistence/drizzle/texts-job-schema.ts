@@ -149,7 +149,7 @@ export const textsAiJobsTable = pgTable(
         index('texts_ai_jobs_expiry_idx').on(t.expiresAt),
         check(
             'texts_ai_jobs_kind_format',
-            sql`${t.format}=${t.jobKind}||':v1' and ${t.jobKind} in ('text-detection','text-translation')`,
+            sql`(${t.jobKind}='text-detection' and ${t.format}='text-detection:v1') or (${t.jobKind}='text-translation' and ${t.format} in ('text-translation:v1','text-translation:v2'))`,
         ),
         check(
             'texts_ai_jobs_versions',

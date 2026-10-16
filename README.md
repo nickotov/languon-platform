@@ -56,7 +56,7 @@ To use a real model, configure the worker in the ignored `.env.local` file:
 
 ```dotenv
 DICTIONARY_GENERATION_PROVIDER_MODE=mastra
-DICTIONARY_GENERATION_MODEL_ID=deepseek/deepseek-chat
+DICTIONARY_GENERATION_MODEL_ID=deepseek/deepseek-flash
 DEEPSEEK_API_KEY=replace-with-a-private-worker-key
 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED=true
 DICTIONARY_AI_MANAGED_ROUTING_ENABLED=true

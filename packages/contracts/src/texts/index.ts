@@ -486,6 +486,7 @@ export const TextErrorCodeSchema = z.enum([
     'shared_text_not_found',
     'generation_job_not_found',
     'invalid_request',
+    'model_capacity_exceeded',
     'invalid_alignment',
     'invalid_selection',
     'version_conflict',

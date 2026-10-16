@@ -155,7 +155,10 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     throw new TextsAiError('idempotency_conflict');
                 return exposeTextsJob(previous);
             }
-            const format = `${kind}:v1`;
+            const format =
+                kind === 'text-translation'
+                    ? 'text-translation:v2'
+                    : 'text-detection:v1';
             const execution = await this.policy!.resolveExecution(
                 tx,
                 ownerId,
