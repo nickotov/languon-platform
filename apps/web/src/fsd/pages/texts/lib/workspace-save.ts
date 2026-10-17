@@ -37,7 +37,9 @@ export async function persistWorkspace(options: {
     let current = document;
     const content = {
         sourceText: input.sourceText,
-        sourceLanguage: TextLanguageSchema.parse(input.sourceLanguage),
+        sourceLanguage: TextLanguageSchema.parse(
+            proposal?.sourceLanguage ?? input.sourceLanguage,
+        ),
         targetLanguage: TextLanguageSchema.parse(input.targetLanguage),
     };
     if (!current) {

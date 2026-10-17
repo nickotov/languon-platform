@@ -12,13 +12,18 @@
 }
 
 .content {
+    box-sizing: border-box;
+    inset: auto;
+    margin: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
     background: var(--background-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-md);
     box-shadow: var(--elevation-lg);
     color: var(--neutral-900);
     max-width: min(var(--size-320), calc(100vw - var(--size-32)));
-    min-width: var(--size-160);
+    min-width: min(var(--size-160), calc(100vw - var(--size-32)));
     outline: none;
     padding: var(--space-6);
     z-index: 50;

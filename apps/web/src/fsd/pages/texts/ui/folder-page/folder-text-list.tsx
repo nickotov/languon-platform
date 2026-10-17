@@ -11,6 +11,7 @@ import type { TextDocument } from '@languon/contracts';
 import type { useTextFolder } from '../../hooks/use-text-folder';
 import { TextRow, type TextRowAction } from './text-row';
 import styles from './folder-page.module.css';
+
 export function FolderTextList({
     folderId,
     list,
@@ -34,17 +35,22 @@ export function FolderTextList({
 }) {
     const { t, href } = useI18n();
     const router = useRouter();
+
     function add() {
         router.push(href(`/texts/folders/${folderId}/new`));
     }
+
     function more() {
         void list.fetchNextPage();
     }
+
     function retry() {
         void list.refetch();
     }
+
     const retryButton = (
         <Button
+            desktopIconOnly
             size='compact'
             variant='secondary'
             leadingIcon={<RefreshCwIcon className={styles.actionIcon} />}
@@ -70,6 +76,7 @@ export function FolderTextList({
     const emptyAction =
         !readOnly && view === 'active' ? (
             <Button
+                desktopIconOnly
                 onClick={add}
                 leadingIcon={<PlusIcon className={styles.actionIcon} />}
             >

@@ -5,6 +5,7 @@ import { BottomSheet, Button } from '@/fsd/shared/ui';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
 import type { ReadingDocument } from '../../types';
 import styles from './text-reading.module.css';
+
 export function CounterpartSheet({
     sheet,
     setSheet,
@@ -19,10 +20,23 @@ export function CounterpartSheet({
     const t = useReadingCopy();
     const pairs = doc.alignment?.source ?? [];
     const translation = doc.alignment?.translation ?? [];
+
+    function close() {
+        setSheet(null);
+    }
+
+    function previous() {
+        setSheet((sheet ?? 0) - 1);
+    }
+
+    function next() {
+        setSheet((sheet ?? 0) + 1);
+    }
+
     return (
         <BottomSheet
             open={sheet !== null}
-            onClose={() => setSheet(null)}
+            onClose={close}
             title={t('texts.reading.sentence', {
                 index: (sheet ?? 0) + 1,
                 total: pairs.length,
@@ -31,22 +45,26 @@ export function CounterpartSheet({
             footer={
                 <div className={styles.sheetActions}>
                     <Button
+                        desktopIconOnly
+                        className={styles.counterpartNavigation}
                         variant='secondary'
                         aria-label={t('texts.reading.previous')}
                         disabled={!sheet}
-                        onClick={() => setSheet((sheet ?? 0) - 1)}
+                        onClick={previous}
                         leadingIcon={<ChevronLeft size={16} />}
                     >
                         {t('texts.reading.previous')}
                     </Button>
-                    <Button fullWidth onClick={() => setSheet(null)}>
+                    <Button fullWidth onClick={close}>
                         {t('texts.reading.back')}
                     </Button>
                     <Button
+                        desktopIconOnly
+                        className={styles.counterpartNavigation}
                         variant='secondary'
                         aria-label={t('texts.reading.next')}
                         disabled={sheet === pairs.length - 1}
-                        onClick={() => setSheet((sheet ?? 0) + 1)}
+                        onClick={next}
                         trailingIcon={<ChevronRight size={16} />}
                     >
                         {t('texts.reading.next')}

@@ -1,7 +1,6 @@
 .hintPopover {
-    position: absolute;
     z-index: 30;
-    width: min(var(--size-288), 100%);
+    width: var(--size-288);
     border-radius: var(--radius-12);
     border: 1px solid var(--border-strong);
     background-color: var(--background-elevated);

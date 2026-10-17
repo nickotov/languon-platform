@@ -40,7 +40,7 @@ function actions() {
     };
 }
 describe('folder card source controls', () => {
-    it('shows real counts, shared state and reachable edit/share/archive actions', () => {
+    it('shows real counts, shared state and reachable edit/share/archive actions', async () => {
         const callbacks = actions();
         render(<FolderCard folder={folder} pending={false} {...callbacks} />);
         expect(screen.getByRole('link', { name: 'Reading' })).toHaveAttribute(
@@ -52,22 +52,26 @@ describe('folder card source controls', () => {
         fireEvent.click(
             screen.getByRole('button', { name: 'Actions for Reading' }),
         );
-        fireEvent.click(screen.getByRole('menuitem', { name: 'Edit details' }));
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Edit details' }),
+        );
         expect(callbacks.onEdit).toHaveBeenCalledWith(folder);
         fireEvent.click(
             screen.getByRole('button', { name: 'Actions for Reading' }),
         );
-        fireEvent.click(screen.getByRole('menuitem', { name: 'Share folder' }));
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Share folder' }),
+        );
         expect(callbacks.onShare).toHaveBeenCalledWith(folder);
         fireEvent.click(
             screen.getByRole('button', { name: 'Actions for Reading' }),
         );
         fireEvent.click(
-            screen.getByRole('menuitem', { name: 'Archive folder' }),
+            await screen.findByRole('menuitem', { name: 'Archive folder' }),
         );
         expect(callbacks.onArchive).toHaveBeenCalledWith(folder);
     });
-    it('keeps sharing disabled until a translated document exists', () => {
+    it('keeps sharing disabled until a translated document exists', async () => {
         const callbacks = actions();
         render(
             <FolderCard
@@ -80,13 +84,13 @@ describe('folder card source controls', () => {
             screen.getByRole('button', { name: 'Actions for Reading' }),
         );
         expect(
-            screen.getByRole('menuitem', {
+            await screen.findByRole('menuitem', {
                 name: 'Share — translate a text first',
             }),
         ).toBeDisabled();
         expect(callbacks.onShare).not.toHaveBeenCalled();
     });
-    it('offers restore for an archived folder and hides editing and sharing', () => {
+    it('offers restore for an archived folder and hides editing and sharing', async () => {
         const callbacks = actions();
         const archived = {
             ...folder,
@@ -100,7 +104,7 @@ describe('folder card source controls', () => {
             screen.getByRole('button', { name: 'Actions for Reading' }),
         );
         expect(
-            screen.getByRole('menuitem', { name: 'Restore folder' }),
+            await screen.findByRole('menuitem', { name: 'Restore folder' }),
         ).toBeInTheDocument();
         expect(
             screen.queryByRole('menuitem', { name: 'Edit details' }),

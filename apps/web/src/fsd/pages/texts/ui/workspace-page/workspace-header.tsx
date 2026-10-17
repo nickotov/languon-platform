@@ -17,6 +17,7 @@ import type { TextWorkspace } from '../../hooks/use-text-workspace';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useWorkspaceCopy } from './workspace-copy';
 import styles from './workspace-page.module.css';
+
 export function WorkspaceHeader({
     ws,
     title,
@@ -42,7 +43,7 @@ export function WorkspaceHeader({
         Boolean(ws.document) &&
         !ws.saving &&
         !ws.proposal &&
-        !ws.translation.active &&
+        !(ws.aiActive ?? ws.translation.active) &&
         ws.mode !== 'edit';
     let indicator = copy('notSaved');
     let Indicator = CircleDot;
@@ -58,6 +59,7 @@ export function WorkspaceHeader({
         indicator = copy('saved');
         Indicator = Check;
     }
+
     const menuItems: MenuItem[] = [
         { label: copy('rename'), icon: <Pencil />, onSelect: onRename },
         {
@@ -66,23 +68,24 @@ export function WorkspaceHeader({
             onSelect: onShare,
             disabled: ws.mode !== 'read',
         },
-        ...(ws.mode === 'read'
-            ? [
-                  {
-                      label: copy('retranslate'),
-                      icon: <RefreshCw />,
-                      onSelect: onRetranslate,
-                  },
-              ]
-            : []),
-        {
-            label: copy('archive'),
-            icon: <Archive />,
-            onSelect: onArchive,
-            separatorBefore: true,
-            tone: 'danger',
-        },
     ];
+
+    if (ws.mode === 'read') {
+        menuItems.push({
+            label: copy('retranslate'),
+            icon: <RefreshCw />,
+            onSelect: onRetranslate,
+        });
+    }
+
+    menuItems.push({
+        label: copy('archive'),
+        icon: <Archive />,
+        onSelect: onArchive,
+        separatorBefore: true,
+        tone: 'danger',
+    });
+
     return (
         <header className={styles.header}>
             <Button

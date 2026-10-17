@@ -16,6 +16,7 @@ import { libraryRelativeTime } from '../../lib/library-relative-time';
 import styles from './folder-page.module.css';
 
 export type TextRowAction = 'rename' | 'share-text' | 'archive-text';
+
 export function TextRow({
     document,
     readOnly,
@@ -47,18 +48,23 @@ export function TextRow({
         date: libraryRelativeTime(document.updatedAt, locale),
     });
     const menuLabel = t('texts.library.actions', { name: document.title });
+
     function rename() {
         onAction('rename', document);
     }
+
     function share() {
         onAction('share-text', document);
     }
+
     function archive() {
         onAction('archive-text', document);
     }
+
     function restore() {
         onRestore(document);
     }
+
     const items: MenuItem[] = [
         {
             label: t('texts.folder.rename'),
@@ -79,6 +85,7 @@ export function TextRow({
             separatorBefore: true,
         },
     ];
+
     return (
         <li className={styles.row}>
             <div className={styles.rowCopy}>
@@ -113,6 +120,7 @@ export function TextRow({
             <div className={styles.rowActions}>
                 {archived && !readOnly && (
                     <Button
+                        desktopIconOnly
                         variant='secondary'
                         size='compact'
                         leadingIcon={

@@ -51,6 +51,10 @@ export function analyzeReadingSelection(
     );
     const bounds = range.getBoundingClientRect();
     return {
+        anchor: {
+            contextElement: startElement,
+            getBoundingClientRect: () => range.getBoundingClientRect(),
+        },
         kind:
             startElement !== endElement || !sentence
                 ? 'cross'

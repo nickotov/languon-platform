@@ -4,6 +4,7 @@ import type { TextSelectionRequest } from '@languon/contracts';
 import { textsApi, TextsApiError } from '@/fsd/entities/texts';
 import { waitForPoll } from '../lib/wait-for-poll';
 import type { ReadingSelection, TextReadingProps } from '../types';
+
 export interface CollectionTask {
     body: TextSelectionRequest;
     selection: ReadingSelection;
@@ -13,6 +14,7 @@ export interface CollectionTask {
     failureCode: string | null;
     terminal: boolean;
 }
+
 export function useCollectionJobs(
     props: TextReadingProps,
     onResult: (task: CollectionTask) => void,
@@ -22,6 +24,7 @@ export function useCollectionJobs(
     const results = useRef(new Map<string, CollectionTask>());
     const notify = useRef(onResult);
     notify.current = onResult;
+
     useEffect(() => {
         const map = controls.current;
         return () => {
@@ -29,10 +32,12 @@ export function useCollectionJobs(
             map.clear();
         };
     }, [props.collectionActorKey, props.requestWithSession, props.shareKey]);
+
     const update = (task: CollectionTask) => {
         results.current.set(task.body.operationId, task);
         setTasks([...results.current.values()]);
     };
+
     const run = async (
         body: TextSelectionRequest,
         selection: ReadingSelection,
@@ -87,15 +92,16 @@ export function useCollectionJobs(
                 );
             }
             if (control.signal.aborted) return;
+            let state: CollectionTask['state'] = 'error';
+            if (response.job.state === 'completed') state = 'success';
+            else if (
+                response.job.failureCode === 'duplicate_confirmation_required'
+            )
+                state = 'duplicate';
+
             task = {
                 ...task,
-                state:
-                    response.job.state === 'completed'
-                        ? 'success'
-                        : response.job.failureCode ===
-                            'duplicate_confirmation_required'
-                          ? 'duplicate'
-                          : 'error',
+                state,
                 dictionaryId: response.job.dictionaryId,
                 failureCode: response.job.failureCode,
                 terminal: true,
@@ -119,10 +125,12 @@ export function useCollectionJobs(
         update(task);
         notify.current(task);
     };
+
     const dismiss = (id: string) => {
         results.current.delete(id);
         setTasks([...results.current.values()]);
     };
+
     const cancel = async (task: CollectionTask) => {
         const control = controls.current.get(task.body.operationId);
         if (!task.jobId || !props.requestWithSession || !control) return;
@@ -139,5 +147,6 @@ export function useCollectionJobs(
             if (!control.signal.aborted) update({ ...task, state: 'error' });
         }
     };
+
     return { tasks, run, dismiss, cancel };
 }

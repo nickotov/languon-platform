@@ -2,7 +2,7 @@
 feature: texts
 title: Texts folders and aligned reading
 status: current
-last_verified: 2026-10-16
+last_verified: 2026-10-17
 surfaces:
     - api
     - system
@@ -102,6 +102,10 @@ or shared/staging/production data are used.
    distinct supported source/target languages. Explicit Save creates a draft.
 3. Optionally submit language detection and poll its job. The result is advisory;
    the client must explicitly accept a suggestion and submit the chosen pair.
+   The web source selector also offers Auto: selecting it accepts detection as the
+   source-language choice in advance. Translate runs the existing detection job
+   followed by translation with a resolved supported tag; `auto` is never an API
+   language tag. Each stage retains its existing AI credit and capacity rules.
 4. Submit translation with an operation ID and poll its durable job. The worker
    translates the complete submitted content, producing ordered source/translation
    arrays linked by stable pair IDs. Completion alone does not change the draft.
@@ -115,6 +119,11 @@ or shared/staging/production data are used.
    collection job. On success, the generated full card and destination identities
    are returned. New dictionary/card/revision creation is atomic. Exact operation
    replay returns the same result; changed input under the same key conflicts.
+   Collection requests canonical Source through the same dictionary authoring
+   generator used by direct card authoring. Noun articles/gender and phrase grammar
+   follow its existing language rules. Original occurrence offsets and surrounding
+   sentences remain unchanged as context. Canonical Source duplicates require
+   explicit confirmation even when the raw selection did not match an existing card.
 
 ### Shared reading and copying
 
@@ -174,6 +183,16 @@ to a pre-Flash build, drain all Flash jobs (including dictionary/learning jobs)
 and select a model supported by that build. Select the enabled DeepSeekFlash model for
 the extended profile; legacy models keep their historical caps.
 
+Canonical Source normalization also requires Source-aware selection workers before
+new admissions. Older workers cannot complete Source-requesting jobs correctly even
+though they advertise `text-selection-card:v1`; a format-only readiness observation
+does not prove this build compatibility. Disable admissions, replace every old
+selection worker, verify actual builds, then enable the new API. New workers retain
+support for legacy queued input. Before worker rollback, disable admissions and drain
+new Source-requesting jobs using Source-aware workers. Mixed-build rolling overlap
+requires separately versioned capability and claim gating; this change does not
+provide or authorize that deployment mode.
+
 New AI admissions default off via `TEXTS_AI_ENABLED`. Activate only after the
 existing expand/activate process proves API and rollback-floor worker compatibility
 for `text-detection:v1`, `text-translation:v1`, and `text-selection-card:v1`.
@@ -190,15 +209,38 @@ no production activation. Backend startup does not automatically deploy changes.
 Scenario `texts/web-owner-reading-and-collection`:
 
 1. Sign up and verify a synthetic local account. Open Texts, create a named folder,
-   open it and choose Add text. Confirm English→Spanish and enter a passage.
+   open it and choose Add text. Leave Source at Auto, choose Spanish as the target
+   and enter an English passage. Choose a manual source only when overriding Auto.
+   Folder items have separate spaced cards. Desktop icon actions expose their
+   localized label on hover or keyboard focus; phone actions retain visible labels.
+   Translate appears beneath populated source text, to the left of its character
+   count. Empty source shows the sample action instead; there is no duplicate
+   compose Translate action in the header, footer or translation pane.
 2. Translate via AI, observe the complete unsaved preview, then explicitly Save.
+   Auto detects English and submits translation with source language `en`.
+   Unsupported/unknown or same-as-target detection stops with a recovery message.
+   While either stage is active, inputs are locked and Cancel stops continuation.
+   To save an untranslated draft, choose a manual source language; Auto does not
+   start or charge for AI from Save draft.
    Reload the canonical saved text route; both sides remain visible in read mode.
+   Missing target language shows a specific field error and red Select border;
+   selecting a target clears both immediately. Source over 20,000 Unicode code
+   points shows a shorten-text error and red textarea border; reducing it clears
+   that field error immediately. No generic combined validation banner remains.
 3. Enter Edit text, edit a paired source/translation block and Save changes.
    Reload and verify edited provenance and both persisted values.
 4. Select one source occurrence, open Add to dictionary, name a new dictionary
    and explicitly Create and add. Observe processing and success with Open dictionary.
+   The selection trigger follows the word. The dictionary panel remains inside the
+   viewport when the window is shortened, and its fields remain clickable and
+   keyboard-focusable inside the fullscreen reader.
+   The two-icon trigger has no unused minimum-width space around its controls.
 5. Follow the toast link and verify the generated full card is persisted. Return
    to Texts and verify the real saved/translated folder count.
+   Repeat with French Auto→Russian and select `but` from its containing sentence.
+   The dictionary stores canonical `le but`, its contextual translation and all
+   generated fields; the text occurrence remains unchanged. Card content retains
+   16 px desktop and 12 px phone padding.
 
 ### Public reading, independent copy and revocation
 
@@ -219,10 +261,14 @@ Scenario `texts/web-phone-reading-selection`:
 
 1. At 390 px create/translate/explicitly save a passage. Source/Translation tabs
    replace squeezed columns; actions remain reachable.
+   Source defaults to Auto: choose the target and translate without a manual
+   detection-confirmation step.
 2. Enable Match sentences and tap/focus a sentence. The counterpart sheet contains
    both language labels and previous/next/back controls.
 3. Return to reading, select a word and collect it through the phone sheet into
    a new dictionary. Observe success and the persisted card.
+   The initial collection trigger appears beside the selection rather than pinned
+   to the bottom of the screen; opening it presents the phone sheet.
 4. At 320 px verify no document overflow, clipped menus or hidden primary controls.
    Capture phone reading, counterpart and creation states. Console/page errors,
    failed requests and 5xx responses fail every journey.

@@ -169,7 +169,12 @@ describe('shared UI accessibility contracts', () => {
         });
         await user.click(input);
         expect(input).toHaveAttribute('aria-expanded', 'true');
-        expect(input).toHaveAttribute('aria-controls');
+        expect(input).toHaveAttribute(
+            'aria-controls',
+            screen.getByRole('listbox').id,
+        );
+        expect(screen.getByRole('listbox').parentElement).toBe(document.body);
+        expect(input).toHaveFocus();
         await user.type(input, 'Span');
         expect(screen.getByRole('option', { name: 'Spanish' })).toHaveAttribute(
             'aria-selected',
@@ -255,7 +260,7 @@ describe('shared UI accessibility contracts', () => {
         }
     });
 
-    it('uses the viewport-aware tooltip for icon buttons', () => {
+    it('uses the viewport-aware tooltip for icon buttons', async () => {
         render(
             <IconButton label='Change theme' tooltipPlacement='bottom'>
                 ◐
@@ -265,7 +270,7 @@ describe('shared UI accessibility contracts', () => {
         const trigger = screen.getByRole('button', { name: 'Change theme' });
         fireEvent.focus(trigger);
 
-        const tooltip = screen.getByRole('tooltip');
+        const tooltip = await screen.findByRole('tooltip');
         expect(trigger).toHaveAccessibleDescription('Change theme');
         expect(tooltip).toHaveAttribute('data-placement', 'bottom');
         expect(tooltip).toHaveStyle({ position: 'fixed' });
@@ -435,6 +440,10 @@ describe('shared UI accessibility contracts', () => {
 
         const trigger = screen.getByRole('button', { name: 'Lesson actions' });
         await user.click(trigger);
+        expect(trigger).toHaveAttribute(
+            'aria-controls',
+            screen.getByRole('menu').id,
+        );
         expect(screen.getAllByRole('separator')).toHaveLength(2);
         expect(screen.getByText('Bulk and sharing')).toBeVisible();
         expect(screen.getByRole('menuitem', { name: 'Rename' })).toHaveFocus();
@@ -564,76 +573,35 @@ describe('shared UI accessibility contracts', () => {
         expect(content).not.toHaveAttribute('sideoffset');
     });
 
-    it('synchronizes focus and expanded state with native popover toggles', () => {
-        const originalShowPopover = HTMLElement.prototype.showPopover;
-        const originalHidePopover = HTMLElement.prototype.hidePopover;
-        vi.stubGlobal('CSS', { supports: () => true });
-        Object.defineProperty(HTMLElement.prototype, 'showPopover', {
-            configurable: true,
-            value: vi.fn(),
+    it('opens both popover APIs in a body portal and consumes native close events', async () => {
+        const user = userEvent.setup();
+        render(
+            <Popover label='Native information' trigger='Open native'>
+                Native content
+            </Popover>,
+        );
+        const trigger = screen.getByRole('button', {
+            name: 'Native information',
         });
-        Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
-            configurable: true,
-            value: vi.fn(function hidePopoverForTest(this: HTMLElement) {
-                fireEvent(
-                    this,
-                    Object.assign(new Event('toggle'), { newState: 'closed' }),
-                );
-            }),
+        await user.click(trigger);
+        const panel = await screen.findByRole('dialog', {
+            name: 'Native information',
         });
-        try {
-            render(
-                <Popover label='Native information' trigger='Open native'>
-                    Native content
-                </Popover>,
-            );
-            const trigger = screen.getByRole('button', {
-                name: 'Native information',
-            });
-            const panel = document.getElementById(
-                trigger.getAttribute('aria-controls')!,
-            )!;
-            expect(panel).toHaveAttribute('role', 'dialog');
-            expect(panel).toHaveAttribute('aria-label', 'Native information');
-            expect(trigger).toHaveAttribute('popovertarget', panel.id);
-            expect(panel).toHaveAttribute('popover', 'auto');
-
-            fireEvent(
-                panel,
-                Object.assign(new Event('toggle'), { newState: 'open' }),
-            );
-            expect(trigger).toHaveAttribute('aria-expanded', 'true');
-            expect(panel).toHaveFocus();
-
-            fireEvent.keyDown(panel, { key: 'Escape' });
-            expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledOnce();
-            expect(trigger).toHaveAttribute('aria-expanded', 'false');
-            expect(trigger).toHaveFocus();
-
-            fireEvent(
-                panel,
-                Object.assign(new Event('toggle'), { newState: 'closed' }),
-            );
-            expect(trigger).toHaveAttribute('aria-expanded', 'false');
-        } finally {
-            vi.unstubAllGlobals();
-            if (originalShowPopover) {
-                Object.defineProperty(HTMLElement.prototype, 'showPopover', {
-                    configurable: true,
-                    value: originalShowPopover,
-                });
-            } else {
-                Reflect.deleteProperty(HTMLElement.prototype, 'showPopover');
-            }
-            if (originalHidePopover) {
-                Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
-                    configurable: true,
-                    value: originalHidePopover,
-                });
-            } else {
-                Reflect.deleteProperty(HTMLElement.prototype, 'hidePopover');
-            }
-        }
+        expect(panel.parentElement).toBe(document.body);
+        expect(trigger).toHaveAttribute('aria-controls', panel.id);
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+        expect(panel).toHaveFocus();
+        fireEvent(
+            panel,
+            Object.assign(new Event('toggle'), { newState: 'closed' }),
+        );
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        await user.click(trigger);
+        await screen.findByRole('dialog');
+        await user.keyboard('{Escape}');
+        expect(trigger).toHaveFocus();
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
 
     it('notifies once when the native dialog close button is used', async () => {

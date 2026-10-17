@@ -13,6 +13,7 @@ export function PublicHeader({
     onSignIn(): void;
 }) {
     const { href, t } = useI18n();
+
     return (
         <header className={styles.header}>
             <Logo href={href('/texts')} />
@@ -31,6 +32,7 @@ export function PublicHeader({
                         </span>
                     ) : (
                         <Button
+                            desktopIconOnly
                             size='compact'
                             variant='secondary'
                             onClick={onSignIn}

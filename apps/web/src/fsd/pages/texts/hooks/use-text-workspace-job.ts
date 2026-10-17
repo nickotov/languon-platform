@@ -9,12 +9,18 @@ import { textsApi, type RequestWithTextSession } from '@/fsd/entities/texts';
 export function useTextWorkspaceJob(
     request: RequestWithTextSession,
     actorId?: string,
+    cleanupRequest = request,
 ) {
     const [job, setJob] = useState<TextAiJob | null>(null);
     const [error, setError] = useState<unknown>(null);
     const [pending, setPending] = useState(false);
     const generation = useRef(0);
+    const latestJob = useRef(job);
+    latestJob.current = job;
+    const cleanup = useRef(cleanupRequest);
+    cleanup.current = cleanupRequest;
     const starting = useRef(false);
+
     const retryOperation = useRef<{
         fingerprint: string;
         operationId: string;
@@ -28,15 +34,26 @@ export function useTextWorkspaceJob(
         refetchInterval: active ? 1000 : false,
         retry: 2,
     });
+
     useEffect(() => {
         if (active && poll.data?.job.id === job?.id) setJob(poll.data!.job);
     }, [poll.data, job?.id, active]);
+
     useEffect(
         () => () => {
             generation.current += 1;
+            const current = latestJob.current;
+            if (
+                current &&
+                (current.state === 'queued' || current.state === 'running')
+            )
+                void cleanup
+                    .current((token) => textsApi.cancelAiJob(token, current.id))
+                    .catch(() => undefined);
         },
         [],
     );
+
     async function start(
         body:
             | EnqueueTextTranslationRequest
@@ -65,39 +82,52 @@ export function useTextWorkspaceJob(
                           submission as EnqueueTextTranslationRequest,
                       ),
             );
-            retryOperation.current = null;
-            if (generation.current === fence) setJob(response.job);
-            else
-                await request((token) =>
+            if (generation.current === fence) {
+                retryOperation.current = null;
+                setJob(response.job);
+            } else if (
+                response.job.state === 'queued' ||
+                response.job.state === 'running'
+            )
+                await cleanup.current((token) =>
                     textsApi.cancelAiJob(token, response.job.id),
                 );
         } catch (cause) {
             if (generation.current === fence) setError(cause);
         } finally {
-            starting.current = false;
-            if (generation.current === fence) setPending(false);
+            if (generation.current === fence) {
+                starting.current = false;
+                setPending(false);
+            }
         }
     }
+
     async function cancel() {
         const current = job;
-        generation.current += 1;
+        const fence = ++generation.current;
+        retryOperation.current = null;
+        starting.current = false;
         setPending(false);
         if (!current) return;
         try {
             const response = await request((token) =>
                 textsApi.cancelAiJob(token, current.id),
             );
-            setJob(response.job);
+            if (generation.current === fence) setJob(response.job);
         } catch (cause) {
-            setError(cause);
+            if (generation.current === fence) setError(cause);
             throw cause;
         }
     }
+
     function clear() {
         generation.current += 1;
+        starting.current = false;
+        setPending(false);
         setJob(null);
         setError(null);
     }
+
     return {
         job,
         error: error ?? poll.error,

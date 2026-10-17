@@ -17,13 +17,10 @@
     border: 1px solid var(--sys-color-border-control);
     border-radius: var(--sys-radius-sm);
     box-shadow: var(--sys-shadow-raised);
-    left: 0;
+    width: var(--popover-anchor-width);
     max-height: var(--size-240);
     overflow-y: auto;
     padding: var(--sys-space-1);
-    position: absolute;
-    right: 0;
-    top: calc(100% + var(--sys-space-1));
     z-index: 30;
 }
 

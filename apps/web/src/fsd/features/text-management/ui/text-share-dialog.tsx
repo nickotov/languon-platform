@@ -30,11 +30,13 @@ type Props = {
     onClose(): void;
     onChanged?(): void;
 };
+
 export function TextShareDialog(props: Props) {
     return props.open ? (
         <ShareContent key={`${props.kind}:${props.resource.id}`} {...props} />
     ) : null;
 }
+
 function ShareContent({
     kind,
     resource,
@@ -47,12 +49,15 @@ function ShareContent({
     const field = useRef<HTMLInputElement>(null);
     const [copyError, setCopyError] = useState(false);
     const name = 'name' in resource ? resource.name : resource.title;
+
     function confirmRevoke() {
         share.setStep('confirm');
     }
+
     function keepLink() {
         share.setStep('normal');
     }
+
     async function copy() {
         try {
             await navigator.clipboard.writeText(share.url);
@@ -63,6 +68,7 @@ function ShareContent({
             setCopyError(true);
         }
     }
+
     return (
         <Dialog
             open
@@ -124,6 +130,7 @@ function ShareContent({
                             </InlineAlert>
                         )}
                         <Button
+                            desktopIconOnly
                             onClick={share.create}
                             loading={share.busy}
                             leadingIcon={
@@ -152,6 +159,7 @@ function ShareContent({
                                 readOnly
                             />
                             <Button
+                                desktopIconOnly
                                 variant='secondary'
                                 onClick={copy}
                                 leadingIcon={
@@ -221,6 +229,7 @@ function ShareContent({
                         title={t('texts.manage.revoked')}
                         actions={
                             <Button
+                                desktopIconOnly
                                 variant='secondary'
                                 size='compact'
                                 onClick={share.create}

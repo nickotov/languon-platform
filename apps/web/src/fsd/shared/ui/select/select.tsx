@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react';
 import { forwardRef, type SelectHTMLAttributes, useId } from 'react';
 
 import styles from './select.module.css';
@@ -144,7 +145,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                             .filter(Boolean)
                             .join(' ')}
                     >
-                        {loading ? '' : '⌄'}
+                        {loading ? null : (
+                            <ChevronDown className={styles.chevron} />
+                        )}
                     </span>
                 </span>
                 {resolvedSelectContent}

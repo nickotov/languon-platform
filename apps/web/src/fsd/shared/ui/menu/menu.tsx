@@ -1,12 +1,6 @@
 'use client';
 
-import {
-    autoUpdate,
-    flip,
-    offset,
-    shift,
-    useFloating,
-} from '@floating-ui/react';
+import { Popover, PopoverAnchor, PopoverContent } from '../popover/popover';
 import {
     type KeyboardEvent,
     Fragment,
@@ -36,8 +30,7 @@ export function Menu({
     showChevron = false,
 }: MenuProps) {
     const id = useId();
-
-    const root = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
 
     const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -47,32 +40,6 @@ export function Menu({
 
     const disabled =
         !allowDisabledItems && items.every((item) => item.disabled);
-
-    const { floatingStyles, refs } = useFloating({
-        middleware: [offset(4), flip({ padding: 8 }), shift({ padding: 8 })],
-        onOpenChange: setOpen,
-        open,
-        placement,
-        strategy: 'fixed',
-        whileElementsMounted: open ? autoUpdate : undefined,
-    });
-
-    useEffect(() => {
-        if (!open) return;
-
-        const first = itemRefs.current.find((item) => item && !item.disabled);
-
-        if (first) first.focus();
-        else refs.floating.current?.focus();
-
-        function dismiss(event: PointerEvent) {
-            if (!root.current?.contains(event.target as Node)) setOpen(false);
-        }
-
-        document.addEventListener('pointerdown', dismiss);
-
-        return () => document.removeEventListener('pointerdown', dismiss);
-    }, [open, refs.floating]);
 
     useEffect(() => {
         if (disabled && open) setOpen(false);
@@ -144,17 +111,6 @@ export function Menu({
         .filter(Boolean)
         .join(' ');
 
-    const setReference = refs.setReference;
-
-    const registerTrigger = useCallback(
-        (node: HTMLButtonElement | null) => {
-            triggerRef.current = node;
-
-            setReference(node);
-        },
-        [setReference],
-    );
-
     const registerItem = useCallback(
         (index: number, node: HTMLButtonElement | null) => {
             itemRefs.current[index] = node;
@@ -169,7 +125,9 @@ export function Menu({
     function closeAndRestoreFocus() {
         setOpen(false);
 
-        triggerRef.current?.focus();
+        queueMicrotask(() =>
+            triggerRef.current?.focus({ preventScroll: true }),
+        );
     }
 
     function handleMenuKey(event: KeyboardEvent<HTMLDivElement>) {
@@ -205,55 +163,74 @@ export function Menu({
     }
 
     return (
-        <div className={styles.root} ref={root}>
-            <button
-                aria-controls={id}
-                aria-expanded={open}
-                aria-haspopup='menu'
-                aria-label={label}
-                className={triggerClassName}
-                disabled={disabled}
-                onClick={toggle}
-                ref={registerTrigger}
-                type='button'
-            >
-                {trigger}
-                {showChevron && (
-                    <svg
-                        className={styles.chevron}
-                        data-open={open || undefined}
-                        aria-hidden='true'
-                        width='16'
-                        height='16'
-                        viewBox='0 0 24 24'
-                        fill='none'
-                        stroke='currentColor'
-                        strokeWidth='2'
+        <Popover open={open} onOpenChange={setOpen}>
+            <div className={styles.root}>
+                <PopoverAnchor asChild>
+                    <button
+                        aria-controls={id}
+                        aria-expanded={open}
+                        aria-haspopup='menu'
+                        aria-label={label}
+                        className={triggerClassName}
+                        disabled={disabled}
+                        onClick={toggle}
+                        ref={triggerRef}
+                        type='button'
                     >
-                        <path d='m6 9 6 6 6-6' />
-                    </svg>
-                )}
-            </button>
-            {open ? (
-                <div
-                    className={[styles.menu, menuClassName]
-                        .filter(Boolean)
-                        .join(' ')}
-                    id={id}
-                    ref={refs.setFloating}
-                    role='menu'
-                    tabIndex={-1}
-                    onKeyDown={handleMenuKey}
-                    style={floatingStyles}
-                >
-                    {heading && (
-                        <div role='presentation' className={styles.heading}>
-                            {heading}
-                        </div>
-                    )}
-                    {items.map(renderItem)}
-                </div>
-            ) : null}
-        </div>
+                        {trigger}
+                        {showChevron && (
+                            <svg
+                                className={styles.chevron}
+                                data-open={open || undefined}
+                                aria-hidden='true'
+                                width='16'
+                                height='16'
+                                viewBox='0 0 24 24'
+                                fill='none'
+                                stroke='currentColor'
+                                strokeWidth='2'
+                            >
+                                <path d='m6 9 6 6 6-6' />
+                            </svg>
+                        )}
+                    </button>
+                </PopoverAnchor>
+                {open ? (
+                    <PopoverContent
+                        side={
+                            placement.split('-')[0] as
+                                'top' | 'bottom' | 'left' | 'right'
+                        }
+                        align={
+                            (placement.split('-')[1] ?? 'center') as
+                                'start' | 'end' | 'center'
+                        }
+                        sideOffset={4}
+                        className={[styles.menu, menuClassName]
+                            .filter(Boolean)
+                            .join(' ')}
+                        id={id}
+                        ref={panelRef}
+                        onFocus={(event) => {
+                            if (event.target === event.currentTarget) {
+                                itemRefs.current
+                                    .find((item) => item && !item.disabled)
+                                    ?.focus({ preventScroll: true });
+                            }
+                        }}
+                        role='menu'
+                        tabIndex={-1}
+                        onKeyDown={handleMenuKey}
+                    >
+                        {heading && (
+                            <div role='presentation' className={styles.heading}>
+                                {heading}
+                            </div>
+                        )}
+                        {items.map(renderItem)}
+                    </PopoverContent>
+                ) : null}
+            </div>
+        </Popover>
     );
 }

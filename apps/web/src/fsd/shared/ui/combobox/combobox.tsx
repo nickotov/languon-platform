@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import styles from './combobox.module.css';
+import { Popover, PopoverAnchor, PopoverContent } from '../popover/popover';
 
 export type ComboboxOption = { label: string; value: string };
 
@@ -160,31 +161,44 @@ export function Combobox({
     const resolvedComboboxContent = resolveComboboxContent();
 
     return (
-        <div className={styles.root}>
-            <input
-                {...props}
-                aria-activedescendant={
-                    open && !loading && activeOption
-                        ? `${listId}-option-${activeIndex}`
-                        : undefined
-                }
-                aria-autocomplete='list'
-                aria-busy={loading || undefined}
-                aria-controls={listId}
-                aria-expanded={open}
-                className={styles.input}
-                onBlur={() => setOpen(false)}
-                onChange={change}
-                onFocus={() => setOpen(true)}
-                onKeyDown={keyDown}
-                role='combobox'
-                value={query}
-            />
-            {open ? (
-                <div className={styles.listbox} id={listId} role='listbox'>
-                    {resolvedComboboxContent}
-                </div>
-            ) : null}
-        </div>
+        <Popover open={open} onOpenChange={setOpen}>
+            <div className={styles.root}>
+                <PopoverAnchor asChild>
+                    <input
+                        {...props}
+                        aria-activedescendant={
+                            open && !loading && activeOption
+                                ? `${listId}-option-${activeIndex}`
+                                : undefined
+                        }
+                        aria-autocomplete='list'
+                        aria-busy={loading || undefined}
+                        aria-controls={listId}
+                        aria-expanded={open}
+                        className={styles.input}
+                        onBlur={() => setOpen(false)}
+                        onChange={change}
+                        onFocus={() => setOpen(true)}
+                        onKeyDown={keyDown}
+                        role='combobox'
+                        value={query}
+                    />
+                </PopoverAnchor>
+                {open ? (
+                    <PopoverContent
+                        autoFocus={false}
+                        returnFocus={false}
+                        side='bottom'
+                        align='start'
+                        sideOffset={4}
+                        className={styles.listbox}
+                        id={listId}
+                        role='listbox'
+                    >
+                        {resolvedComboboxContent}
+                    </PopoverContent>
+                ) : null}
+            </div>
+        </Popover>
     );
 }

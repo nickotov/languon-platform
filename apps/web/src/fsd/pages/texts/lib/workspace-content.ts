@@ -15,21 +15,35 @@ export type WorkspaceInput = {
 };
 export const emptyWorkspaceInput: WorkspaceInput = {
     title: '',
-    sourceLanguage: '',
+    sourceLanguage: 'auto',
     targetLanguage: '',
     sourceText: '',
 };
 export function sourceCodePoints(value: string) {
     return Array.from(value).length;
 }
+
+export function workspaceValidation(input: WorkspaceInput) {
+    const errors: {
+        sourceLanguage?: 'sourceRequired';
+        targetLanguage?: 'targetRequired' | 'sameLanguages';
+        sourceText?: 'textRequired' | 'textTooLong';
+    } = {};
+
+    if (!input.sourceLanguage) errors.sourceLanguage = 'sourceRequired';
+    if (!input.targetLanguage) errors.targetLanguage = 'targetRequired';
+    else if (input.sourceLanguage === input.targetLanguage)
+        errors.targetLanguage = 'sameLanguages';
+
+    if (sourceCodePoints(input.sourceText) > WORKSPACE_SOURCE_LIMIT)
+        errors.sourceText = 'textTooLong';
+    else if (!input.sourceText.trim()) errors.sourceText = 'textRequired';
+
+    return errors;
+}
+
 export function workspaceValid(input: WorkspaceInput) {
-    return Boolean(
-        input.sourceLanguage &&
-        input.targetLanguage &&
-        input.sourceLanguage !== input.targetLanguage &&
-        input.sourceText.trim() &&
-        sourceCodePoints(input.sourceText) <= WORKSPACE_SOURCE_LIMIT,
-    );
+    return Object.keys(workspaceValidation(input)).length === 0;
 }
 export function workspacePairs(
     document: Pick<TextDocument, 'alignment'>,

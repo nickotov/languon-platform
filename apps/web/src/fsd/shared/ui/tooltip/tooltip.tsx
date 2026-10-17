@@ -11,7 +11,7 @@ import {
 } from '@floating-ui/react';
 import {
     cloneElement,
-    type CSSProperties,
+    useCallback,
     type FocusEvent,
     type KeyboardEvent,
     type ReactElement,
@@ -22,8 +22,12 @@ import {
     useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { overlayContainer } from '../../lib/overlay-container';
 
 import styles from './tooltip.module.css';
+import { arrowStyle } from './tooltip-arrow';
+import { tooltipSize } from './tooltip-size';
+import { useTooltipTopLayer } from './use-tooltip-top-layer';
 
 type TriggerProps = {
     'aria-describedby'?: string;
@@ -43,29 +47,6 @@ export type TooltipProps = {
     withArrow?: boolean;
 };
 
-const ARROW_OFFSET = -4;
-
-const oppositeSide = {
-    bottom: 'top',
-    left: 'right',
-    right: 'left',
-    top: 'bottom',
-} as const;
-
-function arrowStyle(
-    placement: Placement,
-    x: number | undefined,
-    y: number | undefined,
-): CSSProperties {
-    const side = placement.split('-')[0] as keyof typeof oppositeSide;
-
-    return {
-        left: x,
-        top: y,
-        [oppositeSide[side]]: ARROW_OFFSET,
-    };
-}
-
 export function Tooltip({
     children,
     className,
@@ -77,6 +58,8 @@ export function Tooltip({
     withArrow = true,
 }: TooltipProps) {
     const id = useId();
+
+    const panelRef = useRef<HTMLDivElement | null>(null);
 
     const arrowRef = useRef<HTMLSpanElement | null>(null);
 
@@ -90,6 +73,7 @@ export function Tooltip({
 
     const {
         floatingStyles,
+        isPositioned,
         middlewareData,
         placement: resolvedPlacement,
         refs,
@@ -97,7 +81,8 @@ export function Tooltip({
         middleware: [
             offset(8),
             flip({ padding: 16 }),
-            shift({ padding: 16 }),
+            shift({ padding: 16, crossAxis: true }),
+            tooltipSize(),
             floatingArrow({ element: arrowRef }),
         ],
         onOpenChange: setOpen,
@@ -143,9 +128,17 @@ export function Tooltip({
         return () => document.removeEventListener('keydown', dismissWithEscape);
     }, [visible]);
 
-    function setPanel(node: HTMLDivElement | null) {
-        refs.setFloating(node);
-    }
+    useTooltipTopLayer(panelRef, mounted && visible);
+
+    const setPanel = useCallback(
+        (node: HTMLDivElement | null) => {
+            panelRef.current = node;
+            if (node && visible && typeof node.showPopover === 'function')
+                node.showPopover();
+            refs.setFloating(node);
+        },
+        [refs, visible],
+    );
 
     function show() {
         if (timer.current) clearTimeout(timer.current);
@@ -222,11 +215,21 @@ export function Tooltip({
                         data-placement={resolvedPlacement}
                         hidden={!visible}
                         id={id}
+                        popover={
+                            typeof HTMLElement.prototype.showPopover ===
+                            'function'
+                                ? 'manual'
+                                : undefined
+                        }
                         ref={setPanel}
                         role='tooltip'
-                        style={floatingStyles}
+                        style={{
+                            ...floatingStyles,
+                            visibility:
+                                visible && isPositioned ? 'visible' : 'hidden',
+                        }}
                     >
-                        {content}
+                        <span className={styles.content}>{content}</span>
                         {withArrow && (
                             <span
                                 aria-hidden='true'
@@ -236,7 +239,7 @@ export function Tooltip({
                             />
                         )}
                     </div>,
-                    document.body,
+                    overlayContainer(refs.domReference.current),
                 )}
         </span>
     );

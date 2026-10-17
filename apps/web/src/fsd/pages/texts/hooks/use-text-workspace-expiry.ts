@@ -1,5 +1,6 @@
 import type { TextAiJob } from '@languon/contracts';
 import { useEffect, useState } from 'react';
+
 export function useTextWorkspaceExpiry(
     job: TextAiJob | null,
     expired: boolean,
@@ -8,6 +9,7 @@ export function useTextWorkspaceExpiry(
     const expiresAt = job?.createdAt
         ? Date.parse(job.createdAt) + 86_400_000
         : Infinity;
+
     useEffect(() => {
         if (job?.state !== 'completed') return;
         setNow(Date.now());

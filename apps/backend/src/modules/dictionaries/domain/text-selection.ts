@@ -57,6 +57,7 @@ export function selectionProviderInput(
         overrides: selectionCardOverrides,
     });
     const fields = [
+        'source',
         'translation',
         'definition',
         'example',
@@ -90,7 +91,7 @@ export function selectionProviderInput(
         requestedFields: fields,
         fieldContext: fields.map((field) => ({
             field,
-            currentValue: null,
+            currentValue: field === 'source' ? selected.phrase : null,
             excludedValues: [],
         })),
     });
@@ -103,10 +104,13 @@ export function selectionCardValues(
     const field = (name: string) =>
         delta.suggestions.find((s) => s.field === name)?.value ?? null;
     for (const required of input.requestedFields)
-        if (field(required) === null)
+        if (required !== 'source' && field(required) === null)
             throw new Error('Missing requested vocabulary field');
     return DictionaryGenerationCardValuesSchema.parse({
-        source: input.source,
+        source:
+            delta.sourceResult?.kind === 'suggested'
+                ? delta.sourceResult.value
+                : input.source,
         translation: field('translation'),
         definition: field('definition'),
         example: field('example'),

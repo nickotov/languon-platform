@@ -24,6 +24,7 @@ export async function loadLibraryFolders(
             cursor = page.nextCursor ?? undefined;
         } while (cursor);
     }
+
     return folders;
 }
 
@@ -37,9 +38,11 @@ export function useTextLibrary(requestWithSession: RequestWithTextSession) {
         queryFn: ({ signal }) => loadLibraryFolders(requestWithSession, signal),
         enabled: status === 'authenticated',
     });
+
     async function refresh() {
         await client.invalidateQueries({ queryKey: ['texts', userId] });
     }
+
     const restore = useMutation({
         mutationFn: (folder: TextFolder) =>
             requestWithSession((token) =>
@@ -56,5 +59,6 @@ export function useTextLibrary(requestWithSession: RequestWithTextSession) {
             });
         },
     });
+
     return { ...query, folders: query.data ?? [], refresh, restore };
 }

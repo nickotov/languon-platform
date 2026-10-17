@@ -4,6 +4,7 @@ import type { TextWorkspace } from '../../hooks/use-text-workspace';
 import type { WorkspacePair } from '../../lib/workspace-content';
 import { useWorkspaceCopy } from './workspace-copy';
 import styles from './workspace-page.module.css';
+
 function Pair({
     pair,
     index,
@@ -17,18 +18,22 @@ function Pair({
     const edited =
         ws.touched.has(pair.pairId) ||
         ws.document?.alignment?.editedPairIds.includes(pair.pairId);
+
     function source(event: React.ChangeEvent<HTMLTextAreaElement>) {
         ws.editPair(pair.pairId, 'source', event.target.value);
     }
+
     function translation(event: React.ChangeEvent<HTMLTextAreaElement>) {
         ws.editPair(pair.pairId, 'translation', event.target.value);
     }
+
     const sourceError =
         ws.showErrors && !pair.source.trim() ? copy('emptyPair') : undefined;
     const translationError =
         ws.showErrors && !pair.translation.trim()
             ? copy('emptyPair')
             : undefined;
+
     return (
         <li className={styles.pair}>
             <div className={styles.pairHeading}>
@@ -66,8 +71,10 @@ function Pair({
         </li>
     );
 }
+
 export function WorkspacePairEditor({ ws }: { ws: TextWorkspace }) {
     const { copy } = useWorkspaceCopy();
+
     return (
         <div className={styles.scroll}>
             <div className={styles.editor}>

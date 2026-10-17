@@ -5,19 +5,27 @@ import type { TextWorkspace } from '../../hooks/use-text-workspace';
 import {
     sourceCodePoints,
     WORKSPACE_SOURCE_LIMIT,
+    workspaceValidation,
 } from '../../lib/workspace-content';
 import { WorkspaceBanners } from './workspace-banners';
 import { useWorkspaceCopy } from './workspace-copy';
 import styles from './workspace-page.module.css';
+
 export function WorkspaceCompose({ ws }: { ws: TextWorkspace }) {
     const { copy } = useWorkspaceCopy();
     const count = sourceCodePoints(ws.input.sourceText);
     const over = count > WORKSPACE_SOURCE_LIMIT;
-    const locked = ws.translation.active || ws.saving;
+    const locked = (ws.aiActive ?? ws.translation.active) || ws.saving;
+    const validation = workspaceValidation(ws.input);
+    const sourceValidation =
+        validation.sourceText && (over || ws.showErrors)
+            ? { error: copy(validation.sourceText) }
+            : {};
+    const hasText = Boolean(ws.input.sourceText.trim());
     const [tab, setTab] = useState('source');
     useEffect(() => {
-        if (ws.translation.active) setTab('translation');
-    }, [ws.translation.active]);
+        if (ws.aiActive ?? ws.translation.active) setTab('translation');
+    }, [ws.aiActive ?? ws.translation.active]);
     const tabItems = [
         { value: 'source', label: copy('source') },
         { value: 'translation', label: copy('translation') },
@@ -26,9 +34,11 @@ export function WorkspaceCompose({ ws }: { ws: TextWorkspace }) {
     function title(event: React.ChangeEvent<HTMLInputElement>) {
         ws.setInput({ ...ws.input, title: event.target.value });
     }
+
     function source(event: React.ChangeEvent<HTMLTextAreaElement>) {
         ws.setInput({ ...ws.input, sourceText: event.target.value });
     }
+
     function sample() {
         ws.setInput({
             ...ws.input,
@@ -36,13 +46,42 @@ export function WorkspaceCompose({ ws }: { ws: TextWorkspace }) {
                 'A quiet morning\n\nThe city was still asleep when I opened the window. A small bird was singing in the garden.',
         });
     }
+
     function shorten() {
         setTab('source');
         ws.shortenSource();
     }
+
     function translate() {
         void ws.translate();
     }
+
+    function sourceAction() {
+        if (locked) return <span />;
+        if (!hasText)
+            return (
+                <Button variant='ghost' onClick={sample}>
+                    {copy('sample')}
+                </Button>
+            );
+
+        return (
+            <Button
+                desktopIconOnly
+                onClick={translate}
+                leadingIcon={<WandSparkles />}
+            >
+                {copy('translate')}
+            </Button>
+        );
+    }
+
+    const counterAction = sourceAction();
+    const sourceLanguage =
+        ws.input.sourceLanguage === 'auto'
+            ? undefined
+            : ws.input.sourceLanguage || undefined;
+
     return (
         <div className={styles.scroll}>
             <div className={styles.composeTabs}>
@@ -73,20 +112,14 @@ export function WorkspaceCompose({ ws }: { ws: TextWorkspace }) {
                         rows={16}
                         resize='vertical'
                         disabled={locked}
-                        lang={ws.input.sourceLanguage || undefined}
+                        lang={sourceLanguage}
                         placeholder={copy('placeholder')}
                         value={ws.input.sourceText}
                         onChange={source}
-                        {...(over ? { error: copy('invalid') } : {})}
+                        {...sourceValidation}
                     />
                     <div className={styles.counterRow}>
-                        {!ws.input.sourceText && !locked ? (
-                            <Button variant='ghost' onClick={sample}>
-                                {copy('sample')}
-                            </Button>
-                        ) : (
-                            <span />
-                        )}
+                        {counterAction}
                         <span
                             className={over ? styles.error : styles.hint}
                             aria-live='polite'
@@ -104,14 +137,6 @@ export function WorkspaceCompose({ ws }: { ws: TextWorkspace }) {
                             <Languages />
                             <h2>{copy('translation')}</h2>
                             <p>{copy('translationHint')}</p>
-                            <div className={styles.mobileOnly}>
-                                <Button
-                                    onClick={translate}
-                                    leadingIcon={<WandSparkles />}
-                                >
-                                    {copy('translate')}
-                                </Button>
-                            </div>
                         </div>
                     )}
                 </section>

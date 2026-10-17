@@ -4,6 +4,7 @@ import {
     render,
     renderHook,
     screen,
+    waitFor,
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SentenceAttempt, SentenceManualReview } from '@languon/contracts';
@@ -69,7 +70,7 @@ const review: SentenceManualReview = {
     createdAt: '2026-10-04T00:00:00.000Z',
 };
 describe('sentence content', () => {
-    it('preserves exact text and gives repeated admitted targets the same hint identity', () => {
+    it('preserves exact text and gives repeated admitted targets the same hint identity', async () => {
         const reveal = vi.fn();
         const { container } = render(
             <I18nProvider locale='en' messages={en}>
@@ -89,11 +90,15 @@ describe('sentence content', () => {
         fireEvent.click(targets[0]!);
         expect(reveal).toHaveBeenLastCalledWith('hint-1');
         expect(
-            screen.getByRole('dialog', { name: 'Hint: book' }),
+            await screen.findByRole('dialog', { name: 'Hint: book' }),
         ).toHaveTextContent('libro');
+        expect(
+            (await screen.findByRole('dialog', { name: 'Hint: book' }))
+                .parentElement,
+        ).toBe(document.body);
         fireEvent.keyDown(targets[0]!, { key: 'Escape' });
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        expect(targets[0]).toHaveFocus();
+        await waitFor(() => expect(targets[0]).toHaveFocus());
         fireEvent.click(targets[1]!);
         expect(reveal).toHaveBeenLastCalledWith('hint-1');
     });

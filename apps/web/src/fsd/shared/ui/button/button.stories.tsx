@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { Save } from 'lucide-react';
 import storyStyles from './button.stories.module.css';
 import { Button } from './button';
 
@@ -64,4 +65,20 @@ export const ControlSizes: Story = {
 export const MixedLanguage: Story = {
     args: { children: 'Продолжить · Continue', size: 'large' },
     parameters: { viewport: { defaultViewport: 'mobile1' } },
+};
+
+export const ResponsiveIconAction: Story = {
+    args: {
+        children: 'Сохранить · Save',
+        desktopIconOnly: true,
+        leadingIcon: <Save size={16} aria-hidden />,
+    },
+};
+
+export const ResponsiveIconActionLoading: Story = {
+    args: { ...ResponsiveIconAction.args, loading: true },
+};
+
+export const ResponsiveIconActionDisabled: Story = {
+    args: { ...ResponsiveIconAction.args, disabled: true },
 };

@@ -62,6 +62,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
     );
     const proposalId = randomUUID();
     const delta: DictionaryCardAuthoringProviderDelta = {
+        sourceResult: { kind: 'unchanged' },
         suggestions: [
             { field: 'translation', value: 'hola' },
             { field: 'definition', value: 'A greeting' },
@@ -280,6 +281,117 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 target: { kind: 'new', name: 'Changed' },
             }),
         ).rejects.toMatchObject({ code: 'idempotency_conflict' });
+    });
+
+    it('saves canonical Source and all fields with provenance, then requires canonical duplicate confirmation and settles reported usage', async () => {
+        const normalizedDelta: DictionaryCardAuthoringProviderDelta = {
+            ...delta,
+            sourceResult: { kind: 'suggested', value: 'the greeting' },
+        };
+        await store.enqueue(owner, request());
+        const first = await claim();
+        expect(first.input.source).toBe('Hello');
+        expect(first.input.requestedFields).toContain('source');
+        await store.dispatch(first);
+        expect(await store.complete(first, normalizedDelta)).toBe(true);
+        const [dictionary] = await db.select().from(dictionariesTable);
+        const input = {
+            ...request(),
+            target: {
+                kind: 'existing' as const,
+                dictionaryId: dictionary!.id,
+                expectedDictionaryVersion: 1,
+                expectedSettingsVersion: 1,
+            },
+        };
+        // Raw Hello differs from saved the greeting, so admission succeeds.
+        await store.enqueue(owner, input);
+        const duplicate = await claim();
+        await store.dispatch(duplicate);
+        expect(
+            await store.complete(duplicate, normalizedDelta, {
+                inputTokens: 100,
+                outputTokens: 40,
+            }),
+        ).toBe(false);
+        expect(await store.read(owner, duplicate.id)).toMatchObject({
+            state: 'failed',
+            failureCode: 'duplicate_confirmation_required',
+        });
+        const [reservation] = await db
+            .select()
+            .from(aiCreditReservationsTable)
+            .where(eq(aiCreditReservationsTable.jobId, duplicate.id));
+        expect(reservation).toMatchObject({
+            state: 'settled',
+            measurement: 'provider_reported',
+        });
+        expect(reservation!.chargedCredits).toBeGreaterThan(0n);
+        expect(reservation!.chargedCredits).toBe(reservation!.measuredCredits);
+        expect(reservation!.chargedCredits).toBeLessThan(
+            reservation!.reservedCredits,
+        );
+        expect(await db.select().from(dictionaryCardsTable)).toHaveLength(1);
+        await store.enqueue(owner, {
+            ...input,
+            operationId: randomUUID(),
+            confirmDuplicate: true,
+        });
+        const confirmed = await claim();
+        await store.dispatch(confirmed);
+        expect(await store.complete(confirmed, normalizedDelta)).toBe(true);
+        const cards = await db.select().from(dictionaryCardsTable);
+        expect(cards).toHaveLength(2);
+        for (const card of cards)
+            expect(card).toMatchObject({
+                source: 'the greeting',
+                normalizedSource: 'the greeting',
+                translation: 'hola',
+                definition: 'A greeting',
+                example: 'Hello, friend.',
+                exampleTranslation: 'Hola, amigo.',
+                authorship: 'ai-generated',
+            });
+        const revisions = await db.select().from(dictionaryCardRevisionsTable);
+        expect(revisions).toHaveLength(2);
+        expect(revisions[0]).toMatchObject({
+            authorship: 'ai-generated',
+            mutationKind: 'ai_create',
+        });
+        expect(JSON.stringify(revisions)).not.toContain('Next sentence');
+        const rows = await db.select().from(jobs);
+        for (const row of rows)
+            expect(row).toMatchObject({
+                inputPayload: null,
+                sourceAuthority: null,
+                target: null,
+            });
+    });
+
+    it('publishes a legacy worker lease without requested Source using its original selection', async () => {
+        await store.enqueue(owner, request());
+        const current = await claim();
+        // A lease created by the prior worker has this supported provider DTO shape.
+        const lease = {
+            ...current,
+            input: {
+                ...current.input,
+                requestedFields: current.input.requestedFields.filter(
+                    (field) => field !== 'source',
+                ),
+                fieldContext: current.input.fieldContext.filter(
+                    (entry) => entry.field !== 'source',
+                ),
+            },
+        };
+        await store.dispatch(lease);
+        expect(
+            await store.complete(lease, { suggestions: delta.suggestions }),
+        ).toBe(true);
+        expect((await db.select().from(dictionaryCardsTable))[0]?.source).toBe(
+            'Hello',
+        );
+        expect((await db.select().from(jobs))[0]?.inputPayload).toBeNull();
     });
     it('never creates an empty dictionary after cancellation, failure or a lost lease', async () => {
         const queued = await store.enqueue(owner, request());

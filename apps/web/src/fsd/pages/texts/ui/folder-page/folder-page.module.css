@@ -79,10 +79,8 @@
 .rows {
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-16);
-    background: var(--background-surface);
+    display: grid;
+    gap: var(--space-12);
     list-style: none;
 }
 
@@ -92,11 +90,10 @@
     align-items: flex-start;
     gap: var(--space-12);
     padding: var(--space-16);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-16);
+    background: var(--background-surface);
     transition: background var(--duration-fast);
-}
-
-.row:where(:not(:last-child)) {
-    border-bottom: 1px solid var(--border-default);
 }
 
 .row:hover {
@@ -189,10 +186,9 @@
     display: grid;
     gap: var(--space-12);
     padding: var(--space-20);
-}
-
-.skeletonRow:where(:not(:last-child)) {
-    border-bottom: 1px solid var(--border-default);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-16);
+    background: var(--background-surface);
 }
 
 .empty {

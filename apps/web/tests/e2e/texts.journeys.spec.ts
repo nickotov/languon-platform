@@ -1,6 +1,12 @@
-// @user-flow-revision texts sha256:3bd497f7f68d42fa
+// @user-flow-revision texts sha256:4df9322d0beb2f55
 
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import {
+    expect,
+    test,
+    type Locator,
+    type Page,
+    type TestInfo,
+} from '@playwright/test';
 import type {
     TextDocument,
     CreateTextFolderRequest,
@@ -75,44 +81,243 @@ async function noOverflow(page: Page) {
         )
         .toBe(true);
 }
+async function viewportBounded(page: Page, element: Locator) {
+    await expect(element).toBeVisible();
+    await expect
+        .poll(async () => {
+            const box = await element.boundingBox();
+            const viewport = page.viewportSize()!;
+            return Boolean(
+                box &&
+                box.x >= 0 &&
+                box.y >= 0 &&
+                box.x + box.width <= viewport.width + 1 &&
+                box.y + box.height <= viewport.height + 1,
+            );
+        })
+        .toBe(true);
+}
+async function responsiveAction(page: Page, name: string) {
+    const action = page
+        .getByRole('button', { name, exact: true })
+        .filter({ visible: true })
+        .first();
+    await expect(action).toBeVisible();
+    const labelVisible = await action.evaluate((button) => {
+        const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+            if (!walker.currentNode.textContent?.trim()) continue;
+            const range = document.createRange();
+            range.selectNodeContents(walker.currentNode);
+            const parent = walker.currentNode.parentElement!;
+            const style = getComputedStyle(parent);
+            if (
+                range.getBoundingClientRect().width > 0 &&
+                style.clipPath !== 'inset(50%)'
+            )
+                return true;
+        }
+        return false;
+    });
+    expect(labelVisible).toBe((page.viewportSize()?.width ?? 1440) <= 767);
+}
 async function translated(page: Page, info: TestInfo, role: string) {
     const owner = role === 'owner';
     const expectedTranslation = owner
         ? 'Descansamos en la orilla.'
         : 'Hola mundo.';
     const token = await signup(page, info, role);
+    await responsiveAction(page, 'New folder');
     await page
         .getByRole('button', { name: 'New folder', exact: true })
         .first()
         .click();
     await page.getByLabel(/Folder name|^Name$/).fill(`Reading ${role}`);
     await page.getByRole('button', { name: /^Create folder$/ }).click();
-    await page
-        .getByRole('link', { name: `Reading ${role}`, exact: true })
-        .click();
+    const folderLink = page.getByRole('link', {
+        name: `Reading ${role}`,
+        exact: true,
+    });
+    const folderRow = folderLink.locator('xpath=ancestor::article');
+    const folderGeometry = await folderRow.evaluate((element) => {
+        const style = getComputedStyle(element);
+        const gridStyle = getComputedStyle(element.closest('ul')!);
+        return {
+            rowGap: parseFloat(gridStyle.rowGap),
+            gap: parseFloat(style.gap) || parseFloat(style.rowGap),
+            padding: parseFloat(style.paddingTop),
+        };
+    });
+    expect(
+        Math.max(folderGeometry.gap || 0, folderGeometry.padding || 0),
+    ).toBeGreaterThanOrEqual(8);
+    expect(folderGeometry.rowGap).toBeGreaterThanOrEqual(12);
+    await folderLink.click();
     await page
         .getByRole('button', { name: 'Add text', exact: true })
         .first()
         .click();
     await page.getByLabel('Title', { exact: true }).fill(`Morning ${role}`);
-    await page
-        .getByLabel('Source language', { exact: true })
-        .selectOption('en');
-    await page
-        .getByLabel('Translation language', { exact: true })
-        .selectOption('es');
-    await page
-        .getByLabel('Source text', { exact: true })
-        .fill(
-            owner
-                ? 'The river flows quietly.\n\nWe rested on the bank. Birds sang nearby.'
-                : 'Hello world.',
+    const source = page.getByLabel('Source text', { exact: true });
+    const target = page.getByLabel('Translation language', { exact: true });
+    const action = page
+        .getByRole('button', {
+            name: 'Translate via AI',
+            exact: true,
+        })
+        .filter({ visible: true });
+    await expect(action).toHaveCount(0);
+    await expect(page.locator('[class*="draftHint"]')).toHaveCount(0);
+    await expect(
+        page.getByLabel('Source language', { exact: true }),
+    ).toHaveValue('auto');
+    await expect(
+        page.getByRole('option', { name: 'Detect automatically', exact: true }),
+    ).toHaveCount(1);
+    const sourceText = owner
+        ? 'The river flows quietly.\n\nWe rested on the bank. Birds sang nearby.'
+        : 'Hello world.';
+    await source.fill(sourceText);
+    await responsiveAction(page, 'Translate via AI');
+    await expect(action).toHaveCount(1);
+    const counter = page.locator('[class*="counterRow"]');
+    await expect(
+        counter.getByRole('button', { name: 'Translate via AI', exact: true }),
+    ).toHaveCount(1);
+    const geometry = await counter.evaluate((row) => {
+        const button = row.querySelector('button')!.getBoundingClientRect();
+        const count = row.lastElementChild!.getBoundingClientRect();
+        return {
+            buttonRight: button.right,
+            countLeft: count.left,
+            buttonTop: button.top,
+            countBottom: count.bottom,
+        };
+    });
+    expect(geometry.buttonRight).toBeLessThanOrEqual(geometry.countLeft);
+    expect(geometry.buttonTop).toBeLessThan(geometry.countBottom);
+    const normalBorder = await target.evaluate((field) => {
+        const probe = document.createElement('span');
+        probe.style.color =
+            getComputedStyle(field).getPropertyValue('--border-default');
+        document.body.append(probe);
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+    });
+    const validBorder = await target.evaluate(
+        (field) => getComputedStyle(field).borderColor,
+    );
+    await action.click();
+    await expect(target).toHaveAttribute('aria-invalid', 'true');
+    await expect(
+        page.getByText('Choose a translation language.', { exact: true }),
+    ).toBeVisible();
+    const errorColor = await page
+        .getByText('Choose a translation language.', { exact: true })
+        .evaluate((message) => getComputedStyle(message).color);
+    await expect
+        .poll(() =>
+            target.evaluate((field) => getComputedStyle(field).borderColor),
+        )
+        .toBe(errorColor);
+    expect(errorColor).not.toBe(validBorder);
+    await capture(page, info, `${role}-compose-missing-target`);
+    await target.selectOption('es');
+    await source.click();
+    await expect(target).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(
+        page.getByText('Choose a translation language.', { exact: true }),
+    ).toHaveCount(0);
+    await expect
+        .poll(() =>
+            target.evaluate((field) => getComputedStyle(field).borderColor),
+        )
+        .toBe(normalBorder);
+    if (owner || role === 'phone-owner') {
+        await page.getByLabel('Title', { exact: true }).click();
+        const sourceBorder = await source.evaluate(
+            (field) => getComputedStyle(field).borderColor,
         );
+        await source.fill('🌍'.repeat(20_001));
+        await expect(source).toHaveAttribute('aria-invalid', 'true');
+        await expect(page.getByText(/^The text is too long/)).toBeVisible();
+        await expect
+            .poll(() =>
+                source.evaluate((field) => getComputedStyle(field).borderColor),
+            )
+            .toBe(errorColor);
+        expect(errorColor).not.toBe(sourceBorder);
+        await page.getByText(/^The text is too long/).scrollIntoViewIfNeeded();
+        await capture(page, info, `${role}-compose-long-source`);
+        await source.fill(sourceText);
+        await page.getByLabel('Title', { exact: true }).click();
+        await expect(source).not.toHaveAttribute('aria-invalid', 'true');
+        await expect(page.getByText(/^The text is too long/)).toHaveCount(0);
+        await expect
+            .poll(() =>
+                source.evaluate((field) => getComputedStyle(field).borderColor),
+            )
+            .toBe(normalBorder);
+    }
+    await noOverflow(page);
+    await action.scrollIntoViewIfNeeded();
+    await capture(page, info, `${role}-compose-counter-action`);
+    if (role === 'phone-owner') {
+        await page.setViewportSize({ width: 320, height: 720 });
+        await noOverflow(page);
+        await responsiveAction(page, 'Translate via AI');
+        expect(
+            await counter.evaluate((row) => {
+                const button = row
+                    .querySelector('button')!
+                    .getBoundingClientRect();
+                const count = row.lastElementChild!.getBoundingClientRect();
+                return button.right <= count.left && button.top < count.bottom;
+            }),
+        ).toBe(true);
+        await action.scrollIntoViewIfNeeded();
+        await capture(page, info, 'phone-320-compose-counter-action');
+        await page.setViewportSize({ width: 390, height: 844 });
+    }
+    const detectionRequest = page.waitForRequest(
+        (request) =>
+            request.method() === 'POST' &&
+            new URL(request.url()).pathname.endsWith('/texts/ai/detection'),
+    );
+    const translationRequest = page.waitForRequest(
+        (request) =>
+            request.method() === 'POST' &&
+            new URL(request.url()).pathname.endsWith('/texts/ai/translation'),
+    );
     await page
         .getByRole('button', { name: 'Translate via AI', exact: true })
         .filter({ visible: true })
         .first()
         .click();
+    await detectionRequest;
+    await expect(
+        page.getByRole('heading', { name: 'Detecting…', exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('heading', {
+            name: 'Translation preview — not saved yet',
+            exact: true,
+        }),
+    ).toHaveCount(0);
+    expect((await translationRequest).postDataJSON()).toMatchObject({
+        sourceLanguage: 'en',
+        targetLanguage: 'es',
+    });
+    await expect(
+        page.getByRole('heading', {
+            name: 'Translation preview — not saved yet',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Detecting…', exact: true }),
+    ).toHaveCount(0);
     await expect(page.locator('[data-reading-pair]').first()).toBeVisible();
     const translationTab = page.getByRole('tab', { name: /^Translation ·/ });
     if ((page.viewportSize()?.width ?? 1440) <= 1023) {
@@ -134,6 +339,8 @@ async function translated(page: Page, info: TestInfo, role: string) {
     const savedResponse = await saved;
     expect(savedResponse.status(), await savedResponse.text()).toBe(200);
     const payload = (await savedResponse.json()) as { text: TextDocument };
+    expect(payload.text.sourceLanguage).toBe('en');
+    expect(payload.text.targetLanguage).toBe('es');
     await expect(page).toHaveURL(new RegExp(`/texts/${payload.text.id}$`));
     await page.reload();
     await expect(page.locator('[data-reading-pair]').first()).toBeVisible();
@@ -178,9 +385,161 @@ async function selectWord(page: Page, word = 'Hello') {
     await expect
         .poll(() => page.evaluate(() => window.getSelection()?.toString()))
         .toBe(word);
+    const trigger = page.getByRole('button', {
+        name: 'Add to dictionary',
+        exact: true,
+    });
+    await expect(trigger).toBeVisible();
+    const triggerBox = (await trigger.boundingBox())!;
+    expect(
+        Math.abs(
+            triggerBox.x +
+                triggerBox.width / 2 -
+                selectionBounds.x -
+                selectionBounds.width / 2,
+        ),
+    ).toBeLessThan(100);
+    expect(Math.abs(triggerBox.y - selectionBounds.y)).toBeLessThan(100);
+    await viewportBounded(page, trigger);
+    const toolbar = trigger.locator('xpath=ancestor::*[@role="dialog"][1]');
+    const toolbarGeometry = await toolbar.evaluate((element) => {
+        const style = getComputedStyle(element);
+        const buttons = [...element.querySelectorAll('button')];
+        let actions = buttons[0]!.parentElement!;
+        while (
+            actions.querySelectorAll('button').length !== buttons.length &&
+            actions !== element
+        )
+            actions = actions.parentElement!;
+        const actionsStyle = getComputedStyle(actions);
+        const number = (value: string) => parseFloat(value) || 0;
+        return {
+            count: buttons.length,
+            width: element.getBoundingClientRect().width,
+            expected:
+                buttons.reduce(
+                    (sum, button) => sum + button.getBoundingClientRect().width,
+                    0,
+                ) +
+                number(actionsStyle.columnGap) * (buttons.length - 1) +
+                number(style.paddingLeft) +
+                number(style.paddingRight) +
+                number(style.borderLeftWidth) +
+                number(style.borderRightWidth),
+        };
+    });
+    expect(toolbarGeometry.count).toBe(2);
+    expect(
+        Math.abs(toolbarGeometry.width - toolbarGeometry.expected),
+    ).toBeLessThanOrEqual(2);
+    await trigger.click();
+    const panel = page.getByRole('dialog', {
+        name: `Add “${word}”`,
+        exact: true,
+    });
+    await viewportBounded(page, panel);
+}
+
+async function verifyCardPadding(page: Page, source: string) {
+    const card = page
+        .getByText(source, { exact: true })
+        .locator('xpath=ancestor::li[1]');
+    const padding = await card.evaluate((element) => {
+        const content = element.querySelector('[class*="cardContent"]');
+        if (!content)
+            throw new Error('Missing persisted dictionary card content');
+        const style = getComputedStyle(content);
+        return [
+            style.paddingTop,
+            style.paddingRight,
+            style.paddingBottom,
+            style.paddingLeft,
+        ].map(parseFloat);
+    });
+    const minimum = (page.viewportSize()?.width ?? 1440) <= 767 ? 12 : 16;
+    expect(Math.min(...padding)).toBeGreaterThanOrEqual(minimum);
+}
+
+async function verifyFrenchArticleCollection(page: Page, info: TestInfo) {
+    await page.goto('/texts');
     await page
-        .getByRole('button', { name: 'Add to dictionary', exact: true })
+        .getByRole('link', { name: 'Reading owner', exact: true })
         .click();
+    await page
+        .getByRole('button', { name: 'Add text', exact: true })
+        .first()
+        .click();
+    await page
+        .getByLabel('Title', { exact: true })
+        .fill('French contextual noun');
+    await expect(
+        page.getByLabel('Source language', { exact: true }),
+    ).toHaveValue('auto');
+    await page
+        .getByLabel('Translation language', { exact: true })
+        .selectOption('ru');
+    await page
+        .getByLabel('Source text', { exact: true })
+        .fill('Le but de cette visite est clair.');
+    const translation = page.waitForRequest(
+        (request) =>
+            request.method() === 'POST' &&
+            new URL(request.url()).pathname.endsWith('/texts/ai/translation'),
+    );
+    await page
+        .getByRole('button', { name: 'Translate via AI', exact: true })
+        .filter({ visible: true })
+        .first()
+        .click();
+    expect((await translation).postDataJSON()).toMatchObject({
+        sourceLanguage: 'fr',
+        targetLanguage: 'ru',
+    });
+    await expect(page.locator('[data-reading-pair]').first()).toBeVisible();
+    const saved = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'PUT' &&
+            /\/texts\/[^/]+$/.test(new URL(response.url()).pathname),
+    );
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    const savedResponse = await saved;
+    expect(savedResponse.status()).toBe(200);
+    const savedPayload = await savedResponse.json();
+    await expect(page).toHaveURL(new RegExp(`/texts/${savedPayload.text.id}$`));
+    await page.reload();
+    await expect(
+        page.getByText('Le but de cette visite est clair.', { exact: true }),
+    ).toBeVisible();
+    await selectWord(page, 'but');
+    await page
+        .getByRole('button', { name: 'Create new dictionary', exact: true })
+        .click();
+    await page
+        .getByLabel('Dictionary name', { exact: true })
+        .fill(`French article ${runId}`);
+    await page
+        .getByRole('button', { name: 'Create and add', exact: true })
+        .click();
+    await expect(
+        page.getByText('Added “but” with definition and example.', {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page
+        .getByRole('link', { name: 'Open dictionary', exact: true })
+        .click();
+    await expect(page).toHaveURL(/\/dictionaries\/[^/]+$/);
+    await page.reload();
+    for (const value of [
+        'le but',
+        'цель',
+        'Un objectif que l’on souhaite atteindre.',
+        'Le but de cette visite est clair.',
+        'Цель этого визита ясна.',
+    ])
+        await expect(page.getByText(value, { exact: true })).toBeVisible();
+    await verifyCardPadding(page, 'le but');
+    await capture(page, info, 'owner-french-canonical-source-card');
 }
 
 async function verifyLongTranslationCapacity(page: Page, token: string) {
@@ -308,6 +667,12 @@ test('owner translates, saves, reloads, edits and collects a contextual word', a
     });
     const original = await translated(page, info, 'owner');
     await capture(page, info, 'owner-saved-reader-desktop');
+    await page
+        .getByRole('button', { name: 'Text options', exact: true })
+        .click();
+    await viewportBounded(page, page.getByRole('menu'));
+    await capture(page, info, 'owner-reader-menu');
+    await page.keyboard.press('Escape');
     await expect(
         page.locator('[data-reading-pair][data-side="source"]'),
     ).toHaveCount(3);
@@ -364,12 +729,26 @@ test('owner translates, saves, reloads, edits and collects a contextual word', a
     }
     await capture(page, info, 'owner-edited-paragraphs');
     await selectWord(page, 'bank');
+    // Keep the native modal open while the available viewport shrinks. The
+    // collection surface must shift/resize rather than extending below it.
+    await page.setViewportSize({ width: 1440, height: 440 });
+    await viewportBounded(
+        page,
+        page.getByRole('dialog', { name: 'Add “bank”', exact: true }),
+    );
+    await capture(page, info, 'owner-collection-short-viewport');
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page
         .getByRole('button', { name: 'Create new dictionary', exact: true })
         .click();
-    await page
-        .getByLabel('Dictionary name', { exact: true })
-        .fill(`Collected ${runId}`);
+    const dictionaryName = page.getByLabel('Dictionary name', { exact: true });
+    await dictionaryName.click();
+    await expect(dictionaryName).toBeFocused();
+    await dictionaryName.fill(`Collected ${runId}`);
+    await viewportBounded(
+        page,
+        page.getByRole('dialog', { name: 'New dictionary', exact: true }),
+    );
     await page
         .getByRole('button', { name: 'Create and add', exact: true })
         .click();
@@ -392,6 +771,7 @@ test('owner translates, saves, reloads, edits and collects a contextual word', a
         'Nos sentamos en la orilla del río.',
     ])
         await expect(page.getByText(value, { exact: true })).toBeVisible();
+    await verifyCardPadding(page, 'bank');
     await capture(page, info, 'owner-contextual-bank-card');
     expect(currentToken).not.toBe('');
     await verifyLongTranslationCapacity(page, currentToken);
@@ -400,6 +780,7 @@ test('owner translates, saves, reloads, edits and collects a contextual word', a
         page.getByText('1 texts · 1 translated', { exact: true }).first(),
     ).toBeVisible();
     await noOverflow(page);
+    await verifyFrenchArticleCollection(page, info);
     assertErrors();
 });
 
@@ -544,6 +925,14 @@ test('phone reader selects and collects without horizontal overflow', async ({
     await expect(
         page.getByRole('dialog', { name: 'Add “Hello”', exact: true }),
     ).toBeVisible();
+    await page.setViewportSize({ width: 320, height: 720 });
+    await viewportBounded(
+        page,
+        page.getByRole('dialog', { name: 'Add “Hello”', exact: true }),
+    );
+    await noOverflow(page);
+    await capture(page, info, 'phone-320-collection-panel');
+    await page.setViewportSize({ width: 390, height: 844 });
     await page
         .getByRole('button', { name: 'Create new dictionary', exact: true })
         .click();
@@ -570,5 +959,7 @@ test('phone reader selects and collects without horizontal overflow', async ({
     await expect(page.getByText('Hello', { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByText('Hello', { exact: true })).toBeVisible();
+    await verifyCardPadding(page, 'Hello');
+    await capture(page, info, 'phone-persisted-card-padding');
     assertErrors();
 });

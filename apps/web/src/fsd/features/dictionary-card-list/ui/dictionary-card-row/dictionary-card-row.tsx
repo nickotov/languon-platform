@@ -162,79 +162,84 @@ export function DictionaryCardRow({
     return (
         <li>
             <Card className={styles.card} variant='outlined' padding='none'>
-                <div className={styles.topRow}>
-                    {archived && deletion ? (
-                        <Checkbox
-                            aria-label={t('dictionary.deletion.selectCard', {
-                                source: card.values.source,
-                            })}
-                            checked={deletion.selected.has(card.id)}
-                            disabled={pending || deletion.remove.isPending}
-                            onChange={toggleSelection}
-                        />
-                    ) : null}
-                    <div className={styles.pair}>
-                        <div
-                            className={styles.source}
-                            dir={sourceDirection}
-                            lang={dictionary.sourceLanguage}
-                        >
-                            <strong
-                                className={styles.pairValue}
+                <div className={styles.cardContent}>
+                    <div className={styles.topRow}>
+                        {archived && deletion ? (
+                            <Checkbox
+                                aria-label={t(
+                                    'dictionary.deletion.selectCard',
+                                    {
+                                        source: card.values.source,
+                                    },
+                                )}
+                                checked={deletion.selected.has(card.id)}
+                                disabled={pending || deletion.remove.isPending}
+                                onChange={toggleSelection}
+                            />
+                        ) : null}
+                        <div className={styles.pair}>
+                            <div
+                                className={styles.source}
                                 dir={sourceDirection}
                                 lang={dictionary.sourceLanguage}
                             >
+                                <strong
+                                    className={styles.pairValue}
+                                    dir={sourceDirection}
+                                    lang={dictionary.sourceLanguage}
+                                >
+                                    <span className={styles.pairText}>
+                                        {card.values.source}
+                                    </span>
+                                    {sourceAudio}
+                                </strong>
+                                {showTranscription && (
+                                    <span className={styles.transcription}>
+                                        ({card.values.transcription})
+                                    </span>
+                                )}
+                            </div>
+                            <strong
+                                className={`${styles.pairValue} ${styles.translation}`}
+                                dir={targetDirection}
+                                lang={dictionary.targetLanguage}
+                            >
                                 <span className={styles.pairText}>
-                                    {card.values.source}
+                                    {card.values.translation}
                                 </span>
-                                {sourceAudio}
+                                {translationAudio}
                             </strong>
-                            {showTranscription && (
-                                <span className={styles.transcription}>
-                                    ({card.values.transcription})
-                                </span>
-                            )}
                         </div>
-                        <strong
-                            className={`${styles.pairValue} ${styles.translation}`}
-                            dir={targetDirection}
-                            lang={dictionary.targetLanguage}
-                        >
-                            <span className={styles.pairText}>
-                                {card.values.translation}
-                            </span>
-                            {translationAudio}
-                        </strong>
+                        <Menu
+                            iconOnly
+                            items={items}
+                            label={menuLabel}
+                            trigger={<MoreHorizontal aria-hidden size={16} />}
+                            triggerClassName={styles.menuTrigger}
+                        />
                     </div>
-                    <Menu
-                        iconOnly
-                        items={items}
-                        label={menuLabel}
-                        trigger={<MoreHorizontal aria-hidden size={16} />}
-                        triggerClassName={styles.menuTrigger}
+                    <OptionalFields
+                        card={card}
+                        dictionary={dictionary}
+                        languages={languages}
                     />
-                </div>
-                <OptionalFields
-                    card={card}
-                    dictionary={dictionary}
-                    languages={languages}
-                />
-                <div className={styles.metadata}>
-                    <Badge
-                        size='sm'
-                        tone={authorshipTone}
-                        icon={authorshipIcon}
-                    >
-                        {authorshipLabel}
-                    </Badge>
-                    <Badge size='sm' tone={inheritanceTone}>
-                        {inheritanceLabel}
-                    </Badge>
-                    {archived ? (
-                        <Badge size='sm'>
-                            {t('dictionary.lifecycle.archived')}
+                    <div className={styles.metadata}>
+                        <Badge
+                            size='sm'
+                            tone={authorshipTone}
+                            icon={authorshipIcon}
+                        >
+                            {authorshipLabel}
                         </Badge>
-                    ) : null}
+                        <Badge size='sm' tone={inheritanceTone}>
+                            {inheritanceLabel}
+                        </Badge>
+                        {archived ? (
+                            <Badge size='sm'>
+                                {t('dictionary.lifecycle.archived')}
+                            </Badge>
+                        ) : null}
+                    </div>
                 </div>
             </Card>
         </li>

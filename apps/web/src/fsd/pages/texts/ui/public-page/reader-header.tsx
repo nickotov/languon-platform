@@ -3,6 +3,7 @@ import type { TextDocument } from '@languon/contracts';
 import { Button, ButtonLink, Switch } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import styles from './public-page.module.css';
+
 export function PublicReaderHeader({
     text,
     folderName,
@@ -20,16 +21,18 @@ export function PublicReaderHeader({
 }) {
     const { href, locale, t } = useI18n();
     const names = new Intl.DisplayNames([locale], { type: 'language' });
+
     return (
         <div className={styles.readerHeader}>
             <div className={styles.readerTitle}>
                 {folderName && (
                     <ButtonLink
+                        desktopIconOnly
+                        leadingIcon={<ArrowLeft size={14} aria-hidden />}
                         href={href(backHref)}
                         variant='quiet'
                         size='compact'
                     >
-                        <ArrowLeft size={14} aria-hidden />
                         {folderName}
                     </ButtonLink>
                 )}
@@ -48,6 +51,7 @@ export function PublicReaderHeader({
                     onCheckedChange={onMatch}
                 />
                 <Button
+                    desktopIconOnly
                     variant='secondary'
                     size='compact'
                     onClick={onCopy}

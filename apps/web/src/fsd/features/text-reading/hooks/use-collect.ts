@@ -8,6 +8,7 @@ import type {
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import type { ReadingSelection, TextReadingProps } from '../types';
 import { useCollectionJobs, type CollectionTask } from './use-collection-jobs';
+
 export type CollectStep =
     | 'closed'
     | 'trigger'
@@ -19,6 +20,7 @@ export type CollectStep =
     | 'error'
     | 'adding'
     | 'success';
+
 export function useCollect(props: TextReadingProps) {
     const [selection, setSelection] = useState<ReadingSelection | null>(null);
     const [step, setStep] = useState<CollectStep>('closed');
@@ -36,6 +38,7 @@ export function useCollect(props: TextReadingProps) {
         setFailureCode(task.failureCode);
         setStep(task.state);
     });
+
     useEffect(
         () => () => active.current?.abort(),
         [props.collectionActorKey, props.shareKey, props.requestWithSession],
@@ -50,11 +53,13 @@ export function useCollect(props: TextReadingProps) {
                   props.document.sourceLanguage,
                   props.document.targetLanguage,
               ] as const);
+
     const close = () => {
         setStep('closed');
         setSelection(null);
         operation.current = null;
     };
+
     const onSelection = (value: ReadingSelection | null) => {
         if (!['closed', 'trigger', 'success', 'adding'].includes(step)) return;
         if (!value && step === 'adding') return;
@@ -62,6 +67,7 @@ export function useCollect(props: TextReadingProps) {
         setStep(value ? 'trigger' : 'closed');
         operation.current = null;
     };
+
     const load = async () => {
         if (!props.requestWithSession) {
             setStep('signin');
@@ -102,6 +108,7 @@ export function useCollect(props: TextReadingProps) {
             if (!control.signal.aborted) setStep('error');
         }
     };
+
     const isInflight = (target: TextSelectionTarget) =>
         jobs.tasks.some(
             (task) =>
@@ -115,6 +122,7 @@ export function useCollect(props: TextReadingProps) {
                     selection?.selection.endOffset &&
                 JSON.stringify(task.body.target) === JSON.stringify(target),
         );
+
     const retryOperation = (task: CollectionTask) => {
         const body = task.terminal
             ? { ...task.body, operationId: crypto.randomUUID() }
@@ -125,6 +133,7 @@ export function useCollect(props: TextReadingProps) {
         setStep('adding');
         void jobs.run(body, task.selection);
     };
+
     const submit = (target: TextSelectionTarget, confirmDuplicate = false) => {
         if (
             step === 'adding' ||
@@ -154,12 +163,14 @@ export function useCollect(props: TextReadingProps) {
         setStep('adding');
         void jobs.run(body, selection);
     };
+
     const restore = (task: CollectionTask) => {
         operation.current = task.body;
         setSelection(task.selection);
         setFailureCode(task.failureCode);
         setStep(task.state);
     };
+
     return {
         step,
         selection,
@@ -220,4 +231,5 @@ export function useCollect(props: TextReadingProps) {
         },
     };
 }
+
 export type CollectController = ReturnType<typeof useCollect>;

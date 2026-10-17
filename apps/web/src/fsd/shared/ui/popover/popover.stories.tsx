@@ -78,10 +78,7 @@ function ModalContainerExample() {
                 </button>
                 <Popover open={open} onOpenChange={setOpen}>
                     <PopoverTrigger>Open preferences</PopoverTrigger>
-                    <PopoverContent
-                        aria-label='Preferences'
-                        portalContainer={dialogRef.current}
-                    >
+                    <PopoverContent aria-label='Preferences'>
                         <label>
                             Appearance
                             <select defaultValue='system'>
@@ -100,4 +97,22 @@ function ModalContainerExample() {
 export const InsideModal: StoryObj<typeof meta> = {
     args: { children: null },
     render: () => <ModalContainerExample />,
+};
+
+export const OversizedContent: StoryObj<typeof meta> = {
+    args: {
+        label: 'Open scrollable preferences',
+        trigger: 'Scrollable preferences',
+        children: (
+            <>
+                {Array.from({ length: 30 }, (_, index) => (
+                    <p key={index}>
+                        Preference {index + 1}: keep this content reachable.
+                    </p>
+                ))}
+                <button type='button'>Final action</button>
+            </>
+        ),
+    },
+    parameters: { viewport: { defaultViewport: 'mobile1' } },
 };

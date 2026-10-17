@@ -3,8 +3,10 @@ import type { TextWorkspace } from '../../hooks/use-text-workspace';
 import { workspaceValid } from '../../lib/workspace-content';
 import { useWorkspaceCopy } from './workspace-copy';
 import styles from './workspace-page.module.css';
+
 export type WorkspaceConfirmation =
     'close' | 'retranslate' | 'discard' | 'cancel-edit' | 'conflict' | null;
+
 export function WorkspaceConfirm({
     kind,
     ws,
@@ -17,7 +19,7 @@ export function WorkspaceConfirm({
     onLeave(): void;
 }) {
     const { copy } = useWorkspaceCopy();
-    const running = ws.translation.active;
+    const running = ws.aiActive ?? ws.translation.active;
     let title = copy('discardTitle');
     let description = copy('discardHint');
     let confirm = copy('discard');
@@ -26,11 +28,13 @@ export function WorkspaceConfirm({
         description = running ? copy('stopHint') : copy('leaveHint');
         confirm = running ? copy('stopClose') : copy('discardClose');
     }
+
     if (kind === 'retranslate') {
         title = copy('retranslateTitle');
         description = copy('retranslateHint');
         confirm = copy('retranslate');
     }
+
     if (kind === 'conflict') {
         title = copy('review');
         description = copy('conflictHint');
@@ -40,7 +44,8 @@ export function WorkspaceConfirm({
         if (kind === 'close') {
             if (running) {
                 try {
-                    await ws.translation.cancel();
+                    if (ws.cancelAi) ws.cancelAi();
+                    else await ws.translation.cancel();
                 } catch {
                     return;
                 }
@@ -64,10 +69,12 @@ export function WorkspaceConfirm({
     async function saveClose() {
         if (await ws.save()) onLeave();
     }
+
     function newer() {
         ws.useNewer();
         onClose();
     }
+
     const canSave =
         kind === 'close' &&
         !running &&
@@ -77,8 +84,10 @@ export function WorkspaceConfirm({
                 ? ws.pairs.every(
                       (pair) => pair.source.trim() && pair.translation.trim(),
                   )
-                : workspaceValid(ws.input)));
+                : ws.input.sourceLanguage !== 'auto' &&
+                  workspaceValid(ws.input)));
     const mine = ws.pairs;
+
     return (
         <Dialog
             open={kind !== null}

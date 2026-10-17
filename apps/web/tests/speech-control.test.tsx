@@ -48,19 +48,21 @@ function control(
 
 beforeEach(() => vi.clearAllMocks());
 
-it('shows only an icon while retaining an action label and keyboard tooltip', () => {
+it('shows only an icon while retaining an action label and keyboard tooltip', async () => {
     control('idle');
     const button = screen.getByRole('button', { name: 'Play Source phrase' });
     expect(button).toHaveTextContent('');
     fireEvent.focus(button);
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Play Source phrase');
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Play Source phrase',
+    );
     fireEvent.click(button);
     expect(play).toHaveBeenCalledOnce();
     fireEvent.keyDown(button, { key: 'Escape' });
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
 });
 
-it('keeps retry instructions in a tooltip and announces failures without inline text', () => {
+it('keeps retry instructions in a tooltip and announces failures without inline text', async () => {
     control('failed');
     const button = screen.getByRole('button', { name: 'Play Source phrase' });
     expect(button).toHaveTextContent('');
@@ -68,14 +70,14 @@ it('keeps retry instructions in a tooltip and announces failures without inline 
         'Pronunciation could not be prepared. Try again.',
     );
     fireEvent.focus(button);
-    expect(screen.getByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
         'Pronunciation could not be prepared. Try again.',
     );
 });
 
 it.each(['en', 'ru', 'fr', 'es'] as const)(
     'localizes provider failure in the %s tooltip and live announcement',
-    (locale) => {
+    async (locale) => {
         control('failed', false, 'speech_provider_unavailable', locale);
         const button = screen.getByRole('button');
         expect(button).toHaveTextContent('');
@@ -83,7 +85,7 @@ it.each(['en', 'ru', 'fr', 'es'] as const)(
             speechCopy[locale].providerUnavailable,
         );
         fireEvent.focus(button);
-        expect(screen.getByRole('tooltip')).toHaveTextContent(
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
             speechCopy[locale].providerUnavailable,
         );
     },
@@ -108,11 +110,11 @@ it('switches to an icon-only stop action while playing', () => {
     expect(stop).toHaveBeenCalledOnce();
 });
 
-it('keeps the test tone disclosure in the ready tooltip and live announcement', () => {
+it('keeps the test tone disclosure in the ready tooltip and live announcement', async () => {
     control('ready', true);
     const button = screen.getByRole('button', { name: 'Play Source phrase' });
     fireEvent.focus(button);
-    expect(screen.getByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
         'Development test tone',
     );
     expect(screen.getByRole('status')).toHaveTextContent(

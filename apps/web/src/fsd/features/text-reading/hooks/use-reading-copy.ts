@@ -5,6 +5,7 @@ import {
     textsReadingEs,
     textsReadingFr,
 } from '@/fsd/shared/i18n/messages/texts-reading';
+
 export function useReadingCopy() {
     const { locale } = useI18n();
     const catalogs: Record<
@@ -16,7 +17,9 @@ export function useReadingCopy() {
         es: textsReadingEs,
         fr: textsReadingFr,
     };
+
     const messages = catalogs[locale] ?? textsReadingEn;
+
     return (
         key: keyof typeof textsReadingEn,
         values: Record<string, string | number> = {},

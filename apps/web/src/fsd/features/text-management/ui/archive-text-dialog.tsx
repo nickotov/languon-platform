@@ -11,6 +11,7 @@ type Props = MutationProps<TextResource> & {
     kind: 'folder' | 'text';
     resource: TextResource;
 };
+
 export function ArchiveTextDialog({
     open,
     kind,
@@ -22,6 +23,7 @@ export function ArchiveTextDialog({
     const { t } = useI18n();
     const mutation = useTextMutation(requestWithSession);
     const name = 'name' in resource ? resource.name : resource.title;
+
     function archive() {
         void mutation.run(
             async (token) =>
@@ -43,6 +45,7 @@ export function ArchiveTextDialog({
             t('texts.manage.archived'),
         );
     }
+
     const consequences = [
         t(
             kind === 'folder'
@@ -53,6 +56,7 @@ export function ArchiveTextDialog({
         t('texts.manage.restorePrivate'),
         t('texts.manage.independentUnaffected'),
     ];
+
     return (
         <Dialog
             open={open}
@@ -70,6 +74,7 @@ export function ArchiveTextDialog({
                         {t('common.cancel')}
                     </Button>
                     <Button
+                        desktopIconOnly
                         variant='danger'
                         loading={mutation.busy}
                         onClick={archive}

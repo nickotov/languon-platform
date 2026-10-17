@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { BookMarked, Check, Info, Search } from 'lucide-react';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import type { RequestWithTextSession } from '@/fsd/entities/texts';
@@ -6,6 +6,7 @@ import { Input } from '@/fsd/shared/ui';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
 import type { CollectController } from '../../hooks/use-collect';
 import styles from './collect-panel.module.css';
+
 export function DictionaryChoices({
     c,
     chosen,
@@ -39,9 +40,22 @@ export function DictionaryChoices({
             .catch(() => undefined);
         return () => control.abort();
     }, [chosen, requestWithSession]);
+
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const matchingDictionaries = c.dictionaries.filter((dictionary) =>
+        dictionary.name.toLocaleLowerCase().includes(normalizedQuery),
+    );
+
+    function changeQuery(event: ChangeEvent<HTMLInputElement>) {
+        setQuery(event.target.value);
+    }
+
+    function chooseDictionary(event: ChangeEvent<HTMLInputElement>) {
+        setChosen(event.target.value);
+    }
+
     return (
         <>
-            {' '}
             {c.dictionaries.length ? (
                 <>
                     <strong>{t('texts.collect.choose')}</strong>
@@ -52,7 +66,7 @@ export function DictionaryChoices({
                             placeholder={t('texts.collect.filter')}
                             leadingIcon={<Search size={16} />}
                             value={query}
-                            onChange={(event) => setQuery(event.target.value)}
+                            onChange={changeQuery}
                         />
                     )}
                     <div
@@ -60,43 +74,35 @@ export function DictionaryChoices({
                         role='radiogroup'
                         aria-label={t('texts.collect.choose')}
                     >
-                        {c.dictionaries
-                            .filter((d) =>
-                                d.name
-                                    .toLocaleLowerCase()
-                                    .includes(query.trim().toLocaleLowerCase()),
-                            )
-                            .map((d) => (
-                                <label
-                                    key={d.id}
-                                    className={`${styles.choice} ${chosen === d.id ? styles.checked : ''}`}
-                                >
-                                    <input
-                                        type='radio'
-                                        name='collection-dictionary'
-                                        value={d.id}
-                                        checked={chosen === d.id}
-                                        onChange={() => setChosen(d.id)}
-                                    />
-                                    <span className={styles.radio} aria-hidden>
-                                        {chosen === d.id && <Check size={12} />}
-                                    </span>
-                                    <span className={styles.choiceText}>
-                                        <strong>{d.name}</strong>
-                                        <small>
-                                            {t('texts.collect.cards', {
-                                                count: d.activeCardCount,
-                                            })}
-                                        </small>
-                                    </span>
-                                    <BookMarked size={16} aria-hidden />
-                                </label>
-                            ))}
-                        {!c.dictionaries.some((d) =>
-                            d.name
-                                .toLocaleLowerCase()
-                                .includes(query.trim().toLocaleLowerCase()),
-                        ) && <p>{t('texts.collect.noMatch', { query })}</p>}
+                        {matchingDictionaries.map((d) => (
+                            <label
+                                key={d.id}
+                                className={`${styles.choice} ${chosen === d.id ? styles.checked : ''}`}
+                            >
+                                <input
+                                    type='radio'
+                                    name='collection-dictionary'
+                                    value={d.id}
+                                    checked={chosen === d.id}
+                                    onChange={chooseDictionary}
+                                />
+                                <span className={styles.radio} aria-hidden>
+                                    {chosen === d.id && <Check size={12} />}
+                                </span>
+                                <span className={styles.choiceText}>
+                                    <strong>{d.name}</strong>
+                                    <small>
+                                        {t('texts.collect.cards', {
+                                            count: d.activeCardCount,
+                                        })}
+                                    </small>
+                                </span>
+                                <BookMarked size={16} aria-hidden />
+                            </label>
+                        ))}
+                        {matchingDictionaries.length === 0 && (
+                            <p>{t('texts.collect.noMatch', { query })}</p>
+                        )}
                     </div>
                 </>
             ) : (

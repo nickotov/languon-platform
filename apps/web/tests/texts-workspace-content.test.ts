@@ -78,6 +78,30 @@ describe('workspace source and explicit persistence', () => {
             },
         ]);
     });
+    it('creates an Auto proposal draft with the resolved proposal language', async () => {
+        const create = vi
+            .spyOn(textsApi, 'createText')
+            .mockResolvedValue({ text: document });
+        vi.spyOn(textsApi, 'saveText').mockResolvedValue({
+            text: { ...document, alignment: proposal.alignment },
+        });
+        await persistWorkspace({
+            request,
+            folderId,
+            document: null,
+            input: { ...input, sourceLanguage: 'auto' },
+            proposal,
+            pairs: [],
+            editing: false,
+            reviewedVersion: null,
+            onCreated: () => undefined,
+        });
+        expect(create).toHaveBeenCalledWith(
+            'test-token',
+            expect.objectContaining({ sourceLanguage: 'en' }),
+        );
+        vi.restoreAllMocks();
+    });
     it('creates a draft only on explicit persistence and retains it if attachment fails for retry', async () => {
         vi.spyOn(textsApi, 'getText').mockResolvedValue({ text: document });
         const create = vi

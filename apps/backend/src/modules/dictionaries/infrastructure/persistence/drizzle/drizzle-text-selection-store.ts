@@ -589,6 +589,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 await this.terminal(tx, job!, 'cancelled', null, now, usage);
                 return false;
             }
+            const values = selectionCardValues(lease.input, delta);
             try {
                 await assertSelectionSource(
                     tx,
@@ -605,6 +606,17 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                     lease.input.source,
                     job!.confirmDuplicate,
                 );
+                // Canonical Source can collide even when the selected text does not.
+                if (values.source !== lease.input.source)
+                    await selectionTarget(
+                        tx,
+                        job!.ownerId,
+                        job!.target!,
+                        lease.input.sourceLanguage,
+                        lease.input.targetLanguage,
+                        values.source,
+                        job!.confirmDuplicate,
+                    );
             } catch (error) {
                 await this.terminal(
                     tx,
@@ -623,7 +635,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 target: job!.target!,
                 sourceLanguage: lease.input.sourceLanguage,
                 targetLanguage: lease.input.targetLanguage,
-                values: selectionCardValues(lease.input, delta),
+                values,
                 confirmDuplicate: job!.confirmDuplicate,
                 now,
             });

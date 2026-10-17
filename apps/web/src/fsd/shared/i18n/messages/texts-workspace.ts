@@ -1,4 +1,22 @@
 export const textsWorkspaceEn = {
+    'texts.workspace.sourceRequired':
+        'Choose a source language or automatic detection.',
+    'texts.workspace.targetRequired': 'Choose a translation language.',
+    'texts.workspace.sameLanguages':
+        'Choose different source and translation languages.',
+    'texts.workspace.textRequired': 'Enter text to translate.',
+    'texts.workspace.textTooLong':
+        'The text is too long. Reduce it to 20,000 characters or fewer.',
+    'texts.workspace.auto': 'Detect automatically',
+    'texts.workspace.autoHint':
+        'The source language is detected when you translate.',
+    'texts.workspace.autoDraftHint':
+        'Choose a source language to save an untranslated draft.',
+    'texts.workspace.autoUnknown':
+        'Couldn’t detect a supported language. Choose the source language and try again.',
+    'texts.workspace.autoSame':
+        'The source and translation languages are the same. Choose another translation language.',
+
     'texts.workspace.shorten': 'Shorten the text',
     'texts.workspace.dismissError': 'Dismiss error',
     'texts.workspace.new': 'New text',
@@ -108,6 +126,23 @@ export const textsWorkspaceEn = {
     'texts.workspace.loading': 'Loading text…',
 } as const;
 export const textsWorkspaceRu = {
+    'texts.workspace.sourceRequired':
+        'Выберите язык оригинала или автоматическое определение.',
+    'texts.workspace.targetRequired': 'Выберите язык перевода.',
+    'texts.workspace.sameLanguages':
+        'Выберите разные языки оригинала и перевода.',
+    'texts.workspace.textRequired': 'Добавьте текст для перевода.',
+    'texts.workspace.textTooLong':
+        'Текст слишком длинный. Сократите его до 20 000 символов или меньше.',
+    'texts.workspace.auto': 'Определить автоматически',
+    'texts.workspace.autoHint': 'Язык оригинала определяется при переводе.',
+    'texts.workspace.autoDraftHint':
+        'Чтобы сохранить черновик без перевода, выберите язык оригинала.',
+    'texts.workspace.autoUnknown':
+        'Не удалось определить поддерживаемый язык. Выберите язык оригинала и повторите попытку.',
+    'texts.workspace.autoSame':
+        'Языки оригинала и перевода совпадают. Выберите другой язык перевода.',
+
     'texts.workspace.shorten': 'Сократить текст',
     'texts.workspace.dismissError': 'Скрыть ошибку',
     'texts.workspace.new': 'Новый текст',
@@ -217,6 +252,23 @@ export const textsWorkspaceRu = {
     'texts.workspace.loading': 'Загрузка текста…',
 };
 export const textsWorkspaceEs = {
+    'texts.workspace.sourceRequired':
+        'Elige el idioma de origen o la detección automática.',
+    'texts.workspace.targetRequired': 'Elige el idioma de traducción.',
+    'texts.workspace.sameLanguages':
+        'Elige idiomas de origen y traducción diferentes.',
+    'texts.workspace.textRequired': 'Introduce el texto que quieres traducir.',
+    'texts.workspace.textTooLong':
+        'El texto es demasiado largo. Redúcelo a 20 000 caracteres o menos.',
+    'texts.workspace.auto': 'Detectar automáticamente',
+    'texts.workspace.autoHint': 'El idioma original se detecta al traducir.',
+    'texts.workspace.autoDraftHint':
+        'Elige un idioma original para guardar un borrador sin traducir.',
+    'texts.workspace.autoUnknown':
+        'No se pudo detectar un idioma compatible. Elige el idioma original e inténtalo de nuevo.',
+    'texts.workspace.autoSame':
+        'El idioma original y el de traducción son iguales. Elige otro idioma de traducción.',
+
     'texts.workspace.shorten': 'Acortar el texto',
     'texts.workspace.dismissError': 'Cerrar error',
     'texts.workspace.new': 'Texto nuevo',
@@ -326,6 +378,23 @@ export const textsWorkspaceEs = {
     'texts.workspace.loading': 'Cargando texto…',
 };
 export const textsWorkspaceFr = {
+    'texts.workspace.sourceRequired':
+        'Choisissez la langue source ou la détection automatique.',
+    'texts.workspace.targetRequired': 'Choisissez la langue de traduction.',
+    'texts.workspace.sameLanguages':
+        'Choisissez des langues source et de traduction différentes.',
+    'texts.workspace.textRequired': 'Ajoutez un texte à traduire.',
+    'texts.workspace.textTooLong':
+        'Le texte est trop long. Réduisez-le à 20 000 caractères ou moins.',
+    'texts.workspace.auto': 'Détecter automatiquement',
+    'texts.workspace.autoHint':
+        'La langue source est détectée lors de la traduction.',
+    'texts.workspace.autoDraftHint':
+        'Choisissez une langue source pour enregistrer un brouillon sans traduction.',
+    'texts.workspace.autoUnknown':
+        'Impossible de détecter une langue prise en charge. Choisissez la langue source et réessayez.',
+    'texts.workspace.autoSame':
+        'Les langues source et cible sont identiques. Choisissez une autre langue cible.',
     'texts.workspace.shorten': 'Raccourcir le texte',
     'texts.workspace.dismissError': 'Fermer l’erreur',
     'texts.workspace.new': 'Nouveau texte',

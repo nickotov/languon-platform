@@ -7,6 +7,7 @@ export function useTextWorkspaceSession(
     request: RequestWithTextSession,
 ) {
     const mounted = useRef(true);
+
     useEffect(() => {
         mounted.current = true;
         return () => {

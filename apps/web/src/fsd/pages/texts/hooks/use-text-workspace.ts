@@ -1,8 +1,4 @@
-import {
-    TextLanguageSchema,
-    type TextDocument,
-    type TextTranslationProposal,
-} from '@languon/contracts';
+import { type TextDocument } from '@languon/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { textsApi, type RequestWithTextSession } from '@/fsd/entities/texts';
@@ -21,6 +17,7 @@ import { useTextWorkspaceSave } from './use-text-workspace-save';
 import { useTextWorkspaceData } from './use-text-workspace-data';
 import { useTextWorkspaceSession } from './use-text-workspace-session';
 import { useTextWorkspaceJob } from './use-text-workspace-job';
+import { useTextWorkspaceAuto } from './use-text-workspace-auto';
 
 export function useTextWorkspace(
     folderId: string,
@@ -32,6 +29,7 @@ export function useTextWorkspace(
         actorId,
         sessionRequest,
     );
+
     const client = useQueryClient();
     const [document, setDocument] = useState<TextDocument | null>(null);
     const [input, setInput] = useState(emptyWorkspaceInput);
@@ -42,15 +40,26 @@ export function useTextWorkspace(
     const [conflict, setConflict] = useState<TextDocument | null>(null);
     const [showErrors, setShowErrors] = useState(false);
     const [expired, setExpired] = useState(false);
-    const translation = useTextWorkspaceJob(request, actorId);
-    const detection = useTextWorkspaceJob(request, actorId);
+    const translation = useTextWorkspaceJob(request, actorId, sessionRequest);
+    const detection = useTextWorkspaceJob(request, actorId, sessionRequest);
+    const auto = useTextWorkspaceAuto({
+        input,
+        folderId,
+        document,
+        detection,
+        translation,
+        isCurrent,
+        setInput,
+    });
     const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+
     const { folder, remote, languages } = useTextWorkspaceData(
         folderId,
         textId,
         request,
         actorId,
     );
+
     function adopt(next: TextDocument) {
         if (!isCurrent()) return;
         setDocument(next);
@@ -59,15 +68,17 @@ export function useTextWorkspace(
         setMode(next.alignment ? 'read' : 'compose');
         setTouched(new Set());
         setConflict(null);
+        setShowErrors(false);
         client.setQueryData(['text', actorId, next.id], { text: next });
         void client.invalidateQueries({ queryKey: ['texts'] });
     }
+
     useEffect(() => {
         if (remote.data && !document) adopt(remote.data.text);
     }, [remote.data, document]);
+
     const result = translation.job?.result;
-    const proposal: TextTranslationProposal | null =
-        result && 'alignment' in result ? result : null;
+    const proposal = result && 'alignment' in result ? result : null;
     const previewExpired = useTextWorkspaceExpiry(translation.job, expired);
     const detectionResult =
         !suggestionDismissed &&
@@ -81,27 +92,20 @@ export function useTextWorkspace(
         touched.size ||
         JSON.stringify(input) !== JSON.stringify(baseline),
     );
+
     useTextWorkspaceUnload(unsaved);
+
     async function translate() {
         if (!workspaceValid(input)) {
             setShowErrors(true);
             return;
         }
+        setShowErrors(false);
+        clearSaveError();
         setExpired(false);
-        await translation.start({
-            folderId,
-            sourceText: input.sourceText,
-            sourceLanguage: TextLanguageSchema.parse(input.sourceLanguage),
-            targetLanguage: TextLanguageSchema.parse(input.targetLanguage),
-            operationId: crypto.randomUUID(),
-            ...(document
-                ? { textId: document.id, expectedTextVersion: document.version }
-                : {}),
-        });
+        await auto.start();
     }
-    useEffect(() => {
-        detection.clear();
-    }, [input.sourceText]);
+
     async function detect() {
         setSuggestionDismissed(false);
         await detection.start(
@@ -113,7 +117,8 @@ export function useTextWorkspace(
             true,
         );
     }
-    const { saving, saveError, save } = useTextWorkspaceSave({
+
+    const { saving, saveError, save, clearSaveError } = useTextWorkspaceSave({
         request,
         folderId,
         document,
@@ -131,6 +136,7 @@ export function useTextWorkspace(
         clearProposal: translation.clear,
         isCurrent,
     });
+
     function startEdit() {
         if (!document) return;
         setPairs(workspacePairs(document));
@@ -138,6 +144,7 @@ export function useTextWorkspace(
         setShowErrors(false);
         setMode('edit');
     }
+
     function shortenSource() {
         translation.clear();
         if (document?.alignment) startEdit();
@@ -147,6 +154,7 @@ export function useTextWorkspace(
                 ?.focus(),
         );
     }
+
     function editPair(
         pairId: string,
         side: 'source' | 'translation',
@@ -159,20 +167,24 @@ export function useTextWorkspace(
         );
         setTouched((previous) => new Set(previous).add(pairId));
     }
+
     function cancelEdit() {
         setMode('read');
         setTouched(new Set());
         setConflict(null);
     }
+
     function discardProposal() {
         translation.clear();
         setExpired(false);
     }
+
     function updateMetadata(next: TextDocument) {
         setDocument(next);
         setInput((previous) => ({ ...previous, title: next.title }));
         setBaseline((previous) => ({ ...previous, title: next.title }));
     }
+
     async function refreshMetadata() {
         if (!document) return;
         try {
@@ -184,12 +196,14 @@ export function useTextWorkspace(
             /* Preserve the current editor; a later Save still checks its version. */
         }
     }
+
     function useNewer() {
         if (conflict) {
             adopt(conflict);
             translation.clear();
         }
     }
+
     return {
         requestWithSession: request,
         folder,
@@ -197,7 +211,7 @@ export function useTextWorkspace(
         languages,
         document,
         input,
-        setInput,
+        setInput: auto.changeInput,
         mode,
         pairs,
         touched,
@@ -206,6 +220,10 @@ export function useTextWorkspace(
         conflict,
         showErrors,
         translation,
+        autoDetecting: auto.detecting,
+        autoError: auto.error,
+        aiActive: auto.detecting || translation.active || detection.active,
+        cancelAi: auto.invalidate,
         detection,
         detectionResult,
         suggestionDismissed,

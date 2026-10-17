@@ -1,4 +1,5 @@
 import { BookPlus, Info, X } from 'lucide-react';
+import type { PointerEvent, MouseEvent } from 'react';
 import {
     BottomSheet,
     Button,
@@ -28,10 +29,8 @@ function CurrentCollectionLayer({
     compact,
     onRequireSignIn,
     requestWithSession,
-    portalContainer,
 }: {
     c: CollectController;
-    portalContainer?: HTMLElement | null;
     requestWithSession?: RequestWithTextSession | undefined;
     compact: boolean;
     onRequireSignIn?: (() => void) | undefined;
@@ -39,14 +38,28 @@ function CurrentCollectionLayer({
     const t = useReadingCopy();
     const selection = c.selection;
     const panelOpen = !['closed', 'trigger'].includes(c.step);
+
+    function preserveSelection(event: PointerEvent | MouseEvent) {
+        event.preventDefault();
+    }
+
+    function openCollection() {
+        void c.open();
+    }
+
+    function changeOpen(open: boolean) {
+        if (!open) c.close();
+    }
+
     const trigger = selection && (
         <div className={styles.trigger}>
             {selection.kind === 'valid' ? (
                 <Button
+                    desktopIconOnly
                     size='compact'
-                    onMouseDown={(e) => e.preventDefault()}
-                    onPointerDown={(e) => e.preventDefault()}
-                    onClick={() => void c.open()}
+                    onMouseDown={preserveSelection}
+                    onPointerDown={preserveSelection}
+                    onClick={openCollection}
                     leadingIcon={<BookPlus size={16} />}
                 >
                     {t('texts.collect.add')}
@@ -71,84 +84,72 @@ function CurrentCollectionLayer({
             />
         </div>
     );
-    const title =
-        c.step === 'new'
-            ? t('texts.collect.new')
-            : c.step === 'signin'
-              ? t('texts.collect.signin')
-              : t('texts.collect.title', { term: selection?.text ?? '' });
-    if (['adding', 'success'].includes(c.step)) return null;
+    let title = t('texts.collect.title', { term: selection?.text ?? '' });
+
+    if (c.step === 'new') title = t('texts.collect.new');
+    if (c.step === 'signin') title = t('texts.collect.signin');
+    if (['closed', 'adding', 'success'].includes(c.step) || !selection) {
+        return null;
+    }
+
+    if (compact && panelOpen) {
+        return (
+            <BottomSheet
+                open
+                title={title}
+                onClose={c.close}
+                closeLabel={t('texts.collect.close')}
+            >
+                <CollectPanel
+                    requestWithSession={requestWithSession}
+                    collect={c}
+                    onRequireSignIn={onRequireSignIn}
+                />
+            </BottomSheet>
+        );
+    }
+
+    const contentClass = panelOpen
+        ? styles.popover
+        : `${styles.popover} ${styles.triggerPopover}`;
+
     return (
-        <>
-            {selection &&
-                c.step !== 'closed' &&
-                (compact ? (
-                    panelOpen ? (
-                        <BottomSheet
-                            open
-                            title={title}
-                            onClose={c.close}
-                            closeLabel={t('texts.collect.close')}
-                            dismissible={c.step !== 'adding'}
-                        >
-                            <CollectPanel
-                                requestWithSession={requestWithSession}
-                                collect={c}
-                                onRequireSignIn={onRequireSignIn}
+        <Popover open onOpenChange={changeOpen}>
+            <PopoverAnchor asChild virtualRef={selection.anchor}>
+                <span className={styles.selectionAnchor} aria-hidden='true' />
+            </PopoverAnchor>
+            <PopoverContent
+                aria-label={title}
+                side={panelOpen ? 'right' : 'top'}
+                align='center'
+                sideOffset={10}
+                autoFocus={panelOpen}
+                returnFocus={panelOpen}
+                closeOnFocusOut={false}
+                className={contentClass}
+            >
+                {panelOpen ? (
+                    <>
+                        <div className={styles.panelHeading}>
+                            <h2>{title}</h2>
+                            <IconButton
+                                icon={<X size={16} />}
+                                label={t('texts.collect.close')}
+                                onClick={c.close}
+                                variant='ghost'
+                                size='sm'
                             />
-                        </BottomSheet>
-                    ) : (
-                        <div className={styles.mobileTrigger}>{trigger}</div>
-                    )
+                        </div>
+                        <CollectPanel
+                            requestWithSession={requestWithSession}
+                            collect={c}
+                            onRequireSignIn={onRequireSignIn}
+                        />
+                    </>
                 ) : (
-                    <Popover open onOpenChange={(open) => !open && c.close()}>
-                        <PopoverAnchor asChild>
-                            <span
-                                className={styles.selectionAnchor}
-                                style={{
-                                    top: selection.rect.top,
-                                    left: selection.rect.left,
-                                    width: selection.rect.width,
-                                    height: selection.rect.height,
-                                }}
-                            />
-                        </PopoverAnchor>
-                        <PopoverContent
-                            portalContainer={portalContainer ?? null}
-                            side='top'
-                            align='center'
-                            sideOffset={10}
-                            className={
-                                panelOpen
-                                    ? styles.popover
-                                    : styles.triggerPopover
-                            }
-                        >
-                            {panelOpen ? (
-                                <>
-                                    <div className={styles.panelHeading}>
-                                        <h2>{title}</h2>
-                                        <IconButton
-                                            icon={<X size={16} />}
-                                            label={t('texts.collect.close')}
-                                            onClick={c.close}
-                                            disabled={c.step === 'adding'}
-                                            variant='ghost'
-                                            size='sm'
-                                        />
-                                    </div>
-                                    <CollectPanel
-                                        requestWithSession={requestWithSession}
-                                        collect={c}
-                                        onRequireSignIn={onRequireSignIn}
-                                    />
-                                </>
-                            ) : (
-                                trigger
-                            )}
-                        </PopoverContent>
-                    </Popover>
-                ))}
-        </>
+                    trigger
+                )}
+            </PopoverContent>
+        </Popover>
     );
 }

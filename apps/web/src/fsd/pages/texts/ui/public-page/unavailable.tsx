@@ -2,8 +2,10 @@ import { Link2Off } from 'lucide-react';
 import { ButtonLink } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import styles from './unavailable.module.css';
+
 export function PublicUnavailable() {
     const { href, t } = useI18n();
+
     return (
         <main className={styles.unavailable}>
             <div className={styles.unavailableCard}>

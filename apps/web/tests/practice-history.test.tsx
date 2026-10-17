@@ -236,7 +236,7 @@ describe('dictionary practice history', () => {
 });
 
 describe('shared dictionary personal secondary actions', () => {
-    it('keeps saved sentences and history separate from training and invokes their actions', () => {
+    it('keeps saved sentences and history separate from training and invokes their actions', async () => {
         const onOpenLibrary = vi.fn();
         const onOpenHistory = vi.fn();
         render(
@@ -253,12 +253,16 @@ describe('shared dictionary personal secondary actions', () => {
             name: 'More dictionary actions',
         });
         fireEvent.click(trigger);
-        expect(screen.getAllByRole('menuitem')).toHaveLength(2);
-        fireEvent.click(screen.getByRole('menuitem', { name: 'Sentences' }));
+        expect(await screen.findAllByRole('menuitem')).toHaveLength(2);
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Sentences' }),
+        );
         expect(onOpenLibrary).toHaveBeenCalledOnce();
         fireEvent.click(trigger);
         fireEvent.click(
-            screen.getByRole('menuitem', { name: 'My practice history' }),
+            await screen.findByRole('menuitem', {
+                name: 'My practice history',
+            }),
         );
         expect(onOpenHistory).toHaveBeenCalledOnce();
     });

@@ -12,6 +12,7 @@ export function useSharedText(kind: 'text' | 'folder', shareId: string) {
         epoch: string;
         locator: string;
     } | null>(null);
+
     useEffect(() => {
         function update() {
             const parsed = TextShareKeySchema.safeParse(
@@ -46,6 +47,7 @@ export function useSharedText(kind: 'text' | 'folder', shareId: string) {
         staleTime: 0,
         gcTime: 0,
     });
+
     return {
         ...query,
         shareKey: key,

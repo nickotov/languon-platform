@@ -8,10 +8,13 @@
 }
 
 .card {
-    padding: var(--space-16);
     background: var(--background-surface);
     border-color: var(--border-default);
     box-shadow: none;
+}
+
+.cardContent {
+    padding: var(--space-16);
 }
 
 .topRow {
@@ -185,7 +188,7 @@
 }
 
 @media (max-width: 639px) {
-    .card {
+    .cardContent {
         padding: var(--space-12);
     }
 

@@ -20,6 +20,7 @@ export function PublicFolder({
     onCopyText(text: TextDocument): void;
 }) {
     const { t } = useI18n();
+
     return (
         <main className={styles.folder}>
             <div className={styles.folderHeading}>
@@ -37,6 +38,7 @@ export function PublicFolder({
                     </p>
                 </div>
                 <Button
+                    desktopIconOnly
                     variant='secondary'
                     onClick={onCopyFolder}
                     leadingIcon={<Copy size={16} aria-hidden />}
@@ -61,6 +63,7 @@ export function PublicFolder({
         </main>
     );
 }
+
 function PublicTextRow({
     text,
     basePath,
@@ -75,9 +78,11 @@ function PublicTextRow({
     const { href, locale, t } = useI18n();
     const names = new Intl.DisplayNames([locale], { type: 'language' });
     const target = href(`${basePath}/texts/${text.id}#${shareKey}`);
+
     function handleCopy() {
         onCopy(text);
     }
+
     return (
         <li className={styles.row}>
             <div className={styles.rowInfo}>
@@ -89,11 +94,15 @@ function PublicTextRow({
                 </p>
             </div>
             <div className={styles.actions}>
-                <ButtonLink href={target}>
-                    <BookOpen size={16} aria-hidden />
+                <ButtonLink
+                    desktopIconOnly
+                    leadingIcon={<BookOpen size={16} aria-hidden />}
+                    href={target}
+                >
                     {t('texts.public.read')}
                 </ButtonLink>
                 <Button
+                    desktopIconOnly
                     variant='secondary'
                     onClick={handleCopy}
                     leadingIcon={<Copy size={16} aria-hidden />}

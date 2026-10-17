@@ -19,7 +19,9 @@ import {
     type MenuItem,
 } from '@/fsd/shared/ui';
 import styles from './folder-page.module.css';
+
 export type FolderAction = 'edit-folder' | 'share-folder' | 'archive-folder';
+
 export function FolderHeader({
     folder,
     pending,
@@ -40,18 +42,23 @@ export function FolderHeader({
         shareLabel = folder.isShared
             ? t('texts.folder.manageShare')
             : t('texts.library.share');
+
     function edit() {
         onAction('edit-folder');
     }
+
     function share() {
         onAction('share-folder');
     }
+
     function archive() {
         onAction('archive-folder');
     }
+
     function add() {
         router.push(href(`/texts/folders/${folder.id}/new`));
     }
+
     const items: MenuItem[] = [
         {
             label: t('texts.folder.edit'),
@@ -78,6 +85,7 @@ export function FolderHeader({
     ];
     const restoreButton = (
         <Button
+            desktopIconOnly
             variant='secondary'
             size='compact'
             leadingIcon={<ArchiveRestoreIcon className={styles.actionIcon} />}
@@ -87,6 +95,7 @@ export function FolderHeader({
             {t('texts.library.restore')}
         </Button>
     );
+
     return (
         <>
             <Breadcrumb items={crumbs} ariaLabel={t('texts.library.folders')} />
@@ -138,6 +147,7 @@ export function FolderHeader({
                             triggerClassName={styles.folderMenuTrigger}
                         />
                         <Button
+                            desktopIconOnly
                             onClick={add}
                             leadingIcon={
                                 <PlusIcon className={styles.actionIcon} />

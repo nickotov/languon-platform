@@ -62,15 +62,19 @@ export function SharedTextsPage({
         shared.isFetchNextPageError,
         shared.fetchNextPage,
     ]);
+
     function openSignIn() {
         setSignIn(true);
     }
+
     function closeSignIn() {
         setSignIn(false);
     }
+
     function closeCopy() {
         setCopy(null);
     }
+
     function openCopyText(item: TextDocument) {
         if (!signedIn) {
             openSignIn();
@@ -84,9 +88,11 @@ export function SharedTextsPage({
             defaultName: shared.folder?.name ?? item.title,
         });
     }
+
     function copyCurrent() {
         if (text) openCopyText(text);
     }
+
     function openCopyFolder() {
         if (!signedIn) {
             openSignIn();
@@ -99,9 +105,11 @@ export function SharedTextsPage({
                 defaultName: shared.folder.name,
             });
     }
+
     function loadMore() {
         void shared.fetchNextPage();
     }
+
     function copied(folderId: string) {
         closeCopy();
         const action = (
@@ -120,6 +128,7 @@ export function SharedTextsPage({
             action,
         });
     }
+
     const source: TextSelectionSource | null = text
         ? {
               kind: 'shared-text',
@@ -213,6 +222,7 @@ export function SharedTextsPage({
                 </Button>
             </main>
         );
+
     return (
         <div className={styles.page}>
             <PublicHeader

@@ -36,6 +36,7 @@ export function TextWorkspacePage({
     textId?: string;
 }) {
     const actorId = useSessionStore((state) => state.user?.id);
+
     return (
         <TextsAuthBoundary
             returnTo={`/texts/folders/${folderId}/${textId ? `texts/${textId}` : 'new'}`}
@@ -49,6 +50,7 @@ export function TextWorkspacePage({
         </TextsAuthBoundary>
     );
 }
+
 function Workspace({
     actorId,
     folderId,
@@ -74,42 +76,55 @@ function Workspace({
         'rename' | 'share' | 'archive' | null
     >(null);
     const [match, setMatch] = useState(false);
+
     function leave() {
         router.push(`/texts/folders/${folderId}`);
     }
+
     function close() {
         if (ws.saving) return;
-        if (ws.unsaved || ws.translation.active) setConfirmation('close');
+        if (ws.unsaved || (ws.aiActive ?? ws.translation.active))
+            setConfirmation('close');
         else leave();
     }
+
     function dismissConfirmation() {
         if (!ws.saving) setConfirmation(null);
     }
+
     function discard() {
         setConfirmation('discard');
     }
+
     function cancelEdit() {
         if (ws.touched.size) setConfirmation('cancel-edit');
         else ws.cancelEdit();
     }
+
     function rename() {
         setManagement('rename');
     }
+
     function share() {
         setManagement('share');
     }
+
     function archive() {
         setManagement('archive');
     }
+
     function retranslate() {
         setConfirmation('retranslate');
     }
+
     function closeManagement() {
         setManagement(null);
     }
+
     function review() {
         setConfirmation('conflict');
     }
+
     const proposal = ws.proposal;
     const { readingDocument, readingSource } = workspaceReadingDocument(ws);
     const loading =
@@ -123,6 +138,7 @@ function Workspace({
                     ws.document?.folderId !== folderId ||
                     ws.document.lifecycle !== 'active'),
             ));
+    const ready = !loading && !missing;
     const displayTitle = ws.input.title.trim() || copy('new');
     const showRead =
         Boolean(readingDocument?.alignment) &&
@@ -135,6 +151,7 @@ function Workspace({
             onCancelEdit={cancelEdit}
         />
     );
+
     return (
         <Dialog
             open
@@ -158,14 +175,14 @@ function Workspace({
                 onArchive={archive}
                 onRetranslate={retranslate}
             />
-            {loading ? (
-                <p role='status'>{copy('loading')}</p>
-            ) : missing ? (
+            {loading && <p role='status'>{copy('loading')}</p>}
+            {missing && (
                 <div className={styles.editor}>
                     <h2>{copy('missing')}</h2>
                     <Button onClick={leave}>{copy('back')}</Button>
                 </div>
-            ) : (
+            )}
+            {ready && (
                 <>
                     <WorkspaceLanguages
                         ws={ws}
@@ -173,12 +190,16 @@ function Workspace({
                         onMatch={setMatch}
                     />
                     {ws.conflict && (
-                        <Button onClick={review} leadingIcon={<RefreshCw />}>
+                        <Button
+                            desktopIconOnly
+                            onClick={review}
+                            leadingIcon={<RefreshCw />}
+                        >
                             {copy('review')}
                         </Button>
                     )}
                     <main className={styles.body}>
-                        {showCompose && <WorkspaceCompose ws={ws} />}{' '}
+                        {showCompose && <WorkspaceCompose ws={ws} />}
                         {ws.mode === 'edit' && !proposal && (
                             <>
                                 <WorkspaceBanners ws={ws} />

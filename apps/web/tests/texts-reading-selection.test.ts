@@ -25,6 +25,25 @@ function select(text: string, start: number, end: number) {
     return { root, pair, selection, range };
 }
 describe('native contextual text selection', () => {
+    it('retains live range geometry as the reader scrolls without changing phrase offsets', () => {
+        const { root, pair, selection, range } = select('A word.', 2, 6);
+        const result = analyzeReadingSelection(root, selection)!;
+        expect(result.anchor?.contextElement).toBe(pair);
+        expect(result.anchor?.getBoundingClientRect().top).toBe(0);
+
+        range.getBoundingClientRect = () =>
+            ({ top: 240, left: 180, width: 48, height: 20 }) as DOMRect;
+        expect(result.anchor?.getBoundingClientRect()).toMatchObject({
+            top: 240,
+            left: 180,
+        });
+        expect(result.selection).toMatchObject({
+            startOffset: 2,
+            endOffset: 6,
+        });
+        expect(result.text).toBe('word');
+    });
+
     it('keeps the repeated occurrence and pair-relative UTF16 offset after trimming', () => {
         const { root, selection } = select('😀 word word. Other.', 7, 12);
         const result = analyzeReadingSelection(root, selection);

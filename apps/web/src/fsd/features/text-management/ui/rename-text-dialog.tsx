@@ -15,6 +15,7 @@ import type { MutationProps } from '../types';
 import styles from './dialogs.module.css';
 
 type Props = MutationProps<TextDocument> & { document: TextDocument };
+
 export function RenameTextDialog(props: Props) {
     return props.open ? (
         <RenameForm
@@ -23,12 +24,14 @@ export function RenameTextDialog(props: Props) {
         />
     ) : null;
 }
+
 function RenameForm({ document, onClose, onSaved, requestWithSession }: Props) {
     const { t } = useI18n();
     const formId = useId();
     const [value, setValue] = useState(document.title);
     const [invalid, setInvalid] = useState(false);
     const mutation = useTextMutation(requestWithSession);
+
     function submit(event: React.FormEvent) {
         event.preventDefault();
         const parsed = TextTitleSchema.safeParse(value);
@@ -50,6 +53,7 @@ function RenameForm({ document, onClose, onSaved, requestWithSession }: Props) {
             t('texts.manage.titleSaved'),
         );
     }
+
     return (
         <Dialog
             open

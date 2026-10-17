@@ -19,6 +19,7 @@ type Dialog =
     | { type: 'create' }
     | { type: 'edit' | 'archive' | 'share'; folder: TextFolder }
     | null;
+
 export function TextsLibraryPage() {
     return (
         <TextsAuthBoundary returnTo='/texts'>
@@ -26,6 +27,7 @@ export function TextsLibraryPage() {
         </TextsAuthBoundary>
     );
 }
+
 function LibraryContent() {
     const { t } = useI18n();
     const { requestWithSession } = useAuth();
@@ -43,38 +45,49 @@ function LibraryContent() {
     ).length;
     const hasFolders = activeCount + archivedCount > 0;
     const ready = library.isSuccess;
+
     function create() {
         setDialog({ type: 'create' });
     }
+
     function edit(folder: TextFolder) {
         setDialog({ type: 'edit', folder });
     }
+
     function archive(folder: TextFolder) {
         setDialog({ type: 'archive', folder });
     }
+
     function share(folder: TextFolder) {
         setDialog({ type: 'share', folder });
     }
+
     function restore(folder: TextFolder) {
         library.restore.mutate(folder);
     }
+
     function close() {
         setDialog(null);
     }
+
     function changeView(value: string) {
         setView(value === 'archived' ? 'archived' : 'active');
     }
+
     function retry() {
         void library.refetch();
     }
+
     function saved() {
         void library.refresh();
         setDialog(null);
     }
+
     function folderSaved() {
         setView('active');
         saved();
     }
+
     const tabs = [
         {
             value: 'active',
@@ -108,6 +121,7 @@ function LibraryContent() {
         );
     const newButton = (
         <Button
+            desktopIconOnly
             onClick={create}
             leadingIcon={<FolderPlusIcon className={styles.actionIcon} />}
         >
@@ -116,6 +130,7 @@ function LibraryContent() {
     );
     const retryButton = (
         <Button
+            desktopIconOnly
             variant='secondary'
             size='compact'
             onClick={retry}
@@ -126,6 +141,7 @@ function LibraryContent() {
     );
     const formOpen = dialog?.type === 'create' || dialog?.type === 'edit';
     const initial = dialog?.type === 'edit' ? dialog.folder : undefined;
+
     return (
         <main className={styles.page}>
             <header className={styles.header}>
@@ -136,6 +152,7 @@ function LibraryContent() {
                     </p>
                 </div>
                 <Button
+                    desktopIconOnly
                     size='large'
                     onClick={create}
                     leadingIcon={

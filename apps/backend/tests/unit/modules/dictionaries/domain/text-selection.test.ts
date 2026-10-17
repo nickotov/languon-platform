@@ -49,6 +49,7 @@ describe('text selection contextual card authoring', () => {
         };
         const input = selectionProviderInput(occurrence, settings, null);
         expect(input.requestedFields).toEqual([
+            'source',
             'translation',
             'definition',
             'example',
@@ -84,6 +85,7 @@ describe('text selection contextual card authoring', () => {
             null,
         );
         const output = {
+            sourceResult: { kind: 'unchanged' as const },
             suggestions: [
                 { field: 'translation' as const, value: 'banque' },
                 {
@@ -108,5 +110,83 @@ describe('text selection contextual card authoring', () => {
                 suggestions: output.suggestions.slice(0, 3),
             }),
         ).toThrow();
+    });
+    it.each([
+        ['parasol', 'Le parasol est ouvert.', 'le parasol'],
+        ['femme', 'La femme est arrivée.', 'la femme'],
+        ['a mangé', 'La femme a mangé.', 'a mangé'],
+        ['femme a mangé', 'Cette femme a mangé.', 'la femme a mangé'],
+    ])(
+        'uses shared canonical Source output for %s without changing the occurrence',
+        (phrase, sentence, canonical) => {
+            const startOffset = sentence.indexOf(phrase);
+            const input = selectionProviderInput(
+                {
+                    ...occurrence,
+                    phrase,
+                    sentence,
+                    startOffset,
+                    endOffset: startOffset + phrase.length,
+                    sourceLanguageTag: 'fr',
+                    targetLanguageTag: 'en',
+                },
+                { ...defaultDictionarySettings, transcriptionEnabled: false },
+                null,
+            );
+            const values = selectionCardValues(input, {
+                sourceResult:
+                    canonical === phrase
+                        ? { kind: 'unchanged' }
+                        : { kind: 'suggested', value: canonical },
+                suggestions: [
+                    { field: 'translation', value: 'contextual translation' },
+                    { field: 'definition', value: 'contextual definition' },
+                    { field: 'example', value: 'contextual example' },
+                    {
+                        field: 'exampleTranslation',
+                        value: 'translated example',
+                    },
+                ],
+            });
+            expect(values.source).toBe(canonical);
+            expect(input.source).toBe(phrase);
+            expect(input.occurrenceContext).toMatchObject({
+                sentence,
+                startOffset,
+                endOffset: startOffset + phrase.length,
+            });
+            expect(
+                input.fieldContext.find((entry) => entry.field === 'source')
+                    ?.currentValue,
+            ).toBe(phrase);
+        },
+    );
+    it('supports queued legacy inputs that did not request Source', () => {
+        const current = selectionProviderInput(
+            occurrence,
+            { ...defaultDictionarySettings, transcriptionEnabled: false },
+            null,
+        );
+        const legacy = {
+            ...current,
+            requestedFields: current.requestedFields.filter(
+                (field) => field !== 'source',
+            ),
+            fieldContext: current.fieldContext.filter(
+                (entry) => entry.field !== 'source',
+            ),
+        };
+        const delta = {
+            suggestions: legacy.requestedFields.map((field) => ({
+                field: field as 'translation',
+                value: `generated ${field}`,
+            })),
+        };
+        expect(selectionCardValues(legacy, delta).source).toBe(
+            occurrence.phrase,
+        );
+        expect(() => selectionCardValues(current, delta)).toThrow(
+            'Source exactly when requested',
+        );
     });
 });

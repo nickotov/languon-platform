@@ -4,8 +4,10 @@ import { dictionaryApi } from '@/fsd/entities/dictionary';
 import type { RequestWithTextSession } from '@/fsd/entities/texts';
 import { Button, Skeleton } from '@/fsd/shared/ui';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
+
 const normalize = (value: string) =>
     value.normalize('NFKC').trim().toLocaleLowerCase('und');
+
 export function DuplicatePreview({
     dictionaryId,
     term,
@@ -62,23 +64,26 @@ export function DuplicatePreview({
         void load();
         return () => control.abort();
     }, [dictionaryId, term, requestWithSession, attempt]);
-    return loading ? (
-        <Skeleton height={44} />
-    ) : card ? (
-        <p>
-            {t('texts.collect.preview', {
-                term: card.values.source,
-                translation: card.values.translation,
-            })}
-        </p>
-    ) : (
+
+    function retry() {
+        setAttempt((value) => value + 1);
+    }
+
+    if (loading) return <Skeleton height={44} />;
+    if (card)
+        return (
+            <p>
+                {t('texts.collect.preview', {
+                    term: card.values.source,
+                    translation: card.values.translation,
+                })}
+            </p>
+        );
+
+    return (
         <div role='status'>
             <p>{t('texts.collect.previewError')}</p>
-            <Button
-                variant='ghost'
-                size='compact'
-                onClick={() => setAttempt((value) => value + 1)}
-            >
+            <Button variant='ghost' size='compact' onClick={retry}>
                 {t('texts.collect.retry')}
             </Button>
         </div>

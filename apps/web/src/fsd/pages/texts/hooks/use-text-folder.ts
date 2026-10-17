@@ -37,9 +37,11 @@ export function useTextFolder(
         getNextPageParam: (page) => page.nextCursor ?? undefined,
         enabled,
     });
+
     async function refresh() {
         await client.invalidateQueries({ queryKey: ['texts', userId] });
     }
+
     const restore = useMutation({
         mutationFn: (document: TextDocument) =>
             requestWithSession((token) =>
@@ -56,6 +58,7 @@ export function useTextFolder(
             });
         },
     });
+
     return {
         ...query,
         documents: query.data?.pages.flatMap((page) => page.data) ?? [],

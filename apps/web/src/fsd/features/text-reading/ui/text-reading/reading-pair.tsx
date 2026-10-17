@@ -4,11 +4,12 @@ import {
 } from '../../lib/reading-fragment';
 import { Fragment } from 'react';
 import { PencilLine } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction, KeyboardEvent } from 'react';
 import type { TextReadingProps, Side } from '../../types';
 import type { CollectController } from '../../hooks/use-collect';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
 import styles from './text-reading.module.css';
+
 export function ReadingPair({
     index,
     side,
@@ -81,6 +82,7 @@ export function ReadingPair({
         result.push(text.slice(cursor));
         return result;
     };
+
     const pair = pairs[index]!;
     const fragment = readingFragment(
         side === 'source' ? pair.text : (translation[index]?.text ?? ''),
@@ -89,6 +91,58 @@ export function ReadingPair({
         pairs[index - 1]?.paragraphIndex === pair.paragraphIndex;
     const hasNext = pairs[index + 1]?.paragraphIndex === pair.paragraphIndex;
     const highlighted = matchMode && (focused ?? active) === pair.pairId;
+
+    const pairLanguage =
+        side === 'source' ? doc.sourceLanguage : doc.targetLanguage;
+    const pairClassName = `${styles.pair} ${matchMode ? styles.match : ''} ${highlighted ? styles.active : ''}`;
+    const renderedText = renderText(
+        fragment.text,
+        fragment.offsetOrigin,
+        pair.pairId,
+        side,
+    );
+
+    function enter() {
+        if (matchMode) setActive(pair.pairId);
+    }
+
+    function leave() {
+        setActive(null);
+    }
+
+    function focus() {
+        if (!matchMode) return;
+        setFocused(pair.pairId);
+        const matchedSide =
+            side === 'source'
+                ? 'texts.reading.translation'
+                : 'texts.reading.source';
+        const matchedText =
+            side === 'source' ? (translation[index]?.text ?? '') : pair.text;
+        setAnnouncement(
+            t('texts.reading.matched', {
+                side: t(matchedSide),
+                text: matchedText,
+            }),
+        );
+    }
+
+    function blur() {
+        setFocused(null);
+    }
+
+    function openCounterpart() {
+        if (matchMode && compact && window.getSelection()?.isCollapsed)
+            setSheet(index);
+    }
+
+    function keyDown(event: KeyboardEvent<HTMLSpanElement>) {
+        if (matchMode && compact && ['Enter', ' '].includes(event.key)) {
+            event.preventDefault();
+            setSheet(index);
+        }
+    }
+
     return (
         <Fragment key={pair.pairId}>
             {hasPrevious
@@ -98,57 +152,17 @@ export function ReadingPair({
                 data-reading-pair={pair.pairId}
                 data-side={side}
                 data-offset-origin={fragment.offsetOrigin}
-                lang={
-                    side === 'source' ? doc.sourceLanguage : doc.targetLanguage
-                }
-                className={`${styles.pair} ${matchMode ? styles.match : ''} ${highlighted ? styles.active : ''}`}
+                lang={pairLanguage}
+                className={pairClassName}
                 tabIndex={matchMode ? 0 : undefined}
-                onMouseEnter={() => matchMode && setActive(pair.pairId)}
-                onMouseLeave={() => setActive(null)}
-                onFocus={() => {
-                    if (matchMode) {
-                        setFocused(pair.pairId);
-                        setAnnouncement(
-                            t('texts.reading.matched', {
-                                side: t(
-                                    side === 'source'
-                                        ? 'texts.reading.translation'
-                                        : 'texts.reading.source',
-                                ),
-                                text:
-                                    side === 'source'
-                                        ? (translation[index]?.text ?? '')
-                                        : pair.text,
-                            }),
-                        );
-                    }
-                }}
-                onBlur={() => setFocused(null)}
-                onClick={() => {
-                    if (
-                        matchMode &&
-                        compact &&
-                        window.getSelection()?.isCollapsed
-                    )
-                        setSheet(index);
-                }}
-                onKeyDown={(event) => {
-                    if (
-                        matchMode &&
-                        compact &&
-                        ['Enter', ' '].includes(event.key)
-                    ) {
-                        event.preventDefault();
-                        setSheet(index);
-                    }
-                }}
+                onMouseEnter={enter}
+                onMouseLeave={leave}
+                onFocus={focus}
+                onBlur={blur}
+                onClick={openCounterpart}
+                onKeyDown={keyDown}
             >
-                {renderText(
-                    fragment.text,
-                    fragment.offsetOrigin,
-                    pair.pairId,
-                    side,
-                )}
+                {renderedText}
             </span>
             {side === 'translation' &&
                 props.showEditedMarkers !== false &&

@@ -60,6 +60,7 @@ describe('icon action menu', () => {
         await user.click(
             screen.getByRole('button', { name: 'Dictionary actions' }),
         );
+        expect(screen.getByRole('menu').parentElement).toBe(document.body);
         await user.keyboard('{End}');
         expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveFocus();
         await user.keyboard('{Home}');

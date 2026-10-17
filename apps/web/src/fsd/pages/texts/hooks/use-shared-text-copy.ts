@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { TextFolder } from '@languon/contracts';
 import { textsApi, type RequestWithTextSession } from '@/fsd/entities/texts';
 import { useSessionStore } from '@/fsd/entities/session';
+
 export type SharedCopyTarget = {
     mode: 'text' | 'folder';
     textId?: string;
@@ -10,6 +11,7 @@ export type SharedCopyTarget = {
     defaultName: string;
     total: number;
 };
+
 export function useSharedTextCopy({
     target,
     kind,
@@ -36,6 +38,7 @@ export function useSharedTextCopy({
     const [state, setState] = useState<'idle' | 'working' | 'failed'>('idle');
     const operation = useRef<{ fingerprint: string; id: string } | null>(null);
     const busy = useRef(false);
+
     useEffect(() => {
         mounted.current = true;
         const unsubscribe = useSessionStore.subscribe((next, previous) => {
@@ -62,6 +65,7 @@ export function useSharedTextCopy({
             unsubscribe();
         };
     }, [target.defaultName]);
+
     function allowed(epoch: number) {
         return (
             mounted.current &&
@@ -69,9 +73,11 @@ export function useSharedTextCopy({
             useSessionStore.getState().user?.id === userId
         );
     }
+
     function assertActor(epoch: number) {
         if (!allowed(epoch)) throw new Error('Copy authority changed');
     }
+
     const folders = useQuery({
         queryKey: ['texts', userId, 'copy-destinations'],
         queryFn: async ({ signal }) => {
@@ -98,7 +104,9 @@ export function useSharedTextCopy({
             return result;
         },
     });
+
     const initialized = useRef(false);
+
     useEffect(() => {
         if (initialized.current || !folders.data) return;
         initialized.current = true;
@@ -116,6 +124,7 @@ export function useSharedTextCopy({
     const overLimit = target.mode === 'folder' && target.total > 500;
     const valid =
         destination === 'existing' ? Boolean(folderId) : Boolean(name.trim());
+
     async function submit() {
         if (busy.current || overLimit || !valid || !allowed(authority.current))
             return;
@@ -192,6 +201,7 @@ export function useSharedTextCopy({
             if (allowed(epoch)) busy.current = false;
         }
     }
+
     return {
         folders,
         destination,

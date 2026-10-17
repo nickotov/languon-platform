@@ -8,10 +8,12 @@ import {
 } from '@/fsd/features/text-management';
 import type { FolderAction } from './folder-header';
 import type { TextRowAction } from './text-row';
+
 export type FolderDialog =
     | { type: FolderAction }
     | { type: TextRowAction; document: TextDocument }
     | null;
+
 export function FolderDialogs({
     folder,
     dialog,
@@ -30,6 +32,7 @@ export function FolderDialogs({
     requestWithSession: RequestWithTextSession;
 }) {
     const textDialog = dialog && 'document' in dialog ? dialog : null;
+
     return (
         <>
             <FolderFormDialog

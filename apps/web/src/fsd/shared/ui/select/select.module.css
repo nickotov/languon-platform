@@ -27,7 +27,8 @@
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     font: inherit;
-    padding: 0 var(--space-40) 0 var(--space-12);
+    padding-block: 0;
+    padding-inline: var(--space-12) var(--space-40);
     transition:
         border-color var(--duration-fast),
         box-shadow var(--duration-fast);
@@ -49,7 +50,7 @@
     min-height: var(--size-48);
 }
 
-.select:hover:not(:disabled) {
+.select:hover:not(:disabled):not([aria-invalid='true']) {
     border-color: var(--border-strong);
 }
 
@@ -71,13 +72,23 @@
 }
 
 .indicator {
+    align-items: center;
     color: var(--text-tertiary);
-    font-size: var(--size-18);
+    display: inline-flex;
+    height: var(--size-16);
+    inset-inline-end: var(--size-12);
+    justify-content: center;
     pointer-events: none;
     position: absolute;
-    right: var(--size-12);
     top: 50%;
-    transform: translateY(-55%);
+    transform: translateY(-50%);
+    width: var(--size-16);
+}
+
+.chevron {
+    display: block;
+    height: var(--size-16);
+    width: var(--size-16);
 }
 
 .spinner {
@@ -85,8 +96,6 @@
     border: 2px solid var(--neutral-300);
     border-radius: 50%;
     border-top-color: var(--primary-default);
-    height: var(--size-16);
-    width: var(--size-16);
 }
 
 .hint,

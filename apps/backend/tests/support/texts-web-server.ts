@@ -118,6 +118,18 @@ async function start() {
     };
     content = createTextsContentComposition({
         ...d,
+        // Three synthetic browser journeys share one localhost address. Retain
+        // real Redis limiting with a bounded suite budget for that address;
+        // per-user and every other policy retain their production limits.
+        rateLimiter: {
+            consume: (request) =>
+                d.rateLimiter.consume({
+                    ...request,
+                    limit:
+                        request.scope === 'texts-public' ? 600 : request.limit,
+                }),
+            linkSubject: (request) => d.rateLimiter.linkSubject(request),
+        },
         dictionaryHmacSecret: secret,
         policy: authentication.options.policy,
         loadProposal: loadTextTranslationProposal,
@@ -149,7 +161,9 @@ async function start() {
             'text-translation:v2',
         ],
         provider: {
-            async run({ input, execution }) {
+            async run({ input, execution, signal }) {
+                // Keep real pending states observable without mocking UI/job transport.
+                await delay(350, undefined, { signal });
                 if (
                     input.kind === 'text-translation' &&
                     (execution.modelId !== 'deepseek-flash' ||
@@ -165,7 +179,14 @@ async function start() {
                 return {
                     draft:
                         input.kind === 'text-detection'
-                            ? { language: 'en', confidence: 'high' }
+                            ? {
+                                  language:
+                                      input.sourceText ===
+                                      'Le but de cette visite est clair.'
+                                          ? 'fr'
+                                          : 'en',
+                                  confidence: 'high',
+                              }
                             : {
                                   translation: input.segments.map((p) => ({
                                       pairId: p.pairId,
@@ -206,6 +227,20 @@ async function start() {
         generator: {
             async generate({ input }) {
                 const bank = input.source === 'bank';
+                const frenchGoal =
+                    input.sourceLanguage === 'fr' && input.source === 'but';
+                if (
+                    frenchGoal &&
+                    (input.occurrenceContext?.sentence !==
+                        'Le but de cette visite est clair.' ||
+                        input.occurrenceContext.previousSentence !== null ||
+                        input.occurrenceContext.nextSentence !== null ||
+                        input.occurrenceContext.startOffset !== 3 ||
+                        input.occurrenceContext.endOffset !== 6)
+                )
+                    throw new Error(
+                        'French selection must retain its raw occurrence and exact sentence context',
+                    );
                 if (
                     bank &&
                     (!input.occurrenceContext?.sentence.includes(
@@ -220,28 +255,48 @@ async function start() {
                     );
                 return {
                     delta: {
+                        ...(input.requestedFields.includes('source')
+                            ? {
+                                  sourceResult: frenchGoal
+                                      ? {
+                                            kind: 'suggested' as const,
+                                            value: 'le but',
+                                        }
+                                      : { kind: 'unchanged' as const },
+                              }
+                            : {}),
                         suggestions: [
                             {
                                 field: 'translation',
-                                value: bank ? 'orilla' : 'hola',
+                                value: frenchGoal
+                                    ? 'цель'
+                                    : bank
+                                      ? 'orilla'
+                                      : 'hola',
                             },
                             {
                                 field: 'definition',
-                                value: bank
-                                    ? 'The land alongside a river.'
-                                    : 'A greeting',
+                                value: frenchGoal
+                                    ? 'Un objectif que l’on souhaite atteindre.'
+                                    : bank
+                                      ? 'The land alongside a river.'
+                                      : 'A greeting',
                             },
                             {
                                 field: 'example',
-                                value: bank
-                                    ? 'We sat on the river bank.'
-                                    : 'Hello, friend.',
+                                value: frenchGoal
+                                    ? 'Le but de cette visite est clair.'
+                                    : bank
+                                      ? 'We sat on the river bank.'
+                                      : 'Hello, friend.',
                             },
                             {
                                 field: 'exampleTranslation',
-                                value: bank
-                                    ? 'Nos sentamos en la orilla del río.'
-                                    : 'Hola, amigo.',
+                                value: frenchGoal
+                                    ? 'Цель этого визита ясна.'
+                                    : bank
+                                      ? 'Nos sentamos en la orilla del río.'
+                                      : 'Hola, amigo.',
                             },
                         ],
                     },

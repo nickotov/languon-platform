@@ -1,4 +1,4 @@
-// @user-flow-revision texts sha256:3bd497f7f68d42fa
+// @user-flow-revision texts sha256:4df9322d0beb2f55
 import { randomUUID } from 'node:crypto';
 import {
     AuthenticationSuccessResponseSchema,
@@ -180,6 +180,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 async generate() {
                     return {
                         delta: {
+                            sourceResult: { kind: 'unchanged' },
                             suggestions: [
                                 { field: 'translation', value: 'hola' },
                                 { field: 'definition', value: 'A greeting' },

@@ -4,6 +4,7 @@ import { useI18n } from '@/fsd/shared/i18n';
 import { Button, Skeleton } from '@/fsd/shared/ui';
 import { FolderCard } from './folder-card';
 import styles from './library-page.module.css';
+
 export function FolderGrid({
     folders,
     onEdit,
@@ -23,9 +24,11 @@ export function FolderGrid({
     const [limit, setLimit] = useState(25);
     const visible = folders.slice(0, limit);
     const hasMore = folders.length > limit;
+
     function more() {
         setLimit((current) => current + 25);
     }
+
     return (
         <>
             <ul className={styles.grid}>

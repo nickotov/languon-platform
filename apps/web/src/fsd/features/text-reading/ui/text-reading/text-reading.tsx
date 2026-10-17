@@ -10,12 +10,19 @@ import { useCollect } from '../../hooks/use-collect';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
 import type { Side, TextReadingProps } from '../../types';
 import styles from './text-reading.module.css';
+
 export function TextReading(props: TextReadingProps) {
     // A different source authority owns a fresh selection, polling loop and marks.
     const source = props.source;
-    const key = `${props.collectionActorKey}:${props.document.id}:${props.document.version}:${source?.kind ?? 'none'}:${source?.kind === 'translation-proposal' ? source.jobId : source?.kind === 'shared-text' ? source.shareId : ''}`;
+    let sourceId = '';
+
+    if (source?.kind === 'translation-proposal') sourceId = source.jobId;
+    if (source?.kind === 'shared-text') sourceId = source.shareId;
+
+    const key = `${props.collectionActorKey}:${props.document.id}:${props.document.version}:${source?.kind ?? 'none'}:${sourceId}`;
     return <ReadingSurface key={key} {...props} />;
 }
+
 function ReadingSurface(props: TextReadingProps) {
     const { document: doc, matchMode } = props;
     const t = useReadingCopy();
@@ -33,6 +40,7 @@ function ReadingSurface(props: TextReadingProps) {
     const pairs = doc.alignment?.source ?? [];
     const language = (code: string) =>
         new Intl.DisplayNames(locale, { type: 'language' }).of(code) ?? code;
+
     useEffect(() => {
         const media = window.matchMedia('(max-width: 1023px)');
         const change = () => setCompact(media.matches);
@@ -40,6 +48,7 @@ function ReadingSurface(props: TextReadingProps) {
         media.addEventListener('change', change);
         return () => media.removeEventListener('change', change);
     }, []);
+
     useEffect(() => {
         if (!matchMode) {
             setActive(null);
@@ -47,6 +56,7 @@ function ReadingSurface(props: TextReadingProps) {
             setSheet(null);
         }
     }, [matchMode]);
+
     useEffect(() => {
         if (props.collectionDisabled || !doc.alignment || !props.source) return;
         let timer = 0;
@@ -63,6 +73,7 @@ function ReadingSurface(props: TextReadingProps) {
             window.document.removeEventListener('selectionchange', handle);
         };
     }, [c.onSelection, props.collectionDisabled, props.source, doc.alignment]);
+
     const changeTab = (side: Side) => {
         const visible = [
             ...(content.current?.querySelectorAll<HTMLElement>(
@@ -90,6 +101,11 @@ function ReadingSurface(props: TextReadingProps) {
                 next?.scrollIntoView({ block: 'start' });
             });
     };
+
+    function selectTab(value: string) {
+        changeTab(value as Side);
+    }
+
     const paragraphs: number[][] = [];
     pairs.forEach((pair, index) => {
         const previous = pairs[index - 1];
@@ -97,6 +113,7 @@ function ReadingSurface(props: TextReadingProps) {
             paragraphs.push([]);
         paragraphs.at(-1)!.push(index);
     });
+
     return (
         <>
             <div className={styles.reader} ref={scroll}>
@@ -104,7 +121,7 @@ function ReadingSurface(props: TextReadingProps) {
                     {compact ? (
                         <Tabs
                             value={tab}
-                            onValueChange={(value) => changeTab(value as Side)}
+                            onValueChange={selectTab}
                             variant='segmented'
                             size='sm'
                             fullWidth
@@ -192,7 +209,6 @@ function ReadingSurface(props: TextReadingProps) {
                 language={language}
             />
             <CollectionLayer
-                portalContainer={scroll.current?.closest('dialog') ?? null}
                 requestWithSession={props.requestWithSession}
                 c={c}
                 compact={compact}

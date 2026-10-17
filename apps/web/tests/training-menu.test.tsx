@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Menu } from '@/fsd/shared/ui';
 
@@ -15,7 +15,7 @@ describe('menu training extensions preserve default behavior', () => {
         );
         expect(screen.getByRole('button', { name: 'Actions' })).toBeDisabled();
     });
-    it('renders a noninteractive heading and disabled hint, restores focus on Escape', () => {
+    it('renders a noninteractive heading and disabled hint, restores focus on Escape', async () => {
         const select = vi.fn();
         render(
             <Menu
@@ -42,18 +42,20 @@ describe('menu training extensions preserve default behavior', () => {
             'role',
             'presentation',
         );
-        expect(screen.getAllByRole('menuitem')).toHaveLength(2);
+        expect(await screen.findAllByRole('menuitem')).toHaveLength(2);
         expect(
-            screen.getByRole('menuitem', { name: 'Sentences Coming soon' }),
+            await screen.findByRole('menuitem', {
+                name: 'Sentences Coming soon',
+            }),
         ).toBeDisabled();
-        const cards = screen.getByRole('menuitem', { name: 'Cards' });
+        const cards = await screen.findByRole('menuitem', { name: 'Cards' });
         expect(cards).toHaveFocus();
         fireEvent.keyDown(cards, { key: 'Escape' });
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-        expect(trigger).toHaveFocus();
+        await waitFor(() => expect(trigger).toHaveFocus());
         expect(select).not.toHaveBeenCalled();
     });
-    it('allows informational all-disabled menus only when explicitly requested', () => {
+    it('allows informational all-disabled menus only when explicitly requested', async () => {
         const select = vi.fn();
         render(
             <Menu
@@ -71,13 +73,13 @@ describe('menu training extensions preserve default behavior', () => {
             />,
         );
         fireEvent.click(screen.getByRole('button', { name: 'Train' }));
-        expect(screen.getByRole('menuitem')).toBeDisabled();
-        fireEvent.click(screen.getByRole('menuitem'));
+        expect(await screen.findByRole('menuitem')).toBeDisabled();
+        fireEvent.click(await screen.findByRole('menuitem'));
         expect(select).not.toHaveBeenCalled();
         fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
-    it('keeps retry menus open only when a menu action requests it', () => {
+    it('keeps retry menus open only when a menu action requests it', async () => {
         const retry = vi.fn();
         render(
             <Menu
@@ -90,11 +92,13 @@ describe('menu training extensions preserve default behavior', () => {
             />,
         );
         fireEvent.click(screen.getByRole('button', { name: 'Train' }));
-        fireEvent.click(screen.getByRole('menuitem', { name: 'Retry' }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Retry' }));
         expect(retry).toHaveBeenCalledOnce();
         expect(screen.getByRole('menu')).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('menuitem', { name: 'Cards' }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Cards' }));
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Train' })).toHaveFocus();
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Train' })).toHaveFocus(),
+        );
     });
 });

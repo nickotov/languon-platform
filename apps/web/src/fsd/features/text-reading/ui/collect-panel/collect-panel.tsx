@@ -1,22 +1,17 @@
 'use client';
 import { useState } from 'react';
+import { NewDictionaryForm } from './new-dictionary-form';
+import { SelectionContext } from './selection-context';
 import { collectionFailureKey } from '../../lib/collection-failure';
 import { DuplicatePreview } from './duplicate-preview';
 import { DictionaryChoices } from './dictionary-choices';
 import type { RequestWithTextSession } from '@/fsd/entities/texts';
-import {
-    ArrowLeft,
-    ArrowRight,
-    BookPlus,
-    Info,
-    LogIn,
-    Plus,
-    Sparkles,
-} from 'lucide-react';
-import { Button, ButtonLink, Input, Skeleton } from '@/fsd/shared/ui';
+import { BookPlus, Info, LogIn, Plus } from 'lucide-react';
+import { Button, ButtonLink, Skeleton } from '@/fsd/shared/ui';
 import type { CollectController } from '../../hooks/use-collect';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
 import styles from './collect-panel.module.css';
+
 export function CollectPanel({
     collect: c,
     onRequireSignIn,
@@ -45,33 +40,27 @@ export function CollectPanel({
     const submit = () => {
         if (target) c.submit(target);
     };
-    const offset = selection.selection.startOffset - selection.sentenceStart;
+
+    function createDictionary() {
+        c.setStep('new');
+    }
+
+    function chooseDictionary() {
+        c.setStep('pick');
+    }
+
+    function submitNewDictionary() {
+        if (name.trim()) c.submit({ kind: 'new', name: name.trim() });
+    }
+
+    function cancel() {
+        void c.cancel();
+    }
+
     return (
         <div className={styles.panel}>
             {c.step !== 'signin' && (
-                <div className={styles.context}>
-                    <div className={styles.contextHeader}>
-                        <strong>
-                            {t('texts.collect.card', { from, to })}
-                            <ArrowRight size={12} aria-hidden />
-                        </strong>
-                        <span>
-                            <Sparkles size={12} aria-hidden />
-                            {t('texts.collect.context')}
-                        </span>
-                    </div>
-                    <p lang={selection.selection.side === 'source' ? from : to}>
-                        {selection.sentence.slice(
-                            Math.max(0, offset - 70),
-                            offset,
-                        )}
-                        <mark>{selection.text}</mark>
-                        {selection.sentence.slice(
-                            offset + selection.text.length,
-                            offset + selection.text.length + 70,
-                        )}
-                    </p>
-                </div>
+                <SelectionContext selection={selection} from={from} to={to} />
             )}
             {c.step === 'loading' && (
                 <div aria-label={t('texts.collect.loading')}>
@@ -87,6 +76,7 @@ export function CollectPanel({
                         })}
                     </p>
                     <Button
+                        desktopIconOnly
                         fullWidth
                         leadingIcon={<LogIn size={16} />}
                         onClick={onRequireSignIn}
@@ -107,10 +97,11 @@ export function CollectPanel({
                         requestWithSession={requestWithSession}
                     />
                     <Button
+                        desktopIconOnly
                         variant='ghost'
                         size='compact'
                         leadingIcon={<Plus size={16} />}
-                        onClick={() => c.setStep('new')}
+                        onClick={createDictionary}
                     >
                         {t('texts.collect.create')}
                     </Button>
@@ -119,6 +110,7 @@ export function CollectPanel({
                             {t('texts.collect.cancel')}
                         </Button>
                         <Button
+                            desktopIconOnly
                             disabled={!selected || busy}
                             leadingIcon={<BookPlus size={16} />}
                             onClick={submit}
@@ -139,40 +131,14 @@ export function CollectPanel({
                 </>
             )}
             {c.step === 'new' && (
-                <form
-                    className={styles.form}
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        if (name.trim())
-                            c.submit({ kind: 'new', name: name.trim() });
-                    }}
-                >
-                    <Input
-                        label={t('texts.collect.name')}
-                        required
-                        autoFocus
-                        maxLength={80}
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                    />
-                    <small>{t('texts.collect.atomic', { from, to })}</small>
-                    <div className={styles.actions}>
-                        <Button
-                            type='button'
-                            variant='ghost'
-                            leadingIcon={<ArrowLeft size={16} />}
-                            onClick={() => c.setStep('pick')}
-                        >
-                            {t('texts.collect.back')}
-                        </Button>
-                        <Button
-                            type='submit'
-                            leadingIcon={<BookPlus size={16} />}
-                        >
-                            {t('texts.collect.createAdd')}
-                        </Button>
-                    </div>
-                </form>
+                <NewDictionaryForm
+                    name={name}
+                    onNameChange={setName}
+                    from={from}
+                    to={to}
+                    onBack={chooseDictionary}
+                    onSubmit={submitNewDictionary}
+                />
             )}
             {c.step === 'duplicate' && (
                 <>
@@ -223,7 +189,7 @@ export function CollectPanel({
                     <p role='status'>
                         {t('texts.collect.adding', { term: selection.text })}
                     </p>
-                    <Button variant='secondary' onClick={() => void c.cancel()}>
+                    <Button variant='secondary' onClick={cancel}>
                         {t('texts.collect.cancel')}
                     </Button>
                 </>

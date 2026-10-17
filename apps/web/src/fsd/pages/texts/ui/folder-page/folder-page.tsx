@@ -19,16 +19,19 @@ import { FolderHeader, type FolderAction } from './folder-header';
 import type { TextRowAction } from './text-row';
 import { FolderTextList } from './folder-text-list';
 import styles from './folder-page.module.css';
+
 import { FolderDialogs, type FolderDialog } from './folder-dialogs';
 
 export function TextFolderPage({ folderId }: { folderId: string }) {
     const returnTo = `/texts/folders/${folderId}`;
+
     return (
         <TextsAuthBoundary returnTo={returnTo}>
             <FolderContent folderId={folderId} />
         </TextsAuthBoundary>
     );
 }
+
 function FolderContent({ folderId }: { folderId: string }) {
     const { t, href } = useI18n();
     const router = useRouter();
@@ -50,44 +53,57 @@ function FolderContent({ folderId }: { folderId: string }) {
         !!folder,
     );
     const list = view === 'active' ? active : archived;
+
     function close() {
         setDialog(null);
     }
+
     function saved() {
         setDialog(null);
         void library.refresh();
     }
+
     function folderArchived() {
         saved();
         back();
     }
+
     function folderAction(type: FolderAction) {
         setDialog({ type });
     }
+
     function textAction(type: TextRowAction, document: TextDocument) {
         setDialog({ type, document });
     }
+
     function restoreFolder() {
         if (folder) library.restore.mutate(folder);
     }
+
     function restoreText(document: TextDocument) {
         list.restore.mutate(document);
     }
+
     function changeView(value: string) {
         setView(value === 'archived' ? 'archived' : 'active');
     }
+
     function back() {
         router.push(href('/texts'));
     }
+
     function preview() {
         setDialog({ type: 'share-folder' });
     }
+
     function retry() {
         void library.refetch();
         void list.refetch();
     }
+
     const retryButton = (
         <Button
+            desktopIconOnly
             size='compact'
             variant='secondary'
             leadingIcon={<RefreshCwIcon className={styles.actionIcon} />}
@@ -146,6 +162,7 @@ function FolderContent({ folderId }: { folderId: string }) {
         library.restore.isError ||
         active.restore.isError ||
         archived.restore.isError;
+
     return (
         <main className={styles.page}>
             <FolderHeader

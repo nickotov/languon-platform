@@ -1,3 +1,8 @@
+import {
+    selectionProviderInput,
+    selectionCardValues,
+} from '../../../../../../src/modules/dictionaries/domain/text-selection';
+import { defaultDictionarySettings } from '../../../../../../src/modules/dictionaries/domain/settings';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createCanonicalMastra } from '../../../../../../src/mastra/composition';
@@ -351,6 +356,59 @@ describe('dictionary card authoring proposal generators', () => {
         });
     });
 
+    it('uses the same structured authoring adapter for contextual canonical Source and complete card fields', async () => {
+        const contextual = selectionProviderInput(
+            {
+                phrase: 'parasol',
+                sentence: 'Le parasol est ouvert.',
+                previousSentence: 'Il fait chaud.',
+                nextSentence: null,
+                startOffset: 3,
+                endOffset: 10,
+                sourceLanguageTag: 'fr',
+                targetLanguageTag: 'en',
+            },
+            { ...defaultDictionarySettings, transcriptionEnabled: false },
+            null,
+        );
+        const delta = {
+            sourceResult: { kind: 'suggested', value: 'le parasol' },
+            suggestions: [
+                { field: 'translation', value: 'sunshade' },
+                { field: 'definition', value: 'An object providing shade.' },
+                { field: 'example', value: 'Le parasol est ouvert.' },
+                { field: 'exampleTranslation', value: 'The sunshade is open.' },
+            ],
+        };
+        const generate = vi.fn().mockResolvedValue({
+            object: delta,
+            usage: { inputTokens: 100, outputTokens: 20 },
+        });
+        const generator = createMastraCardAuthoringProposalGenerator({
+            agent: { generate },
+            structuredOutputMode: 'prompt-injection',
+        });
+        const result = await generator.generate({
+            ...request(),
+            input: contextual,
+        });
+        expect(JSON.parse(generate.mock.calls[0]![0] as string)).toEqual(
+            contextual,
+        );
+        expect(
+            selectionCardValues(
+                contextual,
+                'delta' in result ? result.delta : result,
+            ),
+        ).toMatchObject({
+            source: 'le parasol',
+            translation: 'sunshade',
+            definition: 'An object providing shade.',
+            example: 'Le parasol est ouvert.',
+            exampleTranslation: 'The sunshade is open.',
+        });
+        expect(contextual.source).toBe('parasol');
+    });
     it('registers the authoring agent in canonical Mastra composition', () => {
         const model = 'openai/gpt-4o-mini' as const;
         expect(createDictionaryCardAuthoringAgent({ model }).id).toBe(

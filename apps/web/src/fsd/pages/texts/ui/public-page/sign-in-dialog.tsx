@@ -18,6 +18,7 @@ export function PublicSignInDialog({
     const query = new URLSearchParams({ returnTo }).toString();
     const login = href(`/login?${query}#${shareKey}`);
     const signup = href(`/signup?${query}#${shareKey}`);
+
     return (
         <Dialog
             open={open}
@@ -28,8 +29,11 @@ export function PublicSignInDialog({
             closeLabel={t('texts.public.close')}
         >
             <div className={styles.stack}>
-                <ButtonLink href={login}>
-                    <Mail size={16} aria-hidden />
+                <ButtonLink
+                    desktopIconOnly
+                    leadingIcon={<Mail size={16} aria-hidden />}
+                    href={login}
+                >
                     {t('texts.public.email')}
                 </ButtonLink>
                 <Button variant='ghost' fullWidth onClick={onClose}>

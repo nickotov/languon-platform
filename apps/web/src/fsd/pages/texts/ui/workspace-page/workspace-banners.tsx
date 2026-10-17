@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { Clock3, RefreshCw, Sparkles, Zap, X } from 'lucide-react';
 import { TextsApiError } from '@/fsd/entities/texts';
-import { Button } from '@/fsd/shared/ui';
+import { Button, ButtonLink } from '@/fsd/shared/ui';
 import type { TextWorkspace } from '../../hooks/use-text-workspace';
 import { useWorkspaceCopy } from './workspace-copy';
 import styles from './workspace-page.module.css';
+
 export function WorkspaceBanners({
     ws,
     onShorten,
@@ -13,12 +13,16 @@ export function WorkspaceBanners({
     onShorten?: () => void;
 }) {
     const { copy } = useWorkspaceCopy();
+
     function retry() {
         void ws.translate();
     }
+
     function cancel() {
-        void ws.translation.cancel().catch(() => undefined);
+        if (ws.cancelAi) ws.cancelAi();
+        else void ws.translation.cancel().catch(() => undefined);
     }
+
     const code =
         ws.translation.job?.failureCode ??
         (ws.translation.error instanceof TextsApiError
@@ -30,18 +34,34 @@ export function WorkspaceBanners({
     if (capacity) failure = copy('capacity');
     else if (credits) failure = copy('credits');
     else if (code.includes('unavailable')) failure = copy('unavailable');
+    let proposalTitle = copy('preview');
+    if (ws.previewExpired) proposalTitle = copy('expired');
+    else if (ws.document?.alignment) proposalTitle = copy('proposal');
+
     const failed = Boolean(
         ws.translation.error || ws.translation.job?.state === 'failed',
     );
     const queued =
         ws.translation.job?.state === 'queued' || ws.translation.pending;
+
+    let progressTitle = copy('running');
+    if (ws.autoDetecting) progressTitle = copy('detecting');
+    else if (queued) progressTitle = copy('queued');
+
     return (
         <div className={styles.banners}>
-            {ws.translation.active && (
+            {ws.autoError && (
+                <p role='alert' className={styles.error}>
+                    {ws.autoError === 'same'
+                        ? copy('autoSame')
+                        : copy('autoUnknown')}
+                </p>
+            )}
+            {(ws.aiActive ?? ws.translation.active) && (
                 <section className={styles.panel} role='status'>
                     <h2>
                         {queued ? <Clock3 /> : <Sparkles />}
-                        {queued ? copy('queued') : copy('running')}
+                        {progressTitle}
                     </h2>
                     <p>{copy('jobHint')}</p>
                     <div className={styles.progress} aria-hidden />
@@ -69,12 +89,17 @@ export function WorkspaceBanners({
                         </Button>
                     )}
                     {(capacity || credits) && (
-                        <Link href='/preferences'>
-                            <Zap />
+                        <ButtonLink
+                            desktopIconOnly
+                            leadingIcon={<Zap />}
+                            href='/preferences'
+                            variant='quiet'
+                        >
                             {copy('preferences')}
-                        </Link>
+                        </ButtonLink>
                     )}
                     <Button
+                        desktopIconOnly
                         variant='secondary'
                         onClick={retry}
                         leadingIcon={<RefreshCw />}
@@ -85,20 +110,18 @@ export function WorkspaceBanners({
             )}
             {ws.proposal && (
                 <section className={styles.panel} role='status'>
-                    <h2>
-                        {ws.previewExpired
-                            ? copy('expired')
-                            : ws.document?.alignment
-                              ? copy('proposal')
-                              : copy('preview')}
-                    </h2>
+                    <h2>{proposalTitle}</h2>
                     <p>
                         {ws.document?.alignment
                             ? copy('proposalHint')
                             : copy('previewHint')}
                     </p>
                     {ws.previewExpired && (
-                        <Button onClick={retry} leadingIcon={<RefreshCw />}>
+                        <Button
+                            desktopIconOnly
+                            onClick={retry}
+                            leadingIcon={<RefreshCw />}
+                        >
                             {copy('regenerate')}
                         </Button>
                     )}
@@ -107,11 +130,6 @@ export function WorkspaceBanners({
             {Boolean(ws.saveError) && (
                 <p className={styles.error} role='alert'>
                     {copy('saveError')}
-                </p>
-            )}
-            {ws.showErrors && ws.mode === 'compose' && (
-                <p className={styles.error} role='alert'>
-                    {copy('invalid')}
                 </p>
             )}
             {ws.document?.status === 'edited' &&

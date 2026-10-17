@@ -17,6 +17,7 @@ import { libraryRelativeTime } from '../../lib/library-relative-time';
 import styles from './library-page.module.css';
 
 type FolderProjection = TextFolder;
+
 export function FolderCard({
     folder,
     onEdit,
@@ -36,21 +37,27 @@ export function FolderCard({
     const router = useRouter();
     const archived = folder.lifecycle === 'archived';
     const target = href(`/texts/folders/${folder.id}`);
+
     function open() {
         router.push(target);
     }
+
     function edit() {
         onEdit(folder);
     }
+
     function share() {
         onShare(folder);
     }
+
     function archive() {
         onArchive(folder);
     }
+
     function restore() {
         onRestore(folder);
     }
+
     const items: MenuItem[] = [
         {
             label: t('texts.library.open'),
@@ -89,6 +96,7 @@ export function FolderCard({
             tone: 'danger',
         });
     }
+
     const menuLabel = t('texts.library.actions', { name: folder.name });
     const updated = t('texts.library.updated', {
         date: libraryRelativeTime(folder.updatedAt, locale),
@@ -99,6 +107,7 @@ export function FolderCard({
         total: folder.textCount ?? 0,
         translated: folder.translatedCount ?? 0,
     });
+
     return (
         <article className={styles.card}>
             <div className={styles.cardTop}>
@@ -159,6 +168,7 @@ export function FolderCard({
             {archived && (
                 <div className={styles.restore}>
                     <Button
+                        desktopIconOnly
                         size='compact'
                         variant='secondary'
                         leadingIcon={

@@ -3,6 +3,8 @@
 }
 
 .tooltip {
+    box-sizing: border-box;
+    overflow: visible;
     background: var(--background-surface-dark);
     border: 0;
     border-radius: var(--radius-sm);
@@ -16,6 +18,16 @@
     white-space: normal;
     z-index: 50;
     box-shadow: var(--elevation-md);
+}
+
+.content {
+    display: block;
+    max-height: max(
+        0px,
+        calc(var(--tooltip-available-height, 100vh) - var(--space-4) * 2)
+    );
+    overflow: auto;
+    overflow-wrap: anywhere;
 }
 
 .arrow {

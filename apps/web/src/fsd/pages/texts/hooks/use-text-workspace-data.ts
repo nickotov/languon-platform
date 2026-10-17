@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import { textsApi, type RequestWithTextSession } from '@/fsd/entities/texts';
+
 export function useTextWorkspaceData(
     folderId: string,
     textId: string | undefined,
@@ -26,6 +27,7 @@ export function useTextWorkspaceData(
             return null;
         },
     });
+
     const remote = useQuery({
         queryKey: ['text', actorId, textId],
         queryFn: ({ signal }) =>
@@ -33,10 +35,12 @@ export function useTextWorkspaceData(
         enabled: Boolean(textId),
         refetchOnWindowFocus: false,
     });
+
     const languages = useQuery({
         queryKey: ['dictionary-languages'],
         queryFn: ({ signal }) => dictionaryApi.listLanguages(signal),
         staleTime: Infinity,
     });
+
     return { folder, remote, languages };
 }

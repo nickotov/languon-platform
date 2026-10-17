@@ -33,6 +33,11 @@ export interface TextReadingProps {
     collectionDisabled?: boolean;
 }
 export interface ReadingSelection {
+    /** Live viewport geometry; offsets and selected text remain a fixed snapshot. */
+    anchor?: {
+        contextElement: Element;
+        getBoundingClientRect(): DOMRect;
+    };
     kind: 'valid' | 'cross' | 'long';
     text: string;
     sentence: string;

@@ -19,11 +19,13 @@ import type { MutationProps } from '../types';
 import styles from './dialogs.module.css';
 
 type Props = MutationProps<TextFolder> & { initial?: TextFolder | undefined };
+
 export function FolderFormDialog(props: Props) {
     return props.open ? (
         <FolderForm key={props.initial?.id ?? 'new'} {...props} />
     ) : null;
 }
+
 function FolderForm({ initial, onClose, onSaved, requestWithSession }: Props) {
     const { t } = useI18n();
     const formId = useId();
@@ -31,6 +33,7 @@ function FolderForm({ initial, onClose, onSaved, requestWithSession }: Props) {
     const [description, setDescription] = useState(initial?.description ?? '');
     const [invalid, setInvalid] = useState(false);
     const mutation = useTextMutation(requestWithSession);
+
     function submit(event: React.FormEvent) {
         event.preventDefault();
         const parsed = CreateTextFolderRequestSchema.safeParse({
@@ -60,6 +63,7 @@ function FolderForm({ initial, onClose, onSaved, requestWithSession }: Props) {
             ),
         );
     }
+
     return (
         <Dialog
             open

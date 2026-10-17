@@ -49,15 +49,30 @@ export function useTextWorkspaceSave(options: Options) {
         isCurrent,
     } = options;
     const [saving, setSaving] = useState(false);
-    const [saveError, setSaveError] = useState<unknown>(null);
+    const [failure, setFailure] = useState<{
+        fingerprint: string;
+        error: unknown;
+    } | null>(null);
+    const fingerprint = JSON.stringify({ input, mode, pairs, proposal });
+    const saveError =
+        failure?.fingerprint === fingerprint ? failure.error : null;
     const saveLock = useRef(false);
     const creationOperation = useRef<{
         fingerprint: string;
         id: string;
     } | null>(null);
+
+    function clearSaveError() {
+        setFailure(null);
+    }
+
     async function save(keepMine = false): Promise<boolean> {
         if (saveLock.current) return false;
-        if (mode === 'compose' && !proposal && !workspaceValid(input)) {
+        if (
+            mode === 'compose' &&
+            !proposal &&
+            (input.sourceLanguage === 'auto' || !workspaceValid(input))
+        ) {
             setShowErrors(true);
             return false;
         }
@@ -71,9 +86,10 @@ export function useTextWorkspaceSave(options: Options) {
             return false;
         }
         if (proposal && previewExpired) return false;
+        setShowErrors(false);
         saveLock.current = true;
         setSaving(true);
-        setSaveError(null);
+        clearSaveError();
         try {
             const fingerprint = JSON.stringify({ folderId, ...input });
             if (creationOperation.current?.fingerprint !== fingerprint)
@@ -98,7 +114,7 @@ export function useTextWorkspaceSave(options: Options) {
             clearProposal();
             return true;
         } catch (error) {
-            setSaveError(error);
+            setFailure({ fingerprint, error });
             if (
                 error instanceof TextsApiError &&
                 error.detail.code === 'generation_proposal_expired'
@@ -127,5 +143,5 @@ export function useTextWorkspaceSave(options: Options) {
             setSaving(false);
         }
     }
-    return { saving, saveError, save };
+    return { saving, saveError, save, clearSaveError };
 }

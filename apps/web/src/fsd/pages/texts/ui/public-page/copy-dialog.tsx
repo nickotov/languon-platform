@@ -15,6 +15,7 @@ import {
     type SharedCopyTarget,
 } from '../../hooks/use-shared-text-copy';
 import styles from './public-page.module.css';
+
 import copyStyles from './copy-dialog.module.css';
 
 export function PublicCopyDialog(props: {
@@ -40,27 +41,34 @@ export function PublicCopyDialog(props: {
         label: folder.name,
     }));
     const canChoose = props.target.mode === 'text' && options.length > 0;
+
     function close() {
         if (!working) props.onClose();
     }
+
     function destination(event: ChangeEvent<HTMLInputElement>) {
         copy.setDestination(event.target.value);
     }
+
     function name(event: ChangeEvent<HTMLInputElement>) {
         copy.setName(event.target.value);
     }
+
     function folder(event: ChangeEvent<HTMLSelectElement>) {
         copy.setFolderId(event.target.value);
     }
+
     function retryFolders() {
         void copy.folders.refetch();
     }
+
     const footer = (
         <DialogActions>
             <Button variant='secondary' onClick={close} disabled={working}>
                 {t('texts.public.cancel')}
             </Button>
             <Button
+                desktopIconOnly
                 loading={working}
                 disabled={copy.overLimit || !copy.valid}
                 onClick={copy.submit}
@@ -70,6 +78,7 @@ export function PublicCopyDialog(props: {
             </Button>
         </DialogActions>
     );
+
     return (
         <Dialog
             open
@@ -152,6 +161,7 @@ export function PublicCopyDialog(props: {
                         tone='error'
                         actions={
                             <Button
+                                desktopIconOnly
                                 variant='secondary'
                                 size='compact'
                                 onClick={copy.submit}

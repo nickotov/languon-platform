@@ -11,7 +11,6 @@ import {
     PopoverTrigger,
 } from '@/fsd/shared/ui';
 
-import { useGuestPreferencesPortal } from '../../hooks/use-guest-preferences-portal';
 import type { NavigationVariant } from '../../types';
 import { PreferencesControls } from '../preferences-controls/preferences-controls';
 import styles from './guest-area.module.css';
@@ -32,7 +31,6 @@ export function GuestArea({
     pending = false,
 }: GuestAreaProps) {
     const { href, t } = useI18n();
-    const { portalContainer, setSettingsTrigger } = useGuestPreferencesPortal();
     const rail = variant === 'rail';
     const footerClassName = [styles.footer, rail ? styles.rail : undefined]
         .filter(Boolean)
@@ -75,7 +73,7 @@ export function GuestArea({
                 </ButtonLink>
             )}
             <Popover open={accountOpen} onOpenChange={onAccountOpenChange}>
-                <PopoverTrigger asChild ref={setSettingsTrigger}>
+                <PopoverTrigger asChild>
                     <button
                         aria-label={settingsLabel}
                         className={styles.settingsTrigger}
@@ -89,7 +87,6 @@ export function GuestArea({
                     align='start'
                     aria-label={settingsLabel}
                     className={styles.popover}
-                    portalContainer={portalContainer}
                     ref={focusPreferences}
                     side={rail ? 'right' : 'top'}
                     sideOffset={rail ? 12 : 8}
