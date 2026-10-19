@@ -11,6 +11,7 @@ export function EditorAddCard({
 
     return (
         <Button
+            desktopIconOnly
             leadingIcon={<Plus size={20} aria-hidden />}
             disabled={cardMutation.isPending}
             onClick={openCardDraft}

@@ -33,6 +33,7 @@ import {
     Button,
     ButtonLink,
     Card,
+    CompanionLayout,
     ErrorState,
     LoadingState,
 } from '@/fsd/shared/ui';
@@ -208,125 +209,134 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
             />
         );
     }
+    const signedIn = sessionStatus === 'authenticated';
+    const assistant = (
+        <ContextualAssistant
+            source={{
+                kind: 'dictionary',
+                id: dictionary.id,
+                shareLocator: shareId,
+            }}
+            shareKey={shareKey}
+            contextLabel={dictionary.name}
+        />
+    );
+    const companion = signedIn ? assistant : null;
     return (
-        <main className={styles.main}>
-            <ContextualAssistant
-                source={{
-                    kind: 'dictionary',
-                    id: dictionary.id,
-                    shareLocator: shareId,
-                }}
-                shareKey={shareKey}
-                contextLabel={dictionary.name}
-            />
-            <header>
-                <p className={styles.eyebrow}>
-                    {t('dictionary.public.eyebrow')}
-                </p>
-                <h1 className={styles.title}>{dictionary.name}</h1>
-                {dictionary.description ? (
-                    <p>{dictionary.description}</p>
-                ) : null}
-                <p>
-                    <span>
-                        {languageLabel(
-                            catalog,
-                            dictionary.sourceLanguage,
-                            locale,
-                        )}
-                    </span>{' '}
-                    →{' '}
-                    <span>
-                        {languageLabel(
-                            catalog,
-                            dictionary.targetLanguage,
-                            locale,
-                        )}
-                    </span>{' '}
-                    ·{' '}
-                    {t('dictionary.library.cardCount', {
-                        count: dictionary.activeCardCount,
-                    })}
-                </p>
-                <Badge tone='warning'>{t('dictionary.public.noIndex')}</Badge>
-                <DictionaryTraining
-                    activeCount={dictionary.activeCardCount}
-                    dictionaryTitle={dictionary.name}
-                    identity={trainingIdentity}
-                    requestWithSession={requestWithSession}
-                    signedIn={sessionStatus === 'authenticated'}
-                    sourceLanguage={sourceLanguage}
-                    target={trainingTarget}
-                    targetLanguage={targetLanguage}
-                />
-            </header>
-
-            <Card className={styles.forkCard}>
-                <h2 className={styles.forkTitle}>
-                    {t('dictionary.public.forkTitle')}
-                </h2>
-                <p>{t('dictionary.public.forkHelp')}</p>
-                {sessionStatus === 'authenticated' ? (
-                    <Button
-                        loading={fork.isPending}
-                        onClick={() => fork.mutate()}
-                        type='button'
-                    >
-                        {t('dictionary.public.fork')}
-                    </Button>
-                ) : (
-                    <ButtonLink href={href(signInHref)}>
-                        {t('dictionary.public.signInToFork')}
-                    </ButtonLink>
-                )}
-                {fork.error ? (
-                    <p role='alert'>{t('dictionary.public.forkFailed')}</p>
-                ) : null}
-            </Card>
-
-            <ol className={styles.cards}>
-                {cards.map((card) => (
-                    <li key={card.id}>
-                        <PublicCard
-                            card={card}
-                            dictionary={dictionary}
-                            languages={catalog}
-                            renderAudio={renderAudio}
-                        />
-                    </li>
-                ))}
-            </ol>
-            {shared.hasNextPage ? (
-                <Button
-                    loading={shared.isFetchingNextPage}
-                    onClick={() => void shared.fetchNextPage()}
-                    type='button'
-                    variant='secondary'
-                >
-                    {t('dictionary.cards.loadMore')}
-                </Button>
-            ) : null}
-            {shared.isFetchNextPageError ? (
-                <div role='alert'>
-                    <p>{t('dictionary.public.loadMoreFailed')}</p>
-                    {shared.error instanceof DictionaryApiError &&
-                    shared.error.detail.code === 'version_conflict' ? (
-                        <Button
-                            onClick={() =>
-                                void queryClient.resetQueries({
-                                    exact: true,
-                                    queryKey: sharedQueryKey,
-                                })
-                            }
-                            type='button'
-                            variant='secondary'
-                        >
-                            {t('dictionary.conflict.reload')}
-                        </Button>
+        <CompanionLayout companion={companion}>
+            <main className={styles.main}>
+                {!signedIn && assistant}
+                <header>
+                    <p className={styles.eyebrow}>
+                        {t('dictionary.public.eyebrow')}
+                    </p>
+                    <h1 className={styles.title}>{dictionary.name}</h1>
+                    {dictionary.description ? (
+                        <p>{dictionary.description}</p>
                     ) : null}
-                </div>
-            ) : null}
-        </main>
+                    <p>
+                        <span>
+                            {languageLabel(
+                                catalog,
+                                dictionary.sourceLanguage,
+                                locale,
+                            )}
+                        </span>{' '}
+                        →{' '}
+                        <span>
+                            {languageLabel(
+                                catalog,
+                                dictionary.targetLanguage,
+                                locale,
+                            )}
+                        </span>{' '}
+                        ·{' '}
+                        {t('dictionary.library.cardCount', {
+                            count: dictionary.activeCardCount,
+                        })}
+                    </p>
+                    <Badge tone='warning'>
+                        {t('dictionary.public.noIndex')}
+                    </Badge>
+                    <DictionaryTraining
+                        activeCount={dictionary.activeCardCount}
+                        dictionaryTitle={dictionary.name}
+                        identity={trainingIdentity}
+                        requestWithSession={requestWithSession}
+                        signedIn={sessionStatus === 'authenticated'}
+                        sourceLanguage={sourceLanguage}
+                        target={trainingTarget}
+                        targetLanguage={targetLanguage}
+                    />
+                </header>
+
+                <Card className={styles.forkCard}>
+                    <h2 className={styles.forkTitle}>
+                        {t('dictionary.public.forkTitle')}
+                    </h2>
+                    <p>{t('dictionary.public.forkHelp')}</p>
+                    {sessionStatus === 'authenticated' ? (
+                        <Button
+                            loading={fork.isPending}
+                            onClick={() => fork.mutate()}
+                            type='button'
+                        >
+                            {t('dictionary.public.fork')}
+                        </Button>
+                    ) : (
+                        <ButtonLink href={href(signInHref)}>
+                            {t('dictionary.public.signInToFork')}
+                        </ButtonLink>
+                    )}
+                    {fork.error ? (
+                        <p role='alert'>{t('dictionary.public.forkFailed')}</p>
+                    ) : null}
+                </Card>
+
+                <ol className={styles.cards}>
+                    {cards.map((card) => (
+                        <li key={card.id}>
+                            <PublicCard
+                                card={card}
+                                dictionary={dictionary}
+                                languages={catalog}
+                                renderAudio={renderAudio}
+                            />
+                        </li>
+                    ))}
+                </ol>
+                {shared.hasNextPage ? (
+                    <Button
+                        loading={shared.isFetchingNextPage}
+                        onClick={() => void shared.fetchNextPage()}
+                        type='button'
+                        variant='secondary'
+                    >
+                        {t('dictionary.cards.loadMore')}
+                    </Button>
+                ) : null}
+                {shared.isFetchNextPageError ? (
+                    <div role='alert'>
+                        <p>{t('dictionary.public.loadMoreFailed')}</p>
+                        {shared.error instanceof DictionaryApiError &&
+                        shared.error.detail.code === 'version_conflict' ? (
+                            <Button
+                                onClick={() =>
+                                    void queryClient.resetQueries({
+                                        exact: true,
+                                        queryKey: sharedQueryKey,
+                                    })
+                                }
+                                type='button'
+                                variant='secondary'
+                            >
+                                {t('dictionary.conflict.reload')}
+                            </Button>
+                        ) : null}
+                    </div>
+                ) : null}
+            </main>
+        </CompanionLayout>
     );
 }
 

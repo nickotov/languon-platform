@@ -1,9 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useI18n } from '@/fsd/shared/i18n';
-import { ButtonLink } from '@/fsd/shared/ui';
+import { ButtonLink, useCompanionLayout } from '@/fsd/shared/ui';
 import { AssistantPanel } from './assistant-panel';
 import { SourceSelection } from '../source-selection/source-selection';
 import { TutorLauncher } from '../tutor-shell/tutor-launcher';
@@ -32,6 +32,12 @@ function SourceAssistant(
     const [passage, setPassage] = useState<{ id: string; text: string } | null>(
         null,
     );
+    const placement = useCompanionLayout();
+    const setExpanded = placement?.setExpanded;
+    useEffect(() => {
+        setExpanded?.(started && !folded);
+        return () => setExpanded?.(false);
+    }, [started, folded, setExpanded]);
     function expand() {
         setStarted(true);
         setFolded(false);

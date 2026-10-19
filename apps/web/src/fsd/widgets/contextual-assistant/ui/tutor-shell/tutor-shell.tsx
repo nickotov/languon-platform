@@ -1,10 +1,5 @@
 'use client';
-import {
-    ChevronDown,
-    ChevronUp,
-    LoaderCircle,
-    TriangleAlert,
-} from 'lucide-react';
+import { LoaderCircle, TriangleAlert } from 'lucide-react';
 import {
     useEffect,
     useRef,
@@ -13,6 +8,7 @@ import {
     type ReactNode,
 } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Tooltip, useCompanionLayout } from '@/fsd/shared/ui';
 import { useTutorLayout } from '../../hooks/use-tutor-layout';
 import {
     TutorHeader,
@@ -65,7 +61,9 @@ export function TutorShell({
             launcherRef.current?.focus({ preventScroll: true }),
         );
     }
-    const layout = useTutorLayout(fold);
+    const placement = useCompanionLayout();
+    const hasSlot = Boolean(placement && !placement.detached);
+    const layout = useTutorLayout(fold, hasSlot);
     function expand() {
         onExpand();
         requestAnimationFrame(() => {
@@ -85,9 +83,12 @@ export function TutorShell({
         event.preventDefault();
         fold();
     }
+    let panelWidth: CSSProperties['width'] = layout.width;
+    if (layout.mobile) panelWidth = undefined;
+    else if (layout.attached) panelWidth = '100%';
     const geometry: CSSProperties = {
-        height: layout.height,
-        width: layout.mobile ? undefined : layout.width,
+        height: layout.attached ? '100%' : layout.height,
+        width: panelWidth,
         transform: layout.dragX ? `translateX(${layout.dragX}px)` : undefined,
         bottom: layout.mobile ? layout.keyboardInset : undefined,
     };
@@ -98,12 +99,12 @@ export function TutorShell({
     const ready = unread && !active && !interrupted;
     const expandLabel = `${copy.open} — ${status}`;
     const sheetLabel = layout.sheetFull ? copy.partial : copy.expand;
-    const Chevron = layout.mobile ? ChevronUp : ChevronDown;
     return (
         <div
             ref={layout.areaRef}
             className={styles.area}
             data-dock={layout.dock}
+            data-attached={layout.attached && !folded}
         >
             <section
                 ref={panelRef}
@@ -139,7 +140,7 @@ export function TutorShell({
                     onPointerDown={layout.onHeaderPointerDown}
                 />
                 {children}
-                {!layout.mobile && (
+                {!layout.mobile && !layout.attached && (
                     <div
                         className={styles.resize}
                         role='separator'
@@ -158,27 +159,36 @@ export function TutorShell({
                 )}
             </section>
             {folded && (
-                <button
-                    ref={launcherRef}
-                    type='button'
-                    className={styles.pill}
-                    onClick={expand}
-                    aria-label={expandLabel}
-                    data-ready={ready}
-                >
-                    <span className={styles.pillMark}>
-                        <TutorMark />
-                        {ready && <span className={styles.unread} />}
-                    </span>
-                    {active && (
-                        <LoaderCircle className={styles.spinner} aria-hidden />
-                    )}
-                    {!active && interrupted && (
-                        <TriangleAlert className={styles.warning} aria-hidden />
-                    )}
-                    <span>{status}</span>
-                    <Chevron aria-hidden />
-                </button>
+                <Tooltip content={copy.launcher} placement='left'>
+                    <button
+                        ref={launcherRef}
+                        type='button'
+                        className={styles.pill}
+                        onClick={expand}
+                        aria-label={expandLabel}
+                        data-ready={ready}
+                    >
+                        <span className={styles.pillMark}>
+                            <TutorMark />
+                            {ready && <span className={styles.unread} />}
+                        </span>
+                        {active && (
+                            <LoaderCircle
+                                className={styles.spinner}
+                                aria-hidden
+                            />
+                        )}
+                        {!active && interrupted && (
+                            <TriangleAlert
+                                className={styles.warning}
+                                aria-hidden
+                            />
+                        )}
+                        <span className={styles.status} role='status'>
+                            {status}
+                        </span>
+                    </button>
+                </Tooltip>
             )}
         </div>
     );

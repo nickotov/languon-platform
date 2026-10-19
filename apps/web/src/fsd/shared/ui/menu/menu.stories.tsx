@@ -29,6 +29,7 @@ export const Default: StoryObj<typeof meta> = {
 export const IconActions: StoryObj<typeof meta> = {
     args: {
         iconOnly: true,
+        showTooltip: true,
         items: [
             { icon: <Pencil size={16} />, label: 'Edit', onSelect() {} },
             {

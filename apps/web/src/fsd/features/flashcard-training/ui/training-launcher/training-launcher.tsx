@@ -37,6 +37,7 @@ export interface TrainingLauncherProps {
     archived?: boolean;
     className?: string;
     triggerClassName?: string | undefined;
+    desktopIconOnly?: boolean;
     placement?: 'top' | 'bottom';
     /** Higher-level composition supplies other learning journeys. */
     additionalItems?: MenuItem[];
@@ -77,6 +78,7 @@ function Launcher({
     className,
     triggerClassName,
     placement = 'bottom',
+    desktopIconOnly = false,
     additionalItems,
 }: TrainingLauncherProps) {
     const { t } = useI18n();
@@ -189,10 +191,17 @@ function Launcher({
         ]),
     ];
 
+    const labelClassName = [
+        styles.label,
+        desktopIconOnly ? styles.desktopIconOnly : undefined,
+    ]
+        .filter(Boolean)
+        .join(' ');
+
     const trigger = (
-        <span className={styles.label}>
+        <span className={labelClassName}>
             <GraduationCap aria-hidden className={styles.icon} />
-            {t('training.train')}
+            <span className={styles.triggerText}>{t('training.train')}</span>
         </span>
     );
 
@@ -205,7 +214,8 @@ function Launcher({
                 items={items}
                 heading={t('training.menuHeading')}
                 variant='secondary'
-                showChevron
+                showTooltip={desktopIconOnly}
+                showChevron={!desktopIconOnly}
                 allowDisabledItems
                 placement={placement === 'top' ? 'top-end' : 'bottom-end'}
                 menuClassName={styles.menu}

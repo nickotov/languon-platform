@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:000df4294d8e574b
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:746b3cafb3d922b4
 import { mkdir, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -7,6 +7,7 @@ import {
     type Page,
     type TestInfo,
     type Request,
+    type Browser,
 } from '@playwright/test';
 import type {
     ConversationDetail,
@@ -151,6 +152,17 @@ async function source(page: Page, token: string, info: TestInfo) {
     expect(launchBounds.y + launchBounds.height / 2).toBeGreaterThan(
         viewport.height / 2,
     );
+    expect(
+        Math.abs(launchBounds.width - launchBounds.height),
+    ).toBeLessThanOrEqual(1);
+    await expect(launcher.locator('svg').first()).toBeVisible();
+    if (viewport.width > 768) {
+        await launcher.hover();
+        await expect(
+            page.getByRole('tooltip', { name: 'AI Tutor', exact: true }),
+        ).toBeVisible();
+        await page.mouse.move(0, 0);
+    }
     await capture(page, info, `tutor-initial-pill-${viewport.width}`);
     expect(conversationRequests).toEqual([]);
 
@@ -232,11 +244,38 @@ test('saved source streams through real SDK into an editable private note and re
                 .some((duration) => parseFloat(duration) > 0),
         ),
     ).toBe(true);
+    const content = page.locator('[data-companion-content]').filter({
+        has: page.getByRole('textbox', { name: 'Source text', exact: true }),
+    });
+    await expect(content).toHaveCount(1);
+    await expect(widget.locator('..')).toHaveAttribute('data-attached', 'true');
+    await expect
+        .poll(async () => {
+            const sourceBounds = (await content.boundingBox())!;
+            const tutorBounds = (await widget.boundingBox())!;
+            return tutorBounds.x >= sourceBounds.x + sourceBounds.width - 1;
+        })
+        .toBe(true);
+    await capture(page, info, 'tutor-attached-text-desktop');
+    const retainedQuestion = 'Keep my draft while changing chat placement';
+    await widget.getByLabel('Your question').fill(retainedQuestion);
+    await widget
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    await page
+        .getByRole('menuitemcheckbox', { name: 'Detached chat', exact: true })
+        .click();
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(widget.locator('..')).toHaveAttribute(
+        'data-attached',
+        'false',
+    );
+    await expect(widget.getByLabel('Your question')).toHaveValue(
+        retainedQuestion,
+    );
     await expect
         .poll(async () => Math.round((await widget.boundingBox())!.height))
         .toBe(960);
-
-    await capture(page, info, 'tutor-empty-desktop');
     await expect
         .poll(async () => Math.round((await widget.boundingBox())!.width))
         .toBe(420);
@@ -251,7 +290,6 @@ test('saved source streams through real SDK into an editable private note and re
     await expect
         .poll(async () => (await widget.boundingBox())!.x)
         .toBeLessThan(right);
-    // Full-screen text reading has no sidebar; app-shell pages inherit its width.
     const sidebarOffset = await widget.evaluate(
         (element) =>
             parseFloat(
@@ -263,7 +301,7 @@ test('saved source streams through real SDK into an editable private note and re
     expect(Math.round((await widget.boundingBox())!.x)).toBe(
         sidebarOffset + 24,
     );
-    await capture(page, info, 'tutor-upper-left-desktop');
+    await capture(page, info, 'tutor-detached-upper-left-desktop');
     await widget
         .getByRole('button', { name: 'More options', exact: true })
         .click();
@@ -291,8 +329,22 @@ test('saved source streams through real SDK into an editable private note and re
         .getByRole('button', { name: 'More options', exact: true })
         .click();
     await page
-        .getByRole('menuitem', { name: 'Move to upper right', exact: true })
+        .getByRole('menuitemcheckbox', { name: 'Detached chat', exact: true })
         .click();
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(widget.locator('..')).toHaveAttribute('data-attached', 'true');
+    await expect(widget.getByLabel('Your question')).toHaveValue(
+        retainedQuestion,
+    );
+    await expect
+        .poll(async () => {
+            const sourceBounds = (await content.boundingBox())!;
+            return (
+                (await widget.boundingBox())!.x >=
+                sourceBounds.x + sourceBounds.width - 1
+            );
+        })
+        .toBe(true);
 
     await widget.getByRole('button', { name: /^Reply language:/u }).click();
     await capture(page, info, 'tutor-preferences-desktop');
@@ -450,6 +502,7 @@ test('saved source streams through real SDK into an editable private note and re
 // @user-flow contextual-language-assistant-and-knowledge/dictionary-card-copies-preserve-visible-fields
 test('two copied dictionary cards retain typed labels, language directions and immutable message content', async ({
     page,
+    browser,
 }, info) => {
     const assertClean = runtimeErrors(page);
     const token = await signup(page, info);
@@ -506,6 +559,69 @@ test('two copied dictionary cards retain typed labels, language directions and i
         name: 'Language tutor',
         exact: true,
     });
+    const dictionaryContent = page.locator('#dictionary-content');
+    await expect
+        .poll(async () => {
+            const sourceBounds = (await dictionaryContent.boundingBox())!;
+            return (
+                (await panel.boundingBox())!.x >=
+                sourceBounds.x + sourceBounds.width - 1
+            );
+        })
+        .toBe(true);
+    const addCard = page.getByRole('button', { name: 'Add card', exact: true });
+    for (const name of ['Add card', 'Train']) {
+        const action = page.getByRole('button', { name, exact: true });
+        await expect(action).toBeVisible();
+        const bounds = (await action.boundingBox())!;
+        expect(Math.abs(bounds.width - bounds.height)).toBeLessThanOrEqual(1);
+        await action.hover();
+        await expect(
+            page.getByRole('tooltip', { name, exact: true }),
+        ).toBeVisible();
+        await page.mouse.move(0, 0);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(panel).toBeVisible();
+    await expect
+        .poll(async () => Math.round((await panel.boundingBox())!.width))
+        .toBe(390);
+    await expect
+        .poll(() =>
+            panel.evaluate(
+                (element) => element.scrollWidth <= element.clientWidth + 1,
+            ),
+        )
+        .toBe(true);
+    // At an actual action/chat overlap, hit testing must reach the chat rather
+    // than the dictionary's fixed action bar, which used to cover the composer.
+    await expect
+        .poll(async () => {
+            const action = (await addCard.boundingBox())!;
+            const chat = (await panel.boundingBox())!;
+            const left = Math.max(action.x, chat.x);
+            const right = Math.min(
+                action.x + action.width,
+                chat.x + chat.width,
+            );
+            const top = Math.max(action.y, chat.y);
+            const bottom = Math.min(
+                action.y + action.height,
+                chat.y + chat.height,
+            );
+            if (left >= right || top >= bottom) return false;
+            return panel.evaluate(
+                (element, point) =>
+                    element.contains(
+                        document.elementFromPoint(point.x, point.y),
+                    ),
+                { x: (left + right) / 2, y: (top + bottom) / 2 },
+            );
+        })
+        .toBe(true);
+    await capture(page, info, 'dictionary-chat-above-actions-mobile');
+    await noOverflow(page);
+    await page.setViewportSize({ width: 1440, height: 1000 });
     for (const card of cards) {
         await panel
             .getByRole('button', { name: 'Add context /', exact: true })
@@ -766,8 +882,121 @@ test('two copied dictionary cards retain typed labels, language directions and i
                 ).conversations.length,
         )
         .toBe(0);
+    await verifySharedDictionaryPlacement(
+        page,
+        browser,
+        token,
+        dictionary,
+        info,
+    );
     assertClean();
 });
+
+async function verifySharedDictionaryPlacement(
+    page: Page,
+    browser: Browser,
+    token: string,
+    dictionary: OwnedDictionary,
+    info: TestInfo,
+) {
+    const { dictionary: currentDictionary } = (await api(
+        page,
+        token,
+        `/dictionaries/${dictionary.id}`,
+    )) as { dictionary: OwnedDictionary };
+    const { capability } = (await api(
+        page,
+        token,
+        `/dictionaries/${dictionary.id}/share-key/rotate`,
+        { expectedDictionaryVersion: currentDictionary.version },
+    )) as { capability: { shareId: string; shareKey: string } };
+    const sharedPath = `/shared/dictionaries/${capability.shareId}#${capability.shareKey}`;
+    const readerContext = await browser.newContext({
+        viewport: { width: 1440, height: 1000 },
+        baseURL: 'http://localhost:3336',
+    });
+    const guestContext = await browser.newContext({
+        viewport: { width: 1440, height: 1000 },
+        baseURL: 'http://localhost:3336',
+    });
+    try {
+        const reader = await readerContext.newPage();
+        const assertReaderClean = runtimeErrors(reader);
+        await signup(reader, info);
+        await reader.goto(sharedPath);
+        const sourceContent = reader.locator('[data-companion-content]');
+        await expect(
+            sourceContent.getByRole('heading', {
+                name: dictionary.name,
+                exact: true,
+            }),
+        ).toBeVisible();
+        await reader
+            .getByRole('button', { name: /^Open language tutor/u })
+            .click();
+        const panel = reader.getByRole('region', {
+            name: 'Language tutor',
+            exact: true,
+        });
+        await expect(panel).toBeVisible();
+        await expect(panel.locator('..')).toHaveAttribute(
+            'data-attached',
+            'true',
+        );
+        await expect
+            .poll(async () => {
+                const bounds = (await sourceContent.boundingBox())!;
+                return (
+                    (await panel.boundingBox())!.x >=
+                    bounds.x + bounds.width - 1
+                );
+            })
+            .toBe(true);
+        await expect(panel.getByLabel('Your question')).toBeEnabled();
+        await capture(reader, info, 'shared-dictionary-attached-tutor-desktop');
+        await noOverflow(reader);
+
+        const guest = await guestContext.newPage();
+        const assertGuestClean = runtimeErrors(guest);
+        await guest.goto(sharedPath);
+        const main = guest.locator('[data-companion-content] main');
+        await expect(
+            main.getByRole('heading', { name: dictionary.name, exact: true }),
+        ).toBeVisible();
+        const signIn = main.getByRole('link', {
+            name: 'Sign in to ask the language assistant',
+            exact: true,
+        });
+        await expect(signIn).toBeVisible();
+        await expect(signIn).toHaveAttribute('href', '/login');
+        await expect(guest.locator('[data-companion-slot]')).toBeEmpty();
+        await expect(
+            guest.getByRole('button', { name: /^Open language tutor/u }),
+        ).toHaveCount(0);
+        const linkBounds = (await signIn.boundingBox())!;
+        expect(linkBounds.width).toBeGreaterThan(100);
+        await expect
+            .poll(() =>
+                signIn.evaluate((element) => {
+                    const rect = element.getBoundingClientRect();
+                    return element.contains(
+                        document.elementFromPoint(
+                            rect.x + rect.width / 2,
+                            rect.y + rect.height / 2,
+                        ),
+                    );
+                }),
+            )
+            .toBe(true);
+        await capture(guest, info, 'shared-dictionary-guest-sign-in-desktop');
+        await noOverflow(guest);
+        assertReaderClean();
+        assertGuestClean();
+    } finally {
+        await readerContext.close();
+        await guestContext.close();
+    }
+}
 
 // @user-flow contextual-language-assistant-and-knowledge/durable-close-reopen-stop-retry
 test('closing reconnects without duplicating a turn, Stop retains partials, and retry is explicit on narrow screens', async ({
@@ -781,6 +1010,9 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
         name: 'Language tutor',
         exact: true,
     });
+    await expect
+        .poll(async () => Math.round((await sheet.boundingBox())!.width))
+        .toBe(390);
     await expect
         .poll(async () => Math.round((await sheet.boundingBox())!.height))
         .toBe(832);

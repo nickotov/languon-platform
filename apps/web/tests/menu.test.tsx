@@ -6,6 +6,27 @@ import { Menu } from '@/fsd/shared/ui';
 import { render } from './render';
 
 describe('icon action menu', () => {
+    it('shows an opt-in icon trigger tooltip on keyboard focus and preserves menu focus', async () => {
+        const user = userEvent.setup();
+        render(
+            <Menu
+                label='Train'
+                trigger={<span aria-hidden='true'>🎓</span>}
+                showTooltip
+                items={[{ label: 'Cards', onSelect: vi.fn() }]}
+            />,
+        );
+        const trigger = screen.getByRole('button', { name: 'Train' });
+        await user.tab();
+        expect(trigger).toHaveFocus();
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Train');
+        await user.keyboard('{Enter}');
+        expect(screen.getByRole('menuitem', { name: 'Cards' })).toHaveFocus();
+        await user.keyboard('{Escape}');
+        expect(trigger).toHaveFocus();
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
+
     it('hands focus to its persistent trigger before opening another surface', async () => {
         const user = userEvent.setup();
         let opener: Element | null = null;

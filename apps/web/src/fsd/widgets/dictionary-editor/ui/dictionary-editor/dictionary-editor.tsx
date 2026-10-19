@@ -8,7 +8,7 @@ import {
     type TrainingLauncherProps,
 } from '@/fsd/features/flashcard-training';
 import type { ReactNode } from 'react';
-import { LoadingState } from '@/fsd/shared/ui';
+import { CompanionLayout, LoadingState } from '@/fsd/shared/ui';
 
 import { useDictionaryEditorController } from '../../hooks/use-dictionary-editor-controller';
 import { createEditorView } from '../../lib/editor-view-model';
@@ -105,48 +105,63 @@ export function DictionaryEditor({
 
     const signedIn = sessionStatus === 'authenticated';
 
+    const assistant =
+        active && renderAssistant?.({ dictionaryId, name: current.name });
+
     return (
-        <main id='dictionary-content' tabIndex={-1} className={styles.main}>
-            <EditorSummary model={view.workspace.summary} />
-            {active && renderAssistant?.({ dictionaryId, name: current.name })}
-            <EditorFeedback model={view.workspace.feedback} />
-            <EditorToolbar model={view.workspace.toolbar} />
-            <EditorCards model={view.workspace.cards} />
-            <div className={styles.addCard}>
-                {renderTraining({
-                    triggerClassName: styles.trainButton,
-                    activeCount: current.activeCardCount,
-                    archived: !active,
-                    dictionaryTitle: current.name,
-                    identity: trainingIdentity,
-                    placement: 'top',
-                    requestWithSession,
-                    signedIn,
-                    sourceLanguage,
-                    target,
-                    targetLanguage,
-                })}
+        <CompanionLayout companion={assistant}>
+            <main id='dictionary-content' tabIndex={-1} className={styles.main}>
+                <EditorSummary model={view.workspace.summary} />
+                <EditorFeedback model={view.workspace.feedback} />
+                <EditorToolbar model={view.workspace.toolbar} />
+                <EditorCards model={view.workspace.cards} />
+                <div className={styles.addCard}>
+                    {renderTraining({
+                        triggerClassName: styles.trainButton,
+                        desktopIconOnly: true,
+                        activeCount: current.activeCardCount,
+                        archived: !active,
+                        dictionaryTitle: current.name,
+                        identity: trainingIdentity,
+                        placement: 'top',
+                        requestWithSession,
+                        signedIn,
+                        sourceLanguage,
+                        target,
+                        targetLanguage,
+                    })}
+                    {active ? (
+                        <EditorAddCard model={view.workspace.addCard} />
+                    ) : null}
+                </div>
                 {active ? (
-                    <EditorAddCard model={view.workspace.addCard} />
+                    <>
+                        <EditorDiscardDialog
+                            model={view.authoring.discardDialog}
+                        />
+                        <EditorSettingsSheet
+                            model={view.authoring.settingsSheet}
+                        />
+                        <EditorSharingSheet
+                            model={view.authoring.sharingSheet}
+                        />
+                        <EditorBatchSheet model={view.generation.batchSheet} />
+                        <EditorImportSheet
+                            model={view.interchange.importSheet}
+                        />
+                        <EditorExportSheet
+                            model={view.interchange.exportSheet}
+                        />
+                        <EditorDocumentSheet
+                            model={view.generation.documentSheet}
+                        />
+                        <EditorCardSheet model={view.authoring.cardSheet} />
+                        <EditorGenerationReview
+                            model={view.generation.generationReview}
+                        />
+                    </>
                 ) : null}
-            </div>
-            {active ? (
-                <>
-                    <EditorDiscardDialog model={view.authoring.discardDialog} />
-                    <EditorSettingsSheet model={view.authoring.settingsSheet} />
-                    <EditorSharingSheet model={view.authoring.sharingSheet} />
-                    <EditorBatchSheet model={view.generation.batchSheet} />
-                    <EditorImportSheet model={view.interchange.importSheet} />
-                    <EditorExportSheet model={view.interchange.exportSheet} />
-                    <EditorDocumentSheet
-                        model={view.generation.documentSheet}
-                    />
-                    <EditorCardSheet model={view.authoring.cardSheet} />
-                    <EditorGenerationReview
-                        model={view.generation.generationReview}
-                    />
-                </>
-            ) : null}
-        </main>
+            </main>
+        </CompanionLayout>
     );
 }

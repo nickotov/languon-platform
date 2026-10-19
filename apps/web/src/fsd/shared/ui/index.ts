@@ -214,3 +214,7 @@ export {
     type PartOfSpeech,
     type VocabularyTermCardProps,
 } from './vocabulary-term-card/vocabulary-term-card';
+export {
+    CompanionLayout,
+    useCompanionLayout,
+} from './companion-layout/companion-layout';

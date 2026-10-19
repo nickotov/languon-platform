@@ -1,0 +1,48 @@
+.layout {
+    display: flex;
+    align-items: flex-start;
+    min-width: 0;
+    min-height: 0;
+    flex: 1;
+}
+
+.content {
+    min-width: 0;
+    min-height: 0;
+    flex: 1;
+}
+
+.slot {
+    width: 0;
+    flex-shrink: 0;
+}
+
+.fill {
+    --app-topbar-height: 0px;
+    --app-sidebar-width: 0px;
+    height: 100%;
+    align-items: stretch;
+}
+
+.fill .content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+    .layout:where([data-expanded='true'][data-detached='false']) .slot {
+        position: sticky;
+        top: calc(var(--app-topbar-height, 0px) + var(--space-16));
+        width: min(var(--size-400), 38%);
+        height: calc(100dvh - var(--app-topbar-height, 0px) - var(--space-32));
+        margin: var(--space-16);
+        z-index: 30;
+    }
+
+    .fill:where([data-expanded='true'][data-detached='false']) .slot {
+        top: 0;
+        height: auto;
+        position: relative;
+    }
+}

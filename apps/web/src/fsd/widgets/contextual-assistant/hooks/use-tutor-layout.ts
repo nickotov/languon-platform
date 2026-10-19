@@ -8,12 +8,13 @@ import {
 } from 'react';
 
 /** Geometry is measured in the available app area, including the live sidebar offset. */
-export function useTutorLayout(onFold: () => void) {
+export function useTutorLayout(onFold: () => void, hasSlot = false) {
     const areaRef = useRef<HTMLDivElement>(null);
     const [area, setArea] = useState({
         width: 1000,
         height: 800,
         viewportHeight: 800,
+        viewportWidth: 1000,
     });
     const [mobile, setMobile] = useState(false);
     const [keyboardInset, setKeyboardInset] = useState(0);
@@ -34,6 +35,7 @@ export function useTutorLayout(onFold: () => void) {
         velocity: number;
     } | null>(null);
     const suppressClick = useRef(false);
+    const attached = hasSlot && area.viewportWidth >= 1024;
     const canWiden = area.width >= 900;
     const width = Math.min(wide && canWiden ? 560 : 420, area.width - 48);
     const maxHeight = Math.max(120, area.height - 40);
@@ -65,6 +67,7 @@ export function useTutorLayout(onFold: () => void) {
                 width: bounds.width,
                 height: bounds.height,
                 viewportHeight: window.innerHeight,
+                viewportWidth: window.innerWidth,
             });
             setMobile(query.matches);
             const viewport = window.visualViewport;
@@ -115,6 +118,7 @@ export function useTutorLayout(onFold: () => void) {
         event.currentTarget.setPointerCapture(event.pointerId);
     }
     function onHeaderPointerDown(event: PointerEvent<HTMLElement>) {
+        if (attached) return;
         if ((event.target as Element).closest('button, a, input, textarea'))
             return;
         event.preventDefault();
@@ -218,6 +222,7 @@ export function useTutorLayout(onFold: () => void) {
     }
     return {
         areaRef,
+        attached,
         mobile,
         dock,
         wide,

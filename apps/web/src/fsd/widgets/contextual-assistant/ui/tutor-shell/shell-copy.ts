@@ -1,6 +1,8 @@
 import type { Locale } from '@/fsd/shared/i18n';
 const en = {
     title: 'Language tutor',
+    launcher: 'AI Tutor',
+    detached: 'Detached chat',
     minimize: 'Minimize tutor',
     open: 'Open language tutor',
     more: 'More options',
@@ -29,6 +31,8 @@ const en = {
 type Copy = typeof en;
 const ru: Copy = {
     title: 'Языковой наставник',
+    launcher: 'ИИ-наставник',
+    detached: 'Отдельное окно чата',
     minimize: 'Свернуть наставника',
     open: 'Открыть наставника',
     more: 'Другие действия',
@@ -55,6 +59,8 @@ const ru: Copy = {
 };
 const es: Copy = {
     title: 'Tutor de idiomas',
+    launcher: 'Tutor de IA',
+    detached: 'Chat separado',
     minimize: 'Minimizar tutor',
     open: 'Abrir tutor',
     more: 'Más opciones',
@@ -82,6 +88,8 @@ const es: Copy = {
 };
 const fr: Copy = {
     title: 'Tuteur de langue',
+    launcher: 'Tuteur IA',
+    detached: 'Discussion détachée',
     minimize: 'Réduire le tuteur',
     open: 'Ouvrir le tuteur',
     more: 'Plus d’options',

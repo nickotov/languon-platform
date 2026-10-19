@@ -28,6 +28,12 @@ source_paths:
     - apps/backend/tests/integration/modules/authentication/infrastructure/production-redis-tls-acl.test.ts
     - infra/deploy/redis.production.acl.example
     - apps/web/src/app/knowledge/**
+    - apps/web/src/fsd/shared/ui/companion-layout/**
+    - apps/web/src/fsd/shared/ui/menu/**
+    - apps/web/src/fsd/pages/texts/ui/workspace-page/**
+    - apps/web/src/fsd/pages/shared-dictionary/**
+    - apps/web/src/fsd/features/flashcard-training/ui/training-launcher/**
+    - apps/web/next.config.mjs
     - apps/web/src/fsd/widgets/contextual-assistant/**
     - apps/web/src/fsd/features/conversation-preferences/**
     - apps/web/src/fsd/features/knowledge-notes/**
@@ -110,13 +116,20 @@ configuration startup requires its guard and does not own this cleanup.
 
 ## Browser verification
 
-1. Sign in and open an owned dictionary or text. The folded tutor pill is visible
+1. Sign in and open an owned dictionary or text. The circular AI tutor launcher is visible
    at the lower right. It does not load conversation history or subscribe to events
    until opened. Select **Open language tutor**.
-   The non-modal **Language tutor** widget names its source. On desktop it docks
-   in an upper corner after the sidebar and opens at full available height; the
-   underlying source remains scrollable,
-   selectable and clickable. **More options** offers docking and reading size.
+   Hovering the icon on desktop shows **AI Tutor**. The non-modal **Language
+   tutor** widget names its source. On desktop it opens in a dedicated slot to
+   the right of the text dialog body or dictionary content, leaving the source
+   scrollable, selectable and clickable. **More options** offers **Detached chat**:
+   enable it for the floating chat, with corner docking and reading-size options;
+   disable it to return beside the source. Switching placement preserves the
+   unfinished question and conversation. Dictionary add-card and practice actions
+   use icon buttons with descriptive tooltips on desktop.
+   On a shared dictionary, a signed-in reader gets the same right-side tutor
+   slot. A signed-out visitor sees **Sign in to ask the language assistant**
+   inside the main dictionary content, with no collapsed chat slot hiding it.
 2. Ask about meaning or grammar. Observe stable streaming prose, material discussed,
    and final usage. Select **Charged credits** to open the usage popover above
    the answer action; it shows model, input/output tokens and estimated/reported
@@ -145,6 +158,7 @@ configuration startup requires its guard and does not own this cleanup.
    before applying the draft. Its update is rejected; the draft remains for
    comparison or **Save as a new note**. No silent overwrite occurs.
 6. On a narrow viewport, the tutor opens as a bottom sheet at full available height.
+   It appears above the dictionary action buttons so they cannot cover the chat.
    Its handle and header controls switch between full and partial heights. Repeat fold/reopen at 390px and 320px and explicitly **Stop** a running
    response. Incomplete output is labeled. Final usage distinguishes reported
    values from estimates and labels input tokens, output tokens, and charged
@@ -184,13 +198,18 @@ require `X-Languon-Share-Key`; never put the secret into logs or saved examples.
 
 ## E2E coverage
 
-| Scenario                                         | Observable proof                                                                                                                                                   |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `source-chat-save-knowledge`                     | Non-modal source selection, folded question/editor retention, streamed draft review, explicit publication, note edit and revision history.                         |
-| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation.    |
-| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                        |
-| `durable-close-reopen-stop-retry`                | Narrow bottom-sheet fold/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry. |
-| `dictionary-card-copies-preserve-visible-fields` | Real dictionary/card APIs, attached copies retained on fold, active field labels and Arabic/English markup, prompt delivery and readable history.                  |
+| Scenario                                         | Observable proof                                                                                                                                                                    |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source-chat-save-knowledge`                     | Attached text layout, circular launcher tooltip, detached/reattached draft retention, non-modal source selection, folded editor retention, explicit publication and note revisions. |
+| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation.                     |
+| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                                         |
+| `durable-close-reopen-stop-retry`                | Narrow bottom-sheet fold/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry.                  |
+| `dictionary-card-copies-preserve-visible-fields` | Attached dictionary layout, desktop action tooltip and mobile chat stacking, real card APIs, fold-retained copies, field labels/languages, prompt delivery and readable history.    |
+
+The `dictionary-card-copies-preserve-visible-fields` scenario also rotates a real sharing capability,
+opens the shared page as a separate authenticated reader and verifies right-side
+placement. An isolated signed-out browser context verifies the sign-in link is
+visible and clickable inside the main content.
 
 Exhaustive category/schema validation, concurrency fences, accounting races,
 observer/reflector budgets, source-copy markup, and SQL cleanup invariants remain

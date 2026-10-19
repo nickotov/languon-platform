@@ -14,7 +14,7 @@ source_paths:
     - docs/architecture.md
     - docs/adr/0040-preproduction-owner-scoped-audio-retirement.md
     - apps/backend/src/modules/speech/infrastructure/composition.ts
-source_fingerprint: sha256:ef8a047d1ebe7ceb63716fab9556c44284c1b08e07aca560bde92c04639a4a10
+source_fingerprint: sha256:37f94d368b650c1d186e7859ed7d7e83727a20d6d7af6cec1ce3d8a265e6f084
 reviewed: 2026-10-19
 ---
 

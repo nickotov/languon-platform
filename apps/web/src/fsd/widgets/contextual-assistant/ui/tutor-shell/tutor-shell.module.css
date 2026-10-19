@@ -94,10 +94,6 @@
     flex-shrink: 0;
 }
 
-.mobileChevron {
-    display: none;
-}
-
 .actions {
     display: flex;
     align-items: center;
@@ -250,8 +246,9 @@
     align-items: center;
     gap: var(--space-10);
     height: var(--size-48);
-    max-width: calc(100% - var(--space-48));
-    padding: 0 var(--space-14) 0 var(--space-8);
+    width: var(--size-48);
+    justify-content: center;
+    padding: 0;
     border: var(--size-1) solid var(--border-default);
     border-radius: var(--radius-full);
     background: var(--background-elevated);
@@ -337,13 +334,6 @@
 }
 
 @media (max-width: 767px) {
-    .desktopChevron {
-        display: none;
-    }
-
-    .mobileChevron {
-        display: block;
-    }
     .panel,
     .area:where([data-dock='left']) .panel {
         top: auto;
@@ -426,4 +416,40 @@
         transition: none;
         animation: none;
     }
+}
+
+.area:where([data-attached='true']) {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 100%;
+    z-index: auto;
+}
+
+.area:where([data-attached='true']) .panel {
+    inset: 0;
+    box-shadow: none;
+}
+
+.area:where([data-attached='true']) .header {
+    cursor: default;
+    touch-action: auto;
+}
+
+.status {
+    position: absolute;
+    width: var(--size-1);
+    height: var(--size-1);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.pill > .spinner,
+.pill > .warning {
+    position: absolute;
+    top: calc(-1 * var(--space-4));
+    left: calc(-1 * var(--space-4));
+    background: var(--background-elevated);
+    border-radius: var(--radius-full);
 }

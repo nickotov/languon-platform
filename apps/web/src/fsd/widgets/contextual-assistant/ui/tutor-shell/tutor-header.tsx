@@ -5,7 +5,8 @@ import {
     ChevronsDown,
     ChevronsUp,
     EllipsisVertical,
-    GraduationCap,
+    Sparkles,
+    ExternalLink,
     History,
     Minus,
     PanelLeft,
@@ -16,7 +17,12 @@ import {
 import type { PointerEventHandler } from 'react';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { IconButton, Menu, type MenuItem } from '@/fsd/shared/ui';
+import {
+    IconButton,
+    Menu,
+    useCompanionLayout,
+    type MenuItem,
+} from '@/fsd/shared/ui';
 import type { useTutorLayout } from '../../hooks/use-tutor-layout';
 import { TutorContext, type TutorContextProps } from './tutor-context';
 import { tutorShellCopy } from './shell-copy';
@@ -24,7 +30,7 @@ import styles from './tutor-shell.module.css';
 export function TutorMark() {
     return (
         <span className={styles.mark} aria-hidden>
-            <GraduationCap />
+            <Sparkles />
         </span>
     );
 }
@@ -51,6 +57,10 @@ export function TutorHeader({
     const { locale } = useI18n();
     const copy = tutorShellCopy(locale);
     const existing = conversationCopy(locale);
+    const placement = useCompanionLayout();
+    function toggleDetached() {
+        if (placement) placement.setDetached(!placement.detached);
+    }
     const buttonSize = layout.mobile ? 'large' : 'small';
     const expansionLabel = layout.sheetFull ? copy.partial : copy.expand;
     const expansionIcon = layout.sheetFull ? <ChevronsDown /> : <ChevronsUp />;
@@ -71,7 +81,7 @@ export function TutorHeader({
             onSelect: actions.onNew,
             disabled: Boolean(actions.busy),
         });
-    else
+    else if (!layout.attached)
         items.push(
             {
                 separatorBefore: true,
@@ -105,6 +115,15 @@ export function TutorHeader({
                 onSelect: layout.toggleFull,
             },
         );
+    if (placement && !layout.mobile)
+        items.push({
+            separatorBefore: true,
+            ...(layout.attached ? { headingBefore: copy.layout } : {}),
+            label: copy.detached,
+            checked: placement.detached,
+            icon: <ExternalLink />,
+            onSelect: toggleDetached,
+        });
     items.push({
         separatorBefore: true,
         label: existing.deleteChat,

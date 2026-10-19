@@ -25,4 +25,5 @@ export type MenuProps = {
     placement?: 'top-end' | 'bottom-end';
     variant?: 'default' | 'secondary';
     showChevron?: boolean;
+    showTooltip?: boolean;
 };

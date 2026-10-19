@@ -14,6 +14,7 @@ import {
 import styles from './menu-common.module.css';
 
 import { MenuItemButton } from './menu-item';
+import { Tooltip } from '../tooltip/tooltip';
 import type { MenuItem, MenuProps } from './types';
 
 export function Menu({
@@ -28,6 +29,7 @@ export function Menu({
     placement = 'bottom-end',
     variant = 'default',
     showChevron = false,
+    showTooltip = false,
 }: MenuProps) {
     const id = useId();
     const panelRef = useRef<HTMLDivElement>(null);
@@ -168,36 +170,38 @@ export function Menu({
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <div className={styles.root}>
-                <PopoverAnchor asChild>
-                    <button
-                        aria-controls={id}
-                        aria-expanded={open}
-                        aria-haspopup='menu'
-                        aria-label={label}
-                        className={triggerClassName}
-                        disabled={disabled}
-                        onClick={toggle}
-                        ref={triggerRef}
-                        type='button'
-                    >
-                        {trigger}
-                        {showChevron && (
-                            <svg
-                                className={styles.chevron}
-                                data-open={open || undefined}
-                                aria-hidden='true'
-                                width='16'
-                                height='16'
-                                viewBox='0 0 24 24'
-                                fill='none'
-                                stroke='currentColor'
-                                strokeWidth='2'
-                            >
-                                <path d='m6 9 6 6 6-6' />
-                            </svg>
-                        )}
-                    </button>
-                </PopoverAnchor>
+                <Tooltip content={label} disabled={!showTooltip}>
+                    <PopoverAnchor asChild>
+                        <button
+                            aria-controls={id}
+                            aria-expanded={open}
+                            aria-haspopup='menu'
+                            aria-label={label}
+                            className={triggerClassName}
+                            disabled={disabled}
+                            onClick={toggle}
+                            ref={triggerRef}
+                            type='button'
+                        >
+                            {trigger}
+                            {showChevron && (
+                                <svg
+                                    className={styles.chevron}
+                                    data-open={open || undefined}
+                                    aria-hidden='true'
+                                    width='16'
+                                    height='16'
+                                    viewBox='0 0 24 24'
+                                    fill='none'
+                                    stroke='currentColor'
+                                    strokeWidth='2'
+                                >
+                                    <path d='m6 9 6 6 6-6' />
+                                </svg>
+                            )}
+                        </button>
+                    </PopoverAnchor>
+                </Tooltip>
                 {open ? (
                     <PopoverContent
                         side={

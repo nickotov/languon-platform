@@ -12,7 +12,7 @@ import {
     TextShareDialog,
     TextsAuthBoundary,
 } from '@/fsd/features/text-management';
-import { Button, Dialog } from '@/fsd/shared/ui';
+import { Button, Dialog, CompanionLayout } from '@/fsd/shared/ui';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useTextWorkspace } from '../../hooks/use-text-workspace';
 import { workspaceReadingDocument } from '../../lib/workspace-reading';
@@ -160,6 +160,15 @@ function Workspace({
         />
     );
 
+    const assistant = ws.document ? (
+        <ContextualAssistant
+            source={{ kind: 'text', id: ws.document.id }}
+            contextLabel={displayTitle}
+            currentDraft={assistantDraft}
+            selectionRootId='reader-workspace'
+        />
+    ) : null;
+
     return (
         <Dialog
             open
@@ -173,103 +182,97 @@ function Workspace({
             dismissible={!ws.saving}
             dismissOnEscape={!confirmation && !management}
         >
-            <WorkspaceHeader
-                ws={ws}
-                title={displayTitle}
-                actions={actions}
-                onClose={close}
-                onRename={rename}
-                onShare={share}
-                onArchive={archive}
-                onRetranslate={retranslate}
-            />
-            {loading && <p role='status'>{copy('loading')}</p>}
-            {missing && (
-                <div className={styles.editor}>
-                    <h2>{copy('missing')}</h2>
-                    <Button onClick={leave}>{copy('back')}</Button>
-                </div>
-            )}
-            {ready && (
-                <>
-                    <WorkspaceLanguages
-                        ws={ws}
-                        match={match}
-                        onMatch={setMatch}
-                    />
-                    {ws.conflict && (
-                        <Button
-                            desktopIconOnly
-                            onClick={review}
-                            leadingIcon={<RefreshCw />}
-                        >
-                            {copy('review')}
-                        </Button>
-                    )}
-                    {ws.document && (
-                        <ContextualAssistant
-                            source={{ kind: 'text', id: ws.document.id }}
-                            contextLabel={displayTitle}
-                            currentDraft={assistantDraft}
-                            selectionRootId='reader-workspace'
+            <CompanionLayout fill companion={assistant}>
+                <WorkspaceHeader
+                    ws={ws}
+                    title={displayTitle}
+                    actions={actions}
+                    onClose={close}
+                    onRename={rename}
+                    onShare={share}
+                    onArchive={archive}
+                    onRetranslate={retranslate}
+                />
+                {loading && <p role='status'>{copy('loading')}</p>}
+                {missing && (
+                    <div className={styles.editor}>
+                        <h2>{copy('missing')}</h2>
+                        <Button onClick={leave}>{copy('back')}</Button>
+                    </div>
+                )}
+                {ready && (
+                    <>
+                        <WorkspaceLanguages
+                            ws={ws}
+                            match={match}
+                            onMatch={setMatch}
                         />
-                    )}
-                    <main className={styles.body} id='reader-workspace'>
-                        {showCompose && <WorkspaceCompose ws={ws} />}
-                        {ws.mode === 'edit' && !proposal && (
-                            <>
-                                <WorkspaceBanners ws={ws} />
-                                <WorkspacePairEditor ws={ws} />
-                            </>
+                        {ws.conflict && (
+                            <Button
+                                desktopIconOnly
+                                onClick={review}
+                                leadingIcon={<RefreshCw />}
+                            >
+                                {copy('review')}
+                            </Button>
                         )}
-                        {showRead && readingDocument && (
-                            <TextReading
-                                collectionActorKey={actorId}
-                                document={readingDocument}
-                                source={readingSource}
-                                requestWithSession={ws.requestWithSession}
-                                matchMode={match}
-                                previewExpired={ws.previewExpired}
-                                topSlot={<WorkspaceBanners ws={ws} />}
-                            />
-                        )}
-                    </main>
-                    <div className={styles.bottom}>{actions}</div>
-                </>
-            )}
-            <WorkspaceConfirm
-                kind={confirmation}
-                ws={ws}
-                onClose={dismissConfirmation}
-                onLeave={leave}
-            />
-            {ws.document && (
-                <>
-                    <RenameTextDialog
-                        open={management === 'rename'}
-                        document={ws.document}
-                        onClose={closeManagement}
-                        onSaved={ws.updateMetadata}
-                        requestWithSession={ws.requestWithSession}
-                    />
-                    <ArchiveTextDialog
-                        open={management === 'archive'}
-                        kind='text'
-                        resource={ws.document}
-                        onClose={closeManagement}
-                        onSaved={leave}
-                        requestWithSession={ws.requestWithSession}
-                    />
-                    <TextShareDialog
-                        open={management === 'share'}
-                        kind='text'
-                        resource={ws.document}
-                        onClose={closeManagement}
-                        onChanged={ws.refreshMetadata}
-                        requestWithSession={ws.requestWithSession}
-                    />
-                </>
-            )}
+                        <main className={styles.body} id='reader-workspace'>
+                            {showCompose && <WorkspaceCompose ws={ws} />}
+                            {ws.mode === 'edit' && !proposal && (
+                                <>
+                                    <WorkspaceBanners ws={ws} />
+                                    <WorkspacePairEditor ws={ws} />
+                                </>
+                            )}
+                            {showRead && readingDocument && (
+                                <TextReading
+                                    collectionActorKey={actorId}
+                                    document={readingDocument}
+                                    source={readingSource}
+                                    requestWithSession={ws.requestWithSession}
+                                    matchMode={match}
+                                    previewExpired={ws.previewExpired}
+                                    topSlot={<WorkspaceBanners ws={ws} />}
+                                />
+                            )}
+                        </main>
+                        <div className={styles.bottom}>{actions}</div>
+                    </>
+                )}
+                <WorkspaceConfirm
+                    kind={confirmation}
+                    ws={ws}
+                    onClose={dismissConfirmation}
+                    onLeave={leave}
+                />
+                {ws.document && (
+                    <>
+                        <RenameTextDialog
+                            open={management === 'rename'}
+                            document={ws.document}
+                            onClose={closeManagement}
+                            onSaved={ws.updateMetadata}
+                            requestWithSession={ws.requestWithSession}
+                        />
+                        <ArchiveTextDialog
+                            open={management === 'archive'}
+                            kind='text'
+                            resource={ws.document}
+                            onClose={closeManagement}
+                            onSaved={leave}
+                            requestWithSession={ws.requestWithSession}
+                        />
+                        <TextShareDialog
+                            open={management === 'share'}
+                            kind='text'
+                            resource={ws.document}
+                            onClose={closeManagement}
+                            onChanged={ws.refreshMetadata}
+                            requestWithSession={ws.requestWithSession}
+                        />
+                    </>
+                )}
+            </CompanionLayout>
         </Dialog>
     );
 }
