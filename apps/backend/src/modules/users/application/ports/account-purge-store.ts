@@ -4,20 +4,8 @@ export interface ClaimedAccountPurge {
 }
 
 export interface OwnedDocumentObject {
-    kind?: 'document';
     cleanupState: string;
     objectKey: string;
-}
-
-export interface OwnedAudioObject {
-    kind: 'pronunciation-audio';
-    cleanupState: string;
-    reference: {
-        backend: 'postgres' | 's3';
-        namespace: string;
-        key: string;
-        versionId?: string;
-    };
 }
 
 export interface AccountPurgeStore {
@@ -27,7 +15,7 @@ export interface AccountPurgeStore {
     }): Promise<ClaimedAccountPurge | null>;
     inspectOwner(input: ClaimedAccountPurge): Promise<{
         activeJobs: number;
-        objects: (OwnedDocumentObject | OwnedAudioObject)[];
+        objects: OwnedDocumentObject[];
     }>;
     renew(
         input: ClaimedAccountPurge & { now: Date; workerId: string },
@@ -49,8 +37,4 @@ export interface AccountPurgeStore {
 
 export interface AccountPurgeObjectStorage {
     removeAllVersions(objectKey: string, signal: AbortSignal): Promise<void>;
-    removeAudioVersions?(
-        reference: OwnedAudioObject['reference'],
-        signal: AbortSignal,
-    ): Promise<void>;
 }

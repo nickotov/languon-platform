@@ -43,21 +43,10 @@ export class AccountPurgeService {
                 ) {
                     throw new Error('Account purge lease was lost.');
                 }
-                if (object.kind === 'pronunciation-audio') {
-                    if (!this.storage.removeAudioVersions)
-                        throw new Error(
-                            'Pronunciation storage is unavailable; purge cannot verify physical audio.',
-                        );
-                    await this.storage.removeAudioVersions(
-                        object.reference,
-                        input.signal,
-                    );
-                } else {
-                    await this.storage.removeAllVersions(
-                        object.objectKey,
-                        input.signal,
-                    );
-                }
+                await this.storage.removeAllVersions(
+                    object.objectKey,
+                    input.signal,
+                );
             }
             input.signal.throwIfAborted();
             if (

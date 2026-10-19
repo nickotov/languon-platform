@@ -9,7 +9,6 @@ import type { databaseSchema } from '../../../../../infrastructure/database/sche
 import { dictionaryGenerationJobsTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
 import { dictionariesTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
 import { requestSentenceCancellation } from '../../../../learning/infrastructure/persistence/drizzle/sentence-deletion-participant';
-import { dictionaryAudioJobsTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/audio-schema';
 import type { OwnerDeletionPreparation } from '../../../application/ports/owner-deletion-preparation';
 
 /** Asks the existing generation worker to cancel active work after access is revoked. */
@@ -44,15 +43,6 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
                 ),
                 now: new Date(),
             });
-            await tx
-                .update(dictionaryAudioJobsTable)
-                .set({
-                    // Preserve submitted/ambiguous work as a non-retryable
-                    // tombstone even if deletion is cancelled and access restored.
-                    state: sql`case when ${dictionaryAudioJobsTable.state} = 'queued' then 'cancelled' when ${dictionaryAudioJobsTable.state} in ('submitting','waiting_provider','storing','submission_unknown') then 'submission_unknown' else ${dictionaryAudioJobsTable.state} end`,
-                    text: '',
-                })
-                .where(eq(dictionaryAudioJobsTable.ownerId, userId));
         });
         await this.database
             .update(dictionaryGenerationJobsTable)

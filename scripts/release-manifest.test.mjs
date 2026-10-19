@@ -20,6 +20,27 @@ const generationBudget = {
     outputCostMicrosPerMillionTokens: 4_000_000,
     maxCostMicrosPerAttempt: 70_000,
 };
+const sharedSpeech = {
+    phase: 'compatibility',
+    apiEnqueued: [],
+    apiReadable: [1],
+    workerProcessable: [1],
+    webReadable: [1],
+    adminReadable: [1],
+    purgeReadable: [1],
+    billingSchemas: ['speech-generation:v1'],
+    speechBudget: {
+        maxCharacters: 2000,
+        maxCostUnitsPerClip: 2000,
+        ownerDailyCostUnits: 20000,
+        globalDailyCostUnits: 200000,
+    },
+};
+const modelPricing = {
+    phase: 'compatibility',
+    apiAdmitted: [],
+    workerProcessable: [1],
+};
 
 function fixture(overrides = {}) {
     return {
@@ -52,6 +73,16 @@ function fixture(overrides = {}) {
         ...overrides,
     };
 }
+
+test('rejects retired pronunciation metadata instead of silently reviving old admission', () => {
+    assert.throws(
+        () => validateManifest(fixture({ pronunciationAudio: {} })),
+        /Retired pronunciationAudio/u,
+    );
+    const manifest = validateManifest(fixture({ sharedSpeech, modelPricing }));
+    assert.deepEqual(manifest.sharedSpeech, sharedSpeech);
+    assert.equal(manifest.pronunciationAudio, undefined);
+});
 
 test('accepts only stable vMAJOR.MINOR.PATCH release versions', () => {
     assert.equal(validateVersion('v0.1.0'), 'v0.1.0');
@@ -226,6 +257,10 @@ test('create CLI writes a canonical manifest once and validate CLI checks expect
         '4000000',
         '--dictionary-job-max-cost-micros-per-attempt',
         '70000',
+        '--shared-speech',
+        JSON.stringify(sharedSpeech),
+        '--model-pricing',
+        JSON.stringify(modelPricing),
         ...IMAGE_NAMES.flatMap((name) => [
             '--image',
             `${name}=ghcr.io/nickkotov/languon-platform/${name}@sha256:${DIGEST}`,
@@ -239,6 +274,8 @@ test('create CLI writes a canonical manifest once and validate CLI checks expect
         assert.equal(manifest.version, null);
         assert.equal(manifest.sourceSha, SOURCE_SHA);
         assert.equal(manifest.migration.ledger, 'ledger');
+        assert.deepEqual(manifest.sharedSpeech, sharedSpeech);
+        assert.deepEqual(manifest.modelPricing, modelPricing);
         assert.deepEqual(manifest.dictionaryJobs.apiEnqueued, []);
         assert.deepEqual(manifest.dictionaryJobs.workerProcessable, [
             'single-card:v1',

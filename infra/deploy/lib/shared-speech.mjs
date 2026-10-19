@@ -1,5 +1,40 @@
 const PHASES = new Set(['dormant', 'compatibility', 'enabled', 'retiring']);
 
+function normalizeSpeechBudget(value) {
+    const names = [
+        'maxCharacters',
+        'maxCostUnitsPerClip',
+        'ownerDailyCostUnits',
+        'globalDailyCostUnits',
+    ];
+    if (
+        !value ||
+        typeof value !== 'object' ||
+        Array.isArray(value) ||
+        Object.keys(value).sort().join(',') !== [...names].sort().join(',')
+    )
+        throw new Error(
+            'sharedSpeech.speechBudget must declare every current ceiling.',
+        );
+    const budget = {};
+    for (const name of names) {
+        if (!Number.isSafeInteger(value[name]) || value[name] < 1)
+            throw new Error(
+                `sharedSpeech.speechBudget.${name} must be positive.`,
+            );
+        budget[name] = value[name];
+    }
+    if (
+        budget.maxCharacters > 2000 ||
+        budget.maxCostUnitsPerClip > budget.ownerDailyCostUnits ||
+        budget.ownerDailyCostUnits > budget.globalDailyCostUnits
+    )
+        throw new Error(
+            'Shared speech ceilings must cover clip, owner and global budgets within the 2000-character envelope.',
+        );
+    return budget;
+}
+
 function versions(value, label) {
     if (
         !Array.isArray(value) ||
@@ -20,6 +55,8 @@ export function normalizeSharedSpeech(value) {
     const phase = value?.phase ?? 'dormant';
     if (!PHASES.has(phase)) throw new Error('Invalid sharedSpeech phase');
     const result = { phase };
+    if (value !== undefined)
+        result.speechBudget = normalizeSpeechBudget(value.speechBudget);
     for (const key of [
         'apiEnqueued',
         'apiReadable',
@@ -96,6 +133,22 @@ export function normalizeModelPricing(value) {
 export function assertSharedSpeechOverlap(previous, next) {
     const before = previous?.sharedSpeech;
     const after = next.sharedSpeech;
+    if (
+        before?.workerProcessable.some((version) =>
+            after?.workerProcessable.includes(version),
+        )
+    ) {
+        const oldBudget = normalizeSpeechBudget(before.speechBudget);
+        const newBudget = normalizeSpeechBudget(after.speechBudget);
+        if (
+            Object.keys(oldBudget).some(
+                (key) => oldBudget[key] !== newBudget[key],
+            )
+        )
+            throw new Error(
+                'Shared speech budgets must remain stable during worker overlap.',
+            );
+    }
     for (const version of before?.apiEnqueued ?? []) {
         if (!(after?.workerProcessable ?? []).includes(version))
             throw new Error(

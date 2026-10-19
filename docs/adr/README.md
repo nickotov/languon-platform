@@ -56,6 +56,9 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0035](./0035-texts-and-contextual-vocabulary-publication.md)   | Texts ownership and contextual vocabulary publication | Accepted               |
 | [ADR-0036](./0036-task-specific-text-translation-capacity.md)       | Task-specific immutable translation capacity          | Accepted               |
 | [ADR-0037](./0037-independent-knowledge-and-agent-proposals.md)     | Independent knowledge and agent proposals             | Accepted               |
+| [ADR-0038](./0038-preproduction-text-model-retirement.md)           | Preproduction text model retirement                   | Accepted               |
+| [ADR-0039](./0039-source-backed-local-diagram-atlas.md)             | Source-backed local diagram atlas                     | Accepted               |
+| [ADR-0040](./0040-preproduction-owner-scoped-audio-retirement.md)   | Preproduction owner-scoped pronunciation retirement   | Accepted               |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

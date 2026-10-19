@@ -1,5 +1,3 @@
-import { isIP } from 'node:net';
-
 import { z } from 'zod';
 
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../modules/dictionaries/application/ports/dictionary-generation-provider-policy';
@@ -25,38 +23,6 @@ const optionalUrl = z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.url().optional(),
 );
-
-function isPrivateAddress(hostname: string): boolean {
-    const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
-    if (host === 'localhost' || host.endsWith('.localhost')) return true;
-    if (isIP(host) === 6) {
-        if (host.startsWith('::ffff:')) {
-            return isPrivateAddress(host.slice('::ffff:'.length));
-        }
-        return (
-            host === '::' ||
-            host === '::1' ||
-            host.startsWith('fc') ||
-            host.startsWith('fd') ||
-            /^fe[89ab]/.test(host)
-        );
-    }
-    if (isIP(host) !== 4) return false;
-    const parts = host.split('.');
-    const first = Number(parts[0]);
-    const second = Number(parts[1]);
-    return (
-        first === 0 ||
-        first === 10 ||
-        first === 127 ||
-        (first === 100 && second >= 64 && second <= 127) ||
-        (first === 169 && second === 254) ||
-        (first === 172 && second >= 16 && second <= 31) ||
-        (first === 192 && second === 168) ||
-        (first === 198 && [18, 19].includes(second)) ||
-        first >= 224
-    );
-}
 
 function parseFormats(value: string, name: string): string[] {
     const formats = value.split(',').filter(Boolean);
@@ -169,12 +135,9 @@ export interface DictionaryWorkerEnvironment {
         | { mode: 'deterministic' }
         | {
               apiKey: string;
-              baseUrl: string;
-              catalogModel?: DictionaryTextModelCatalogEntry;
-              credentialReference?: string;
+              catalogModel: DictionaryTextModelCatalogEntry;
               mode: 'mastra';
               modelId: `${string}/${string}`;
-              providerModelId?: string;
           };
     readinessTimeoutMs: number;
     releaseSha: string;
@@ -287,52 +250,18 @@ export function loadDictionaryWorkerEnvironment(
                 'Curated dictionary text models use their trusted catalog URL and provider credential; remove legacy DICTIONARY_GENERATION_MODEL_API_KEY and DICTIONARY_GENERATION_MODEL_BASE_URL.',
             );
         }
-        const apiKey = catalogModel
-            ? environment[catalogModel.credentialEnvironmentVariable]
-            : environment.DICTIONARY_GENERATION_MODEL_API_KEY;
-        const baseUrlValue = catalogModel
-            ? catalogModel.apiBaseUrl
-            : environment.DICTIONARY_GENERATION_MODEL_BASE_URL;
-        if (!apiKey || !baseUrlValue) {
+        if (!catalogModel)
             throw new Error(
-                catalogModel
-                    ? `Mastra dictionary generation with ${modelId} requires ${catalogModel.credentialEnvironmentVariable}.`
-                    : 'Legacy Mastra dictionary generation requires model ID, base URL, and API key.',
+                'Dictionary generation model is unsupported; select a curated model.',
             );
-        }
-        let baseUrl: URL;
-        try {
-            baseUrl = new URL(baseUrlValue);
-        } catch {
+        const apiKey = environment[catalogModel.credentialEnvironmentVariable];
+        if (!apiKey)
             throw new Error(
-                'DICTIONARY_GENERATION_MODEL_BASE_URL must be a valid provider base URL.',
+                `Mastra dictionary generation with ${modelId} requires ${catalogModel.credentialEnvironmentVariable}.`,
             );
-        }
-        if (
-            baseUrl.username !== '' ||
-            baseUrl.password !== '' ||
-            baseUrl.search !== '' ||
-            baseUrl.hash !== '' ||
-            baseUrl.pathname.length > 200 ||
-            !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/.test(baseUrl.pathname) ||
-            (deployed && baseUrl.protocol !== 'https:') ||
-            (deployed && isPrivateAddress(baseUrl.hostname)) ||
-            (!deployed && !['http:', 'https:'].includes(baseUrl.protocol))
-        ) {
-            throw new Error(
-                'DICTIONARY_GENERATION_MODEL_BASE_URL must be a bounded credential-free HTTPS provider URL outside private addresses when deployed.',
-            );
-        }
         provider = {
             apiKey,
-            baseUrl: baseUrlValue,
-            ...(catalogModel
-                ? {
-                      catalogModel,
-                      credentialReference: catalogModel.credentialReference,
-                      providerModelId: catalogModel.modelId,
-                  }
-                : {}),
+            catalogModel,
             mode: 'mastra',
             modelId: modelId as `${string}/${string}`,
         };
@@ -347,11 +276,11 @@ export function loadDictionaryWorkerEnvironment(
         providerBudget,
         supportedFormats,
     );
-    if (provider.mode === 'mastra' && provider.catalogModel) {
+    if (provider.mode === 'mastra') {
         const unsupportedFormats = supportedFormats.filter(
             (format) =>
                 format !== 'conversation:v1' &&
-                !provider.catalogModel!.supportedFormats.includes(format),
+                !provider.catalogModel.supportedFormats.includes(format),
         );
         if (unsupportedFormats.length > 0) {
             throw new Error(

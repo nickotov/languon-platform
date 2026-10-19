@@ -77,8 +77,8 @@ function setup(options: { denyMembership?: boolean } = {}) {
             providers: [],
             settings: {
                 activeProvider: 'deepseek',
-                defaultModel: 'deepseek-chat',
-                enabledModels: ['deepseek-chat'],
+                defaultModel: 'deepseek-flash',
+                enabledModels: ['deepseek-flash'],
                 updatedAt: '2026-08-20T09:00:00.000Z',
                 version: 1,
             },
@@ -269,8 +269,8 @@ describe('administration routes', () => {
         const { administration, app } = setup();
         const body = {
             activeProvider: 'deepseek',
-            defaultModel: 'deepseek-chat',
-            enabledModels: ['deepseek-chat'],
+            defaultModel: 'deepseek-flash',
+            enabledModels: ['deepseek-flash'],
             expectedVersion: 0,
             reason: 'Enable reviewed dictionary generation',
         };

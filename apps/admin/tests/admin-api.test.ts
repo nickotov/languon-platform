@@ -360,8 +360,8 @@ describe('admin API boundary', () => {
                                 outputCreditsPerMillionTokens: 3_000_000,
                                 revision: 1,
                             },
-                            id: 'deepseek-chat',
-                            label: 'DeepSeek Chat',
+                            id: 'deepseek-flash',
+                            label: 'DeepSeek Flash',
                             available: true,
                             supportedFormats: ['card:v1'],
                             unavailableReason: null,
@@ -371,8 +371,8 @@ describe('admin API boundary', () => {
             ],
             settings: {
                 activeProvider: 'deepseek',
-                defaultModel: 'deepseek-chat',
-                enabledModels: ['deepseek-chat'],
+                defaultModel: 'deepseek-flash',
+                enabledModels: ['deepseek-flash'],
                 updatedAt: null,
                 version: 1,
             },
@@ -387,8 +387,8 @@ describe('admin API boundary', () => {
         await expect(
             adminApi.mutateAiSettings({
                 activeProvider: 'deepseek',
-                defaultModel: 'deepseek-chat',
-                enabledModels: ['deepseek-chat'],
+                defaultModel: 'deepseek-flash',
+                enabledModels: ['deepseek-flash'],
                 expectedVersion: 1,
                 reason: 'Enable verified dictionary generation',
             }),
@@ -404,8 +404,8 @@ describe('admin API boundary', () => {
         const request = fetchMock.mock.lastCall?.[1] as RequestInit;
         expect(JSON.parse(String(request.body))).toEqual({
             activeProvider: 'deepseek',
-            defaultModel: 'deepseek-chat',
-            enabledModels: ['deepseek-chat'],
+            defaultModel: 'deepseek-flash',
+            enabledModels: ['deepseek-flash'],
             expectedVersion: 1,
             reason: 'Enable verified dictionary generation',
         });

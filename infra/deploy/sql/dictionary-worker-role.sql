@@ -10,7 +10,7 @@ REVOKE CREATE ON SCHEMA public FROM :"dictionary_worker_role";
 GRANT USAGE ON SCHEMA public TO :"dictionary_worker_role";
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
-    dictionary_audio_assets, dictionary_audio_bindings, dictionary_audio_blobs, dictionary_audio_jobs
+    dictionary_audio_blobs
 TO :"dictionary_worker_role";
 GRANT SELECT (id, status) ON TABLE users TO :"dictionary_worker_role";
 GRANT SELECT (id, owner_id, lifecycle, source_language_tag, target_language_tag) ON TABLE dictionaries TO :"dictionary_worker_role";

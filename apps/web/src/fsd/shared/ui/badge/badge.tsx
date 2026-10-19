@@ -57,8 +57,3 @@ export function Badge({
 export function Chip({ children }: { children: ReactNode }) {
     return <span className={styles.chip}>{children}</span>;
 }
-
-/** @deprecated Import the standalone Divider primitive instead. */
-export function Divider() {
-    return <hr className={styles.divider} />;
-}

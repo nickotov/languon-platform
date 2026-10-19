@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision global-app-shell sha256:d323acf5857e750d
+// @user-flow-revision global-app-shell sha256:bda4f902cf35d0cf
 
 const runId =
     process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;

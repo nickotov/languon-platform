@@ -154,15 +154,17 @@ LANGUON_DEPLOY_E2E=true node --test infra/deploy/tests/local-rehearsal.journeys.
 
 ## System verification
 
-Pronunciation audio has separate optional release metadata and speech budgets;
-absent metadata disables its API/worker activation. Use the release manifest CLI's
-`--pronunciation-audio` JSON input when deliberately enabling it. First expand
-with dormant audio-capable API, worker and purge versions; activate only when the
-rollback floor also understands audio jobs and physical-object cleanup. Audio is
-hosted in the existing worker process and does not add an image identity. Never
-reuse proposal token budgets or document-quarantine storage credentials for audio.
+Shared pronunciation uses the separate `sharedSpeech` and `modelPricing`
+release namespaces. Supply their JSON envelopes through `--shared-speech` and
+`--model-pricing` in the release manifest CLI. `sharedSpeech.speechBudget` owns
+`maxCharacters`, `maxCostUnitsPerClip`, `ownerDailyCostUnits` and
+`globalDailyCostUnits`; overlapping worker releases must agree on the budget.
+Missing namespaces disable activation. The retired `--pronunciation-audio`
+argument is rejected. Speech runs in the existing dictionary worker and adds no
+image identity. API and worker receive separate scoped audio-storage credentials;
+account purge detaches owner links and retains successful shared recordings.
+Never reuse document-quarantine storage credentials or proposal token budgets.
 
-Shared pronunciation adds separate `sharedSpeech` and `modelPricing` namespaces.
 First publish compatibility readers/workers, then admit version one only when
 both active and rollback-floor releases understand speech settlement and immutable
 rate revisions. Missing namespaces fail closed. The four version-list environment

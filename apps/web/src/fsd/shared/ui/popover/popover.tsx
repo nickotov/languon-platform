@@ -19,8 +19,6 @@ import {
     type ReactNode,
 } from 'react';
 import { PopoverContext } from './popover-context';
-import { PopoverContent } from './popover-content';
-import { PopoverTrigger } from './popover-parts';
 
 export * from './popover-parts';
 export * from './popover-accessories';
@@ -33,36 +31,7 @@ export type PopoverRootProps = {
     open?: boolean;
 };
 
-export type LegacyPopoverProps = {
-    children: ReactNode;
-    label: string;
-    placement?: Placement;
-    trigger: ReactNode;
-};
-
-export function Popover(props: PopoverRootProps | LegacyPopoverProps) {
-    if ('trigger' in props) {
-        const { children, label, placement = 'bottom-end', trigger } = props;
-        const [side, alignment] = placement.split('-');
-        return (
-            <PopoverRoot>
-                <PopoverTrigger aria-label={label}>{trigger}</PopoverTrigger>
-                <PopoverContent
-                    aria-label={label}
-                    side={side as 'bottom' | 'top' | 'left' | 'right'}
-                    align={
-                        (alignment ?? 'center') as 'start' | 'end' | 'center'
-                    }
-                >
-                    {children}
-                </PopoverContent>
-            </PopoverRoot>
-        );
-    }
-    return <PopoverRoot {...props} />;
-}
-
-function PopoverRoot({
+export function Popover({
     children,
     defaultOpen = false,
     onOpenChange,

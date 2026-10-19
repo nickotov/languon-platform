@@ -157,58 +157,19 @@ describe('dictionary worker environment', () => {
         ).toThrow(/local-only/);
     });
 
-    it('accepts only complete deployed HTTPS Mastra configuration', () => {
-        expect(
-            loadDictionaryWorkerEnvironment({
-                ...base,
-                APP_ENV: 'production',
-                DICTIONARY_WORKER_DATABASE_URL:
-                    'postgres://user:pass@database.internal:5432/languon?sslmode=verify-full',
-                DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-                DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-                DICTIONARY_GENERATION_MODEL_BASE_URL:
-                    'https://models.example.test/openai/v1',
-                DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
-                ...liveProviderBudget,
-            }).provider,
-        ).toEqual({
-            apiKey: 'private-test-key',
-            baseUrl: 'https://models.example.test/openai/v1',
-            mode: 'mastra',
-            modelId: 'provider/model-v1',
-        });
-        expect(() =>
-            loadDictionaryWorkerEnvironment({
-                ...base,
-                APP_ENV: 'production',
-                DICTIONARY_WORKER_DATABASE_URL:
-                    'postgres://user:pass@database.internal:5432/languon?sslmode=verify-full',
-                DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-                DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-                DICTIONARY_GENERATION_MODEL_BASE_URL: 'http://models.test',
-                DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
-                ...liveProviderBudget,
-            }),
-        ).toThrow(/HTTPS provider URL/);
-        for (const unsafeUrl of [
-            'https://user:pass@models.example.test/v1',
-            'https://models.example.test/v1?tenant=private',
-            'https://127.0.0.1/v1',
-            'https://[::1]/v1',
-        ]) {
+    it('rejects retired and arbitrary model routes even with complete legacy settings', () => {
+        for (const modelId of ['deepseek/deepseek-chat', 'provider/model-v1']) {
             expect(() =>
                 loadDictionaryWorkerEnvironment({
                     ...base,
-                    APP_ENV: 'production',
-                    DICTIONARY_WORKER_DATABASE_URL:
-                        'postgres://user:pass@database.internal:5432/languon?sslmode=verify-full',
-                    DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-                    DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-                    DICTIONARY_GENERATION_MODEL_BASE_URL: unsafeUrl,
-                    DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
                     ...liveProviderBudget,
+                    DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+                    DICTIONARY_GENERATION_MODEL_ID: modelId,
+                    DICTIONARY_GENERATION_MODEL_API_KEY: 'synthetic-key',
+                    DICTIONARY_GENERATION_MODEL_BASE_URL:
+                        'https://models.example.test/v1',
                 }),
-            ).toThrow(/credential-free HTTPS provider URL/);
+            ).toThrow(/unsupported|legacy/);
         }
     });
 
@@ -216,16 +177,18 @@ describe('dictionary worker environment', () => {
         const deepseek = loadDictionaryWorkerEnvironment({
             ...base,
             DEEPSEEK_API_KEY: 'deepseek-test-key',
-            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             ...liveProviderBudget,
         });
         expect(deepseek.provider).toMatchObject({
             apiKey: 'deepseek-test-key',
-            baseUrl: 'https://api.deepseek.com',
-            credentialReference: 'env:DEEPSEEK_API_KEY',
-            modelId: 'deepseek/deepseek-chat',
-            providerModelId: 'deepseek-chat',
+            catalogModel: {
+                apiBaseUrl: 'https://api.deepseek.com',
+                credentialReference: 'env:DEEPSEEK_API_KEY',
+                modelId: 'deepseek-flash',
+            },
+            modelId: 'deepseek/deepseek-flash',
         });
         expect(deepseek.providerCredentials).toEqual({
             DEEPSEEK_API_KEY: 'deepseek-test-key',
@@ -240,10 +203,12 @@ describe('dictionary worker environment', () => {
         });
         expect(kie.provider).toMatchObject({
             apiKey: 'kie-test-key',
-            baseUrl: 'https://api.kie.ai/gemini-2.5-pro/v1',
-            credentialReference: 'env:KIE_API_KEY',
+            catalogModel: {
+                apiBaseUrl: 'https://api.kie.ai/gemini-2.5-pro/v1',
+                credentialReference: 'env:KIE_API_KEY',
+                modelId: 'gemini-2.5-pro',
+            },
             modelId: 'kie/gemini-2.5-pro',
-            providerModelId: 'gemini-2.5-pro',
         });
         expect(kie.providerCredentials).toEqual({
             KIE_API_KEY: 'kie-test-key',
@@ -254,7 +219,7 @@ describe('dictionary worker environment', () => {
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
-                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
                 ...liveProviderBudget,
             }),
@@ -266,7 +231,7 @@ describe('dictionary worker environment', () => {
                 DICTIONARY_GENERATION_MODEL_API_KEY: 'legacy-test-key',
                 DICTIONARY_GENERATION_MODEL_BASE_URL:
                     'https://models.example.test/v1',
-                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
                 ...liveProviderBudget,
             }),
@@ -276,10 +241,8 @@ describe('dictionary worker environment', () => {
     it('requires and validates an explicit conservative live provider budget', () => {
         const live = loadDictionaryWorkerEnvironment({
             ...base,
-            DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-            DICTIONARY_GENERATION_MODEL_BASE_URL:
-                'https://models.example.test/openai/v1',
-            DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+            DEEPSEEK_API_KEY: 'private-test-key',
+            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             ...liveProviderBudget,
         });
@@ -294,20 +257,16 @@ describe('dictionary worker environment', () => {
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
-                DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-                DICTIONARY_GENERATION_MODEL_BASE_URL:
-                    'https://models.example.test/openai/v1',
-                DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+                DEEPSEEK_API_KEY: 'private-test-key',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             }),
         ).toThrow(/all five/i);
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
-                DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-                DICTIONARY_GENERATION_MODEL_BASE_URL:
-                    'https://models.example.test/openai/v1',
-                DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+                DEEPSEEK_API_KEY: 'private-test-key',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
                 ...liveProviderBudget,
                 DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '1000',
@@ -334,10 +293,8 @@ describe('dictionary worker environment', () => {
         };
         const activated = {
             ...base,
-            DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-            DICTIONARY_GENERATION_MODEL_BASE_URL:
-                'https://models.example.test/openai/v1',
-            DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+            DEEPSEEK_API_KEY: 'private-test-key',
+            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'pasted-terms:v2',
             DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'pasted-terms:v2',
@@ -418,10 +375,8 @@ describe('dictionary worker environment', () => {
                     'postgres://worker:secret@database.internal:5432/languon?sslmode=verify-full',
                 DICTIONARY_DOCUMENT_STORAGE_ENDPOINT:
                     'https://documents.example.test',
-                DICTIONARY_GENERATION_MODEL_API_KEY: 'private-test-key',
-                DICTIONARY_GENERATION_MODEL_BASE_URL:
-                    'https://models.example.test/openai/v1',
-                DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+                DEEPSEEK_API_KEY: 'private-test-key',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             }),
         ).toThrow(/local\/test-only/);

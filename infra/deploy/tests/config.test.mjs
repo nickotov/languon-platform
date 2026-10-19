@@ -183,7 +183,7 @@ test('production requires a dedicated dictionary worker database user', () => {
     );
 });
 
-test('audio storage requires independent purge, worker and API keys', async () => {
+test('audio storage requires independent worker and API keys', async () => {
     const config = parseEnvironmentFile(
         await readFile('infra/deploy/stage.env.example', 'utf8'),
     );
@@ -193,7 +193,7 @@ test('audio storage requires independent purge, worker and API keys', async () =
                 ...config,
                 DICTIONARY_AUDIO_STORAGE: 's3',
             }),
-        /distinct API, worker, and purge/,
+        /distinct API and worker/,
     );
     const ready = {
         ...config,
@@ -202,17 +202,15 @@ test('audio storage requires independent purge, worker and API keys', async () =
         DICTIONARY_AUDIO_S3_API_SECRET_ACCESS_KEY: 'test',
         DICTIONARY_AUDIO_S3_WORKER_ACCESS_KEY_ID: 'worker',
         DICTIONARY_AUDIO_S3_WORKER_SECRET_ACCESS_KEY: 'test',
-        ACCOUNT_PURGE_AUDIO_STORAGE_ACCESS_KEY_ID: 'purge',
-        ACCOUNT_PURGE_AUDIO_STORAGE_SECRET_ACCESS_KEY: 'test',
     };
     assert.doesNotThrow(() => assertDeployConfig('stage', ready));
     assert.throws(
         () =>
             assertDeployConfig('stage', {
                 ...ready,
-                ACCOUNT_PURGE_AUDIO_STORAGE_ACCESS_KEY_ID: 'worker',
+                DICTIONARY_AUDIO_S3_WORKER_ACCESS_KEY_ID: 'api',
             }),
-        /distinct API, worker, and purge/,
+        /distinct API and worker/,
     );
 });
 
@@ -367,29 +365,30 @@ test('dictionary worker process and drain settings are bounded before deployment
                 DICTIONARY_GENERATION_MODEL_BASE_URL: 'http://models.test',
                 DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
             }),
-        /HTTPS provider URL/,
+        /unsupported/,
     );
-    assert.equal(
-        assertDeployConfig('stage', {
-            ...required,
-            ...liveDictionaryBudget,
-            DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-            DICTIONARY_GENERATION_MODEL_API_KEY: 'secret',
-            DICTIONARY_GENERATION_MODEL_BASE_URL:
-                'https://models.example.test/openai/v1',
-            DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
-        }).DICTIONARY_GENERATION_PROVIDER_MODE,
-        'mastra',
+    assert.throws(
+        () =>
+            assertDeployConfig('stage', {
+                ...required,
+                ...liveDictionaryBudget,
+                DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+                DICTIONARY_GENERATION_MODEL_API_KEY: 'secret',
+                DICTIONARY_GENERATION_MODEL_BASE_URL:
+                    'https://models.example.test/openai/v1',
+                DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+            }),
+        /unsupported/,
     );
     assert.equal(
         assertDeployConfig('stage', {
             ...required,
             ...liveDictionaryBudget,
             DEEPSEEK_API_KEY: 'curated-secret',
-            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-chat',
+            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
         }).DICTIONARY_GENERATION_MODEL_ID,
-        'deepseek/deepseek-chat',
+        'deepseek/deepseek-flash',
     );
     assert.throws(
         () =>
@@ -405,10 +404,8 @@ test('dictionary worker process and drain settings are bounded before deployment
         assertDeployConfig('stage', {
             ...required,
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-            DICTIONARY_GENERATION_MODEL_API_KEY: 'secret',
-            DICTIONARY_GENERATION_MODEL_BASE_URL:
-                'https://models.example.test/openai/v1',
-            DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+            DEEPSEEK_API_KEY: 'secret',
+            DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
             DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '32768',
             DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '128',
             DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS: '1',
@@ -417,33 +414,13 @@ test('dictionary worker process and drain settings are bounded before deployment
         }).DICTIONARY_GENERATION_MAX_INPUT_TOKENS,
         '32768',
     );
-    for (const unsafeUrl of [
-        'https://user:pass@models.example.test/v1',
-        'https://models.example.test/v1?tenant=private',
-        'https://10.0.0.2/v1',
-    ]) {
-        assert.throws(
-            () =>
-                assertDeployConfig('stage', {
-                    ...required,
-                    ...liveDictionaryBudget,
-                    DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-                    DICTIONARY_GENERATION_MODEL_API_KEY: 'secret',
-                    DICTIONARY_GENERATION_MODEL_BASE_URL: unsafeUrl,
-                    DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
-                }),
-            /credential-free HTTPS provider URL/,
-        );
-    }
     assert.throws(
         () =>
             assertDeployConfig('stage', {
                 ...required,
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-                DICTIONARY_GENERATION_MODEL_API_KEY: 'secret',
-                DICTIONARY_GENERATION_MODEL_BASE_URL:
-                    'https://models.example.test/v1',
-                DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+                DEEPSEEK_API_KEY: 'secret',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
             }),
         /missing required budget keys/,
     );

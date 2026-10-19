@@ -12,6 +12,12 @@ import {
 } from '../lib/deployment.mjs';
 
 const speech = {
+    speechBudget: {
+        maxCharacters: 2000,
+        maxCostUnitsPerClip: 2000,
+        ownerDailyCostUnits: 20000,
+        globalDailyCostUnits: 200000,
+    },
     phase: 'compatibility',
     apiEnqueued: [],
     apiReadable: [1],
@@ -91,6 +97,46 @@ test('shared speech rollout requires complete readers and typed success settleme
     );
 });
 
+test('shared speech owns bounded immutable ceilings without retired pronunciation metadata', () => {
+    assert.throws(
+        () => normalizeSharedSpeech({ ...speech, speechBudget: undefined }),
+        /speechBudget/u,
+    );
+    assert.throws(
+        () =>
+            normalizeSharedSpeech({
+                ...speech,
+                speechBudget: { ...speech.speechBudget, maxCharacters: 2001 },
+            }),
+        /2000-character/u,
+    );
+    assert.throws(
+        () =>
+            normalizeSharedSpeech({
+                ...speech,
+                speechBudget: {
+                    ...speech.speechBudget,
+                    ownerDailyCostUnits: 1,
+                },
+            }),
+        /ceilings/u,
+    );
+    assert.throws(
+        () =>
+            assertSharedSpeechOverlap(floor, {
+                ...enabled,
+                sharedSpeech: {
+                    ...enabled.sharedSpeech,
+                    speechBudget: {
+                        ...speech.speechBudget,
+                        ownerDailyCostUnits: 25000,
+                    },
+                },
+            }),
+        /stable during worker overlap/u,
+    );
+});
+
 test('editable-price jobs require revision-aware worker rollback compatibility', () => {
     assert.throws(
         () => normalizeModelPricing({ ...pricing, apiAdmitted: [1] }),
@@ -148,6 +194,9 @@ test('release-derived speech flags override stale operator enablement and carry 
     assert.equal(active.SPEECH_API_ENQUEUED_VERSIONS, '1');
     assert.equal(active.AI_MODEL_PRICE_API_ADMITTED_VERSIONS, '1');
     assert.equal(active.AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS, '1');
+    assert.equal(active.DICTIONARY_AUDIO_OWNER_BUDGET_UNITS, '20000');
+    assert.equal(active.DICTIONARY_AUDIO_PLAYBACK_ENABLED, undefined);
+    assert.equal(active.DICTIONARY_AUDIO_GENERATION_ENABLED, undefined);
 });
 
 test('production preflight rejects missing shared execution or mutable pricing privilege', () => {

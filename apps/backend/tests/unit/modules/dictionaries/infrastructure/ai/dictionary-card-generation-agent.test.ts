@@ -5,7 +5,7 @@ import { createDictionaryCardGenerationAgent } from '../../../../../../src/modul
 describe('dictionary card review agent instructions', () => {
     it('receives mandatory noun article correction without calling a model', async () => {
         const agent = createDictionaryCardGenerationAgent({
-            model: 'deepseek/deepseek-chat',
+            model: 'deepseek/deepseek-flash',
         });
         const instructions = await agent.getInstructions();
 

@@ -179,7 +179,7 @@ feature.
 
 Useful backend checks:
 
-- health: `http://localhost:4000/health`;
+- health: `http://localhost:4000/livez`;
 - OpenAPI: `http://localhost:4000/openapi.json`.
 
 Stop local infrastructure with:

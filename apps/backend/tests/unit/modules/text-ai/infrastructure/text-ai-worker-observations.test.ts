@@ -52,7 +52,7 @@ describe('shared worker capability publication', () => {
             supportedFormats: formats,
             workerId: 'worker',
         });
-        expect(f.rows).toHaveLength(3);
+        expect(f.rows).toHaveLength(2);
         for (const row of f.rows) {
             expect(
                 isTextAiCapacityCapableObservation(row, 'single-card:v1'),
@@ -93,11 +93,11 @@ describe('shared worker capability publication', () => {
             workerId: 'worker',
             learningExecutionEnabled: true,
         });
-        expect(f.rows).toHaveLength(6);
+        expect(f.rows).toHaveLength(4);
         const learning = f.rows.filter((row) =>
             isSentenceExecutionCapableObservation(row, 'sentence-check:v1'),
         );
-        expect(learning).toHaveLength(3);
+        expect(learning).toHaveLength(2);
         for (const row of learning) {
             expect(row.textAiSupportedFormats).toEqual([
                 'sentence-generation:v1',
@@ -110,9 +110,9 @@ describe('shared worker capability publication', () => {
                 isTextAiCapacityCapableObservation(row, 'single-card:v1'),
             ).toBe(false);
         }
-        expect(fetchProvider).toHaveBeenCalledTimes(3);
+        expect(fetchProvider).toHaveBeenCalledTimes(2);
         expect(f.rows.filter((row) => row.status === 'available')).toHaveLength(
-            4,
+            2,
         );
         expect(
             f.rows.filter((row) => row.status === 'unverified'),
@@ -131,7 +131,7 @@ describe('shared worker capability publication', () => {
                 learningExecutionEnabled: true,
                 sentencePreparationExecutionEnabled: enabled,
             });
-            expect(f.rows).toHaveLength(3);
+            expect(f.rows).toHaveLength(2);
             for (const row of f.rows) {
                 expect(
                     isSentenceExecutionCapableObservation(
@@ -200,15 +200,15 @@ describe('shared worker capability publication', () => {
             textsCapacityEnabled: true,
             textsExecutionEnabled: true,
         });
-        expect(f.rows).toHaveLength(9);
+        expect(f.rows).toHaveLength(6);
         const execution = f.rows.filter((row) =>
             row.id.startsWith('texts-execution:'),
         );
         const capacity = f.rows.filter((row) =>
             row.id.startsWith('texts-capacity:'),
         );
-        expect(execution).toHaveLength(3);
-        expect(capacity).toHaveLength(3);
+        expect(execution).toHaveLength(2);
+        expect(capacity).toHaveLength(2);
         for (const row of execution) {
             expect(
                 isTextsExecutionCapableObservation(row, 'text-translation:v2'),
@@ -293,7 +293,7 @@ describe('shared worker capability publication', () => {
             workerId: 'worker',
             learningExecutionEnabled: true,
         });
-        expect(f.rows).toHaveLength(6);
+        expect(f.rows).toHaveLength(4);
         expect(f.rows.every((row) => row.status === 'unavailable')).toBe(true);
         expect(JSON.stringify(f.rows)).not.toContain(
             'private transport details',
@@ -331,7 +331,7 @@ describe('conversation worker capabilities', () => {
         const capacity = f.rows.filter((row) =>
             isConversationCapacityCapableObservation(row, 'single-card:v1'),
         );
-        expect(capacity).toHaveLength(3);
+        expect(capacity).toHaveLength(2);
         for (const row of capacity) {
             expect(
                 isSentenceExecutionCapableObservation(

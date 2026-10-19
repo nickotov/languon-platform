@@ -8,12 +8,8 @@ const optional = z.preprocess(
 );
 const positive = z.coerce.number().int().positive();
 const schema = z.object({
-    DICTIONARY_AUDIO_PLAYBACK_ENABLED: z
-        .enum(['true', 'false'])
-        .default('false'),
-    DICTIONARY_AUDIO_GENERATION_ENABLED: z
-        .enum(['true', 'false'])
-        .default('false'),
+    SPEECH_PLAYBACK_ENABLED: z.enum(['true', 'false']).default('false'),
+    SPEECH_GENERATION_ENABLED: z.enum(['true', 'false']).default('false'),
     DICTIONARY_AUDIO_STORAGE: z.enum(['postgres', 's3']).default('postgres'),
     DICTIONARY_AUDIO_PROVIDER: z.enum(['fixture', 'kie']).default('fixture'),
     DICTIONARY_AUDIO_CONFIGURATION_ID: z
@@ -93,7 +89,7 @@ function fingerprintHistory(value: string | undefined): string[] {
 
 export function loadDictionaryAudioEnvironment(
     values: NodeJS.ProcessEnv,
-    options: { deployed: boolean; role?: 'api' | 'worker' | 'purge' },
+    options: { deployed: boolean; role?: 'api' | 'worker' },
 ) {
     const env = schema.parse(values);
     let fixtureSupportedLanguages: string[] | undefined;
@@ -117,17 +113,9 @@ export function loadDictionaryAudioEnvironment(
         fixtureSupportedLanguages = [...new Set(languages)];
     }
     const role = options.role ?? 'worker';
-    const playbackEnabled =
-        env.DICTIONARY_AUDIO_PLAYBACK_ENABLED === 'true' ||
-        values.SPEECH_PLAYBACK_ENABLED === 'true';
-    const generationEnabled =
-        env.DICTIONARY_AUDIO_GENERATION_ENABLED === 'true' ||
-        values.SPEECH_GENERATION_ENABLED === 'true';
-    const enabled =
-        playbackEnabled ||
-        generationEnabled ||
-        values.SPEECH_PLAYBACK_ENABLED === 'true' ||
-        values.SPEECH_GENERATION_ENABLED === 'true';
+    const playbackEnabled = env.SPEECH_PLAYBACK_ENABLED === 'true';
+    const generationEnabled = env.SPEECH_GENERATION_ENABLED === 'true';
+    const enabled = playbackEnabled || generationEnabled;
     if (options.deployed && enabled && !env.DICTIONARY_AUDIO_FINGERPRINT_SECRET)
         throw new Error(
             'Deployed audio requires a dedicated fingerprint secret.',
@@ -203,7 +191,6 @@ export function loadDictionaryAudioEnvironment(
     if (
         generationEnabled &&
         env.DICTIONARY_AUDIO_PROVIDER === 'kie' &&
-        role !== 'purge' &&
         ((role === 'worker' &&
             (!env.DICTIONARY_AUDIO_KIE_API_KEY ||
                 !allowedDownloadHosts.length)) ||

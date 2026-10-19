@@ -121,6 +121,11 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             !conversation
         ) {
             if (
+                !textAiModelCatalog.some(
+                    (model) =>
+                        model.id === configured.snapshot.modelId &&
+                        model.providerId === configured.snapshot.providerId,
+                ) ||
                 !configured.snapshot.enabledModelIds.includes(
                     configured.snapshot.modelId,
                 ) ||

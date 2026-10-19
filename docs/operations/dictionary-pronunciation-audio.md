@@ -1,19 +1,17 @@
 ---
 type: reference
-title: Dictionary pronunciation compatibility operations
+title: Dictionary pronunciation operations
 source_paths:
     - apps/backend/src/modules/speech/**
-    - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/audio-schema.ts
-    - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-store.ts
     - infra/deploy/**
     - .env.example
 ---
 
-# Dictionary pronunciation compatibility operations
+# Dictionary pronunciation operations
 
 The shared speech module now serves dictionary fields, flashcards and sentence
 learning through the existing dictionary worker process. Its authoritative
-storage, retention, pricing, rotation and migration runbook is
+storage, retention, pricing and rotation runbook is
 [Shared pronunciation operations](../shared-pronunciation-operations.md).
 [ADR-0031](../adr/0031-shared-pronunciation-and-retained-recordings.md) partially
 supersedes ADR-0020's owner-scoped deduplication, development storage and erasure
@@ -41,9 +39,9 @@ DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS=[]
 Use the scoped development application credentials from `.env.example`; never
 reuse them in production. The Compose backend uses `http://minio:9000` rather
 than the host endpoint. Fixture audio is a labelled WAV tone and proves plumbing,
-not correct pronunciation. PostgreSQL byte storage remains a compatibility/test
-adapter, not the standard local setup. Legacy `DICTIONARY_AUDIO_*` adapter settings
-remain valid; old generation flags do not replace the new shared flags.
+not correct pronunciation. PostgreSQL byte storage remains a test adapter. Current `DICTIONARY_AUDIO_*`
+settings configure shared provider/storage adapters; playback and admission use
+only the `SPEECH_*` flags.
 
 ## Live provider configuration
 
@@ -72,19 +70,19 @@ reinterpret an existing provider task. Never blindly resubmit unknown work.
 
 ## S3 and release compatibility
 
-Use private S3 in production, with distinct scoped API-read, worker-write/delete
-and legacy-purge cleanup credentials. Preserve current/retained namespace registry
+Use private S3 in production, with distinct scoped API-read and
+worker-write/delete credentials. Preserve current/retained namespace registry
 entries while inventory still references them. See deployment examples for
-`DICTIONARY_AUDIO_RETAINED_S3_API_CONFIGURATIONS`,
-`DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS` and
-`ACCOUNT_PURGE_AUDIO_RETAINED_S3_CONFIGURATIONS`. These legacy purge mappings do
-not authorize deleting successful shared recordings during account removal.
+`DICTIONARY_AUDIO_RETAINED_S3_API_CONFIGURATIONS` and
+`DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS`. Account purge receives no
+audio storage credentials: account removal detaches owner links and retains
+successful shared recordings.
 
-The optional legacy `pronunciationAudio` manifest namespace remains a
-compatibility mechanism. Shared admission additionally requires `sharedSpeech`
-and revision-aware `modelPricing` support in active and rollback-floor releases.
-First ship compatible readers/workers; enable new admissions only afterward.
-Operational flags alone cannot bypass the release-derived version lists.
+Shared admission requires `sharedSpeech` and revision-aware `modelPricing`
+support in active and rollback-floor releases. `sharedSpeech.speechBudget` owns
+`maxCharacters`, `maxCostUnitsPerClip`, `ownerDailyCostUnits` and
+`globalDailyCostUnits` with the current bounds and overlap invariant. Operational flags cannot bypass
+release-derived version lists. The old owner-scoped protocol is retired by ADR-0040.
 
 Scoped worker grants and database guards permit execution and approved cleanup,
 but reject ready-recording erasure or immutable identity changes. Runtime keys,
@@ -93,7 +91,7 @@ Fingerprint rotation must distribute both lookup aliases to every API, worker an
 rollback node before switching the writer; the detailed two-phase checklist is
 in the shared operations runbook.
 
-## Failure, retention and migration
+## Failure and retention
 
 Known provider tasks continue under their original identity across restarts.
 Download/publication retries reuse output. Unknown submissions retain a
@@ -109,26 +107,19 @@ finish. Only audited administrative inventory deletion erases successful speech;
 failed/temporary cleanup has its own bounded lifecycle. Already delivered bytes
 cannot be retracted and provider-side retention is a separate policy.
 
-Before switching legacy inventory, follow the exact guarded `pnpm speech:migrate`
-procedure in [the cutover runbook](../shared-pronunciation-operations.md#legacy-recording-cutover).
-Drain known work, pause competing writers/purge, use correct retained keys and
-scoped copy credentials, inspect counters and resume interrupted copies without
-another synthesis call. Distinct uncertain task/profile identities, separate null
-provider IDs or an unknown/ready canonical collision stop preflight/cutover. Resolve
-original provider identities first; do not pick one task, copy conflicting work,
-create a new charge or resubmit generation. Existing inventory remains intact. The shipped production entry is
-`node dist/cli/speech-migration-command.js`; development `tsx` source is not present
-in production images. Do not drop inventory or old credentials until cleanup and
-reconciliation finish. Compatible recovery continues after admission is disabled.
+The old owner-scoped API, worker and one-time migration CLI are retired.
+The retirement migration refuses nonempty old inventory; never bypass that check
+or erase unaccounted provider tasks/objects. Shared recordings and billing state
+remain governed by ADR-0031/0032 and their current cleanup paths.
 
 ## Verification evidence
 
 Feature 042 records real browser/media playback, paid quote/cancellation/success,
 cross-user reuse, admin preview/price publication/impact deletion, disposable
-PostgreSQL financial/source/migration tests, MinIO integrity/version deletion and
+PostgreSQL financial/source tests, MinIO integrity/version deletion and
 actual least-privilege SQL roles. These checks use deterministic fixtures.
 
 Before live activation, separately record a bounded authorized Kie quality,
 connectivity/cost/terms check and isolated Selectel conformance using the built
 release. No local fixture or generic S3 emulator proves live pronunciation,
-provider access from Russia, Selectel behavior or deployment-host migration.
+provider access from Russia, Selectel behavior or deployment-host activation.

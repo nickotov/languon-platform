@@ -5,6 +5,7 @@ title: Task-specific immutable translation capacity
 status: accepted
 date: 2026-10-16
 supersedes: None
+superseded_in_part_by: 'ADR-0038: retired DeepSeek Chat and arbitrary legacy environment model execution only'
 ---
 
 # ADR-0036: Task-specific immutable translation capacity

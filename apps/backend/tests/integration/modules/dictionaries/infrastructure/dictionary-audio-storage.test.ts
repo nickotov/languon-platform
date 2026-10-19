@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
-import { PostgresAudioObjectStorage } from '../../../../../src/modules/dictionaries/infrastructure/audio/audio-object-storages';
+import { PostgresAudioObjectStorage } from '../../../../../src/modules/speech/infrastructure/audio/audio-object-storages';
 import {
     audioChecksum,
     createFixtureAudio,
-} from '../../../../../src/modules/dictionaries/infrastructure/audio/audio-integrity';
+} from '../../../../../src/modules/speech/domain/audio-integrity';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,

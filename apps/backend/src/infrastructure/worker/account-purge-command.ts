@@ -4,8 +4,6 @@ import { hostname } from 'node:os';
 import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
-import { createDictionaryAudioAdapters } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
-import { loadDictionaryAudioEnvironment } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
 
 import { databaseSchema } from '../database/schema';
 import { AccountPurgeService } from '../../modules/users/application/account-purge-service';
@@ -31,33 +29,6 @@ async function main(): Promise<void> {
         maxConnections: environment.databaseMaxConnections,
     });
     const database = createDrizzleDatabase(sql, databaseSchema);
-    // Purge has no provider dependency and must work while generation is disabled.
-    const audioEnvironment = loadDictionaryAudioEnvironment(
-        {
-            ...process.env,
-            DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'false',
-            DICTIONARY_AUDIO_GENERATION_ENABLED: 'false',
-            DICTIONARY_AUDIO_PROVIDER: 'fixture',
-            DICTIONARY_AUDIO_RETAINED_S3_CONFIGURATIONS:
-                process.env.ACCOUNT_PURGE_AUDIO_RETAINED_S3_CONFIGURATIONS ??
-                '',
-            DICTIONARY_AUDIO_S3_ACCESS_KEY_ID:
-                process.env.ACCOUNT_PURGE_AUDIO_STORAGE_ACCESS_KEY_ID ?? '',
-            DICTIONARY_AUDIO_S3_SECRET_ACCESS_KEY:
-                process.env.ACCOUNT_PURGE_AUDIO_STORAGE_SECRET_ACCESS_KEY ?? '',
-        },
-        {
-            deployed: ['production', 'staging'].includes(
-                process.env.APP_ENV ?? '',
-            ),
-            role: 'purge',
-        },
-    );
-    const audioAdapters = createDictionaryAudioAdapters({
-        role: 'purge',
-        environment: audioEnvironment,
-        database,
-    });
     const storage = environment.storage
         ? new S3PrivateDocumentStorage({
               bucket: environment.storage.bucket,
@@ -79,11 +50,6 @@ async function main(): Promise<void> {
                           'Document storage is unavailable; account purge cannot verify physical files.',
                       );
                   },
-            removeAudioVersions: async (reference, signal) => {
-                signal.throwIfAborted();
-                await audioAdapters.storage.delete(reference);
-                signal.throwIfAborted();
-            },
         },
     );
     const controller = new AbortController();
@@ -129,7 +95,6 @@ async function main(): Promise<void> {
         }
         await service.releaseWorkerLeases({ now: new Date(), workerId });
     } finally {
-        audioAdapters.close();
         process.off('SIGINT', stop);
         process.off('SIGTERM', stop);
         await sql.end({ timeout: 5 });

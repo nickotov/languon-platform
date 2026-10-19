@@ -91,7 +91,7 @@ async function writeJsonAtomic(filePath, value, mode = 0o600) {
 
 export function assertDictionaryWorkerDatabasePrivileges(
     privileges,
-    { audio = false, sharedSpeech = false, modelPricing = false } = {},
+    { sharedSpeech = false, modelPricing = false } = {},
 ) {
     if (sharedSpeech && privileges.sharedSpeech !== true)
         throw new Error(
@@ -99,10 +99,6 @@ export function assertDictionaryWorkerDatabasePrivileges(
         );
     if (modelPricing && privileges.modelPricing !== true)
         throw new Error('Worker lacks immutable model price read capability.');
-    if (audio && privileges.audio !== true)
-        throw new Error(
-            'Pronunciation worker lacks its required least-privilege audio capabilities.',
-        );
     if (
         privileges.jobs !== true ||
         privileges.proposals !== true ||
@@ -232,22 +228,6 @@ export const MODEL_PRICING_WORKER_DATABASE_PRIVILEGE_QUERY = `select (
   not has_table_privilege(current_user, 'model_price_revisions', 'UPDATE') and
   not has_table_privilege(current_user, 'model_price_revisions', 'DELETE')
 ) as "modelPricing"`;
-
-export const DICTIONARY_AUDIO_WORKER_DATABASE_PRIVILEGE_QUERY = `select (
-    ${['dictionary_audio_assets', 'dictionary_audio_jobs', 'dictionary_audio_bindings', 'dictionary_audio_blobs'].map((table) => tablePrivilegeExpression(table, ['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'and')).join(' and ')}
-    and has_column_privilege(current_user, 'public.users', 'id', 'SELECT')
-    and has_column_privilege(current_user, 'public.users', 'status', 'SELECT')
-    and ${['id', 'owner_id', 'lifecycle', 'source_language_tag', 'target_language_tag'].map((column) => `has_column_privilege(current_user, 'public.dictionaries', '${column}', 'SELECT')`).join(' and ')}
-    and ${['translation', 'example', 'example_translation', 'lifecycle', 'version', 'example_enabled_override', 'example_translation_enabled_override', 'example_language_role_override'].map((column) => `has_column_privilege(current_user, 'public.dictionary_cards', '${column}', 'SELECT')`).join(' and ')}
-    and not exists (select 1 from information_schema.columns where table_schema='public' and table_name in ('users','dictionaries') and (
-        has_column_privilege(current_user, 'public.' || table_name, column_name, 'UPDATE') or
-        has_column_privilege(current_user, 'public.' || table_name, column_name, 'INSERT') or
-        has_column_privilege(current_user, 'public.' || table_name, column_name, 'REFERENCES')
-        or (has_column_privilege(current_user, 'public.' || table_name, column_name, 'SELECT') and
-            ((table_name='users' and column_name not in ('id','status')) or
-             (table_name='dictionaries' and column_name not in ('id','owner_id','lifecycle','source_language_tag','target_language_tag'))))
-    ))
-) as audio`;
 
 export const DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY = `select
     ${tablePrivilegeExpression('dictionary_generation_jobs', ['SELECT', 'UPDATE'], 'and')} as "jobs",
@@ -433,37 +413,20 @@ export class Deployment {
                 normalizeRetainedSpeechFingerprintSecrets(
                     this.config.DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS,
                 ),
-            DICTIONARY_AUDIO_PLAYBACK_ENABLED:
-                this.manifest.pronunciationAudio?.apiReadable.includes(1) &&
-                this.config.DICTIONARY_AUDIO_PLAYBACK_ENABLED === 'true'
-                    ? 'true'
-                    : 'false',
-            DICTIONARY_AUDIO_GENERATION_ENABLED:
-                this.manifest.pronunciationAudio?.apiEnqueued.includes(1) &&
-                this.config.DICTIONARY_AUDIO_GENERATION_ENABLED === 'true'
-                    ? 'true'
-                    : 'false',
-            DICTIONARY_AUDIO_API_ENQUEUED_VERSIONS: (
-                this.manifest.pronunciationAudio?.apiEnqueued ?? []
-            ).join(','),
-            DICTIONARY_AUDIO_WORKER_PROCESSABLE_VERSIONS: (
-                this.manifest.pronunciationAudio?.workerProcessable ?? []
-            ).join(','),
             DICTIONARY_AUDIO_MAX_CHARACTERS: String(
-                this.manifest.pronunciationAudio?.speechBudget.maxCharacters ??
-                    2000,
+                this.manifest.sharedSpeech?.speechBudget.maxCharacters ?? 2000,
             ),
             DICTIONARY_AUDIO_MAX_COST_UNITS_PER_CLIP: String(
-                this.manifest.pronunciationAudio?.speechBudget
-                    .maxCostUnitsPerClip ?? 10000,
+                this.manifest.sharedSpeech?.speechBudget.maxCostUnitsPerClip ??
+                    10000,
             ),
             DICTIONARY_AUDIO_OWNER_BUDGET_UNITS: String(
-                this.manifest.pronunciationAudio?.speechBudget
-                    .ownerDailyCostUnits ?? 10000,
+                this.manifest.sharedSpeech?.speechBudget.ownerDailyCostUnits ??
+                    10000,
             ),
             DICTIONARY_AUDIO_GLOBAL_BUDGET_UNITS: String(
-                this.manifest.pronunciationAudio?.speechBudget
-                    .globalDailyCostUnits ?? 100000,
+                this.manifest.sharedSpeech?.speechBudget.globalDailyCostUnits ??
+                    100000,
             ),
             ...dictionaryBudgetEnvironment,
         };
@@ -703,9 +666,6 @@ export class Deployment {
             path.join(this.composeDirectory, 'apps.compose.yaml'),
             path.join(this.composeDirectory, 'apps.production.compose.yaml'),
         ];
-        const audio = Boolean(
-            this.manifest.pronunciationAudio?.workerProcessable.length,
-        );
         const sharedSpeech = Boolean(
             this.manifest.sharedSpeech?.workerProcessable.length,
         );
@@ -717,11 +677,6 @@ export class Deployment {
             'const sql = postgres(process.env.DICTIONARY_WORKER_DATABASE_URL, { connect_timeout: 5, idle_timeout: 1, max: 1, onnotice: () => undefined });',
             'try {',
             `  const [privileges] = await sql.unsafe(${JSON.stringify(DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY)});`,
-            ...(audio
-                ? [
-                      `  Object.assign(privileges, (await sql.unsafe(${JSON.stringify(DICTIONARY_AUDIO_WORKER_DATABASE_PRIVILEGE_QUERY)}))[0]);`,
-                  ]
-                : []),
             ...(sharedSpeech
                 ? [
                       `  Object.assign(privileges, (await sql.unsafe(${JSON.stringify(SHARED_SPEECH_WORKER_DATABASE_PRIVILEGE_QUERY)}))[0]);`,
@@ -760,7 +715,6 @@ export class Deployment {
             );
         }
         assertDictionaryWorkerDatabasePrivileges(privileges, {
-            audio,
             sharedSpeech,
             modelPricing,
         });
@@ -987,17 +941,6 @@ export class Deployment {
             ) {
                 throw new Error(
                     'Shared speech admission requires live Kie, private S3, both speech flags and revision-aware pricing',
-                );
-            }
-            if (
-                this.manifest.pronunciationAudio?.apiEnqueued.length &&
-                (this.config.DICTIONARY_AUDIO_GENERATION_ENABLED !== 'true' ||
-                    this.config.DICTIONARY_AUDIO_PLAYBACK_ENABLED !== 'true' ||
-                    this.config.DICTIONARY_AUDIO_PROVIDER !== 'kie' ||
-                    this.config.DICTIONARY_AUDIO_STORAGE !== 's3')
-            ) {
-                throw new Error(
-                    'Pronunciation activation requires explicit playback, generation, live provider and private S3 configuration.',
                 );
             }
             if (

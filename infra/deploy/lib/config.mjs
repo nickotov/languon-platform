@@ -3,36 +3,6 @@ import { lstat, readFile } from 'node:fs/promises';
 const ENVIRONMENT_PATTERN = /^(stage|production)$/;
 const SAFE_KEY_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 
-function isPrivateAddress(hostname) {
-    const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
-    if (host === 'localhost' || host.endsWith('.localhost')) return true;
-    if (host.includes(':')) {
-        if (host.startsWith('::ffff:')) {
-            return isPrivateAddress(host.slice('::ffff:'.length));
-        }
-        return (
-            host === '::' ||
-            host === '::1' ||
-            host.startsWith('fc') ||
-            host.startsWith('fd') ||
-            /^fe[89ab]/.test(host)
-        );
-    }
-    if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return false;
-    const [first, second] = host.split('.').map(Number);
-    return (
-        first === 0 ||
-        first === 10 ||
-        first === 127 ||
-        (first === 100 && second >= 64 && second <= 127) ||
-        (first === 169 && second === 254) ||
-        (first === 172 && second >= 16 && second <= 31) ||
-        (first === 192 && second === 168) ||
-        (first === 198 && [18, 19].includes(second)) ||
-        first >= 224
-    );
-}
-
 export function validateEnvironment(value) {
     if (!ENVIRONMENT_PATTERN.test(value ?? '')) {
         throw new Error('Environment must be stage or production.');
@@ -136,6 +106,17 @@ export function normalizeRetainedSpeechFingerprintSecrets(value) {
 }
 
 export function assertDeployConfig(environment, config) {
+    for (const key of [
+        'DICTIONARY_AUDIO_PLAYBACK_ENABLED',
+        'DICTIONARY_AUDIO_GENERATION_ENABLED',
+        'DICTIONARY_AUDIO_API_ENQUEUED_VERSIONS',
+        'DICTIONARY_AUDIO_WORKER_PROCESSABLE_VERSIONS',
+    ]) {
+        if (config[key] !== undefined)
+            throw new Error(
+                'Retired dictionary audio flags are unsupported; configure shared speech.',
+            );
+    }
     const retainedSpeechFingerprintSecrets =
         normalizeRetainedSpeechFingerprintSecrets(
             config.DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS,
@@ -260,12 +241,10 @@ export function assertDeployConfig(environment, config) {
         const audioKeys = [
             config.DICTIONARY_AUDIO_S3_API_ACCESS_KEY_ID,
             config.DICTIONARY_AUDIO_S3_WORKER_ACCESS_KEY_ID,
-            config.ACCOUNT_PURGE_AUDIO_STORAGE_ACCESS_KEY_ID,
         ];
         const audioSecrets = [
             config.DICTIONARY_AUDIO_S3_API_SECRET_ACCESS_KEY,
             config.DICTIONARY_AUDIO_S3_WORKER_SECRET_ACCESS_KEY,
-            config.ACCOUNT_PURGE_AUDIO_STORAGE_SECRET_ACCESS_KEY,
         ];
         if (
             audioKeys.some((value) => !value) ||
@@ -273,7 +252,7 @@ export function assertDeployConfig(environment, config) {
             new Set(audioKeys).size !== audioKeys.length
         ) {
             throw new Error(
-                'Pronunciation storage requires distinct API, worker, and purge storage credentials.',
+                'Pronunciation storage requires distinct API and worker storage credentials.',
             );
         }
     }
@@ -377,17 +356,18 @@ export function assertDeployConfig(environment, config) {
     if (dictionaryProviderMode === 'mastra') {
         const modelId = config.DICTIONARY_GENERATION_MODEL_ID;
         const curatedCredentialKey =
-            modelId === 'deepseek/deepseek-chat'
+            modelId === 'deepseek/deepseek-flash'
                 ? 'DEEPSEEK_API_KEY'
                 : modelId === 'kie/gemini-2.5-pro'
                   ? 'KIE_API_KEY'
                   : null;
-        const missingModelKeys = curatedCredentialKey
-            ? [
-                  !modelId && 'DICTIONARY_GENERATION_MODEL_ID',
-                  !config[curatedCredentialKey] && curatedCredentialKey,
-              ].filter(Boolean)
-            : dictionaryModelKeys.filter((key) => !config[key]);
+        if (!curatedCredentialKey)
+            throw new Error(
+                'Dictionary generation model is unsupported; select a curated model.',
+            );
+        const missingModelKeys = !config[curatedCredentialKey]
+            ? [curatedCredentialKey]
+            : [];
         if (missingModelKeys.length) {
             throw new Error(
                 `Mastra dictionary generation is missing required keys: ${missingModelKeys.join(', ')}.`,
@@ -406,34 +386,6 @@ export function assertDeployConfig(environment, config) {
             throw new Error(
                 'Curated dictionary models must use their fixed endpoint and provider credential.',
             );
-        }
-        if (!curatedCredentialKey) {
-            let modelBaseUrl;
-            try {
-                modelBaseUrl = new URL(
-                    config.DICTIONARY_GENERATION_MODEL_BASE_URL,
-                );
-            } catch {
-                throw new Error(
-                    'DICTIONARY_GENERATION_MODEL_BASE_URL must be a valid provider base URL.',
-                );
-            }
-            if (
-                modelBaseUrl.protocol !== 'https:' ||
-                modelBaseUrl.username !== '' ||
-                modelBaseUrl.password !== '' ||
-                modelBaseUrl.search !== '' ||
-                modelBaseUrl.hash !== '' ||
-                modelBaseUrl.pathname.length > 200 ||
-                !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/.test(
-                    modelBaseUrl.pathname,
-                ) ||
-                isPrivateAddress(modelBaseUrl.hostname)
-            ) {
-                throw new Error(
-                    'DICTIONARY_GENERATION_MODEL_BASE_URL must be a bounded credential-free HTTPS provider URL outside private addresses.',
-                );
-            }
         }
     } else if (dictionaryModelKeys.some((key) => config[key])) {
         throw new Error(

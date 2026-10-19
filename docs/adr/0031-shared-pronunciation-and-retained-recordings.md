@@ -5,6 +5,7 @@ title: 'Shared pronunciation and retained recordings'
 status: accepted
 date: 2026-10-13
 supersedes: 'ADR-0020 dictionary ownership, deduplication, development storage and deletion; ADR-0023 pronunciation erasure; ADR-0027 copied-content erasure only for retained speech derivatives'
+superseded_in_part_by: 'ADR-0040 owner-scoped protocol and one-time cutover retirement'
 ---
 
 # ADR-0031: Shared pronunciation and retained recordings

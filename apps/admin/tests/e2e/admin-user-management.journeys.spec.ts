@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:29f2d2b9405ea161
+// @user-flow-revision shared-pronunciation-playback sha256:78ad180c5e1dd88f
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, resolve } from 'node:path';
@@ -14,7 +14,7 @@ import {
 } from '@playwright/test';
 import postgres from 'postgres';
 
-// @user-flow-revision admin-user-management sha256:8f1ff6e6a88850b6
+// @user-flow-revision admin-user-management sha256:4329a23dfacbe067
 // @user-flow-revision ai-provider-management sha256:9d0a0f62b235f0b2
 // @user-flow-revision ai-credit-wallet sha256:912c63845e283ad8
 
@@ -653,7 +653,7 @@ test.describe.serial('admin user management journeys', () => {
             .filter({ hasText: 'DeepSeek' })
             .click();
         const modelEnabled = page.getByRole('checkbox', {
-            name: /DeepSeek Chat/,
+            name: /DeepSeek Flash/,
         });
         if (!(await modelEnabled.isChecked()))
             await modelEnabled.evaluate((element: HTMLInputElement) =>
@@ -665,7 +665,7 @@ test.describe.serial('admin user management journeys', () => {
         await fixtureDefault.press('Enter');
         await expect(
             page.locator('.ant-select').filter({ has: fixtureDefault }),
-        ).toContainText('DeepSeek Chat');
+        ).toContainText('DeepSeek Flash');
         await page
             .getByLabel('Reason for change')
             .fill(
@@ -1099,7 +1099,7 @@ test.describe.serial('admin user management journeys', () => {
             .filter({ hasText: 'DeepSeek' })
             .click();
         await page
-            .getByRole('checkbox', { name: /DeepSeek Chat/ })
+            .getByRole('checkbox', { name: /DeepSeek Flash/ })
             .evaluate((element: HTMLInputElement) => {
                 // A preceding sentence journey may already have enabled this model.
                 if (!element.checked) element.click();
@@ -1110,7 +1110,7 @@ test.describe.serial('admin user management journeys', () => {
         await defaultModel.press('Enter');
         await expect(
             page.locator('.ant-select').filter({ has: defaultModel }),
-        ).toContainText('DeepSeek Chat');
+        ).toContainText('DeepSeek Flash');
         await page
             .getByLabel('Reason for change')
             .fill('Configure priced managed generation for credit E2E');
@@ -1316,11 +1316,38 @@ test.describe.serial('admin user management journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
         });
+        const failedRequests: string[] = [];
+        page.on('requestfailed', (request) => {
+            const path = new URL(request.url()).pathname;
+            // React Query cancels these read-only requests as this journey
+            // navigates/reloads. Every other failure remains unexpected.
+            if (
+                request.method() === 'GET' &&
+                request.failure()?.errorText === 'net::ERR_ABORTED' &&
+                (path === '/api/admin/ai/model-prices' ||
+                    /^\/api\/admin\/users\/[^/]+\/ai-credits$/.test(path))
+            )
+                return;
+            failedRequests.push(
+                `${request.method()} ${path}: ${request.failure()?.errorText}`,
+            );
+        });
         await passwordLogin(page);
         await page.getByRole('menuitem', { name: 'AI settings' }).click();
         await expect(
             page.getByRole('heading', { name: 'AI providers' }),
         ).toBeVisible();
+        await expect(
+            page.getByRole('checkbox', { name: /DeepSeek Chat/ }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole('checkbox', { name: /DeepSeek Flash/ }),
+        ).toBeVisible();
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(
+            page.getByRole('checkbox', { name: /DeepSeek Flash/ }),
+        ).toBeVisible();
+        await page.setViewportSize({ width: 1280, height: 720 });
         // Establish the first revision on every run: this owned fixture can retain
         // a Kie default from a previous successful run or the credit-wallet case.
         await page
@@ -1328,7 +1355,7 @@ test.describe.serial('admin user management journeys', () => {
             .filter({ hasText: 'DeepSeek' })
             .click();
         const deepSeekCheckbox = page.getByRole('checkbox', {
-            name: /DeepSeek Chat/,
+            name: /DeepSeek Flash/,
         });
         if (!(await deepSeekCheckbox.isChecked())) {
             await deepSeekCheckbox.evaluate((element: HTMLInputElement) =>
@@ -1341,7 +1368,7 @@ test.describe.serial('admin user management journeys', () => {
         await defaultModel.press('Enter');
         await expect(
             page.locator('.ant-select').filter({ has: defaultModel }),
-        ).toContainText('DeepSeek Chat');
+        ).toContainText('DeepSeek Flash');
         await page
             .getByLabel('Reason for change')
             .fill('Establish DeepSeek baseline for pinned revision regression');
@@ -1532,7 +1559,7 @@ test.describe.serial('admin user management journeys', () => {
                     })),
                 ).toEqual(
                     expect.arrayContaining([
-                        { modelId: 'deepseek-chat', providerId: 'deepseek' },
+                        { modelId: 'deepseek-flash', providerId: 'deepseek' },
                         { modelId: 'gemini-2.5-pro', providerId: 'kie' },
                     ]),
                 );
@@ -1570,6 +1597,9 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByText(/Configuration version \d+/i),
         ).toBeVisible();
+        expect(failedRequests, 'unexpected failed browser requests').toEqual(
+            [],
+        );
         assertNoBrowserErrors();
     });
 

@@ -99,12 +99,12 @@ export default defineConfig({
             stderr: 'pipe',
             stdout: 'pipe',
             timeout: 120_000,
-            url: `${backendOrigin}/health`,
+            url: `${backendOrigin}/livez`,
         },
         ...(sentenceServicesEnabled
             ? [
                   {
-                      command: `until curl --fail --silent ${backendOrigin}/health >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend exec tsx tests/support/sentence-web-worker.ts`,
+                      command: `until curl --fail --silent ${backendOrigin}/livez >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend exec tsx tests/support/sentence-web-worker.ts`,
                       env: {
                           APP_ENV: 'test',
                           AUTH_E2E_SENTENCE_SERVICES: 'true',

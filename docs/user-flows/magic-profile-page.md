@@ -52,7 +52,7 @@ pnpm dev
 ```
 
 Expect the web app at `http://localhost:3333` and the backend health endpoint at
-`http://localhost:4000/health`. The mapped E2E wrapper provisions its own safe
+`http://localhost:4000/livez`. The mapped E2E wrapper provisions its own safe
 test database and Redis services.
 
 ## Browser verification

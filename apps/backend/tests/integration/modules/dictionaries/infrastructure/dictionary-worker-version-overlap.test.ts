@@ -555,7 +555,7 @@ run('dictionary worker version overlap', () => {
     it('persists AI acceptance authorship, immutable provenance, and semantic no-op identity', async () => {
         const humanSeeded = await seedCard();
         const humanJob = await completeGeneration(humanSeeded, proposal, 10);
-        const humanAccepted = await generationStore.accept({
+        const humanAccepted = await generationStore.acceptSingleCard({
             candidate: proposal.candidate,
             candidateFingerprint: fingerprint('H'),
             context: context(13),
@@ -606,7 +606,7 @@ run('dictionary worker version overlap', () => {
         const aiSeeded = await seedCard();
         await markCardAsAiGenerated(aiSeeded);
         const aiJob = await completeGeneration(aiSeeded, proposal, 20);
-        await generationStore.accept({
+        await generationStore.acceptSingleCard({
             candidate: proposal.candidate,
             candidateFingerprint: fingerprint('I'),
             context: context(23),
@@ -639,7 +639,7 @@ run('dictionary worker version overlap', () => {
                 translation: 'bonjour humain',
             },
         };
-        await generationStore.accept({
+        await generationStore.acceptSingleCard({
             candidate: editedCandidate,
             candidateFingerprint: fingerprint('J'),
             context: context(33),
@@ -684,7 +684,7 @@ run('dictionary worker version overlap', () => {
             noOpSeeded.created.card.id,
             noOpJob.id,
         );
-        const noOpAccepted = await generationStore.accept({
+        const noOpAccepted = await generationStore.acceptSingleCard({
             candidate: noOpProposal.candidate,
             candidateFingerprint: fingerprint('K'),
             context: context(noOpAt + 3),
@@ -728,7 +728,7 @@ run('dictionary worker version overlap', () => {
             instant(53),
         );
         await expect(
-            generationStore.accept({
+            generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
                 candidateFingerprint: fingerprint('L'),
                 context: context(54),
@@ -1471,7 +1471,7 @@ run('dictionary worker version overlap', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
-        const accepted = await generationStore.accept({
+        const accepted = await generationStore.acceptSingleCard({
             candidate: proposal.candidate,
             candidateFingerprint: fingerprint('C'),
             context: context(5),
@@ -1483,7 +1483,7 @@ run('dictionary worker version overlap', () => {
             cardVersion: 2,
         });
         await expect(
-            generationStore.accept({
+            generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
                 candidateFingerprint: fingerprint('C'),
                 context: context(6),
@@ -1492,7 +1492,7 @@ run('dictionary worker version overlap', () => {
             }),
         ).resolves.toEqual(accepted);
         await expect(
-            generationStore.accept({
+            generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
                 candidateFingerprint: fingerprint('D'),
                 context: context(7),
@@ -1543,7 +1543,7 @@ run('dictionary worker version overlap', () => {
             },
         });
         await expect(
-            generationStore.accept({
+            generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
                 candidateFingerprint: fingerprint('C'),
                 context: context(6),

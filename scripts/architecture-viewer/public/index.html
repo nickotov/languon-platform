@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Languon · Architecture</title>
+        <link rel="stylesheet" href="/styles.css" />
+        <script type="module" src="/app.mjs"></script>
+    </head>
+    <body>
+        <a class="skip-link" href="#diagram-title">Skip to diagram</a>
+        <aside class="sidebar" aria-label="Architecture navigation">
+            <a class="brand" href="/">Languon<span>Architecture atlas</span></a>
+            <p class="intro">The app, traced through code.</p>
+            <label for="search">Find a diagram</label>
+            <input
+                id="search"
+                type="search"
+                placeholder="Search flows…"
+                autocomplete="off"
+            />
+            <nav id="navigation" aria-label="Diagrams"></nav>
+            <p id="search-empty" hidden>No matching diagrams.</p>
+            <footer>
+                Local · Read only<br />Code + decisions + documentation
+            </footer>
+        </aside>
+        <main>
+            <header class="page-header">
+                <div>
+                    <p class="eyebrow">System reference</p>
+                    <h1 id="diagram-title" tabindex="-1">Architecture atlas</h1>
+                </div>
+                <button id="refresh" type="button">Refresh sources</button>
+            </header>
+            <p id="summary">Loading diagrams…</p>
+            <p id="catalog-issues" class="notice" role="alert" hidden></p>
+            <section id="workspace" hidden aria-label="Selected diagram">
+                <div class="diagram-toolbar">
+                    <p id="freshness" role="status"></p>
+                    <div
+                        class="zoom-controls"
+                        role="group"
+                        aria-label="Diagram zoom"
+                    >
+                        <button
+                            id="zoom-out"
+                            type="button"
+                            aria-label="Zoom out"
+                        >
+                            −
+                        </button>
+                        <output id="zoom-level" aria-live="polite">100%</output>
+                        <button id="zoom-in" type="button" aria-label="Zoom in">
+                            +
+                        </button>
+                        <button id="fit" type="button">Fit</button>
+                    </div>
+                </div>
+                <p id="render-status" role="status"></p>
+                <div
+                    id="viewport"
+                    tabindex="0"
+                    role="region"
+                    aria-label="Diagram canvas. Use arrow keys to scroll."
+                >
+                    <div id="canvas"></div>
+                </div>
+                <div class="diagram-meta">
+                    <span id="reviewed"></span
+                    ><span>Scroll to explore · Zoom for detail</span>
+                </div>
+                <details id="notes-details">
+                    <summary>Flow notes</summary>
+                    <pre id="notes"></pre>
+                </details>
+                <details id="sources-details">
+                    <summary>Sources and Mermaid</summary>
+                    <p id="document-path" class="path"></p>
+                    <h2>Inputs checked for changes</h2>
+                    <ul id="sources"></ul>
+                    <h2>Diagram source</h2>
+                    <pre id="mermaid-source"></pre>
+                </details>
+            </section>
+            <noscript
+                >This viewer needs JavaScript. The diagrams are also available
+                as Mermaid in docs/diagrams.</noscript
+            >
+        </main>
+    </body>
+</html>

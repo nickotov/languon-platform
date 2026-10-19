@@ -25,8 +25,8 @@ describe('Mastra playground environment', () => {
         expect(loadPlaygroundEnvironment(environment())).toMatchObject({
             appEnvironment: 'test',
             databaseName: 'languon_mastra_playground_test',
-            fallbackModelId: 'deepseek/deepseek-chat',
-            modelId: 'deepseek/deepseek-chat',
+            fallbackModelId: 'deepseek/deepseek-flash',
+            modelId: 'deepseek/deepseek-flash',
             promptMode: 'local',
         });
     });
@@ -41,7 +41,7 @@ describe('Mastra playground environment', () => {
             ),
         ).toMatchObject({
             deepSeekApiKey: 'development-deepseek-key',
-            fallbackModelId: 'deepseek/deepseek-chat',
+            fallbackModelId: 'deepseek/deepseek-flash',
             modelId: 'anthropic/claude-sonnet-4-5',
         });
     });
@@ -74,8 +74,9 @@ describe('Mastra playground environment', () => {
 
     it.each([
         'deepseek',
-        '/deepseek-chat',
-        'DeepSeek/deepseek-chat',
+        'deepseek/deepseek-chat',
+        '/deepseek-flash',
+        'DeepSeek/deepseek-flash',
         'deepseek/deepseek chat',
         'deepseek/../../credential',
     ])('rejects malformed model identifier %s', (modelId) => {

@@ -153,7 +153,7 @@ export function enforceDevelopmentHarnessProcessPolicy(
     environment: NodeJS.ProcessEnv = process.env,
 ): void {
     const configuredModelId =
-        environment.MASTRA_MODEL_ID ?? 'deepseek/deepseek-chat';
+        environment.MASTRA_MODEL_ID ?? 'deepseek/deepseek-flash';
     const configuredProvider = configuredModelId.split('/', 1)[0] ?? 'deepseek';
     const baseUrlVariables = new Set([
         'DEEPSEEK_BASE_URL',

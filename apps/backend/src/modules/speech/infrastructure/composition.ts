@@ -1,8 +1,8 @@
-import { dictionaryAudioBudget } from '../../dictionaries/infrastructure/audio/dictionary-audio-budget';
+import { dictionaryAudioBudget } from './audio/dictionary-audio-budget';
 import { randomBytes } from 'node:crypto';
 import type { PostgresJsDatabase } from '@languon/database';
 import type { databaseSchema } from '../../../infrastructure/database/schema';
-import type { loadDictionaryAudioEnvironment } from '../../dictionaries/infrastructure/audio/dictionary-audio-environment';
+import type { loadDictionaryAudioEnvironment } from './audio/dictionary-audio-environment';
 import { HmacDictionaryCryptography } from '../../dictionaries/infrastructure/crypto/dictionary-cryptography';
 import type {
     AudioObjectStorage,
@@ -34,8 +34,7 @@ export function createSpeechInfrastructure(input: {
     const budget = dictionaryAudioBudget(input.environment);
     const store = new DrizzleSpeechStore({
         database: input.database,
-        fingerprintSecret:
-            input.environment.fingerprintSecret ?? input.dictionaryHmacSecret,
+        fingerprintSecret: input.environment.fingerprintSecret,
         profileResolver: input.provider,
         fixtureMode: input.environment.provider === 'fixture',
         storageIdentity: input.storage.identity,

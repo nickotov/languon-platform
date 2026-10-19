@@ -11,6 +11,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Development cleanup and architecture diagrams](./development-cleanup-and-architecture-diagrams.md) — reusable retirement/diagram skills and a local source-backed diagram viewer.
+
 - [Contextual Language Assistant and Knowledge](./contextual-language-assistant-and-knowledge.md) — private source conversations, explicit draft publication, independent notes and revisions.
 
 - [Shared pronunciation playback](./shared-pronunciation-playback.md) — shared audio, explicit paid generation, retained recordings and editable model prices.

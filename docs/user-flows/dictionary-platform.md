@@ -142,7 +142,7 @@ docker compose -f infra/test/document-services.compose.yaml down --volumes
 ```
 
 Expect the web app at `http://localhost:3333`, backend health at
-`http://localhost:4000/health`, and OpenAPI at
+`http://localhost:4000/livez`, and OpenAPI at
 `http://localhost:4000/openapi.json`. Use only unique `@example.test` accounts
 and the development verification code `0000`. Never run this guide against a
 shared, staging, or production database.

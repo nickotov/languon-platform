@@ -8,7 +8,7 @@ const mastraModelIdPattern =
 export type DevelopmentHarnessModelId = `${string}/${string}`;
 
 export const developmentHarnessDeepSeekModelId =
-    'deepseek/deepseek-chat' as const;
+    'deepseek/deepseek-flash' as const;
 
 const RawPlaygroundEnvironmentSchema = z.object({
     APP_ENV: z.enum(['development', 'test']),
@@ -18,7 +18,11 @@ const RawPlaygroundEnvironmentSchema = z.object({
         .string()
         .max(255)
         .regex(mastraModelIdPattern)
-        .refine((modelId) => !modelId.includes('..'))
+        .refine(
+            (modelId) =>
+                !modelId.includes('..') && modelId !== 'deepseek/deepseek-chat',
+            'Retired model is unsupported.',
+        )
         .default(developmentHarnessDeepSeekModelId),
     MASTRA_PLAYGROUND_ADMIN_DATABASE_URL: z.url(),
     MASTRA_PLAYGROUND_DATABASE_URL: z.url(),

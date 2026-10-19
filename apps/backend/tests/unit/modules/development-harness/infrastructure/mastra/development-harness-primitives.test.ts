@@ -14,8 +14,8 @@ const principalId = '00000000-0000-4000-8000-000000000019';
 
 function createOptions() {
     return {
-        fallbackModelId: 'deepseek/deepseek-chat' as const,
-        modelId: 'deepseek/deepseek-chat' as const,
+        fallbackModelId: 'deepseek/deepseek-flash' as const,
+        modelId: 'deepseek/deepseek-flash' as const,
         service: new DevelopmentVerificationService(
             {
                 findById: async () => ({
@@ -192,7 +192,7 @@ describe('development harness Mastra primitives', () => {
                 id: 'deepseek-default',
                 maxRetries: 0,
                 model: {
-                    id: 'deepseek/deepseek-chat',
+                    id: 'deepseek/deepseek-flash',
                     url: 'https://api.deepseek.com',
                 },
             },
@@ -209,7 +209,7 @@ describe('development harness Mastra primitives', () => {
                 id: 'deepseek-fallback',
                 maxRetries: 0,
                 model: {
-                    id: 'deepseek/deepseek-chat',
+                    id: 'deepseek/deepseek-flash',
                     url: 'https://api.deepseek.com',
                 },
             },

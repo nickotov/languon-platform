@@ -92,6 +92,67 @@ async function withPendingMigrationFixture(
 }
 
 describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
+    const audioRetirementBaseline = `
+        create table dictionary_audio_assets (id integer primary key);
+        create table dictionary_audio_bindings (id integer primary key);
+        create table dictionary_audio_jobs (id integer primary key);
+        create table dictionary_audio_blobs (namespace text, key text, bytes bytea);
+        insert into dictionary_audio_blobs values ('current-speech', 'retained', decode('010203', 'hex'));
+        create table speech_recordings (id integer primary key);
+        insert into speech_recordings values (1);
+    `;
+
+    it.each([
+        'dictionary_audio_assets',
+        'dictionary_audio_bindings',
+        'dictionary_audio_jobs',
+    ])(
+        'refuses audio retirement with outstanding inventory in %s',
+        async (table) => {
+            const upgradeSql = readFileSync(
+                join(getMigrationsFolder(), '0074_retire_dictionary_audio.sql'),
+                'utf8',
+            );
+            await withPendingMigrationFixture(
+                audioRetirementBaseline,
+                upgradeSql,
+                async ({ migrate }) => {
+                    await client.unsafe(`insert into ${table} values (1)`);
+                    await expect(migrate()).rejects.toThrow(
+                        'Obsolete dictionary audio inventory must be reconciled',
+                    );
+                    expect(
+                        await client.unsafe(`select id from ${table}`),
+                    ).toEqual([{ id: 1 }]);
+                    expect(
+                        (
+                            await client.unsafe(
+                                'select * from dictionary_audio_blobs',
+                            )
+                        )[0]?.bytes,
+                    ).toEqual(Buffer.from([1, 2, 3]));
+                    await client.unsafe(`delete from ${table}`);
+                    await migrate();
+                    expect(
+                        await client.unsafe(
+                            "select to_regclass('dictionary_audio_assets') as assets, to_regclass('dictionary_audio_bindings') as bindings, to_regclass('dictionary_audio_jobs') as jobs",
+                        ),
+                    ).toEqual([{ assets: null, bindings: null, jobs: null }]);
+                    expect(
+                        (
+                            await client.unsafe(
+                                'select * from dictionary_audio_blobs',
+                            )
+                        )[0]?.bytes,
+                    ).toEqual(Buffer.from([1, 2, 3]));
+                    expect(
+                        await client.unsafe('select id from speech_recordings'),
+                    ).toEqual([{ id: 1 }]);
+                },
+            );
+        },
+    );
+
     beforeAll(() => {
         client = createTestPostgresClient();
     });
@@ -152,14 +213,19 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             'auth_security_events',
             'auth_sessions',
             'auth_verification_challenges',
+            'conversation_chats',
+            'conversation_drafts',
+            'conversation_events',
+            'conversation_memory',
+            'conversation_messages',
+            'conversation_provider_calls',
+            'conversation_settings',
+            'conversation_turns',
             'dictionaries',
             'dictionary_ai_configuration',
             'dictionary_ai_configuration_revisions',
             'dictionary_ai_worker_observations',
-            'dictionary_audio_assets',
-            'dictionary_audio_bindings',
             'dictionary_audio_blobs',
-            'dictionary_audio_jobs',
             'dictionary_card_revisions',
             'dictionary_cards',
             'dictionary_deletion_receipts',
@@ -172,9 +238,13 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             'dictionary_generation_provider_usage_archive',
             'dictionary_idempotency_keys',
             'dictionary_settings',
+            'dictionary_text_selection_jobs',
             'flashcard_attempts',
             'flashcard_entry_progress',
             'flashcard_preferences',
+            'knowledge_note_revisions',
+            'knowledge_notes',
+            'knowledge_operation_receipts',
             'model_price_revisions',
             'password_credentials',
             'sentence_ai_jobs',
@@ -198,6 +268,12 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             'speech_jobs',
             'speech_quotes',
             'speech_recordings',
+            'text_folders',
+            'text_idempotency',
+            'text_revisions',
+            'text_shares',
+            'texts',
+            'texts_ai_jobs',
             'user_emails',
             'user_text_ai_preferences',
             'users',

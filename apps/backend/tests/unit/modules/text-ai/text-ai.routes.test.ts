@@ -77,7 +77,7 @@ describe('text AI authenticated HTTP routes', () => {
         expect((await app.request('/text-ai/models')).status).toBe(401);
         for (const body of [
             { mode: 'auto', expectedVersion: 0, userId: 'foreign' },
-            { mode: 'auto', modelId: 'deepseek-chat', expectedVersion: 0 },
+            { mode: 'auto', modelId: 'deepseek-flash', expectedVersion: 0 },
             { mode: 'explicit', expectedVersion: 0 },
             { mode: 'auto', expectedVersion: -1 },
         ])

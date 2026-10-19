@@ -13,12 +13,18 @@ export const Default: StoryObj<typeof meta> = {
     args: {
         children: (
             <>
-                <p>Choose a calm pace now; you can change it later.</p>
-                <button type='button'>Use calm pace</button>
+                <PopoverTrigger aria-label='Open practice information'>
+                    Practice info
+                </PopoverTrigger>
+                <PopoverContent
+                    aria-label='Open practice information'
+                    align='end'
+                >
+                    <p>Choose a calm pace now; you can change it later.</p>
+                    <button type='button'>Use calm pace</button>
+                </PopoverContent>
             </>
         ),
-        label: 'Open practice information',
-        trigger: 'Practice info',
     },
 };
 
@@ -26,15 +32,22 @@ export const ViewportCollision: StoryObj<typeof meta> = {
     args: {
         children: (
             <>
-                <p>
-                    This panel flips and shifts instead of leaving the viewport.
-                </p>
-                <button type='button'>Keep this visible</button>
+                <PopoverTrigger aria-label='Open edge-aware information'>
+                    Open at the edge
+                </PopoverTrigger>
+                <PopoverContent
+                    aria-label='Open edge-aware information'
+                    side='bottom'
+                    align='end'
+                >
+                    <p>
+                        This panel flips and shifts instead of leaving the
+                        viewport.
+                    </p>
+                    <button type='button'>Keep this visible</button>
+                </PopoverContent>
             </>
         ),
-        label: 'Open edge-aware information',
-        placement: 'bottom-end',
-        trigger: 'Open at the edge',
     },
     decorators: [
         (Story) => (
@@ -101,16 +114,22 @@ export const InsideModal: StoryObj<typeof meta> = {
 
 export const OversizedContent: StoryObj<typeof meta> = {
     args: {
-        label: 'Open scrollable preferences',
-        trigger: 'Scrollable preferences',
         children: (
             <>
-                {Array.from({ length: 30 }, (_, index) => (
-                    <p key={index}>
-                        Preference {index + 1}: keep this content reachable.
-                    </p>
-                ))}
-                <button type='button'>Final action</button>
+                <PopoverTrigger aria-label='Open scrollable preferences'>
+                    Scrollable preferences
+                </PopoverTrigger>
+                <PopoverContent
+                    aria-label='Open scrollable preferences'
+                    align='end'
+                >
+                    {Array.from({ length: 30 }, (_, index) => (
+                        <p key={index}>
+                            Preference {index + 1}: keep this content reachable.
+                        </p>
+                    ))}
+                    <button type='button'>Final action</button>
+                </PopoverContent>
             </>
         ),
     },

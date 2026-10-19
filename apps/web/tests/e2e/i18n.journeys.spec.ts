@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision web-i18n-support sha256:892b37c815ab7144
+// @user-flow-revision web-i18n-support sha256:52b7f07a4eba4dcf
 
 function captureBrowserErrors(page: Page) {
     const errors: string[] = [];

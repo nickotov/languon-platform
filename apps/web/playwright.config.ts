@@ -156,8 +156,6 @@ export default defineConfig({
                     sentenceServicesEnabled ? 'true' : 'false',
                 SPEECH_PLAYBACK_ENABLED: 'true',
                 SPEECH_GENERATION_ENABLED: 'true',
-                DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
-                DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
                 SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en,es,fr',
                 DICTIONARY_AUDIO_STORAGE: 'postgres',
@@ -193,10 +191,10 @@ export default defineConfig({
             stderr: 'pipe',
             stdout: 'pipe',
             timeout: 120_000,
-            url: `${backendOrigin}/health`,
+            url: `${backendOrigin}/livez`,
         },
         {
-            command: `until curl --fail --silent ${backendOrigin}/health >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend ${sentenceServicesEnabled ? 'exec tsx tests/support/sentence-web-worker.ts' : 'dictionary:worker'}`,
+            command: `until curl --fail --silent ${backendOrigin}/livez >/dev/null; do sleep 0.1; done; pnpm --filter @languon/backend ${sentenceServicesEnabled ? 'exec tsx tests/support/sentence-web-worker.ts' : 'dictionary:worker'}`,
             env: {
                 APP_ENV: 'test',
                 AUTH_E2E_SENTENCE_SERVICES: sentenceServicesEnabled
@@ -232,8 +230,6 @@ export default defineConfig({
                 DICTIONARY_WORKER_DATABASE_URL: databaseUrl,
                 SPEECH_PLAYBACK_ENABLED: 'true',
                 SPEECH_GENERATION_ENABLED: 'true',
-                DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
-                DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
                 SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en,es,fr',
                 DICTIONARY_AUDIO_STORAGE: 'postgres',

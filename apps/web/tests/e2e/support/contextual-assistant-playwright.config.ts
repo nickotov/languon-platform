@@ -34,7 +34,7 @@ export default defineConfig({
                 APP_ENV: 'test',
                 CONTEXTUAL_ASSISTANT_FIXTURE: 'true',
             },
-            url: 'http://127.0.0.1:4006/health',
+            url: 'http://127.0.0.1:4006/livez',
             timeout: 120_000,
             reuseExistingServer: false,
         },

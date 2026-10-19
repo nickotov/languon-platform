@@ -54,7 +54,7 @@ pnpm dev:web
 ```
 
 Expect the web app at `http://localhost:3333` and backend health at
-`http://localhost:4000/health`. Use fake local authentication data only. The
+`http://localhost:4000/livez`. Use fake local authentication data only. The
 localization checks themselves do not create database records.
 
 ## Browser verification

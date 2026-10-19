@@ -1,13 +1,5 @@
 import type { DictionaryOperationalMeasurement } from '../../modules/dictionaries/application/ports/dictionary-generation-store';
-import {
-    sanitizeAudioMeasurement,
-    type DictionaryAudioMeasurement,
-} from '../../modules/dictionaries/application/ports/dictionary-audio-measurement';
-
 export interface DictionaryWorkerApplicationService {
-    observeAudioState?(input: {
-        signal: AbortSignal;
-    }): Promise<DictionaryAudioMeasurement>;
     observeOperationalState?(input: {
         signal: AbortSignal;
         windowMs: number;
@@ -30,8 +22,7 @@ export interface DictionaryWorkerLogger {
 }
 
 export type DictionaryWorkerOperationalLogFields =
-    | Readonly<DictionaryOperationalMeasurement>
-    | Readonly<DictionaryAudioMeasurement>;
+    Readonly<DictionaryOperationalMeasurement>;
 
 export interface DictionaryWorkerRuntimeOptions {
     concurrency: number;
@@ -372,23 +363,6 @@ export class DictionaryWorkerRuntime {
                 this.#logger.error(
                     'Dictionary worker operational measurement failed; observation will retry.',
                 );
-            }
-            if (this.#options.service.observeAudioState) {
-                try {
-                    const audio = await this.#options.service.observeAudioState(
-                        { signal },
-                    );
-                    if (signal.aborted) return;
-                    this.#logger.info(
-                        'Dictionary pronunciation operational measurement.',
-                        sanitizeAudioMeasurement(audio),
-                    );
-                } catch {
-                    if (signal.aborted) return;
-                    this.#logger.error(
-                        'Dictionary pronunciation measurement failed; observation will retry.',
-                    );
-                }
             }
             await delay(this.#operationalObservationIntervalMs, signal);
         }

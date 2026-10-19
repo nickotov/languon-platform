@@ -21,11 +21,6 @@ import type {
     DictionaryStore,
 } from '../../../application/ports/dictionary-store';
 import {
-    dictionaryAudioAssetsTable,
-    dictionaryAudioBindingsTable,
-    dictionaryAudioJobsTable,
-} from './audio-schema';
-import {
     dictionariesTable,
     dictionaryCardRevisionsTable,
     dictionaryCardsTable,
@@ -531,65 +526,6 @@ export class DrizzleDictionaryDeletionStore {
                 )
             )
                 throw new DictionaryDeletionBusyError();
-        }
-
-        const audioCondition = cardIds
-            ? inArray(dictionaryAudioJobsTable.cardId, [...cardIds])
-            : inArray(dictionaryAudioJobsTable.dictionaryId, [
-                  ...dictionaryIds,
-              ]);
-        const audioJobs = await tx
-            .select()
-            .from(dictionaryAudioJobsTable)
-            .where(audioCondition)
-            .for('update');
-        if (
-            audioJobs.some(
-                (job) =>
-                    !['ready', 'failed', 'cancelled'].includes(job.state) ||
-                    (job.leaseExpiresAt !== null &&
-                        job.leaseExpiresAt > input.context.now),
-            )
-        )
-            throw new DictionaryDeletionBusyError();
-        const audioJobIds = audioJobs.map((job) => job.id);
-        if (audioJobIds.length > 0) {
-            const assets = await tx
-                .select()
-                .from(dictionaryAudioAssetsTable)
-                .where(
-                    inArray(
-                        dictionaryAudioAssetsTable.id,
-                        audioJobs.map((job) => job.assetId),
-                    ),
-                )
-                .for('update');
-            if (
-                assets.some(
-                    (asset) =>
-                        asset.writerExpiresAt !== null &&
-                        asset.writerExpiresAt > input.context.now,
-                )
-            )
-                throw new DictionaryDeletionBusyError();
-            await tx
-                .delete(dictionaryAudioBindingsTable)
-                .where(
-                    inArray(dictionaryAudioBindingsTable.jobId, audioJobIds),
-                );
-            await tx
-                .update(dictionaryAudioJobsTable)
-                .set({ state: 'cancelled', text: '' })
-                .where(inArray(dictionaryAudioJobsTable.id, audioJobIds));
-            await tx
-                .update(dictionaryAudioAssetsTable)
-                .set({ state: 'deleting' })
-                .where(
-                    inArray(
-                        dictionaryAudioAssetsTable.id,
-                        audioJobs.map((job) => job.assetId),
-                    ),
-                );
         }
 
         const settledJobs = directJobs.filter(

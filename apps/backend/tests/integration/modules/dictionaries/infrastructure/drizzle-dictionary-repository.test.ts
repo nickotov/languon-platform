@@ -28,10 +28,6 @@ import {
 import { DictionaryOwnerCapacityError } from '../../../../../src/modules/dictionaries/domain/limits';
 import { DrizzleDictionaryStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
 import {
-    dictionaryAudioAssetsTable,
-    dictionaryAudioJobsTable,
-} from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
-import {
     dictionaryGenerationAdmissionLock,
     DrizzleDictionaryGenerationStore,
 } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
@@ -78,8 +74,6 @@ run('DrizzleDictionaryStore', () => {
     // A separate bounded setup budget prevents timeout callbacks from overlapping
     // the next test's fixtures; all behavioral assertions stay intact.
     beforeEach(async () => {
-        await database.delete(dictionaryAudioJobsTable);
-        await database.delete(dictionaryAudioAssetsTable);
         await database.delete(dictionaryDocumentUploadsTable);
         await database.delete(dictionaryGenerationProposalsTable);
         await database.delete(dictionaryCardRevisionsTable);
@@ -470,103 +464,9 @@ run('DrizzleDictionaryStore', () => {
             .delete(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, busyJobId));
 
-        const audioAssetId = randomUUID();
-        const audioJobId = randomUUID();
-        await database.insert(dictionaryAudioAssetsTable).values({
-            cardId: secondArchived.card.id,
-            createdAt: now,
-            dictionaryId: dictionary.id,
-            field: 'source',
-            fingerprint: 'audio-fingerprint',
-            id: audioAssetId,
-            lastAccessedAt: now,
-            ownerId,
-            state: 'pending',
-            storage: {
-                backend: 'postgres',
-                key: `dictionary-audio/${ownerId}/${audioAssetId}`,
-                namespace: 'dictionary-audio-v1',
-            },
-            writerExpiresAt: new Date(now.getTime() + 60_000),
-        });
-        await database.insert(dictionaryAudioJobsTable).values({
-            assetId: audioAssetId,
-            cardId: secondArchived.card.id,
-            cardVersion: secondArchived.card.version,
-            createdAt: now,
-            deadlineAt: new Date(now.getTime() + 60_000),
-            dictionaryId: dictionary.id,
-            field: 'source',
-            fingerprint: 'audio-fingerprint',
-            id: audioJobId,
-            nextPollAt: now,
-            ownerId,
-            profile: {
-                configurationId: 'fixture-v1',
-                estimatedCostUnitsPerCharacter: 1,
-                language: 'en',
-                model: 'fixture',
-                provider: 'fixture',
-                settingsVersion: '1',
-                voice: 'fixture',
-            },
-            reservedCost: 1,
-            settingsVersion: dictionary.settings.version,
-            leaseExpiresAt: new Date(now.getTime() + 60_000),
-            leaseToken: randomUUID(),
-            state: 'submitting',
-            text: 'second',
-        });
-        await expect(deleteRemaining()).rejects.toBeInstanceOf(
-            DictionaryDeletionBusyError,
-        );
-        await expect(
-            database
-                .select({ id: dictionaryCardsTable.id })
-                .from(dictionaryCardsTable)
-                .where(eq(dictionaryCardsTable.id, secondArchived.card.id)),
-        ).resolves.toEqual([{ id: secondArchived.card.id }]);
-        await expect(
-            database
-                .select({ state: dictionaryAudioAssetsTable.state })
-                .from(dictionaryAudioAssetsTable)
-                .where(eq(dictionaryAudioAssetsTable.id, audioAssetId)),
-        ).resolves.toEqual([{ state: 'pending' }]);
-        await expect(
-            database
-                .select({
-                    state: dictionaryAudioJobsTable.state,
-                    text: dictionaryAudioJobsTable.text,
-                })
-                .from(dictionaryAudioJobsTable)
-                .where(eq(dictionaryAudioJobsTable.id, audioJobId)),
-        ).resolves.toEqual([{ state: 'submitting', text: 'second' }]);
-        await database
-            .update(dictionaryAudioJobsTable)
-            .set({ leaseExpiresAt: null, leaseToken: null, state: 'ready' })
-            .where(eq(dictionaryAudioJobsTable.id, audioJobId));
-        await database
-            .update(dictionaryAudioAssetsTable)
-            .set({ state: 'ready', writerExpiresAt: null })
-            .where(eq(dictionaryAudioAssetsTable.id, audioAssetId));
         await expect(deleteRemaining()).resolves.toMatchObject({
             deletedCount: 1,
         });
-        await expect(
-            database
-                .select({ state: dictionaryAudioAssetsTable.state })
-                .from(dictionaryAudioAssetsTable)
-                .where(eq(dictionaryAudioAssetsTable.id, audioAssetId)),
-        ).resolves.toEqual([{ state: 'deleting' }]);
-        await expect(
-            database
-                .select({
-                    state: dictionaryAudioJobsTable.state,
-                    text: dictionaryAudioJobsTable.text,
-                })
-                .from(dictionaryAudioJobsTable)
-                .where(eq(dictionaryAudioJobsTable.id, audioJobId)),
-        ).resolves.toEqual([{ state: 'cancelled', text: '' }]);
     });
 
     it('archives direct settled provider usage and keeps it in the effective owner budget', async () => {
@@ -1047,7 +947,7 @@ run('DrizzleDictionaryStore', () => {
         );
     });
 
-    it('does not take the global audio lock and waits for generation admission before row locks', async () => {
+    it('waits for generation admission before row locks', async () => {
         const archiveDictionary = async () => {
             const dictionary = await createDictionary();
             return store.archiveDictionary({
@@ -1057,48 +957,6 @@ run('DrizzleDictionaryStore', () => {
                 request: { expectedDictionaryVersion: dictionary.version },
             });
         };
-        const audioTarget = await archiveDictionary();
-        let releaseAudio!: () => void;
-        let audioReady!: () => void;
-        const audioHeld = new Promise<void>((resolve) => {
-            releaseAudio = resolve;
-        });
-        const audioAcquired = new Promise<void>((resolve) => {
-            audioReady = resolve;
-        });
-        const audioBlocker = database.transaction(async (tx) => {
-            await tx.execute(sql`select pg_advisory_xact_lock(76021941)`);
-            audioReady();
-            await audioHeld;
-        });
-        await audioAcquired;
-        const audioDeletion = store.deleteDictionaries({
-            context: context(),
-            fingerprint: `hmac-sha256:v1:${'N'.repeat(43)}`,
-            idempotencyKey: `audio-lock-deletion-${randomUUID()}`,
-            ownerId,
-            request: {
-                scope: {
-                    kind: 'selected',
-                    targets: [
-                        {
-                            dictionaryId: audioTarget.id,
-                            expectedVersion: audioTarget.version,
-                        },
-                    ],
-                },
-            },
-        });
-        const audioOutcome = await Promise.race([
-            audioDeletion.then(() => 'deleted' as const),
-            new Promise<'blocked'>((resolve) =>
-                setTimeout(() => resolve('blocked'), 500),
-            ),
-        ]);
-        releaseAudio();
-        await audioBlocker;
-        expect(audioOutcome).toBe('deleted');
-
         const admissionTarget = await archiveDictionary();
         let releaseAdmission!: () => void;
         let admissionReady!: () => void;

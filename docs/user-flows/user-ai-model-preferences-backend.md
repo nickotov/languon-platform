@@ -87,6 +87,11 @@ global-revision path; known fresh default-provider unavailability fails. Provide
 HEAD probes may be unverified yet operationally usable under existing policy;
 unverified is not a silent model fallback.
 
+DeepSeek Chat is retired during development (ADR-0038). Catalogs expose Flash
+and Kie. Retired snapshots fail closed; use existing administration to select a
+current default and preferences to deliberately select Auto or a supported model.
+Immutable execution and accounting records are never rewritten as Flash.
+
 ## Expected failure and edge cases
 
 - Not authenticated: sign in and retry the personal operation.

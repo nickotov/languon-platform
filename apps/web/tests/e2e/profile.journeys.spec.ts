@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision magic-profile-page sha256:08674df4ddf980ab
+// @user-flow-revision magic-profile-page sha256:19162749cd4b4b44
 // @user-flow-revision profile-account-controls sha256:81a95391b604fcc4
 
 const password = 'E2e!Profile-password-2026';

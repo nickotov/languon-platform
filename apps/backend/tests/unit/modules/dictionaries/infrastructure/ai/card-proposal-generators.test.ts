@@ -426,11 +426,11 @@ describe('dictionary card proposal generators', () => {
 
     it('creates and canonically registers a one-step product agent with no tools', async () => {
         const agent = createDictionaryCardGenerationAgent({
-            model: 'deepseek/deepseek-chat',
+            model: 'deepseek/deepseek-flash',
         });
         const mastra = createCanonicalMastra({
             dictionaryCardGeneration: {
-                model: 'deepseek/deepseek-chat',
+                model: 'deepseek/deepseek-flash',
             },
         });
 

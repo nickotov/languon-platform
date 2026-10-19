@@ -8,7 +8,7 @@ vi.mock('node:https', () => ({ request: mocks.request }));
 import {
     downloadAudioResult,
     validateWav,
-} from '../../../../../src/modules/dictionaries/infrastructure/audio/safe-audio-download';
+} from '../../../../../src/modules/speech/infrastructure/audio/safe-audio-download';
 import { audioChecksum } from '../../../../../src/modules/speech/domain/audio-integrity';
 
 function pcmWav(samples = 24000, channels = 1): Buffer {
@@ -78,9 +78,10 @@ describe('bounded HTTPS audio transport', () => {
             serve(200, [bytes.subarray(0, 20), bytes.subarray(20)], {
                 'content-type': contentType,
             });
-            const result = await downloadAudioResult('https://cdn.example.com/a', [
-                'cdn.example.com',
-            ]);
+            const result = await downloadAudioResult(
+                'https://cdn.example.com/a',
+                ['cdn.example.com'],
+            );
             expect(result).toEqual({
                 bytes,
                 mimeType: 'audio/wav',
@@ -94,7 +95,9 @@ describe('bounded HTTPS audio transport', () => {
             'content-type': 'audio/wav',
         });
         await expect(
-            downloadAudioResult('https://cdn.example.com/a', ['cdn.example.com']),
+            downloadAudioResult('https://cdn.example.com/a', [
+                'cdn.example.com',
+            ]),
         ).rejects.toThrow('Invalid MP3');
     });
     it('rejects a mixed public/private DNS answer before connecting', async () => {
@@ -172,7 +175,10 @@ describe('complete PCM WAV validation', () => {
         expect(() => validateWav(appended)).toThrow();
     });
     it('rejects duplicate data and format chunks', () => {
-        for (const extra of [pcmWav().subarray(12, 36), pcmWav().subarray(36)]) {
+        for (const extra of [
+            pcmWav().subarray(12, 36),
+            pcmWav().subarray(36),
+        ]) {
             const bytes = Buffer.concat([pcmWav(), extra]);
             bytes.writeUInt32LE(bytes.length - 8, 4);
             expect(() => validateWav(bytes)).toThrow();
@@ -183,7 +189,11 @@ describe('complete PCM WAV validation', () => {
         junk.write('JUNK');
         junk.writeUInt32LE(1, 4);
         const wav = pcmWav();
-        const bytes = Buffer.concat([wav.subarray(0, 36), junk, wav.subarray(36)]);
+        const bytes = Buffer.concat([
+            wav.subarray(0, 36),
+            junk,
+            wav.subarray(36),
+        ]);
         bytes.writeUInt32LE(bytes.length - 8, 4);
         expect(validateWav(bytes)).toBe(1000);
         const unpadded = Buffer.concat([

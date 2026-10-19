@@ -67,7 +67,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('dictionary text provider wire contracts', () => {
     for (const catalogId of [
-        'deepseek/deepseek-chat',
+        'deepseek/deepseek-flash',
         'kie/gemini-2.5-pro',
     ] as const) {
         it(`maps ${catalogId} through the OpenAI-compatible structured-output wire contract`, async () => {

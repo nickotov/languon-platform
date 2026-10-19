@@ -120,7 +120,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     userId,
                     {
                         mode: 'explicit',
-                        modelId: 'deepseek-chat',
+                        modelId: 'deepseek-flash',
                         expectedVersion: 0,
                     },
                     at,
@@ -158,7 +158,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 userId,
                 {
                     mode: 'explicit',
-                    modelId: 'deepseek-chat',
+                    modelId: 'deepseek-flash',
                     expectedVersion: 0,
                 },
                 at,
@@ -167,7 +167,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const preference = await service.get(userId, at);
             expect(preference).toMatchObject({
                 mode: 'explicit',
-                modelId: 'deepseek-chat',
+                modelId: 'deepseek-flash',
                 version: 1,
                 selectedModel: { availability: 'disabled' },
             });
@@ -190,6 +190,45 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     at,
                 ),
             ).resolves.toMatchObject({ mode: 'auto', version: 2 });
+        });
+        it('rejects a retired default and retired explicit choice without changing history', async () => {
+            const model = textAiModelCatalog[0]!;
+            await database.update(dictionaryAiConfigurationRevisionsTable).set({
+                catalogSnapshot: {
+                    ...model,
+                    modelId: 'deepseek-chat',
+                    enabledModelIds: ['deepseek-chat'],
+                    supportedFormats: [...model.supportedFormats],
+                },
+            });
+            await expect(
+                service.update(
+                    userId,
+                    {
+                        mode: 'explicit',
+                        modelId: 'deepseek-chat',
+                        expectedVersion: 0,
+                    },
+                    at,
+                ),
+            ).rejects.toBeInstanceOf(TextAiModelUnavailableError);
+            await expect(
+                database.transaction((transaction) =>
+                    new DrizzleTextAiAdmissionParticipant(transaction, {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                    }).resolve({
+                        userId,
+                        now: at,
+                        format: 'single-card:v2',
+                        legacyBudget: model.aggregateBudget,
+                    }),
+                ),
+            ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+            const [revision] = await database
+                .select()
+                .from(dictionaryAiConfigurationRevisionsTable);
+            expect(revision!.catalogSnapshot.modelId).toBe('deepseek-chat');
         });
         it('fails closed for absent, stale, unavailable and old-worker readiness', async () => {
             const cases = [
@@ -224,7 +263,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         userId,
                         {
                             mode: 'explicit',
-                            modelId: 'deepseek-chat',
+                            modelId: 'deepseek-flash',
                             expectedVersion: 0,
                         },
                         at,
@@ -267,7 +306,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     userId,
                     {
                         mode: 'explicit',
-                        modelId: 'deepseek-chat',
+                        modelId: 'deepseek-flash',
                         expectedVersion: 1,
                     },
                     at,
@@ -306,7 +345,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 userId,
                 {
                     mode: 'explicit',
-                    modelId: 'deepseek-chat',
+                    modelId: 'deepseek-flash',
                     expectedVersion: 0,
                 },
                 at,
@@ -444,7 +483,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 userId,
                 {
                     mode: 'explicit',
-                    modelId: 'deepseek-chat',
+                    modelId: 'deepseek-flash',
                     expectedVersion: 0,
                 },
                 at,
@@ -513,7 +552,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         userId,
                         {
                             mode: 'explicit',
-                            modelId: 'deepseek-chat',
+                            modelId: 'deepseek-flash',
                             expectedVersion: 0,
                         },
                         at,
@@ -566,9 +605,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .values({ userId, mode: 'explicit', modelId: null }),
             ).rejects.toThrow();
             await expect(
-                database
-                    .insert(textAiPreferencesTable)
-                    .values({ userId, mode: 'auto', modelId: 'deepseek-chat' }),
+                database.insert(textAiPreferencesTable).values({
+                    userId,
+                    mode: 'auto',
+                    modelId: 'deepseek-flash',
+                }),
             ).rejects.toThrow();
             await expect(
                 database

@@ -8,11 +8,11 @@ import {
     type S3Client,
 } from '@aws-sdk/client-s3';
 import { describe, expect, it } from 'vitest';
-import { createFixtureAudio } from '../../../../../src/modules/dictionaries/infrastructure/audio/audio-integrity';
+import { createFixtureAudio } from '../../../../../src/modules/speech/domain/audio-integrity';
 import {
     S3AudioObjectStorage,
     RoutingAudioObjectStorage,
-} from '../../../../../src/modules/dictionaries/infrastructure/audio/audio-object-storages';
+} from '../../../../../src/modules/speech/infrastructure/audio/audio-object-storages';
 
 function fakeVersionedS3() {
     const versions = new Map<

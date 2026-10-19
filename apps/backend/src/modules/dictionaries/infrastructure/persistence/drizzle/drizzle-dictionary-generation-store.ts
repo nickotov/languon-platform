@@ -2335,45 +2335,54 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async discard(
         input: Parameters<DictionaryGenerationStore['discard']>[0],
     ) {
-        const result = await modelPricingTransaction(this.database, async (tx) => {
-            abort(input.context);
-            const job = await this.lockOwnedJob(tx, input.ownerId, input.jobId);
-            const proposal = await this.lockProposal(tx, job.id);
-            abort(input.context);
-            if (proposal?.reviewState === 'discarded')
+        const result = await modelPricingTransaction(
+            this.database,
+            async (tx) => {
+                abort(input.context);
+                const job = await this.lockOwnedJob(
+                    tx,
+                    input.ownerId,
+                    input.jobId,
+                );
+                const proposal = await this.lockProposal(tx, job.id);
+                abort(input.context);
+                if (proposal?.reviewState === 'discarded')
+                    return {
+                        expired: false as const,
+                        value: await this.readView(tx, job, input.context.now),
+                    };
+                if (proposal?.reviewState === 'expired')
+                    return { expired: true as const };
+                if (!proposal || proposal.reviewState !== 'reviewable')
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.documentStagedAt && !proposal.documentPublishedAt)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.expiresAt <= input.context.now) {
+                    await this.expireProposal(tx, job.id, input.context.now);
+                    return { expired: true as const };
+                }
+                abort(input.context);
+                await tx
+                    .update(dictionaryGenerationProposalsTable)
+                    .set({
+                        payload: null,
+                        reviewState: 'discarded',
+                        terminalAt: input.context.now,
+                        updatedAt: input.context.now,
+                    })
+                    .where(
+                        eq(dictionaryGenerationProposalsTable.jobId, job.id),
+                    );
+                await tx
+                    .update(dictionaryGenerationJobsTable)
+                    .set({ inputPayload: null, updatedAt: input.context.now })
+                    .where(eq(dictionaryGenerationJobsTable.id, job.id));
                 return {
                     expired: false as const,
                     value: await this.readView(tx, job, input.context.now),
                 };
-            if (proposal?.reviewState === 'expired')
-                return { expired: true as const };
-            if (!proposal || proposal.reviewState !== 'reviewable')
-                throw new DictionaryGenerationNotReviewableError();
-            if (proposal.documentStagedAt && !proposal.documentPublishedAt)
-                throw new DictionaryGenerationNotReviewableError();
-            if (proposal.expiresAt <= input.context.now) {
-                await this.expireProposal(tx, job.id, input.context.now);
-                return { expired: true as const };
-            }
-            abort(input.context);
-            await tx
-                .update(dictionaryGenerationProposalsTable)
-                .set({
-                    payload: null,
-                    reviewState: 'discarded',
-                    terminalAt: input.context.now,
-                    updatedAt: input.context.now,
-                })
-                .where(eq(dictionaryGenerationProposalsTable.jobId, job.id));
-            await tx
-                .update(dictionaryGenerationJobsTable)
-                .set({ inputPayload: null, updatedAt: input.context.now })
-                .where(eq(dictionaryGenerationJobsTable.id, job.id));
-            return {
-                expired: false as const,
-                value: await this.readView(tx, job, input.context.now),
-            };
-        });
+            },
+        );
         if (result.expired)
             throw new DictionaryGenerationProposalExpiredError();
         return result.value;
@@ -2382,28 +2391,289 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
     public async acceptSingleCard(
         input: Parameters<DictionaryGenerationStore['acceptSingleCard']>[0],
     ) {
-        const result = await modelPricingTransaction(this.database, async (tx) => {
-            abort(input.context);
-            await lockTextAiCapacity(tx);
-            abort(input.context);
-            await tx
-                .select({ id: usersTable.id })
-                .from(usersTable)
-                .where(eq(usersTable.id, input.ownerId))
-                .for('update');
-            abort(input.context);
-            const job = await this.lockOwnedJob(tx, input.ownerId, input.jobId);
-            if (job.kind !== 'single-card')
-                throw new DictionaryGenerationNotReviewableError();
-            const proposal = await this.lockProposal(tx, job.id);
-            abort(input.context);
-            if (!proposal) throw new DictionaryGenerationNotReviewableError();
-            if (proposal.reviewState === 'accepted') {
+        const result = await modelPricingTransaction(
+            this.database,
+            async (tx) => {
+                abort(input.context);
+                await lockTextAiCapacity(tx);
+                abort(input.context);
+                await tx
+                    .select({ id: usersTable.id })
+                    .from(usersTable)
+                    .where(eq(usersTable.id, input.ownerId))
+                    .for('update');
+                abort(input.context);
+                const job = await this.lockOwnedJob(
+                    tx,
+                    input.ownerId,
+                    input.jobId,
+                );
+                if (job.kind !== 'single-card')
+                    throw new DictionaryGenerationNotReviewableError();
+                const proposal = await this.lockProposal(tx, job.id);
+                abort(input.context);
+                if (!proposal)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.reviewState === 'accepted') {
+                    if (
+                        proposal.acceptedCandidateFingerprint !==
+                        input.candidateFingerprint
+                    )
+                        throw new DictionaryGenerationCandidateConflictError();
+                    const acceptedJob = await this.readView(
+                        tx,
+                        job,
+                        input.context.now,
+                    );
+                    if (
+                        acceptedJob.kind !== 'single-card' ||
+                        !acceptedJob.outcome
+                    )
+                        throw new DictionaryGenerationCandidateConflictError();
+                    return {
+                        expired: false as const,
+                        value: {
+                            job: acceptedJob,
+                            outcome: acceptedJob.outcome,
+                        },
+                    };
+                }
+                if (proposal.reviewState === 'expired')
+                    return { expired: true as const };
+                if (proposal.reviewState !== 'reviewable' || !proposal.payload)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.documentStagedAt && !proposal.documentPublishedAt)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.expiresAt <= input.context.now) {
+                    await this.expireProposal(tx, job.id, input.context.now);
+                    return { expired: true as const };
+                }
+                const storedProposal = parseDictionaryGenerationProposal(
+                    proposal.payload,
+                );
+                const candidate = parseDictionaryGenerationProposal({
+                    ...storedProposal,
+                    candidate: input.candidate,
+                }).candidate;
+                const current = await this.lockCardSnapshot(tx, job);
+                abort(input.context);
                 if (
-                    proposal.acceptedCandidateFingerprint !==
-                    input.candidateFingerprint
+                    current.dictionary.lifecycle !== 'active' ||
+                    current.card.lifecycle !== 'active' ||
+                    current.dictionary.version !==
+                        job.expectedDictionaryVersion ||
+                    current.settings.version !== job.expectedSettingsVersion ||
+                    current.card.version !== job.expectedCardVersion ||
+                    current.dictionary.sourceLanguageTag !==
+                        job.sourceLanguageTag ||
+                    current.dictionary.targetLanguageTag !==
+                        job.targetLanguageTag
                 )
-                    throw new DictionaryGenerationCandidateConflictError();
+                    throw new DictionaryVersionConflictError();
+
+                const candidateOverrides = domainOverrides(candidate.overrides);
+                assertCardSettingsOverrideTransition({
+                    dictionary: domainSettings(current.settings),
+                    next: candidateOverrides,
+                    previous: domainOverrides(wireOverrides(current.card)),
+                });
+                const candidateValues = normalizeCardValues(candidate.values);
+                const semanticChange = !areCardSemanticStatesEqual(
+                    {
+                        overrides: domainOverrides(wireOverrides(current.card)),
+                        values: values(current.card),
+                    },
+                    { overrides: candidateOverrides, values: candidateValues },
+                );
+                const proposalEdited = !areCardSemanticStatesEqual(
+                    {
+                        overrides: domainOverrides(
+                            storedProposal.candidate.overrides,
+                        ),
+                        values: storedProposal.candidate.values,
+                    },
+                    { overrides: candidateOverrides, values: candidateValues },
+                );
+                const authorship = resolveCardMutationAuthorship({
+                    mutationKind: 'ai_proposal_accept',
+                    prior: current.card.authorship,
+                    proposalEdited,
+                    semanticChange,
+                }).authorship;
+
+                let card = current.card;
+                let dictionaryVersion = current.dictionary.version;
+                let revisionId: string;
+                if (semanticChange) {
+                    const [ownerRevisionCount] = await tx
+                        .select({ value: count() })
+                        .from(dictionaryCardRevisionsTable)
+                        .innerJoin(
+                            dictionariesTable,
+                            eq(
+                                dictionariesTable.id,
+                                dictionaryCardRevisionsTable.dictionaryId,
+                            ),
+                        )
+                        .where(eq(dictionariesTable.ownerId, input.ownerId));
+                    if (Number(ownerRevisionCount?.value ?? 0) >= 250_000)
+                        throw new DictionaryGenerationNotAvailableError();
+                    abort(input.context);
+                    const [updatedCard] = await tx
+                        .update(dictionaryCardsTable)
+                        .set({
+                            authorship,
+                            customNotationLabelOverride:
+                                candidateOverrides.customNotationLabel,
+                            definition: candidateValues.definition,
+                            definitionEnabledOverride:
+                                candidateOverrides.definitionEnabled,
+                            definitionLanguageRoleOverride:
+                                candidateOverrides.definitionLanguageRole,
+                            example: candidateValues.example,
+                            exampleEnabledOverride:
+                                candidateOverrides.exampleEnabled,
+                            exampleLanguageRoleOverride:
+                                candidateOverrides.exampleLanguageRole,
+                            exampleTranslation:
+                                candidateValues.exampleTranslation,
+                            exampleTranslationEnabledOverride:
+                                candidateOverrides.exampleTranslationEnabled,
+                            normalizedSource:
+                                normalizeDictionaryCardSourceForSearch(
+                                    candidateValues.source,
+                                ),
+                            source: candidateValues.source,
+                            transcription: candidateValues.transcription,
+                            transcriptionEnabledOverride:
+                                candidateOverrides.transcriptionEnabled,
+                            transcriptionNotationOverride:
+                                candidateOverrides.transcriptionNotation,
+                            translation: candidateValues.translation,
+                            learningVersion:
+                                current.card.learningVersion +
+                                Number(
+                                    hasLearningContentChanged({
+                                        previous: {
+                                            values: values(current.card),
+                                            settings: resolveCardSettings({
+                                                dictionary: domainSettings(
+                                                    current.settings,
+                                                ),
+                                                overrides: domainOverrides(
+                                                    wireOverrides(current.card),
+                                                ),
+                                            }),
+                                        },
+                                        next: {
+                                            values: candidateValues,
+                                            settings: resolveCardSettings({
+                                                dictionary: domainSettings(
+                                                    current.settings,
+                                                ),
+                                                overrides: candidateOverrides,
+                                            }),
+                                        },
+                                    }),
+                                ),
+                            updatedAt: input.context.now,
+                            version: current.card.version + 1,
+                        })
+                        .where(
+                            and(
+                                eq(dictionaryCardsTable.id, current.card.id),
+                                eq(
+                                    dictionaryCardsTable.version,
+                                    current.card.version,
+                                ),
+                            ),
+                        )
+                        .returning();
+                    if (!updatedCard)
+                        throw new DictionaryVersionConflictError();
+                    card = updatedCard;
+                    revisionId = this.ids.generate();
+                    await tx.insert(dictionaryCardRevisionsTable).values({
+                        acceptedGenerationJobId: job.id,
+                        actorUserId: input.ownerId,
+                        authorship: card.authorship,
+                        cardId: card.id,
+                        cardVersion: card.version,
+                        createdAt: input.context.now,
+                        dictionaryId: card.dictionaryId,
+                        id: revisionId,
+                        mutationKind: 'ai_proposal_accept',
+                        revisionNumber: card.version,
+                        schemaVersion: 2,
+                        settingsVersion: current.settings.version,
+                        snapshot: revisionSnapshot(
+                            card,
+                            current.settings,
+                            current.dictionary.translationContext,
+                        ),
+                    });
+                    const [updatedDictionary] = await tx
+                        .update(dictionariesTable)
+                        .set({
+                            updatedAt: input.context.now,
+                            version: current.dictionary.version + 1,
+                        })
+                        .where(
+                            and(
+                                eq(dictionariesTable.id, current.dictionary.id),
+                                eq(
+                                    dictionariesTable.version,
+                                    current.dictionary.version,
+                                ),
+                            ),
+                        )
+                        .returning({ version: dictionariesTable.version });
+                    if (!updatedDictionary)
+                        throw new DictionaryVersionConflictError();
+                    dictionaryVersion = updatedDictionary.version;
+                } else {
+                    const [currentRevision] = await tx
+                        .select({ id: dictionaryCardRevisionsTable.id })
+                        .from(dictionaryCardRevisionsTable)
+                        .where(
+                            and(
+                                eq(
+                                    dictionaryCardRevisionsTable.cardId,
+                                    current.card.id,
+                                ),
+                                eq(
+                                    dictionaryCardRevisionsTable.cardVersion,
+                                    current.card.version,
+                                ),
+                            ),
+                        )
+                        .limit(1);
+                    if (!currentRevision)
+                        throw new DictionaryGenerationCandidateConflictError();
+                    revisionId = currentRevision.id;
+                }
+
+                abort(input.context);
+                await tx
+                    .update(dictionaryGenerationProposalsTable)
+                    .set({
+                        acceptedCandidateFingerprint:
+                            input.candidateFingerprint,
+                        acceptedCardVersion: card.version,
+                        acceptedDictionaryVersion: dictionaryVersion,
+                        acceptedRevisionId: revisionId,
+                        payload: null,
+                        reviewState: 'accepted',
+                        terminalAt: input.context.now,
+                        updatedAt: input.context.now,
+                    })
+                    .where(
+                        eq(dictionaryGenerationProposalsTable.jobId, job.id),
+                    );
+                await tx
+                    .update(dictionaryGenerationJobsTable)
+                    .set({ inputPayload: null, updatedAt: input.context.now })
+                    .where(eq(dictionaryGenerationJobsTable.id, job.id));
                 const acceptedJob = await this.readView(
                     tx,
                     job,
@@ -2415,158 +2685,422 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     expired: false as const,
                     value: { job: acceptedJob, outcome: acceptedJob.outcome },
                 };
-            }
-            if (proposal.reviewState === 'expired')
-                return { expired: true as const };
-            if (proposal.reviewState !== 'reviewable' || !proposal.payload)
-                throw new DictionaryGenerationNotReviewableError();
-            if (proposal.documentStagedAt && !proposal.documentPublishedAt)
-                throw new DictionaryGenerationNotReviewableError();
-            if (proposal.expiresAt <= input.context.now) {
-                await this.expireProposal(tx, job.id, input.context.now);
-                return { expired: true as const };
-            }
-            const storedProposal = parseDictionaryGenerationProposal(
-                proposal.payload,
-            );
-            const candidate = parseDictionaryGenerationProposal({
-                ...storedProposal,
-                candidate: input.candidate,
-            }).candidate;
-            const current = await this.lockCardSnapshot(tx, job);
-            abort(input.context);
-            if (
-                current.dictionary.lifecycle !== 'active' ||
-                current.card.lifecycle !== 'active' ||
-                current.dictionary.version !== job.expectedDictionaryVersion ||
-                current.settings.version !== job.expectedSettingsVersion ||
-                current.card.version !== job.expectedCardVersion ||
-                current.dictionary.sourceLanguageTag !==
-                    job.sourceLanguageTag ||
-                current.dictionary.targetLanguageTag !== job.targetLanguageTag
-            )
-                throw new DictionaryVersionConflictError();
+            },
+        );
+        if (result.expired)
+            throw new DictionaryGenerationProposalExpiredError();
+        return result.value;
+    }
 
-            const candidateOverrides = domainOverrides(candidate.overrides);
-            assertCardSettingsOverrideTransition({
-                dictionary: domainSettings(current.settings),
-                next: candidateOverrides,
-                previous: domainOverrides(wireOverrides(current.card)),
-            });
-            const candidateValues = normalizeCardValues(candidate.values);
-            const semanticChange = !areCardSemanticStatesEqual(
-                {
-                    overrides: domainOverrides(wireOverrides(current.card)),
-                    values: values(current.card),
-                },
-                { overrides: candidateOverrides, values: candidateValues },
-            );
-            const proposalEdited = !areCardSemanticStatesEqual(
-                {
-                    overrides: domainOverrides(
-                        storedProposal.candidate.overrides,
-                    ),
-                    values: storedProposal.candidate.values,
-                },
-                { overrides: candidateOverrides, values: candidateValues },
-            );
-            const authorship = resolveCardMutationAuthorship({
-                mutationKind: 'ai_proposal_accept',
-                prior: current.card.authorship,
-                proposalEdited,
-                semanticChange,
-            }).authorship;
+    public async acceptCardAuthoring(
+        input: Parameters<DictionaryGenerationStore['acceptCardAuthoring']>[0],
+    ) {
+        const result = await modelPricingTransaction(
+            this.database,
+            async (tx) => {
+                abort(input.context);
+                await lockTextAiCapacity(tx);
+                await tx
+                    .select({ id: usersTable.id })
+                    .from(usersTable)
+                    .where(eq(usersTable.id, input.ownerId))
+                    .for('update');
+                const job = await this.lockOwnedJob(
+                    tx,
+                    input.ownerId,
+                    input.jobId,
+                );
+                if (job.kind !== 'card-authoring')
+                    throw new DictionaryGenerationNotReviewableError();
+                const proposal = await this.lockProposal(tx, job.id);
+                if (!proposal)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.reviewState === 'accepted') {
+                    if (
+                        proposal.acceptedCandidateFingerprint !==
+                        input.acceptanceFingerprint
+                    )
+                        throw new DictionaryGenerationCandidateConflictError();
+                    const acceptedJob = await this.readView(
+                        tx,
+                        job,
+                        input.context.now,
+                    );
+                    if (
+                        acceptedJob.kind !== 'card-authoring' ||
+                        !acceptedJob.outcome
+                    )
+                        throw new DictionaryGenerationCandidateConflictError();
+                    return {
+                        expired: false as const,
+                        value: {
+                            job: acceptedJob,
+                            outcome: acceptedJob.outcome,
+                        },
+                    };
+                }
+                if (proposal.reviewState === 'expired')
+                    return { expired: true as const };
+                if (proposal.reviewState !== 'reviewable' || !proposal.payload)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.expiresAt <= input.context.now) {
+                    await this.expireProposal(tx, job.id, input.context.now);
+                    return { expired: true as const };
+                }
 
-            let card = current.card;
-            let dictionaryVersion = current.dictionary.version;
-            let revisionId: string;
-            if (semanticChange) {
+                const stored =
+                    DictionaryCardAuthoringProposalPayloadSchema.parse(
+                        proposal.payload,
+                    );
+                const jobInput = parseDictionaryGenerationInput(
+                    job.inputPayload,
+                );
+                if (
+                    jobInput.format !==
+                        dictionaryCardAuthoringGenerationFormat &&
+                    jobInput.format !==
+                        dictionaryCardAuthoringGenerationFormatV2 &&
+                    jobInput.format !==
+                        dictionaryCardAuthoringGenerationFormatV1
+                )
+                    throw new DictionaryGenerationCandidateConflictError();
+                const candidateValues = normalizeCardValues(
+                    input.candidate.values,
+                );
+                const candidateTranslationContext =
+                    jobInput.format === dictionaryCardAuthoringGenerationFormat
+                        ? (input.candidate.translationContext ?? null)
+                        : undefined;
+                const proposalTranslationContext =
+                    jobInput.format === dictionaryCardAuthoringGenerationFormat
+                        ? DictionaryCardAuthoringV3ProposalSchema.parse(
+                              proposal.payload,
+                          ).translationContext
+                        : undefined;
+                if (
+                    jobInput.format ===
+                        dictionaryCardAuthoringGenerationFormat &&
+                    (input.candidate.translationContext === undefined ||
+                        candidateTranslationContext !==
+                            jobInput.draft.translationContext ||
+                        proposalTranslationContext !==
+                            jobInput.translationContext)
+                )
+                    throw new DictionaryGenerationCandidateConflictError();
+                const aiAssisted = input.selectedSuggestions.length > 0;
+                if (
+                    jobInput.format ===
+                        dictionaryCardAuthoringGenerationFormatV1 &&
+                    aiAssisted &&
+                    candidateValues.source !== stored.source
+                )
+                    throw new DictionaryGenerationCandidateConflictError();
+                const suggestionsById = new Map(
+                    [
+                        ...stored.suggestions,
+                        ...(stored.sourceSuggestions ?? []),
+                    ].map((suggestion) => [suggestion.id, suggestion]),
+                );
+                for (const selected of input.selectedSuggestions) {
+                    const suggestion = suggestionsById.get(
+                        selected.suggestionId,
+                    );
+                    if (
+                        !suggestion ||
+                        suggestion.field !== selected.field ||
+                        candidateValues[selected.field] !== suggestion.value ||
+                        (suggestion.field !== 'source' &&
+                            suggestion.basisSource !== undefined &&
+                            suggestion.basisSource !== candidateValues.source)
+                    )
+                        throw new DictionaryGenerationCandidateConflictError();
+                }
+                if (
+                    usesModernCardAuthoringSemantics(jobInput.format) &&
+                    candidateValues.source !== stored.source &&
+                    input.selectedSuggestions.some(
+                        (selected) => selected.field !== 'source',
+                    ) &&
+                    !input.selectedSuggestions.some(
+                        (selected) => selected.field === 'source',
+                    )
+                )
+                    throw new DictionaryGenerationCandidateConflictError();
+
+                const [current] = await tx
+                    .select({
+                        dictionary: dictionariesTable,
+                        settings: dictionarySettingsTable,
+                    })
+                    .from(dictionariesTable)
+                    .innerJoin(
+                        dictionarySettingsTable,
+                        eq(
+                            dictionarySettingsTable.dictionaryId,
+                            dictionariesTable.id,
+                        ),
+                    )
+                    .where(
+                        and(
+                            eq(dictionariesTable.id, job.dictionaryId),
+                            eq(dictionariesTable.ownerId, input.ownerId),
+                        ),
+                    )
+                    .for('update');
+                if (!current) throw new DictionaryGenerationJobNotFoundError();
+                if (
+                    current.dictionary.lifecycle !== 'active' ||
+                    current.dictionary.version !==
+                        job.expectedDictionaryVersion ||
+                    current.settings.version !== job.expectedSettingsVersion ||
+                    current.dictionary.sourceLanguageTag !==
+                        job.sourceLanguageTag ||
+                    current.dictionary.targetLanguageTag !==
+                        job.targetLanguageTag
+                )
+                    throw new DictionaryVersionConflictError();
+                const candidateOverrides = domainOverrides(
+                    input.candidate.overrides,
+                );
+                const target =
+                    jobInput.format ===
+                    dictionaryCardAuthoringGenerationFormatV1
+                        ? ({ kind: 'create' } as const)
+                        : jobInput.target;
+                let targetCard: CardRow | null = null;
+                if (target.kind === 'update') {
+                    const [lockedCard] = await tx
+                        .select()
+                        .from(dictionaryCardsTable)
+                        .where(
+                            and(
+                                eq(dictionaryCardsTable.id, target.cardId),
+                                eq(
+                                    dictionaryCardsTable.dictionaryId,
+                                    job.dictionaryId,
+                                ),
+                                eq(dictionaryCardsTable.lifecycle, 'active'),
+                            ),
+                        )
+                        .limit(1)
+                        .for('update');
+                    if (!lockedCard) throw new DictionaryCardNotFoundError();
+                    if (lockedCard.version !== target.expectedCardVersion)
+                        throw new DictionaryVersionConflictError();
+                    targetCard = lockedCard;
+                }
+                const rawTranslationContext =
+                    jobInput.format === dictionaryCardAuthoringGenerationFormat
+                        ? candidateTranslationContext!
+                        : (targetCard?.translationContext ?? null);
+                if (
+                    jobInput.format ===
+                        dictionaryCardAuthoringGenerationFormat &&
+                    resolveTranslationContext({
+                        card: rawTranslationContext,
+                        dictionary: current.dictionary.translationContext,
+                    }) !== jobInput.translationContext
+                )
+                    throw new DictionaryGenerationCandidateConflictError();
+                assertCardSettingsOverrideTransition({
+                    dictionary: domainSettings(current.settings),
+                    next: candidateOverrides,
+                    previous: targetCard
+                        ? domainOverrides(wireOverrides(targetCard))
+                        : null,
+                });
+
+                const [cardState] = await tx
+                    .select({
+                        active: sql<number>`count(*) filter (where ${dictionaryCardsTable.lifecycle} = 'active')`,
+                        maximumSortKey: sql<
+                            string | null
+                        >`(max(${dictionaryCardsTable.sortKey}) filter (where ${dictionaryCardsTable.lifecycle} = 'active'))::text`,
+                    })
+                    .from(dictionaryCardsTable)
+                    .where(
+                        eq(dictionaryCardsTable.dictionaryId, job.dictionaryId),
+                    );
+                if (!targetCard)
+                    assertDictionaryCardCapacity(
+                        Number(cardState?.active ?? 0) + 1,
+                    );
+                const [ownerCardCount] = await tx
+                    .select({ value: count() })
+                    .from(dictionaryCardsTable)
+                    .innerJoin(
+                        dictionariesTable,
+                        eq(
+                            dictionaryCardsTable.dictionaryId,
+                            dictionariesTable.id,
+                        ),
+                    )
+                    .where(eq(dictionariesTable.ownerId, input.ownerId));
+                const [ownerDictionaryCount] = await tx
+                    .select({ value: count() })
+                    .from(dictionariesTable)
+                    .where(eq(dictionariesTable.ownerId, input.ownerId));
                 const [ownerRevisionCount] = await tx
                     .select({ value: count() })
                     .from(dictionaryCardRevisionsTable)
                     .innerJoin(
                         dictionariesTable,
                         eq(
-                            dictionariesTable.id,
                             dictionaryCardRevisionsTable.dictionaryId,
+                            dictionariesTable.id,
                         ),
                     )
                     .where(eq(dictionariesTable.ownerId, input.ownerId));
-                if (Number(ownerRevisionCount?.value ?? 0) >= 250_000)
-                    throw new DictionaryGenerationNotAvailableError();
-                abort(input.context);
-                const [updatedCard] = await tx
-                    .update(dictionaryCardsTable)
-                    .set({
-                        authorship,
-                        customNotationLabelOverride:
-                            candidateOverrides.customNotationLabel,
-                        definition: candidateValues.definition,
-                        definitionEnabledOverride:
-                            candidateOverrides.definitionEnabled,
-                        definitionLanguageRoleOverride:
-                            candidateOverrides.definitionLanguageRole,
-                        example: candidateValues.example,
-                        exampleEnabledOverride:
-                            candidateOverrides.exampleEnabled,
-                        exampleLanguageRoleOverride:
-                            candidateOverrides.exampleLanguageRole,
-                        exampleTranslation: candidateValues.exampleTranslation,
-                        exampleTranslationEnabledOverride:
-                            candidateOverrides.exampleTranslationEnabled,
-                        normalizedSource:
-                            normalizeDictionaryCardSourceForSearch(
-                                candidateValues.source,
-                            ),
-                        source: candidateValues.source,
-                        transcription: candidateValues.transcription,
-                        transcriptionEnabledOverride:
-                            candidateOverrides.transcriptionEnabled,
-                        transcriptionNotationOverride:
-                            candidateOverrides.transcriptionNotation,
-                        translation: candidateValues.translation,
-                        learningVersion:
-                            current.card.learningVersion +
-                            Number(
-                                hasLearningContentChanged({
-                                    previous: {
-                                        values: values(current.card),
-                                        settings: resolveCardSettings({
-                                            dictionary: domainSettings(
-                                                current.settings,
-                                            ),
-                                            overrides: domainOverrides(
-                                                wireOverrides(current.card),
-                                            ),
-                                        }),
-                                    },
-                                    next: {
-                                        values: candidateValues,
-                                        settings: resolveCardSettings({
-                                            dictionary: domainSettings(
-                                                current.settings,
-                                            ),
-                                            overrides: candidateOverrides,
-                                        }),
-                                    },
-                                }),
-                            ),
-                        updatedAt: input.context.now,
-                        version: current.card.version + 1,
-                    })
+                assertDictionaryOwnerCapacity(
+                    {
+                        cards: Number(ownerCardCount?.value ?? 0),
+                        dictionaries: Number(ownerDictionaryCount?.value ?? 0),
+                        revisions: Number(ownerRevisionCount?.value ?? 0),
+                    },
+                    {
+                        cards: targetCard ? 0 : 1,
+                        dictionaries: 0,
+                        revisions: 1,
+                    },
+                    dictionaryLimits,
+                );
+                const [duplicateSourceMatch] = await tx
+                    .select({ id: dictionaryCardsTable.id })
+                    .from(dictionaryCardsTable)
                     .where(
                         and(
-                            eq(dictionaryCardsTable.id, current.card.id),
                             eq(
-                                dictionaryCardsTable.version,
-                                current.card.version,
+                                dictionaryCardsTable.dictionaryId,
+                                job.dictionaryId,
                             ),
+                            eq(
+                                dictionaryCardsTable.normalizedSource,
+                                normalizeDictionaryCardSourceForSearch(
+                                    candidateValues.source,
+                                ),
+                            ),
+                            ...(targetCard
+                                ? [
+                                      sql`${dictionaryCardsTable.id} <> ${targetCard.id}`,
+                                  ]
+                                : []),
                         ),
                     )
-                    .returning();
-                if (!updatedCard) throw new DictionaryVersionConflictError();
-                card = updatedCard;
-                revisionId = this.ids.generate();
+                    .limit(1);
+                const duplicateSource = Boolean(duplicateSourceMatch);
+                abort(input.context);
+
+                const authorship = targetCard
+                    ? resolveCardMutationAuthorship({
+                          mutationKind: 'ai_proposal_accept',
+                          prior: targetCard.authorship,
+                          proposalEdited: true,
+                          semanticChange:
+                              targetCard.translationContext !==
+                                  rawTranslationContext ||
+                              !areCardSemanticStatesEqual(
+                                  {
+                                      overrides: domainOverrides(
+                                          wireOverrides(targetCard),
+                                      ),
+                                      values: values(targetCard),
+                                  },
+                                  {
+                                      overrides: candidateOverrides,
+                                      values: candidateValues,
+                                  },
+                              ),
+                      }).authorship
+                    : aiAssisted
+                      ? 'mixed'
+                      : 'human';
+                const cardId = targetCard?.id ?? this.ids.generate();
+                const cardValues = {
+                    authorship,
+                    createdAt: input.context.now,
+                    customNotationLabelOverride:
+                        candidateOverrides.customNotationLabel,
+                    definition: candidateValues.definition,
+                    definitionEnabledOverride:
+                        candidateOverrides.definitionEnabled,
+                    definitionLanguageRoleOverride:
+                        candidateOverrides.definitionLanguageRole,
+                    dictionaryId: job.dictionaryId,
+                    example: candidateValues.example,
+                    exampleEnabledOverride: candidateOverrides.exampleEnabled,
+                    exampleLanguageRoleOverride:
+                        candidateOverrides.exampleLanguageRole,
+                    exampleTranslation: candidateValues.exampleTranslation,
+                    exampleTranslationEnabledOverride:
+                        candidateOverrides.exampleTranslationEnabled,
+                    lifecycle: 'active' as const,
+                    normalizedSource: normalizeDictionaryCardSourceForSearch(
+                        candidateValues.source,
+                    ),
+                    sortKey:
+                        targetCard?.sortKey ??
+                        BigInt(cardState?.maximumSortKey ?? 0) +
+                            dictionaryCardSortGap,
+                    source: candidateValues.source,
+                    transcription: candidateValues.transcription,
+                    transcriptionEnabledOverride:
+                        candidateOverrides.transcriptionEnabled,
+                    transcriptionNotationOverride:
+                        candidateOverrides.transcriptionNotation,
+                    translation: candidateValues.translation,
+                    translationContext: rawTranslationContext,
+                    updatedAt: input.context.now,
+                };
+                const [card] = targetCard
+                    ? await tx
+                          .update(dictionaryCardsTable)
+                          .set({
+                              ...cardValues,
+                              createdAt: targetCard.createdAt,
+                              learningVersion:
+                                  targetCard.learningVersion +
+                                  Number(
+                                      hasLearningContentChanged({
+                                          previous: {
+                                              values: values(targetCard),
+                                              settings: resolveCardSettings({
+                                                  dictionary: domainSettings(
+                                                      current.settings,
+                                                  ),
+                                                  overrides: domainOverrides(
+                                                      wireOverrides(targetCard),
+                                                  ),
+                                              }),
+                                          },
+                                          next: {
+                                              values: candidateValues,
+                                              settings: resolveCardSettings({
+                                                  dictionary: domainSettings(
+                                                      current.settings,
+                                                  ),
+                                                  overrides: candidateOverrides,
+                                              }),
+                                          },
+                                      }),
+                                  ),
+                              version: targetCard.version + 1,
+                          })
+                          .where(
+                              and(
+                                  eq(dictionaryCardsTable.id, targetCard.id),
+                                  eq(
+                                      dictionaryCardsTable.version,
+                                      targetCard.version,
+                                  ),
+                              ),
+                          )
+                          .returning()
+                    : await tx
+                          .insert(dictionaryCardsTable)
+                          .values({ ...cardValues, id: cardId })
+                          .returning();
+                if (!card) throw new DictionaryVersionConflictError();
+                const revisionId = this.ids.generate();
                 await tx.insert(dictionaryCardRevisionsTable).values({
                     acceptedGenerationJobId: job.id,
                     actorUserId: input.ownerId,
@@ -2576,7 +3110,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     createdAt: input.context.now,
                     dictionaryId: card.dictionaryId,
                     id: revisionId,
-                    mutationKind: 'ai_proposal_accept',
+                    mutationKind: targetCard
+                        ? 'ai_proposal_accept'
+                        : aiAssisted
+                          ? 'ai_proposal_accept'
+                          : 'manual_create',
                     revisionNumber: card.version,
                     schemaVersion: 2,
                     settingsVersion: current.settings.version,
@@ -2604,82 +3142,29 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     .returning({ version: dictionariesTable.version });
                 if (!updatedDictionary)
                     throw new DictionaryVersionConflictError();
-                dictionaryVersion = updatedDictionary.version;
-            } else {
-                const [currentRevision] = await tx
-                    .select({ id: dictionaryCardRevisionsTable.id })
-                    .from(dictionaryCardRevisionsTable)
+
+                await tx
+                    .update(dictionaryGenerationProposalsTable)
+                    .set({
+                        acceptedCandidateFingerprint:
+                            input.acceptanceFingerprint,
+                        acceptedCardId: card.id,
+                        acceptedCardVersion: card.version,
+                        acceptedDictionaryVersion: updatedDictionary.version,
+                        acceptedDuplicateSource: duplicateSource,
+                        acceptedRevisionId: revisionId,
+                        payload: null,
+                        reviewState: 'accepted',
+                        terminalAt: input.context.now,
+                        updatedAt: input.context.now,
+                    })
                     .where(
-                        and(
-                            eq(
-                                dictionaryCardRevisionsTable.cardId,
-                                current.card.id,
-                            ),
-                            eq(
-                                dictionaryCardRevisionsTable.cardVersion,
-                                current.card.version,
-                            ),
-                        ),
-                    )
-                    .limit(1);
-                if (!currentRevision)
-                    throw new DictionaryGenerationCandidateConflictError();
-                revisionId = currentRevision.id;
-            }
-
-            abort(input.context);
-            await tx
-                .update(dictionaryGenerationProposalsTable)
-                .set({
-                    acceptedCandidateFingerprint: input.candidateFingerprint,
-                    acceptedCardVersion: card.version,
-                    acceptedDictionaryVersion: dictionaryVersion,
-                    acceptedRevisionId: revisionId,
-                    payload: null,
-                    reviewState: 'accepted',
-                    terminalAt: input.context.now,
-                    updatedAt: input.context.now,
-                })
-                .where(eq(dictionaryGenerationProposalsTable.jobId, job.id));
-            await tx
-                .update(dictionaryGenerationJobsTable)
-                .set({ inputPayload: null, updatedAt: input.context.now })
-                .where(eq(dictionaryGenerationJobsTable.id, job.id));
-            const acceptedJob = await this.readView(tx, job, input.context.now);
-            if (acceptedJob.kind !== 'single-card' || !acceptedJob.outcome)
-                throw new DictionaryGenerationCandidateConflictError();
-            return {
-                expired: false as const,
-                value: { job: acceptedJob, outcome: acceptedJob.outcome },
-            };
-        });
-        if (result.expired)
-            throw new DictionaryGenerationProposalExpiredError();
-        return result.value;
-    }
-
-    public async acceptCardAuthoring(
-        input: Parameters<DictionaryGenerationStore['acceptCardAuthoring']>[0],
-    ) {
-        const result = await modelPricingTransaction(this.database, async (tx) => {
-            abort(input.context);
-            await lockTextAiCapacity(tx);
-            await tx
-                .select({ id: usersTable.id })
-                .from(usersTable)
-                .where(eq(usersTable.id, input.ownerId))
-                .for('update');
-            const job = await this.lockOwnedJob(tx, input.ownerId, input.jobId);
-            if (job.kind !== 'card-authoring')
-                throw new DictionaryGenerationNotReviewableError();
-            const proposal = await this.lockProposal(tx, job.id);
-            if (!proposal) throw new DictionaryGenerationNotReviewableError();
-            if (proposal.reviewState === 'accepted') {
-                if (
-                    proposal.acceptedCandidateFingerprint !==
-                    input.acceptanceFingerprint
-                )
-                    throw new DictionaryGenerationCandidateConflictError();
+                        eq(dictionaryGenerationProposalsTable.jobId, job.id),
+                    );
+                await tx
+                    .update(dictionaryGenerationJobsTable)
+                    .set({ inputPayload: null, updatedAt: input.context.now })
+                    .where(eq(dictionaryGenerationJobsTable.id, job.id));
                 const acceptedJob = await this.readView(
                     tx,
                     job,
@@ -2692,426 +3177,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     throw new DictionaryGenerationCandidateConflictError();
                 return {
                     expired: false as const,
-                    value: {
-                        job: acceptedJob,
-                        outcome: acceptedJob.outcome,
-                    },
+                    value: { job: acceptedJob, outcome: acceptedJob.outcome },
                 };
-            }
-            if (proposal.reviewState === 'expired')
-                return { expired: true as const };
-            if (proposal.reviewState !== 'reviewable' || !proposal.payload)
-                throw new DictionaryGenerationNotReviewableError();
-            if (proposal.expiresAt <= input.context.now) {
-                await this.expireProposal(tx, job.id, input.context.now);
-                return { expired: true as const };
-            }
-
-            const stored = DictionaryCardAuthoringProposalPayloadSchema.parse(
-                proposal.payload,
-            );
-            const jobInput = parseDictionaryGenerationInput(job.inputPayload);
-            if (
-                jobInput.format !== dictionaryCardAuthoringGenerationFormat &&
-                jobInput.format !== dictionaryCardAuthoringGenerationFormatV2 &&
-                jobInput.format !== dictionaryCardAuthoringGenerationFormatV1
-            )
-                throw new DictionaryGenerationCandidateConflictError();
-            const candidateValues = normalizeCardValues(input.candidate.values);
-            const candidateTranslationContext =
-                jobInput.format === dictionaryCardAuthoringGenerationFormat
-                    ? (input.candidate.translationContext ?? null)
-                    : undefined;
-            const proposalTranslationContext =
-                jobInput.format === dictionaryCardAuthoringGenerationFormat
-                    ? DictionaryCardAuthoringV3ProposalSchema.parse(
-                          proposal.payload,
-                      ).translationContext
-                    : undefined;
-            if (
-                jobInput.format === dictionaryCardAuthoringGenerationFormat &&
-                (input.candidate.translationContext === undefined ||
-                    candidateTranslationContext !==
-                        jobInput.draft.translationContext ||
-                    proposalTranslationContext !== jobInput.translationContext)
-            )
-                throw new DictionaryGenerationCandidateConflictError();
-            const aiAssisted = input.selectedSuggestions.length > 0;
-            if (
-                jobInput.format === dictionaryCardAuthoringGenerationFormatV1 &&
-                aiAssisted &&
-                candidateValues.source !== stored.source
-            )
-                throw new DictionaryGenerationCandidateConflictError();
-            const suggestionsById = new Map(
-                [
-                    ...stored.suggestions,
-                    ...(stored.sourceSuggestions ?? []),
-                ].map((suggestion) => [suggestion.id, suggestion]),
-            );
-            for (const selected of input.selectedSuggestions) {
-                const suggestion = suggestionsById.get(selected.suggestionId);
-                if (
-                    !suggestion ||
-                    suggestion.field !== selected.field ||
-                    candidateValues[selected.field] !== suggestion.value ||
-                    (suggestion.field !== 'source' &&
-                        suggestion.basisSource !== undefined &&
-                        suggestion.basisSource !== candidateValues.source)
-                )
-                    throw new DictionaryGenerationCandidateConflictError();
-            }
-            if (
-                usesModernCardAuthoringSemantics(jobInput.format) &&
-                candidateValues.source !== stored.source &&
-                input.selectedSuggestions.some(
-                    (selected) => selected.field !== 'source',
-                ) &&
-                !input.selectedSuggestions.some(
-                    (selected) => selected.field === 'source',
-                )
-            )
-                throw new DictionaryGenerationCandidateConflictError();
-
-            const [current] = await tx
-                .select({
-                    dictionary: dictionariesTable,
-                    settings: dictionarySettingsTable,
-                })
-                .from(dictionariesTable)
-                .innerJoin(
-                    dictionarySettingsTable,
-                    eq(
-                        dictionarySettingsTable.dictionaryId,
-                        dictionariesTable.id,
-                    ),
-                )
-                .where(
-                    and(
-                        eq(dictionariesTable.id, job.dictionaryId),
-                        eq(dictionariesTable.ownerId, input.ownerId),
-                    ),
-                )
-                .for('update');
-            if (!current) throw new DictionaryGenerationJobNotFoundError();
-            if (
-                current.dictionary.lifecycle !== 'active' ||
-                current.dictionary.version !== job.expectedDictionaryVersion ||
-                current.settings.version !== job.expectedSettingsVersion ||
-                current.dictionary.sourceLanguageTag !==
-                    job.sourceLanguageTag ||
-                current.dictionary.targetLanguageTag !== job.targetLanguageTag
-            )
-                throw new DictionaryVersionConflictError();
-            const candidateOverrides = domainOverrides(
-                input.candidate.overrides,
-            );
-            const target =
-                jobInput.format === dictionaryCardAuthoringGenerationFormatV1
-                    ? ({ kind: 'create' } as const)
-                    : jobInput.target;
-            let targetCard: CardRow | null = null;
-            if (target.kind === 'update') {
-                const [lockedCard] = await tx
-                    .select()
-                    .from(dictionaryCardsTable)
-                    .where(
-                        and(
-                            eq(dictionaryCardsTable.id, target.cardId),
-                            eq(
-                                dictionaryCardsTable.dictionaryId,
-                                job.dictionaryId,
-                            ),
-                            eq(dictionaryCardsTable.lifecycle, 'active'),
-                        ),
-                    )
-                    .limit(1)
-                    .for('update');
-                if (!lockedCard) throw new DictionaryCardNotFoundError();
-                if (lockedCard.version !== target.expectedCardVersion)
-                    throw new DictionaryVersionConflictError();
-                targetCard = lockedCard;
-            }
-            const rawTranslationContext =
-                jobInput.format === dictionaryCardAuthoringGenerationFormat
-                    ? candidateTranslationContext!
-                    : (targetCard?.translationContext ?? null);
-            if (
-                jobInput.format === dictionaryCardAuthoringGenerationFormat &&
-                resolveTranslationContext({
-                    card: rawTranslationContext,
-                    dictionary: current.dictionary.translationContext,
-                }) !== jobInput.translationContext
-            )
-                throw new DictionaryGenerationCandidateConflictError();
-            assertCardSettingsOverrideTransition({
-                dictionary: domainSettings(current.settings),
-                next: candidateOverrides,
-                previous: targetCard
-                    ? domainOverrides(wireOverrides(targetCard))
-                    : null,
-            });
-
-            const [cardState] = await tx
-                .select({
-                    active: sql<number>`count(*) filter (where ${dictionaryCardsTable.lifecycle} = 'active')`,
-                    maximumSortKey: sql<
-                        string | null
-                    >`(max(${dictionaryCardsTable.sortKey}) filter (where ${dictionaryCardsTable.lifecycle} = 'active'))::text`,
-                })
-                .from(dictionaryCardsTable)
-                .where(eq(dictionaryCardsTable.dictionaryId, job.dictionaryId));
-            if (!targetCard)
-                assertDictionaryCardCapacity(
-                    Number(cardState?.active ?? 0) + 1,
-                );
-            const [ownerCardCount] = await tx
-                .select({ value: count() })
-                .from(dictionaryCardsTable)
-                .innerJoin(
-                    dictionariesTable,
-                    eq(dictionaryCardsTable.dictionaryId, dictionariesTable.id),
-                )
-                .where(eq(dictionariesTable.ownerId, input.ownerId));
-            const [ownerDictionaryCount] = await tx
-                .select({ value: count() })
-                .from(dictionariesTable)
-                .where(eq(dictionariesTable.ownerId, input.ownerId));
-            const [ownerRevisionCount] = await tx
-                .select({ value: count() })
-                .from(dictionaryCardRevisionsTable)
-                .innerJoin(
-                    dictionariesTable,
-                    eq(
-                        dictionaryCardRevisionsTable.dictionaryId,
-                        dictionariesTable.id,
-                    ),
-                )
-                .where(eq(dictionariesTable.ownerId, input.ownerId));
-            assertDictionaryOwnerCapacity(
-                {
-                    cards: Number(ownerCardCount?.value ?? 0),
-                    dictionaries: Number(ownerDictionaryCount?.value ?? 0),
-                    revisions: Number(ownerRevisionCount?.value ?? 0),
-                },
-                {
-                    cards: targetCard ? 0 : 1,
-                    dictionaries: 0,
-                    revisions: 1,
-                },
-                dictionaryLimits,
-            );
-            const [duplicateSourceMatch] = await tx
-                .select({ id: dictionaryCardsTable.id })
-                .from(dictionaryCardsTable)
-                .where(
-                    and(
-                        eq(dictionaryCardsTable.dictionaryId, job.dictionaryId),
-                        eq(
-                            dictionaryCardsTable.normalizedSource,
-                            normalizeDictionaryCardSourceForSearch(
-                                candidateValues.source,
-                            ),
-                        ),
-                        ...(targetCard
-                            ? [
-                                  sql`${dictionaryCardsTable.id} <> ${targetCard.id}`,
-                              ]
-                            : []),
-                    ),
-                )
-                .limit(1);
-            const duplicateSource = Boolean(duplicateSourceMatch);
-            abort(input.context);
-
-            const authorship = targetCard
-                ? resolveCardMutationAuthorship({
-                      mutationKind: 'ai_proposal_accept',
-                      prior: targetCard.authorship,
-                      proposalEdited: true,
-                      semanticChange:
-                          targetCard.translationContext !==
-                              rawTranslationContext ||
-                          !areCardSemanticStatesEqual(
-                              {
-                                  overrides: domainOverrides(
-                                      wireOverrides(targetCard),
-                                  ),
-                                  values: values(targetCard),
-                              },
-                              {
-                                  overrides: candidateOverrides,
-                                  values: candidateValues,
-                              },
-                          ),
-                  }).authorship
-                : aiAssisted
-                  ? 'mixed'
-                  : 'human';
-            const cardId = targetCard?.id ?? this.ids.generate();
-            const cardValues = {
-                authorship,
-                createdAt: input.context.now,
-                customNotationLabelOverride:
-                    candidateOverrides.customNotationLabel,
-                definition: candidateValues.definition,
-                definitionEnabledOverride: candidateOverrides.definitionEnabled,
-                definitionLanguageRoleOverride:
-                    candidateOverrides.definitionLanguageRole,
-                dictionaryId: job.dictionaryId,
-                example: candidateValues.example,
-                exampleEnabledOverride: candidateOverrides.exampleEnabled,
-                exampleLanguageRoleOverride:
-                    candidateOverrides.exampleLanguageRole,
-                exampleTranslation: candidateValues.exampleTranslation,
-                exampleTranslationEnabledOverride:
-                    candidateOverrides.exampleTranslationEnabled,
-                lifecycle: 'active' as const,
-                normalizedSource: normalizeDictionaryCardSourceForSearch(
-                    candidateValues.source,
-                ),
-                sortKey:
-                    targetCard?.sortKey ??
-                    BigInt(cardState?.maximumSortKey ?? 0) +
-                        dictionaryCardSortGap,
-                source: candidateValues.source,
-                transcription: candidateValues.transcription,
-                transcriptionEnabledOverride:
-                    candidateOverrides.transcriptionEnabled,
-                transcriptionNotationOverride:
-                    candidateOverrides.transcriptionNotation,
-                translation: candidateValues.translation,
-                translationContext: rawTranslationContext,
-                updatedAt: input.context.now,
-            };
-            const [card] = targetCard
-                ? await tx
-                      .update(dictionaryCardsTable)
-                      .set({
-                          ...cardValues,
-                          createdAt: targetCard.createdAt,
-                          learningVersion:
-                              targetCard.learningVersion +
-                              Number(
-                                  hasLearningContentChanged({
-                                      previous: {
-                                          values: values(targetCard),
-                                          settings: resolveCardSettings({
-                                              dictionary: domainSettings(
-                                                  current.settings,
-                                              ),
-                                              overrides: domainOverrides(
-                                                  wireOverrides(targetCard),
-                                              ),
-                                          }),
-                                      },
-                                      next: {
-                                          values: candidateValues,
-                                          settings: resolveCardSettings({
-                                              dictionary: domainSettings(
-                                                  current.settings,
-                                              ),
-                                              overrides: candidateOverrides,
-                                          }),
-                                      },
-                                  }),
-                              ),
-                          version: targetCard.version + 1,
-                      })
-                      .where(
-                          and(
-                              eq(dictionaryCardsTable.id, targetCard.id),
-                              eq(
-                                  dictionaryCardsTable.version,
-                                  targetCard.version,
-                              ),
-                          ),
-                      )
-                      .returning()
-                : await tx
-                      .insert(dictionaryCardsTable)
-                      .values({ ...cardValues, id: cardId })
-                      .returning();
-            if (!card) throw new DictionaryVersionConflictError();
-            const revisionId = this.ids.generate();
-            await tx.insert(dictionaryCardRevisionsTable).values({
-                acceptedGenerationJobId: job.id,
-                actorUserId: input.ownerId,
-                authorship: card.authorship,
-                cardId: card.id,
-                cardVersion: card.version,
-                createdAt: input.context.now,
-                dictionaryId: card.dictionaryId,
-                id: revisionId,
-                mutationKind: targetCard
-                    ? 'ai_proposal_accept'
-                    : aiAssisted
-                      ? 'ai_proposal_accept'
-                      : 'manual_create',
-                revisionNumber: card.version,
-                schemaVersion: 2,
-                settingsVersion: current.settings.version,
-                snapshot: revisionSnapshot(
-                    card,
-                    current.settings,
-                    current.dictionary.translationContext,
-                ),
-            });
-            const [updatedDictionary] = await tx
-                .update(dictionariesTable)
-                .set({
-                    updatedAt: input.context.now,
-                    version: current.dictionary.version + 1,
-                })
-                .where(
-                    and(
-                        eq(dictionariesTable.id, current.dictionary.id),
-                        eq(
-                            dictionariesTable.version,
-                            current.dictionary.version,
-                        ),
-                    ),
-                )
-                .returning({ version: dictionariesTable.version });
-            if (!updatedDictionary) throw new DictionaryVersionConflictError();
-
-            await tx
-                .update(dictionaryGenerationProposalsTable)
-                .set({
-                    acceptedCandidateFingerprint: input.acceptanceFingerprint,
-                    acceptedCardId: card.id,
-                    acceptedCardVersion: card.version,
-                    acceptedDictionaryVersion: updatedDictionary.version,
-                    acceptedDuplicateSource: duplicateSource,
-                    acceptedRevisionId: revisionId,
-                    payload: null,
-                    reviewState: 'accepted',
-                    terminalAt: input.context.now,
-                    updatedAt: input.context.now,
-                })
-                .where(eq(dictionaryGenerationProposalsTable.jobId, job.id));
-            await tx
-                .update(dictionaryGenerationJobsTable)
-                .set({ inputPayload: null, updatedAt: input.context.now })
-                .where(eq(dictionaryGenerationJobsTable.id, job.id));
-            const acceptedJob = await this.readView(tx, job, input.context.now);
-            if (acceptedJob.kind !== 'card-authoring' || !acceptedJob.outcome)
-                throw new DictionaryGenerationCandidateConflictError();
-            return {
-                expired: false as const,
-                value: { job: acceptedJob, outcome: acceptedJob.outcome },
-            };
-        });
+            },
+        );
         if (result.expired)
             throw new DictionaryGenerationProposalExpiredError();
         return result.value;
-    }
-
-    /** @deprecated Use acceptSingleCard through the application port. */
-    public async accept(
-        input: Parameters<DictionaryGenerationStore['acceptSingleCard']>[0],
-    ) {
-        return this.acceptSingleCard(input);
     }
 
     public async acceptBatch(
@@ -3120,30 +3192,381 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         const selected = [...input.selected].sort(
             (left, right) => left.rowIndex - right.rowIndex,
         );
-        const result = await modelPricingTransaction(this.database, async (tx) => {
-            abort(input.context);
-            await lockTextAiCapacity(tx);
-            await tx
-                .select({ id: usersTable.id })
-                .from(usersTable)
-                .where(eq(usersTable.id, input.ownerId))
-                .for('update');
-            abort(input.context);
-            const job = await this.lockOwnedJob(tx, input.ownerId, input.jobId);
-            if (
-                job.kind !== 'pasted-terms' &&
-                job.kind !== 'document-terms' &&
-                job.kind !== 'import-pairs'
-            )
-                throw new DictionaryGenerationNotReviewableError();
-            const proposal = await this.lockProposal(tx, job.id);
-            if (!proposal) throw new DictionaryGenerationNotReviewableError();
-            if (proposal.reviewState === 'accepted') {
+        const result = await modelPricingTransaction(
+            this.database,
+            async (tx) => {
+                abort(input.context);
+                await lockTextAiCapacity(tx);
+                await tx
+                    .select({ id: usersTable.id })
+                    .from(usersTable)
+                    .where(eq(usersTable.id, input.ownerId))
+                    .for('update');
+                abort(input.context);
+                const job = await this.lockOwnedJob(
+                    tx,
+                    input.ownerId,
+                    input.jobId,
+                );
                 if (
-                    proposal.acceptedCandidateFingerprint !==
-                    input.acceptanceFingerprint
+                    job.kind !== 'pasted-terms' &&
+                    job.kind !== 'document-terms' &&
+                    job.kind !== 'import-pairs'
                 )
-                    throw new DictionaryGenerationCandidateConflictError();
+                    throw new DictionaryGenerationNotReviewableError();
+                const proposal = await this.lockProposal(tx, job.id);
+                if (!proposal)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.reviewState === 'accepted') {
+                    if (
+                        proposal.acceptedCandidateFingerprint !==
+                        input.acceptanceFingerprint
+                    )
+                        throw new DictionaryGenerationCandidateConflictError();
+                    const acceptedJob = await this.readView(
+                        tx,
+                        job,
+                        input.context.now,
+                    );
+                    if (
+                        ![
+                            'pasted-terms',
+                            'document-terms',
+                            'import-pairs',
+                        ].includes(acceptedJob.kind) ||
+                        !acceptedJob.outcome ||
+                        !('cards' in acceptedJob.outcome)
+                    )
+                        throw new DictionaryGenerationCandidateConflictError();
+                    return {
+                        expired: false as const,
+                        value: {
+                            job: acceptedJob,
+                            outcome: acceptedJob.outcome,
+                        },
+                    };
+                }
+                if (proposal.reviewState === 'expired')
+                    return { expired: true as const };
+                if (proposal.reviewState !== 'reviewable' || !proposal.payload)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.documentStagedAt && !proposal.documentPublishedAt)
+                    throw new DictionaryGenerationNotReviewableError();
+                if (proposal.expiresAt <= input.context.now) {
+                    await this.expireProposal(tx, job.id, input.context.now);
+                    return { expired: true as const };
+                }
+
+                const storedProposal =
+                    job.kind === 'import-pairs'
+                        ? parseDictionaryImportPairsGenerationProposal(
+                              proposal.payload,
+                          )
+                        : parseDictionaryBatchGenerationProposal(
+                              proposal.payload,
+                          );
+                const storedCandidates = new Map(
+                    storedProposal.candidates.map((candidate) => [
+                        candidate.rowIndex,
+                        candidate,
+                    ]),
+                );
+                const acceptedCandidates = selected.map((selection) => {
+                    const stored = storedCandidates.get(selection.rowIndex);
+                    if (!stored)
+                        throw new DictionaryGenerationCandidateConflictError();
+                    const candidate = parseDictionaryGenerationProposal({
+                        candidate: selection.candidate,
+                        fieldFeedback: stored.fieldFeedback,
+                        warnings: [],
+                    }).candidate;
+                    const candidateOverrides = domainOverrides(
+                        candidate.overrides,
+                    );
+                    const candidateValues = normalizeCardValues(
+                        candidate.values,
+                    );
+                    const proposalEdited = !areCardSemanticStatesEqual(
+                        {
+                            overrides: domainOverrides(
+                                stored.candidate.overrides,
+                            ),
+                            values: stored.candidate.values,
+                        },
+                        {
+                            overrides: candidateOverrides,
+                            values: candidateValues,
+                        },
+                    );
+                    return {
+                        authorship:
+                            job.kind === 'import-pairs' || proposalEdited
+                                ? ('mixed' as const)
+                                : ('ai-generated' as const),
+                        overrides: candidateOverrides,
+                        rowIndex: selection.rowIndex,
+                        values: candidateValues,
+                    };
+                });
+
+                const [current] = await tx
+                    .select({
+                        dictionary: dictionariesTable,
+                        settings: dictionarySettingsTable,
+                    })
+                    .from(dictionariesTable)
+                    .innerJoin(
+                        dictionarySettingsTable,
+                        eq(
+                            dictionarySettingsTable.dictionaryId,
+                            dictionariesTable.id,
+                        ),
+                    )
+                    .where(
+                        and(
+                            eq(dictionariesTable.id, job.dictionaryId),
+                            eq(dictionariesTable.ownerId, input.ownerId),
+                        ),
+                    )
+                    .for('update');
+                if (!current) throw new DictionaryGenerationJobNotFoundError();
+                if (
+                    current.dictionary.lifecycle !== 'active' ||
+                    current.dictionary.version !==
+                        job.expectedDictionaryVersion ||
+                    current.settings.version !== job.expectedSettingsVersion ||
+                    current.dictionary.sourceLanguageTag !==
+                        job.sourceLanguageTag ||
+                    current.dictionary.targetLanguageTag !==
+                        job.targetLanguageTag
+                )
+                    throw new DictionaryVersionConflictError();
+                for (const candidate of acceptedCandidates) {
+                    assertCardSettingsOverrideTransition({
+                        dictionary: domainSettings(current.settings),
+                        next: candidate.overrides,
+                        previous: null,
+                    });
+                }
+
+                const [dictionaryCardState] = await tx
+                    .select({
+                        active: sql<number>`count(*) filter (where ${dictionaryCardsTable.lifecycle} = 'active')`,
+                        maximumSortKey: sql<
+                            string | null
+                        >`(max(${dictionaryCardsTable.sortKey}) filter (where ${dictionaryCardsTable.lifecycle} = 'active'))::text`,
+                    })
+                    .from(dictionaryCardsTable)
+                    .where(
+                        eq(dictionaryCardsTable.dictionaryId, job.dictionaryId),
+                    );
+                const existingSources = await tx
+                    .select({
+                        cardId: dictionaryCardsTable.id,
+                        source: dictionaryCardsTable.source,
+                    })
+                    .from(dictionaryCardsTable)
+                    .where(
+                        eq(dictionaryCardsTable.dictionaryId, job.dictionaryId),
+                    )
+                    .orderBy(
+                        asc(dictionaryCardsTable.createdAt),
+                        asc(dictionaryCardsTable.id),
+                    );
+                const acceptanceWarnings =
+                    createDictionaryBatchDuplicateWarnings(
+                        acceptedCandidates.map((candidate) => ({
+                            input: candidate.values.source,
+                            rowIndex: candidate.rowIndex,
+                        })),
+                        existingSources,
+                    );
+                assertDictionaryCardCapacity(
+                    Number(dictionaryCardState?.active ?? 0) +
+                        acceptedCandidates.length,
+                );
+                const [ownerCardCount] = await tx
+                    .select({ value: count() })
+                    .from(dictionaryCardsTable)
+                    .innerJoin(
+                        dictionariesTable,
+                        eq(
+                            dictionaryCardsTable.dictionaryId,
+                            dictionariesTable.id,
+                        ),
+                    )
+                    .where(eq(dictionariesTable.ownerId, input.ownerId));
+                const [ownerDictionaryCount] = await tx
+                    .select({ value: count() })
+                    .from(dictionariesTable)
+                    .where(eq(dictionariesTable.ownerId, input.ownerId));
+                const [ownerRevisionCount] = await tx
+                    .select({ value: count() })
+                    .from(dictionaryCardRevisionsTable)
+                    .innerJoin(
+                        dictionariesTable,
+                        eq(
+                            dictionaryCardRevisionsTable.dictionaryId,
+                            dictionariesTable.id,
+                        ),
+                    )
+                    .where(eq(dictionariesTable.ownerId, input.ownerId));
+                assertDictionaryOwnerCapacity(
+                    {
+                        cards: Number(ownerCardCount?.value ?? 0),
+                        dictionaries: Number(ownerDictionaryCount?.value ?? 0),
+                        revisions: Number(ownerRevisionCount?.value ?? 0),
+                    },
+                    {
+                        cards: acceptedCandidates.length,
+                        dictionaries: 0,
+                        revisions: acceptedCandidates.length,
+                    },
+                    dictionaryLimits,
+                );
+                abort(input.context);
+
+                const maximumSortKey = BigInt(
+                    dictionaryCardState?.maximumSortKey ?? 0,
+                );
+                const cardInserts = acceptedCandidates.map(
+                    (candidate, index) => ({
+                        authorship: candidate.authorship,
+                        createdAt: input.context.now,
+                        customNotationLabelOverride:
+                            candidate.overrides.customNotationLabel,
+                        definition: candidate.values.definition,
+                        definitionEnabledOverride:
+                            candidate.overrides.definitionEnabled,
+                        definitionLanguageRoleOverride:
+                            candidate.overrides.definitionLanguageRole,
+                        dictionaryId: job.dictionaryId,
+                        example: candidate.values.example,
+                        exampleEnabledOverride:
+                            candidate.overrides.exampleEnabled,
+                        exampleLanguageRoleOverride:
+                            candidate.overrides.exampleLanguageRole,
+                        exampleTranslation: candidate.values.exampleTranslation,
+                        exampleTranslationEnabledOverride:
+                            candidate.overrides.exampleTranslationEnabled,
+                        id: this.ids.generate(),
+                        lifecycle: 'active' as const,
+                        normalizedSource:
+                            normalizeDictionaryCardSourceForSearch(
+                                candidate.values.source,
+                            ),
+                        sortKey:
+                            maximumSortKey +
+                            BigInt(index + 1) * dictionaryCardSortGap,
+                        source: candidate.values.source,
+                        transcription: candidate.values.transcription,
+                        transcriptionEnabledOverride:
+                            candidate.overrides.transcriptionEnabled,
+                        transcriptionNotationOverride:
+                            candidate.overrides.transcriptionNotation,
+                        translation: candidate.values.translation,
+                        updatedAt: input.context.now,
+                    }),
+                );
+                const insertedCards = await tx
+                    .insert(dictionaryCardsTable)
+                    .values(cardInserts)
+                    .returning();
+                if (insertedCards.length !== acceptedCandidates.length)
+                    throw new DictionaryVersionConflictError();
+                const cardsById = new Map(
+                    insertedCards.map((card) => [card.id, card]),
+                );
+                const orderedCards = cardInserts.map((insert) => {
+                    const card = cardsById.get(insert.id);
+                    if (!card) throw new DictionaryVersionConflictError();
+                    return card;
+                });
+                await tx.insert(dictionaryCardRevisionsTable).values(
+                    orderedCards.map((card) => ({
+                        acceptedGenerationJobId: job.id,
+                        actorUserId: input.ownerId,
+                        authorship: card.authorship,
+                        cardId: card.id,
+                        cardVersion: card.version,
+                        createdAt: input.context.now,
+                        dictionaryId: card.dictionaryId,
+                        id: this.ids.generate(),
+                        mutationKind: 'ai_proposal_accept' as const,
+                        revisionNumber: card.version,
+                        schemaVersion: 2,
+                        settingsVersion: current.settings.version,
+                        snapshot: revisionSnapshot(
+                            card,
+                            current.settings,
+                            current.dictionary.translationContext,
+                        ),
+                    })),
+                );
+                const [updatedDictionary] = await tx
+                    .update(dictionariesTable)
+                    .set({
+                        updatedAt: input.context.now,
+                        version: current.dictionary.version + 1,
+                    })
+                    .where(
+                        and(
+                            eq(dictionariesTable.id, current.dictionary.id),
+                            eq(
+                                dictionariesTable.version,
+                                current.dictionary.version,
+                            ),
+                        ),
+                    )
+                    .returning({ version: dictionariesTable.version });
+                if (!updatedDictionary)
+                    throw new DictionaryVersionConflictError();
+                const outcome =
+                    job.kind === 'import-pairs'
+                        ? DictionaryImportPairsGenerationAcceptedOutcomeSchema.parse(
+                              {
+                                  authorship: 'mixed',
+                                  cards: orderedCards.map((card, index) => ({
+                                      cardId: card.id,
+                                      cardVersion: card.version,
+                                      rowIndex:
+                                          acceptedCandidates[index]!.rowIndex,
+                                  })),
+                                  dictionaryVersion: updatedDictionary.version,
+                                  warnings: acceptanceWarnings,
+                              },
+                          )
+                        : DictionaryPastedTermsGenerationAcceptedOutcomeSchema.parse(
+                              {
+                                  cards: orderedCards.map((card, index) => ({
+                                      cardId: card.id,
+                                      cardVersion: card.version,
+                                      rowIndex:
+                                          acceptedCandidates[index]!.rowIndex,
+                                  })),
+                                  dictionaryVersion: updatedDictionary.version,
+                                  warnings: acceptanceWarnings,
+                              },
+                          );
+
+                await tx
+                    .update(dictionaryGenerationProposalsTable)
+                    .set({
+                        acceptedBatchOutcome: outcome,
+                        acceptedCandidateFingerprint:
+                            input.acceptanceFingerprint,
+                        payload: null,
+                        reviewState: 'accepted',
+                        terminalAt: input.context.now,
+                        updatedAt: input.context.now,
+                    })
+                    .where(
+                        eq(dictionaryGenerationProposalsTable.jobId, job.id),
+                    );
+                await tx
+                    .update(dictionaryGenerationJobsTable)
+                    .set({ inputPayload: null, updatedAt: input.context.now })
+                    .where(eq(dictionaryGenerationJobsTable.id, job.id));
                 const acceptedJob = await this.readView(
                     tx,
                     job,
@@ -3163,322 +3586,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     expired: false as const,
                     value: { job: acceptedJob, outcome: acceptedJob.outcome },
                 };
-            }
-            if (proposal.reviewState === 'expired')
-                return { expired: true as const };
-            if (proposal.reviewState !== 'reviewable' || !proposal.payload)
-                throw new DictionaryGenerationNotReviewableError();
-            if (proposal.documentStagedAt && !proposal.documentPublishedAt)
-                throw new DictionaryGenerationNotReviewableError();
-            if (proposal.expiresAt <= input.context.now) {
-                await this.expireProposal(tx, job.id, input.context.now);
-                return { expired: true as const };
-            }
-
-            const storedProposal =
-                job.kind === 'import-pairs'
-                    ? parseDictionaryImportPairsGenerationProposal(
-                          proposal.payload,
-                      )
-                    : parseDictionaryBatchGenerationProposal(proposal.payload);
-            const storedCandidates = new Map(
-                storedProposal.candidates.map((candidate) => [
-                    candidate.rowIndex,
-                    candidate,
-                ]),
-            );
-            const acceptedCandidates = selected.map((selection) => {
-                const stored = storedCandidates.get(selection.rowIndex);
-                if (!stored)
-                    throw new DictionaryGenerationCandidateConflictError();
-                const candidate = parseDictionaryGenerationProposal({
-                    candidate: selection.candidate,
-                    fieldFeedback: stored.fieldFeedback,
-                    warnings: [],
-                }).candidate;
-                const candidateOverrides = domainOverrides(candidate.overrides);
-                const candidateValues = normalizeCardValues(candidate.values);
-                const proposalEdited = !areCardSemanticStatesEqual(
-                    {
-                        overrides: domainOverrides(stored.candidate.overrides),
-                        values: stored.candidate.values,
-                    },
-                    {
-                        overrides: candidateOverrides,
-                        values: candidateValues,
-                    },
-                );
-                return {
-                    authorship:
-                        job.kind === 'import-pairs' || proposalEdited
-                            ? ('mixed' as const)
-                            : ('ai-generated' as const),
-                    overrides: candidateOverrides,
-                    rowIndex: selection.rowIndex,
-                    values: candidateValues,
-                };
-            });
-
-            const [current] = await tx
-                .select({
-                    dictionary: dictionariesTable,
-                    settings: dictionarySettingsTable,
-                })
-                .from(dictionariesTable)
-                .innerJoin(
-                    dictionarySettingsTable,
-                    eq(
-                        dictionarySettingsTable.dictionaryId,
-                        dictionariesTable.id,
-                    ),
-                )
-                .where(
-                    and(
-                        eq(dictionariesTable.id, job.dictionaryId),
-                        eq(dictionariesTable.ownerId, input.ownerId),
-                    ),
-                )
-                .for('update');
-            if (!current) throw new DictionaryGenerationJobNotFoundError();
-            if (
-                current.dictionary.lifecycle !== 'active' ||
-                current.dictionary.version !== job.expectedDictionaryVersion ||
-                current.settings.version !== job.expectedSettingsVersion ||
-                current.dictionary.sourceLanguageTag !==
-                    job.sourceLanguageTag ||
-                current.dictionary.targetLanguageTag !== job.targetLanguageTag
-            )
-                throw new DictionaryVersionConflictError();
-            for (const candidate of acceptedCandidates) {
-                assertCardSettingsOverrideTransition({
-                    dictionary: domainSettings(current.settings),
-                    next: candidate.overrides,
-                    previous: null,
-                });
-            }
-
-            const [dictionaryCardState] = await tx
-                .select({
-                    active: sql<number>`count(*) filter (where ${dictionaryCardsTable.lifecycle} = 'active')`,
-                    maximumSortKey: sql<
-                        string | null
-                    >`(max(${dictionaryCardsTable.sortKey}) filter (where ${dictionaryCardsTable.lifecycle} = 'active'))::text`,
-                })
-                .from(dictionaryCardsTable)
-                .where(eq(dictionaryCardsTable.dictionaryId, job.dictionaryId));
-            const existingSources = await tx
-                .select({
-                    cardId: dictionaryCardsTable.id,
-                    source: dictionaryCardsTable.source,
-                })
-                .from(dictionaryCardsTable)
-                .where(eq(dictionaryCardsTable.dictionaryId, job.dictionaryId))
-                .orderBy(
-                    asc(dictionaryCardsTable.createdAt),
-                    asc(dictionaryCardsTable.id),
-                );
-            const acceptanceWarnings = createDictionaryBatchDuplicateWarnings(
-                acceptedCandidates.map((candidate) => ({
-                    input: candidate.values.source,
-                    rowIndex: candidate.rowIndex,
-                })),
-                existingSources,
-            );
-            assertDictionaryCardCapacity(
-                Number(dictionaryCardState?.active ?? 0) +
-                    acceptedCandidates.length,
-            );
-            const [ownerCardCount] = await tx
-                .select({ value: count() })
-                .from(dictionaryCardsTable)
-                .innerJoin(
-                    dictionariesTable,
-                    eq(dictionaryCardsTable.dictionaryId, dictionariesTable.id),
-                )
-                .where(eq(dictionariesTable.ownerId, input.ownerId));
-            const [ownerDictionaryCount] = await tx
-                .select({ value: count() })
-                .from(dictionariesTable)
-                .where(eq(dictionariesTable.ownerId, input.ownerId));
-            const [ownerRevisionCount] = await tx
-                .select({ value: count() })
-                .from(dictionaryCardRevisionsTable)
-                .innerJoin(
-                    dictionariesTable,
-                    eq(
-                        dictionaryCardRevisionsTable.dictionaryId,
-                        dictionariesTable.id,
-                    ),
-                )
-                .where(eq(dictionariesTable.ownerId, input.ownerId));
-            assertDictionaryOwnerCapacity(
-                {
-                    cards: Number(ownerCardCount?.value ?? 0),
-                    dictionaries: Number(ownerDictionaryCount?.value ?? 0),
-                    revisions: Number(ownerRevisionCount?.value ?? 0),
-                },
-                {
-                    cards: acceptedCandidates.length,
-                    dictionaries: 0,
-                    revisions: acceptedCandidates.length,
-                },
-                dictionaryLimits,
-            );
-            abort(input.context);
-
-            const maximumSortKey = BigInt(
-                dictionaryCardState?.maximumSortKey ?? 0,
-            );
-            const cardInserts = acceptedCandidates.map((candidate, index) => ({
-                authorship: candidate.authorship,
-                createdAt: input.context.now,
-                customNotationLabelOverride:
-                    candidate.overrides.customNotationLabel,
-                definition: candidate.values.definition,
-                definitionEnabledOverride:
-                    candidate.overrides.definitionEnabled,
-                definitionLanguageRoleOverride:
-                    candidate.overrides.definitionLanguageRole,
-                dictionaryId: job.dictionaryId,
-                example: candidate.values.example,
-                exampleEnabledOverride: candidate.overrides.exampleEnabled,
-                exampleLanguageRoleOverride:
-                    candidate.overrides.exampleLanguageRole,
-                exampleTranslation: candidate.values.exampleTranslation,
-                exampleTranslationEnabledOverride:
-                    candidate.overrides.exampleTranslationEnabled,
-                id: this.ids.generate(),
-                lifecycle: 'active' as const,
-                normalizedSource: normalizeDictionaryCardSourceForSearch(
-                    candidate.values.source,
-                ),
-                sortKey:
-                    maximumSortKey + BigInt(index + 1) * dictionaryCardSortGap,
-                source: candidate.values.source,
-                transcription: candidate.values.transcription,
-                transcriptionEnabledOverride:
-                    candidate.overrides.transcriptionEnabled,
-                transcriptionNotationOverride:
-                    candidate.overrides.transcriptionNotation,
-                translation: candidate.values.translation,
-                updatedAt: input.context.now,
-            }));
-            const insertedCards = await tx
-                .insert(dictionaryCardsTable)
-                .values(cardInserts)
-                .returning();
-            if (insertedCards.length !== acceptedCandidates.length)
-                throw new DictionaryVersionConflictError();
-            const cardsById = new Map(
-                insertedCards.map((card) => [card.id, card]),
-            );
-            const orderedCards = cardInserts.map((insert) => {
-                const card = cardsById.get(insert.id);
-                if (!card) throw new DictionaryVersionConflictError();
-                return card;
-            });
-            await tx.insert(dictionaryCardRevisionsTable).values(
-                orderedCards.map((card) => ({
-                    acceptedGenerationJobId: job.id,
-                    actorUserId: input.ownerId,
-                    authorship: card.authorship,
-                    cardId: card.id,
-                    cardVersion: card.version,
-                    createdAt: input.context.now,
-                    dictionaryId: card.dictionaryId,
-                    id: this.ids.generate(),
-                    mutationKind: 'ai_proposal_accept' as const,
-                    revisionNumber: card.version,
-                    schemaVersion: 2,
-                    settingsVersion: current.settings.version,
-                    snapshot: revisionSnapshot(
-                        card,
-                        current.settings,
-                        current.dictionary.translationContext,
-                    ),
-                })),
-            );
-            const [updatedDictionary] = await tx
-                .update(dictionariesTable)
-                .set({
-                    updatedAt: input.context.now,
-                    version: current.dictionary.version + 1,
-                })
-                .where(
-                    and(
-                        eq(dictionariesTable.id, current.dictionary.id),
-                        eq(
-                            dictionariesTable.version,
-                            current.dictionary.version,
-                        ),
-                    ),
-                )
-                .returning({ version: dictionariesTable.version });
-            if (!updatedDictionary) throw new DictionaryVersionConflictError();
-            const outcome =
-                job.kind === 'import-pairs'
-                    ? DictionaryImportPairsGenerationAcceptedOutcomeSchema.parse(
-                          {
-                              authorship: 'mixed',
-                              cards: orderedCards.map((card, index) => ({
-                                  cardId: card.id,
-                                  cardVersion: card.version,
-                                  rowIndex: acceptedCandidates[index]!.rowIndex,
-                              })),
-                              dictionaryVersion: updatedDictionary.version,
-                              warnings: acceptanceWarnings,
-                          },
-                      )
-                    : DictionaryPastedTermsGenerationAcceptedOutcomeSchema.parse(
-                          {
-                              cards: orderedCards.map((card, index) => ({
-                                  cardId: card.id,
-                                  cardVersion: card.version,
-                                  rowIndex: acceptedCandidates[index]!.rowIndex,
-                              })),
-                              dictionaryVersion: updatedDictionary.version,
-                              warnings: acceptanceWarnings,
-                          },
-                      );
-
-            await tx
-                .update(dictionaryGenerationProposalsTable)
-                .set({
-                    acceptedBatchOutcome: outcome,
-                    acceptedCandidateFingerprint: input.acceptanceFingerprint,
-                    payload: null,
-                    reviewState: 'accepted',
-                    terminalAt: input.context.now,
-                    updatedAt: input.context.now,
-                })
-                .where(eq(dictionaryGenerationProposalsTable.jobId, job.id));
-            await tx
-                .update(dictionaryGenerationJobsTable)
-                .set({ inputPayload: null, updatedAt: input.context.now })
-                .where(eq(dictionaryGenerationJobsTable.id, job.id));
-            const acceptedJob = await this.readView(tx, job, input.context.now);
-            if (
-                !['pasted-terms', 'document-terms', 'import-pairs'].includes(
-                    acceptedJob.kind,
-                ) ||
-                !acceptedJob.outcome ||
-                !('cards' in acceptedJob.outcome)
-            )
-                throw new DictionaryGenerationCandidateConflictError();
-            return {
-                expired: false as const,
-                value: { job: acceptedJob, outcome: acceptedJob.outcome },
-            };
-        });
+            },
+        );
         if (result.expired)
             throw new DictionaryGenerationProposalExpiredError();
         return result.value;
-    }
-
-    public async acceptPastedTerms(
-        input: Parameters<DictionaryGenerationStore['acceptPastedTerms']>[0],
-    ) {
-        return this.acceptBatch(input);
     }
 
     public async claim(

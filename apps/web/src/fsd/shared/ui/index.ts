@@ -119,7 +119,6 @@ export {
     PopoverItem,
     PopoverSeparator,
     PopoverTrigger,
-    type LegacyPopoverProps,
     type PopoverAnchorProps,
     type PopoverCloseProps,
     type PopoverContentProps,

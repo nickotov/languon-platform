@@ -10,11 +10,6 @@ source_paths:
     - apps/web/src/fsd/features/speech-playback/**
     - apps/backend/src/modules/speech/**
     - apps/backend/src/modules/speech/infrastructure/audio/**
-    - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/audio-schema.ts
-    - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-store.ts
-    - apps/backend/src/modules/dictionaries/interface/http/dictionary-audio.routes.ts
-    - apps/web/src/fsd/features/dictionary-audio
-    - packages/contracts/src/dictionaries/audio.ts
 related_features:
     - shared-pronunciation-playback
     - dictionary-platform
@@ -28,7 +23,7 @@ e2e_scenarios:
     - repeat-play-reuses-audio-and-edits-refresh
     - audio-failure-retry-and-selection-cancellation
     - archived-or-removed-owner-cannot-play-audio
-last_verified: 2026-10-14
+last_verified: 2026-10-19
 ---
 
 # Dictionary pronunciation audio

@@ -713,7 +713,7 @@ run('pasted-term generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
-        await generationStore.acceptPastedTerms({
+        await generationStore.acceptBatch({
             acceptanceFingerprint: fingerprint('X'),
             context: operationContext(5),
             jobId: job.id,
@@ -846,7 +846,7 @@ run('pasted-term generation persistence', () => {
             },
         };
         const acceptanceFingerprint = fingerprint('C');
-        const accepted = await generationStore.acceptPastedTerms({
+        const accepted = await generationStore.acceptBatch({
             acceptanceFingerprint,
             context: operationContext(4),
             jobId: job.id,
@@ -911,7 +911,7 @@ run('pasted-term generation persistence', () => {
         });
 
         await expect(
-            generationStore.acceptPastedTerms({
+            generationStore.acceptBatch({
                 acceptanceFingerprint,
                 context: operationContext(5),
                 jobId: job.id,
@@ -926,7 +926,7 @@ run('pasted-term generation persistence', () => {
             }),
         ).resolves.toEqual(accepted);
         await expect(
-            generationStore.acceptPastedTerms({
+            generationStore.acceptBatch({
                 acceptanceFingerprint: fingerprint('D'),
                 context: operationContext(6),
                 jobId: job.id,
@@ -960,7 +960,7 @@ run('pasted-term generation persistence', () => {
             .where(eq(dictionariesTable.id, dictionary.id));
 
         await expect(
-            generationStore.acceptPastedTerms({
+            generationStore.acceptBatch({
                 acceptanceFingerprint: fingerprint('E'),
                 context: operationContext(5),
                 jobId: job.id,
@@ -993,7 +993,7 @@ run('pasted-term generation persistence', () => {
             .where(eq(dictionarySettingsTable.dictionaryId, dictionary.id));
 
         await expect(
-            generationStore.acceptPastedTerms({
+            generationStore.acceptBatch({
                 acceptanceFingerprint: fingerprint('S'),
                 context: operationContext(5),
                 jobId: job.id,
@@ -1277,7 +1277,7 @@ run('pasted-term generation persistence', () => {
         `);
 
         await expect(
-            generationStore.acceptPastedTerms({
+            generationStore.acceptBatch({
                 acceptanceFingerprint: fingerprint('I'),
                 context: operationContext(5),
                 jobId: job.id,

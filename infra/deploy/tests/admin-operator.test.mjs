@@ -14,10 +14,22 @@ import {
     validateRemoteAdminTarget,
 } from '../../../scripts/admin-membership-remote.mjs';
 
+import { EMPTY_DICTIONARY_JOB_CAPABILITIES } from '../lib/manifest.mjs';
+
 const sha = 'b'.repeat(40);
 const digest = 'a'.repeat(64);
 const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    dictionaryJobs: {
+        ...EMPTY_DICTIONARY_JOB_CAPABILITIES,
+        generationBudget: {
+            maxInputTokensPerAttempt: 65536,
+            maxOutputTokensPerAttempt: 1024,
+            inputCostMicrosPerMillionTokens: 1000000,
+            outputCostMicrosPerMillionTokens: 4000000,
+            maxCostMicrosPerAttempt: 70000,
+        },
+    },
     identity: 'stage-admin-test',
     version: null,
     sourceSha: sha,

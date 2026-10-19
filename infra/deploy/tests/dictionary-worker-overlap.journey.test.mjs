@@ -10,7 +10,10 @@ import {
     DICTIONARY_WORKER_DATABASE_PRIVILEGE_QUERY,
     Deployment,
 } from '../lib/deployment.mjs';
-import { validateReleaseManifest } from '../lib/manifest.mjs';
+import {
+    EMPTY_DICTIONARY_JOB_CAPABILITIES,
+    validateReleaseManifest,
+} from '../lib/manifest.mjs';
 import { runCommand } from '../lib/runner.mjs';
 
 const digest = 'a'.repeat(64);
@@ -57,13 +60,10 @@ function release(identity, phase, apiEnqueued, capabilityOverrides = {}) {
     });
 }
 
-function historicalRelease() {
-    const { dictionaryJobs: _, ...manifest } = release('legacy', 'expand', []);
-    return validateReleaseManifest({
-        ...manifest,
-        schemaVersion: 1,
-        identity: 'legacy',
-        sourceSha: 'd'.repeat(40),
+function emptyCapabilityRelease() {
+    return release('empty', 'expand', [], {
+        ...EMPTY_DICTIONARY_JOB_CAPABILITIES,
+        generationBudget: baseCapabilities.generationBudget,
     });
 }
 
@@ -86,9 +86,8 @@ const config = {
     TLS_CERTIFICATE_PATH: '/tls/cert',
     TLS_PRIVATE_KEY_PATH: '/tls/key',
     DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
-    DICTIONARY_GENERATION_MODEL_API_KEY: 'synthetic-deployment-test-key',
-    DICTIONARY_GENERATION_MODEL_BASE_URL: 'https://models.example.test',
-    DICTIONARY_GENERATION_MODEL_ID: 'provider/model-v1',
+    DEEPSEEK_API_KEY: 'synthetic-deployment-test-key',
+    DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
     DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '65536',
     DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '1024',
     DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS: '1000000',
@@ -335,8 +334,8 @@ test('activate, steady expand patch, and rollback restore the activated release'
     ]);
 });
 
-test('rollback from initial expand to schema-v1 runs the drain gate without retirement metadata', async () => {
-    const legacy = historicalRelease();
+test('rollback from initial expand to an empty current release runs the drain gate without retirement metadata', async () => {
+    const legacy = emptyCapabilityRelease();
     const expand = release('expand', 'expand', []);
     const { calls, deployment } = await fixture(legacy);
     await deployment.deploy();

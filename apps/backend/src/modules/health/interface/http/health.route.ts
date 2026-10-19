@@ -1,5 +1,4 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
-import { HealthResponseSchema } from '@languon/contracts';
 
 export interface DependencyReadiness {
     postgres: 'ok' | 'unavailable';
@@ -11,22 +10,6 @@ export interface HealthRouteOptions {
     readiness: () => Promise<DependencyReadiness>;
     releaseSha: string;
 }
-
-const legacyHealthRoute = createRoute({
-    method: 'get',
-    path: '/health',
-    responses: {
-        200: {
-            content: {
-                'application/json': {
-                    schema: HealthResponseSchema,
-                },
-            },
-            description: 'Compatibility liveness response for the API process.',
-        },
-    },
-    tags: ['Operations'],
-});
 
 const LiveResponseSchema = z.object({
     release: z.string(),
@@ -89,9 +72,6 @@ export function createHealthRoutes(
     options: HealthRouteOptions = defaultOptions,
 ): OpenAPIHono {
     return new OpenAPIHono()
-        .openapi(legacyHealthRoute, (context) =>
-            context.json({ service: 'backend', status: 'ok' }, 200),
-        )
         .openapi(liveRoute, (context) =>
             context.json(
                 {

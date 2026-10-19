@@ -44,8 +44,8 @@ const response: AiSettingsResponse = {
                         outputCreditsPerMillionTokens: 3_000_000,
                         revision: 1,
                     },
-                    id: 'deepseek-chat',
-                    label: 'DeepSeek Chat',
+                    id: 'deepseek-flash',
+                    label: 'DeepSeek Flash',
                     available: true,
                     supportedFormats: ['card:v1'],
                     unavailableReason: null,
@@ -81,8 +81,8 @@ const response: AiSettingsResponse = {
     ],
     settings: {
         activeProvider: 'deepseek',
-        defaultModel: 'deepseek-chat',
-        enabledModels: ['deepseek-chat'],
+        defaultModel: 'deepseek-flash',
+        enabledModels: ['deepseek-flash'],
         updatedAt: '2026-09-23T09:00:00.000Z',
         version: 4,
     },
@@ -108,16 +108,16 @@ describe('AI settings form behavior', () => {
             toMutationRequest(
                 {
                     activeProvider: 'deepseek',
-                    defaultModel: 'deepseek-chat',
-                    enabledModels: ['deepseek-chat'],
+                    defaultModel: 'deepseek-flash',
+                    enabledModels: ['deepseek-flash'],
                     reason: '  Change the production default  ',
                 },
                 response.settings.version,
             ),
         ).toEqual({
             activeProvider: 'deepseek',
-            defaultModel: 'deepseek-chat',
-            enabledModels: ['deepseek-chat'],
+            defaultModel: 'deepseek-flash',
+            enabledModels: ['deepseek-flash'],
             expectedVersion: 4,
             reason: 'Change the production default',
         });
@@ -127,7 +127,7 @@ describe('AI settings form behavior', () => {
         const handleChange = vi.fn();
         render(
             <ProviderCard
-                enabledModelIds={['deepseek-chat', 'gemini-2.5-pro']}
+                enabledModelIds={['deepseek-flash', 'gemini-2.5-pro']}
                 onEnabledModelsChange={handleChange}
                 provider={response.providers[0]!}
             />,
@@ -139,7 +139,7 @@ describe('AI settings form behavior', () => {
             screen.getByText(/1,000,000 input.*3,000,000 output.*400,000/),
         ).toBeInTheDocument();
         fireEvent.click(
-            screen.getByRole('checkbox', { name: /DeepSeek Chat/i }),
+            screen.getByRole('checkbox', { name: /DeepSeek Flash/i }),
         );
         expect(handleChange).toHaveBeenCalledWith(['gemini-2.5-pro']);
     });

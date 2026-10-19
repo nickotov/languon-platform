@@ -68,6 +68,10 @@ function requiredInteger(options, name) {
 }
 
 function createManifest(options) {
+    if (options.has('pronunciation-audio'))
+        fail(
+            'Retired --pronunciation-audio is unsupported; use --shared-speech.',
+        );
     const sourceSha = required(options, 'source-sha');
     const identity = required(options, 'identity');
     const workflowRunText = required(options, 'workflow-run');
@@ -146,12 +150,11 @@ function createManifest(options) {
             },
         },
         images,
-        ...(options.has('pronunciation-audio')
-            ? {
-                  pronunciationAudio: JSON.parse(
-                      required(options, 'pronunciation-audio'),
-                  ),
-              }
+        ...(options.has('shared-speech')
+            ? { sharedSpeech: JSON.parse(required(options, 'shared-speech')) }
+            : {}),
+        ...(options.has('model-pricing')
+            ? { modelPricing: JSON.parse(required(options, 'model-pricing')) }
             : {}),
     });
 }

@@ -135,7 +135,7 @@ worker-local parser child <------ bounded IPC ------------------------+
   adding that format to API enqueue. Activation is a later manifest change after
   the deployed rollback floor advertises that format's complete lifecycle.
   Illustrative single-card deployment tests need not activate pasted terms.
-  Historical schema-v1 manifests normalize to empty job capabilities.
+  Release manifests require schema v2 with explicit job capabilities; retired schema-v1 manifests are rejected.
 - Claims return a monotonically increasing fencing token. Every heartbeat,
   stage/result, proposal, release, and terminal write compares current owner,
   token, state, and deadline; stale output is discarded.

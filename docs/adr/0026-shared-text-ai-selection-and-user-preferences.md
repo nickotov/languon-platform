@@ -4,7 +4,7 @@ id: ADR-0026
 title: Shared text AI selection and user preferences
 status: accepted
 date: 2026-10-04
-superseded_in_part_by: 'ADR-0037: contextual-conversation Auto selects compatible Flash; other tasks unchanged'
+superseded_in_part_by: 'ADR-0037: contextual-conversation Auto selects compatible Flash; other tasks unchanged; ADR-0038 retired DeepSeek Chat/arbitrary legacy model execution'
 supersedes: 'ADR-0021 configuration ownership and global-only selection; other routing guarantees remain active'
 ---
 

@@ -188,20 +188,6 @@ export interface DictionaryGenerationStore {
             | DictionaryPastedTermsGenerationAcceptedOutcome
             | DictionaryImportPairsGenerationAcceptedOutcome;
     }>;
-    /** @deprecated Use acceptBatch; retained for source compatibility. */
-    acceptPastedTerms(input: {
-        acceptanceFingerprint: string;
-        context: DictionaryOperationContext;
-        jobId: string;
-        ownerId: string;
-        selected: Array<{
-            candidate: DictionaryGenerationCandidate;
-            rowIndex: number;
-        }>;
-    }): Promise<{
-        job: DictionaryGenerationJobView;
-        outcome: DictionaryPastedTermsGenerationAcceptedOutcome;
-    }>;
     cancel(input: {
         context: DictionaryOperationContext;
         jobId: string;

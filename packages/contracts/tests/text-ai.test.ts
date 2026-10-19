@@ -14,7 +14,7 @@ describe('text AI public contracts', () => {
         expect(
             UpdateTextAiPreferenceRequestSchema.safeParse({
                 mode: 'explicit',
-                modelId: 'deepseek-chat',
+                modelId: 'deepseek-flash',
                 expectedVersion: 2,
             }).success,
         ).toBe(true);
@@ -29,7 +29,7 @@ describe('text AI public contracts', () => {
             UpdateTextAiPreferenceRequestSchema.safeParse({
                 mode: 'auto',
                 expectedVersion: 0,
-                modelId: 'deepseek-chat',
+                modelId: 'deepseek-flash',
             }).success,
         ).toBe(false);
     });

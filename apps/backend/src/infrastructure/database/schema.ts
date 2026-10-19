@@ -1,3 +1,5 @@
+import { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
+export { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
 import * as knowledgeSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/schema';
 import * as conversationSchema from '../../modules/conversations/infrastructure/persistence/drizzle/schema';
 import * as conversationCallSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-provider-call-schema';
@@ -132,20 +134,8 @@ import {
     dictionarySettingsTable,
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
-export {
-    dictionaryAudioAssetsTable,
-    dictionaryAudioJobsTable,
-    dictionaryAudioBindingsTable,
-    dictionaryAudioBlobsTable,
-} from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
-import {
-    dictionaryAudioAssetsTable,
-    dictionaryAudioJobsTable,
-    dictionaryAudioBindingsTable,
-    dictionaryAudioBlobsTable,
-} from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
-
 export const databaseSchema = {
+    speechAudioBlobs: speechAudioBlobsTable,
     ...knowledgeSchema,
     ...conversationSchema,
     ...conversationCallSchema,
@@ -168,10 +158,6 @@ export const databaseSchema = {
     aiCreditHistory: aiCreditHistoryTable,
     aiCreditReservationAllocations: aiCreditReservationAllocationsTable,
     aiCreditReservations: aiCreditReservationsTable,
-    dictionaryAudioAssets: dictionaryAudioAssetsTable,
-    dictionaryAudioJobs: dictionaryAudioJobsTable,
-    dictionaryAudioBindings: dictionaryAudioBindingsTable,
-    dictionaryAudioBlobs: dictionaryAudioBlobsTable,
     accountDeletionRequests: accountDeletionRequestsTable,
     adminAuditEvents: adminAuditEventsTable,
     adminMemberships: adminMembershipsTable,

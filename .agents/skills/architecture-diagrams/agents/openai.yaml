@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Architecture Diagrams'
+    short_description: 'Maintain source-backed architecture and flow diagrams'
+    default_prompt: 'Use $architecture-diagrams to create or update current-state diagrams from code, accepted ADRs and current docs, then verify freshness and the local viewer.'

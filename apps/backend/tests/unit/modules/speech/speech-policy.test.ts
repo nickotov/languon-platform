@@ -32,6 +32,7 @@ describe('shared pronunciation normalization and pricing', () => {
                 'synthetic-secret',
                 language,
                 normalizeSpeechText(text),
+                'pronunciation',
             );
         expect(key('  e\u0301tude  ')).toBe(key('étude'));
         expect(key('Hello')).not.toBe(key('hello'));
@@ -39,10 +40,10 @@ describe('shared pronunciation normalization and pricing', () => {
         expect(key('pain', 'fr')).not.toBe(key('pain', 'en'));
         expect(key('hello!')).not.toBe(key('hello'));
     });
-    it('separates fixture tones from pronunciation while preserving normalized sharing and legacy identity', () => {
+    it('separates fixture tones from pronunciation while preserving normalized sharing', () => {
         const key = (
             text: string,
-            recordingClass?: 'fixture' | 'pronunciation',
+            recordingClass: 'fixture' | 'pronunciation',
         ) =>
             speechTextIdentity(
                 'synthetic-secret',
@@ -55,8 +56,6 @@ describe('shared pronunciation normalization and pricing', () => {
         );
         expect(key('  e\u0301tude  ', 'fixture')).toBe(key('étude', 'fixture'));
         expect(key('étude', 'fixture')).not.toBe(key('étude', 'pronunciation'));
-        expect(key('étude')).not.toBe(key('étude', 'pronunciation'));
-        expect(key('étude')).not.toBe(key('étude', 'fixture'));
     });
     it('preserves vertical separators as line breaks in normalized text and cache identity', () => {
         const key = (text: string) =>
@@ -64,6 +63,7 @@ describe('shared pronunciation normalization and pricing', () => {
                 'synthetic-secret',
                 'en',
                 normalizeSpeechText(text),
+                'pronunciation',
             );
         for (const separator of [
             '\n',

@@ -713,17 +713,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }).runOnce(),
             ).toBe(true);
         };
-        const seedLegacy = async (ready: boolean) => {
-            // Represent pre-isolation rows directly at INSERT, preserving the
+        const seedRecording = async (ready: boolean) => {
+            // Seed scoped rows directly at INSERT, preserving the
             // real immutable-recording and worker-transition guards.
             const id = randomUUID();
             const canonicalKey = speechTextIdentity(
                 'synthetic-shared-speech-secret',
                 'fr',
                 text,
+                providerKind === 'fixture' ? 'fixture' : 'pronunciation',
             );
             const audio = createFixtureAudio();
-            const reference = await storage.put(`speech/legacy/${id}`, audio);
+            const reference = await storage.put(`speech/scoped/${id}`, audio);
             await db.insert(speechRecordingsTable).values({
                 id,
                 canonicalKey,
@@ -759,12 +760,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     recoveryDeadline: new Date(now.getTime() + 86_400_000),
                 });
         };
-        for (const legacy of [false, true]) {
+        {
             for (const firstProvider of ['fixture', 'kie'] as const) {
-                it(`isolates ${legacy ? 'legacy' : 'scoped'} ${firstProvider} cached audio from the other recording class`, async () => {
+                it(`isolates scoped ${firstProvider} cached audio from the other recording class`, async () => {
                     providerKind = firstProvider;
-                    if (legacy) await seedLegacy(true);
-                    else {
+                    {
                         await prepare(actors[0]!);
                         await finishRecording();
                     }
@@ -773,7 +773,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expect((await prepare(actors[1]!)).state).toBe('queued');
                     expect(
                         await db.select().from(speechJobsTable),
-                    ).toHaveLength(legacy ? 1 : 2);
+                    ).toHaveLength(2);
                     await finishRecording();
                     expect((await prepare(actors[1]!)).state).toBe('ready');
                     const recordings = await db
@@ -788,9 +788,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expect((await wallet(actors[1]!)).consumedCredits).toBe(0n);
                 });
             }
-            it(`does not join ${legacy ? 'legacy' : 'scoped'} pending fixture jobs when live pronunciation is requested`, async () => {
-                if (legacy) await seedLegacy(false);
-                else await prepare(actors[0]!);
+            it(`does not join scoped pending fixture jobs when live pronunciation is requested`, async () => {
+                await prepare(actors[0]!);
                 providerKind = 'kie';
                 const prepared = await prepare(actors[1]!);
                 expect(prepared.state).toBe('queued');
@@ -800,17 +799,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     2,
                 );
                 const bindings = await db.select().from(speechBindingsTable);
-                expect(new Set(bindings.map((row) => row.jobId)).size).toBe(
-                    legacy ? 1 : 2,
-                );
+                expect(new Set(bindings.map((row) => row.jobId)).size).toBe(2);
                 expect(
                     bindings.find((row) => row.actorId === actors[1]!)!.jobId,
                 ).not.toBe(jobs.find((row) => row.payerId === actors[0]!)!.id);
             });
         }
-        it('reuses legacy pronunciation audio even when the current model no longer supports its language', async () => {
+        it('reuses scoped pronunciation audio even when the current model no longer supports its language', async () => {
             providerKind = 'kie';
-            await seedLegacy(true);
+            await seedRecording(true);
             supported = false;
             expect(
                 await store.availability(actors[1]!, source, {
@@ -822,8 +819,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect((await prepare(actors[1]!)).state).toBe('ready');
             expect(await db.select().from(speechJobsTable)).toHaveLength(0);
         });
-        it('does not advertise legacy fixture audio as pronunciation for unsupported languages', async () => {
-            await seedLegacy(true);
+        it('does not advertise scoped fixture audio as pronunciation for unsupported languages', async () => {
+            await seedRecording(true);
             providerKind = 'kie';
             supported = false;
             expect(

@@ -85,8 +85,3 @@
     color: var(--primary-default);
     padding: var(--space-4) var(--space-8);
 }
-
-.divider {
-    border: 0;
-    border-top: 1px solid var(--border-default);
-}

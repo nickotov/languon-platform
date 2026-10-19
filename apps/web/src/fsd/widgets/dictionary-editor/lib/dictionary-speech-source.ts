@@ -1,5 +1,4 @@
 import type {
-    DictionaryAudioField,
     DictionaryCard,
     OwnedDictionary,
     SpeechSource,
@@ -9,7 +8,7 @@ import type {
 export function dictionarySpeechSource(
     dictionary: Pick<OwnedDictionary, 'id' | 'version' | 'settingsVersion'>,
     card: Pick<DictionaryCard, 'id' | 'version' | 'settingsVersion'>,
-    field: DictionaryAudioField,
+    field: Extract<SpeechSource, { kind: 'dictionary-field' }>['field'],
 ): Extract<SpeechSource, { kind: 'dictionary-field' }> {
     return {
         kind: 'dictionary-field',

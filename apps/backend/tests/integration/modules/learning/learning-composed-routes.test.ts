@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-// @user-flow-revision flashcard-training-backend sha256:e4849ac44de6247b
+// @user-flow-revision flashcard-training-backend sha256:fbfa0ab1619194dd
 import {
     AuthenticationSuccessResponseSchema,
     DictionaryResponseSchema,

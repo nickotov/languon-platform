@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision user-ai-model-preferences-backend sha256:1eb78a4d4c46a816
+// @user-flow-revision user-ai-model-preferences-backend sha256:0c068e37f21ea036
 import {
     AuthenticationSuccessResponseSchema,
     DictionaryCardResponseSchema,
@@ -309,8 +309,8 @@ run('real composed text-AI preference HTTP journey', () => {
                     expect.objectContaining({
                         availability: 'available',
                         enabled: true,
-                        id: 'deepseek-chat',
-                        label: 'DeepSeek Chat',
+                        id: 'deepseek-flash',
+                        label: 'DeepSeek Flash',
                     }),
                     expect.objectContaining({
                         availability: 'available',
@@ -333,7 +333,7 @@ run('real composed text-AI preference HTTP journey', () => {
             ).toMatchObject({
                 mode: 'auto',
                 modelId: null,
-                selectedModel: { id: 'deepseek-chat' },
+                selectedModel: { id: 'deepseek-flash' },
                 version: 0,
             });
 

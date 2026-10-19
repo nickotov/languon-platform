@@ -47,7 +47,7 @@ Use Node.js 24, the repository pnpm version, and installed workspace dependencie
 For manual verification, start the existing local infrastructure and applications
 using the [authentication guide](user-authentication.md#start-the-development-environment).
 The web app is `http://localhost:3333`; backend health is
-`http://localhost:4000/health`. Use only synthetic `example.test` accounts.
+`http://localhost:4000/livez`. Use only synthetic `example.test` accounts.
 
 Automated journeys use the existing disposable PostgreSQL/Redis harness in
 [`apps/web/tests/e2e/README.md`](../../apps/web/tests/e2e/README.md). Export its

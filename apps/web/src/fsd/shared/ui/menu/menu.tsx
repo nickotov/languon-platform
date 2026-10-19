@@ -123,6 +123,9 @@ export function Menu({
     }
 
     function closeAndRestoreFocus() {
+        // A selected action may open a dialog in this commit. Give its native
+        // opener capture the persistent trigger rather than a departing item.
+        triggerRef.current?.focus({ preventScroll: true });
         setOpen(false);
 
         queueMicrotask(() =>

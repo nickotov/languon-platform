@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Development Cleanup'
+    short_description: 'Retire evidenced stale code and development data'
+    default_prompt: 'Use $development-cleanup to audit and remove obsolete compatibility paths within the authorized scope, verify current behavior, and record any data cleanup.'

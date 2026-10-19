@@ -4,7 +4,7 @@ id: ADR-0020
 title: 'Dictionary pronunciation audio'
 status: accepted
 date: 2026-09-21
-superseded_in_part_by: 'ADR-0031 shared speech ownership, deduplication, development storage and successful-recording retention'
+superseded_in_part_by: 'ADR-0031 shared speech ownership, deduplication, development storage and successful-recording retention; ADR-0040 owner-scoped protocol and one-time cutover retirement'
 supersedes: 'None'
 ---
 

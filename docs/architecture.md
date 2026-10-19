@@ -12,6 +12,11 @@ source_paths:
 
 # Architecture
 
+Browse the [source-backed diagram atlas](diagrams/README.md) with `pnpm diagrams`
+for system boundaries and authentication, AI/accounting, learning, Texts,
+Knowledge, audio and operational flows. Each diagram records its implementation
+and ADR inputs and reports changes since review.
+
 ## System boundaries
 
 Languon begins as a modular monorepo. Applications own delivery concerns while

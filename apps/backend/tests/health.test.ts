@@ -2,27 +2,32 @@ import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app';
 
-describe('health endpoint', () => {
-    it('reports that the backend is ready', async () => {
-        const response = await createApp().request('/health');
+describe('operational endpoints', () => {
+    it('reports default process liveness', async () => {
+        const response = await createApp().request('/livez');
 
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual({
+            release: 'development',
             service: 'backend',
             status: 'ok',
         });
     });
 
-    it('publishes the health operation in OpenAPI', async () => {
+    it('publishes only current operational routes in OpenAPI', async () => {
         const response = await createApp().request('/openapi.json');
         const document = (await response.json()) as {
             paths?: Record<string, unknown>;
         };
 
         expect(response.status).toBe(200);
-        expect(document.paths).toHaveProperty('/health');
+        expect(document.paths).not.toHaveProperty('/health');
         expect(document.paths).toHaveProperty('/livez');
         expect(document.paths).toHaveProperty('/readyz');
+    });
+
+    it('does not serve the retired compatibility liveness alias', async () => {
+        expect((await createApp().request('/health')).status).toBe(404);
     });
 
     it('reports release identity without coupling liveness to dependencies', async () => {

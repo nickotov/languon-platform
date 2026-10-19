@@ -31,7 +31,7 @@ describe('Mastra development server policy', () => {
         expect(() =>
             enforceDevelopmentHarnessProcessPolicy({
                 DEEPSEEK_BASE_URL: 'http://127.0.0.1:7777/attacker',
-                MASTRA_MODEL_ID: 'deepseek/deepseek-chat',
+                MASTRA_MODEL_ID: 'deepseek/deepseek-flash',
             }),
         ).toThrow('DEEPSEEK_BASE_URL is not supported');
         expect(() =>

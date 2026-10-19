@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:29f2d2b9405ea161
+// @user-flow-revision shared-pronunciation-playback sha256:78ad180c5e1dd88f
 // @user-flow-revision sentence-practice-web sha256:30e6921701e3a8f5
 
 import {
@@ -632,7 +632,11 @@ test.describe('sentence practice and model preferences', () => {
         );
         let readerAuthorization = `Bearer ${readerToken}`;
         reader.on('request', (request) => {
-            if (!request.url().startsWith(apiOrigin)) return;
+            const requestUrl = new URL(request.url());
+            const sameOriginApi =
+                requestUrl.origin === new URL(reader.url()).origin &&
+                requestUrl.pathname.startsWith('/api/');
+            if (requestUrl.origin !== apiOrigin && !sameOriginApi) return;
             const authorization = request.headers()['authorization'];
             if (authorization) readerAuthorization = authorization;
         });

@@ -26,7 +26,7 @@ export default defineConfig({
             command:
                 'pnpm --filter @languon/backend exec tsx tests/support/texts-web-server.ts',
             env: { ...env, APP_ENV: 'test', TEXTS_WEB_FIXTURE: 'true' },
-            url: 'http://127.0.0.1:4005/health',
+            url: 'http://127.0.0.1:4005/livez',
             timeout: 120_000,
             reuseExistingServer: process.env.TEXTS_WEB_REUSE_SERVERS === 'true',
         },

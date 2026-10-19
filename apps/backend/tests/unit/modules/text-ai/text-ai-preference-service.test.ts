@@ -15,11 +15,11 @@ function harness() {
         version: 0,
     };
     const catalog: TextAiModelsResponse = {
-        defaultModelId: 'deepseek-chat',
+        defaultModelId: 'deepseek-flash',
         models: [
             {
-                id: 'deepseek-chat',
-                label: 'DeepSeek Chat',
+                id: 'deepseek-flash',
+                label: 'DeepSeek Flash',
                 enabled: true,
                 capabilities: ['structured-text'],
                 availability: 'available',
@@ -54,7 +54,7 @@ describe('text AI preference service', () => {
             mode: 'auto',
             modelId: null,
             version: 0,
-            selectedModel: { id: 'deepseek-chat' },
+            selectedModel: { id: 'deepseek-flash' },
         });
         expect(save).not.toHaveBeenCalled();
     });
@@ -63,12 +63,12 @@ describe('text AI preference service', () => {
         await expect(
             service.update('learner', {
                 mode: 'explicit',
-                modelId: 'deepseek-chat',
+                modelId: 'deepseek-flash',
                 expectedVersion: 0,
             }),
         ).resolves.toMatchObject({
             mode: 'explicit',
-            modelId: 'deepseek-chat',
+            modelId: 'deepseek-flash',
             version: 1,
         });
         await expect(
@@ -95,7 +95,7 @@ describe('text AI preference service', () => {
         await expect(
             service.update('learner', {
                 mode: 'explicit',
-                modelId: 'deepseek-chat',
+                modelId: 'deepseek-flash',
                 expectedVersion: 0,
             }),
         ).rejects.toBeInstanceOf(TextAiModelUnavailableError);
@@ -105,14 +105,14 @@ describe('text AI preference service', () => {
         const { service, catalog } = harness();
         await service.update('learner', {
             mode: 'explicit',
-            modelId: 'deepseek-chat',
+            modelId: 'deepseek-flash',
             expectedVersion: 0,
         });
         catalog.models[0]!.availability = 'disabled';
         catalog.models[0]!.enabled = false;
         await expect(service.get('learner')).resolves.toMatchObject({
             mode: 'explicit',
-            modelId: 'deepseek-chat',
+            modelId: 'deepseek-flash',
             version: 1,
             selectedModel: { availability: 'disabled' },
         });

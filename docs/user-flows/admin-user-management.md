@@ -89,7 +89,7 @@ admin E2E test database.
    `pnpm dev:web`, and `pnpm dev:admin`. The admin Vite server proxies its
    same-origin `/api/*` requests to the local backend.
 
-Expected result: `/health`, the public web sign-in page, and the admin sign-in
+Expected result: `/livez`, the public web sign-in page, and the admin sign-in
 page respond locally. The browser never receives a database URL, Redis URL, JWT
 secret, or owner-management credential.
 

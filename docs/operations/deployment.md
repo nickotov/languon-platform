@@ -78,8 +78,7 @@ Production images are built from the repository root with:
 
 Every deployed manifest pins all four images by digest and records
 `RELEASE_SHA`. Backend liveness is `/livez`; backend readiness is `/readyz` and
-requires PostgreSQL and Redis. The compatibility `/health` endpoint remains
-available but is not a deployment gate. Web and admin readiness is `/healthz`.
+requires PostgreSQL and Redis. Web and admin readiness is `/healthz`.
 NGINX routes same-origin `/api/*` to backend with the `/api` prefix removed.
 
 The backend digest also starts one private dictionary-worker service in each

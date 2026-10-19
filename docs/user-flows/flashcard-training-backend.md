@@ -64,7 +64,7 @@ entry IDs and a live unlisted share link using the existing dictionary API guide
 Use the link's fragment key in the dedicated `X-Languon-Share-Key` header only;
 never put it in a query parameter, body, logs or saved request collection.
 Use verified bearer credentials for personal operations; do not paste real
-tokens into documentation. Inspect `/health` and the actual OpenAPI operations
+tokens into documentation. Inspect `/livez` and the actual OpenAPI operations
 in `/openapi.json` before proceeding. No destructive local reset is necessary.
 
 ## API verification

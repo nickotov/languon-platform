@@ -49,10 +49,6 @@ export class DictionaryGenerationService {
     public constructor(
         private readonly dependencies: {
             authentication: DictionaryAuthentication;
-            pronunciationAudio?: {
-                playbackAvailable: boolean;
-                generationAvailable: boolean;
-            };
             capabilities: DictionaryGenerationApiCapabilities;
             clock: DictionaryClock;
             cryptography: DictionaryCryptography;
@@ -67,9 +63,6 @@ export class DictionaryGenerationService {
     ) {
         await this.owner(accessToken, context);
         return {
-            ...(this.dependencies.pronunciationAudio
-                ? { pronunciationAudio: this.dependencies.pronunciationAudio }
-                : {}),
             cardAuthoringGeneration: {
                 available: this.supports(
                     'enqueued',

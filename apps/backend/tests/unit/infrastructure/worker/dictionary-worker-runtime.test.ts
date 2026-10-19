@@ -339,18 +339,6 @@ describe('DictionaryWorkerRuntime', () => {
     });
 
     it('periodically logs only the fixed sanitized operational fields', async () => {
-        const audioMeasurement = {
-            schemaVersion: 1 as const,
-            queueQueuedCount: 2,
-            queueSubmittingCount: 1,
-            queueWaitingProviderCount: 3,
-            queueStoringCount: 4,
-            submissionUnknownCount: 0,
-            liveLeaseCount: 1,
-            reservedDailyCostUnits: 100,
-            cleanupPendingCount: 2,
-            cleanupOldestAgeMs: 86400000,
-        };
         let resolveMeasured!: () => void;
         const measured = new Promise<void>((resolve) => {
             resolveMeasured = resolve;
@@ -358,10 +346,7 @@ describe('DictionaryWorkerRuntime', () => {
         const logger = {
             error: vi.fn(),
             info: vi.fn((message: string) => {
-                if (
-                    message ===
-                    'Dictionary pronunciation operational measurement.'
-                )
+                if (message === 'Dictionary worker operational measurement.')
                     resolveMeasured();
             }),
         };
@@ -373,12 +358,6 @@ describe('DictionaryWorkerRuntime', () => {
             pollIntervalMs: 50,
             readinessTimeoutMs: 1_000,
             service: {
-                observeAudioState: async () =>
-                    ({
-                        ...audioMeasurement,
-                        text: 'private card text',
-                        taskId: 'object key',
-                    }) as typeof audioMeasurement,
                 observeOperationalState: async () =>
                     ({
                         ...operationalMeasurement,
@@ -407,10 +386,6 @@ describe('DictionaryWorkerRuntime', () => {
         expect(logger.info).toHaveBeenCalledWith(
             'Dictionary worker operational measurement.',
             operationalMeasurement,
-        );
-        expect(logger.info).toHaveBeenCalledWith(
-            'Dictionary pronunciation operational measurement.',
-            audioMeasurement,
         );
         expect(JSON.stringify(logger.info.mock.calls)).not.toContain(
             'private card text',

@@ -25,8 +25,8 @@ function snapshot(modelId: string, format: string): TextAiExecutionSnapshot {
 }
 
 describe('reviewed Texts execution limits', () => {
-    it('preserves dictionary and legacy route limits', () => {
-        for (const modelId of ['deepseek-chat', 'deepseek-flash']) {
+    it('preserves dictionary request limits', () => {
+        for (const modelId of ['deepseek-flash']) {
             const execution = snapshot(modelId, 'single-card:v2');
             expect(execution.perCallMaxOutputTokens).toBe(8192);
             expect(
@@ -36,10 +36,6 @@ describe('reviewed Texts execution limits', () => {
                 ).id,
             ).toBe(modelId);
         }
-        expect(
-            snapshot('deepseek-chat', 'text-translation:v2')
-                .perCallMaxOutputTokens,
-        ).toBe(8192);
     });
 
     it('passes the pinned reviewed Flash translation limits to the adapter', () => {

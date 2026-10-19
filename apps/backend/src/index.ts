@@ -46,10 +46,8 @@ import { createAuthenticationComposition } from './modules/authentication/infras
 import { createDictionaryComposition } from './modules/dictionaries/infrastructure/dictionary-composition';
 import { createLearningComposition } from './modules/learning/infrastructure/learning-composition';
 import { createTextAiModule } from './modules/text-ai/infrastructure/text-ai-composition';
-import { createDictionaryAudioAdapters } from './modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
-import { dictionaryAudioBudget } from './modules/dictionaries/infrastructure/audio/dictionary-audio-budget';
-import { loadDictionaryAudioEnvironment } from './modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
-import { DrizzleDictionaryAudioStore } from './modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-store';
+import { createDictionaryAudioAdapters } from './modules/speech/infrastructure/audio/dictionary-audio-adapters';
+import { loadDictionaryAudioEnvironment } from './modules/speech/infrastructure/audio/dictionary-audio-environment';
 import { createDictionaryDocumentS3Client } from './modules/dictionaries/infrastructure/document/s3-document-client';
 import { S3DictionaryDocumentUploadStorage } from './modules/dictionaries/infrastructure/document/s3-dictionary-document-storage';
 import { UserProfileService } from './modules/users/application/user-profile-service';
@@ -118,18 +116,6 @@ const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
 });
 
 if (
-    deployed &&
-    audioEnvironment.generationEnabled &&
-    !environment.SPEECH_GENERATION_ENABLED &&
-    !process.env.DICTIONARY_AUDIO_API_ENQUEUED_VERSIONS?.split(',').includes(
-        '1',
-    )
-) {
-    throw new Error(
-        'Pronunciation generation requires release-compatible API enqueue metadata.',
-    );
-}
-if (
     ['staging', 'production'].includes(environment.APP_ENV) &&
     environment.SPEECH_GENERATION_ENABLED &&
     (!process.env.SPEECH_API_ENQUEUED_VERSIONS?.split(',').includes('1') ||
@@ -164,20 +150,6 @@ const speech = createSpeechInfrastructure({
 });
 const dictionaries = createDictionaryComposition({
     ...authentication.productDependencies,
-    audio: {
-        fingerprintSecret: audioEnvironment.fingerprintSecret,
-        store: new DrizzleDictionaryAudioStore(
-            authentication.productDependencies.database,
-        ),
-        storage: audioAdapters.storage,
-        provider: audioAdapters.provider,
-        budget: dictionaryAudioBudget(audioEnvironment),
-        playbackEnabled:
-            process.env.DICTIONARY_AUDIO_PLAYBACK_ENABLED === 'true',
-        generationEnabled:
-            audioEnvironment.generationEnabled &&
-            !environment.SPEECH_GENERATION_ENABLED,
-    },
     generation: {
         acceptableFormats: environment.DICTIONARY_JOB_API_ACCEPTABLE_FORMATS,
         cancellableFormats: environment.DICTIONARY_JOB_API_CANCELLABLE_FORMATS,

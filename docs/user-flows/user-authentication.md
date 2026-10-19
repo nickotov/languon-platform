@@ -140,7 +140,7 @@ Expected endpoints:
 
 - Web: `http://localhost:3333`
 - Browser API: `http://localhost:3333/api/*` (development proxy)
-- Backend health: `http://localhost:4000/health`
+- Backend health: `http://localhost:4000/livez`
 - OpenAPI: `http://localhost:4000/openapi.json`
 
 Browser requests use `/api/auth/...` through the web development proxy. Direct
@@ -155,7 +155,7 @@ public local secrets and verification/recovery code `0000`.
 Confirm the backend and authentication capabilities before creating data:
 
 ```sh
-curl --fail-with-body http://localhost:4000/health
+curl --fail-with-body http://localhost:4000/livez
 curl --fail-with-body http://localhost:4000/auth/capabilities
 ```
 

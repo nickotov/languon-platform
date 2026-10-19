@@ -235,8 +235,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         id: '0198c304-3f0d-7279-bfc6-1de92e25a20c',
                         occurredAt: now,
                     },
-                    defaultModel: 'deepseek-chat',
-                    enabledModels: ['deepseek-chat'],
+                    defaultModel: 'deepseek-flash',
+                    enabledModels: ['deepseek-flash'],
                     expectedVersion: 0,
                     reason: 'Enable verified dictionary AI provider',
                     revisionId: '0198c304-7b38-74a3-b07d-7307aa917df2',
@@ -244,8 +244,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                 expect(response.settings).toMatchObject({
                     activeProvider: 'deepseek',
-                    defaultModel: 'deepseek-chat',
-                    enabledModels: ['deepseek-chat'],
+                    defaultModel: 'deepseek-flash',
+                    enabledModels: ['deepseek-flash'],
                     version: 1,
                 });
                 expect(
@@ -294,8 +294,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             id: '0198c305-3f0d-7279-bfc6-1de92e25a20c',
                             occurredAt: now,
                         },
-                        defaultModel: 'deepseek-chat',
-                        enabledModels: ['deepseek-chat'],
+                        defaultModel: 'deepseek-flash',
+                        enabledModels: ['deepseek-flash'],
                         expectedVersion: 0,
                         reason: 'Attempt stale dictionary AI update',
                         revisionId: '0198c305-7b38-74a3-b07d-7307aa917df2',
@@ -385,8 +385,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 : '0198c307-3f0d-7279-bfc6-1de92e25a20c',
                         occurredAt: now,
                     },
-                    defaultModel: 'deepseek-chat',
-                    enabledModels: ['deepseek-chat'],
+                    defaultModel: 'deepseek-flash',
+                    enabledModels: ['deepseek-flash'],
                     expectedVersion: 0,
                     reason: `Concurrent reviewed AI update ${suffix}`,
                     revisionId:

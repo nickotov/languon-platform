@@ -25,65 +25,6 @@ function fixture() {
 }
 
 describe('AccountPurgeService', () => {
-    it('fails closed for audio inventory when no audio storage adapter is available', async () => {
-        const { input, service, store } = fixture();
-        store.inspectOwner.mockResolvedValue({
-            activeJobs: 0,
-            objects: [
-                {
-                    kind: 'pronunciation-audio',
-                    cleanupState: 'complete',
-                    reference: {
-                        backend: 's3',
-                        namespace: 'audio',
-                        key: 'asset',
-                    },
-                },
-            ],
-        });
-        await expect(service.processNext(input)).rejects.toThrow(
-            'Pronunciation storage is unavailable',
-        );
-        expect(store.finish).not.toHaveBeenCalled();
-    });
-
-    it('dispatches audio references separately and waits for physical deletion', async () => {
-        const { input, store, storage } = fixture();
-        const removeAudioVersions = vi
-            .fn()
-            .mockRejectedValue(new Error('retained version'));
-        const reference = {
-            backend: 's3' as const,
-            namespace: 'audio',
-            key: 'asset',
-        };
-        store.inspectOwner.mockResolvedValue({
-            activeJobs: 0,
-            objects: [
-                {
-                    kind: 'pronunciation-audio',
-                    cleanupState: 'complete',
-                    reference,
-                },
-            ],
-        });
-        const service = new AccountPurgeService(store, {
-            ...storage,
-            removeAudioVersions,
-        });
-        await expect(service.processNext(input)).rejects.toThrow(
-            'retained version',
-        );
-        expect(removeAudioVersions).toHaveBeenCalledWith(
-            reference,
-            input.signal,
-        );
-        expect(storage.removeAllVersions).not.toHaveBeenCalled();
-        expect(store.finish).not.toHaveBeenCalled();
-        removeAudioVersions.mockResolvedValue(undefined);
-        await expect(service.processNext(input)).resolves.toBe(true);
-        expect(store.finish).toHaveBeenCalledOnce();
-    });
     it('waits and retries without deletion while jobs remain active', async () => {
         const { input, service, storage, store } = fixture();
         store.inspectOwner.mockResolvedValue({ activeJobs: 1, objects: [] });

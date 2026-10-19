@@ -47,6 +47,22 @@ questions. They do not start implementation, accept ADRs, or authorize vendor
 outreach or paid experiments. This is an original Languon-owned skill; no
 external upstream package is incorporated.
 
+### Development cleanup and architecture diagrams
+
+Use [`$development-cleanup`](../.agents/skills/development-cleanup/SKILL.md) to
+audit and remove evidenced obsolete runtime paths and retired configuration.
+For example: `$development-cleanup audit retired text models and their callers`.
+The skill traces persisted and indirect consumers, records removal/retention
+evidence and verifies any authorized disposable data cleanup against an exact target.
+
+Use [`$architecture-diagrams`](../.agents/skills/architecture-diagrams/SKILL.md)
+to create or update the [diagram atlas](diagrams/README.md) from code, accepted ADRs
+and current docs. For example: `$architecture-diagrams update the AI job and
+accounting flow after these changes`. Run `pnpm diagrams` to browse locally and
+`pnpm diagrams:check` to check syntax and recorded source freshness. Review code
+changes before stamping new hashes. Both are original Languon-owned skills and
+remain subject to the repository delivery and data-authority rules.
+
 ### Speech provider and model configuration
 
 Use [`$speech-model-configuration`](../.agents/skills/speech-model-configuration/SKILL.md)

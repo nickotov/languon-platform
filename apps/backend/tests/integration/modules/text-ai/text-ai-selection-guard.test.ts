@@ -185,7 +185,7 @@ run('selected execution database guards', () => {
         // Satisfy the older routing guard so the new selected-worker guard alone must reject this SQL claim.
         await expect(
             client.begin(async (sql) => {
-                await sql`select set_config('languon.dictionary_ai_routing_revision','1',true)`;
+                await sql`select set_config('languon.dictionary_ai_routing_revision','1',true), set_config('languon.model_pricing_revision','1',true)`;
                 await sql`update dictionary_generation_jobs set execution_state='running', worker_id='incapable-worker', heartbeat_at=${now.toISOString()}::timestamptz, lease_deadline=${new Date(now.getTime() + 1000).toISOString()}::timestamptz where id=${jobId}`;
             }),
         ).rejects.toMatchObject({
@@ -201,7 +201,7 @@ run('selected execution database guards', () => {
             )[0]?.executionState,
         ).toBe('queued');
         await expect(
-            client`update dictionary_generation_jobs set selected_execution_snapshot=jsonb_set(selected_execution_snapshot,'{modelId}','"deepseek-chat"'::jsonb) where id=${jobId}`,
+            client`update dictionary_generation_jobs set selected_execution_snapshot=jsonb_set(selected_execution_snapshot,'{modelId}','"deepseek-flash"'::jsonb) where id=${jobId}`,
         ).rejects.toMatchObject({
             code: '23514',
             message: 'Selected text AI execution is immutable',

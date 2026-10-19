@@ -4,7 +4,6 @@ export * from './dictionaries';
 export * from './learning';
 export * from './text-ai';
 export * from './speech';
-export { HealthResponseSchema, type HealthResponse } from './health';
 export * from './learning/sentences';
 export * from './learning/sentence-library';
 export * from './learning/sentence-preparation';

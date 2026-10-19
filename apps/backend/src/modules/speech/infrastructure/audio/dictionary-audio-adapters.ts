@@ -17,7 +17,7 @@ import type { AudioObjectStorage } from '../../application/ports/audio-object-st
 type AdapterOptions = {
     environment: DictionaryAudioEnvironment;
     database: Pick<PostgresJsDatabase, 'execute'>;
-    role?: 'api' | 'worker' | 'purge';
+    role?: 'api' | 'worker';
 };
 type ProfileResolver = Pick<
     SpeechSynthesisProvider,
@@ -31,7 +31,7 @@ type AdapterResult<P extends ProfileResolver> = {
 };
 
 export function createDictionaryAudioAdapters(
-    options: AdapterOptions & { role: 'api' | 'purge' },
+    options: AdapterOptions & { role: 'api' },
 ): AdapterResult<ProfileResolver>;
 export function createDictionaryAudioAdapters(
     options: AdapterOptions & { role?: 'worker' },
@@ -72,16 +72,10 @@ export function createDictionaryAudioAdapters(
     const close = () => {
         for (const client of clients) client.destroy();
     };
-    if (options.role === 'api' || options.role === 'purge') {
+    if (options.role === 'api') {
         // Metadata resolution cannot execute paid work and holds no provider credentials.
         const resolved = resolveSpeechProvider(env);
-        const provider: ProfileResolver =
-            options.role === 'purge'
-                ? {
-                      configurationId: resolved.configurationId,
-                      supports: () => null,
-                  }
-                : resolved;
+        const provider: ProfileResolver = resolved;
         return { storage, provider, providers: new Map(), close };
     }
     const provider = createSpeechProvider(env);

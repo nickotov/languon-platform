@@ -6,6 +6,31 @@ import { Menu } from '@/fsd/shared/ui';
 import { render } from './render';
 
 describe('icon action menu', () => {
+    it('hands focus to its persistent trigger before opening another surface', async () => {
+        const user = userEvent.setup();
+        let opener: Element | null = null;
+        function openNextSurface() {
+            // Native dialogs capture this element as their return-focus target.
+            opener = document.activeElement;
+        }
+        render(
+            <Menu
+                label='Dictionary actions'
+                trigger='Actions'
+                items={[
+                    { label: 'Practice history', onSelect: openNextSurface },
+                ]}
+            />,
+        );
+        const trigger = screen.getByRole('button', {
+            name: 'Dictionary actions',
+        });
+        await user.click(trigger);
+        await user.click(
+            screen.getByRole('menuitem', { name: 'Practice history' }),
+        );
+        expect(opener).toBe(trigger);
+    });
     it('keeps decorative icons out of names and restores focus after selection', async () => {
         const user = userEvent.setup();
         const onSelect = vi.fn();

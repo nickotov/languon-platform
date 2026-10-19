@@ -2,7 +2,7 @@
 feature: shared-pronunciation-playback
 title: Shared pronunciation playback and model prices
 status: current
-last_verified: 2026-10-14
+last_verified: 2026-10-19
 surfaces:
     - browser
     - admin
@@ -231,10 +231,6 @@ remain complementary evidence, not substituted E2E coverage.
 - Stale/expired quote: refresh the exact price before confirmation.
 - Provider failure or ten-minute billing deadline: release the hold permanently.
 - Unknown submission: retain reconciliation state; no automatic new submission.
-- Legacy cutover conflicts between distinct uncertain tasks/profiles, separate
-  null-task legacy jobs or unknown/ready canonical identities fail closed. Reconcile
-  original provider identities before retry; preserve inventory without new billing,
-  copying or synthesis. Dedicated migration PostgreSQL tests cover these collisions.
 - Late successful output: may become reusable, but never debit or autoplay late.
 - Deleted/revoked/changed source: old handles fail fresh authorization/revision checks.
 - Administrative physical deletion failure: leave an unavailable retryable inventory

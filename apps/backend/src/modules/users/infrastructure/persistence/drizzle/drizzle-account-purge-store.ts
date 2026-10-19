@@ -15,12 +15,6 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import {
-    dictionaryAudioAssetsTable,
-    dictionaryAudioBindingsTable,
-    dictionaryAudioBlobsTable,
-    dictionaryAudioJobsTable,
-} from '../../../../dictionaries/infrastructure/persistence/drizzle/audio-schema';
-import {
     adminAuditEventsTable,
     adminMembershipsTable,
 } from '../../../../administration/infrastructure/persistence/drizzle/schema';
@@ -154,80 +148,36 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 ),
             });
         });
-        const [active, objects, audioActive, audioObjects, audioWriters] =
-            await Promise.all([
-                this.database
-                    .select({ count: sql<number>`count(*)::int` })
-                    .from(dictionaryGenerationJobsTable)
-                    .where(
-                        and(
-                            eq(
-                                dictionaryGenerationJobsTable.ownerId,
-                                input.userId,
-                            ),
-                            inArray(
-                                dictionaryGenerationJobsTable.executionState,
-                                ['queued', 'running'],
-                            ),
-                        ),
+        const [active, objects] = await Promise.all([
+            this.database
+                .select({ count: sql<number>`count(*)::int` })
+                .from(dictionaryGenerationJobsTable)
+                .where(
+                    and(
+                        eq(dictionaryGenerationJobsTable.ownerId, input.userId),
+                        inArray(dictionaryGenerationJobsTable.executionState, [
+                            'queued',
+                            'running',
+                        ]),
                     ),
-                this.database
-                    .select({
-                        cleanupState:
-                            dictionaryDocumentUploadsTable.cleanupState,
-                        objectKey: dictionaryDocumentUploadsTable.objectKey,
-                    })
-                    .from(dictionaryDocumentUploadsTable)
-                    .where(
-                        eq(
-                            dictionaryDocumentUploadsTable.ownerId,
-                            input.userId,
-                        ),
-                    ),
-                this.database
-                    .select({ count: sql<number>`count(*)::int` })
-                    .from(dictionaryAudioJobsTable)
-                    .where(
-                        and(
-                            eq(dictionaryAudioJobsTable.ownerId, input.userId),
-                            sql`${dictionaryAudioJobsTable.leaseExpiresAt} > now()`,
-                        ),
-                    ),
-                this.database
-                    .select({ reference: dictionaryAudioAssetsTable.storage })
-                    .from(dictionaryAudioAssetsTable)
-                    .where(
-                        eq(dictionaryAudioAssetsTable.ownerId, input.userId),
-                    ),
-                this.database
-                    .select({ count: sql<number>`count(*)::int` })
-                    .from(dictionaryAudioAssetsTable)
-                    .where(
-                        and(
-                            eq(
-                                dictionaryAudioAssetsTable.ownerId,
-                                input.userId,
-                            ),
-                            sql`${dictionaryAudioAssetsTable.writerExpiresAt} > now()`,
-                        ),
-                    ),
-            ]);
+                ),
+            this.database
+                .select({
+                    cleanupState: dictionaryDocumentUploadsTable.cleanupState,
+                    objectKey: dictionaryDocumentUploadsTable.objectKey,
+                })
+                .from(dictionaryDocumentUploadsTable)
+                .where(
+                    eq(dictionaryDocumentUploadsTable.ownerId, input.userId),
+                ),
+        ]);
         return {
             activeJobs:
                 (active[0]?.count ?? 0) +
                 (sentenceBusy ? 1 : 0) +
                 (textsBusy ? 1 : 0) +
-                (conversationBusy ? 1 : 0) +
-                (audioActive[0]?.count ?? 0) +
-                (audioWriters[0]?.count ?? 0),
-            objects: [
-                ...objects,
-                ...audioObjects.map((object) => ({
-                    ...object,
-                    kind: 'pronunciation-audio' as const,
-                    cleanupState: 'complete',
-                })),
-            ],
+                (conversationBusy ? 1 : 0),
+            objects,
         };
     }
 
@@ -316,33 +266,6 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 throw new Error('Text work is not quiescent');
             if (await sentenceDeletionBusy(tx, sentenceScope))
                 throw new Error('Sentence work is not quiescent');
-            const [activeAudio] = await tx
-                .select({ count: sql<number>`count(*)::int` })
-                .from(dictionaryAudioJobsTable)
-                .where(
-                    and(
-                        eq(dictionaryAudioJobsTable.ownerId, input.userId),
-                        gt(dictionaryAudioJobsTable.leaseExpiresAt, input.now),
-                    ),
-                );
-            if ((activeAudio?.count ?? 0) > 0)
-                throw new Error('Owner audio writers are not quiescent.');
-            const [activeAudioWriters] = await tx
-                .select({ count: sql<number>`count(*)::int` })
-                .from(dictionaryAudioAssetsTable)
-                .where(
-                    and(
-                        eq(dictionaryAudioAssetsTable.ownerId, input.userId),
-                        gt(
-                            dictionaryAudioAssetsTable.writerExpiresAt,
-                            input.now,
-                        ),
-                    ),
-                );
-            if ((activeAudioWriters?.count ?? 0) > 0)
-                throw new Error(
-                    'Owner audio storage writes are not quiescent.',
-                );
             const [active] = await tx
                 .select({ count: sql<number>`count(*)::int` })
                 .from(dictionaryGenerationJobsTable)
@@ -381,20 +304,6 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
 
             // Child rows are removed in FK order. Audit and membership rows retain only
             // opaque user IDs, allowing the user row to remain as a minimal tombstone.
-            await tx
-                .delete(dictionaryAudioBlobsTable)
-                .where(
-                    sql`exists (select 1 from dictionary_audio_assets asset where asset.owner_id = ${input.userId} and asset.storage->>'backend' = 'postgres' and asset.storage->>'key' = ${dictionaryAudioBlobsTable.key} and asset.storage->>'namespace' = ${dictionaryAudioBlobsTable.namespace})`,
-                );
-            await tx
-                .delete(dictionaryAudioBindingsTable)
-                .where(eq(dictionaryAudioBindingsTable.ownerId, input.userId));
-            await tx
-                .delete(dictionaryAudioJobsTable)
-                .where(eq(dictionaryAudioJobsTable.ownerId, input.userId));
-            await tx
-                .delete(dictionaryAudioAssetsTable)
-                .where(eq(dictionaryAudioAssetsTable.ownerId, input.userId));
             await tx
                 .delete(dictionaryDocumentExtractionsTable)
                 .where(

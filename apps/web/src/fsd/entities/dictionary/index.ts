@@ -1,6 +1,5 @@
 export {
     dictionaryApi,
-    dictionaryAudioApi,
     DictionaryApiError,
     resolveDictionaryApiUrl,
     type DictionaryApi,

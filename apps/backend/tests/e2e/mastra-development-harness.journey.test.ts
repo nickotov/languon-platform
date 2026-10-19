@@ -16,7 +16,7 @@ const enabled =
     process.env.ALLOW_MASTRA_PLAYGROUND_DATABASE_TESTS === 'true' &&
     typeof process.env.MASTRA_PLAYGROUND_TEST_ADMIN_DATABASE_URL === 'string';
 
-// @user-flow-revision mastra-agent-development-harness sha256:e3da633ccdb44719
+// @user-flow-revision mastra-agent-development-harness sha256:4150f855b91f5719
 describe.runIf(enabled)('Mastra development harness journey', () => {
     // @user-flow mastra-agent-development-harness/playground-provision-run-persist-reset
     it('provisions, runs, persists, isolates, and safely resets the playground', async () => {
@@ -85,8 +85,8 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             developmentHarnessFixture.principalId,
         );
         const primitives = createDevelopmentHarnessPrimitives({
-            fallbackModelId: 'deepseek/deepseek-chat',
-            modelId: 'deepseek/deepseek-chat',
+            fallbackModelId: 'deepseek/deepseek-flash',
+            modelId: 'deepseek/deepseek-flash',
             service,
         });
         const requestContext = new RequestContext<{

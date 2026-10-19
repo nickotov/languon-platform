@@ -4,10 +4,6 @@ import {
     assertSharedSpeechOverlap,
 } from './shared-speech.mjs';
 import { readFile } from 'node:fs/promises';
-import {
-    assertPronunciationAudioCompatibility,
-    normalizePronunciationAudio,
-} from './pronunciation-audio.mjs';
 
 export const IMAGE_NAMES = ['backend', 'web', 'admin', 'migrator'];
 export const SHA_PATTERN = /^[a-f0-9]{40}$/;
@@ -129,26 +125,7 @@ function assertSubset(formats, supported, description) {
     }
 }
 
-function normalizeDictionaryJobs(input, schemaVersion) {
-    if (schemaVersion === 1) {
-        if (input !== undefined) {
-            throw new Error(
-                'schemaVersion 1 cannot declare dictionaryJobs capabilities.',
-            );
-        }
-        return {
-            ...EMPTY_DICTIONARY_JOB_CAPABILITIES,
-            workerProcessable: [],
-            apiReadable: [],
-            apiCancellable: [],
-            apiDiscardable: [],
-            apiAcceptable: [],
-            apiEnqueued: [],
-            webReadable: [],
-            retireFormats: [],
-            generationBudget: null,
-        };
-    }
+function normalizeDictionaryJobs(input) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
         throw new Error(
             'dictionaryJobs compatibility metadata is required for schemaVersion 2.',
@@ -254,9 +231,6 @@ export function assertDictionaryJobRollbackCompatibility(
     rollbackFloor,
     { direction = 'forward' } = {},
 ) {
-    assertPronunciationAudioCompatibility(candidate, rollbackFloor, {
-        direction,
-    });
     assertSharedSpeechOverlap(rollbackFloor, candidate);
     if (!['forward', 'rollback'].includes(direction)) {
         throw new Error('Dictionary job compatibility direction is invalid.');
@@ -340,8 +314,8 @@ export function validateReleaseManifest(input, expectations = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
         throw new Error('Release manifest must be a JSON object.');
     }
-    if (![1, 2].includes(input.schemaVersion)) {
-        throw new Error('schemaVersion must be 1 or 2.');
+    if (input.schemaVersion !== 2) {
+        throw new Error('schemaVersion must be 2.');
     }
     if (input.verified !== true)
         throw new Error('Release manifest is not build-ready.');
@@ -423,10 +397,11 @@ export function validateReleaseManifest(input, expectations = {}) {
             `Manifest version does not match expected release ${expectations.version}.`,
         );
     }
-    const dictionaryJobs = normalizeDictionaryJobs(
-        input.dictionaryJobs,
-        input.schemaVersion,
-    );
+    if (input.pronunciationAudio !== undefined)
+        throw new Error(
+            'Retired pronunciationAudio release metadata is unsupported; use sharedSpeech.',
+        );
+    const dictionaryJobs = normalizeDictionaryJobs(input.dictionaryJobs);
     const sharedSpeech =
         input.sharedSpeech === undefined
             ? undefined
@@ -454,13 +429,6 @@ export function validateReleaseManifest(input, expectations = {}) {
         dictionaryJobs,
         ...(input.sharedSpeech === undefined ? {} : { sharedSpeech }),
         ...(input.modelPricing === undefined ? {} : { modelPricing }),
-        ...(input.pronunciationAudio === undefined
-            ? {}
-            : {
-                  pronunciationAudio: normalizePronunciationAudio(
-                      input.pronunciationAudio,
-                  ),
-              }),
         images: Object.fromEntries(
             IMAGE_NAMES.map((service) => [service, input.images[service]]),
         ),

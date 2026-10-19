@@ -5,7 +5,7 @@ source_paths:
     - compose.yaml
     - infra/dev/speech-storage-policy.json
     - .env.example
-    - infra/deploy/lib/pronunciation-audio.mjs
+    - infra/deploy/lib/shared-speech.mjs
 ---
 
 # Shared pronunciation storage and activation operations
@@ -71,8 +71,8 @@ Every configured language must already be in the curated app/model capability se
 Hungarian is not currently an app language. Do not add a language solely by editing
 environment JSON. Review actual pronunciation per language before production use.
 
-Fixture and real pronunciation have separate canonical identities and class-filtered
-legacy lookup. Existing test tones remain retained for development evidence but
+Fixture and real pronunciation have separate, mandatory class-scoped canonical
+identities. Existing test tones remain retained for development evidence but
 are never reused for new live requests. Real recordings remain reusable across
 live provider/model changes and if their language is no longer generatable. No
 bucket reset or audio deletion is necessary. Historical requests keep their pinned
@@ -163,15 +163,20 @@ provisioned or tested. Keep admission disabled until the feature evidence record
 - Selectel private bucket/prefix and scoped runtime/cleanup credentials; isolated
   conformance proof for upload, checksum validation, authorized read and complete
   version deletion. Never point disposable destructive checks at retained data.
-- Schema expansion, additive legacy-audio migration with checksums, lease/task
-  ownership transfer and old-worker claim/admission fencing.
+- Current schema migration, shared-worker claim/admission fencing and verified
+  absence of retired owner-scoped pronunciation inventory.
 - An effective immutable price revision and a compatible speech settlement worker.
 - Account/content deletion removes associations without erasing retained successful
   speech, and without allowing a late debit to a removed account.
 
-The legacy pronunciation namespace does not establish shared billing/retention
-compatibility. `sharedSpeech` declares version-one enqueue, API/web/admin/purge
-readers, workers and `speech-generation:v1` settlement support; `modelPricing`
+`sharedSpeech` declares version-one enqueue, API/web/admin/purge
+readers, workers and `speech-generation:v1` settlement support. Its `speechBudget`
+contains positive integer `maxCharacters` (at most 2000),
+`maxCostUnitsPerClip`, `ownerDailyCostUnits` and `globalDailyCostUnits`; retain
+the existing clip/owner/global cost relationships and unchanged budgets while
+worker releases overlap. Release creation uses `--shared-speech` JSON and
+`--model-pricing` JSON. The retired `--pronunciation-audio` option is rejected.
+`modelPricing`
 declares revision-aware API admission and workers. Missing namespaces are dormant.
 Ship a compatibility release with complete readers/workers before an enabled
 release admits work. Both the active release and rollback floor must cover the
@@ -252,73 +257,19 @@ lookup key merely because jobs drained: first establish a reviewed identity
 migration or continued historical lookup support. Rollback restores the old
 writer only while keeping the new writer's key as a lookup alias.
 
-## Legacy recording cutover
+## Preproduction protocol retirement
 
-The migration copies already generated audio; it has no synthesis-provider
-capability and does not regenerate pronunciation. Validate the release schema and
-storage capabilities first. Stop new legacy/shared admission, drain known tasks
-and cancel definitely unsubmitted queued work through established controls, then
-stop/drain old API and worker writers before migrating. Preserve known/unknown
-provider identities; unknown tasks are transferred as no-resubmit reconciliation
-markers, not restarted. Pause account/content purge during the cutover so it
-cannot race the operator's old-inventory transfer.
+ADR-0040 retires the owner-scoped dictionary audio API/worker and its one-time
+migration command. All current dictionary, flashcard and sentence playback uses
+the shared speech protocol. The retirement migration refuses nonempty old audio
+inventory rather than discarding unaccounted provider tasks or remote objects.
+The authorized local preflight found no old assets, jobs, bindings or blobs.
+Shared recordings, source bindings, prices, holds and ledger history remain.
 
-The reviewed root command for a local checkout is:
-
-```sh
-ALLOW_SPEECH_MIGRATION=true DICTIONARY_AUDIO_GENERATION_ENABLED=false SPEECH_GENERATION_ENABLED=false pnpm speech:migrate
-```
-
-It uses the backend TypeScript CLI in development. Apply compatible migrations
-beforehand, target only the expressly chosen local/test or approved deployed
-configuration, and inspect the counters. The command requires
-`ALLOW_SPEECH_MIGRATION=true` and refuses enabled generation or undrained known
-legacy tasks. It verifies saved-source identity and byte integrity, promotes or
-reuses approved global inventory, and retires old references only after successful
-publication. Preflight/cutover also fails closed when distinct uncertain legacy
-provider tasks or profiles share one canonical text/language identity, when null
-task IDs belong to different legacy jobs for that identity, or when an unknown
-legacy identity collides with an approved ready recording. An arbitrary choice or
-merge would lose upstream execution identity and could enable duplicate work.
-Reconcile each original provider task/profile before retrying cutover. A blocked
-run preserves the existing inventory and introduces no copying, new billing or
-synthesis for the conflicting work. Source mismatch, inaccessible source or changed publication state
-preserves old data instead of erasing it. Repeat a stopped/interrupted run with the
-same configuration; durable inventory allows resume without another provider call.
-
-The built entry point shipped in backend/migrator images is
-`node dist/cli/speech-migration-command.js` (`speech:migrate:built` in the backend
-package). Production images contain `dist` and production dependencies, not the
-workspace source or development `tsx`; do not invoke the root development command
-inside those images. Use the existing reviewed release/Compose mechanism with
-that fixed Node entry point and the approved immutable image, not a mutable tag.
-
-Provide the process with the protected backend environment contract plus a
-migration-owner `DATABASE_URL`, the correct current/retained fingerprint secrets,
-and read/write/version-delete access for current/retained audio namespaces. The
-usual API read-only S3 key cannot perform a copy. Retained storage configuration
-must contain the appropriate scoped migration keys. The CLI uses the non-provider
-purge adapter role; this is not a grant of blanket production bucket access.
-Do not print resolved environment, credentials, share keys, private text or URLs.
-
-Before live-host cutover, rehearse with an isolated production-like database and
-Selectel test prefix using the built CLI, not only a migration-owner unit test.
-Prove old object copy/read/checksum, interruption/resume, unknown submission
-markers, authorized bindings and all-version legacy cleanup. Record runtime image,
-migration ledger, redacted namespace identities and report counters. This is a
-production activation requirement; local PostgreSQL/MinIO migration tests do not
-claim that the built image has been executed on the deployment host.
-
-Only resume new admission after compatible APIs/workers, role grants, source
-access and retained inventory pass inspection. Keep the old storage credentials
-and inventory for outstanding cleanup/reconciliation. Rollback disables new
-admission while compatible reads/recovery continue; never return to a binary that
-owner-deletes shared retained recordings or ignores their immutable price revision.
-
-Already admitted shared generation can finish under its pinned provider identity
-after the initiating account is removed. Purge removes associations and closes
-holds permanently, so completion may retain reusable audio but cannot debit the
-removed account or restore its access.
+The PostgreSQL byte adapter remains test infrastructure under speech ownership;
+standard development uses private persistent MinIO. Provider/storage settings
+named DICTIONARY_AUDIO_* still configure the current shared adapters. Playback
+and admission use only SPEECH_PLAYBACK_ENABLED and SPEECH_GENERATION_ENABLED.
 
 ## Terminal provider failures
 

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
     assertDictionaryJobRollbackCompatibility,
+    EMPTY_DICTIONARY_JOB_CAPABILITIES,
     validateReleaseManifest,
 } from '../lib/manifest.mjs';
 
@@ -93,19 +94,10 @@ test('permits local digest registry only with an explicit rehearsal option', () 
     );
 });
 
-test('normalizes historical schema-v1 manifests to no dictionary job capabilities', () => {
-    const { dictionaryJobs: _, ...historical } = valid;
-    const normalized = validateReleaseManifest({
-        ...historical,
-        schemaVersion: 1,
-    });
-    assert.deepEqual(normalized.dictionaryJobs.apiEnqueued, []);
-    assert.deepEqual(normalized.dictionaryJobs.workerProcessable, []);
-    assert.deepEqual(normalized.dictionaryJobs.retireFormats, []);
-    assert.equal(normalized.dictionaryJobs.generationBudget, null);
+test('rejects retired schema-v1 release manifests', () => {
     assert.throws(
         () => validateReleaseManifest({ ...valid, schemaVersion: 1 }),
-        /cannot declare dictionaryJobs/,
+        /schemaVersion must be 2/,
     );
 });
 
@@ -223,8 +215,10 @@ test('preflight enforces full lifecycle compatibility in both rollback direction
 
     const historical = validateReleaseManifest({
         ...valid,
-        schemaVersion: 1,
-        dictionaryJobs: undefined,
+        dictionaryJobs: {
+            ...EMPTY_DICTIONARY_JOB_CAPABILITIES,
+            generationBudget,
+        },
     });
     assert.throws(
         () => assertDictionaryJobRollbackCompatibility(activate, historical),
@@ -382,8 +376,10 @@ test('lifecycle support removal requires an exact retirement declaration', () =>
     );
     const historical = validateReleaseManifest({
         ...valid,
-        schemaVersion: 1,
-        dictionaryJobs: undefined,
+        dictionaryJobs: {
+            ...EMPTY_DICTIONARY_JOB_CAPABILITIES,
+            generationBudget,
+        },
     });
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(historical, rollbackFloor, {

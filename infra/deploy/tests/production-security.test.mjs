@@ -123,7 +123,10 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
     assert.doesNotMatch(worker, /AUTH_|REDIS_URL|BACKEND_PORT|edge:/);
     assert.match(worker, /DICTIONARY_JOB_API_ENQUEUED_FORMATS/);
     assert.match(worker, /DICTIONARY_GENERATION_PROVIDER_MODE/);
-    assert.match(worker, /DICTIONARY_GENERATION_MODEL_API_KEY/);
+    assert.doesNotMatch(
+        worker,
+        /DICTIONARY_GENERATION_MODEL_API_KEY|DICTIONARY_GENERATION_MODEL_BASE_URL/,
+    );
     assert.match(worker, /DEEPSEEK_API_KEY/);
     assert.match(worker, /KIE_API_KEY/);
     const backend = apps.slice(
@@ -131,7 +134,21 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
         apps.indexOf('    dictionary-worker:'),
     );
     assert.match(backend, /DICTIONARY_HMAC_SECRET/);
-    assert.doesNotMatch(worker, /DICTIONARY_HMAC_SECRET/);
+    // Shared speech worker composition uses the dictionary HMAC for identity/
+    // encrypted artifacts; this is distinct from HTTP auth or cache authority.
+    assert.match(
+        worker,
+        /^\s+DICTIONARY_HMAC_SECRET: \$\{DICTIONARY_HMAC_SECRET:\?required\}/m,
+    );
+    const workerComposition = await readFile(
+        'apps/backend/src/infrastructure/worker/dictionary-worker-command.ts',
+        'utf8',
+    );
+    assert.match(workerComposition, /createSpeechInfrastructure\(\{/);
+    assert.match(
+        workerComposition,
+        /dictionaryHmacSecret:\s*process\.env\.DICTIONARY_HMAC_SECRET/,
+    );
     assert.doesNotMatch(backend, /DICTIONARY_GENERATION_MODEL_API_KEY/);
     assert.doesNotMatch(backend, /^\s+DEEPSEEK_API_KEY:/m);
     assert.doesNotMatch(backend, /^\s+KIE_API_KEY:/m);
@@ -232,7 +249,7 @@ test('paid speech authority belongs only to the dictionary worker and retained s
         /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS|ACCOUNT_PURGE_AUDIO_RETAINED_S3_CONFIGURATIONS/,
     );
     assert.match(worker, /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS/);
-    assert.match(purge, /ACCOUNT_PURGE_AUDIO_RETAINED_S3_CONFIGURATIONS/);
+    assert.doesNotMatch(purge, /ACCOUNT_PURGE_AUDIO_|DICTIONARY_AUDIO_/);
     assert.doesNotMatch(
         purge,
         /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS|DICTIONARY_AUDIO_RETAINED_S3_API_CONFIGURATIONS/,

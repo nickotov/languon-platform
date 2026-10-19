@@ -22,13 +22,9 @@ import {
 } from '../../modules/learning/infrastructure/sentence-composition';
 import { createSentenceAiProvider } from '../../modules/learning/infrastructure/ai/sentence-ai-provider';
 import type { SentenceAiProvider } from '../../modules/learning/application/ports/sentence-ai-provider';
-import { DictionaryAudioWorker } from '../../modules/dictionaries/application/dictionary-audio-worker';
 import { DictionaryWorkerCoordinator } from '../../modules/dictionaries/application/dictionary-worker-coordinator';
-import { createDictionaryAudioAdapters } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
-import { dictionaryAudioBudget } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-budget';
-import { loadDictionaryAudioEnvironment } from '../../modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
-import { DrizzleDictionaryAudioStore } from '../../modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-store';
-import { DrizzleDictionaryAudioMeasurements } from '../../modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-audio-measurements';
+import { createDictionaryAudioAdapters } from '../../modules/speech/infrastructure/audio/dictionary-audio-adapters';
+import { loadDictionaryAudioEnvironment } from '../../modules/speech/infrastructure/audio/dictionary-audio-environment';
 
 import { databaseSchema } from '../database/schema';
 import { createCardProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-proposal-generators';
@@ -232,40 +228,17 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         generationEnabled: process.env.SPEECH_GENERATION_ENABLED === 'true',
     });
 
-    const audioWorker = new DictionaryAudioWorker({
-        store: new DrizzleDictionaryAudioStore(
-            database,
-            audioEnvironment.fingerprintSecret,
-        ),
-        storage: audioAdapters.storage,
-        providers: audioAdapters.providers,
-        clock: { now: () => new Date() },
-        budget: dictionaryAudioBudget(audioEnvironment),
-        generationEnabled:
-            audioEnvironment.generationEnabled &&
-            process.env.SPEECH_GENERATION_ENABLED !== 'true',
-    });
-    const legacyMastraOptions =
+    const defaultMastraOptions =
         environment.provider.mode === 'mastra'
-            ? environment.provider.catalogModel
-                ? createDictionaryTextMastraGeneratorOptions({
-                      apiKey: environment.provider.apiKey,
-                      model: environment.provider.catalogModel,
-                      providerBudget: environment.providerBudget,
-                  })
-                : {
-                      mode: 'mastra' as const,
-                      model: {
-                          apiKey: environment.provider.apiKey,
-                          id: environment.provider.modelId,
-                          url: environment.provider.baseUrl,
-                      },
-                      providerBudget: environment.providerBudget,
-                  }
+            ? createDictionaryTextMastraGeneratorOptions({
+                  apiKey: environment.provider.apiKey,
+                  model: environment.provider.catalogModel,
+                  providerBudget: environment.providerBudget,
+              })
             : undefined;
     const provider = createCardProposalGenerator(
         environment.provider.mode === 'mastra'
-            ? legacyMastraOptions!
+            ? defaultMastraOptions!
             : { mode: environment.provider.mode },
     );
     const cardAuthoringProvider = createCardAuthoringProposalGenerator(
@@ -276,7 +249,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                 dictionaryCardAuthoringGenerationFormat,
             )
             ? environment.provider.mode === 'mastra'
-                ? legacyMastraOptions!
+                ? defaultMastraOptions!
                 : { mode: environment.provider.mode }
             : { mode: 'unavailable' },
     );
@@ -285,7 +258,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             dictionaryPastedTermsGenerationFormat,
         )
             ? environment.provider.mode === 'mastra'
-                ? legacyMastraOptions!
+                ? defaultMastraOptions!
                 : { mode: environment.provider.mode }
             : { mode: 'unavailable' },
     );
@@ -294,7 +267,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             dictionaryImportPairsGenerationFormat,
         )
             ? environment.provider.mode === 'mastra'
-                ? legacyMastraOptions!
+                ? defaultMastraOptions!
                 : { mode: environment.provider.mode }
             : { mode: 'unavailable' },
     );
@@ -392,11 +365,6 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         providerBudget: environment.providerBudget,
         supportedFormats: environment.supportedFormats,
     });
-    const audioSupported =
-        !audioDeployed ||
-        process.env.DICTIONARY_AUDIO_WORKER_PROCESSABLE_VERSIONS?.split(
-            ',',
-        ).includes('1');
     const speechSupported =
         !audioDeployed ||
         (process.env.SPEECH_WORKER_PROCESSABLE_VERSIONS?.split(',').includes(
@@ -405,43 +373,17 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             process.env.AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS?.split(
                 ',',
             ).includes('1'));
-    let speechFirst = true;
     const coordinator = new DictionaryWorkerCoordinator(service, {
-        runOnce: async (signal?: AbortSignal) => {
-            speechFirst = !speechFirst;
-            if (
-                speechFirst &&
-                speechSupported &&
-                (await sharedSpeech.worker.runOnce(signal))
-            )
-                return true;
-            if (
-                audioSupported &&
-                (await audioWorker.runOnce(
-                    signal ?? new AbortController().signal,
-                ))
-            )
-                return true;
-            return !speechFirst && speechSupported
-                ? sharedSpeech.worker.runOnce(signal)
-                : false;
-        },
+        runOnce: (signal?: AbortSignal) => sharedSpeech.worker.runOnce(signal),
     });
-    const audioMeasurements = new DrizzleDictionaryAudioMeasurements(database);
     const coordinatedService = {
         processNext: (input: Parameters<typeof service.processNext>[0]) =>
-            audioSupported || speechSupported
+            speechSupported
                 ? coordinator.processNext(input)
                 : service.processNext(input),
         readiness: service.readiness.bind(service),
         releaseWorkerLeases: service.releaseWorkerLeases.bind(service),
         observeOperationalState: service.observeOperationalState.bind(service),
-        ...(audioSupported
-            ? {
-                  observeAudioState: ({ signal }: { signal: AbortSignal }) =>
-                      audioMeasurements.observe({ signal, now: new Date() }),
-              }
-            : {}),
     };
     const workerId = createWorkerId(environment.releaseSha);
     // The API flag controls admissions, never draining persisted sentence jobs.

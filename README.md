@@ -32,10 +32,11 @@ The default local endpoints are:
 
 - Web: `http://localhost:3333`
 - Admin: `http://localhost:3001`
-- Backend health: `http://localhost:4000/health`
+- Backend health: `http://localhost:4000/livez`
 - OpenAPI document: `http://localhost:4000/openapi.json`
 - Mastra Studio (when started separately): `http://127.0.0.1:4111`
 - Web dev command panel (when started separately): `http://127.0.0.1:4400`
+- Architecture diagrams (run `pnpm diagrams`): `http://127.0.0.1:4401`
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
 - MinIO speech storage: `http://127.0.0.1:9000`
@@ -199,6 +200,10 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm dev:admin`                              | Run only the administration application                                            |
 | `pnpm dev:mobile`                             | Run only the Expo development server                                               |
 | `pnpm dev:panel`                              | Run the local reviewed-command web panel                                           |
+| `pnpm diagrams`                               | Browse source-backed architecture and data-flow diagrams locally                   |
+| `pnpm diagrams:check`                         | Check diagram syntax and source freshness                                          |
+| `pnpm test:diagrams`                          | Test the diagram catalog and read-only HTTP boundary                               |
+| `pnpm test:e2e:diagrams`                      | Verify the real diagram viewer in Chromium                                         |
 | `pnpm browser:install`                        | Install Chrome for agent-led browser checks                                        |
 | `pnpm browser:check`                          | Test the safe wrapper and live browser launch                                      |
 | `pnpm agent-skills:check`                     | Validate repository-scoped agent skill packages                                    |
@@ -208,7 +213,6 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm db:generate`                            | Generate reviewed Drizzle SQL migrations                                           |
 | `pnpm db:check`                               | Validate Drizzle migration history                                                 |
 | `pnpm db:migrate`                             | Explicitly apply pending PostgreSQL migrations                                     |
-| `pnpm speech:migrate`                         | Guarded legacy-audio transfer; follow shared pronunciation cutover instructions    |
 | `pnpm test:e2e:shared-pronunciation`          | Run guarded learner/admin pronunciation and pricing journeys                       |
 | `pnpm test:e2e:texts-backend`                 | Run guarded Texts API journeys against disposable PostgreSQL and Redis             |
 | `pnpm test:e2e:texts-web`                     | Run guarded Texts real-browser journeys                                            |
@@ -283,6 +287,8 @@ handle it prints for subsequent commands.
 - `packages/database/` — PostgreSQL and Redis infrastructure factories.
 - `packages/prompts/` — local prompt fallbacks and Langfuse prompt access.
 - `web-dev-panel/` — native local dashboard for reviewed development commands.
+- `scripts/architecture-viewer/` — native read-only diagram server and local browser client.
+- `docs/diagrams/` — maintained source-backed architecture and data-flow views.
 - `infra/` — checked-in container definitions.
 - `design/` — design-system blueprints and editable visual design sources.
 - `docs/` — product, architecture, ADRs, setup, and development documentation.

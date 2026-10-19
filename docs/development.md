@@ -141,9 +141,9 @@ Zod validated and cancellation is preserved.
 
 Checked-in local prompts are the only default resolver. Neither Langfuse nor a
 model key is required to boot or run the deterministic tool, workflow, and code
-scorer. The live agent defaults to `deepseek/deepseek-chat`. When
+scorer. The live agent defaults to `deepseek/deepseek-flash`. When
 `MASTRA_MODEL_ID` selects another valid Mastra `provider/model`, that model is
-the primary and DeepSeek Chat remains the fixed fallback. Live invocation is
+the primary and DeepSeek Flash remains the fixed fallback. Live invocation is
 explicit and fails with a sanitized error when `DEEPSEEK_API_KEY` is absent so
 the fallback is never silently unavailable; an alternate primary also requires
 its provider-specific environment key. The harness forces Mastra usage

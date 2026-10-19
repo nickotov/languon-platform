@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDictionaryAudioAdapters } from '../../../../../src/modules/dictionaries/infrastructure/audio/dictionary-audio-adapters';
+import { createDictionaryAudioAdapters } from '../../../../../src/modules/speech/infrastructure/audio/dictionary-audio-adapters';
 import {
     createFixtureAudio,
     audioChecksum,
-} from '../../../../../src/modules/dictionaries/infrastructure/audio/audio-integrity';
-import { loadDictionaryAudioEnvironment } from '../../../../../src/modules/dictionaries/infrastructure/audio/dictionary-audio-environment';
+} from '../../../../../src/modules/speech/domain/audio-integrity';
+import { loadDictionaryAudioEnvironment } from '../../../../../src/modules/speech/infrastructure/audio/dictionary-audio-environment';
 import {
     isPublicAudioAddress,
     validateAudioResultUrl,
     validateMp3,
-} from '../../../../../src/modules/dictionaries/infrastructure/audio/safe-audio-download';
+} from '../../../../../src/modules/speech/infrastructure/audio/safe-audio-download';
 import {
     FixtureSpeechProvider,
     KieSpeechProvider,
-} from '../../../../../src/modules/dictionaries/infrastructure/audio/speech-providers';
+} from '../../../../../src/modules/speech/infrastructure/audio/speech-providers';
 import { SpeechTaskFailedError } from '../../../../../src/modules/speech/application/ports/speech-synthesis-provider';
 
 const profile = {
@@ -319,7 +319,7 @@ describe('audio download trust boundary', () => {
 describe('audio configuration', () => {
     it('resolves deployed API profiles without paid credentials or executable providers', () => {
         const values = {
-            DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
+            SPEECH_GENERATION_ENABLED: 'true',
             DICTIONARY_AUDIO_PROVIDER: 'kie',
             DICTIONARY_AUDIO_FINGERPRINT_SECRET:
                 'fake-dedicated-fingerprint-secret-32',
@@ -443,7 +443,7 @@ describe('audio configuration', () => {
         });
         expect(() =>
             loadDictionaryAudioEnvironment(
-                { DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true' },
+                { SPEECH_PLAYBACK_ENABLED: 'true' },
                 { deployed: true },
             ),
         ).toThrow();
@@ -453,7 +453,7 @@ describe('audio configuration', () => {
             loadDictionaryAudioEnvironment(
                 {
                     DICTIONARY_AUDIO_PROVIDER: 'kie',
-                    DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
+                    SPEECH_GENERATION_ENABLED: 'true',
                 },
                 { deployed: false },
             ),

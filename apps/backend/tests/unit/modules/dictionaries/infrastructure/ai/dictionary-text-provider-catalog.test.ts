@@ -12,10 +12,10 @@ import {
 describe('dictionary text provider catalog', () => {
     it('exposes fixed provider URLs, model IDs, credentials, formats, and request caps', () => {
         expect(dictionaryTextModelCatalog).toMatchObject({
-            'deepseek/deepseek-chat': {
+            'deepseek/deepseek-flash': {
                 apiBaseUrl: 'https://api.deepseek.com',
                 credentialEnvironmentVariable: 'DEEPSEEK_API_KEY',
-                modelId: 'deepseek-chat',
+                modelId: 'deepseek-flash',
                 providerId: 'deepseek',
                 requestLimits: {
                     maxInputTokens: 64_000,
@@ -45,6 +45,9 @@ describe('dictionary text provider catalog', () => {
             );
         }
         expect(findDictionaryTextModel('untrusted/model')).toBeUndefined();
+        expect(
+            findDictionaryTextModel('deepseek/deepseek-chat'),
+        ).toBeUndefined();
     });
 
     it('creates Mastra OpenAI-compatible configuration with the provider wire model ID', () => {
@@ -73,12 +76,12 @@ describe('dictionary text provider catalog', () => {
         expect(
             createDictionaryTextMastraGeneratorOptions({
                 apiKey: 'test-deepseek-key',
-                model: dictionaryTextModelCatalog['deepseek/deepseek-chat'],
+                model: dictionaryTextModelCatalog['deepseek/deepseek-flash'],
                 providerBudget,
             }),
         ).toMatchObject({
             mode: 'mastra',
-            model: { modelId: 'deepseek-chat', providerId: 'deepseek' },
+            model: { modelId: 'deepseek-flash', providerId: 'deepseek' },
             providerBudget,
             structuredOutputMode: 'prompt-injection',
         });
@@ -103,7 +106,7 @@ describe('dictionary text provider catalog', () => {
                     maxInputTokensPerAttempt: 262_144,
                     maxOutputTokensPerAttempt: 40_960,
                 },
-                model: dictionaryTextModelCatalog['deepseek/deepseek-chat']
+                model: dictionaryTextModelCatalog['deepseek/deepseek-flash']
                     .requestLimits,
             }),
         ).toEqual({ maxInputTokens: 64_000, maxOutputTokens: 8_192 });
@@ -117,7 +120,7 @@ describe('dictionary text provider catalog', () => {
         const signal = new AbortController().signal;
 
         for (const id of [
-            'deepseek/deepseek-chat',
+            'deepseek/deepseek-flash',
             'kie/gemini-2.5-pro',
         ] as const) {
             const model = dictionaryTextModelCatalog[id];

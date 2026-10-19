@@ -4,12 +4,15 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { Deployment } from '../lib/deployment.mjs';
+import { EMPTY_DICTIONARY_JOB_CAPABILITIES } from '../lib/manifest.mjs';
 
 const sha = 'b'.repeat(40);
 const speechCapabilities = {
-    phase: 'expand',
+    phase: 'compatibility',
     workerProcessable: [1],
     apiReadable: [1],
+    adminReadable: [1],
+    billingSchemas: ['speech-generation:v1'],
     webReadable: [1],
     purgeReadable: [1],
     apiEnqueued: [],
@@ -21,25 +24,30 @@ const speechCapabilities = {
     },
 };
 
-test('pronunciation activation requires expanded rollback support and explicit operator configuration', async () => {
+test('shared speech activation requires expanded rollback support and explicit operator configuration', async () => {
     const { deployment, calls } = await fixture();
     deployment.manifest = {
         ...manifest,
-        pronunciationAudio: speechCapabilities,
+        sharedSpeech: speechCapabilities,
+        modelPricing: {
+            phase: 'compatibility',
+            apiAdmitted: [],
+            workerProcessable: [1],
+        },
     };
     await deployment.deploy();
     deployment.manifest = {
         ...manifest,
-        pronunciationAudio: {
+        sharedSpeech: {
             ...speechCapabilities,
-            phase: 'activate',
+            phase: 'enabled',
             apiEnqueued: [1],
         },
     };
     const before = calls.length;
     await assert.rejects(
         () => deployment.deploy(),
-        /explicit playback, generation/,
+        /Shared speech admission requires/,
     );
     assert.equal(
         calls.slice(before).some((args) => args.includes('migrator')),
@@ -47,20 +55,25 @@ test('pronunciation activation requires expanded rollback support and explicit o
     );
 });
 
-test('absent pronunciation metadata overrides stale operator enablement and pins budgets', async () => {
+test('absent shared speech metadata overrides stale operator enablement and pins budgets', async () => {
     const { deployment } = await fixture();
     deployment.config = {
         ...deployment.config,
-        DICTIONARY_AUDIO_PLAYBACK_ENABLED: 'true',
-        DICTIONARY_AUDIO_GENERATION_ENABLED: 'true',
+        SPEECH_PLAYBACK_ENABLED: 'true',
+        SPEECH_GENERATION_ENABLED: 'true',
         DICTIONARY_AUDIO_OWNER_BUDGET_UNITS: '9999999',
     };
     const dormant = deployment.commandEnvironment('blue');
-    assert.equal(dormant.DICTIONARY_AUDIO_GENERATION_ENABLED, 'false');
-    assert.equal(dormant.DICTIONARY_AUDIO_PLAYBACK_ENABLED, 'false');
+    assert.equal(dormant.SPEECH_GENERATION_ENABLED, 'false');
+    assert.equal(dormant.SPEECH_PLAYBACK_ENABLED, 'false');
     deployment.manifest = {
         ...manifest,
-        pronunciationAudio: speechCapabilities,
+        sharedSpeech: speechCapabilities,
+        modelPricing: {
+            phase: 'compatibility',
+            apiAdmitted: [],
+            workerProcessable: [1],
+        },
     };
     assert.equal(
         deployment.commandEnvironment('blue')
@@ -70,7 +83,17 @@ test('absent pronunciation metadata overrides stale operator enablement and pins
 });
 const digest = 'a'.repeat(64);
 const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    dictionaryJobs: {
+        ...EMPTY_DICTIONARY_JOB_CAPABILITIES,
+        generationBudget: {
+            maxInputTokensPerAttempt: 65536,
+            maxOutputTokensPerAttempt: 1024,
+            inputCostMicrosPerMillionTokens: 1000000,
+            outputCostMicrosPerMillionTokens: 4000000,
+            maxCostMicrosPerAttempt: 70000,
+        },
+    },
     identity: 'stage-test',
     version: null,
     sourceSha: sha,

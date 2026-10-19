@@ -157,13 +157,9 @@ export class DrizzleSpeechStore implements SpeechStore {
                 fixture ? 'fixture' : 'pronunciation',
             ),
         );
-        // Old canonical keys remain readable only within their recording class.
-        const legacyKeys = secrets.map((secret) =>
-            speechTextIdentity(secret, resolved.language, inspected.normalized),
-        );
         return {
             ...inspected,
-            keys: [...keys, ...legacyKeys],
+            keys,
             key: keys[0]!,
             fixture,
         };

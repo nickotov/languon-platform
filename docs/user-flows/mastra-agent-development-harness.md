@@ -81,9 +81,9 @@ must be loopback PostgreSQL, use a database name beginning with
 different from `DATABASE_URL`. Do not substitute shared, staging, production,
 or copied data.
 
-`MASTRA_MODEL_ID` defaults to `deepseek/deepseek-chat`. To exercise another
+`MASTRA_MODEL_ID` defaults to `deepseek/deepseek-flash`. To exercise another
 Mastra-supported model, set its `provider/model` identifier as the primary and
-add that provider's standard API-key variable. DeepSeek Chat remains the fixed
+add that provider's standard API-key variable. DeepSeek Flash remains the fixed
 fallback, so every live agent run also requires a development-only
 `DEEPSEEK_API_KEY`. Deterministic checks require neither credential.
 Provider `*_BASE_URL` overrides are intentionally unsupported: the DeepSeek
@@ -218,7 +218,7 @@ unit tests.
 - Missing `DEEPSEEK_API_KEY` affects only live agent invocation and prevents a
   run whose declared fallback would be unavailable.
 - With a different valid `MASTRA_MODEL_ID`, Mastra tries the configured primary
-  with no repeated request and then `deepseek/deepseek-chat`; fallback failure
+  with no repeated request and then `deepseek/deepseek-flash`; fallback failure
   is surfaced and no third provider is attempted.
 - `DEEPSEEK_BASE_URL` or the selected provider's `*_BASE_URL` override stops
   startup rather than redirecting credentials or prompts.

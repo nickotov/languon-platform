@@ -173,7 +173,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 id: revision,
                 version: 1,
                 createdByUserId: ownerId,
-                catalogSnapshot: { ...snapshot, modelId: 'deepseek-chat' },
+                catalogSnapshot: { ...snapshot, modelId: 'deepseek-flash' },
             });
             await db.insert(dictionaryAiConfigurationTable).values({
                 id: 'global',
@@ -580,7 +580,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db.insert(textAiPreferencesTable).values({
                 userId: ownerId,
                 mode: 'explicit',
-                modelId: 'deepseek-chat',
+                modelId: 'deepseek-flash',
                 version: 1,
             });
             await expect(

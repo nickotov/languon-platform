@@ -480,8 +480,17 @@ describe('shared UI accessibility contracts', () => {
         const user = userEvent.setup();
         render(
             <>
-                <Popover label='Practice information' trigger='Practice info'>
-                    <button type='button'>Use calm pace</button>
+                <Popover>
+                    <PopoverTrigger aria-label='Practice information'>
+                        Practice info
+                    </PopoverTrigger>
+                    <PopoverContent
+                        aria-label='Practice information'
+                        side='bottom'
+                        align='end'
+                    >
+                        <button type='button'>Use calm pace</button>
+                    </PopoverContent>
                 </Popover>
                 <button type='button'>After popover</button>
             </>,
@@ -573,11 +582,20 @@ describe('shared UI accessibility contracts', () => {
         expect(content).not.toHaveAttribute('sideoffset');
     });
 
-    it('opens both popover APIs in a body portal and consumes native close events', async () => {
+    it('opens a popover in a body portal and consumes native close events', async () => {
         const user = userEvent.setup();
         render(
-            <Popover label='Native information' trigger='Open native'>
-                Native content
+            <Popover>
+                <PopoverTrigger aria-label='Native information'>
+                    Open native
+                </PopoverTrigger>
+                <PopoverContent
+                    aria-label='Native information'
+                    side='bottom'
+                    align='end'
+                >
+                    Native content
+                </PopoverContent>
             </Popover>,
         );
         const trigger = screen.getByRole('button', {

@@ -171,17 +171,17 @@
             "title": "Build"
         },
         {
-            "batchEligible": true,
+            "batchEligible": false,
             "category": "Quality",
             "conflictsWith": ["dev:all"],
             "description": "Runs the complete repository quality and build gate.",
-            "disabledReason": null,
-            "enabled": true,
+            "disabledReason": "Changed package script requires an explicit safety review.",
+            "enabled": false,
             "id": "check",
             "kind": "task",
             "outputProtocol": "plain",
             "source": {
-                "revision": "sha256:d13d5b1c854fce43782d5f59dba22adffa73543afa9044967cb86fcf66b9da3a",
+                "revision": "sha256:cb81f075da403d2cca15a1ebf30fd18261c3df2d172e0ffc483e3ab22724d01d",
                 "script": "check",
                 "type": "package-script"
             },
@@ -684,6 +684,40 @@
             "title": "Dev · Web · Docker"
         },
         {
+            "batchEligible": false,
+            "category": "Development",
+            "conflictsWith": [],
+            "description": "Serve the read-only local diagram atlas on loopback port4401.",
+            "disabledReason": "New command awaits explicit web-dev-panel execution review; run it from the terminal.",
+            "enabled": false,
+            "id": "diagrams",
+            "kind": "service",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:68478f10e50ed07303bee2a543991d60417406d7b3e27dfe580c1a148cbb4771",
+                "script": "diagrams",
+                "type": "package-script"
+            },
+            "title": "Architecture diagrams"
+        },
+        {
+            "batchEligible": false,
+            "category": "Quality",
+            "conflictsWith": [],
+            "description": "Validate diagram metadata, Mermaid syntax and recorded source fingerprints.",
+            "disabledReason": "New command awaits explicit web-dev-panel execution review; run it from the terminal.",
+            "enabled": false,
+            "id": "diagrams:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:536f33fc73195959086cdeb095794480f668a30a1d0318ed547e5c99cdb6f699",
+                "script": "diagrams:check",
+                "type": "package-script"
+            },
+            "title": "Check diagram freshness"
+        },
+        {
             "batchEligible": true,
             "category": "Documentation",
             "conflictsWith": [],
@@ -837,17 +871,51 @@
             "title": "Resources · Profile"
         },
         {
-            "batchEligible": true,
+            "batchEligible": false,
+            "category": "Other",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "search:ast",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:812d8599c2277cfd4591e58bc247c7921cc20aa40836f7adcee049dd1c581265",
+                "script": "search:ast",
+                "type": "package-script"
+            },
+            "title": "Search · Ast"
+        },
+        {
+            "batchEligible": false,
+            "category": "Other",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "styles:check",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:5e3cf16af31982e7e7a6333698a300b24463adcfab77a66dabeab62c06a7f215",
+                "script": "styles:check",
+                "type": "package-script"
+            },
+            "title": "Styles · Check"
+        },
+        {
+            "batchEligible": false,
             "category": "Tests",
             "conflictsWith": [],
             "description": "Runs the repository automated test suite.",
-            "disabledReason": null,
-            "enabled": true,
+            "disabledReason": "Changed package script requires an explicit safety review.",
+            "enabled": false,
             "id": "test",
             "kind": "task",
             "outputProtocol": "plain",
             "source": {
-                "revision": "sha256:f9f5ba2eb8333c262fb0a308c204b9e74552e97c68aa04390ea37235e6919185",
+                "revision": "sha256:fd47e2c8660b10e04d6d9767476466fbf63b56bf25a0d414749d5374f2a3faef",
                 "script": "test",
                 "type": "package-script"
             },
@@ -871,6 +939,23 @@
             "title": "Test · Agent Browser"
         },
         {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:code-search",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:59159a9010a92d6993a36646512937980cc1413189f7211bb3f39097ad83f0ac",
+                "script": "test:code-search",
+                "type": "package-script"
+            },
+            "title": "Test · Code Search"
+        },
+        {
             "batchEligible": true,
             "category": "Tests",
             "conflictsWith": [],
@@ -886,6 +971,23 @@
                 "type": "package-script"
             },
             "title": "Test · Coverage"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Test diagram freshness, source confinement and the read-only local HTTP boundary.",
+            "disabledReason": "New command awaits explicit web-dev-panel execution review; run it from the terminal.",
+            "enabled": false,
+            "id": "test:diagrams",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:6bc6dc2c25ac6ab355091ba12ddf02ce4a03153520939895196a20f20d8396c7",
+                "script": "test:diagrams",
+                "type": "package-script"
+            },
+            "title": "Test architecture viewer"
         },
         {
             "batchEligible": true,
@@ -963,6 +1065,142 @@
                 "type": "package-script"
             },
             "title": "Test · E2e · AI Provider Management"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:e2e:contextual-assistant",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:aaf3c03d668e2ec20ac8e6e4fee83eb26561db3955a407e20d2e6856b16e7e7c",
+                "script": "test:e2e:contextual-assistant",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Contextual Assistant"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "Render and explore all source-backed diagrams in an owned local Chromium journey.",
+            "disabledReason": "New command awaits explicit web-dev-panel execution review; run it from the terminal.",
+            "enabled": false,
+            "id": "test:e2e:diagrams",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:3025fc1344300bb730f85d2d12dcb7083185d01d119eff56c5de03c20fb50ad4",
+                "script": "test:e2e:diagrams",
+                "type": "package-script"
+            },
+            "title": "Test diagram browser journey"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:e2e:sentence-practice-backend",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:16309598ac2a01dea29114575f47b17210214a194c09409ef1d6d91703833780",
+                "script": "test:e2e:sentence-practice-backend",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Sentence Practice Backend"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:e2e:shared-pronunciation",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:17f97cf5ad20dab7c49c75311a07e8debe58fde4b97862cae5d10ae5b00c4857",
+                "script": "test:e2e:shared-pronunciation",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Shared Pronunciation"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:e2e:texts",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:ab501fa4ff45d674211a43097ecfb797fe3e88b1426cda5e6ddac6973cd6db52",
+                "script": "test:e2e:texts",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Texts"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:e2e:texts-backend",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:25f21bfed5c524c62e0609ac3646a929fbda1a91724f6c425135015c52479c13",
+                "script": "test:e2e:texts-backend",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Texts Backend"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:e2e:texts-web",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:d01172f06683d63255e9c70f7098d93e980f4fd33cc4998ab95ff3434a973401",
+                "script": "test:e2e:texts-web",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · Texts Web"
+        },
+        {
+            "batchEligible": false,
+            "category": "Tests",
+            "conflictsWith": [],
+            "description": "New root package script awaiting a description and safety review.",
+            "disabledReason": "New package script requires an explicit safety review.",
+            "enabled": false,
+            "id": "test:e2e:user-ai-model-preferences-backend",
+            "kind": "task",
+            "outputProtocol": "plain",
+            "source": {
+                "revision": "sha256:af1f172923e04017402a14fe1a4224ff3eaa918e3d59e884f5d9fc186d9b88f5",
+                "script": "test:e2e:user-ai-model-preferences-backend",
+                "type": "package-script"
+            },
+            "title": "Test · E2e · User Ai Model Preferences Backend"
         },
         {
             "batchEligible": true,

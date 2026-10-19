@@ -64,8 +64,8 @@ function setup(
             providers: [],
             settings: {
                 activeProvider: 'deepseek',
-                defaultModel: 'deepseek-chat',
-                enabledModels: ['deepseek-chat'],
+                defaultModel: 'deepseek-flash',
+                enabledModels: ['deepseek-flash'],
                 updatedAt: now.toISOString(),
                 version: 1,
             },
@@ -185,8 +185,8 @@ describe('AdministrationService', () => {
         const { authentication, service, store } = setup();
         const input = {
             activeProvider: 'deepseek' as const,
-            defaultModel: 'deepseek-chat',
-            enabledModels: ['deepseek-chat'],
+            defaultModel: 'deepseek-flash',
+            enabledModels: ['deepseek-flash'],
             expectedVersion: 0,
             reason: 'Enable verified dictionary generation',
         };
