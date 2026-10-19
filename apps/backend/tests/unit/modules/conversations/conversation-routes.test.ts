@@ -81,7 +81,10 @@ it('keeps live SSE private and prevents proxy compression from buffering small b
                 ownerId: '00000000-0000-4000-8000-000000000002',
             }),
             admitStream: async () => ({ release: async () => {} }),
-            store: { detail: async () => ({}), events: async () => [] },
+            store: {
+                detail: async () => ({ turns: [] }),
+                events: async () => [],
+            },
         } as never,
         policy: new AuthHttpPolicy({
             allowedOrigins: ['http://localhost:3333'],

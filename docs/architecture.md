@@ -382,6 +382,9 @@ Web chat uses Vercel AI SDK UI with a custom transport projecting durable events
 into typed message/tool parts. Disconnecting a subscription leaves worker work
 running; explicit Stop requests cancellation. Knowledge editing uses Tiptap with
 a restricted, versioned ProseMirror contract and fixed safe rendering. Chat
-Markdown remains separate. See [ADR-0037](adr/0037-independent-knowledge-and-agent-proposals.md)
+Markdown remains separate and uses a restricted Streamdown renderer. Active SSE
+delivery and native incremental SDK projections retain durable replay; localized
+work/tool/writing activity stays visible before text and during pauses. See
+[ADR-0041](adr/0041-durable-tutor-streaming-presentation.md), [ADR-0037](adr/0037-independent-knowledge-and-agent-proposals.md)
 and [feature044](../.agent/features/044-contextual-language-assistant-and-knowledge/FEATURE.md)
 for decisions and implementation evidence.

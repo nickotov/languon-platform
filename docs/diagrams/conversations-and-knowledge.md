@@ -3,6 +3,13 @@ type: diagram
 title: Conversations and independent Knowledge
 summary: Durable contextual chat produces editable private drafts; only an explicit learner command publishes an independent note.
 source_paths:
+    - docs/adr/0041-durable-tutor-streaming-presentation.md
+    - apps/web/src/fsd/entities/conversation/lib/durable-message-projection.ts
+    - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream.ts
+    - apps/web/src/fsd/widgets/contextual-assistant/lib/conversation-stream-session.ts
+    - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-streaming-text.ts
+    - apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx
+    - apps/backend/src/modules/conversations/interface/http/conversation.routes.ts
     - apps/backend/src/modules/conversations/application/conversation-service.ts
     - apps/backend/src/modules/conversations/application/conversation-worker-service.ts
     - apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts
@@ -16,7 +23,7 @@ source_paths:
     - apps/web/src/fsd/entities/conversation/api/conversation-api.ts
     - apps/web/src/fsd/entities/conversation/api/durable-chat-transport.ts
     - apps/backend/tests/unit/modules/conversations/conversation-worker-service.test.ts
-source_fingerprint: sha256:91c2433f41bf49447f6143c18e4b1ad9dbb56e817e5c9a8fc67eaf55a46694ed
+source_fingerprint: sha256:b7f2580a99122176b042bb54f26086c1cbd7670f76026e9dad1dea7a7ce2bd39
 reviewed: 2026-10-19
 ---
 
@@ -76,6 +83,14 @@ not create a back-reference from the note to its old conversation.
 
 ## Sources
 
+- [docs/adr/0041-durable-tutor-streaming-presentation.md](../../docs/adr/0041-durable-tutor-streaming-presentation.md)
+- [apps/web/src/fsd/entities/conversation/lib/durable-message-projection.ts](../../apps/web/src/fsd/entities/conversation/lib/durable-message-projection.ts)
+- [apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream.ts](../../apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream.ts)
+- [apps/web/src/fsd/widgets/contextual-assistant/lib/conversation-stream-session.ts](../../apps/web/src/fsd/widgets/contextual-assistant/lib/conversation-stream-session.ts)
+- [apps/web/src/fsd/widgets/contextual-assistant/hooks/use-streaming-text.ts](../../apps/web/src/fsd/widgets/contextual-assistant/hooks/use-streaming-text.ts)
+- [apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx](../../apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx)
+- [apps/backend/src/modules/conversations/interface/http/conversation.routes.ts](../../apps/backend/src/modules/conversations/interface/http/conversation.routes.ts)
+
 - [apps/backend/src/modules/conversations/application/conversation-service.ts](../../apps/backend/src/modules/conversations/application/conversation-service.ts)
 - [apps/backend/src/modules/conversations/application/conversation-worker-service.ts](../../apps/backend/src/modules/conversations/application/conversation-worker-service.ts)
 - [apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts](../../apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts)
@@ -89,3 +104,13 @@ not create a back-reference from the note to its old conversation.
 - [apps/web/src/fsd/entities/conversation/api/conversation-api.ts](../../apps/web/src/fsd/entities/conversation/api/conversation-api.ts)
 - [apps/web/src/fsd/entities/conversation/api/durable-chat-transport.ts](../../apps/web/src/fsd/entities/conversation/api/durable-chat-transport.ts)
 - [apps/backend/tests/unit/modules/conversations/conversation-worker-service.test.ts](../../apps/backend/tests/unit/modules/conversations/conversation-worker-service.test.ts)
+
+Streaming presentation follows [ADR-0041](../adr/0041-durable-tutor-streaming-presentation.md):
+active125ms/idle1000ms SSE delivers committed canonical state, then the browser
+projects native incremental AI SDK parts and restricted Streamdown Markdown.
+Each committed conversation session owns its SDK Chat, callbacks, cache key and
+publication epoch; speculative React renders start no subscription. Terminal
+access loss purges only that owner and invalidates queued publications.
+Snapshots/reconnect still reconcile canonical history; UI reveal and activity
+indicators do not execute tools or change durable turn state. The graph's
+authority and data-flow relationships remain unchanged.

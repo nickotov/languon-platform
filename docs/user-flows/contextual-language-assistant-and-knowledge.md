@@ -130,8 +130,13 @@ configuration startup requires its guard and does not own this cleanup.
    On a shared dictionary, a signed-in reader gets the same right-side tutor
    slot. A signed-out visitor sees **Sign in to ask the language assistant**
    inside the main dictionary content, with no collapsed chat slot hiding it.
-2. Ask about meaning or grammar. Observe stable streaming prose, material discussed,
-   and final usage. Select **Charged credits** to open the usage popover above
+2. Ask about meaning or grammar. A visible activity indicator covers admission,
+   waiting for the first text, and tool work. The indicator shows **Writing…** as
+   small text updates arrive and **Working…** while generation pauses; it remains
+   visible even when an assistant placeholder is empty. Completed, failed and
+   explicitly stopped turns remove the activity indicator. Streamed Markdown
+   remains readable while incomplete and settles to the final explanation.
+   Observe material discussed and final usage. Select **Charged credits** to open the usage popover above
    the answer action; it shows model, input/output tokens and estimated/reported
    accounting. Escape closes the popover and restores focus to its trigger.
    **Minimize tutor** folds the widget into the lower-right pill while preserving
@@ -198,18 +203,30 @@ require `X-Languon-Share-Key`; never put the secret into logs or saved examples.
 
 ## E2E coverage
 
-| Scenario                                         | Observable proof                                                                                                                                                                    |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source-chat-save-knowledge`                     | Attached text layout, circular launcher tooltip, detached/reattached draft retention, non-modal source selection, folded editor retention, explicit publication and note revisions. |
-| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation.                     |
-| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                                         |
-| `durable-close-reopen-stop-retry`                | Narrow bottom-sheet fold/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry.                  |
-| `dictionary-card-copies-preserve-visible-fields` | Attached dictionary layout, desktop action tooltip and mobile chat stacking, real card APIs, fold-retained copies, field labels/languages, prompt delivery and readable history.    |
+| Scenario                                         | Observable proof                                                                                                                                                                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source-chat-save-knowledge`                     | Attached text layout, circular launcher tooltip, detached/reattached draft retention, non-modal source selection, first-text waiting and midstream pause indicators, rendered incremental timing, folded editor retention, explicit publication and note revisions. |
+| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation.                                                                                                     |
+| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                                                                                                                         |
+| `durable-close-reopen-stop-retry`                | Narrow bottom-sheet fold/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry.                                                                                                  |
+| `dictionary-card-copies-preserve-visible-fields` | Attached dictionary layout, desktop action tooltip and mobile chat stacking, real card APIs, fold-retained copies, field labels/languages, prompt delivery and readable history.                                                                                    |
 
 The `dictionary-card-copies-preserve-visible-fields` scenario also rotates a real sharing capability,
 opens the shared page as a separate authenticated reader and verifies right-side
 placement. An isolated signed-out browser context verifies the sign-in link is
 visible and clickable inside the main content.
+
+The source-chat browser journey delays only the external deterministic provider,
+emits four-character chunks every 140ms with a deliberate 1.1-second pause, and
+records actual rendered text mutations. It asserts prefix-preserving small
+updates, repeated subsecond delivery, empty-placeholder activity, pause activity,
+and completion cleanup. A second authorized subscription through the actual
+Next.js SSE proxy records wire delivery before display smoothing. It requires
+at least three distinct increasing-content arrivals separated by more than40ms
+and less than500ms, excluding coalesced same-packet bursts; a one-second polling
+regression cannot pass through animation alone. The existing narrow-screen journey retains real
+close/reopen, Stop, failure and explicit retry checks. No internal application
+layer or network transport is replaced for this streaming proof.
 
 Exhaustive category/schema validation, concurrency fences, accounting races,
 observer/reflector budgets, source-copy markup, and SQL cleanup invariants remain

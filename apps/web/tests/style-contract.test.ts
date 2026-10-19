@@ -9,6 +9,21 @@ import {
 } from '../scripts/style-contract';
 
 describe('CSS-only styling contract', () => {
+    it('permits AI SDK protocol literals while still rejecting alignment utilities in class attributes', () => {
+        expect(
+            inspectMarkup(
+                'const event = { type: "text-start" }; const delta = "text-delta"; const end = "text-end";',
+            ),
+        ).toEqual([]);
+        expect(
+            inspectMarkup('<div className="text-start text-end" />'),
+        ).toEqual(
+            expect.arrayContaining([
+                'Tailwind utility: text-start',
+                'Tailwind utility: text-end',
+            ]),
+        );
+    });
     it('rejects utilities in direct, conditional and computed class names', () => {
         expect(
             inspectMarkup('<div className="flex items-center" />'),

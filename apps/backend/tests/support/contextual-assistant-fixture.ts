@@ -131,6 +131,7 @@ function deterministicModel(
             }
             const ordinal = dispatched++;
             const draft = /draft|save|revise/iu.test(question) && ordinal === 0;
+            const progressive = /progressively/iu.test(question);
             const text = fail
                 ? 'Partial explanation before interruption.'
                 : 'A river bank is the land beside a river. This explanation uses your saved learning context.';
@@ -163,28 +164,61 @@ function deterministicModel(
                                     type: 'text-start',
                                     id: 'answer',
                                 });
-                                controller.enqueue({
-                                    type: 'text-delta',
-                                    id: 'answer',
-                                    delta: text.slice(0, 20),
-                                });
-                                await delay(
-                                    /slow/iu.test(question) ? 8_000 : 350,
-                                    undefined,
-                                    {
+                                if (progressive) {
+                                    // Delays/chunks live only at the external model boundary:
+                                    // Mastra, tools, durable writes, SSE and UI run unchanged.
+                                    await delay(900, undefined, {
                                         signal:
                                             options.abortSignal ?? undefined,
-                                    },
-                                );
-                                if (fail)
-                                    throw new Error(
-                                        'Deterministic interrupted provider response.',
+                                    });
+                                    for (
+                                        let offset = 0;
+                                        offset < text.length;
+                                        offset += 4
+                                    ) {
+                                        controller.enqueue({
+                                            type: 'text-delta',
+                                            id: 'answer',
+                                            delta: text.slice(
+                                                offset,
+                                                offset + 4,
+                                            ),
+                                        });
+                                        await delay(
+                                            offset === 40 ? 1_100 : 140,
+                                            undefined,
+                                            {
+                                                signal:
+                                                    options.abortSignal ??
+                                                    undefined,
+                                            },
+                                        );
+                                    }
+                                } else {
+                                    controller.enqueue({
+                                        type: 'text-delta',
+                                        id: 'answer',
+                                        delta: text.slice(0, 20),
+                                    });
+                                    await delay(
+                                        /slow/iu.test(question) ? 8_000 : 350,
+                                        undefined,
+                                        {
+                                            signal:
+                                                options.abortSignal ??
+                                                undefined,
+                                        },
                                     );
-                                controller.enqueue({
-                                    type: 'text-delta',
-                                    id: 'answer',
-                                    delta: text.slice(20),
-                                });
+                                    if (fail)
+                                        throw new Error(
+                                            'Deterministic interrupted provider response.',
+                                        );
+                                    controller.enqueue({
+                                        type: 'text-delta',
+                                        id: 'answer',
+                                        delta: text.slice(20),
+                                    });
+                                }
                                 controller.enqueue({
                                     type: 'text-end',
                                     id: 'answer',

@@ -12,6 +12,7 @@ export type ConversationUIMessage = UIMessage<
     ConversationMessage,
     {
         canonical: ConversationEvent;
+        reconcile: ConversationDetail;
         connection: { reconnecting: boolean };
         material: CopiedAttachment;
         knowledgeDraft: KnowledgeDraft;

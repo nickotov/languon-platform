@@ -2,6 +2,7 @@ import type { ChatTransport, UIMessageChunk } from 'ai';
 import {
     SubmitConversationTurnRequestSchema,
     type ConversationEvent,
+    type ConversationDetail,
     type ConversationTurn,
 } from '@languon/contracts';
 import {
@@ -10,11 +11,13 @@ import {
     type ConversationSessionRequest,
 } from './conversation-api';
 import type { ConversationUIMessage } from '../lib/conversation-ui-message';
+import { DurableMessageProjection } from '../lib/durable-message-projection';
 
 type TransportOptions = {
     request: ConversationSessionRequest;
     shareKey?: string | undefined;
     onAdmitted(turn: ConversationTurn): void;
+    getDetail?(): ConversationDetail | undefined;
 };
 
 /** Adapts durable admission/replay to AI SDK UI. Abort only disconnects the subscriber. */
@@ -65,6 +68,9 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
         const options = this.options;
         const cursor = this.cursor;
         let ended = false;
+        const projection = new DurableMessageProjection(
+            this.options.getDetail?.(),
+        );
         return new ReadableStream<UIMessageChunk>({
             start(stream) {
                 const connection = (reconnecting: boolean) => {
@@ -84,10 +90,15 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                                     id,
                                     cursor.after,
                                     (event: ConversationEvent) => {
-                                        if (controller.signal.aborted) return;
                                         if (
-                                            event.id <= cursor.after &&
-                                            event.type !== 'snapshot'
+                                            controller.signal.aborted ||
+                                            event.conversationId !== id
+                                        )
+                                            return;
+                                        if (
+                                            event.id < cursor.after ||
+                                            (event.id === cursor.after &&
+                                                event.type !== 'snapshot')
                                         )
                                             return;
                                         cursor.after = Math.max(
@@ -95,12 +106,10 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                                             event.id,
                                         );
                                         connection(false);
-                                        // Canonical replacement avoids replayed text/tool deltas duplicating history.
-                                        stream.enqueue({
-                                            type: 'data-canonical',
-                                            data: event,
-                                            transient: true,
-                                        });
+                                        for (const chunk of projection.project(
+                                            event,
+                                        ))
+                                            stream.enqueue(chunk);
                                     },
                                     controller.signal,
                                     options.shareKey,

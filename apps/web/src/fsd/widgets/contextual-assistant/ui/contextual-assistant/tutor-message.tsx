@@ -16,6 +16,7 @@ import {
 import { messagesCopy } from '../../lib/messages-copy';
 import { ConversationErrorNotice } from './conversation-error-notice';
 import { ChatMarkdown } from './chat-markdown';
+import { useStreamingText } from '../../hooks/use-streaming-text';
 import styles from './conversation-messages.module.css';
 
 export function TutorMessage({
@@ -43,12 +44,20 @@ export function TutorMessage({
     const [copied, setCopied] = useState(false);
     const [copyError, setCopyError] = useState(false);
     const canonical = message.metadata;
-    if (!canonical) return null;
-    const isUser = message.role === 'user';
+    const streaming = Boolean(
+        active &&
+        turn &&
+        turn.status === 'running' &&
+        message.role === 'assistant' &&
+        canonical?.status === 'streaming',
+    );
     const text = message.parts
         .filter((part) => part.type === 'text')
         .map((part) => part.text)
         .join('');
+    const displayedText = useStreamingText(text, streaming);
+    if (!canonical) return null;
+    const isUser = message.role === 'user';
     const materials = message.parts.filter(
         (part) => part.type === 'data-material',
     );
@@ -127,7 +136,10 @@ export function TutorMessage({
                         {text}
                     </p>
                 ) : (
-                    <ChatMarkdown content={text} />
+                    <ChatMarkdown
+                        content={displayedText}
+                        streaming={streaming}
+                    />
                 )}
                 {canonical.sourceProvenance === 'draft' && (
                     <span className={styles.notice}>{copy.draftLabel}</span>

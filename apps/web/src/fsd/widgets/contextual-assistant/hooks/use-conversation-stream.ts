@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
@@ -7,13 +7,10 @@ import type {
     SubmitConversationTurnRequest,
 } from '@languon/contracts';
 import {
-    DurableChatTransport,
-    ConversationApiError,
     conversationUIMessages,
-    reduceConversationEvent,
     type ConversationSessionRequest,
-    type ConversationUIMessage,
 } from '@/fsd/entities/conversation';
+import { createConversationStreamSession } from '../lib/conversation-stream-session';
 
 export function useConversationStream(
     actorId: string,
@@ -23,83 +20,65 @@ export function useConversationStream(
     detail: ConversationDetail | undefined,
 ) {
     const client = useQueryClient();
-    const [reconnecting, setReconnecting] = useState(false);
-    const [unavailable, setUnavailable] = useState(false);
-    const admission = useRef<{
-        resolve(turn: ConversationTurn): void;
-        reject(error: Error): void;
-    } | null>(null);
-    const transport = useMemo(
+    const session = useMemo(
         () =>
-            new DurableChatTransport({
+            createConversationStreamSession({
+                actorId,
+                id,
                 request,
                 shareKey,
-                onAdmitted(turn) {
-                    admission.current?.resolve(turn);
-                    admission.current = null;
-                },
+                client,
             }),
-        [request, shareKey, id],
+        [actorId, id, request, shareKey, client],
     );
-    const sdk = useChat<ConversationUIMessage>({
-        id: id ?? `pending:${actorId}`,
-        transport,
-        // Tools run only in the durable worker. Receiving an output never submits a turn.
-        sendAutomaticallyWhen: () => false,
-        onData(part) {
-            if (part.type === 'data-connection') {
-                setReconnecting(part.data.reconnecting);
-                return;
-            }
-            if (
-                part.type !== 'data-canonical' ||
-                part.data.conversationId !== id
-            )
-                return;
-            client.setQueryData<ConversationDetail>(
-                ['conversation', actorId, id],
-                (current) => reduceConversationEvent(current, part.data),
-            );
-        },
-        onError(error) {
-            admission.current?.reject(error);
-            admission.current = null;
-            if (
-                error instanceof ConversationApiError &&
-                [401, 403, 404, 410].includes(error.status)
-            ) {
-                client.removeQueries({
-                    queryKey: ['conversation', actorId, id],
-                    exact: true,
-                });
-                setUnavailable(true);
-            }
-        },
-    });
-    const { resumeStream, setMessages, stop: disconnect } = sdk;
-    useEffect(() => {
-        if (detail) setMessages(conversationUIMessages(detail));
-    }, [detail, setMessages]);
-    useEffect(() => {
-        setUnavailable(false);
-        setReconnecting(false);
-        if (id) void resumeStream();
+    const { state, chat, transport, resetPublication } = session;
+    const sdk = useChat({ chat });
+    const flags = useSyncExternalStore(
+        session.subscribe,
+        session.getSnapshot,
+        session.getSnapshot,
+    );
+
+    // Commit owns activation. A speculative/suspended render creates an inert owner;
+    // it cannot redirect callbacks or invalidate the still-committed subscription.
+    useLayoutEffect(() => {
+        state.mounted = true;
+        resetPublication(true);
+        session.updateFlags({ unavailable: false, reconnecting: false });
+        if (id) void chat.resumeStream();
         return () => {
-            // SDK stop/transport close only detach HTTP; the server keeps working.
+            state.mounted = false;
+            resetPublication(false);
             transport.close();
-            void disconnect();
+            void chat.stop();
+            state.admission?.reject(new Error('Conversation disconnected.'));
+            state.admission = null;
         };
-    }, [id, resumeStream, disconnect, transport]);
+    }, [session, state, resetPublication, transport, chat, id]);
+    useLayoutEffect(() => {
+        if (!state.active || detail?.conversation.id !== id) return;
+        state.detail = detail;
+        if (!state.bootstrapped && detail) {
+            state.bootstrapped = true;
+            chat.messages = conversationUIMessages(detail);
+        }
+    }, [detail, id, state, chat]);
+
     async function submit(
         input: SubmitConversationTurnRequest,
     ): Promise<{ turn: ConversationTurn }> {
-        if (!id) throw new Error('Conversation is unavailable.');
-        await disconnect();
-        sdk.clearError();
+        if (!id || !state.mounted)
+            throw new Error('Conversation is unavailable.');
+        const epoch = state.epoch;
+        await chat.stop();
+        if (!state.mounted || state.epoch !== epoch)
+            throw new Error('Conversation is unavailable.');
+        resetPublication(true);
+        chat.clearError();
         const accepted = new Promise<ConversationTurn>((resolve, reject) => {
-            admission.current = { resolve, reject };
+            state.admission = { resolve, reject };
         });
-        void sdk
+        void chat
             .sendMessage(
                 {
                     id: input.requestId,
@@ -109,26 +88,22 @@ export function useConversationStream(
                 { body: { turn: input } },
             )
             .catch((error: unknown) => {
-                admission.current?.reject(
+                state.admission?.reject(
                     error instanceof Error
                         ? error
                         : new Error('Admission failed.'),
                 );
-                admission.current = null;
+                state.admission = null;
             });
         return { turn: await accepted };
     }
     async function reconnect() {
-        await disconnect();
-        setUnavailable(false);
-        sdk.clearError();
-        void resumeStream();
+        await chat.stop();
+        if (!state.mounted) return;
+        resetPublication(true);
+        session.updateFlags({ unavailable: false, reconnecting: false });
+        chat.clearError();
+        void chat.resumeStream();
     }
-    return {
-        reconnecting,
-        unavailable,
-        submit,
-        reconnect,
-        messages: sdk.messages,
-    };
+    return { ...flags, submit, reconnect, messages: sdk.messages };
 }

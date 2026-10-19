@@ -2,6 +2,11 @@ import type { Locale } from '@/fsd/shared/i18n';
 const messages = {
     en: {
         summary: 'Short summary',
+        waiting: 'Getting ready…',
+        working: 'Working…',
+        writing: 'Writing…',
+        reading: 'Reading context…',
+        preparing: 'Preparing a note…',
         explanation: 'Explanation and examples',
         preview: 'Preview',
         edit: 'Edit',
@@ -23,6 +28,11 @@ const messages = {
     },
     ru: {
         summary: 'Краткое описание',
+        waiting: 'Подготовка…',
+        working: 'Работаю…',
+        writing: 'Пишу…',
+        reading: 'Читаю контекст…',
+        preparing: 'Готовлю заметку…',
         explanation: 'Объяснение и примеры',
         preview: 'Предпросмотр',
         edit: 'Редактировать',
@@ -45,6 +55,11 @@ const messages = {
     },
     es: {
         summary: 'Resumen breve',
+        waiting: 'Preparando…',
+        working: 'Procesando…',
+        writing: 'Escribiendo…',
+        reading: 'Leyendo el contexto…',
+        preparing: 'Preparando una nota…',
         explanation: 'Explicación y ejemplos',
         preview: 'Vista previa',
         edit: 'Editar',
@@ -67,6 +82,11 @@ const messages = {
     },
     fr: {
         summary: 'Résumé court',
+        waiting: 'Préparation…',
+        working: 'En cours…',
+        writing: 'Rédaction…',
+        reading: 'Lecture du contexte…',
+        preparing: 'Préparation d’une note…',
         explanation: 'Explication et exemples',
         preview: 'Aperçu',
         edit: 'Modifier',

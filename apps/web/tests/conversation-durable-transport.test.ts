@@ -13,6 +13,7 @@ import {
     conversationUIMessages,
     type ConversationUIMessage,
 } from '../src/fsd/entities/conversation/lib/conversation-ui-message';
+import { DurableMessageProjection } from '../src/fsd/entities/conversation/lib/durable-message-projection';
 import { reduceConversationEvent } from '../src/fsd/entities/conversation/lib/reduce-event';
 
 const conversationId = 'a6e3a080-82b5-4cc6-ab7f-610517abb087';
@@ -123,9 +124,11 @@ describe('durable AI SDK UI transport', () => {
                 transport,
                 sendAutomaticallyWhen: () => false,
                 onData(part) {
+                    if (part.type === 'data-reconcile') {
+                        chat.messages = conversationUIMessages(part.data);
+                    }
                     if (part.type !== 'data-canonical') return;
                     canonical = reduceConversationEvent(canonical, part.data)!;
-                    chat.messages = conversationUIMessages(canonical);
                 },
             });
         const requestId = '82953067-877d-419b-baf9-a27bbde32e89';
@@ -148,7 +151,13 @@ describe('durable AI SDK UI transport', () => {
         expect(chat.messages).toHaveLength(1);
         expect(
             chat.messages[0]?.parts.filter((part) => part.type === 'text'),
-        ).toEqual([{ type: 'text', text: 'Hello' }]);
+        ).toEqual([
+            expect.objectContaining({
+                type: 'text',
+                text: 'Hello',
+                state: 'done',
+            }),
+        ]);
         expect(
             chat.messages[0]?.parts.find(
                 (part) => part.type === 'tool-read_source_context',
@@ -263,10 +272,11 @@ describe('durable AI SDK UI transport', () => {
                 onData(part) {
                     if (part.type === 'data-connection')
                         connections.push(part.data.reconnecting);
+                    if (part.type === 'data-reconcile')
+                        chat.messages = conversationUIMessages(part.data);
                     if (part.type !== 'data-canonical') return;
                     received.push(part.data.id);
                     canonical = reduceConversationEvent(canonical, part.data)!;
-                    chat.messages = conversationUIMessages(canonical);
                 },
             });
         const completion = chat.resumeStream();
@@ -283,7 +293,13 @@ describe('durable AI SDK UI transport', () => {
             expect(chat.messages).toHaveLength(1);
             expect(
                 chat.messages[0]?.parts.filter((part) => part.type === 'text'),
-            ).toEqual([{ type: 'text', text: 'Hello' }]);
+            ).toEqual([
+                expect.objectContaining({
+                    type: 'text',
+                    text: 'Hello',
+                    state: 'done',
+                }),
+            ]);
             expect(
                 chat.messages[0]?.parts.filter(
                     (part) => part.type === 'tool-read_source_context',
@@ -295,6 +311,247 @@ describe('durable AI SDK UI transport', () => {
                 ),
             ).toMatchObject({ state: 'output-available' });
             expect(submit).not.toHaveBeenCalled();
+        } finally {
+            await chat.stop();
+            transport.close();
+            await completion;
+        }
+    });
+
+    it('updates the actual SDK progressively without canonical resets and safely rebuilds truncation or a later turn', async () => {
+        let receive!: (event: ConversationEvent) => void;
+        vi.spyOn(conversationApi, 'events').mockImplementation(
+            async (_token, _id, _after, onEvent, signal) => {
+                receive = onEvent;
+                onEvent({
+                    id: 1,
+                    conversationId,
+                    createdAt: date,
+                    type: 'snapshot',
+                    data: initial,
+                });
+                await new Promise<void>((resolve) =>
+                    signal.addEventListener('abort', () => resolve(), {
+                        once: true,
+                    }),
+                );
+            },
+        );
+        const reconciliations = vi.fn();
+        const transport = new DurableChatTransport({
+            request: (operation) => operation('local-token'),
+            onAdmitted: vi.fn(),
+        });
+        const chat: Chat<ConversationUIMessage> =
+            new Chat<ConversationUIMessage>({
+                id: conversationId,
+                transport,
+                onData(part) {
+                    if (part.type === 'data-reconcile') {
+                        reconciliations();
+                        chat.messages = conversationUIMessages(part.data);
+                    }
+                },
+            });
+        const completion = chat.resumeStream();
+        function update(
+            id: number,
+            content: string,
+            status: 'streaming' | 'complete' | 'incomplete' = 'streaming',
+            assistantId = messageId,
+        ) {
+            receive({
+                ...event,
+                id,
+                data: {
+                    ...message,
+                    id: assistantId,
+                    content,
+                    status,
+                    toolCalls: [],
+                },
+            });
+        }
+        const text = (index = 0) =>
+            chat.messages[index]?.parts
+                .filter((part) => part.type === 'text')
+                .map((part) => part.text)
+                .join('');
+        try {
+            await vi.waitFor(() => expect(receive).toBeDefined());
+            update(2, 'Hel');
+            await vi.waitFor(() => expect(text()).toBe('Hel'));
+            update(3, 'Hello');
+            await vi.waitFor(() => expect(text()).toBe('Hello'));
+            receive({
+                ...event,
+                id: 999,
+                conversationId: '397ec960-17c8-47b8-836d-a1627a361c45',
+            });
+            update(2, 'Old replay');
+            update(3, 'Repeated ID');
+            update(4, 'Hello world');
+            await vi.waitFor(() => expect(text()).toBe('Hello world'));
+            receive({
+                id: 1,
+                conversationId,
+                createdAt: date,
+                type: 'snapshot',
+                data: initial,
+            });
+            expect(reconciliations).toHaveBeenCalledTimes(1);
+            // A canonical restart/truncation replaces text rather than appending it.
+            update(5, 'New');
+            await vi.waitFor(() => expect(text()).toBe('New'));
+            update(6, 'New answer', 'incomplete');
+            await vi.waitFor(() =>
+                expect(chat.messages[0]?.metadata?.status).toBe('incomplete'),
+            );
+            expect(text()).toBe('New answer');
+            expect(
+                chat.messages[0]?.parts.filter((part) => part.type === 'text'),
+            ).toHaveLength(1);
+            update(
+                7,
+                'Another turn',
+                'complete',
+                'c7dfeec2-cc5f-4eb4-97b8-02201737ff8a',
+            );
+            await vi.waitFor(() => expect(text(1)).toBe('Another turn'));
+            expect(text()).toBe('New answer');
+            expect(chat.messages).toHaveLength(2);
+            expect(reconciliations).toHaveBeenCalledTimes(1);
+        } finally {
+            await chat.stop();
+            transport.close();
+            await completion;
+        }
+    });
+
+    it('emits only an appended text suffix and rebuilds public parts if canonical attachments/tools are removed', () => {
+        const projection = new DurableMessageProjection(initial);
+        const first: ConversationEvent = {
+            ...event,
+            data: { ...message, content: 'First', status: 'streaming' },
+        };
+        const initialChunks = projection.project(first);
+        expect(initialChunks).toContainEqual({
+            type: 'text-delta',
+            id: 'answer',
+            delta: 'First',
+        });
+        const appended = projection.project({
+            ...first,
+            id: 3,
+            data: { ...first.data, content: 'First second' },
+        });
+        expect(appended.filter((chunk) => chunk.type === 'text-delta')).toEqual(
+            [{ type: 'text-delta', id: 'answer', delta: ' second' }],
+        );
+        expect(
+            appended.some(
+                (chunk) =>
+                    chunk.type === 'reset-step' ||
+                    chunk.type === 'data-reconcile' ||
+                    chunk.type === 'start',
+            ),
+        ).toBe(false);
+        const rebuilt = projection.project({
+            ...first,
+            id: 4,
+            data: {
+                ...first.data,
+                attachments: [],
+                toolCalls: [],
+                content: 'First second',
+            },
+        });
+        expect(rebuilt).toContainEqual({ type: 'reset-step' });
+        expect(rebuilt.filter((chunk) => chunk.type === 'text-delta')).toEqual([
+            { type: 'text-delta', id: 'answer', delta: 'First second' },
+        ]);
+        expect(
+            rebuilt.some(
+                (chunk) =>
+                    chunk.type === 'data-material' ||
+                    chunk.type.startsWith('tool-'),
+            ),
+        ).toBe(false);
+    });
+
+    it('reconciles initial readable history then continues its partial assistant without duplicates', async () => {
+        const historicalId = 'b4d2e09b-0854-4711-b2b4-1bfdc05477c9';
+        const partial = {
+            ...message,
+            status: 'streaming' as const,
+            content: 'Hello',
+            toolCalls: [],
+        };
+        const snapshot = {
+            ...initial,
+            messages: [
+                { ...message, id: historicalId, content: 'Earlier answer' },
+                partial,
+            ],
+        };
+        let receive!: (event: ConversationEvent) => void;
+        vi.spyOn(conversationApi, 'events').mockImplementation(
+            async (_token, _id, _after, onEvent, signal) => {
+                receive = onEvent;
+                onEvent({
+                    id: 2,
+                    conversationId,
+                    createdAt: date,
+                    type: 'snapshot',
+                    data: snapshot,
+                });
+                await new Promise<void>((resolve) =>
+                    signal.addEventListener('abort', () => resolve(), {
+                        once: true,
+                    }),
+                );
+            },
+        );
+        const transport = new DurableChatTransport({
+            request: (operation) => operation('local-token'),
+            onAdmitted: vi.fn(),
+        });
+        const chat: Chat<ConversationUIMessage> =
+            new Chat<ConversationUIMessage>({
+                id: conversationId,
+                transport,
+                onData(part) {
+                    if (part.type === 'data-reconcile')
+                        chat.messages = conversationUIMessages(part.data);
+                },
+            });
+        const completion = chat.resumeStream();
+        try {
+            await vi.waitFor(() => expect(chat.messages).toHaveLength(2));
+            receive({
+                ...event,
+                id: 3,
+                data: {
+                    ...partial,
+                    content: 'Hello world',
+                    status: 'complete',
+                },
+            });
+            await vi.waitFor(() =>
+                expect(chat.messages[1]?.metadata?.status).toBe('complete'),
+            );
+            expect(chat.messages.map((item) => item.id)).toEqual([
+                historicalId,
+                messageId,
+            ]);
+            expect(chat.messages[0]?.parts[0]).toMatchObject({
+                text: 'Earlier answer',
+            });
+            expect(
+                chat.messages[1]?.parts.filter((part) => part.type === 'text'),
+            ).toEqual([
+                expect.objectContaining({ text: 'Hello world', state: 'done' }),
+            ]);
         } finally {
             await chat.stop();
             transport.close();

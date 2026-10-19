@@ -15,12 +15,14 @@ import { emptyStateCopy } from '../../lib/empty-state-copy';
 import { messagesCopy } from '../../lib/messages-copy';
 import { messageScrollSignature } from '../../lib/message-scroll-signature';
 import { TutorMessage } from './tutor-message';
+import { TutorActivity } from '../tutor-activity/tutor-activity';
 import styles from './conversation-messages.module.css';
 
 export function ConversationMessages({
     detail,
     uiMessages,
     active,
+    pending = false,
     onRetry,
     onPropose,
     onSuggest,
@@ -31,6 +33,7 @@ export function ConversationMessages({
     detail: ConversationDetail;
     uiMessages: ConversationUIMessage[];
     active: boolean;
+    pending?: boolean;
     onRetry(turn: ConversationTurn): void;
     onPropose(message?: ConversationUIMessage): void;
     onSuggest?: (text: string) => void;
@@ -81,13 +84,30 @@ export function ConversationMessages({
                     : undefined,
             };
         });
-    const waiting =
-        active &&
-        !messages.some(
-            ({ message }) =>
-                message.role === 'assistant' &&
-                message.metadata?.status === 'streaming',
-        );
+    const activeTurn = detail.turns.find(
+        (turn) => turn.status === 'queued' || turn.status === 'running',
+    );
+    const answer = uiMessages.find(
+        (message) =>
+            message.role === 'assistant' &&
+            message.metadata?.turnId === activeTurn?.id,
+    );
+    const activeText =
+        answer?.parts
+            .filter((part) => part.type === 'text')
+            .map((part) => part.text)
+            .join('') ?? '';
+    const currentTool = answer?.parts.find(
+        (part) =>
+            (part.type === 'tool-read_source_context' ||
+                part.type === 'tool-propose_knowledge_note') &&
+            part.state === 'input-available',
+    );
+    let tool: 'reading' | 'preparing' | undefined;
+    if (currentTool?.type === 'tool-read_source_context') tool = 'reading';
+    if (currentTool?.type === 'tool-propose_knowledge_note') tool = 'preparing';
+    const responding = active || pending;
+    const queued = pending || activeTurn?.status === 'queued';
     return (
         <div className={styles.frame}>
             <div
@@ -125,11 +145,12 @@ export function ConversationMessages({
                             onPropose={onPropose}
                         />
                     ))}
-                    {waiting && (
-                        <p className={styles.notice} role='status'>
-                            {copy.running}
-                        </p>
-                    )}
+                    <TutorActivity
+                        active={responding}
+                        queued={queued}
+                        text={activeText}
+                        tool={tool}
+                    />
                     {children}
                 </div>
             </div>

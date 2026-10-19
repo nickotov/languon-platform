@@ -1,0 +1,5 @@
+080f23aec0e676adc55c1661f122ccc005a68fed16b869d3bba5c5d258a433f1  apps/backend/tests/support/contextual-assistant-fixture.ts
+cf2de30331dc3451c988addf76b1722a41fd4f7e89d03f6c3d5038cc38a79a6d  apps/web/tests/e2e/contextual-assistant.journeys.spec.ts
+a887e90fa320fdd93ed1d19babafc5acbafd1c44abe5390e858f0792bc8fad02  docs/user-flows/contextual-language-assistant-and-knowledge.md
+4aeb96a8999029914ef0317a06fa2fa9b27a201602b8239fefa98ba6c53fb749  apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream.ts
+435d18ea80d129b08fda7b2c67ca82cbad9c9591c7dade25126ab15a140650aa  apps/web/src/fsd/widgets/contextual-assistant/lib/conversation-stream-session.ts

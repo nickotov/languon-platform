@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ConversationDetail, ConversationEvent } from '@languon/contracts';
+import type {
+    ConversationDetail,
+    ConversationEvent,
+    ConversationTurn,
+} from '@languon/contracts';
 import { ConversationService } from '../../../../src/modules/conversations/application/conversation-service';
 import type { ConversationStore } from '../../../../src/modules/conversations/application/ports/conversation-store';
 import { ConversationError } from '../../../../src/modules/conversations/domain/conversation';
@@ -13,6 +17,21 @@ import {
 } from '../../../../src/modules/authentication/application/ports/rate-limiter';
 
 const conversationId = '00000000-0000-4000-8000-000000000001';
+const turn: ConversationTurn = {
+    id: '00000000-0000-4000-8000-000000000002',
+    conversationId,
+    modelId: null,
+    status: 'running',
+    failureCode: null,
+    usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        chargedCredits: '0',
+        estimated: false,
+    },
+    createdAt: '2026-10-19T00:00:00Z',
+    updatedAt: '2026-10-19T00:00:00Z',
+};
 const detail: ConversationDetail = {
     conversation: {
         id: conversationId,
@@ -41,7 +60,7 @@ function fixture(
         },
     ],
 ) {
-    const events = vi.fn(readEvents),
+    const events = vi.fn<ConversationStore['events']>(readEvents),
         authenticate = vi.fn(async () => ({ userId: conversationId }));
     const consume = vi.fn<RateLimiter['consume']>(async () => ({
         allowed: true,
@@ -90,6 +109,228 @@ afterEach(() => {
     vi.useRealTimers();
 });
 describe('durable conversation stream polling policy', () => {
+    it('polls active turns every125ms then returns to idle cadence on completion', async () => {
+        vi.useFakeTimers();
+        const activeDetail = { ...detail, turns: [turn] };
+        const { app, readDetail, events, authenticate } = fixture(
+            async () => [],
+        );
+        readDetail.mockResolvedValue(activeDetail);
+        events.mockResolvedValueOnce([
+            {
+                id: 5,
+                conversationId,
+                type: 'snapshot',
+                data: activeDetail,
+                createdAt: turn.createdAt,
+            },
+        ]);
+        const response = await app.request(
+            `/conversations/${conversationId}/events`,
+            {
+                headers: { Authorization: 'Bearer a.b.c' },
+            },
+        );
+        const reader = response.body!.getReader();
+        try {
+            await reader.read();
+            await vi.advanceTimersByTimeAsync(124);
+            expect(events).toHaveBeenCalledTimes(1);
+            await vi.advanceTimersByTimeAsync(1);
+            expect(events).toHaveBeenCalledTimes(2);
+            await reader.read();
+            events.mockResolvedValueOnce([
+                {
+                    id: 6,
+                    conversationId,
+                    type: 'turn',
+                    data: { ...turn, status: 'succeeded' },
+                    createdAt: turn.createdAt,
+                },
+            ]);
+            await vi.advanceTimersByTimeAsync(125);
+            expect(events).toHaveBeenCalledTimes(3);
+            await reader.read();
+            await vi.advanceTimersByTimeAsync(0);
+            await vi.advanceTimersByTimeAsync(999);
+            expect(events).toHaveBeenCalledTimes(3);
+            await vi.advanceTimersByTimeAsync(1);
+            expect(events).toHaveBeenCalledTimes(4);
+            expect(authenticate).toHaveBeenCalledTimes(5);
+        } finally {
+            await reader.cancel();
+        }
+    });
+    it('seeds active cadence from initial detail before any turn event arrives', async () => {
+        vi.useFakeTimers();
+        const { app, readDetail, events } = fixture(async () => []);
+        readDetail.mockResolvedValue({
+            ...detail,
+            turns: [{ ...turn, status: 'queued' }],
+        });
+        const response = await app.request(
+            `/conversations/${conversationId}/events`,
+            {
+                headers: { Authorization: 'Bearer a.b.c' },
+            },
+        );
+        const reader = response.body!.getReader();
+        try {
+            await reader.read();
+            await vi.advanceTimersByTimeAsync(125);
+            expect(events).toHaveBeenCalledTimes(2);
+        } finally {
+            await reader.cancel();
+        }
+    });
+    it('drains saturated replay promptly with a fresh authorization check and forward cursor', async () => {
+        vi.useFakeTimers();
+        const batch: ConversationEvent[] = Array.from(
+            { length: 100 },
+            (_, index) => ({
+                id: index + 1,
+                conversationId,
+                type: 'turn',
+                data: turn,
+                createdAt: turn.createdAt,
+            }),
+        );
+        const { app, events, authenticate } = fixture(async () => []);
+        events.mockResolvedValueOnce(batch);
+        const response = await app.request(
+            `/conversations/${conversationId}/events?after=1`,
+            {
+                headers: { Authorization: 'Bearer a.b.c' },
+            },
+        );
+        const reader = response.body!.getReader();
+        try {
+            for (let index = 0; index < 100; index++) await reader.read();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(events).toHaveBeenCalledTimes(2);
+            expect(events.mock.calls[1]?.[2]).toBe(100);
+            expect(authenticate).toHaveBeenCalledTimes(3);
+            await vi.advanceTimersByTimeAsync(124);
+            expect(events).toHaveBeenCalledTimes(2);
+        } finally {
+            await reader.cancel();
+        }
+    });
+    it('revalidates active streams before reading another batch after session revocation', async () => {
+        vi.useFakeTimers();
+        const { app, readDetail, events, authenticate, release } = fixture(
+            async () => [],
+        );
+        readDetail.mockResolvedValue({ ...detail, turns: [turn] });
+        const response = await app.request(
+            `/conversations/${conversationId}/events`,
+            {
+                headers: { Authorization: 'Bearer a.b.c' },
+            },
+        );
+        const reader = response.body!.getReader();
+        await reader.read();
+        authenticate.mockRejectedValueOnce(new AuthenticationRequiredError());
+        await vi.advanceTimersByTimeAsync(125);
+        expect(events).toHaveBeenCalledTimes(1);
+        expect(new TextDecoder().decode((await reader.read()).value)).toContain(
+            '"status":401',
+        );
+        expect(release).toHaveBeenCalledTimes(1);
+        await reader.cancel();
+    });
+    it('never spins on unchanged zero-id snapshots while a turn is active', async () => {
+        vi.useFakeTimers();
+        const activeDetail = { ...detail, turns: [turn] };
+        const { app, events } = fixture(async () => [
+            {
+                id: 0,
+                conversationId,
+                type: 'snapshot',
+                data: activeDetail,
+                createdAt: turn.createdAt,
+            },
+        ]);
+        const response = await app.request(
+            `/conversations/${conversationId}/events`,
+            {
+                headers: { Authorization: 'Bearer a.b.c' },
+            },
+        );
+        const reader = response.body!.getReader();
+        try {
+            await reader.read();
+            await vi.advanceTimersByTimeAsync(125);
+            const frame = new TextDecoder().decode((await reader.read()).value);
+            expect(frame).toContain('event: heartbeat');
+            expect(frame).not.toContain('snapshot');
+            await vi.advanceTimersByTimeAsync(124);
+            expect(events).toHaveBeenCalledTimes(2);
+        } finally {
+            await reader.cancel();
+        }
+    });
+    it('does not busy-loop a full non-progressing replay page', async () => {
+        vi.useFakeTimers();
+        const { app, events } = fixture(async () =>
+            Array.from({ length: 100 }, () => ({
+                id: 7,
+                conversationId,
+                type: 'turn',
+                data: turn,
+                createdAt: turn.createdAt,
+            })),
+        );
+        const response = await app.request(
+            `/conversations/${conversationId}/events?after=7`,
+            {
+                headers: { Authorization: 'Bearer a.b.c' },
+            },
+        );
+        const reader = response.body!.getReader();
+        try {
+            for (let index = 0; index < 100; index++) await reader.read();
+            await vi.advanceTimersByTimeAsync(124);
+            expect(events).toHaveBeenCalledTimes(1);
+        } finally {
+            await reader.cancel();
+        }
+    });
+    it('does not emit an in-flight batch that returns after stream expiry', async () => {
+        vi.useFakeTimers();
+        let entered!: () => void, resume!: () => void;
+        const started = new Promise<void>((resolve) => {
+            entered = resolve;
+        });
+        const waiting = new Promise<void>((resolve) => {
+            resume = resolve;
+        });
+        const { app, release } = fixture(async () => {
+            entered();
+            await waiting;
+            return [
+                {
+                    id: 1,
+                    conversationId,
+                    type: 'turn',
+                    data: turn,
+                    createdAt: turn.createdAt,
+                },
+            ];
+        });
+        const response = await app.request(
+            `/conversations/${conversationId}/events`,
+            {
+                headers: { Authorization: 'Bearer a.b.c' },
+            },
+        );
+        await started;
+        await vi.advanceTimersByTimeAsync(240_000);
+        expect(release).toHaveBeenCalledTimes(1);
+        resume();
+        expect(await response.text()).toBe('');
+        expect(release).toHaveBeenCalledTimes(1);
+    });
     it('fails before polling when stream capacity or Redis admission is unavailable', async () => {
         for (const mode of [
             'full',

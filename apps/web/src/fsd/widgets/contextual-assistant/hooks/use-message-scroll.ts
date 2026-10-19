@@ -54,6 +54,8 @@ export function useMessageScroll(identity: string, signature: string) {
             if (!nearBottom()) setShowJump(true);
         });
         observer.observe(node);
+        // Local streaming reveal grows the transcript without resizing its viewport.
+        if (node.firstElementChild) observer.observe(node.firstElementChild);
         return () => observer.disconnect();
     }, [identity]);
     useEffect(() => {

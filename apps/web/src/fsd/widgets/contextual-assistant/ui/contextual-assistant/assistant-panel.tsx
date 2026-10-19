@@ -149,6 +149,7 @@ export function AssistantPanel(
                             contextLabel={props.contextLabel}
                             uiMessages={chat.stream.messages}
                             active={panel.active}
+                            pending={chat.submit.isPending}
                             onRetry={panel.retry}
                             onPropose={panel.propose}
                             onSuggest={chat.setQuestion}

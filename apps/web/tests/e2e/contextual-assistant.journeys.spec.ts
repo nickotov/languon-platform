@@ -1,5 +1,5 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:746b3cafb3d922b4
-import { mkdir, copyFile } from 'node:fs/promises';
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:933d796afdfaae27
+import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
     expect,
@@ -220,13 +220,172 @@ async function capture(page: Page, info: TestInfo, name: string) {
     }
 }
 
+/** A second real authorized subscription measures proxy delivery before UI smoothing. */
+async function observeWire(page: Page, token: string, conversationId: string) {
+    const { ConversationEventSchema } = await import('@languon/contracts');
+    const controller = new AbortController();
+    const samples: { at: number; text: string }[] = [];
+    let ready!: () => void;
+    let rejected!: (error: unknown) => void;
+    const initial = new Promise<void>((resolve, reject) => {
+        ready = resolve;
+        rejected = reject;
+    });
+    let failure: unknown;
+    const done = (async () => {
+        const response = await fetch(
+            `http://localhost:3336/api/conversations/${conversationId}/events?after=0`,
+            {
+                headers: {
+                    Authorization: `Bearer ${liveTokens.get(page) ?? token}`,
+                    Origin: 'http://localhost:3336',
+                },
+                signal: AbortSignal.any([
+                    controller.signal,
+                    AbortSignal.timeout(30_000),
+                ]),
+            },
+        );
+        if (!response.ok || !response.body)
+            throw new Error(`Wire observation rejected: ${response.status}`);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const at = performance.now();
+                buffer += decoder
+                    .decode(value, { stream: true })
+                    .replace(/\r\n/gu, '\n');
+                let end: number;
+                while ((end = buffer.indexOf('\n\n')) !== -1) {
+                    const frame = buffer.slice(0, end);
+                    buffer = buffer.slice(end + 2);
+                    if (
+                        !frame
+                            .split('\n')
+                            .some((line) => line === 'event: conversation')
+                    )
+                        continue;
+                    const data = frame
+                        .split('\n')
+                        .filter((line) => line.startsWith('data:'))
+                        .map((line) => line.slice(5).trimStart())
+                        .join('\n');
+                    const event = ConversationEventSchema.parse(
+                        JSON.parse(data),
+                    );
+                    if (event.type === 'snapshot') ready();
+                    if (
+                        event.type !== 'message' ||
+                        event.data.role !== 'assistant' ||
+                        !event.data.content
+                    )
+                        continue;
+                    if (event.data.content !== samples.at(-1)?.text)
+                        samples.push({ at, text: event.data.content });
+                }
+            }
+        } finally {
+            await reader.cancel().catch(() => {});
+            reader.releaseLock();
+        }
+    })().catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+            failure = error;
+            rejected(error);
+        }
+    });
+    try {
+        await initial;
+    } catch (error) {
+        controller.abort();
+        await done;
+        throw error;
+    }
+    return {
+        samples,
+        async close() {
+            controller.abort();
+            await done;
+            if (failure) throw failure;
+        },
+    };
+}
+
+/** Observe rendered output rather than network chunks or internal React state. */
+async function observeStreaming(page: Page) {
+    await page
+        .getByRole('region', { name: 'Language tutor', exact: true })
+        .evaluate((element) => {
+            type Sample = { at: number; text: string; activity: string | null };
+            const root = element as HTMLElement & {
+                streamingEvidence?: {
+                    samples: Sample[];
+                    observer: MutationObserver;
+                };
+            };
+            const samples: Sample[] = [];
+            const collect = () => {
+                const text = Array.from(
+                    root.querySelectorAll('[data-assistant-content]'),
+                )
+                    .map((content) => content.textContent ?? '')
+                    .join('');
+                const activity =
+                    root
+                        .querySelector('[data-tutor-activity]')
+                        ?.getAttribute('data-tutor-activity') ?? null;
+                const previous = samples.at(-1);
+                if (
+                    !previous ||
+                    previous.text !== text ||
+                    previous.activity !== activity
+                )
+                    samples.push({ at: performance.now(), text, activity });
+            };
+            const observer = new MutationObserver(collect);
+            observer.observe(root, {
+                subtree: true,
+                childList: true,
+                characterData: true,
+                attributes: true,
+                attributeFilter: ['data-tutor-activity'],
+            });
+            root.streamingEvidence = { samples, observer };
+            collect();
+        });
+}
+async function streamingEvidence(page: Page) {
+    return page
+        .getByRole('region', { name: 'Language tutor', exact: true })
+        .evaluate((element) => {
+            const root = element as HTMLElement & {
+                streamingEvidence?: {
+                    samples: {
+                        at: number;
+                        text: string;
+                        activity: string | null;
+                    }[];
+                    observer: MutationObserver;
+                };
+            };
+            if (!root.streamingEvidence)
+                throw new Error('Missing rendered streaming observer.');
+            root.streamingEvidence.observer.disconnect();
+            return root.streamingEvidence.samples;
+        });
+}
+
 // @user-flow contextual-language-assistant-and-knowledge/source-chat-save-knowledge
 test('saved source streams through real SDK into an editable private note and revision history', async ({
     page,
 }, info) => {
     const assertClean = runtimeErrors(page);
     const token = await signup(page, info);
-    await source(page, token, info);
+    const text = await source(page, token, info);
     const widget = page.getByRole('region', {
         name: 'Language tutor',
         exact: true,
@@ -379,16 +538,128 @@ test('saved source streams through real SDK into an editable private note and re
     await expect(page.getByLabel('Your question')).toHaveValue(
         'Keep this unfinished question',
     );
-    await send(
+    const { conversations: wireConversations } = (await api(
         page,
-        'Please draft a standalone explanation of river bank usage.',
-    );
-    await expect(
-        page.getByRole('button', { name: 'Review and save', exact: true }),
-    ).toBeVisible();
-    await expect(
-        page.getByRole('button', { name: 'Stop', exact: true }),
-    ).toHaveCount(0);
+        token,
+        `/conversations?sourceKind=text&sourceId=${text.id}`,
+    )) as { conversations: { id: string }[] };
+    const wire = await observeWire(page, token, wireConversations[0]!.id);
+    try {
+        await observeStreaming(page);
+        await send(
+            page,
+            'Please draft a standalone explanation of river bank usage progressively.',
+        );
+        const activity = widget.locator('[data-tutor-activity]');
+        await expect(activity).toBeVisible();
+        await expect(activity).toHaveAttribute('role', 'status');
+        await expect(
+            widget.locator('[data-tutor-activity="working"]'),
+        ).toBeVisible();
+        await capture(page, info, 'tutor-working-before-first-text-desktop');
+        await expect(
+            widget.locator('[data-tutor-activity="writing"]'),
+        ).toBeVisible();
+        await expect
+            .poll(
+                async () => {
+                    const text = await widget
+                        .locator('[data-assistant-content]')
+                        .allTextContents();
+                    const state = await activity.getAttribute(
+                        'data-tutor-activity',
+                    );
+                    return text.join('').length >= 40 && state === 'working';
+                },
+                { intervals: [50, 100, 100] },
+            )
+            .toBe(true);
+        await capture(
+            page,
+            info,
+            'tutor-working-during-provider-pause-desktop',
+        );
+        await expect(
+            page.getByRole('button', { name: 'Review and save', exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Stop', exact: true }),
+        ).toHaveCount(0);
+        await expect(activity).toHaveCount(0);
+        const samples = await streamingEvidence(page);
+        await info.attach('rendered-stream-timing', {
+            body: JSON.stringify(samples, null, 2),
+            contentType: 'application/json',
+        });
+        expect(
+            samples.some(
+                (sample) => sample.text === '' && sample.activity === 'working',
+            ),
+        ).toBe(true);
+        expect(
+            samples.some(
+                (sample) =>
+                    sample.text.length >= 40 && sample.activity === 'working',
+            ),
+        ).toBe(true);
+        const textChanges = samples.filter(
+            (sample, index) =>
+                sample.text.length > 0 &&
+                sample.text !== samples[index - 1]?.text,
+        );
+        expect(textChanges.length).toBeGreaterThanOrEqual(10);
+        for (let index = 1; index < textChanges.length; index++) {
+            const previous = textChanges[index - 1]!;
+            const current = textChanges[index]!;
+            expect(current.text.startsWith(previous.text)).toBe(true);
+            expect(
+                current.text.length - previous.text.length,
+            ).toBeLessThanOrEqual(20);
+        }
+        expect(
+            textChanges
+                .slice(1)
+                .filter(
+                    (sample, index) => sample.at - textChanges[index]!.at < 800,
+                ).length,
+        ).toBeGreaterThanOrEqual(8);
+        expect(textChanges.at(-1)?.text).toBe(
+            'A river bank is the land beside a river. This explanation uses your saved learning context.',
+        );
+        await expect
+            .poll(() => wire.samples.at(-1)?.text)
+            .toBe(
+                'A river bank is the land beside a river. This explanation uses your saved learning context.',
+            );
+        const wireIntervals = wire.samples.slice(1).map((sample, index) => {
+            expect(sample.text.startsWith(wire.samples[index]!.text)).toBe(
+                true,
+            );
+            return sample.at - wire.samples[index]!.at;
+        });
+        expect(
+            wireIntervals.filter((interval) => interval > 40 && interval < 500)
+                .length,
+        ).toBeGreaterThanOrEqual(3);
+        const wirePath = info.outputPath('wire-stream-timing.json');
+        await writeFile(
+            wirePath,
+            JSON.stringify(
+                {
+                    lengths: wire.samples.map((sample) => sample.text.length),
+                    intervalsMs: wireIntervals,
+                },
+                null,
+                2,
+            ),
+        );
+        await info.attach('wire-stream-timing', {
+            path: wirePath,
+            contentType: 'application/json',
+        });
+    } finally {
+        await wire.close();
+    }
     expect(
         ((await api(page, token, '/knowledge')) as { notes: KnowledgeNote[] })
             .notes,
@@ -1151,6 +1422,7 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
     await expect(
         page.getByRole('button', { name: 'Retry response', exact: true }),
     ).toBeVisible();
+    await expect(sheet.locator('[data-tutor-activity]')).toHaveCount(0);
     await expect(
         page.getByText('Incomplete response', { exact: true }).first(),
     ).toBeVisible();

@@ -13,7 +13,7 @@ source_paths:
     - docs/architecture.md
     - docs/adr/0005-frontend-component-and-fsd-standards.md
     - docs/adr/0010-admin-application-and-authorization.md
-source_fingerprint: sha256:2486f6c2bb6125911c4b8f601a6d4ceb02cb767bf3fb134cb0799d03ccc1279f
+source_fingerprint: sha256:d17ec25b39a040d98d6ed2b360d37907de2727a7a29edffb3de3c86829a7b990
 reviewed: 2026-10-19
 ---
 

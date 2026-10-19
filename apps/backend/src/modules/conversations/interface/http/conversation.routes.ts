@@ -578,8 +578,20 @@ export function createConversationRoutes({
                     c.req.valid('query').after,
                     c.req.valid('header')['last-event-id'] ?? 0,
                 );
-                await service.store.detail(actor, conversationId);
+                const initialDetail = await service.store.detail(
+                    actor,
+                    conversationId,
+                );
                 c.req.raw.signal.throwIfAborted();
+                const activeTurns = new Set(
+                    initialDetail.turns
+                        .filter(
+                            (turn) =>
+                                turn.status === 'queued' ||
+                                turn.status === 'running',
+                        )
+                        .map((turn) => turn.id),
+                );
                 const response = streamSSE(c, async (stream) => {
                     stream.onAbort(releaseOnAbort);
                     const expiry = setTimeout(
@@ -591,13 +603,34 @@ export function createConversationRoutes({
                         while (!stream.aborted && Date.now() < deadline) {
                             const currentActor = await revalidate(c);
                             if (stream.aborted || Date.now() >= deadline) break;
+                            const previousCursor = after;
                             const batch = await service.store.events(
                                 currentActor,
                                 conversationId,
                                 after,
                             );
+                            if (stream.aborted || Date.now() >= deadline) break;
                             let emitted = false;
                             for (const event of batch) {
+                                if (stream.aborted || Date.now() >= deadline)
+                                    break;
+                                if (event.type === 'snapshot') {
+                                    activeTurns.clear();
+                                    for (const turn of event.data.turns) {
+                                        if (
+                                            turn.status === 'queued' ||
+                                            turn.status === 'running'
+                                        )
+                                            activeTurns.add(turn.id);
+                                    }
+                                } else if (event.type === 'turn') {
+                                    if (
+                                        event.data.status === 'queued' ||
+                                        event.data.status === 'running'
+                                    )
+                                        activeTurns.add(event.data.id);
+                                    else activeTurns.delete(event.data.id);
+                                }
                                 if (
                                     event.type === 'snapshot' &&
                                     event.id === 0
@@ -614,12 +647,21 @@ export function createConversationRoutes({
                                 emitted = true;
                                 after = event.id;
                             }
+                            if (stream.aborted || Date.now() >= deadline) break;
                             if (!emitted)
                                 await stream.writeSSE({
                                     event: 'heartbeat',
                                     data: '{}',
                                 });
-                            await stream.sleep(1000);
+                            // A full persisted page may have more replay waiting. Drain only
+                            // on cursor progress, and revalidate at the top of every page.
+                            if (batch.length >= 100 && after > previousCursor)
+                                continue;
+                            // At most eight authorized reads/second while queued/running;
+                            // idle subscribers retain the one-second poll bound.
+                            await stream.sleep(
+                                activeTurns.size > 0 ? 125 : 1000,
+                            );
                         }
                     } catch (failure) {
                         let status: 401 | 403 | 404 | undefined;
