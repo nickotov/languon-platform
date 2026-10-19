@@ -350,6 +350,7 @@ export function loadDictionaryWorkerEnvironment(
     if (provider.mode === 'mastra' && provider.catalogModel) {
         const unsupportedFormats = supportedFormats.filter(
             (format) =>
+                format !== 'conversation:v1' &&
                 !provider.catalogModel!.supportedFormats.includes(format),
         );
         if (unsupportedFormats.length > 0) {

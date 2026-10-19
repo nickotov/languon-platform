@@ -1,3 +1,4 @@
+import { knowledgeEs } from './knowledge';
 import { textsLibraryEs } from './texts-library';
 import { textsReadingEs } from './texts-reading';
 import { textsPublicEs } from './texts-public';
@@ -7,6 +8,7 @@ import { profileFeatureMessages, type Messages } from './en';
 import { trainingEs } from './training';
 
 export const es = {
+    ...knowledgeEs,
     ...textsLibraryEs,
     ...textsReadingEs,
     ...textsPublicEs,

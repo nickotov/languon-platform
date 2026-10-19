@@ -43,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     function resolvePageTitle() {
         if (pathname === '/') return 'Languon';
+        if (isRouteWithin(pathname, '/knowledge')) return t('knowledge.title');
         if (isRouteWithin(pathname, '/texts'))
             return t('texts.manage.navigation');
         if (isRouteWithin(pathname, '/profile')) {

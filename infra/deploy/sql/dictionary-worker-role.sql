@@ -146,3 +146,17 @@ GRANT UPDATE (version, updated_at) ON TABLE dictionaries TO :"dictionary_worker_
 
 -- PostgreSQL requires one UPDATE grant for a capability row lock.
 GRANT UPDATE (created_at) ON TABLE text_shares TO :"dictionary_worker_role";
+
+-- Conversation worker can persist private transcripts, drafts and thread memory.
+-- Knowledge publication remains an explicit authenticated application action.
+GRANT SELECT, UPDATE ON TABLE conversation_chats, conversation_turns
+    TO :"dictionary_worker_role";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_messages,
+    conversation_events, conversation_drafts, conversation_memory,
+    conversation_provider_calls TO :"dictionary_worker_role";
+GRANT USAGE, SELECT ON SEQUENCE conversation_events_id_seq TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE knowledge_notes, knowledge_note_revisions TO :"dictionary_worker_role";
+GRANT UPDATE (updated_at) ON TABLE knowledge_notes TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE dictionary_cards TO :"dictionary_worker_role";
+
+GRANT SELECT ON TABLE conversation_settings TO :"dictionary_worker_role";

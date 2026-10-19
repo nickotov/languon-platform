@@ -26,7 +26,7 @@ BL-004 and BL-005 are Done. BL-003 retains its broader unfinished scope.
 | BL-003 | [Personal learning progress](003-personal-learning-progress.md)                                      | in-progress |
 | BL-004 | [AI sentence translation practice](004-ai-sentence-translation-practice-done.md)                     | done        |
 | BL-005 | [User-selectable AI models](005-user-selectable-ai-models-done.md)                                   | done        |
-| BL-006 | [Grammar conversations and learning documents](006-grammar-conversations-and-learning-documents.md)  | pending     |
+| BL-006 | [Grammar conversations and learning documents](006-grammar-conversations-and-learning-documents.md)  | in-progress |
 | BL-007 | [Manual exercise creation and editing](007-manual-exercise-creation-and-editing.md)                  | pending     |
 | BL-008 | [Increased sentence difficulty](008-increased-sentence-difficulty.md)                                | pending     |
 | BL-009 | [Practice plans for weak areas](009-practice-plans-for-weak-areas.md)                                | pending     |

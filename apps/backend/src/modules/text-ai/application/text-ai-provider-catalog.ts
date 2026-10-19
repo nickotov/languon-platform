@@ -41,6 +41,8 @@ export function textAiProviderMaximumPricedCostMicros(
     });
 }
 
+export const textAiConversationFormats = ['conversation:v1'] as const;
+
 export const textAiTextsFormats = [
     'text-detection:v1',
     'text-translation:v1',
@@ -66,7 +68,9 @@ export const textAiTextFormats = [
     ...textAiTextsFormats,
 ] as const;
 
-export type TextAiWorkFormat = (typeof textAiTextFormats)[number];
+export type TextAiWorkFormat =
+    | (typeof textAiTextFormats)[number]
+    | (typeof textAiConversationFormats)[number];
 export const textAiSentenceFormats = [
     'sentence-generation:v1',
     'sentence-generation:v2',
@@ -184,7 +188,7 @@ export const textAiModelCatalog: readonly TextAiModelDefinition[] = [
         perCallMaxOutputTokens: 8_192,
         providerId: 'deepseek',
         supportedCapabilities: ['structured-text'],
-        supportedFormats: textAiTextFormats,
+        supportedFormats: [...textAiTextFormats, ...textAiConversationFormats],
     },
 ] as const;
 

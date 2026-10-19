@@ -33,10 +33,12 @@ export function DictionaryEditor({
     dictionaryId,
     requestWithSession,
     renderTraining = (props) => <TrainingLauncher {...props} />,
+    renderAssistant,
 }: {
     dictionaryId: string;
     requestWithSession: RequestWithSession;
     renderTraining?(props: TrainingLauncherProps): ReactNode;
+    renderAssistant?(props: { dictionaryId: string; name: string }): ReactNode;
 }) {
     const model = useDictionaryEditorController(
         dictionaryId,
@@ -106,6 +108,7 @@ export function DictionaryEditor({
     return (
         <main id='dictionary-content' tabIndex={-1} className={styles.main}>
             <EditorSummary model={view.workspace.summary} />
+            {active && renderAssistant?.({ dictionaryId, name: current.name })}
             <EditorFeedback model={view.workspace.feedback} />
             <EditorToolbar model={view.workspace.toolbar} />
             <EditorCards model={view.workspace.cards} />

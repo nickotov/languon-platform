@@ -1,4 +1,10 @@
 import {
+    conversationDeletionBusy,
+    eraseOwnerConversations,
+} from '../../../../conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
+import { eraseOwnerKnowledge } from '../../../../knowledge/infrastructure/persistence/drizzle/knowledge-deletion-participant';
+import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
+import {
     eraseTextsOwnedContent,
     textsDeletionBusy,
 } from '../../../../texts/infrastructure/persistence/drizzle/texts-deletion-participant';
@@ -129,6 +135,9 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
     }
 
     public async inspectOwner(input: ClaimedAccountPurge) {
+        const conversationBusy = await this.database.transaction((tx) =>
+            conversationDeletionBusy(tx, { ownerId: input.userId }),
+        );
         const textsBusy = await this.database.transaction((tx) =>
             textsDeletionBusy(tx, input.userId),
         );
@@ -208,6 +217,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 (active[0]?.count ?? 0) +
                 (sentenceBusy ? 1 : 0) +
                 (textsBusy ? 1 : 0) +
+                (conversationBusy ? 1 : 0) +
                 (audioActive[0]?.count ?? 0) +
                 (audioWriters[0]?.count ?? 0),
             objects: [
@@ -253,6 +263,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
         input: ClaimedAccountPurge & { now: Date; workerId: string },
     ): Promise<boolean> {
         return this.database.transaction(async (tx) => {
+            await lockTextAiCapacity(tx);
             await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${input.userId}, 76021941))`,
             );
@@ -293,6 +304,14 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                     (dictionary) => dictionary.id,
                 ),
             };
+            if (
+                await conversationDeletionBusy(
+                    tx,
+                    { ownerId: input.userId },
+                    input.now,
+                )
+            )
+                throw new Error('Conversation work is not quiescent');
             if (await textsDeletionBusy(tx, input.userId))
                 throw new Error('Text work is not quiescent');
             if (await sentenceDeletionBusy(tx, sentenceScope))
@@ -404,6 +423,8 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await tx
                 .delete(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.ownerId, input.userId));
+            await eraseOwnerConversations(tx, input.userId, input.now);
+            await eraseOwnerKnowledge(tx, input.userId);
             await eraseTextsOwnedContent(tx, input.userId, input.now);
             await eraseSentenceDerivedContent(tx, {
                 ...sentenceScope,

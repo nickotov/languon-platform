@@ -2,7 +2,7 @@
 type: reference
 title: Product backlog context and lifecycle
 created: 2026-10-01
-updated: 2026-10-02
+updated: 2026-10-18
 ---
 
 # Product backlog
@@ -35,8 +35,13 @@ These definitions clarify this backlog; they do not rename existing contracts.
   state such as the current item and the items requiring another round.
 - **Progress:** a learner's persisted history and learning status, associated with
   the relevant content.
-- **Grammar document:** a saved grammar explanation, compact conversation context,
-  and associated exercises.
+- **Knowledge note:** a private, editable, independently understandable
+  language-learning explanation explicitly saved by the learner. See the
+  [learning-assistance glossary](../../CONTEXT.md).
+- **Grammar document:** the earlier BL-006 term for a grammar-focused saved
+  explanation, now covered by independent knowledge notes. Follow-up
+  conversations are included in its refined first-delivery scope; attached
+  exercises remain later requirements of that task.
 
 “Stateless exercises” means that reusable exercise content does not carry a
 particular learner's completion state. Exercise content is saved and reusable;

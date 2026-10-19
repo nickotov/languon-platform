@@ -41,6 +41,7 @@ e2e_scenarios:
     - document-generation-cleans-original-and-commits-final-review
     - quizlet-import-and-export-round-trip
 related_features:
+    - contextual-language-assistant-and-knowledge
     - flashcard-training-web
     - dictionary-permanent-deletion
     - dictionary-pronunciation-audio
@@ -616,6 +617,15 @@ test layers where their failure conditions are deterministic.
   dictionary, settings, pair, and capacity under lock. Changed idempotency-key
   reuse conflicts. Export is active-only, bounded, ordered, cancellation-aware,
   and never interpolates user content into attachment headers.
+
+## Related contextual assistant coverage
+
+An authenticated owner or currently authorized shared reader can choose
+**Ask about this** for a private source conversation. Explicit Knowledge draft
+review/publication and shared-source conversation permissions belong to the
+[Contextual Language Assistant and Knowledge guide](contextual-language-assistant-and-knowledge.md).
+Dictionary authoring, sharing, forks and AI card proposals retain the scenarios
+declared here; this guide does not treat a conversation draft as a card proposal.
 
 ## Automated regression checks
 

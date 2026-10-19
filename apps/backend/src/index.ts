@@ -1,3 +1,15 @@
+import { createKnowledgeService } from './modules/knowledge/infrastructure/knowledge-composition';
+import { createKnowledgeRoutes } from './modules/knowledge/interface/http/knowledge.routes';
+import { KnowledgeDomainError } from './modules/knowledge/domain/knowledge';
+import { createConversationsComposition } from './modules/conversations/infrastructure/conversations-composition';
+import {
+    conversationAdmission,
+    settleInterruptedConversationCalls,
+} from './modules/conversations/infrastructure/conversation-accounting';
+import {
+    conversationDeletionBusy,
+    eraseConversationSource,
+} from './modules/conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
 import { createTextsContentComposition } from './modules/texts/infrastructure/texts-composition';
 import { createTextsAiComposition } from './modules/texts/infrastructure/texts-ai-composition';
 import { createTextsJobRoutes } from './modules/texts/interface/http/texts-job.routes';
@@ -239,7 +251,40 @@ const textSelections = createTextSelectionApiModule({
     verifyShare: (key, digest) => texts.cryptography.verifyShare(key, digest),
     proposal: resolveTextTranslationProposal,
 });
+const knowledge = createKnowledgeService({
+    database: authentication.productDependencies.database,
+    authenticate: authenticateTextActor,
+    rateLimiter: authentication.productDependencies.rateLimiter,
+    lifecycle: {
+        async beforeNoteDeletion(tx, { noteId, now }) {
+            if (
+                await conversationDeletionBusy(
+                    tx,
+                    { sourceKind: 'knowledge', sourceIds: [noteId] },
+                    now,
+                )
+            )
+                throw new KnowledgeDomainError(
+                    'deletion_busy',
+                    'Stop the active conversation before deleting this note.',
+                );
+            await eraseConversationSource(tx, 'knowledge', noteId, now);
+        },
+    },
+});
+const conversations = createConversationsComposition({
+    ...authentication.productDependencies,
+    dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
+    policy: authentication.options.policy,
+    admitTurn: conversationAdmission(textsSelectionPolicy),
+    settleInterrupted: settleInterruptedConversationCalls,
+});
 const app = createApp({
+    conversations: conversations.routes,
+    knowledge: createKnowledgeRoutes({
+        service: knowledge,
+        policy: authentication.options.policy,
+    }),
     texts: texts.routes,
     textsAi: createTextsJobRoutes({
         service: textsAi.service,

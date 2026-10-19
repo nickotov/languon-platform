@@ -26,6 +26,7 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
 import { SpeechControl } from '@/fsd/features/speech-playback';
 import { DictionaryTraining } from '@/fsd/widgets/dictionary-training';
+import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     Badge,
@@ -209,6 +210,15 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
     }
     return (
         <main className={styles.main}>
+            <ContextualAssistant
+                source={{
+                    kind: 'dictionary',
+                    id: dictionary.id,
+                    shareLocator: shareId,
+                }}
+                shareKey={shareKey}
+                contextLabel={dictionary.name}
+            />
             <header>
                 <p className={styles.eyebrow}>
                     {t('dictionary.public.eyebrow')}

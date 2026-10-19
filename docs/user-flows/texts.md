@@ -50,6 +50,7 @@ e2e_scenarios:
     - web-public-copy-and-revocation
     - web-phone-reading-selection
 related_features:
+    - contextual-language-assistant-and-knowledge
     - dictionary-platform
     - user-ai-model-preferences-backend
     - ai-credit-wallet
@@ -272,6 +273,15 @@ Scenario `texts/web-phone-reading-selection`:
 4. At 320 px verify no document overflow, clipped menus or hidden primary controls.
    Capture phone reading, counterpart and creation states. Console/page errors,
    failed requests and 5xx responses fail every journey.
+
+## Related contextual assistant coverage
+
+Owned and currently authorized shared texts expose **Ask about this**. The
+[Contextual Language Assistant and Knowledge guide](contextual-language-assistant-and-knowledge.md)
+owns private conversations, explicit use of unsaved source wording, durable
+response reconnect and independent note publication. The translation, contextual
+card collection and share/copy scenarios declared here retain their behavior;
+they do not claim to test assistant publication.
 
 ## Automated regression checks
 

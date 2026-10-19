@@ -20,6 +20,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-empty-coming-soon-and-header-navigation
 related_features:
+    - contextual-language-assistant-and-knowledge
     - global-app-shell
     - sentence-practice-web
     - user-authentication
@@ -112,6 +113,14 @@ focused component tests because they do not require another system boundary.
 - Password and passkey functionality now lives in the Profile Security tab;
   unavailable OAuth connection is visibly future functionality;
   `/security` redirects there.
+
+## Related contextual assistant coverage
+
+The Account tab also includes **AI chat defaults** for future conversations.
+Those preferences and the authenticated **Knowledge** navigation destination
+belong to the [Contextual Language Assistant and Knowledge guide](contextual-language-assistant-and-knowledge.md).
+The scenario here still verifies truthful account placeholders, appearance,
+responsive navigation and home routing; it does not claim to exercise chat settings.
 
 ## Automated regression checks
 

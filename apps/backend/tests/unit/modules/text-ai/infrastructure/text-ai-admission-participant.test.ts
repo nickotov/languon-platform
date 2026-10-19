@@ -1,3 +1,5 @@
+import { PgDialect } from 'drizzle-orm/pg-core';
+import type { SQL } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import {
     textAiModelCatalog,
@@ -31,7 +33,16 @@ function snapshot(model = defaultModel!) {
 }
 function database(results: unknown[][], overlap = false) {
     return {
-        execute: async () => [{ overlap }],
+        // Existing fixture flag represents sentence/Texts overlap; chat overlap is independent.
+        execute: async (query: SQL) => [
+            {
+                overlap: new PgDialect()
+                    .sqlToQuery(query)
+                    .sql.includes('conversation_turns')
+                    ? false
+                    : overlap,
+            },
+        ],
         select() {
             const result = results.shift() ?? [];
             const chain = {

@@ -44,6 +44,19 @@ describeIfEnabled('production Redis TLS and ACL contract', () => {
             allowed: false,
             remaining: 0,
         });
+        const leaseRequest = {
+            scope: 'conversation-stream-test',
+            subject: 'synthetic-actor',
+            limit: 1,
+            ttlMs: 300_000,
+        };
+        const lease = await limiter.acquireLease(leaseRequest);
+        expect(lease).not.toBeNull();
+        expect(await limiter.acquireLease(leaseRequest)).toBeNull();
+        await lease!.release();
+        const replacement = await limiter.acquireLease(leaseRequest);
+        expect(replacement).not.toBeNull();
+        await replacement!.release();
         await expect(redis.flushall()).rejects.toThrow(/NOPERM/);
     });
 });

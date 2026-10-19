@@ -1,0 +1,4 @@
+ALTER TABLE "ai_credit_reservations" DROP CONSTRAINT "ai_credit_reservations_job_kind_closed";--> statement-breakpoint
+ALTER TABLE "dictionary_ai_worker_observations" ADD COLUMN "conversation_capacity_revision" integer;--> statement-breakpoint
+ALTER TABLE "dictionary_ai_worker_observations" ADD COLUMN "conversation_execution_revision" integer;--> statement-breakpoint
+ALTER TABLE "ai_credit_reservations" ADD CONSTRAINT "ai_credit_reservations_job_kind_closed" CHECK ("ai_credit_reservations"."job_kind" in ('dictionary-generation', 'sentence-generation', 'sentence-check', 'speech-generation', 'text-detection', 'text-translation', 'text-selection-card', 'conversation-turn'));

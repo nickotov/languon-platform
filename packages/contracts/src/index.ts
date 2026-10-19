@@ -10,3 +10,4 @@ export * from './learning/sentence-library';
 export * from './learning/sentence-preparation';
 
 export * from './texts';
+export * from './contextual-assistant';

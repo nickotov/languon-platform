@@ -53,6 +53,10 @@ export interface DictionaryWorkerRuntimeOptions {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
     };
+    conversationService?: {
+        processNext(signal: AbortSignal): Promise<boolean>;
+        releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
+    };
     selectionService?: {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
@@ -242,6 +246,7 @@ export class DictionaryWorkerRuntime {
                         this.#options.sentenceService,
                         this.#options.textsService,
                         this.#options.selectionService,
+                        this.#options.conversationService,
                     ]
                         .filter((service) => service !== undefined)
                         .map((service) =>
@@ -298,6 +303,14 @@ export class DictionaryWorkerRuntime {
                 };
                 const services = [
                     dictionary,
+                    ...(this.#options.conversationService
+                        ? [
+                              () =>
+                                  this.#options.conversationService!.processNext(
+                                      signal,
+                                  ),
+                          ]
+                        : []),
                     ...(this.#options.sentenceService ? [sentence] : []),
                     ...(this.#options.textsService
                         ? [

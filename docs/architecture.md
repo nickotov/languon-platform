@@ -4,8 +4,10 @@ title: Languon architecture
 source_paths:
     - apps/backend/src/modules
     - packages/contracts/src
-  - apps/web/src/fsd/pages/texts
-  - apps/web/src/fsd/features/text-reading
+    - apps/web/src/fsd/widgets/contextual-assistant
+    - apps/web/src/fsd/pages/knowledge
+    - apps/web/src/fsd/pages/texts
+    - apps/web/src/fsd/features/text-reading
 ---
 
 # Architecture
@@ -348,3 +350,33 @@ The worker format filter isolates new work from v1-only workers. Profile limits
 stay inside existing aggregate token/cost reservations. See
 [ADR-0036](adr/0036-task-specific-text-translation-capacity.md) for profile
 validation, conservative preflight and shared-model rollout/rollback floors.
+
+## Contextual language assistance and Knowledge
+
+The backend `conversations` module owns private source-associated histories,
+copied attachments, editable proposals and durable turn leases/replay events.
+Its source adapter checks current dictionary/text/note access separately from
+content versions. Each admitted turn freezes the wording discussed; ordinary
+source edits refresh subsequent turns. Permanent primary-source deletion removes
+associated chat/memory/drafts, while independently saved notes survive.
+
+The separate `knowledge` module owns private independent explanations, optimistic
+version checks, immutable revisions and explicit learner publication. No note
+stores an origin dictionary/text/chat reference. Tools may retrieve authorized
+material and propose validated note content; only authenticated application
+commands publish. Restoring a revision creates a new version.
+
+Mastra Memory1.26.0/Core1.57.0 use an application-owned transactional adapter.
+Observation, reflection and actor calls share bounded per-turn execution and
+credit settlement. The existing worker pool executes conversation turns and
+numerical usage remains in combined capacity after content deletion. The initial
+chat capability supports DeepSeek Flash; chat Auto selects Flash, while other
+text tasks retain their existing default-selection policy.
+
+Web chat uses Vercel AI SDK UI with a custom transport projecting durable events
+into typed message/tool parts. Disconnecting a subscription leaves worker work
+running; explicit Stop requests cancellation. Knowledge editing uses Tiptap with
+a restricted, versioned ProseMirror contract and fixed safe rendering. Chat
+Markdown remains separate. See [ADR-0037](adr/0037-independent-knowledge-and-agent-proposals.md)
+and [feature044](../.agent/features/044-contextual-language-assistant-and-knowledge/FEATURE.md)
+for decisions and implementation evidence.

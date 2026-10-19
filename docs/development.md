@@ -1,3 +1,8 @@
+---
+type: reference
+title: Development guide
+---
+
 # Development
 
 ## Environment
@@ -76,6 +81,13 @@ module infrastructure and are registered through that factory. Permanent
 verification primitives appear only when `MASTRA_DEV_HARNESS=true`; the Hono
 server imports the same production composition without exposing generic Mastra
 routes.
+
+The contextual language tutor is registered through the canonical composition
+only with an operation-bound model, tools, identity and memory store. It is
+intentionally excluded from the default Studio runtime: learner source access
+and billing cannot be established by caller-selected Studio fields. Deterministic
+integration tests exercise the same factory with synthetic source/accounting
+ports; no learner execution route is added to Studio.
 
 #### Registering Mastra primitives
 

@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
-import { textAiTextFormats } from '../../../application/text-ai-provider-catalog';
+import {
+    textAiTextFormats,
+    textAiConversationFormats,
+} from '../../../application/text-ai-provider-catalog';
 
 export function textAiSelectionObservationId(
     workerId: string,
@@ -49,6 +52,20 @@ export function textsExecutionObservationId(
 ): string {
     return `texts-execution:v1/${identity(workerId, providerId, modelId)}`;
 }
+export function conversationCapacityObservationId(
+    workerId: string,
+    providerId: string,
+    modelId: string,
+): string {
+    return `conversation-capacity:v1/${identity(workerId, providerId, modelId)}`;
+}
+export function conversationExecutionObservationId(
+    workerId: string,
+    providerId: string,
+    modelId: string,
+): string {
+    return `conversation-execution:v1/${identity(workerId, providerId, modelId)}`;
+}
 interface WorkerCapabilityObservation {
     id: string;
     workerId: string;
@@ -58,6 +75,8 @@ interface WorkerCapabilityObservation {
     textAiSupportedFormats: string[] | null;
     textAiCapacityRevision?: number | null;
     textsCapacityRevision?: number | null;
+    conversationCapacityRevision?: number | null;
+    conversationExecutionRevision?: number | null;
     textsExecutionRevision?: number | null;
     learningExecutionRevision?: number | null;
     creditSettlementRevision?: number | null;
@@ -71,7 +90,7 @@ function supports(
         Array.isArray(observation.textAiSupportedFormats) &&
         observation.textAiSupportedFormats.some(
             (supported) =>
-                textAiTextFormats.some(
+                [...textAiTextFormats, ...textAiConversationFormats].some(
                     (registered) => registered === supported,
                 ) &&
                 (format === undefined || supported === format),
@@ -102,6 +121,16 @@ export function isTextsCapacityCapableObservation(
         observation.textAiCapacityRevision === 1 &&
         observation.textsCapacityRevision === 1 &&
         [
+            conversationCapacityObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+            conversationExecutionObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
             textsCapacityObservationId(
                 observation.workerId,
                 observation.providerId,
@@ -123,8 +152,54 @@ export function isTextsExecutionCapableObservation(
         isTextsCapacityCapableObservation(observation, format) &&
         observation.textsExecutionRevision === 1 &&
         observation.creditSettlementRevision === 1 &&
-        observation.id ===
+        [
             textsExecutionObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+            conversationCapacityObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+        ].includes(observation.id)
+    );
+}
+export function isConversationCapacityCapableObservation(
+    observation: WorkerCapabilityObservation,
+    format?: string,
+): boolean {
+    return (
+        supports(observation, format) &&
+        observation.textAiCapacityRevision === 1 &&
+        observation.textsCapacityRevision === 1 &&
+        observation.conversationCapacityRevision === 1 &&
+        [
+            conversationCapacityObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+            conversationExecutionObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+        ].includes(observation.id)
+    );
+}
+export function isConversationExecutionCapableObservation(
+    observation: WorkerCapabilityObservation,
+    format: string = 'conversation:v1',
+): boolean {
+    return (
+        format === 'conversation:v1' &&
+        isConversationCapacityCapableObservation(observation, format) &&
+        observation.conversationExecutionRevision === 1 &&
+        observation.creditSettlementRevision === 1 &&
+        observation.id ===
+            conversationExecutionObservationId(
                 observation.workerId,
                 observation.providerId,
                 observation.modelId,
@@ -150,12 +225,18 @@ export function isSentenceExecutionCapableObservation(
         observation.textAiCapacityRevision === 1 &&
         observation.learningExecutionRevision === 1 &&
         observation.creditSettlementRevision === 1 &&
-        observation.id ===
+        [
             sentenceExecutionObservationId(
                 observation.workerId,
                 observation.providerId,
                 observation.modelId,
-            )
+            ),
+            conversationCapacityObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
+        ].includes(observation.id)
     );
 }
 export function isTextAiSelectionCapableObservation(
@@ -174,6 +255,7 @@ export function isTextAiSelectionCapableObservation(
             ) ||
             isTextAiCapacityCapableObservation(observation, format) ||
             isSentenceExecutionCapableObservation(observation, format) ||
-            isTextsCapacityCapableObservation(observation, format))
+            isTextsCapacityCapableObservation(observation, format) ||
+            isConversationCapacityCapableObservation(observation, format))
     );
 }

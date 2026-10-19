@@ -13,6 +13,7 @@ import {
     TextsAuthBoundary,
 } from '@/fsd/features/text-management';
 import { Button, Dialog } from '@/fsd/shared/ui';
+import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useTextWorkspace } from '../../hooks/use-text-workspace';
 import { workspaceReadingDocument } from '../../lib/workspace-reading';
 import { WorkspaceHeader } from './workspace-header';
@@ -144,6 +145,13 @@ function Workspace({
         Boolean(readingDocument?.alignment) &&
         (ws.mode === 'read' || Boolean(proposal));
     const showCompose = !showRead && ws.mode !== 'edit';
+    const assistantDraft = ws.unsaved
+        ? JSON.stringify({
+              title: ws.input.title,
+              sourceText: ws.input.sourceText,
+              pairs: ws.pairs,
+          })
+        : undefined;
     const actions = (
         <WorkspaceActions
             ws={ws}
@@ -198,7 +206,15 @@ function Workspace({
                             {copy('review')}
                         </Button>
                     )}
-                    <main className={styles.body}>
+                    {ws.document && (
+                        <ContextualAssistant
+                            source={{ kind: 'text', id: ws.document.id }}
+                            contextLabel={displayTitle}
+                            currentDraft={assistantDraft}
+                            selectionRootId='reader-workspace'
+                        />
+                    )}
+                    <main className={styles.body} id='reader-workspace'>
                         {showCompose && <WorkspaceCompose ws={ws} />}
                         {ws.mode === 'edit' && !proposal && (
                             <>

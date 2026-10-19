@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { publishTextAiWorkerObservations } from '../../../../../src/modules/text-ai/infrastructure/ai/text-ai-worker-observations';
 import {
     isSentenceExecutionCapableObservation,
+    isConversationCapacityCapableObservation,
+    isConversationExecutionCapableObservation,
     isTextsExecutionCapableObservation,
     isTextsCapacityCapableObservation,
     isTextAiCapacityCapableObservation,
@@ -297,4 +299,113 @@ describe('shared worker capability publication', () => {
             'private transport details',
         );
     });
+});
+
+describe('conversation worker capabilities', () => {
+    it('advertises Flash chat only with execution and combined-capacity opt-in', async () => {
+        const f = fixture();
+        await publishTextAiWorkerObservations({
+            database: f.database,
+            credentials: {},
+            now,
+            readinessTimeoutMs: 20,
+            supportedFormats: [
+                'single-card:v1',
+                'sentence-generation:v1',
+                'text-translation:v2',
+                'conversation:v1',
+            ],
+            workerId: 'worker',
+            conversationCapacityEnabled: true,
+            conversationExecutionEnabled: true,
+            textsCapacityEnabled: true,
+            textsExecutionEnabled: true,
+            learningExecutionEnabled: true,
+        });
+        const chat = f.rows.filter((row) =>
+            isConversationExecutionCapableObservation(row),
+        );
+        expect(chat).toHaveLength(1);
+        expect(chat[0]?.modelId).toBe('deepseek-flash');
+        expect(chat[0]?.textAiSupportedFormats).toEqual(['conversation:v1']);
+        const capacity = f.rows.filter((row) =>
+            isConversationCapacityCapableObservation(row, 'single-card:v1'),
+        );
+        expect(capacity).toHaveLength(3);
+        for (const row of capacity) {
+            expect(
+                isSentenceExecutionCapableObservation(
+                    row,
+                    'sentence-generation:v1',
+                ),
+            ).toBe(true);
+            expect(
+                isTextsExecutionCapableObservation(row, 'text-translation:v2'),
+            ).toBe(true);
+            expect(isConversationExecutionCapableObservation(row)).toBe(false);
+        }
+        for (const row of chat) {
+            expect(
+                isTextsCapacityCapableObservation(row, 'conversation:v1'),
+            ).toBe(true);
+            expect(
+                isConversationExecutionCapableObservation({
+                    ...row,
+                    conversationExecutionRevision: null,
+                }),
+            ).toBe(false);
+            expect(
+                isConversationExecutionCapableObservation({
+                    ...row,
+                    conversationCapacityRevision: null,
+                }),
+            ).toBe(false);
+            expect(
+                isConversationExecutionCapableObservation({
+                    ...row,
+                    creditSettlementRevision: null,
+                }),
+            ).toBe(false);
+            expect(
+                isConversationExecutionCapableObservation({
+                    ...row,
+                    id: textAiSelectionObservationId(
+                        row.workerId,
+                        row.providerId,
+                        row.modelId,
+                    ),
+                }),
+            ).toBe(false);
+        }
+    });
+    it.each([
+        {},
+        { conversationCapacityEnabled: true },
+        { conversationExecutionEnabled: true },
+    ])(
+        'cannot advertise chat without both safe capacity and execution: %j',
+        async (options) => {
+            const f = fixture();
+            await publishTextAiWorkerObservations({
+                database: f.database,
+                credentials: {},
+                now,
+                readinessTimeoutMs: 20,
+                supportedFormats: ['conversation:v1'],
+                workerId: 'worker',
+                textsCapacityEnabled: true,
+                ...options,
+            });
+            expect(
+                f.rows.filter((row) =>
+                    isConversationExecutionCapableObservation(row),
+                ),
+            ).toEqual([]);
+            expect(
+                f.rows.filter((row) =>
+                    row.textAiSupportedFormats?.includes('conversation:v1'),
+                ),
+            ).toEqual([]);
+        },
+    );
 });

@@ -1,0 +1,17 @@
+.controls {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, var(--size-160)), 1fr)
+    );
+    gap: var(--space-8);
+}
+
+.section {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.error {
+    color: var(--danger-default);
+}

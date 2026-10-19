@@ -1,9 +1,12 @@
+import { randomUUID } from 'node:crypto';
 import {
     RateLimitUnavailableError,
     type RateLimitDecision,
     type RateLimiter,
     type RateLimitRequest,
     type RateLimitSubjectLink,
+    type ConcurrentRequestLease,
+    type ConcurrentRequestLimiter,
 } from '../../application/ports/rate-limiter';
 import {
     AUTHENTICATION_REDIS_NAMESPACE,
@@ -36,6 +39,20 @@ local member = redisTime[1] .. ":" .. redisTime[2] .. ":" .. count
 redis.call("ZADD", KEYS[1], now, member)
 redis.call("PEXPIRE", KEYS[1], window)
 return { count + 1, window }
+`;
+const ACQUIRE_CONCURRENT_LEASE_SCRIPT = `
+local redisTime = redis.call("TIME")
+local now = (tonumber(redisTime[1]) * 1000) + math.floor(tonumber(redisTime[2]) / 1000)
+redis.call("ZREMRANGEBYSCORE", KEYS[1], "-inf", now)
+if redis.call("ZCARD", KEYS[1]) >= tonumber(ARGV[1]) then return 0 end
+redis.call("ZADD", KEYS[1], now + tonumber(ARGV[2]), ARGV[3])
+redis.call("PEXPIRE", KEYS[1], ARGV[2])
+return 1
+`;
+const RELEASE_CONCURRENT_LEASE_SCRIPT = `
+local removed = redis.call("ZREM", KEYS[1], ARGV[1])
+if redis.call("ZCARD", KEYS[1]) == 0 then redis.call("DEL", KEYS[1]) end
+return removed
 `;
 
 export interface RedisRateLimiterOptions {
@@ -80,7 +97,7 @@ function parseResult(value: unknown): readonly [number, number] {
     return [value[0], value[1]];
 }
 
-export class RedisRateLimiter implements RateLimiter {
+export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
     private readonly hmacSecret: string;
     private readonly namespace: string;
     private readonly redis: AuthenticationRedisClient;
@@ -158,6 +175,76 @@ export class RedisRateLimiter implements RateLimiter {
             if (request.signal?.aborted === true || isAbortError(error)) {
                 throw error;
             }
+            throw new RateLimitUnavailableError();
+        }
+    }
+
+    public async acquireLease(
+        input: Parameters<ConcurrentRequestLimiter['acquireLease']>[0],
+    ): Promise<ConcurrentRequestLease | null> {
+        assertRequest({ ...input, windowMs: input.ttlMs });
+        const key = deriveOpaqueRedisKey(
+            this.namespace,
+            'concurrent-request',
+            `${input.scope}\0${input.subject}`,
+            this.hmacSecret,
+        );
+        const token = randomUUID();
+        const release = () =>
+            runBoundedRedisOperation(
+                this.redis,
+                () =>
+                    this.redis.eval(
+                        RELEASE_CONCURRENT_LEASE_SCRIPT,
+                        1,
+                        key,
+                        token,
+                    ),
+                this.requestTimeoutMs === undefined
+                    ? {}
+                    : { requestTimeoutMs: this.requestTimeoutMs },
+            ).then(() => undefined);
+        try {
+            const result = await runBoundedRedisOperation(
+                this.redis,
+                () =>
+                    this.redis.eval(
+                        ACQUIRE_CONCURRENT_LEASE_SCRIPT,
+                        1,
+                        key,
+                        input.limit,
+                        input.ttlMs,
+                        token,
+                    ),
+                {
+                    ...(this.requestTimeoutMs === undefined
+                        ? {}
+                        : { requestTimeoutMs: this.requestTimeoutMs }),
+                    ...(input.signal === undefined
+                        ? {}
+                        : { signal: input.signal }),
+                },
+            );
+            input.signal?.throwIfAborted();
+            if (result === 0) return null;
+            if (result !== 1)
+                throw new Error('Invalid concurrent lease response.');
+            let released: Promise<void> | undefined;
+            return {
+                release: () =>
+                    (released ??= release().catch(() => {
+                        throw new RateLimitUnavailableError();
+                    })),
+            };
+        } catch (error) {
+            // An aborted/timed-out admission may already have committed in Redis.
+            // Same-client command ordering and the private token make cleanup safe.
+            try {
+                await release();
+            } catch {
+                /* The finite lease TTL remains the crash/outage backstop. */
+            }
+            if (input.signal?.aborted || isAbortError(error)) throw error;
             throw new RateLimitUnavailableError();
         }
     }

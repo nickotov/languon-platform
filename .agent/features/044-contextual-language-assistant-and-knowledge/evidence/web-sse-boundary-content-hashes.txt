@@ -1,0 +1,11 @@
+03b41b034dfeb0768564caae0898e62154e5b4c1751391267fdbce272aac2e10  apps/web/tests/conversation-api-events.test.ts
+bdaaced05e4b7155faf79f40d8d36def5c37f65cffbe653fb96339f569a50a5d  apps/web/tests/conversation-durable-transport.test.ts
+c423ef127201b08d6a5ebde88322ba1f373c035fa0504fc3fdd6c70fa3d12f62  apps/web/tests/conversation-event-stream.test.ts
+937c4b0b870d667da2e9ad7199d6af7339016129aac6b5d92bbc99586d26b85e  apps/web/src/fsd/entities/conversation/api/durable-chat-transport.ts
+78991932f3f57f7c6e953382b8599d21c63295d4085a79c5f598711c0b1b8321  apps/web/src/fsd/entities/conversation/api/conversation-api.ts
+f452e42383097677894bf4c260def5281a11384234d477939ae1d172c7e6194e  apps/web/src/fsd/entities/conversation/lib/read-event-stream.ts
+84b1524b77bb2044eb9be1a17844ea3c87566755131babff96554573570ef5ee  apps/web/src/fsd/entities/conversation/lib/conversation-ui-message.ts
+f26652a0fff4e3e507db2688008b46ee3ba2484079fadc4af0085bf9adaed35b  apps/web/src/fsd/entities/conversation/lib/reduce-event.ts
+ea4576d210ca43648b4477602c3b7f86e2fe9f73520c948a780a785983da4070  apps/web/package.json
+a09c797d92d1cd7bd8700f85fe3c887bddd31fe51c8b622dce36309f8216f8b3  packages/contracts/src/contextual-assistant.ts
+bafb94ae4f2f93efb6983f1a3b2f46fa015e25dc116685b788b73d82e7bb2ca3  pnpm-lock.yaml

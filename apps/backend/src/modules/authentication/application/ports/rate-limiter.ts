@@ -27,6 +27,19 @@ export interface RateLimiter {
     linkSubject(input: RateLimitSubjectLink): Promise<void>;
 }
 
+export interface ConcurrentRequestLease {
+    release(): Promise<void>;
+}
+export interface ConcurrentRequestLimiter {
+    acquireLease(input: {
+        scope: string;
+        subject: string;
+        limit: number;
+        ttlMs: number;
+        signal?: AbortSignal;
+    }): Promise<ConcurrentRequestLease | null>;
+}
+
 export class RateLimitUnavailableError extends Error {
     public constructor() {
         super('Authentication rate limiting is unavailable.');

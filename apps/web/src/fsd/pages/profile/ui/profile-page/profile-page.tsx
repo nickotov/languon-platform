@@ -13,7 +13,7 @@ import {
     WalletCards,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type {
     AccountDeletionScheduleResponse,
     AuthUser,
@@ -26,6 +26,7 @@ import {
 } from '@/fsd/features/account-controls';
 import { LanguageSwitcher } from '@/fsd/features/change-locale';
 import { SecuritySettings, useAuth } from '@/fsd/features/auth';
+import { ConversationDefaults } from '@/fsd/features/conversation-preferences';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     ModelPreferenceSection,
@@ -156,6 +157,12 @@ function AuthenticatedProfile({
 }) {
     const { href, t, locale } = useI18n();
     const preferenceNavigation = useModelPreferenceNavigation();
+    const [modelDirty, setModelDirty] = useState(false);
+    const [chatDirty, setChatDirty] = useState(false);
+    useEffect(
+        () => preferenceNavigation.setDirty(modelDirty || chatDirty),
+        [modelDirty, chatDirty, preferenceNavigation.setDirty],
+    );
     const modelCopy = preferenceCopy(locale);
 
     const router = useRouter();
@@ -202,7 +209,8 @@ function AuthenticatedProfile({
                         clearLocalSession();
                     }}
                     requestWithSession={requestWithSession}
-                    onModelDirtyChange={preferenceNavigation.setDirty}
+                    onModelDirtyChange={setModelDirty}
+                    onChatDirtyChange={setChatDirty}
                     onOpenCredits={openCredits}
                 />
             ),
@@ -319,9 +327,11 @@ function AccountTab({
     onScheduled,
     requestWithSession,
     onModelDirtyChange,
+    onChatDirtyChange,
     onOpenCredits,
 }: ComingSoonProps & {
     onModelDirtyChange(dirty: boolean): void;
+    onChatDirtyChange(dirty: boolean): void;
     onOpenCredits(): void;
     onScheduled(receipt: AccountDeletionScheduleResponse): void;
     requestWithSession<T>(
@@ -388,6 +398,10 @@ function AccountTab({
                 onDirtyChange={onModelDirtyChange}
                 onOpenCredits={onOpenCredits}
                 requestWithSession={requestWithSession}
+            />
+            <ConversationDefaults
+                requestWithSession={requestWithSession}
+                onDirtyChange={onChatDirtyChange}
             />
             <SettingsSection
                 description={t('profile.dataDescription')}

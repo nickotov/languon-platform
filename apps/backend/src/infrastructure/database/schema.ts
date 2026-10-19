@@ -1,3 +1,6 @@
+import * as knowledgeSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/schema';
+import * as conversationSchema from '../../modules/conversations/infrastructure/persistence/drizzle/schema';
+import * as conversationCallSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-provider-call-schema';
 import * as dictionaryTextSelectionSchema from '../../modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema';
 import * as textsJobSchema from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-schema';
 import * as textsContentSchema from '../../modules/texts/infrastructure/persistence/drizzle/schema';
@@ -143,6 +146,9 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/audio-schema';
 
 export const databaseSchema = {
+    ...knowledgeSchema,
+    ...conversationSchema,
+    ...conversationCallSchema,
     ...dictionaryTextSelectionSchema,
     ...textsJobSchema,
     ...textsContentSchema,
@@ -219,3 +225,7 @@ export * from '../../modules/texts/infrastructure/persistence/drizzle/schema';
 export * from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-schema';
 
 export * from '../../modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema';
+
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/schema';
+export * from '../../modules/conversations/infrastructure/persistence/drizzle/schema';
+export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-provider-call-schema';

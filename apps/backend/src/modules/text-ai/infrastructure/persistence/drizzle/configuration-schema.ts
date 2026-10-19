@@ -93,6 +93,10 @@ export const dictionaryAiWorkerObservationsTable = pgTable(
         textAiSelectionRevision: integer('text_ai_selection_revision'),
         textAiCapacityRevision: integer('text_ai_capacity_revision'),
         textsCapacityRevision: integer('texts_capacity_revision'),
+        conversationCapacityRevision: integer('conversation_capacity_revision'),
+        conversationExecutionRevision: integer(
+            'conversation_execution_revision',
+        ),
         textsExecutionRevision: integer('texts_execution_revision'),
         learningExecutionRevision: integer('learning_execution_revision'),
         creditSettlementRevision: integer('credit_settlement_revision'),

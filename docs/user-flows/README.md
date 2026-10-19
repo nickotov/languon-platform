@@ -11,6 +11,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Contextual Language Assistant and Knowledge](./contextual-language-assistant-and-knowledge.md) — private source conversations, explicit draft publication, independent notes and revisions.
+
 - [Shared pronunciation playback](./shared-pronunciation-playback.md) — shared audio, explicit paid generation, retained recordings and editable model prices.
 
 - [Global App Shell](./global-app-shell.md) — session-aware navigation, guest settings, preference persistence, responsive drawer focus, and the WIP home page.

@@ -393,9 +393,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(legacy()).rejects.toMatchObject({
                 cause: { code: '55000' },
             });
-            await database
-                .update(dictionaryGenerationProviderUsageArchiveTable)
-                .set({ settledAt: instant(-86_400_001) });
+            await client`update dictionary_generation_provider_usage_archive set settled_at=now()-interval '24 hours 1 second'`;
             await expect(legacy()).resolves.toBeUndefined();
         });
         for (const sentenceFirst of [false, true])

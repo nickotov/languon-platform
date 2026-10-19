@@ -1,3 +1,4 @@
+import { createConversationWorkerComposition } from '../../modules/conversations/infrastructure/conversation-worker-composition';
 import { createTextSelectionWorkerComposition } from '../../modules/dictionaries/infrastructure/text-selection-composition';
 import { createTextsCryptography } from '../../modules/texts/infrastructure/texts-composition';
 import { resolveTextTranslationProposal } from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-support';
@@ -130,6 +131,10 @@ export function publishWorkerTextAiObservations(
     workerId: string,
 ) {
     return publishTextAiWorkerObservations({
+        conversationCapacityEnabled: true,
+        conversationExecutionEnabled:
+            environment.providerFixtureMode !== 'deterministic' &&
+            environment.supportedFormats.includes('conversation:v1'),
         textsCapacityEnabled: true,
         textsExecutionEnabled: true,
         learningExecutionEnabled:
@@ -552,6 +557,23 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                   resolveTextTranslationProposal(tx, input),
           }).worker
         : undefined;
+    const conversationEnabled =
+        environment.supportedFormats.includes('conversation:v1') &&
+        environment.providerFixtureMode !== 'deterministic';
+    if (
+        conversationEnabled &&
+        (!textsHmacSecret || Buffer.byteLength(textsHmacSecret, 'utf8') < 32)
+    )
+        throw new DictionaryWorkerConfigurationError(
+            'Conversation execution requires DICTIONARY_HMAC_SECRET (at least 32 bytes).',
+        );
+    const conversationWorker = conversationEnabled
+        ? createConversationWorkerComposition({
+              database,
+              dictionaryHmacSecret: textsHmacSecret!,
+              credentials: environment.providerCredentials,
+          })
+        : undefined;
     const observationWorkerId = `${environment.releaseSha}:${hostname().slice(0, 64)}`;
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
@@ -561,6 +583,9 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
         sentenceService: sentenceWorker,
+        ...(conversationWorker
+            ? { conversationService: conversationWorker }
+            : {}),
         ...(textsWorker ? { textsService: textsWorker } : {}),
         ...(selectionWorker ? { selectionService: selectionWorker } : {}),
         sentencePreparation,

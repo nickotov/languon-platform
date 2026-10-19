@@ -689,11 +689,11 @@ describe('shared dictionary and sentence slot pool', () => {
     });
 });
 
-it('shares one polling slot fairly among dictionary, sentence, texts and selection work', async () => {
+it('shares one polling slot fairly among dictionary, conversation, sentence, texts and selection work', async () => {
     const order: string[] = [];
     const run = (kind: string) => async () => {
         order.push(kind);
-        if (order.length === 8) void runtime.shutdown('SIGTERM');
+        if (order.length === 10) void runtime.shutdown('SIGTERM');
         return true;
     };
     const release = vi.fn(async () => undefined);
@@ -705,6 +705,7 @@ it('shares one polling slot fairly among dictionary, sentence, texts and selecti
         readinessTimeoutMs: 100,
         supportedFormats: [
             'single-card:v1',
+            'conversation:v1',
             'sentence-check:v1',
             'text-translation:v1',
             'text-selection-card:v1',
@@ -713,6 +714,10 @@ it('shares one polling slot fairly among dictionary, sentence, texts and selecti
         service: {
             readiness: async () => undefined,
             processNext: run('dictionary'),
+            releaseWorkerLeases: release,
+        },
+        conversationService: {
+            processNext: run('conversation'),
             releaseWorkerLeases: release,
         },
         sentenceService: {
@@ -731,14 +736,16 @@ it('shares one polling slot fairly among dictionary, sentence, texts and selecti
     await runtime.run();
     expect(order).toEqual([
         'dictionary',
+        'conversation',
         'sentence',
         'texts',
         'selection',
         'dictionary',
+        'conversation',
         'sentence',
         'texts',
         'selection',
     ]);
     await runtime.shutdown('SIGTERM');
-    expect(release).toHaveBeenCalledTimes(4);
+    expect(release).toHaveBeenCalledTimes(5);
 });

@@ -87,3 +87,38 @@ it('uses synthetic local translation without invoking the provider or dropping s
         usage: { inputTokens: 1, outputTokens: 1 },
     });
 });
+
+it('publishes conversation execution only for configured live worker support', async () => {
+    publishObservation.mockClear();
+    const database = {} as Parameters<
+        typeof publishWorkerTextAiObservations
+    >[1];
+    await publishWorkerTextAiObservations(
+        {
+            providerFixtureMode: 'off',
+            supportedFormats: ['conversation:v1'],
+            providerCredentials: {},
+            readinessTimeoutMs: 100,
+        },
+        database,
+        'live',
+    );
+    await publishWorkerTextAiObservations(
+        {
+            providerFixtureMode: 'deterministic',
+            supportedFormats: ['conversation:v1'],
+            providerCredentials: {},
+            readinessTimeoutMs: 100,
+        },
+        database,
+        'fixture',
+    );
+    expect(publishObservation.mock.calls[0]?.[0]).toMatchObject({
+        conversationCapacityEnabled: true,
+        conversationExecutionEnabled: true,
+    });
+    expect(publishObservation.mock.calls[1]?.[0]).toMatchObject({
+        conversationCapacityEnabled: true,
+        conversationExecutionEnabled: false,
+    });
+});

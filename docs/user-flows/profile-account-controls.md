@@ -29,6 +29,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-handle-security-and-removal
 related_features:
+    - contextual-language-assistant-and-knowledge
     - shared-pronunciation-playback
     - flashcard-training-backend
     - user-authentication
@@ -164,6 +165,14 @@ version. Encrypted historical backup retention itself is unchanged.
   or cancellation; a restore-gate outage prevents traffic activation.
 - Email-change is a client-only mock and sends no link; current-password change
   remains the real authenticated operation.
+
+## Related contextual assistant coverage
+
+Conversation and Knowledge content extend the personal-data lifecycle covered by
+the [Contextual Language Assistant and Knowledge guide](contextual-language-assistant-and-knowledge.md)
+and feature 044's disposable lifecycle tests. This guide continues to own account
+scheduling, administrator cancellation and the restore gate. Its mapped browser
+scenario schedules removal; it does not claim to execute the later content purge.
 
 ## Automated regression checks
 

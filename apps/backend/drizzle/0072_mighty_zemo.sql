@@ -1,0 +1,3 @@
+ALTER TABLE "dictionary_generation_provider_usage_archive" DROP CONSTRAINT "text_ai_usage_archive_kind";--> statement-breakpoint
+ALTER TABLE "conversation_messages" ADD COLUMN "tool_calls" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "dictionary_generation_provider_usage_archive" ADD CONSTRAINT "text_ai_usage_archive_kind" CHECK ("dictionary_generation_provider_usage_archive"."job_kind" in ('dictionary-generation', 'sentence-generation', 'sentence-check', 'text-detection', 'text-translation', 'text-selection-card', 'conversation-turn'));

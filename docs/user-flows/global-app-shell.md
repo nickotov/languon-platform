@@ -21,6 +21,7 @@ e2e_scenarios:
     - guest-settings-persistence
     - session-aware-global-navigation
 related_features:
+    - contextual-language-assistant-and-knowledge
     - magic-profile-page
     - user-authentication
     - web-ui-kit
@@ -113,6 +114,14 @@ remain covered by their existing journey suites.
   mobile drawer. Escape closes the inner popup before the native modal drawer.
 - Existing navigation loading, error/retry, empty state, create dialog, and
   sign-out failure behavior remain unchanged.
+
+## Related contextual assistant coverage
+
+Authenticated navigation now also includes **Knowledge**. Its private library,
+source conversations and publication journey are owned by the
+[Contextual Language Assistant and Knowledge guide](contextual-language-assistant-and-knowledge.md).
+The shell scenarios here retain their guest settings, identity isolation,
+dictionary navigation and drawer assertions; they do not claim to test notes.
 
 ## Automated regression checks
 

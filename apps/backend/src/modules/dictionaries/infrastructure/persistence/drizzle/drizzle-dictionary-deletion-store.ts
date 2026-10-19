@@ -1,3 +1,7 @@
+import {
+    conversationDeletionBusy,
+    eraseConversationContent,
+} from '../../../../conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
 import { createHash } from 'node:crypto';
 
 import { DictionaryDeletionReceiptResponseSchema } from '@languon/contracts';
@@ -435,6 +439,15 @@ export class DrizzleDictionaryDeletionStore {
         cardIds: readonly string[] | null,
     ): Promise<void> {
         abort(input.context);
+        if (!cardIds) {
+            const scope = {
+                sourceKind: 'dictionary' as const,
+                sourceIds: dictionaryIds,
+            };
+            if (await conversationDeletionBusy(tx, scope, input.context.now))
+                throw new DictionaryDeletionBusyError();
+            await eraseConversationContent(tx, scope, input.context.now);
+        }
         const sentenceScope = cardIds
             ? { entryIds: cardIds }
             : { dictionaryIds };

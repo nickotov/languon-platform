@@ -4,6 +4,7 @@ import type { TextDocument, TextSelectionSource } from '@languon/contracts';
 import { useAuth } from '@/fsd/features/auth';
 import { useSessionStore } from '@/fsd/entities/session';
 import { TextReading } from '@/fsd/features/text-reading';
+import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, ButtonLink, LoadingState, showToast } from '@/fsd/shared/ui';
 import { useSharedText } from '../../hooks/use-shared-text';
@@ -167,7 +168,18 @@ export function SharedTextsPage({
                     onMatch={setMatch}
                     onCopy={copyCurrent}
                 />
-                <div className={styles.reader}>
+                <ContextualAssistant
+                    source={{
+                        kind: 'text',
+                        id: text.id,
+                        shareLocator: shareId,
+                        shareKind: kind,
+                    }}
+                    shareKey={shared.shareKey}
+                    contextLabel={text.title}
+                    selectionRootId='shared-text-reading'
+                />
+                <div className={styles.reader} id='shared-text-reading'>
                     <TextReading
                         collectionActorKey={actor}
                         document={text}

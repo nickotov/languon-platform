@@ -9,6 +9,7 @@ const guidesDirectory = join(repositoryRoot, 'docs', 'user-flows');
 const indexPath = join(guidesDirectory, 'README.md');
 const maximumTestFileBytes = 2 * 1024 * 1024;
 export const e2eCommands = new Map([
+    ['contextual-assistant', 'node scripts/run-contextual-assistant-e2e.mjs'],
     ['texts-backend', 'node scripts/run-texts-e2e.mjs'],
     ['texts-web', 'node scripts/run-texts-web-e2e.mjs'],
     ['texts', 'node scripts/run-texts-all-e2e.mjs'],

@@ -1,3 +1,4 @@
+import { knowledgeRu } from './knowledge';
 import { textsLibraryRu } from './texts-library';
 import { textsReadingRu } from './texts-reading';
 import { textsPublicRu } from './texts-public';
@@ -7,6 +8,7 @@ import { profileFeatureMessages, type Messages } from './en';
 import { trainingRu } from './training';
 
 export const ru = {
+    ...knowledgeRu,
     ...textsLibraryRu,
     ...textsReadingRu,
     ...textsPublicRu,

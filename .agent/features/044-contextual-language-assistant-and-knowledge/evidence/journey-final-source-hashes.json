@@ -1,0 +1,130 @@
+{
+  "base": "9ae467b035e135eea3b9df07d61fba2192206df7",
+  "run": "assistant044-c3b-final",
+  "algorithm": "sha256 of sorted relative path, NUL, bytes, NUL per scope",
+  "scopes": {
+    "apps/backend/src": {
+      "sha256": "725ffbc7e41c86d690226afa831dd8ae5c01703d4a09692927ab2f69d43e9718",
+      "files": 377
+    },
+    "apps/web/src": {
+      "sha256": "29de5002e2399195c0d8153ad315fa5b8b6864e92d6b0d8074a8ce574a30af38",
+      "files": 785
+    },
+    "apps/backend/drizzle": {
+      "sha256": "76802280b8d8f628c832620ce9ca14abf1e61da807addb8e95e29bafe3fe25f3",
+      "files": 150
+    },
+    "apps/backend/tests/support/contextual-assistant-fixture.ts": {
+      "sha256": "d91e150ee7ad056eb5741c003c81f85a8f5d1fca55b49c16c4f437abe0b7261c",
+      "files": 1
+    },
+    "apps/backend/tests/support/contextual-assistant-web-server.ts": {
+      "sha256": "8dc3a5ce52fb3637c8ccf8d30d78029c6f9784bd8ac8890a953ff5a00ff83a0d",
+      "files": 1
+    },
+    "apps/backend/tests/integration/modules/conversations/contextual-assistant.journeys.test.ts": {
+      "sha256": "99ce5fde96c3df3f8ffbe53c9967259be14a04529c5a419ae1b096c7ab9317d3",
+      "files": 1
+    },
+    "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts": {
+      "sha256": "1bdc051fb0093246d3504c8881fc7df3d172a282dbd80de80cf72274b046c1fd",
+      "files": 1
+    },
+    "apps/web/tests/e2e/support/contextual-assistant-playwright.config.ts": {
+      "sha256": "50379cd931d2cfd54ee34f5781fbc2d7986a106dc74a24cf48a572feb4474b31",
+      "files": 1
+    },
+    "apps/web/next.config.mjs": {
+      "sha256": "264ae90f992e1a500ee32cef9c82a482eaa9633a011e18d767999d8f8c1358f5",
+      "files": 1
+    },
+    "apps/backend/vitest.config.ts": {
+      "sha256": "5bbd3aff97b5ee70120f86eb0f4b0c528a32e2acddca000388be2aabdfc73a6a",
+      "files": 1
+    },
+    "scripts/run-contextual-assistant-e2e.mjs": {
+      "sha256": "3bcd443e7b6000d59606497c61021a0486073c4778128ee092e51704152fd6d7",
+      "files": 1
+    },
+    "scripts/run-contextual-assistant-e2e.test.mjs": {
+      "sha256": "95f887b088b86da822df6c566e2f2714f68c66e4e87c8a7fe9c5200c5e67b11a",
+      "files": 1
+    },
+    "scripts/check-user-flow-guides.mjs": {
+      "sha256": "b9cb8b250af903aca18f31c297dc556228c68210d260c7f1784ce026dd1e4bbe",
+      "files": 1
+    },
+    "scripts/user-flow-e2e.mjs": {
+      "sha256": "43348b8826489569ac5a12e41dd988a2d85c845c2bd722cc3742f757d5521636",
+      "files": 1
+    },
+    "pnpm-lock.yaml": {
+      "sha256": "4af14a9557c72c36ccf1ef2d1183c501d8c1bb34ee4e2b29053ea8d5516b2e78",
+      "files": 1
+    },
+    "package.json": {
+      "sha256": "b064bbdf7c09c77826d4fa6980910267d10323001a0c410115f1ad6daf0eda25",
+      "files": 1
+    },
+    "apps/web/package.json": {
+      "sha256": "54da2b472df90b09309225d51d6da10e7470a36db3c90a6bc78e84ffbc681250",
+      "files": 1
+    },
+    "apps/backend/package.json": {
+      "sha256": "91f151ad674efac5937f6915df91724b0ba65f6ca5a79395f2a490f39e60ca9f",
+      "files": 1
+    },
+    "packages/browser-auth/src": {
+      "sha256": "2a9b6a2fabfbfd54394c85e7e025d1763eb4c9e47d76d09299dff8aec3fececf",
+      "files": 4
+    },
+    "packages/contracts/src": {
+      "sha256": "c2df4516765e2ddc3b5d65526dbdb35e9d6524c7f460cc5fffff6a6dc7f31f60",
+      "files": 35
+    },
+    "packages/database/src": {
+      "sha256": "281e5ed396e8e60bb749aad5bf4490ebfdbb8e8f55bb29ac1bdebdfc91d8aac8",
+      "files": 5
+    },
+    "packages/languages/src": {
+      "sha256": "d440e0e0d7ee8143a93b58ef72b49b67d8d427b762cf681a539027286f2c8636",
+      "files": 1
+    },
+    "packages/prompts/src": {
+      "sha256": "70e2d7c24777e4c4182b49cba9b9ae040c42c8a2e6726d451f2d9becf3a76df5",
+      "files": 11
+    },
+    "packages/contracts/dist": {
+      "sha256": "079a6e93bf122655484c3049135bac73fa191eb89101269aebd0f6547b09a0e5",
+      "files": 2
+    },
+    "packages/prompts/dist": {
+      "sha256": "260fb8bf591f07e86d39c5a87686776f99b0b59f2e8c996723f42f8e3b06b1d9",
+      "files": 2
+    },
+    "packages/browser-auth/dist": {
+      "sha256": "a636ab30b1e001188e6599dfe7e263b62e6d37efab918d169d9f938db2762343",
+      "files": 2
+    },
+    "infra/deploy/redis.production.acl.example": {
+      "sha256": "2943556834e73648c2cf5a74dcb6355b263915494f3cd6878eb36899b0946902",
+      "files": 1
+    },
+    "apps/backend/tests/integration/modules/authentication/infrastructure/redis-concurrent-requests.test.ts": {
+      "sha256": "b4ba7374c7ff38e87451458a00b3115906f69fa9acc9997b1072774e8d11ce20",
+      "files": 1
+    },
+    "apps/backend/tests/integration/modules/authentication/infrastructure/production-redis-tls-acl.test.ts": {
+      "sha256": "3e4aa212de585c7fef5c11b70004dd8f8b8a853fccb1fd2e8e5e611577e2d441",
+      "files": 1
+    }
+  },
+  "next_env_before_sha256": "0f70629890b72a0a82e91972cc032c04b658b26c265373cb711cf576bfbf8fcc",
+  "after_run_comparison": {
+    "changed_scopes": [],
+    "result": "identical"
+  },
+  "next_env_after_sha256": "0f70629890b72a0a82e91972cc032c04b658b26c265373cb711cf576bfbf8fcc",
+  "execution_result": "API2/2 and browser3/3 passed after C3b source-owner lock remediation; strengthened mobile assertions included in full run"
+}

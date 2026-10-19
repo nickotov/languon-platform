@@ -333,6 +333,7 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
                 'text-translation',
                 'text-selection-card',
                 'speech-generation',
+                'conversation-turn',
             ].includes(jobKind)
         ) {
             throw new AiCreditReservationStateError();

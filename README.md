@@ -212,6 +212,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm test:e2e:shared-pronunciation`          | Run guarded learner/admin pronunciation and pricing journeys                       |
 | `pnpm test:e2e:texts-backend`                 | Run guarded Texts API journeys against disposable PostgreSQL and Redis             |
 | `pnpm test:e2e:texts-web`                     | Run guarded Texts real-browser journeys                                            |
+| `pnpm test:e2e:contextual-assistant`          | Run guarded contextual chat and Knowledge journeys with deterministic models       |
 | `pnpm test:e2e:texts`                         | Run Texts backend and web journeys against exclusive disposable targets            |
 | `pnpm db:studio`                              | Inspect the local database with Drizzle Studio                                     |
 | `pnpm mastra:playground:reset`                | Guarded destructive Mastra playground reset                                        |
@@ -234,6 +235,11 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm user-flow:e2e -- check [slug]`          | Validate guide-to-E2E scenario traceability                                        |
 | `node scripts/run-flashcard-training-e2e.mjs` | Run backend flashcard HTTP journeys in owned ephemeral PostgreSQL/Redis containers |
 | `pnpm feature:new -- <slug> "<title>"`        | Create the next numbered feature evidence workspace                                |
+
+The contextual assistant journey uses exclusive disposable PostgreSQL/Redis
+targets and a deterministic model. Follow its
+[user-flow guide](docs/user-flows/contextual-language-assistant-and-knowledge.md)
+for the required confirmation variables, ports and cleanup.
 
 Quick one-command style remote flow (Timeweb-ready):
 

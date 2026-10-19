@@ -77,7 +77,8 @@
         "test:e2e:shared-pronunciation": "node scripts/run-shared-pronunciation-e2e.mjs",
         "test:e2e:texts-backend": "node scripts/run-texts-e2e.mjs",
         "test:e2e:texts-web": "node scripts/run-texts-web-e2e.mjs",
-        "test:e2e:texts": "node scripts/run-texts-all-e2e.mjs"
+        "test:e2e:texts": "node scripts/run-texts-all-e2e.mjs",
+        "test:e2e:contextual-assistant": "node scripts/run-contextual-assistant-e2e.mjs"
     },
     "devDependencies": {
         "@ast-grep/cli": "0.45.3",

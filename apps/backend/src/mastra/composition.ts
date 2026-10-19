@@ -1,3 +1,5 @@
+import type { Agent } from '@mastra/core/agent';
+import type { createContextualTutorTools } from '../modules/conversations/infrastructure/ai/contextual-tutor-tools';
 import { createTextsAgents } from '../modules/texts/infrastructure/ai/texts-agents';
 import { Mastra } from '@mastra/core/mastra';
 
@@ -22,6 +24,11 @@ import {
 } from './development-server-policy';
 
 export interface CanonicalMastraOptions {
+    /** Only operation-bound production instances; no default learner identity in Studio. */
+    contextualTutor?: {
+        agent: Agent;
+        tools: ReturnType<typeof createContextualTutorTools>;
+    };
     textsAi?: Parameters<typeof createTextsAgents>[0];
     dictionaryCardAuthoring?: DictionaryCardAuthoringAgentOptions;
     dictionaryCardGeneration?: DictionaryCardGenerationAgentOptions;
@@ -87,6 +94,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 
     if (
         !development &&
+        !options.contextualTutor &&
         !textsAgents &&
         !dictionaryCardAuthoringAgent &&
         !dictionaryCardGenerationAgent &&
@@ -98,7 +106,11 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 
     if (!development) {
         return new Mastra({
+            tools: options.contextualTutor?.tools ?? {},
             agents: {
+                ...(options.contextualTutor
+                    ? { contextualLanguageTutor: options.contextualTutor.agent }
+                    : {}),
                 ...textsAgents,
                 ...(dictionaryCardAuthoringAgent
                     ? { dictionaryCardAuthoringAgent }
@@ -119,6 +131,9 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
     }
 
     return createDevelopmentMastra({
+        ...(options.contextualTutor
+            ? { contextualTutor: options.contextualTutor }
+            : {}),
         development,
         textsAgents,
         dictionaryCardAuthoringAgent,
@@ -130,6 +145,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 }
 
 function createDevelopmentMastra(options: {
+    contextualTutor?: NonNullable<CanonicalMastraOptions['contextualTutor']>;
     textsAgents: ReturnType<typeof createTextsAgents> | undefined;
     development: ReturnType<typeof createDevelopmentHarnessPrimitives>;
     dictionaryCardGenerationAgent:
@@ -155,7 +171,11 @@ function createDevelopmentMastra(options: {
     };
 }) {
     return new Mastra({
+        tools: options.contextualTutor?.tools ?? {},
         agents: {
+            ...(options.contextualTutor
+                ? { contextualLanguageTutor: options.contextualTutor.agent }
+                : {}),
             ...options.textsAgents,
             ...(options.dictionaryCardAuthoringAgent
                 ? {

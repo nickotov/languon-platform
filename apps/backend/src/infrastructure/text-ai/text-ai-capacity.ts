@@ -26,7 +26,7 @@ export interface TextAiProviderBudgetUsage {
 export async function lockTextAiCapacity(tx: Transaction): Promise<void> {
     await tx.execute(sql`select pg_advisory_xact_lock(${textAiCapacityLock})`);
     await tx.execute(
-        sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true)`,
+        sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true), set_config('languon.conversation_capacity_revision', '1', true)`,
     );
 }
 
@@ -73,6 +73,24 @@ export async function hasTextsCapacityOverlap(
     return rows[0]?.overlap === true;
 }
 
+/** Conversation accounting includes every actor, observer and reflector call. */
+export async function hasConversationCapacityOverlap(
+    tx: Transaction,
+    now: Date,
+): Promise<boolean> {
+    const windowStart = new Date(now.getTime() - 86_400_000).toISOString();
+    const rows = await tx.execute(sql`select exists (
+        select 1 from conversation_turns where status in ('queued','running')
+        union all
+        select 1 from conversation_provider_calls where state <> 'settled'
+            or (settled_at > ${windowStart}::timestamptz and (actual_cost_micros > 0 or actual_input_tokens > 0 or actual_output_tokens > 0))
+        union all
+        select 1 from dictionary_generation_provider_usage_archive where job_kind='conversation-turn'
+            and settled_at > ${windowStart}::timestamptz and (actual_cost_micros > 0 or actual_input_tokens > 0 or actual_output_tokens > 0)
+    ) as overlap`);
+    return rows[0]?.overlap === true;
+}
+
 /** Closed typed union: dictionaries, sentences and Texts share existing limits.
  * Provider usage remains grouped by the immutable five-field budget cohort. */
 export async function readTextAiCapacity(
@@ -97,6 +115,8 @@ export async function readTextAiCapacity(
         select owner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from texts_ai_jobs
         union all
         select owner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from dictionary_text_selection_jobs
+        union all
+        select owner_id as actor_id, status as execution_state, created_at, created_at as next_attempt_at, not cancel_requested as runnable from conversation_turns
     ) select
         count(*) filter (where execution_state='queued') as global_queued,
         count(*) filter (where execution_state='queued' and actor_id=${actorId}::uuid) as actor_queued,
@@ -127,6 +147,12 @@ export async function readTextAiCapacity(
             provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
             provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
             provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from dictionary_text_selection_jobs
+        union all
+        select id, owner_id as actor_id, case when state='settled' then 'settled' else 'active' end as provider_reservation_state, settled_at as provider_reservation_settled_at,
+            reserved_cost_micros, reserved_input_tokens, reserved_output_tokens,
+            actual_cost_micros, actual_input_tokens, actual_output_tokens,
+            input_cost_micros_per_million_tokens, output_cost_micros_per_million_tokens,
+            max_cost_micros_per_attempt, max_input_tokens_per_attempt, max_output_tokens_per_attempt from conversation_provider_calls
     ), cohorts as (
         select * from live_jobs where provider_input_cost_micros_per_million_tokens=${budget.inputCostMicrosPerMillionTokens}
             and provider_output_cost_micros_per_million_tokens=${budget.outputCostMicrosPerMillionTokens}

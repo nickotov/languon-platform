@@ -23,12 +23,15 @@ import {
     isTextAiCapacityCapableObservation,
     isSentenceExecutionCapableObservation,
     isTextsExecutionCapableObservation,
+    isConversationExecutionCapableObservation,
+    isConversationCapacityCapableObservation,
     isTextsCapacityCapableObservation,
 } from './text-ai-worker-readiness';
 import { isTextAiCircuitOpen } from '../../../../../infrastructure/text-ai/text-ai-circuit';
 import {
     hasSentenceCapacityOverlap,
     hasTextsCapacityOverlap,
+    hasConversationCapacityOverlap,
 } from '../../../../../infrastructure/text-ai/text-ai-capacity';
 import { sql } from 'drizzle-orm';
 import {
@@ -57,16 +60,20 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         input: Parameters<TextAiAdmissionParticipant['resolve']>[0],
     ) {
         const tx = this.transaction;
+        const conversation = input.format === 'conversation:v1';
         const learning = textAiSentenceFormats.some(
             (format) => format === input.format,
         );
         const texts = textAiTextsFormats.some(
             (format) => format === input.format,
         );
+        const conversationOverlap =
+            conversation ||
+            (await hasConversationCapacityOverlap(tx, input.now));
         const textsOverlap =
             texts || (await hasTextsCapacityOverlap(tx, input.now));
         const overlap =
-            learning || textsOverlap
+            learning || textsOverlap || conversationOverlap
                 ? true
                 : await hasSentenceCapacityOverlap(tx, input.now);
         const [preference] = await tx
@@ -91,7 +98,12 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             .where(eq(dictionaryAiConfigurationTable.id, 'global'))
             .limit(1);
         if (!configured) {
-            if (learning || texts || preference?.mode === 'explicit')
+            if (
+                conversation ||
+                learning ||
+                texts ||
+                preference?.mode === 'explicit'
+            )
                 throw new TextAiSelectionUnavailableError();
             return {
                 budget: input.legacyBudget,
@@ -102,7 +114,12 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         }
         if (this.policy.pricingAdmissionEnabled === false)
             throw new TextAiSelectionUnavailableError();
-        if (preference?.mode !== 'explicit' && !learning && !texts) {
+        if (
+            preference?.mode !== 'explicit' &&
+            !learning &&
+            !texts &&
+            !conversation
+        ) {
             if (
                 !configured.snapshot.enabledModelIds.includes(
                     configured.snapshot.modelId,
@@ -134,6 +151,15 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                     ),
                 );
             if (
+                (conversationOverlap &&
+                    !observations.some(
+                        (observation) =>
+                            observation.status !== 'unavailable' &&
+                            isConversationCapacityCapableObservation(
+                                observation,
+                                input.requiredWorkerFormat ?? input.format,
+                            ),
+                    )) ||
                 observations.some(
                     (observation) => observation.status === 'unavailable',
                 ) ||
@@ -162,7 +188,9 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 candidate.id ===
                 (preference?.mode === 'explicit'
                     ? preference.modelId
-                    : configured.snapshot.modelId),
+                    : conversation
+                      ? 'deepseek-flash'
+                      : configured.snapshot.modelId),
         );
         if (
             !model ||
@@ -193,6 +221,15 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 ),
             );
         if (
+            (conversationOverlap &&
+                !observations.some(
+                    (observation) =>
+                        observation.status !== 'unavailable' &&
+                        isConversationCapacityCapableObservation(
+                            observation,
+                            input.requiredWorkerFormat ?? input.format,
+                        ),
+                )) ||
             observations.some(
                 (observation) => observation.status === 'unavailable',
             ) ||
@@ -207,32 +244,37 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 )) ||
             !observations.some(
                 (observation) =>
-                    (texts
-                        ? isTextsExecutionCapableObservation(
+                    (conversation
+                        ? isConversationExecutionCapableObservation(
                               observation,
                               input.requiredWorkerFormat ?? input.format,
                           )
-                        : learning
-                          ? isSentenceExecutionCapableObservation(
+                        : texts
+                          ? isTextsExecutionCapableObservation(
                                 observation,
                                 input.requiredWorkerFormat ?? input.format,
                             )
-                          : overlap
-                            ? (textsOverlap
-                                  ? isTextsCapacityCapableObservation
-                                  : isTextAiCapacityCapableObservation)(
+                          : learning
+                            ? isSentenceExecutionCapableObservation(
                                   observation,
                                   input.requiredWorkerFormat ?? input.format,
                               )
-                            : isTextAiSelectionCapableObservation(
-                                  observation,
-                                  input.requiredWorkerFormat ?? input.format,
-                              )) && observation.status !== 'unavailable',
+                            : overlap
+                              ? (textsOverlap
+                                    ? isTextsCapacityCapableObservation
+                                    : isTextAiCapacityCapableObservation)(
+                                    observation,
+                                    input.requiredWorkerFormat ?? input.format,
+                                )
+                              : isTextAiSelectionCapableObservation(
+                                    observation,
+                                    input.requiredWorkerFormat ?? input.format,
+                                )) && observation.status !== 'unavailable',
             )
         )
             throw new TextAiSelectionUnavailableError();
         if (
-            (learning || texts) &&
+            (conversation || learning || texts) &&
             (await isTextAiCircuitOpen(tx, {
                 execution: { providerId: model.providerId, modelId: model.id },
                 format: input.format,
@@ -253,13 +295,14 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         const snapshot = {
             adapterRevision: model.adapterRevision,
             aggregateBudget: {
-                ...(preference?.mode !== 'explicit'
+                ...(preference?.mode !== 'explicit' && !conversation
                     ? configured.snapshot.aggregateBudget
                     : model.aggregateBudget),
             },
             credentialReference: model.credentialReference,
             creditPricing: {
                 ...(preference?.mode !== 'explicit' &&
+                !conversation &&
                 configured.snapshot.creditPricing
                     ? configured.snapshot.creditPricing
                     : model.creditPricing),

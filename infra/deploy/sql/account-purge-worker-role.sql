@@ -120,3 +120,15 @@ GRANT SELECT (id, owner_id, execution_state, provider_reservation_state,
     ON TABLE texts_ai_jobs, dictionary_text_selection_jobs TO :"account_purge_role";
 GRANT SELECT (source_owner_id), UPDATE (source_owner_id)
     ON TABLE dictionary_text_selection_jobs TO :"account_purge_role";
+
+-- Conversation cleanup uses opaque source ownership and numerical billing only.
+-- Cascades erase messages, drafts, events and memory without granting body access.
+GRANT SELECT (id, owner_id, source_kind, source_id), DELETE
+    ON TABLE conversation_chats TO :"account_purge_role";
+GRANT SELECT (id, conversation_id, owner_id, status, lease_until)
+    ON TABLE conversation_turns TO :"account_purge_role";
+GRANT SELECT, DELETE ON TABLE conversation_provider_calls TO :"account_purge_role";
+GRANT SELECT (owner_id), DELETE ON TABLE conversation_settings TO :"account_purge_role";
+GRANT SELECT (id, owner_id), DELETE ON TABLE knowledge_notes TO :"account_purge_role";
+GRANT SELECT (owner_id), DELETE ON TABLE knowledge_operation_receipts TO :"account_purge_role";
+GRANT SELECT (id) ON TABLE texts TO :"account_purge_role";

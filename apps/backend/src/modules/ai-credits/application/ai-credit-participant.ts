@@ -5,7 +5,8 @@ export type AiCreditJobKind =
     | 'text-detection'
     | 'text-translation'
     | 'text-selection-card'
-    | 'speech-generation';
+    | 'speech-generation'
+    | 'conversation-turn';
 
 import type {
     AiCreditGrantSource,

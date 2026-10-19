@@ -9,8 +9,10 @@ import { dictionaryCardGenerationPrompt } from './local/dictionary-card-generati
 import { dictionaryPastedTermsGenerationPrompt } from './local/dictionary-pasted-terms-generation';
 import { dictionaryImportPairsGenerationPrompt } from './local/dictionary-import-pairs-generation';
 import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring';
+import { contextualLanguageTutorPrompt } from './local/contextual-language-tutor';
 
 const localPrompts = {
+    [contextualLanguageTutorPrompt.name]: contextualLanguageTutorPrompt.system,
     [textTranslationPrompt.name]: textTranslationPrompt.system,
     [textDetectionPrompt.name]: textDetectionPrompt.system,
     [sentenceGenerationPrompt.name]: sentenceGenerationPrompt.system,

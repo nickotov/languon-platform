@@ -43,6 +43,8 @@ export function createApp(options?: {
     operational?: AppOperationalOptions;
     textAi?: OpenAPIHono;
     texts?: OpenAPIHono;
+    conversations?: OpenAPIHono;
+    knowledge?: OpenAPIHono;
     textsAi?: OpenAPIHono;
     textSelections?: OpenAPIHono;
     userProfiles?: UserProfileRouteDependencies;
@@ -69,6 +71,8 @@ export function createApp(options?: {
     if (options?.administration) {
         app.route('/', createAdministrationRoutes(options.administration));
     }
+    if (options?.conversations) app.route('/', options.conversations);
+    if (options?.knowledge) app.route('/', options.knowledge);
     if (options?.textsAi) app.route('/', options.textsAi);
     if (options?.textSelections) app.route('/', options.textSelections);
     if (options?.texts) app.route('/', options.texts);
