@@ -110,17 +110,33 @@ configuration startup requires its guard and does not own this cleanup.
 
 ## Browser verification
 
-1. Sign in and open an owned dictionary or text. Select **Ask about this**.
-   The **Language assistant** dialog names its source and shows model selection.
-2. Select **New conversation** when there is no existing conversation. Ask about meaning or grammar. Observe streaming prose, material discussed,
-   and final usage. Closing the dialog preserves work; reopening reconnects to
-   the same conversation. **New conversation** starts separate history.
-   For dictionary questions, open **Add context /** and find two cards. Expand
-   each result and attach it. Copies expose labeled source, translation, enabled
+1. Sign in and open an owned dictionary or text. The folded tutor pill is visible
+   at the lower right. It does not load conversation history or subscribe to events
+   until opened. Select **Open language tutor**.
+   The non-modal **Language tutor** widget names its source. On desktop it docks
+   in an upper corner after the sidebar and opens at full available height; the
+   underlying source remains scrollable,
+   selectable and clickable. **More options** offers docking and reading size.
+2. Ask about meaning or grammar. Observe stable streaming prose, material discussed,
+   and final usage. Select **Charged credits** to open the usage popover above
+   the answer action; it shows model, input/output tokens and estimated/reported
+   accounting. Escape closes the popover and restores focus to its trigger.
+   **Minimize tutor** folds the widget into the lower-right pill while preserving
+   the question, attachments, scroll, note edits and running response. **Open language
+   tutor** returns to the same conversation. **New conversation** starts separate
+   history. Scrolling upward during streaming keeps that position; **Jump to latest**
+   returns to the newest text.
+   For dictionary questions, open **Add context /**, find and select a card. Close
+   the picker and expand its attached chip to review all available fields. Repeat
+   for a second card. Copies expose labeled source, translation, enabled
    definition/transcription/examples and field languages. Reopen after sending;
    the copied content remains readable with appropriate language direction.
-3. Ask for a Knowledge note. A **Knowledge draft** appears. Before saving it,
-   the Knowledge library remains unchanged. Edit its title, explanation,
+   **Conversation history** opens the source’s saved chats. Deleting a history row
+   opens confirmation; cancelling retains it, confirming removes its conversation.
+3. Ask for a Knowledge note. A compact **Knowledge draft** appears. Before saving it,
+   the Knowledge library remains unchanged. Select **Review and save** to open
+   the dedicated editor. Folding and reopening preserves unsaved editor changes.
+   Edit its title, explanation,
    summary, categories, and languages, then select **Save to Knowledge**.
 4. Open **Knowledge**. Search by saved wording and filter by category/studied
    language. Open the saved note, edit it, and save. **Revision history** exposes
@@ -128,7 +144,8 @@ configuration startup requires its guard and does not own this cleanup.
 5. Ask about a saved note and request a revision. Change the saved note elsewhere
    before applying the draft. Its update is rejected; the draft remains for
    comparison or **Save as a new note**. No silent overwrite occurs.
-6. On a narrow viewport, repeat close/reopen and explicitly **Stop** a running
+6. On a narrow viewport, the tutor opens as a bottom sheet at full available height.
+   Its handle and header controls switch between full and partial heights. Repeat fold/reopen at 390px and 320px and explicitly **Stop** a running
    response. Incomplete output is labeled. Final usage distinguishes reported
    values from estimates and labels input tokens, output tokens, and charged
    credits. **Retry response** starts only after
@@ -136,7 +153,8 @@ configuration startup requires its guard and does not own this cleanup.
 7. Confirm **Delete note** and revisit its URL. It is unavailable, together with
    its source-associated conversations. Independently saved other notes remain.
 
-Observe focus, labels, keyboard access, narrow-screen overflow, browser console
+Opening and folding use restrained transitions; reduced-motion preferences suppress
+those transitions. Observe focus, labels, keyboard access, narrow-screen overflow, browser console
 errors, and unexpected failed requests. Streaming cancellation may abort the
 subscription; this is expected and does not cancel durable work.
 
@@ -166,13 +184,13 @@ require `X-Languon-Share-Key`; never put the secret into logs or saved examples.
 
 ## E2E coverage
 
-| Scenario                                         | Observable proof                                                                                                                                                |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source-chat-save-knowledge`                     | Real browser source chat, streamed tool-generated draft, editable restricted explanation, explicit publication, note edit and revision history.                 |
-| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation. |
-| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                     |
-| `durable-close-reopen-stop-retry`                | Narrow browser close/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry.  |
-| `dictionary-card-copies-preserve-visible-fields` | Real dictionary/card APIs, two selected copies with all active labeled fields, Arabic/English language markup, prompt delivery and persistent readable history. |
+| Scenario                                         | Observable proof                                                                                                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `source-chat-save-knowledge`                     | Non-modal source selection, folded question/editor retention, streamed draft review, explicit publication, note edit and revision history.                         |
+| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation.    |
+| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                        |
+| `durable-close-reopen-stop-retry`                | Narrow bottom-sheet fold/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry. |
+| `dictionary-card-copies-preserve-visible-fields` | Real dictionary/card APIs, attached copies retained on fold, active field labels and Arabic/English markup, prompt delivery and readable history.                  |
 
 Exhaustive category/schema validation, concurrency fences, accounting races,
 observer/reflector budgets, source-copy markup, and SQL cleanup invariants remain

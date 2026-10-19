@@ -23,6 +23,8 @@ requirement IDs for design review and later frontend verification.
 | [Sentence library and preparation](./sentence-library-and-preparation.md) | Dictionary preview, personal archive/restore, optional background preparation and ready rounds | v001 backend verified; awaiting generated design ([handoff](../../.agent/features/039-sentence-library-management/DESIGN.md)) |
 | [Admin sentence management](./admin-sentence-library-management.md) | Per-user discovery, preview, personal/global archive and guarded permanent deletion | v001 backend verified; awaiting generated design ([handoff](../../.agent/features/039-sentence-library-management/DESIGN.md)) |
 
+| [Contextual language tutor widget](./contextual-assistant-widget.md) | Floating desktop chat, mobile bottom sheet, folding, streaming, context and Knowledge drafts | Implemented selected v001 / provider v5 ([handoff](../../.agent/features/044-contextual-language-assistant-and-knowledge/DESIGN.md)) |
+
 Every saved brief also has a [versioned handoff](../../.agent/DESIGN_HANDOFF.md)
 with a frozen prompt, generated-design URL slot, approval history and selected
 implementation version. Start with the [dictionary card handoff](../../.agent/features/027-dictionary-pronunciation-audio/DESIGN.md).

@@ -24,6 +24,16 @@ export function useConversation(
     const [attachments, setAttachments] = useState<CopiedAttachment[]>([]);
     const [useDraft, setUseDraft] = useState(false);
     const [actionError, setActionError] = useState(false);
+    const composerDrafts = useRef(
+        new Map<
+            string,
+            {
+                question: string;
+                attachments: CopiedAttachment[];
+                useDraft: boolean;
+            }
+        >(),
+    );
     const pendingRequest = useRef<SubmitConversationTurnRequest | null>(null);
     const sourceIdentity = JSON.stringify(source);
     const listKey = ['conversations', actorId, sourceIdentity];
@@ -72,10 +82,26 @@ export function useConversation(
             }),
         ]);
     }
+    function rememberComposer() {
+        if (id)
+            composerDrafts.current.set(id, { question, attachments, useDraft });
+    }
+    function restoreComposer(next: string) {
+        const saved = composerDrafts.current.get(next);
+        setQuestion(saved?.question ?? '');
+        setAttachments(saved?.attachments ?? []);
+        setUseDraft(saved?.useDraft ?? false);
+        pendingRequest.current = null;
+    }
     const create = useMutation({
         mutationFn: () =>
             request((token) => conversationApi.create(token, source, shareKey)),
         onSuccess: async ({ conversation }) => {
+            // The first conversation adopts a passage attached while creation runs.
+            if (id) {
+                rememberComposer();
+                restoreComposer(conversation.id);
+            }
             setSelected(conversation.id);
             await refresh(conversation.id);
         },
@@ -143,19 +169,29 @@ export function useConversation(
             setActionError(true);
         }
     }
-    async function remove() {
-        if (!id) return;
-        await request((token) => conversationApi.delete(token, id, shareKey));
+    async function remove(conversationId = id) {
+        if (!conversationId) return;
+        await request((token) =>
+            conversationApi.delete(token, conversationId, shareKey),
+        );
         client.removeQueries({
-            queryKey: ['conversation', actorId, id],
+            queryKey: ['conversation', actorId, conversationId],
             exact: true,
         });
-        setSelected(null);
+        composerDrafts.current.delete(conversationId);
+        if (conversationId === id) {
+            setSelected(null);
+            setQuestion('');
+            setAttachments([]);
+            setUseDraft(false);
+            pendingRequest.current = null;
+        }
         await refresh();
     }
     function select(next: string) {
+        rememberComposer();
+        restoreComposer(next);
         setSelected(next);
-        pendingRequest.current = null;
     }
     return {
         id,

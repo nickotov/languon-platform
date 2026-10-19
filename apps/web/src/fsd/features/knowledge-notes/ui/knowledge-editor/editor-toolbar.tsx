@@ -10,12 +10,25 @@ import { EditorTableControls } from './editor-table-controls';
 export function EditorToolbar({
     editor,
     disabled,
+    variant = 'full',
 }: {
     editor: Editor;
     disabled: boolean;
+    variant?: 'full' | 'tutor';
 }) {
     const { t } = useI18n();
     const toolbar = useKnowledgeEditorToolbar(editor);
+    const full = variant === 'full';
+    const iconSize = full ? 18 : 14;
+    const tutorControls = new Set([
+        'knowledge.bold',
+        'knowledge.italic',
+        'knowledge.bulletList',
+        'knowledge.blockquote',
+    ]);
+    const controls = full
+        ? toolbar.controls
+        : toolbar.controls.filter((control) => tutorControls.has(control.key));
     function preserveSelection(event: React.MouseEvent) {
         event.preventDefault();
     }
@@ -26,19 +39,24 @@ export function EditorToolbar({
                 role='group'
                 aria-label={t('knowledge.explanation')}
             >
-                <Select
-                    aria-label={t('knowledge.paragraph')}
-                    size='sm'
-                    disabled={disabled}
-                    value={toolbar.paragraph}
-                    onChange={toolbar.changeParagraph}
-                    options={[
-                        { value: 'paragraph', label: t('knowledge.paragraph') },
-                        { value: '2', label: t('knowledge.heading2') },
-                        { value: '3', label: t('knowledge.heading3') },
-                    ]}
-                />
-                {toolbar.controls.map(
+                {full && (
+                    <Select
+                        aria-label={t('knowledge.paragraph')}
+                        size='sm'
+                        disabled={disabled}
+                        value={toolbar.paragraph}
+                        onChange={toolbar.changeParagraph}
+                        options={[
+                            {
+                                value: 'paragraph',
+                                label: t('knowledge.paragraph'),
+                            },
+                            { value: '2', label: t('knowledge.heading2') },
+                            { value: '3', label: t('knowledge.heading3') },
+                        ]}
+                    />
+                )}
+                {controls.map(
                     ({ key, icon: Icon, action, active, unavailable }) => (
                         <button
                             key={key}
@@ -51,12 +69,14 @@ export function EditorToolbar({
                             onMouseDown={preserveSelection}
                             onClick={action}
                         >
-                            <Icon aria-hidden size={18} />
+                            <Icon aria-hidden size={iconSize} />
                         </button>
                     ),
                 )}
             </div>
-            <EditorTableControls editor={editor} disabled={disabled} />
+            {full && (
+                <EditorTableControls editor={editor} disabled={disabled} />
+            )}
             <Dialog
                 open={toolbar.linkOpen}
                 onClose={toolbar.closeLink}

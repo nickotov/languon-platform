@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { useAssistantNavigation } from '../src/fsd/widgets/contextual-assistant/hooks/use-assistant-navigation';
 
-it('guards invalid or unsaved drafts across close/history/new actions, and permits leaving only after save or explicit discard', () => {
+it('guards invalid or unsaved drafts across history/new actions, and permits leaving only after save or explicit discard', () => {
     const leave = vi.fn();
     const { result } = renderHook(useAssistantNavigation);
     act(() => result.current.draftDirty('draft-one', true));

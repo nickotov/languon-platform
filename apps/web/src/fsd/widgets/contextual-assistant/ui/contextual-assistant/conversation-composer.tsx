@@ -1,10 +1,21 @@
-import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
+import {
+    useId,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    type ChangeEvent,
+    type FormEvent,
+    type KeyboardEvent,
+    type ReactNode,
+} from 'react';
+import { ArrowUp, Plus, Square, TextSelect } from 'lucide-react';
 import type { ChatPreferences, CopiedAttachment } from '@languon/contracts';
-import { CopiedMaterial, conversationCopy } from '@/fsd/entities/conversation';
-import { ConversationPreferences } from '@/fsd/features/conversation-preferences';
+import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Textarea } from '@/fsd/shared/ui';
-import styles from './contextual-assistant.module.css';
+import { ComposerAttachments } from './composer-attachments';
+import { ComposerPreferences } from './composer-preferences';
+import { composerCopy } from './composer-copy';
+import styles from './composer.module.css';
 
 export function ConversationComposer({
     question,
@@ -19,9 +30,10 @@ export function ConversationComposer({
     onStop,
     busy,
     active,
-    hasDraft,
-    useDraft,
-    onUseDraft,
+    modelControl,
+    contextPicker,
+    onSelectFromPage,
+    contextOpen = false,
 }: {
     question: string;
     onQuestion(value: string): void;
@@ -38,119 +50,140 @@ export function ConversationComposer({
     hasDraft: boolean;
     useDraft: boolean;
     onUseDraft(value: boolean): void;
+    modelControl?: ReactNode;
+    contextPicker?: ReactNode;
+    onSelectFromPage?: (() => void) | undefined;
+    contextOpen?: boolean;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
+    const text = composerCopy(locale);
+    const id = useId();
+    const input = useRef<HTMLTextAreaElement>(null);
+    const wasContextOpen = useRef(contextOpen);
+    useEffect(() => {
+        if (wasContextOpen.current && !contextOpen)
+            input.current?.focus({ preventScroll: true });
+        wasContextOpen.current = contextOpen;
+    }, [contextOpen]);
+    const canSend = Boolean(question.trim()) && !busy && !active;
+    const hint = question.trim() ? text.pendingQuestion : text.continueTyping;
+    const hintId = `${id}-hint`;
+    useLayoutEffect(() => {
+        const node = input.current;
+        if (!node) return;
+        node.style.height = 'auto';
+        node.style.height = `${node.scrollHeight}px`;
+    }, [question]);
     function change(event: ChangeEvent<HTMLTextAreaElement>) {
         onQuestion(event.target.value);
     }
     function key(event: KeyboardEvent<HTMLTextAreaElement>) {
-        if (
-            event.key === '/' &&
-            !event.nativeEvent.isComposing &&
-            question === ''
-        ) {
+        if (event.nativeEvent.isComposing) return;
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            if (canSend) onSend();
+        }
+        const before = question.slice(0, event.currentTarget.selectionStart);
+        if (event.key === '/' && (!before || /\s$/.test(before))) {
             event.preventDefault();
             onContext();
         }
     }
     function submit(event: FormEvent) {
         event.preventDefault();
-        if (question.trim() && !busy && !active) onSend();
-    }
-    function draft(event: ChangeEvent<HTMLInputElement>) {
-        onUseDraft(event.target.checked);
+        if (canSend) onSend();
     }
     return (
         <form className={styles.composer} onSubmit={submit}>
-            <div className={styles.attachments}>
-                {attachments.map((attachment) => (
-                    <Attachment
-                        key={attachment.id}
-                        attachment={attachment}
-                        onRemove={onRemove}
-                    />
-                ))}
+            {contextPicker}
+            <ComposerAttachments
+                attachments={attachments}
+                onRemove={onRemove}
+            />
+            <div className={styles.inputFrame}>
+                <textarea
+                    ref={input}
+                    id={id}
+                    aria-label={copy.question}
+                    aria-describedby={active ? hintId : undefined}
+                    placeholder={text.placeholder}
+                    className={styles.input}
+                    value={question}
+                    onChange={change}
+                    onKeyDown={key}
+                    rows={1}
+                    maxLength={20000}
+                    dir='auto'
+                />
+                <div className={styles.inputActions}>
+                    <div className={styles.contextActions}>
+                        <button
+                            type='button'
+                            className={styles.contextButton}
+                            onClick={onContext}
+                            aria-label={copy.addContext}
+                            aria-expanded={contextOpen}
+                            aria-haspopup='dialog'
+                            aria-keyshortcuts='/'
+                            disabled={attachments.length >= 10 || busy}
+                        >
+                            <Plus size={16} aria-hidden='true' />
+                            <span className={styles.desktopLabel}>
+                                {text.context}
+                            </span>
+                            <kbd className={styles.shortcut}>/</kbd>
+                        </button>
+                        {onSelectFromPage && (
+                            <button
+                                type='button'
+                                onClick={onSelectFromPage}
+                                className={styles.selectButton}
+                            >
+                                <TextSelect size={16} aria-hidden='true' />
+                                {text.select}
+                            </button>
+                        )}
+                    </div>
+                    {active ? (
+                        <button
+                            type='button'
+                            onClick={onStop}
+                            className={styles.stop}
+                        >
+                            <Square
+                                size={12}
+                                fill='currentColor'
+                                aria-hidden='true'
+                            />
+                            {copy.stop}
+                        </button>
+                    ) : (
+                        <button
+                            type='submit'
+                            className={styles.send}
+                            aria-label={copy.send}
+                            disabled={!canSend}
+                        >
+                            <ArrowUp size={16} aria-hidden='true' />
+                        </button>
+                    )}
+                </div>
             </div>
-            {hasDraft ? (
-                <label>
-                    <input
-                        type='checkbox'
-                        checked={useDraft}
-                        onChange={draft}
-                    />
-                    {copy.draftContext}
-                </label>
-            ) : (
-                <p className={styles.notice}>{copy.savedContext}</p>
+            {active && (
+                <p id={hintId} className={styles.hint}>
+                    {hint}
+                </p>
             )}
-            <Textarea
-                label={copy.question}
-                value={question}
-                onChange={change}
-                onKeyDown={key}
-                rows={3}
-                maxLength={20000}
-                disabled={busy}
-                dir='auto'
-            />
-            <ConversationPreferences
-                value={preferences}
-                onChange={onPreferences}
-                disabled={busy || active}
-            />
-            <div className={styles.toolbar}>
-                <Button type='button' variant='quiet' onClick={onDefaults}>
-                    {copy.defaults}
-                </Button>
-                <Button
-                    type='button'
-                    variant='secondary'
-                    onClick={onContext}
-                    disabled={attachments.length >= 10 || busy}
-                >
-                    {copy.addContext}
-                </Button>
-                {active ? (
-                    <Button type='button' variant='secondary' onClick={onStop}>
-                        {copy.stop}
-                    </Button>
-                ) : (
-                    <Button
-                        type='submit'
-                        disabled={!question.trim() || busy}
-                        loading={busy}
-                    >
-                        {copy.send}
-                    </Button>
-                )}
+            <div className={styles.preferencesRow}>
+                <ComposerPreferences
+                    value={preferences}
+                    onChange={onPreferences}
+                    onDefaults={onDefaults}
+                    disabled={busy || active}
+                />
+                {modelControl}
             </div>
         </form>
-    );
-}
-function Attachment({
-    attachment,
-    onRemove,
-}: {
-    attachment: CopiedAttachment;
-    onRemove(id: string): void;
-}) {
-    const { locale } = useI18n();
-    const copy = conversationCopy(locale);
-    function remove() {
-        onRemove(attachment.id);
-    }
-    return (
-        <div className={styles.attachment}>
-            <CopiedMaterial attachment={attachment} />
-            <Button
-                type='button'
-                size='compact'
-                variant='quiet'
-                onClick={remove}
-            >
-                {copy.remove}
-            </Button>
-        </div>
     );
 }

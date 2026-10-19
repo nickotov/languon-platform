@@ -1,0 +1,120 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+    min-width: 0;
+}
+.categories {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+.categories :where(legend),
+.label {
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+.categoryOptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    margin-block-start: var(--space-6);
+}
+.category {
+    min-height: var(--size-32);
+    padding: 0 var(--space-10);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    font-weight: 500;
+    cursor: pointer;
+}
+.category[aria-pressed='true'] {
+    border-color: var(--primary-default);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+.category:focus-visible,
+.previewButton:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+.languages {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12);
+}
+.explanation {
+    min-width: 0;
+}
+.explanationHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    margin-block-end: var(--space-4);
+}
+.previewButton {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: var(--size-28);
+    padding: 0 var(--space-6);
+    border: 0;
+    border-radius: var(--radius-6);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    cursor: pointer;
+}
+.richEditor :where([role='group'] button) {
+    width: var(--size-28);
+    height: var(--size-28);
+}
+.richEditor :where([role='textbox']) {
+    min-height: var(--size-180);
+    padding: var(--space-8) var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+.error {
+    color: var(--danger-default);
+    font-size: var(--size-14);
+}
+@media (max-width: 640px) {
+    .category,
+    .previewButton,
+    .richEditor :where([role='group'] button) {
+        min-height: var(--size-44);
+    }
+}
+
+.richEditor :where([role='group']) {
+    padding: var(--space-4);
+    gap: var(--space-2);
+}
+
+/* Inherited source Input uses slate borders and foreground; other fields use app tokens. */
+.form {
+    --tutor-input-border: #cbd5e1;
+    --tutor-input-background: #ffffff;
+    --tutor-input-foreground: #0f172a;
+}
+.titleInput {
+    background: var(--tutor-input-background);
+    height: var(--size-40);
+    border-radius: var(--radius-6);
+    border-color: var(--tutor-input-border);
+    color: var(--tutor-input-foreground);
+}
+.form :where(label) {
+    font-weight: 500;
+}
+
+.summaryInput {
+    min-height: var(--size-64);
+}

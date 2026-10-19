@@ -68,4 +68,33 @@ describe('icon action menu', () => {
         await user.click(screen.getByRole('button', { name: 'Outside' }));
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
+    it('exposes checked layout options and keeps the menu open on activation', async () => {
+        const user = userEvent.setup();
+        const onSelect = vi.fn();
+        render(
+            <Menu
+                label='Tutor options'
+                trigger='Options'
+                items={[
+                    {
+                        label: 'Wide',
+                        checked: true,
+                        closeOnSelect: false,
+                        onSelect,
+                    },
+                ]}
+            />,
+        );
+        await user.click(screen.getByRole('button', { name: 'Tutor options' }));
+        const item = screen.getByRole('menuitemcheckbox', {
+            name: 'Wide',
+            checked: true,
+        });
+        expect(item).toHaveFocus();
+        await user.keyboard('{Enter}');
+        expect(onSelect).toHaveBeenCalledOnce();
+        expect(screen.getByRole('menu')).toBeVisible();
+        await user.keyboard('{Escape}');
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
 });

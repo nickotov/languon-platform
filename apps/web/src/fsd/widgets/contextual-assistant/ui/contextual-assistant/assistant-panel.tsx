@@ -1,268 +1,239 @@
 'use client';
-import { useState, type ChangeEvent } from 'react';
-import type { ConversationTurn, CopiedAttachment } from '@languon/contracts';
-import { conversationApi, conversationCopy } from '@/fsd/entities/conversation';
-import { useAuth } from '@/fsd/features/auth';
+import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Dialog, LoadingState } from '@/fsd/shared/ui';
-import { useConversation } from '../../hooks/use-conversation';
+import { LoadingState } from '@/fsd/shared/ui';
+import { usePublishedKnowledge } from '../../hooks/use-published-knowledge';
+import { ConversationDeleteConfirmation } from './conversation-delete-confirmation';
+import { useAssistantPanel } from '../../hooks/use-assistant-panel';
 import { ConversationMessages } from './conversation-messages';
 import { ConversationComposer } from './conversation-composer';
 import { ContextPicker } from './context-picker';
+import { PublishedNoteNotice } from './published-note-notice';
 import { KnowledgeDraftCard } from './knowledge-draft-card';
 import { ConversationModel } from './conversation-model';
-import styles from './contextual-assistant.module.css';
 import { ConversationErrorNotice } from './conversation-error-notice';
 import { ConversationHistory } from './conversation-history';
 import { AssistantDialogs } from './assistant-dialogs';
-import { useAssistantNavigation } from '../../hooks/use-assistant-navigation';
-
+import { TutorShell } from '../tutor-shell/tutor-shell';
 import type { ContextualAssistantProps } from '../../types';
+import styles from './assistant-panel.module.css';
 
-export function AssistantPanel({
-    source,
-    contextLabel,
-    shareKey,
-    currentDraft,
-    actorId,
-    passage,
-    onClose,
-}: ContextualAssistantProps & {
-    actorId: string;
-    passage: string | null;
-    onClose(): void;
-}) {
-    const { requestWithSession } = useAuth();
+export function AssistantPanel(
+    props: ContextualAssistantProps & {
+        actorId: string;
+        selectedPassage: { id: string; text: string } | null;
+        folded: boolean;
+        onFold(): void;
+        onExpand(): void;
+        onSelectFromPage(): void;
+    },
+) {
     const { locale, formatDate } = useI18n();
-    const { navigation, draftDirty, discardRevision } =
-        useAssistantNavigation();
-    function close() {
-        navigation.request(onClose);
-    }
     const copy = conversationCopy(locale);
-    const chat = useConversation(actorId, source, requestWithSession, shareKey);
-    const [picker, setPicker] = useState(false);
-    const [deleting, setDeleting] = useState(false);
-    const [localError, setLocalError] = useState(false);
-    const [defaultsSaved, setDefaultsSaved] = useState(false);
-    const [passageAttached, setPassageAttached] = useState(false);
-    const detail = chat.detail.data;
-    const preferences = detail?.conversation.preferences;
+    const panel = useAssistantPanel(props);
+    const { chat, detail } = panel;
+    const { published, publishedNote } = usePublishedKnowledge(
+        chat.id,
+        panel.setEditingDraft,
+    );
     const options =
         chat.list.data?.conversations.map((conversation) => ({
             value: conversation.id,
             label: formatDate(conversation.updatedAt),
+            date: props.contextLabel ?? copy.history,
         })) ?? [];
-    const busy = chat.create.isPending || chat.submit.isPending;
-    const unavailable =
-        chat.stream.unavailable || chat.detail.isError || chat.list.isError;
-    const error =
-        localError ||
-        chat.actionError ||
-        chat.submit.isError ||
-        chat.create.isError;
-    function select(event: ChangeEvent<HTMLSelectElement>) {
-        const next = event.target.value;
-        navigation.request(() => chat.select(next));
-    }
-    function create() {
-        navigation.request(() => chat.create.mutate());
-    }
-    function remove() {
-        setDeleting(true);
-    }
-    function cancelDelete() {
-        setDeleting(false);
-    }
-    async function confirmDelete() {
-        try {
-            await chat.remove();
-            setDeleting(false);
-        } catch {
-            setLocalError(true);
-        }
-    }
-    function send() {
-        chat.submit.mutate({
-            content: chat.question,
-            draftContext: chat.useDraft ? currentDraft : undefined,
-        });
-    }
-    function propose() {
-        chat.submit.mutate({ content: copy.proposeQuestion });
-    }
-    function retry(turn: ConversationTurn) {
-        const message = detail?.messages.find(
-            (item) => item.turnId === turn.id && item.role === 'user',
-        );
-        if (message)
-            chat.submit.mutate({ content: message.content, retryOf: turn.id });
-    }
-    async function context() {
-        try {
-            if (!chat.id) await chat.create.mutateAsync();
-            setPicker((value) => !value);
-        } catch {
-            setLocalError(true);
-        }
-    }
-    function attach(attachment: CopiedAttachment) {
-        chat.setAttachments((previous) =>
-            previous.length < 10 ? [...previous, attachment] : previous,
-        );
-    }
-    function removeAttachment(id: string) {
-        chat.setAttachments((previous) =>
-            previous.filter((item) => item.id !== id),
-        );
-    }
-    function attachPassage() {
-        if (passage) {
-            attach({
-                id: crypto.randomUUID(),
-                label: copy.selection,
-                content: passage,
-            });
-            setPassageAttached(true);
-        }
-    }
-    async function defaults() {
-        if (!preferences) return;
-        try {
-            await requestWithSession((token) =>
-                conversationApi.saveDefaults(token, preferences),
-            );
-            setDefaultsSaved(true);
-        } catch {
-            setLocalError(true);
-        }
-    }
-    function retrySubmission() {
-        if (chat.submit.variables) chat.submit.mutate(chat.submit.variables);
-        else reload();
-    }
-    function reload() {
-        void chat.stream.reconnect();
-        void chat.refresh();
-    }
+    const lastTurn = detail?.turns.at(-1);
+    const interrupted =
+        lastTurn?.status === 'failed' || lastTurn?.status === 'cancelled';
+    const editing = Boolean(
+        panel.editingDraft &&
+        detail?.drafts.some((draft) => draft.id === panel.editingDraft),
+    );
+    const preferences = panel.preferences;
+    const showContent = !panel.unavailable && Boolean(detail);
+    const loading =
+        chat.list.isPending ||
+        (chat.detail.isPending && Boolean(chat.id)) ||
+        chat.create.isPending;
+    const busy = panel.busy || panel.deletingPending;
+    const deletePending = Boolean(panel.deleting) && !panel.history;
+    const historyDeleting = panel.history ? panel.deleting : null;
+    const canSelect = Boolean(props.selectionRootId);
+    const selectionAction = canSelect ? props.onSelectFromPage : undefined;
+    const modelControl = (
+        <ConversationModel
+            actorId={props.actorId}
+            request={panel.requestWithSession}
+        />
+    );
+    const contextPicker =
+        panel.picker && chat.id ? (
+            <ContextPicker
+                actorId={props.actorId}
+                conversationId={chat.id}
+                request={panel.requestWithSession}
+                shareKey={props.shareKey}
+                attachments={chat.attachments}
+                onAttach={panel.attach}
+                onClose={panel.closePicker}
+            />
+        ) : undefined;
     return (
-        <Dialog
-            open
-            onClose={close}
-            title={copy.title}
-            description={contextLabel}
-            closeLabel={copy.close}
-            className={styles.panel}
-            bodyClassName={styles.body}
+        <TutorShell
+            folded={props.folded}
+            onFold={props.onFold}
+            onExpand={props.onExpand}
+            active={panel.active}
+            interrupted={interrupted}
+            unread={panel.unread}
+            sourceKind={props.source.kind}
+            contextLabel={props.contextLabel ?? copy.source}
+            hasDraft={Boolean(props.currentDraft)}
+            useDraft={chat.useDraft}
+            onUseDraft={chat.setUseDraft}
+            onNew={panel.create}
+            onHistory={panel.toggleHistory}
+            onDelete={panel.remove}
+            busy={busy}
+            canDelete={Boolean(chat.id)}
+            unavailable={panel.unavailable}
         >
-            <ConversationModel actorId={actorId} request={requestWithSession} />
-            <ConversationHistory
-                id={chat.id}
-                options={options}
-                busy={busy}
-                onSelect={select}
-                onCreate={create}
-                onDelete={remove}
-            />
-            {(chat.list.isPending ||
-                (chat.detail.isPending && Boolean(chat.id))) && (
-                <LoadingState>{copy.loading}</LoadingState>
-            )}
-            {unavailable && (
-                <ConversationErrorNotice
-                    error={chat.detail.error ?? chat.list.error}
-                    onRetry={reload}
-                />
-            )}
-            {!unavailable && detail && (
-                <>
-                    <ConversationMessages
-                        detail={detail}
-                        uiMessages={chat.stream.messages}
-                        active={Boolean(chat.active)}
-                        onRetry={retry}
-                        onPropose={propose}
+            <div className={styles.content}>
+                {loading && (
+                    <div className={styles.notice}>
+                        <LoadingState>{copy.loading}</LoadingState>
+                    </div>
+                )}
+                {panel.unavailable && (
+                    <div className={styles.notice}>
+                        <ConversationErrorNotice
+                            error={chat.detail.error ?? chat.list.error}
+                            onRetry={panel.reload}
+                        />
+                    </div>
+                )}
+                {deletePending && (
+                    <ConversationDeleteConfirmation
+                        pending={panel.deletingPending}
+                        onConfirm={panel.confirmDelete}
+                        onCancel={panel.cancelDelete}
                     />
-                    {detail.drafts.map((draft) => (
-                        <KnowledgeDraftCard
-                            key={draft.id}
-                            draft={draft}
-                            request={requestWithSession}
-                            shareKey={shareKey}
-                            onChanged={chat.refresh}
-                            onDirtyChange={draftDirty}
-                            discardRevision={discardRevision}
-                        />
-                    ))}
-                </>
-            )}
-            {!chat.id && !chat.list.isPending && !unavailable && (
-                <p>{copy.empty}</p>
-            )}
-            {error && (
-                <ConversationErrorNotice
-                    error={chat.submit.error ?? chat.create.error}
-                    onRetry={retrySubmission}
-                />
-            )}
-            {chat.active && (
-                <p role='status' className={styles.notice}>
-                    {chat.stream.reconnecting
-                        ? copy.reconnecting
-                        : copy.running}
-                </p>
-            )}
-            {!unavailable && (
-                <>
-                    {passage && !passageAttached && (
-                        <Button variant='secondary' onClick={attachPassage}>
-                            {copy.attachSelection}
-                        </Button>
-                    )}
-                    {picker && chat.id && (
-                        <ContextPicker
-                            actorId={actorId}
-                            conversationId={chat.id}
-                            request={requestWithSession}
-                            shareKey={shareKey}
-                            onAttach={attach}
-                        />
-                    )}
-                    {preferences ? (
-                        <ConversationComposer
-                            question={chat.question}
-                            onQuestion={chat.setQuestion}
-                            attachments={chat.attachments}
-                            onRemove={removeAttachment}
-                            preferences={preferences}
-                            onPreferences={chat.updatePreferences}
-                            onDefaults={defaults}
-                            onContext={context}
-                            onSend={send}
-                            onStop={chat.stop}
-                            busy={busy}
-                            active={Boolean(chat.active)}
-                            hasDraft={Boolean(currentDraft)}
-                            useDraft={chat.useDraft}
-                            onUseDraft={chat.setUseDraft}
-                        />
-                    ) : (
-                        <Button
-                            onClick={create}
-                            loading={chat.create.isPending}
+                )}
+                <div
+                    className={styles.view}
+                    hidden={!panel.history || panel.unavailable}
+                >
+                    <ConversationHistory
+                        id={chat.id}
+                        options={options}
+                        busy={busy}
+                        sourceLabel={props.contextLabel}
+                        onSelect={panel.select}
+                        onCreate={panel.create}
+                        onDelete={panel.deleteFromHistory}
+                        onBack={panel.backToChat}
+                        deleting={historyDeleting}
+                        deletingPending={panel.deletingPending}
+                        onConfirmDelete={panel.confirmDelete}
+                        onCancelDelete={panel.cancelDelete}
+                    />
+                </div>
+                <div
+                    className={styles.view}
+                    hidden={panel.history || panel.unavailable}
+                >
+                    {showContent && detail && (
+                        <ConversationMessages
+                            detail={detail}
+                            sourceKind={props.source.kind}
+                            contextLabel={props.contextLabel}
+                            uiMessages={chat.stream.messages}
+                            active={panel.active}
+                            onRetry={panel.retry}
+                            onPropose={panel.propose}
+                            onSuggest={chat.setQuestion}
                         >
-                            {copy.newChat}
-                        </Button>
+                            {detail.drafts.map((draft) => (
+                                <KnowledgeDraftCard
+                                    key={draft.id}
+                                    draft={draft}
+                                    request={panel.requestWithSession}
+                                    shareKey={props.shareKey}
+                                    onChanged={chat.refresh}
+                                    onDirtyChange={panel.draftDirty}
+                                    discardRevision={panel.discardRevision}
+                                    expanded={panel.editingDraft === draft.id}
+                                    onOpen={panel.setEditingDraft}
+                                    onBack={panel.backToChat}
+                                    onPublished={publishedNote}
+                                />
+                            ))}
+                            {published && (
+                                <PublishedNoteNotice note={published} />
+                            )}
+                        </ConversationMessages>
                     )}
-                    {defaultsSaved && <p role='status'>{copy.saved}</p>}
-                </>
-            )}
+                    {panel.error && (
+                        <div className={styles.notice}>
+                            <ConversationErrorNotice
+                                error={panel.error}
+                                onRetry={panel.retrySubmission}
+                            />
+                        </div>
+                    )}
+                    {chat.actionError && (
+                        <div className={styles.notice}>
+                            <ConversationErrorNotice onRetry={panel.reload} />
+                        </div>
+                    )}
+                    {chat.stream.reconnecting && (
+                        <p className={styles.reconnecting} role='status'>
+                            {copy.reconnecting}
+                        </p>
+                    )}
+                    <div hidden={editing} className={styles.composer}>
+                        {panel.attachmentError && (
+                            <p role='alert' className={styles.notice}>
+                                {panel.attachmentError}
+                            </p>
+                        )}
+                        {preferences && (
+                            <ConversationComposer
+                                question={chat.question}
+                                onQuestion={chat.setQuestion}
+                                attachments={chat.attachments}
+                                onRemove={panel.removeAttachment}
+                                preferences={preferences}
+                                onPreferences={chat.updatePreferences}
+                                onDefaults={panel.defaults}
+                                onContext={panel.context}
+                                onSend={panel.send}
+                                onStop={chat.stop}
+                                busy={busy}
+                                active={panel.active}
+                                hasDraft={Boolean(props.currentDraft)}
+                                useDraft={chat.useDraft}
+                                onUseDraft={chat.setUseDraft}
+                                modelControl={modelControl}
+                                contextPicker={contextPicker}
+                                contextOpen={panel.picker}
+                                onSelectFromPage={selectionAction}
+                            />
+                        )}
+                    </div>
+                    {panel.defaultsSaved && (
+                        <span role='status' className={styles.srOnly}>
+                            {copy.saved}
+                        </span>
+                    )}
+                </div>
+            </div>
             <AssistantDialogs
-                navigation={navigation}
-                deleting={deleting}
-                onCancelDelete={cancelDelete}
-                onConfirmDelete={confirmDelete}
+                navigation={panel.navigation}
+                deleting={false}
+                onCancelDelete={panel.cancelDelete}
+                onConfirmDelete={panel.confirmDelete}
             />
-        </Dialog>
+        </TutorShell>
     );
 }

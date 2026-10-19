@@ -1,0 +1,95 @@
+{
+  "capturedAt": "2026-10-19T08:13:01.760677+00:00",
+  "providerArtifactId": "dc75f1a9-eb2b-4b7b-84d4-4edf56ab4932",
+  "providerVersion": 5,
+  "localBriefRevision": "v001",
+  "source": "../source",
+  "inheritedDesignSystem": "source/design-system",
+  "inheritedDesignSystemQualification": "Current published design-system artifact ecb75ac2-c06e-44ed-8e1b-28ec4bff5287 captured today, not historical proof of v5 inheritance. Nine empty artifact primitive files resolved from this source for rendering only; original 58-file snapshot unchanged.",
+  "rendering": "Actual supplied React source bundled using esbuild 0.25.12, React 18.3.1, lucide-react 0.577.0, framer-motion 11.18.2, date-fns 4.1.0, tailwind-merge 2.6.1, Radix popover 1.1.2 per prototype package. Tailwind 3.4.17 controlled JSON config reproduces literal supplied tokens. No exported scripts/config executed. Google Inter fonts downloaded and served locally. No source behavior or design changed.",
+  "browser": "Project-safe pnpm browser wrapper, Chromium",
+  "session": "languon-tutor-reference-b423163b1376eda4dea513c61d49c8ba",
+  "url": "http://127.0.0.1:4399/",
+  "screenshots": [
+    {
+      "file": "desktop-folded-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "desktop default, manually minimized",
+      "theme": "light"
+    },
+    {
+      "file": "desktop-note-editor-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "knowledge-draft",
+      "theme": "light"
+    },
+    {
+      "file": "mobile-note-editor-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "knowledge-draft, partial sheet",
+      "theme": "light"
+    },
+    {
+      "file": "mobile-partial-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "mobile-partial",
+      "theme": "light"
+    },
+    {
+      "file": "mobile-expanded-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "mobile-partial then Expand to full height",
+      "theme": "light"
+    },
+    {
+      "file": "mobile-expanded-320.png",
+      "viewport": [
+        320,
+        740
+      ],
+      "state": "same expanded sheet resized to 320",
+      "theme": "light"
+    },
+    {
+      "file": "desktop-default-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "desktop, transcript automatically scrolled to latest",
+      "theme": "light"
+    },
+    {
+      "file": "desktop-menu-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "desktop, More options open",
+      "theme": "light"
+    }
+  ],
+  "consoleErrors": [],
+  "network": "All document/script/styles/font requests local HTTP200; incidental favicon.ico404. No external browser requests.",
+  "limitations": [
+    "Prototype demo controls visible as supplied.",
+    "No production runtime fidelity claim; these are supplied-source references.",
+    "Font stylesheet requested normal weights100..900; italic text uses browser synthesized italic.",
+    "Current inherited design-system primitive presentation may differ from historical v5 inheritance."
+  ]
+}

@@ -1,14 +1,21 @@
-import type { ConversationDetail, ConversationTurn } from '@languon/contracts';
+import { useMemo, type ReactNode } from 'react';
+import { ArrowDown, CornerDownRight } from 'lucide-react';
+import type {
+    ConversationDetail,
+    ConversationTurn,
+    ConversationSource,
+} from '@languon/contracts';
 import {
     conversationCopy,
-    CopiedMaterial,
     type ConversationUIMessage,
 } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button } from '@/fsd/shared/ui';
-import { ConversationErrorNotice } from './conversation-error-notice';
-import { ChatMarkdown } from './chat-markdown';
-import styles from './contextual-assistant.module.css';
+import { useMessageScroll } from '../../hooks/use-message-scroll';
+import { emptyStateCopy } from '../../lib/empty-state-copy';
+import { messagesCopy } from '../../lib/messages-copy';
+import { messageScrollSignature } from '../../lib/message-scroll-signature';
+import { TutorMessage } from './tutor-message';
+import styles from './conversation-messages.module.css';
 
 export function ConversationMessages({
     detail,
@@ -16,194 +23,196 @@ export function ConversationMessages({
     active,
     onRetry,
     onPropose,
+    onSuggest,
+    children,
+    sourceKind,
+    contextLabel,
 }: {
     detail: ConversationDetail;
     uiMessages: ConversationUIMessage[];
     active: boolean;
     onRetry(turn: ConversationTurn): void;
-    onPropose(): void;
+    onPropose(message?: ConversationUIMessage): void;
+    onSuggest?: (text: string) => void;
+    children?: ReactNode;
+    sourceKind?: ConversationSource['kind'] | undefined;
+    contextLabel?: string | undefined;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
+    const labels = messagesCopy(locale);
+    const signature = messageScrollSignature(uiMessages, detail.drafts.length);
+    const turns = useMemo(
+        () => new Map(detail.turns.map((turn) => [turn.id, turn])),
+        [detail.turns],
+    );
+    const questions = useMemo(
+        () =>
+            new Map(
+                detail.messages
+                    .filter((item) => item.role === 'user')
+                    .map((item) => [item.turnId, item.content]),
+            ),
+        [detail.messages],
+    );
+    const assistantTurns = new Set(
+        uiMessages
+            .filter((item) => item.role === 'assistant')
+            .map((item) => item.metadata?.turnId),
+    );
+    const scroll = useMessageScroll(detail.conversation.id, signature);
     let previousVersion: string | null = null;
     const messages = uiMessages
         .filter((message) => Boolean(message.metadata))
-        .map((uiMessage) => {
-            const message = uiMessage.metadata!;
+        .map((message) => {
+            const canonical = message.metadata!;
             const changed =
-                message.role === 'user' &&
+                canonical.role === 'user' &&
                 previousVersion !== null &&
-                message.sourceVersion !== null &&
-                previousVersion !== message.sourceVersion;
-            if (message.role === 'user')
-                previousVersion = message.sourceVersion;
-            return { message: uiMessage, changed };
+                canonical.sourceVersion !== null &&
+                previousVersion !== canonical.sourceVersion;
+            if (canonical.role === 'user')
+                previousVersion = canonical.sourceVersion;
+            return {
+                message,
+                changed,
+                turn: canonical.turnId
+                    ? turns.get(canonical.turnId)
+                    : undefined,
+            };
         });
-    const failed = detail.turns
-        .filter(
-            (turn) => turn.status === 'failed' || turn.status === 'cancelled',
-        )
-        .map((turn) => ({
-            turn,
-            question:
-                detail.messages.find(
-                    (message) =>
-                        message.turnId === turn.id && message.role === 'user',
-                )?.content ?? '',
-        }));
-    const hasAnswer = detail.messages.some(
-        (message) =>
-            message.role === 'assistant' && message.status === 'complete',
-    );
+    const waiting =
+        active &&
+        !messages.some(
+            ({ message }) =>
+                message.role === 'assistant' &&
+                message.metadata?.status === 'streaming',
+        );
     return (
-        <div className={styles.messages}>
-            {messages.length === 0 && <p>{copy.empty}</p>}
-            {messages.map(({ message, changed }) => (
-                <Message key={message.id} message={message} changed={changed} />
-            ))}
-            {failed.map(({ turn, question }) => (
-                <FailedTurn
-                    key={turn.id}
-                    turn={turn}
-                    question={question}
-                    disabled={active}
-                    onRetry={onRetry}
-                />
-            ))}
-            {hasAnswer && (
-                <Button
-                    variant='secondary'
-                    disabled={active}
-                    onClick={onPropose}
-                >
-                    {copy.propose}
-                </Button>
+        <div className={styles.frame}>
+            <div
+                ref={scroll.ref}
+                onScroll={scroll.onScroll}
+                className={styles.scroller}
+                role='log'
+                aria-label={copy.title}
+                aria-live='off'
+                aria-busy={active}
+                tabIndex={0}
+            >
+                <div className={styles.messages}>
+                    {messages.length === 0 && (
+                        <ConversationEmpty
+                            onSuggest={onSuggest}
+                            sourceKind={sourceKind}
+                            contextLabel={contextLabel}
+                        />
+                    )}
+                    {messages.map(({ message, changed, turn }) => (
+                        <TutorMessage
+                            key={message.id}
+                            message={message}
+                            changed={changed}
+                            turn={turn}
+                            active={active}
+                            hasAssistant={assistantTurns.has(
+                                message.metadata?.turnId,
+                            )}
+                            question={
+                                questions.get(message.metadata!.turnId) ?? ''
+                            }
+                            onRetry={onRetry}
+                            onPropose={onPropose}
+                        />
+                    ))}
+                    {waiting && (
+                        <p className={styles.notice} role='status'>
+                            {copy.running}
+                        </p>
+                    )}
+                    {children}
+                </div>
+            </div>
+            {scroll.showJump && (
+                <div className={styles.jumpWrap}>
+                    <button
+                        className={styles.jump}
+                        type='button'
+                        onClick={scroll.jump}
+                    >
+                        <ArrowDown size={14} aria-hidden='true' />
+                        {labels.jump}
+                    </button>
+                </div>
             )}
-            {detail.turns.map((turn) => (
-                <Usage key={turn.id} turn={turn} />
-            ))}
         </div>
     );
 }
-function Message({
-    message,
-    changed,
+
+export function ConversationEmpty({
+    onSuggest,
+    sourceKind,
+    contextLabel,
 }: {
-    message: ConversationUIMessage;
-    changed: boolean;
+    onSuggest?: ((text: string) => void) | undefined;
+    sourceKind?: ConversationSource['kind'] | undefined;
+    contextLabel?: string | undefined;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
-    const canonical = message.metadata;
-    if (!canonical) return null;
-    const isUser = message.role === 'user';
-    const text = message.parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join('');
-    const materials = message.parts.filter(
-        (part) => part.type === 'data-material',
-    );
-    const tools = message.parts.filter(
-        (part) =>
-            part.type === 'tool-read_source_context' ||
-            part.type === 'tool-propose_knowledge_note',
-    );
+    const labels = messagesCopy(locale);
+    const sourceCopy = sourceKind ? emptyStateCopy(locale, sourceKind) : null;
+    const heading =
+        sourceCopy && contextLabel
+            ? `${sourceCopy.heading} “${contextLabel}”`
+            : labels.intro;
+    const intro = sourceCopy?.intro ?? copy.empty;
+    const suggestions = sourceCopy?.suggestions ?? [
+        labels.suggestion,
+        labels.suggestionTwo,
+        labels.suggestionThree,
+    ];
     return (
-        <article className={styles.message}>
-            {changed && <p className={styles.notice}>{copy.changed}</p>}
-            {canonical.sourceProvenance === 'draft' && (
-                <p className={styles.notice}>{copy.draftLabel}</p>
-            )}
-            {isUser ? (
-                <p className={styles.user} dir='auto'>
-                    {text}
-                </p>
-            ) : (
-                <ChatMarkdown content={text} />
-            )}
-            {materials.map(({ data: item }) => (
-                <CopiedMaterial
-                    key={item.id}
-                    attachment={item}
-                    caption={isUser ? copy.copied : copy.material}
-                />
-            ))}
-            {tools.map((tool) => (
-                <p
-                    key={tool.toolCallId}
-                    className={styles.notice}
-                    role='status'
-                >
-                    {tool.type === 'tool-read_source_context'
-                        ? copy.reading
-                        : copy.preparingNote}{' '}
-                    ·{' '}
-                    {tool.state === 'output-error'
-                        ? copy.toolFailed
-                        : tool.state === 'output-available'
-                          ? copy.toolDone
-                          : copy.running}
-                </p>
-            ))}
-            {canonical.status === 'incomplete' && (
-                <p className={styles.notice}>{copy.incomplete}</p>
-            )}
-        </article>
-    );
-}
-function FailedTurn({
-    turn,
-    question,
-    disabled,
-    onRetry,
-}: {
-    turn: ConversationTurn;
-    question: string;
-    disabled: boolean;
-    onRetry(turn: ConversationTurn): void;
-}) {
-    const { locale } = useI18n();
-    const copy = conversationCopy(locale);
-    function retry() {
-        onRetry(turn);
-    }
-    const label = `${copy.incomplete}: ${question}`;
-    const hasFailure = turn.status === 'failed';
-    return (
-        <section aria-label={label}>
-            <p className={styles.notice}>{copy.incomplete}</p>
-            <p dir='auto'>{question}</p>
-            {hasFailure ? (
-                <ConversationErrorNotice
-                    code={turn.failureCode}
-                    onRetry={retry}
-                    disabled={disabled}
-                />
-            ) : (
-                <Button variant='secondary' onClick={retry} disabled={disabled}>
-                    {copy.retry}
-                </Button>
+        <section className={styles.empty}>
+            <h3>{heading}</h3>
+            <p>{intro}</p>
+            {onSuggest && (
+                <>
+                    <ul className={styles.suggestions}>
+                        {suggestions.map((text) => (
+                            <Suggestion
+                                key={text}
+                                text={text}
+                                onSuggest={onSuggest}
+                            />
+                        ))}
+                    </ul>
+                    <small>{labels.hint}</small>
+                </>
             )}
         </section>
     );
 }
-function Usage({ turn }: { turn: ConversationTurn }) {
-    const { locale } = useI18n();
-    const copy = conversationCopy(locale);
-    if (turn.status === 'queued' || turn.status === 'running') return null;
-    const certainty = turn.usage.estimated ? copy.estimated : copy.reported;
+function Suggestion({
+    text,
+    onSuggest,
+}: {
+    text: string;
+    onSuggest(text: string): void;
+}) {
+    function choose() {
+        onSuggest(text);
+    }
     return (
-        <p className={styles.notice}>
-            {turn.modelId && (
-                <span>
-                    {copy.model}: {turn.modelId} ·{' '}
-                </span>
-            )}
-            {copy.usage}: <span>{certainty}</span> · {copy.inputTokens}:{' '}
-            {turn.usage.inputTokens} · {copy.outputTokens}:{' '}
-            {turn.usage.outputTokens} · {copy.chargedCredits}:{' '}
-            {turn.usage.chargedCredits}
-        </p>
+        <li>
+            <button
+                type='button'
+                className={styles.suggestion}
+                onClick={choose}
+            >
+                <CornerDownRight size={14} aria-hidden='true' />
+                {text}
+            </button>
+        </li>
     );
 }

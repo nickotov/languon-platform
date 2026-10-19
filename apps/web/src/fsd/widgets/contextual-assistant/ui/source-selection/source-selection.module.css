@@ -1,0 +1,64 @@
+.toolbar {
+    position: fixed;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    max-width: calc(100vw - var(--size-16));
+    padding: var(--space-4);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-elevated);
+    box-shadow: var(--elevation-lg);
+}
+
+.attach,
+.copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-6);
+    min-height: var(--size-36);
+    padding: 0 var(--space-10);
+    border: 0;
+    border-radius: var(--radius-8);
+    font-size: var(--size-14);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.attach {
+    background: var(--primary-default);
+    color: var(--text-on-primary);
+}
+
+.copy {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.copy:hover {
+    background: var(--background-subtle);
+}
+
+.attach:hover {
+    background: var(--primary-hover);
+}
+
+.toolbar :where(svg) {
+    width: var(--size-16);
+    height: var(--size-16);
+    flex-shrink: 0;
+}
+
+.toolbar :where(button:focus-visible) {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+@media (max-width: 1023px) {
+    .attach,
+    .copy {
+        min-height: var(--size-44);
+    }
+}

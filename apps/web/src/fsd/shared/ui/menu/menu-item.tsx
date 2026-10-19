@@ -46,7 +46,8 @@ export function MenuItemButton({
             onClick={select}
             onKeyDown={move}
             ref={register}
-            role='menuitem'
+            role={item.checked === undefined ? 'menuitem' : 'menuitemcheckbox'}
+            aria-checked={item.checked}
             tabIndex={-1}
             type='button'
         >

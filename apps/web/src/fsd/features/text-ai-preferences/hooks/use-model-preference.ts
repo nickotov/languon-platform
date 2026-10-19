@@ -112,20 +112,27 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             /* The query exposes its failure for retry. */
         }
     }
-    async function save(overwrite = false) {
+    async function save(overwrite = false, selectedChoice?: string) {
         const expected = overwrite ? latest : base;
+        const choice = selectedChoice ?? draft;
+        const choiceAvailable =
+            choice === 'auto' ||
+            catalog.data?.models.some(
+                (model) =>
+                    model.id === choice && model.availability === 'available',
+            ) === true;
         if (
             !authenticated ||
             !expected ||
-            !draft ||
+            !choice ||
             !online ||
-            !available ||
+            !choiceAvailable ||
             savingRef.current
         )
             return;
         if (!overwrite && saveState === 'conflict') return;
         const owner = actor;
-        const choice = draft;
+        setDraft(choice);
         savingRef.current = true;
         setSaveState('saving');
         try {

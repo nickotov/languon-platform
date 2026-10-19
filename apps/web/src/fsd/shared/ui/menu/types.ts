@@ -4,6 +4,7 @@ export type MenuItem = {
     separatorBefore?: boolean;
     headingBefore?: string;
     disabled?: boolean;
+    checked?: boolean;
     icon?: ReactNode;
     label: string;
     hint?: string;

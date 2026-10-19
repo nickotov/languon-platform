@@ -1,0 +1,73 @@
+.content {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.view {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.view[hidden],
+.composer[hidden] {
+    display: none;
+}
+
+.composer {
+    flex-shrink: 0;
+}
+
+.notice {
+    padding: var(--space-12) var(--space-16);
+    font-size: var(--size-12);
+}
+
+.reconnecting {
+    margin: 0;
+    padding: var(--space-6) var(--space-16);
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.confirm {
+    padding: var(--space-12) var(--space-16);
+    border-bottom: 1px solid var(--border-default);
+    background: var(--danger-subtle);
+    font-size: var(--size-14);
+}
+
+.confirm :where(p) {
+    margin: var(--space-2) 0 var(--space-8);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.actions,
+.saved {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.saved {
+    padding: var(--space-12);
+    background: var(--success-subtle);
+    color: var(--success-default);
+    font-size: var(--size-12);
+    border-radius: var(--radius-12);
+}
+
+.srOnly {
+    position: absolute;
+    width: var(--size-1);
+    height: var(--size-1);
+    overflow: hidden;
+    clip-path: inset(50%);
+}

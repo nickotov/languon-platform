@@ -1,7 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { safeChatLink } from '@/fsd/entities/conversation';
-import styles from './contextual-assistant.module.css';
+import styles from './chat-markdown.module.css';
 
 const plugins = [remarkGfm];
 const elements = [

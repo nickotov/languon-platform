@@ -19,10 +19,12 @@ export function KnowledgeEditor({
     onChange,
     disabled = false,
     onValidityChange,
+    toolbarVariant = 'full',
 }: {
     value: KnowledgeBody;
     onChange(value: KnowledgeBody): void;
     disabled?: boolean;
+    toolbarVariant?: 'full' | 'tutor';
     onValidityChange?: ((valid: boolean) => void) | undefined;
 }) {
     const { t } = useI18n();
@@ -98,7 +100,13 @@ export function KnowledgeEditor({
 
     return (
         <div className={styles.root} aria-busy={!editor}>
-            {editor && <EditorToolbar editor={editor} disabled={disabled} />}
+            {editor && (
+                <EditorToolbar
+                    editor={editor}
+                    disabled={disabled}
+                    variant={toolbarVariant}
+                />
+            )}
             <EditorContent editor={editor} className={styles.content} />
             {invalid && (
                 <InlineAlert tone='error'>

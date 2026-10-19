@@ -22,3 +22,8 @@ apps/*/next-env.d.ts
 .agent/features/039-sentence-library-management/designs/admin-sentence-library-management/v001.prompt.md
 .agent/features/039-sentence-library-management/designs/sentence-library-and-preparation/v001/source
 .agent/features/039-sentence-library-management/designs/sentence-library-and-preparation/v001/source-manifest.json
+
+# Frozen contextual tutor prompt and exact supplied design snapshots.
+.agent/features/044-contextual-language-assistant-and-knowledge/designs/contextual-assistant-widget/v001.prompt.md
+.agent/features/044-contextual-language-assistant-and-knowledge/designs/contextual-assistant-widget/v001/source
+.agent/features/044-contextual-language-assistant-and-knowledge/designs/contextual-assistant-widget/v001/reference/source

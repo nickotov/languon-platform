@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { conversationUIMessages } from '../src/fsd/entities/conversation';
 import { ConversationDetailSchema } from '@languon/contracts';
 import { ConversationMessages } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages';
 import { ConversationApiError } from '../src/fsd/entities/conversation/api/conversation-api';
@@ -133,7 +134,7 @@ it('associates each failed/cancelled Retry with its original learner question', 
     render(
         <ConversationMessages
             detail={detail}
-            uiMessages={[]}
+            uiMessages={conversationUIMessages(detail)}
             active={false}
             onRetry={retry}
             onPropose={vi.fn()}
@@ -172,7 +173,7 @@ it.each([
     },
 ])(
     'labels $status token counts as $label with explicit token and charged-credit units',
-    ({ estimated, status, label, absent }) => {
+    async ({ estimated, status, label, absent }) => {
         const id = '00000000-0000-4000-8000-000000000001';
         const date = '2026-10-19T10:00:00.000Z';
         const detail = ConversationDetailSchema.parse({
@@ -184,7 +185,20 @@ it.each([
                 createdAt: date,
                 updatedAt: date,
             },
-            messages: [],
+            messages: [
+                {
+                    id,
+                    conversationId: id,
+                    turnId: id,
+                    role: 'assistant',
+                    content: 'A river bank is land beside a river.',
+                    attachments: [],
+                    status: status === 'failed' ? 'incomplete' : 'complete',
+                    sourceVersion: '1',
+                    sourceProvenance: 'saved',
+                    createdAt: date,
+                },
+            ],
             drafts: [],
             turns: [
                 {
@@ -207,18 +221,31 @@ it.each([
         const { container } = render(
             <ConversationMessages
                 detail={detail}
-                uiMessages={[]}
+                uiMessages={conversationUIMessages(detail)}
                 active={false}
                 onRetry={vi.fn()}
                 onPropose={vi.fn()}
             />,
         );
-        expect(screen.getByText(label, { exact: true })).toBeInTheDocument();
         expect(
-            screen.queryByText(absent, { exact: true }),
+            screen.queryByRole('dialog', { name: 'Usage' }),
         ).not.toBeInTheDocument();
-        expect(container).toHaveTextContent('Input tokens: 64000');
-        expect(container).toHaveTextContent('Output tokens: 4096');
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Charged credits: 37' }),
+        );
+        const usage = await screen.findByRole('dialog', { name: 'Usage' });
+        expect(
+            within(usage).getByText(label, { exact: true }),
+        ).toBeInTheDocument();
+        expect(
+            within(usage).queryByText(absent, { exact: true }),
+        ).not.toBeInTheDocument();
+        expect(
+            within(usage).getByText('Input tokens').nextElementSibling,
+        ).toHaveTextContent('64000');
+        expect(
+            within(usage).getByText('Output tokens').nextElementSibling,
+        ).toHaveTextContent('4096');
         expect(container).toHaveTextContent('Charged credits: 37');
     },
 );

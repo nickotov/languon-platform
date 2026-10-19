@@ -1,0 +1,454 @@
+.composer {
+    position: relative;
+    flex: none;
+    border-top: 1px solid var(--border-default);
+    background: var(--background-surface);
+    padding: var(--space-12) var(--space-12) var(--space-8);
+}
+
+.inputFrame {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-16);
+    background: var(--background-surface);
+}
+
+.inputFrame:focus-within {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 var(--size-2) var(--primary-100);
+}
+
+.input {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    max-height: calc(var(--size-160) + var(--size-8));
+    min-height: var(--size-36);
+    resize: none;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--size-16);
+    line-height: var(--size-24);
+    padding: var(--space-12) var(--space-14) 0;
+}
+
+.input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.inputActions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.contextActions {
+    display: flex;
+    min-width: 0;
+    gap: var(--space-2);
+}
+
+.contextButton,
+.selectButton,
+.stop,
+.send,
+.chip,
+.attachmentToggle,
+.removeAttachment,
+.pasteButton,
+.result {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    border: 0;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+}
+
+.contextButton,
+.selectButton {
+    height: var(--size-32);
+    padding: 0 var(--space-8);
+    border-radius: var(--radius-8);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.selectButton {
+    display: none;
+}
+
+.shortcut {
+    padding: 0 var(--space-4);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-4);
+    color: var(--text-tertiary);
+    font: inherit;
+}
+
+.send,
+.stop {
+    flex-shrink: 0;
+    height: var(--size-36);
+    border-radius: var(--radius-12);
+    justify-content: center;
+}
+
+.send {
+    width: var(--size-36);
+    color: var(--background-surface);
+    background: var(--primary-default);
+}
+
+.send:hover {
+    background: var(--primary-hover);
+}
+
+.send:disabled {
+    background: var(--background-subtle);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+}
+
+.stop {
+    padding: 0 var(--space-12);
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+
+.preferencesRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.preferencesRow::-webkit-scrollbar {
+    display: none;
+}
+
+.preferences {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+    height: var(--size-24);
+    gap: var(--space-4);
+    padding: 0 var(--space-6);
+    border-radius: var(--radius-6);
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+}
+
+.chip strong {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.contextButton:hover,
+.selectButton:hover,
+.stop:hover,
+.chip:hover,
+.attachmentToggle:hover,
+.removeAttachment:hover,
+.pasteButton:hover,
+.result:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+.composer :where(button):focus-visible,
+.picker :where(button):focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.preferencePopover {
+    width: var(--size-256);
+    max-height: min(var(--size-384), 60dvh);
+    padding: var(--space-4);
+}
+
+.defaults {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-8);
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.defaults button {
+    border: 0;
+    border-radius: var(--radius-6);
+    background: transparent;
+    color: var(--primary-default);
+    font: inherit;
+    font-weight: 500;
+    padding: var(--space-4) var(--space-6);
+    cursor: pointer;
+}
+
+.hint {
+    margin: var(--space-6) var(--space-4) 0;
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+}
+
+.attachmentTray {
+    margin-bottom: var(--space-8);
+}
+
+.attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.attachmentChip {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    overflow: hidden;
+    font-size: var(--size-12);
+}
+
+.attachmentToggle {
+    height: var(--size-32);
+    min-width: 0;
+    padding: 0 var(--space-4) 0 var(--space-8);
+    color: var(--text-primary);
+}
+
+.attachmentToggle span {
+    max-width: var(--size-160);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.removeAttachment {
+    justify-content: center;
+    width: var(--size-28);
+    height: var(--size-32);
+    color: var(--text-tertiary);
+}
+
+.attachmentPreview {
+    margin-top: var(--space-8);
+    max-height: var(--size-192);
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    padding: var(--space-12);
+    background: var(--background-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+
+.attachmentPreview p {
+    margin: var(--space-4) 0 0;
+}
+
+.attachmentPreview blockquote {
+    margin: var(--space-8) 0 0;
+    padding-inline-start: var(--space-10);
+    border-inline-start: var(--size-2) solid var(--primary-200);
+}
+
+.cardHeading {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+}
+
+.cardHeading span {
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+}
+
+.picker {
+    position: absolute;
+    inset-inline: var(--space-12);
+    bottom: 100%;
+    margin-bottom: var(--space-8);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    max-height: min(var(--size-384), 55dvh);
+    overflow: hidden;
+    background: var(--background-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-16);
+    box-shadow: var(--elevation-lg);
+}
+
+.searchRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    padding: 0 var(--space-12);
+    border-bottom: 1px solid var(--border-default);
+    color: var(--text-tertiary);
+}
+
+.search {
+    flex: 1;
+    min-width: 0;
+    height: var(--size-44);
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--size-14);
+}
+
+.results {
+    overflow-y: auto;
+    min-height: 0;
+    padding: var(--space-6);
+}
+
+.result {
+    width: 100%;
+    border-radius: var(--radius-8);
+    align-items: flex-start;
+    text-align: start;
+    padding: var(--space-8);
+    gap: var(--space-10);
+}
+
+.resultText {
+    min-width: 0;
+    flex: 1;
+}
+
+.resultText strong,
+.resultText span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.resultText strong {
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+
+.resultText span {
+    font-size: var(--size-12);
+}
+
+.pasteArea {
+    border-top: 1px solid var(--border-default);
+    padding: var(--space-8);
+}
+
+.pasteButton {
+    width: 100%;
+    height: var(--size-36);
+    border-radius: var(--radius-8);
+    padding: 0 var(--space-8);
+    font-size: var(--size-14);
+}
+
+.pasteActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+}
+
+@media (max-width: 767px) {
+    .input {
+        max-height: var(--size-120);
+    }
+
+    .contextButton,
+    .selectButton,
+    .stop,
+    .send,
+    .attachmentToggle,
+    .removeAttachment,
+    .pasteButton {
+        min-height: var(--size-44);
+    }
+
+    .send,
+    .removeAttachment {
+        width: var(--size-44);
+    }
+
+    .selectButton {
+        display: inline-flex;
+    }
+
+    .desktopLabel,
+    .shortcut {
+        display: none;
+    }
+
+    .chip {
+        height: var(--size-44);
+    }
+
+    .search {
+        height: var(--size-48);
+    }
+}
+
+.optionText {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: start;
+}
+
+.optionText small {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 400;
+}
+
+.attachmentChip:has([aria-expanded='true']) {
+    box-shadow: 0 0 0 var(--size-2) var(--primary-100);
+}
+
+.contextButton:disabled,
+.chip:disabled,
+.pasteButton:disabled,
+.result:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.result:where([aria-pressed='true']) {
+    opacity: 1;
+    color: var(--primary-default);
+}

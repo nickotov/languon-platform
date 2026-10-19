@@ -1,5 +1,13 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:76dad0ed0457a680
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:000df4294d8e574b
+import { mkdir, copyFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import {
+    expect,
+    test,
+    type Page,
+    type TestInfo,
+    type Request,
+} from '@playwright/test';
 import type {
     ConversationDetail,
     KnowledgeNote,
@@ -107,7 +115,7 @@ async function api(
     expect(response.ok(), await response.text()).toBe(true);
     return response.json();
 }
-async function source(page: Page, token: string) {
+async function source(page: Page, token: string, info: TestInfo) {
     const { folder } = (await api(page, token, '/text-folders', {
         name: 'River reading',
     })) as { folder: TextFolder };
@@ -117,24 +125,60 @@ async function source(page: Page, token: string) {
         sourceLanguage: 'en',
         targetLanguage: 'es',
     })) as { text: TextDocument };
+    const conversationRequests: { path: string; method: string }[] = [];
+    function observeConversation(request: Request) {
+        const path = new URL(request.url()).pathname;
+        if (
+            path === '/api/conversations' ||
+            path.startsWith('/api/conversations/')
+        )
+            conversationRequests.push({ path, method: request.method() });
+    }
+    page.on('request', observeConversation);
     await page.goto(`/texts/folders/${folder.id}/texts/${text.id}`);
-    await page
-        .getByRole('button', { name: 'Ask about this', exact: true })
-        .click();
+    const launcher = page.getByRole('button', {
+        name: /^Open language tutor/u,
+    });
+    await expect(launcher).toBeVisible();
     await expect(
-        page.getByRole('dialog', { name: 'Language assistant' }),
-    ).toBeVisible();
-    await page
-        .getByRole('dialog', { name: 'Language assistant', exact: true })
-        .getByRole('button', { name: 'New conversation', exact: true })
-        .first()
-        .click();
+        page.getByRole('region', { name: 'Language tutor', exact: true }),
+    ).toHaveCount(0);
+    const launchBounds = (await launcher.boundingBox())!;
+    const viewport = page.viewportSize()!;
+    expect(launchBounds.x + launchBounds.width / 2).toBeGreaterThan(
+        viewport.width / 2,
+    );
+    expect(launchBounds.y + launchBounds.height / 2).toBeGreaterThan(
+        viewport.height / 2,
+    );
+    await capture(page, info, `tutor-initial-pill-${viewport.width}`);
+    expect(conversationRequests).toEqual([]);
+
+    await launcher.focus();
+    await launcher.press('Enter');
+    const openedTutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    await expect(openedTutor).toBeVisible();
+    await expect
+        .poll(() =>
+            openedTutor.evaluate((element) =>
+                element.contains(document.activeElement),
+            ),
+        )
+        .toBe(true);
     await expect(page.getByLabel('Your question')).toBeEnabled();
-    await page.getByLabel('Your question').focus();
-    await page.keyboard.press('Tab');
-    await expect(
-        page.getByRole('combobox', { name: 'Reply language', exact: true }),
-    ).toBeFocused();
+    await expect
+        .poll(() =>
+            conversationRequests.some(
+                (request) =>
+                    request.path === '/api/conversations' &&
+                    request.method === 'GET',
+            ),
+        )
+        .toBe(true);
+    page.off('request', observeConversation);
     return text;
 }
 async function send(page: Page, content: string) {
@@ -154,6 +198,14 @@ async function capture(page: Page, info: TestInfo, name: string) {
     const path = info.outputPath(`${name}.png`);
     await page.screenshot({ path, fullPage: true, animations: 'disabled' });
     await info.attach(name, { path, contentType: 'image/png' });
+    if (process.env.TUTOR_DESIGN_EVIDENCE === 'true') {
+        const directory = resolve(
+            process.cwd(),
+            '../../.agent/improvements/contextual-tutor-widget-polish-evidence',
+        );
+        await mkdir(directory, { recursive: true });
+        await copyFile(path, resolve(directory, `${name}.png`));
+    }
 }
 
 // @user-flow contextual-language-assistant-and-knowledge/source-chat-save-knowledge
@@ -162,13 +214,125 @@ test('saved source streams through real SDK into an editable private note and re
 }, info) => {
     const assertClean = runtimeErrors(page);
     const token = await signup(page, info);
-    await source(page, token);
+    await source(page, token, info);
+    const widget = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    await expect(widget).not.toHaveAttribute('aria-modal', 'true');
+    expect(
+        await widget.evaluate(
+            (element) => getComputedStyle(element).animationName,
+        ),
+    ).not.toBe('none');
+    expect(
+        await widget.evaluate((element) =>
+            getComputedStyle(element)
+                .transitionDuration.split(',')
+                .some((duration) => parseFloat(duration) > 0),
+        ),
+    ).toBe(true);
+    await expect
+        .poll(async () => Math.round((await widget.boundingBox())!.height))
+        .toBe(960);
+
+    await capture(page, info, 'tutor-empty-desktop');
+    await expect
+        .poll(async () => Math.round((await widget.boundingBox())!.width))
+        .toBe(420);
+    const right = (await widget.boundingBox())!.x;
+    await widget
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    await capture(page, info, 'tutor-menu-desktop');
+    await page
+        .getByRole('menuitem', { name: 'Move to upper left', exact: true })
+        .click();
+    await expect
+        .poll(async () => (await widget.boundingBox())!.x)
+        .toBeLessThan(right);
+    // Full-screen text reading has no sidebar; app-shell pages inherit its width.
+    const sidebarOffset = await widget.evaluate(
+        (element) =>
+            parseFloat(
+                getComputedStyle(element).getPropertyValue(
+                    '--app-sidebar-width',
+                ),
+            ) || 0,
+    );
+    expect(Math.round((await widget.boundingBox())!.x)).toBe(
+        sidebarOffset + 24,
+    );
+    await capture(page, info, 'tutor-upper-left-desktop');
+    await widget
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    await page
+        .getByRole('menuitemcheckbox', {
+            name: 'Wider reading size',
+            exact: true,
+        })
+        .click();
+    await page.keyboard.press('Escape');
+    await expect
+        .poll(async () => Math.round((await widget.boundingBox())!.width))
+        .toBe(560);
+    await widget
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    await page
+        .getByRole('menuitemcheckbox', {
+            name: 'Wider reading size',
+            exact: true,
+        })
+        .click();
+    await page.keyboard.press('Escape');
+    await widget
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    await page
+        .getByRole('menuitem', { name: 'Move to upper right', exact: true })
+        .click();
+
+    await widget.getByRole('button', { name: /^Reply language:/u }).click();
+    await capture(page, info, 'tutor-preferences-desktop');
+    await page.keyboard.press('Escape');
+    // The source remains interactive while the tutor is open: real pointer
+    // selection must succeed rather than falling behind a modal overlay.
+    const passage = page.getByRole('textbox', {
+        name: 'Source text',
+        exact: true,
+    });
+    await passage.click();
+    await passage.press('ControlOrMeta+a');
+    await expect
+        .poll(() =>
+            passage.evaluate((element) => {
+                const textarea = element as HTMLTextAreaElement;
+                return textarea.value.slice(
+                    textarea.selectionStart,
+                    textarea.selectionEnd,
+                );
+            }),
+        )
+        .toBe('We rested on the bank.');
+    await page
+        .getByLabel('Your question')
+        .fill('Keep this unfinished question');
+    await page
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
+        .click();
+    await expect(widget).toHaveCount(0);
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    await expect(page.getByLabel('Your question')).toHaveValue(
+        'Keep this unfinished question',
+    );
     await send(
         page,
         'Please draft a standalone explanation of river bank usage.',
     );
     await expect(
-        page.getByRole('heading', { name: 'Knowledge draft' }),
+        page.getByRole('button', { name: 'Review and save', exact: true }),
     ).toBeVisible();
     await expect(
         page.getByRole('button', { name: 'Stop', exact: true }),
@@ -177,8 +341,12 @@ test('saved source streams through real SDK into an editable private note and re
         ((await api(page, token, '/knowledge')) as { notes: KnowledgeNote[] })
             .notes,
     ).toHaveLength(0);
+    await capture(page, info, 'tutor-draft-card-desktop');
     await page
-        .getByRole('dialog', { name: 'Language assistant', exact: true })
+        .getByRole('button', { name: 'Review and save', exact: true })
+        .click();
+    await page
+        .getByRole('region', { name: 'Language tutor', exact: true })
         .getByLabel('Title', { exact: true })
         .fill('My river bank explanation');
     await page
@@ -186,6 +354,38 @@ test('saved source streams through real SDK into an editable private note and re
         .fill(
             'The river bank is the land beside a river. We rested on the bank.',
         );
+    await page
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
+        .click();
+    await expect(page.getByRole('dialog', { name: /unsaved/i })).toHaveCount(0);
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    await expect(widget.getByLabel('Title', { exact: true })).toHaveValue(
+        'My river bank explanation',
+    );
+    await expect(
+        page.getByRole('textbox', { name: 'Explanation', exact: true }),
+    ).toContainText('We rested on the bank.');
+    await capture(page, info, 'tutor-note-editor-desktop');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect
+        .poll(() =>
+            widget
+                .getByLabel('Title', { exact: true })
+                .evaluate(
+                    (element) => getComputedStyle(element).backgroundColor,
+                ),
+        )
+        .toBe('rgb(255, 255, 255)');
+    await expect
+        .poll(() =>
+            widget
+                .getByLabel('Title', { exact: true })
+                .evaluate((element) => getComputedStyle(element).color),
+        )
+        .toBe('rgb(15, 23, 42)');
+    await capture(page, info, 'tutor-note-editor-dark');
+    await page.emulateMedia({ colorScheme: 'light' });
+
     const publication = page.waitForResponse(
         (response) =>
             response.request().method() === 'POST' &&
@@ -197,13 +397,15 @@ test('saved source streams through real SDK into an editable private note and re
         .click();
     expect((await publication).status()).toBe(200);
     await expect(
-        page.getByRole('heading', { name: 'Knowledge draft' }),
+        page.getByRole('button', { name: 'Review and save', exact: true }),
     ).toHaveCount(0);
     const saved = (
         (await api(page, token, '/knowledge')) as { notes: KnowledgeNote[] }
     ).notes[0]!;
     expect(saved.title).toBe('My river bank explanation');
-    await page.getByRole('button', { name: 'Close chat', exact: true }).click();
+    await page
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
+        .click();
     await page.goto(`/knowledge/${saved.id}`);
     await expect(
         page.getByRole('heading', { level: 1, name: saved.title }),
@@ -299,58 +501,67 @@ test('two copied dictionary cards retain typed labels, language directions and i
         version = created.dictionaryVersion;
     }
     await page.goto(`/dictionaries/${dictionary.id}`);
-    await page
-        .getByRole('button', { name: 'Ask about this', exact: true })
-        .click();
-    const panel = page.getByRole('dialog', {
-        name: 'Language assistant',
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    const panel = page.getByRole('region', {
+        name: 'Language tutor',
         exact: true,
     });
-    await panel
-        .getByRole('button', { name: 'New conversation', exact: true })
-        .first()
-        .click();
-    await panel
-        .getByRole('button', { name: 'Add context /', exact: true })
-        .click();
     for (const card of cards) {
         await panel
+            .getByRole('button', { name: 'Add context /', exact: true })
+            .click();
+        const picker = panel.getByRole('dialog', {
+            name: 'Add context /',
+            exact: true,
+        });
+        await picker
             .getByLabel('Find a word or passage', { exact: true })
             .fill(card.source);
-        const result = panel.locator('details').filter({
-            has: page.locator('summary').filter({ hasText: card.source }),
-        });
-        await expect(result).toHaveCount(1);
-        await result.locator('summary').click();
-        for (const label of [
-            'Source',
-            'Translation',
-            'Definition',
-            'Transcription (ipa)',
-            'Example',
-            'Example translation',
+        await capture(page, info, 'tutor-context-picker-desktop');
+        await picker
+            .getByRole('button')
+            .filter({ hasText: card.source })
+            .click();
+        await picker
+            .getByRole('button', { name: 'Close context picker', exact: true })
+            .click();
+        await panel
+            .getByRole('button', { name: card.source, exact: true })
+            .click();
+        for (const value of [
+            card.translation,
+            card.definition,
+            card.transcription,
+            card.example,
+            card.exampleTranslation,
         ])
-            await expect(
-                result.getByRole('term').filter({
-                    hasText: new RegExp(`^${label.replace(/[()]/g, '\\$&')}$`),
-                }),
-            ).toBeVisible();
+            await expect(panel.getByText(value, { exact: true })).toBeVisible();
         await expect(
-            result.getByText(card.definition, { exact: true }),
+            panel.getByText(card.definition, { exact: true }),
         ).toHaveAttribute('lang', 'ar');
         await expect(
-            result.getByText(card.definition, { exact: true }),
+            panel.getByText(card.definition, { exact: true }),
         ).toHaveAttribute('dir', 'auto');
         await expect(
-            result.getByText(card.exampleTranslation, { exact: true }),
+            panel.getByText(card.exampleTranslation, { exact: true }),
         ).toHaveAttribute('lang', 'en');
-        await result
-            .locator('..')
-            .getByRole('button', { name: 'Attach', exact: true })
+        await panel
+            .getByRole('button', { name: card.source, exact: true })
             .click();
     }
     await expect(
-        panel.getByRole('button', { name: 'Remove attachment', exact: true }),
+        panel.getByRole('button', { name: /^Remove attachment:/u }),
+    ).toHaveCount(2);
+    await panel.getByLabel('Your question').fill('Compare the attached words');
+    await panel
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
+        .click();
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    await expect(panel.getByLabel('Your question')).toHaveValue(
+        'Compare the attached words',
+    );
+    await expect(
+        panel.getByRole('button', { name: /^Remove attachment:/u }),
     ).toHaveCount(2);
     // Controlled browser-only failure proof; the subsequent admission remains real.
     const admissionPattern = '**/api/conversations/*/turns';
@@ -424,21 +635,40 @@ test('two copied dictionary cards retain typed labels, language directions and i
             transcriptionNotation: 'ipa',
         });
     }
-    await page.getByRole('button', { name: 'Close chat', exact: true }).click();
     await page
-        .getByRole('button', { name: 'Ask about this', exact: true })
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
         .click();
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
     await expect(
         panel.getByText(
             'Explain the difference between these two copied cards.',
             { exact: true },
         ),
     ).toBeVisible();
+    await panel
+        .locator('summary')
+        .filter({ hasText: /^Copied material/u })
+        .click();
     for (const card of cards) {
         const copy = panel.locator('details').filter({
-            has: page.locator('summary').filter({ hasText: card.source }),
+            has: page
+                .locator(':scope > summary')
+                .filter({ hasText: card.source }),
         });
         await copy.locator('summary').click();
+        for (const label of [
+            'Source',
+            'Translation',
+            'Definition',
+            'Transcription (ipa)',
+            'Example',
+            'Example translation',
+        ])
+            await expect(
+                copy.getByRole('term').filter({
+                    hasText: new RegExp(`^${label.replace(/[()]/g, '\\$&')}$`),
+                }),
+            ).toBeVisible();
         await expect(
             copy.getByText(card.definition, { exact: true }),
         ).toBeVisible();
@@ -448,6 +678,94 @@ test('two copied dictionary cards retain typed labels, language directions and i
     }
     await noOverflow(page);
     await capture(page, info, 'dictionary-card-copies-desktop');
+    const lightSurface = await panel.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+    );
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await expect
+        .poll(() =>
+            panel.evaluate(
+                (element) => getComputedStyle(element).backgroundColor,
+            ),
+        )
+        .not.toBe(lightSurface);
+    await expect
+        .poll(() =>
+            page.evaluate(
+                () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+            ),
+        )
+        .toBe(true);
+    expect(
+        await panel.evaluate(
+            (element) => getComputedStyle(element).animationName,
+        ),
+    ).toBe('none');
+    // The app-wide reduced-motion rule retains a 1ms duration; this panel's
+    // transition-property:none suppresses its opening/folding transitions.
+    expect(
+        await panel.evaluate(
+            (element) => getComputedStyle(element).transitionProperty,
+        ),
+    ).toBe('none');
+    expect(
+        await panel.evaluate((element) =>
+            getComputedStyle(element)
+                .transitionDuration.split(',')
+                .every((duration) => parseFloat(duration) <= 0.001),
+        ),
+    ).toBe(true);
+    await capture(page, info, 'tutor-dark-rtl-material-reduced-motion');
+    await page.emulateMedia({
+        colorScheme: 'light',
+        reducedMotion: 'no-preference',
+    });
+    await panel
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    await page
+        .getByRole('menuitem', { name: 'Conversation history', exact: true })
+        .click();
+    await capture(page, info, 'tutor-history-desktop');
+    await panel.getByRole('button', { name: /^Delete conversation:/u }).click();
+    const confirmation = page.getByRole('group', {
+        name: 'Delete conversation',
+        exact: true,
+    });
+    await expect(confirmation).toBeVisible();
+    await expect(
+        confirmation.getByRole('button', { name: 'Cancel', exact: true }),
+    ).toBeFocused();
+    await confirmation
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .last()
+        .click();
+    expect(
+        (
+            (await api(
+                page,
+                token,
+                `/conversations?sourceKind=dictionary&sourceId=${dictionary.id}`,
+            )) as { conversations: unknown[] }
+        ).conversations,
+    ).toHaveLength(1);
+    await panel.getByRole('button', { name: /^Delete conversation:/u }).click();
+    await confirmation
+        .getByRole('button', { name: 'Delete', exact: true })
+        .click();
+    await expect(confirmation).toHaveCount(0);
+    await expect
+        .poll(
+            async () =>
+                (
+                    (await api(
+                        page,
+                        token,
+                        `/conversations?sourceKind=dictionary&sourceId=${dictionary.id}`,
+                    )) as { conversations: unknown[] }
+                ).conversations.length,
+        )
+        .toBe(0);
     assertClean();
 });
 
@@ -458,14 +776,63 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
     const assertClean = runtimeErrors(page);
     await page.setViewportSize({ width: 390, height: 844 });
     const token = await signup(page, info);
-    const text = await source(page, token);
+    const text = await source(page, token, info);
+    const sheet = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    await expect
+        .poll(async () => Math.round((await sheet.boundingBox())!.height))
+        .toBe(832);
+    await capture(page, info, 'tutor-initial-full-sheet-mobile');
+    await sheet
+        .getByRole('button', { name: 'Reduce to partial height', exact: true })
+        .first()
+        .click();
+    const partial = (await sheet.boundingBox())!.height;
+    expect(Math.round(partial)).toBe(Math.round(844 * 0.75));
+    await sheet
+        .getByRole('button', { name: 'Expand to full height', exact: true })
+        .first()
+        .click();
+    await expect
+        .poll(async () => (await sheet.boundingBox())!.height)
+        .toBeGreaterThan(partial);
+    await capture(page, info, 'tutor-expanded-sheet-mobile');
+    await sheet
+        .getByRole('button', { name: 'Reduce to partial height', exact: true })
+        .first()
+        .click();
+    await expect
+        .poll(async () => Math.round((await sheet.boundingBox())!.height))
+        .toBe(Math.round(partial));
+    await capture(page, info, 'tutor-partial-sheet-mobile');
+    const handle = (await sheet
+        .getByRole('button', { name: 'Expand to full height', exact: true })
+        .first()
+        .boundingBox())!;
+    await page.mouse.move(
+        handle.x + handle.width / 2,
+        handle.y + handle.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+        handle.x + handle.width / 2,
+        handle.y + handle.height / 2 + 300,
+        { steps: 10 },
+    );
+    await page.mouse.up();
+    await expect(sheet).toHaveCount(0);
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    await expect(sheet).toBeVisible();
+
     await page.setViewportSize({ width: 320, height: 844 });
     await noOverflow(page);
     await expect
         .poll(() =>
             page
-                .getByRole('dialog', {
-                    name: 'Language assistant',
+                .getByRole('region', {
+                    name: 'Language tutor',
                     exact: true,
                 })
                 .evaluate(
@@ -493,16 +860,17 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
         `/conversations/${conversationId}`,
     )) as ConversationDetail;
     expect(streaming.turns[0]?.status).toBe('running');
-    await page.getByRole('button', { name: 'Close chat', exact: true }).click();
+    await page
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
+        .click();
     await expect(
-        page.getByRole('dialog', { name: 'Language assistant' }),
+        page.getByRole('region', { name: 'Language tutor' }),
     ).toHaveCount(0);
     await expect(
-        page.getByRole('button', { name: 'Ask about this', exact: true }),
+        page.getByRole('button', { name: /^Open language tutor/u }),
     ).toBeFocused();
-    await page
-        .getByRole('button', { name: 'Ask about this', exact: true })
-        .click();
+    await capture(page, info, 'tutor-folded-stream-mobile');
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
     await expect(page.getByLabel('Your question')).toBeVisible();
     await expect(
         page.getByText(/A river bank is the land beside a river/).first(),
@@ -582,15 +950,35 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
         })
         .getByRole('button', { name: 'Retry response', exact: true });
     await expect(retry).toBeEnabled();
-    await expect(page.getByText('Estimated', { exact: true })).toHaveCount(2);
-    const estimated = page.getByText('Estimated', { exact: true }).last();
-    await expect(estimated).toBeVisible();
-    await expect(estimated.locator('..')).toContainText(
-        `Input tokens: ${failed.usage.inputTokens} · Output tokens: ${failed.usage.outputTokens} · Charged credits: ${failed.usage.chargedCredits}`,
+    const failedArticle = page.locator('article').filter({ has: retry });
+    const usageTrigger = failedArticle.getByRole('button', {
+        name: /^Charged credits:/u,
+    });
+    await usageTrigger.click();
+    const usage = page.getByRole('dialog', { name: 'Usage', exact: true });
+    await expect(usage).toBeVisible();
+    await expect(usage.getByText('Estimated', { exact: true })).toBeVisible();
+    await expect(
+        usage
+            .getByRole('term')
+            .filter({ hasText: /^Input tokens$/u })
+            .locator('+ dd'),
+    ).toHaveText(String(failed.usage.inputTokens));
+    await expect(
+        usage
+            .getByRole('term')
+            .filter({ hasText: /^Output tokens$/u })
+            .locator('+ dd'),
+    ).toHaveText(String(failed.usage.outputTokens));
+    await expect(usageTrigger).toContainText(
+        `Charged credits: ${failed.usage.chargedCredits}`,
     );
-    await estimated.scrollIntoViewIfNeeded();
+    await usage.scrollIntoViewIfNeeded();
     await noOverflow(page);
     await capture(page, info, 'assistant-estimated-usage-mobile');
+    await page.keyboard.press('Escape');
+    await expect(usage).toHaveCount(0);
+    await expect(usageTrigger).toBeFocused();
     const retried = page.waitForRequest(
         (request) =>
             request.method() === 'POST' &&

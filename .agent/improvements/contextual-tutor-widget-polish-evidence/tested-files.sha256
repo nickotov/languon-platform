@@ -1,0 +1,14 @@
+a93b93248b9fb9ecaadb73c5014dddb8ae488695b35d71542c16bbb96bca3275  apps/web/src/fsd/shared/ui/menu/menu-common.module.css
+7e95aeba955e3fdd12869f888e8eaca2e4b917be603a6cb627711b820319e0dd  apps/web/src/fsd/widgets/contextual-assistant/hooks/use-tutor-layout.ts
+f4644bded8558a33cbf8e781125be25c28e690113073c0642eb2e6772fbc4aaa  apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/contextual-assistant.tsx
+ca5fc7cca2fc09891c6de1372ebceebdec7cfa8d9c42bba480f51eec0b9c9dc9  apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer.module.css
+a87378dfcfc1828f54c4b793f821cdc5da1ab5119d98ca708bc986da285cf053  apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.module.css
+48cd8433b489593b2839b83e3f171b12901d82cc5fbbf35e1d45333e1caaa3d3  apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx
+ae4d197eddcf46b85abc8bffd9e1bdde4e30bf8001fe46f5ccfa65050bec8578  apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-launcher.tsx
+77b90e76052f4a8ea2e4ffc9a4a1ce10acd376379e4d54bd420031a870a2239f  apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell.tsx
+22706a045a6899087c1440719df44d29e6571160a526da8f15a2259f70301f70  apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell.module.css
+e0413cd4e1b4dd805296b9097e93bdd79a10f02f3d7f5639f5b29fc23fc2d066  apps/web/tests/conversation-error-notice.test.tsx
+8f0fc8fcee925c97f6a1d0cd9aead1efb4e49338b5219d88fbb0f7debe64af8e  apps/web/tests/tutor-usage-popover.test.tsx
+9514a0577713f966aaf602f479a9d30794aa1c7dfec580163594fb4aa4ae333a  apps/web/tests/e2e/contextual-assistant.journeys.spec.ts
+cd43b4263f97f47088ddc97ea45eead5786deb2a66a10b97c7c13c271c35aabb  apps/backend/tests/integration/modules/conversations/contextual-assistant.journeys.test.ts
+a78608684a1a574ccc3578394d80449f74aedfe163d60fcfa6d30badf3169985  docs/user-flows/contextual-language-assistant-and-knowledge.md

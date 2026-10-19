@@ -1,0 +1,152 @@
+.draft {
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-16);
+    padding: var(--space-16);
+    background: var(--background-surface);
+}
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-8);
+}
+.badge {
+    border-radius: var(--radius-6);
+    padding: var(--space-2) var(--space-8);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+.status {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+    margin: 0;
+}
+.title {
+    margin: var(--space-10) 0 var(--space-4);
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+.summary {
+    margin: 0;
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+    color: var(--text-secondary);
+}
+.categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    padding: 0;
+    margin: var(--space-10) 0 var(--space-14);
+    list-style: none;
+}
+.categories :where(li) {
+    padding: var(--space-2) var(--space-8);
+    border-radius: var(--radius-6);
+    background: var(--background-subtle);
+    font-size: var(--size-12);
+    color: var(--text-secondary);
+}
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+.editor {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--background-elevated);
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-12);
+    border-block-end: var(--size-1) solid var(--border-default);
+}
+.editorBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--space-16);
+}
+.editorBody[hidden],
+.footer[hidden] {
+    display: none;
+}
+.footer {
+    padding: var(--space-12) var(--space-16);
+    border-block-start: var(--size-1) solid var(--border-default);
+}
+.footer .toolbar {
+    justify-content: end;
+    margin-block-start: var(--space-8);
+}
+.error {
+    color: var(--danger-default);
+    font-size: var(--size-14);
+}
+
+.comparison {
+    display: grid;
+    gap: var(--space-12);
+    margin-block-start: var(--space-12);
+}
+.comparison :where(section) {
+    min-width: 0;
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-12);
+    padding: var(--space-12);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+.comparison :where(h4) {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+@media (max-width: 640px) {
+    .draft :where(button),
+    .editor :where(button) {
+        min-height: var(--size-44);
+    }
+}
+
+/* Exact inherited Magic Patterns Button fallback values, scoped to tutor. */
+.draft,
+.editor {
+    --tutor-control-primary: #0f172a;
+    --tutor-control-primary-hover: #1e293b;
+    --tutor-control-primary-active: #020617;
+    --tutor-control-on-primary: #ffffff;
+}
+.primaryAction {
+    --primary-default: var(--tutor-control-primary);
+    --primary-hover: var(--tutor-control-primary-hover);
+    --primary-pressed: var(--tutor-control-primary-active);
+    --text-on-primary: var(--tutor-control-on-primary);
+    border-radius: var(--radius-12);
+    background: var(--tutor-control-primary);
+    color: var(--tutor-control-on-primary);
+}
+.primaryAction:where(:hover:not(:disabled)) {
+    background: var(--tutor-control-primary-hover);
+}
+.primaryAction:where(:active:not(:disabled)) {
+    background: var(--tutor-control-primary-active);
+}
+.editorBody {
+    scrollbar-width: none;
+}
+.editorBody::-webkit-scrollbar {
+    display: none;
+}

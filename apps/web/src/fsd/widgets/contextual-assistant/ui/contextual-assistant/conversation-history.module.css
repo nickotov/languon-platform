@@ -1,0 +1,115 @@
+.history {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-12);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.list {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--space-12) var(--space-8);
+    scrollbar-width: none;
+}
+
+.list :where(ul) {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.heading {
+    padding: 0 var(--space-8) var(--space-6);
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.empty {
+    padding: var(--space-8);
+    font-size: var(--size-14);
+    color: var(--text-secondary);
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    border-radius: var(--radius-12);
+    margin-bottom: var(--space-2);
+}
+
+.row:hover {
+    background: var(--background-subtle);
+}
+
+.active {
+    background: var(--primary-subtle);
+}
+
+.select {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: flex-start;
+    gap: var(--space-10);
+    padding: var(--space-10) var(--space-12);
+    border: 0;
+    background: transparent;
+    border-radius: var(--radius-12);
+    color: var(--text-tertiary);
+    text-align: start;
+    cursor: pointer;
+}
+
+.select :where(svg) {
+    flex-shrink: 0;
+    margin-top: var(--space-2);
+}
+
+.select :where(span) {
+    min-width: 0;
+}
+
+.select:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+
+.active :where(svg) {
+    color: var(--primary-default);
+}
+
+.title,
+.date {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.title {
+    font-size: var(--size-14);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.date {
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+}
+
+.delete {
+    flex-shrink: 0;
+    margin-inline-end: var(--space-4);
+}

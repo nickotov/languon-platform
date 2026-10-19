@@ -1,9 +1,14 @@
 .root {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     position: relative;
+    vertical-align: middle;
 }
 
 .trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: transparent;
     border: 0;
     color: currentColor;
