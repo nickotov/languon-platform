@@ -5,7 +5,7 @@ name: ${DOCUMENT_TEST_COMPOSE_PROJECT:-languon-document-test}
 # the backup bucket or credentials.
 services:
     minio:
-        image: minio/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
+        image: heifeng/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
         command: ['server', '/data', '--console-address', ':9001']
         environment:
             MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:3000,http://localhost:3000,http://127.0.0.1:3333,http://localhost:3333
@@ -19,7 +19,7 @@ services:
         networks: [document-test, document-test-host]
 
     minio-init:
-        image: minio/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3
+        image: heifeng/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3
         depends_on:
             minio:
                 condition: service_started

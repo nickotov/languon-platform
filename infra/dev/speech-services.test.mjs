@@ -34,10 +34,13 @@ test('development speech storage renders private, persistent and bucket-scoped',
     }
     assert.equal(services.minio.ports[0].published, '9000');
     assert.equal(services.minio.ports[1].published, '9001');
-    assert.match(services.minio.image, /^minio\/minio@sha256:[a-f0-9]{64}$/);
+    assert.match(
+        services.minio.image,
+        /^heifeng\/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e$/,
+    );
     assert.match(
         services['minio-init'].image,
-        /^minio\/mc@sha256:[a-f0-9]{64}$/,
+        /^heifeng\/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3$/,
     );
     assert.ok(volumes['speech-minio-data']);
     assert.equal(services.minio.volumes[0].type, 'volume');

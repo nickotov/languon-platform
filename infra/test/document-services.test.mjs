@@ -16,11 +16,11 @@ test('document disposable services remain isolated, pinned, and private', async 
 
     assert.match(
         compose,
-        /minio\/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e/,
+        /heifeng\/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e/,
     );
     assert.match(
         compose,
-        /minio\/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3/,
+        /heifeng\/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3/,
     );
     assert.match(
         compose,

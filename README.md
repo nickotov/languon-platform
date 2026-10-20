@@ -170,7 +170,14 @@ providers use the provider-specific readiness behavior above. Restart
 running `pnpm dev:mastra` does not change the dictionary worker provider.
 
 Standard development pronunciation storage uses the private, versioned MinIO
-bucket initialized by `pnpm dev:infra`. Keep the fixture provider for local work;
+bucket initialized by `pnpm dev:infra`. Development and disposable-test Compose
+files use the public `heifeng/minio` and `heifeng/mc` replicas, pinned to the exact
+original upstream image digests because the original repositories no longer
+allow these pulls. Both ARM64 and AMD64 manifests were verified. Changing the
+registry does not change the MinIO release or stored data. No Docker login or
+`.env` change is needed for these public replicas.
+
+Keep the fixture provider for local work;
 shared playback/generation remain disabled until explicitly configured. See
 [shared pronunciation operations](docs/shared-pronunciation-operations.md) for
 host/container endpoints, scoped credentials, retained-text policy and live
