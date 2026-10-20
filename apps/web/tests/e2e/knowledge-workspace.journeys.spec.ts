@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:04bb63dbf403f96a
+// @user-flow-revision knowledge-workspace sha256:209ef26f5a2bc963
 
 type Share = { locator: string; key: string };
 
@@ -381,11 +381,9 @@ test('an empty workspace recovers edits, names itself from the first tutor quest
     await tutor
         .getByRole('button', { name: 'Response settings', exact: true })
         .click();
-    const settings = page
-        .getByRole('dialog')
-        .filter({
-            has: page.getByRole('radiogroup', { name: 'Mode', exact: true }),
-        });
+    const settings = page.getByRole('dialog').filter({
+        has: page.getByRole('radiogroup', { name: 'Mode', exact: true }),
+    });
     await expect(
         settings.getByRole('radio', { name: 'Auto', exact: true }),
     ).toBeChecked();
@@ -1318,5 +1316,131 @@ test('the workspace switches between mobile document and tutor tabs and uses a t
             ),
         )
         .toBe(true);
+    assertClean();
+});
+
+// @user-flow knowledge-workspace/workspace-markdown-insertion
+test('Markdown replies become rich editable drafts, survive save and sharing, and offer literal fallback', async ({
+    page,
+    browser,
+}, info) => {
+    const assertClean = runtimeErrors(page);
+    const token = await signup(page, info);
+    await createDraft(page);
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    const editor = page.getByRole('textbox', { name: 'Document', exact: true });
+    await tutor
+        .getByLabel('Your question')
+        .fill('Markdown grammar mapping fixture');
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    await tutor
+        .getByRole('button', { name: 'Use in document', exact: true })
+        .click();
+    const review = page.getByRole('region', {
+        name: 'Use tutor reply in document',
+        exact: true,
+    });
+    await review
+        .getByRole('radio', { name: 'Append to end', exact: true })
+        .check();
+    await expect(
+        review.getByRole('heading', {
+            name: 'Времена во французском',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        review.locator('strong').filter({ hasText: /^время$/u }),
+    ).toBeVisible();
+    await expect(review).toContainText('H1 → H2');
+    await capture(page, info, 'markdown-formatted-preview');
+    await review.getByRole('button', { name: 'Append', exact: true }).click();
+    await expect(editor.locator('h2').first()).toHaveText(
+        'Времена во французском',
+    );
+    await expect(editor.locator('strong')).toHaveText('время');
+    await expect(editor.locator('em')).toHaveText('вид');
+    await expect(editor.locator('li')).toHaveCount(2);
+    await expect(editor.locator('table')).toHaveCount(1);
+    await expect(editor).not.toContainText('**');
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(editor).toHaveText('');
+    await page.getByRole('button', { name: 'Redo', exact: true }).click();
+    await waitForRecovery(page);
+    await page.reload();
+    await expect(editor.locator('strong')).toHaveText('время');
+    await page.getByLabel('Title').fill('French Markdown grammar');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.getByRole('button', { name: 'Save', exact: true }),
+    ).toBeDisabled();
+    await page.reload();
+    await expect(editor.locator('table')).toHaveCount(1);
+    await openSharing(page);
+    await page
+        .getByRole('button', { name: 'Enable sharing', exact: true })
+        .click();
+    await expect(
+        page.getByRole('button', { name: 'Shared', exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+    const noteId = page.url().split('/').at(-1)!;
+    const share = await api<Share>(page, token, `/knowledge/${noteId}/share`);
+    const context = await browser.newContext();
+    try {
+        const reader = await context.newPage();
+        const readerClean = runtimeErrors(reader);
+        await reader.goto(
+            `${webOrigin}/shared/knowledge/${share.locator}#${share.key}`,
+        );
+        await expect(
+            reader.getByRole('heading', {
+                name: 'Времена во французском',
+                exact: true,
+            }),
+        ).toBeVisible();
+        await expect(
+            reader.locator('strong').filter({ hasText: /^время$/u }),
+        ).toBeVisible();
+        await expect(reader.locator('table')).toHaveCount(1);
+        readerClean();
+    } finally {
+        await context.close();
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    await tutor
+        .getByLabel('Your question')
+        .fill('Unsupported Markdown grammar fixture');
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect(
+        tutor.locator('code').filter({ hasText: 'Je parle français.' }),
+    ).toBeVisible();
+    await expect(
+        tutor.getByRole('button', { name: 'Use in document', exact: true }),
+    ).toHaveCount(2);
+    await tutor
+        .getByRole('button', { name: 'Use in document', exact: true })
+        .last()
+        .click();
+    await review
+        .getByRole('radio', { name: 'Append to end', exact: true })
+        .check();
+    await expect(review).toContainText('Formatted insertion is unavailable');
+    await expect(
+        review.getByRole('button', { name: 'Append', exact: true }),
+    ).toBeDisabled();
+    await review
+        .getByRole('checkbox', { name: 'Insert as plain text', exact: true })
+        .check();
+    await capture(page, info, 'markdown-mobile-literal-fallback');
+    await review.getByRole('button', { name: 'Append', exact: true }).click();
+    await expect(editor).toContainText('```text');
+    await expect(editor.locator('h2').first()).toHaveText(
+        'Времена во французском',
+    );
     assertClean();
 });

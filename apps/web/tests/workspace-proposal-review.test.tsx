@@ -278,3 +278,228 @@ it('keeps inline intent while a persisted target is being restored asynchronousl
     );
     expect(accept).not.toHaveBeenCalled();
 });
+
+it('previews supported Markdown as document nodes and explains heading mapping', async () => {
+    const user = userEvent.setup();
+    const accept = vi.fn(async () => 'applied' as const);
+    render(
+        <WorkspaceProposal
+            content={
+                '# French tenses\n\n**Present** and *past*\n\n- First\n- Second'
+            }
+            turnId='formatted'
+            onAccept={accept}
+        />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Use in document' }));
+    const review = screen.getByRole('region', {
+        name: 'Use tutor reply in document',
+    });
+    expect(
+        within(review).getByRole('heading', {
+            level: 2,
+            name: 'French tenses',
+        }),
+    ).toBeVisible();
+    expect(within(review).getByText('Present').tagName).toBe('STRONG');
+    expect(within(review).getByText('past').tagName).toBe('EM');
+    expect(within(review).getAllByRole('listitem')).toHaveLength(2);
+    expect(
+        within(review).getByText(/Heading levels are adapted/),
+    ).toBeVisible();
+    expect(review.querySelector('p p, p h2, p ul, ins p')).toBeNull();
+    await user.click(
+        within(review).getByRole('button', { name: 'Append', exact: true }),
+    );
+    expect(accept).toHaveBeenCalledWith(
+        expect.any(String),
+        'append',
+        'formatted',
+        undefined,
+        undefined,
+        'markdown',
+    );
+});
+
+it('rejects unsupported formatting until the user explicitly chooses plain text', async () => {
+    const user = userEvent.setup();
+    const accept = vi.fn(async () => 'applied' as const);
+    const content = '```js\nconst example = true;\n```';
+    render(
+        <WorkspaceProposal
+            content={content}
+            turnId='fallback'
+            onAccept={accept}
+        />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Use in document' }));
+    const review = screen.getByRole('region', {
+        name: 'Use tutor reply in document',
+    });
+    const append = within(review).getByRole('button', {
+        name: 'Append',
+        exact: true,
+    });
+    expect(append).toBeDisabled();
+    expect(
+        within(review).getByText(/Formatted insertion is unavailable/),
+    ).toBeVisible();
+    await user.click(
+        within(review).getByRole('checkbox', { name: 'Insert as plain text' }),
+    );
+    expect(append).toBeEnabled();
+    expect(within(review).getByText('```js')).toBeVisible();
+    await user.click(append);
+    expect(accept).toHaveBeenCalledWith(
+        content,
+        'append',
+        'fallback',
+        undefined,
+        undefined,
+        'plain-text',
+    );
+});
+
+it('keeps an invalid proposal open with an accurate error rather than claiming it applied', async () => {
+    const user = userEvent.setup();
+    const accept = vi.fn(async () => 'invalid' as const);
+    render(
+        <WorkspaceProposal
+            content='**Proposed wording**'
+            turnId='invalid'
+            onAccept={accept}
+        />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Use in document' }));
+    const review = screen.getByRole('region', {
+        name: 'Use tutor reply in document',
+    });
+    await user.click(
+        within(review).getByRole('button', { name: 'Append', exact: true }),
+    );
+    expect(review).toBeVisible();
+    expect(within(review).getByRole('status')).toHaveTextContent(
+        'The document would exceed its limits',
+    );
+    expect(
+        screen.queryByText('Added to working draft. You can undo this edit.'),
+    ).toBeNull();
+});
+
+it('routes unsupported inline content to full review without offering unguarded acceptance', async () => {
+    const user = userEvent.setup();
+    const accept = vi.fn(async () => 'applied' as const);
+    const context = {
+        ...workspace(vi.fn(async () => 'target')),
+        inlineProposalRootId: 'invalid-inline-root',
+        proposalRootId: 'invalid-review-root',
+        getProposalPosition: () => ({ top: 100, left: 0, width: 600 }),
+    };
+    render(
+        <>
+            <div id='invalid-inline-root' />
+            <div id='invalid-review-root' />
+            <WorkspaceProposal
+                content='![image](https://example.com/a.png)'
+                anchor={anchor}
+                targetId='target'
+                turnId='inline-fallback'
+                onAccept={accept}
+                workspace={context}
+                rootId='invalid-review-root'
+            />
+        </>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Show in text' }));
+    const review = screen.getByRole('region', {
+        name: 'Use tutor reply in document',
+    });
+    expect(review.parentElement?.id).toBe('invalid-review-root');
+    expect(
+        within(review).getByRole('checkbox', { name: 'Insert as plain text' }),
+    ).toBeVisible();
+    expect(
+        within(review).getByRole('button', { name: 'Replace', exact: true }),
+    ).toBeDisabled();
+    expect(accept).not.toHaveBeenCalled();
+});
+
+it('renders unsafe links literally with an explicit error and no active anchor', async () => {
+    const user = userEvent.setup();
+    render(
+        <WorkspaceProposal
+            content='[Open](javascript:alert(1))'
+            turnId='unsafe'
+            onAccept={vi.fn(async () => 'applied' as const)}
+        />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Use in document' }));
+    const review = screen.getByRole('region', {
+        name: 'Use tutor reply in document',
+    });
+    expect(
+        within(review).getByText(/unsupported or unsafe link/),
+    ).toBeVisible();
+    expect(within(review).queryByRole('link')).toBeNull();
+    expect(
+        within(review).getByRole('button', { name: 'Append', exact: true }),
+    ).toBeDisabled();
+});
+
+it('uses rich document rendering for inline suggestions without nesting paragraphs', async () => {
+    const user = userEvent.setup();
+    const context = {
+        ...workspace(vi.fn(async () => 'target')),
+        inlineProposalRootId: 'rich-inline-root',
+        getProposalPosition: () => ({ top: 100, left: 0, width: 600 }),
+    };
+    render(
+        <>
+            <div id='rich-inline-root' />
+            <WorkspaceProposal
+                content='**New wording**'
+                turnId='rich-inline'
+                anchor={anchor}
+                targetId='target'
+                workspace={context}
+                onAccept={vi.fn(async () => 'applied' as const)}
+            />
+        </>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Show in text' }));
+    const review = screen.getByRole('region', {
+        name: 'Use tutor reply in document',
+    });
+    expect(review.parentElement?.id).toBe('rich-inline-root');
+    expect(within(review).getByText('New wording').tagName).toBe('STRONG');
+    expect(review.querySelector('p p, ins p')).toBeNull();
+});
+
+it('previews GFM tables and discloses alignment and link-title normalization', async () => {
+    const user = userEvent.setup();
+    const content =
+        '| Tense | Example |\n| :--- | ---: |\n| Present | [Example](https://example.com "More information") |';
+    render(
+        <WorkspaceProposal
+            content={content}
+            turnId='table'
+            onAccept={vi.fn(async () => 'applied' as const)}
+        />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Use in document' }));
+    const review = screen.getByRole('region', {
+        name: 'Use tutor reply in document',
+    });
+    expect(within(review).getByRole('table')).toBeVisible();
+    expect(
+        within(review).getByRole('link', { name: 'Example' }),
+    ).toHaveAttribute('href', 'https://example.com');
+    expect(
+        within(review).getByText(
+            /Table alignment and link tooltips are adapted/,
+        ),
+    ).toBeVisible();
+    expect(
+        within(review).getByRole('button', { name: 'Append', exact: true }),
+    ).toBeEnabled();
+});

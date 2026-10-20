@@ -61,7 +61,10 @@ export function ConversationMessages({
               turnId: string | null,
               anchor?: ConversationEditorTarget,
               trackedTargetId?: string,
-          ) => Promise<'applied' | 'changed' | 'missing' | undefined>)
+              format?: 'markdown' | 'plain-text',
+          ) => Promise<
+              'applied' | 'changed' | 'missing' | 'invalid' | undefined
+          >)
         | undefined;
 }) {
     const { locale } = useI18n();

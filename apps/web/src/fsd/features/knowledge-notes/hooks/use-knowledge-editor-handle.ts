@@ -1,5 +1,7 @@
 import { useImperativeHandle, type ForwardedRef, type RefObject } from 'react';
 import type { Editor } from '@tiptap/react';
+import type { Transaction } from '@tiptap/pm/state';
+import { closeHistory } from '@tiptap/pm/history';
 import { type KnowledgeEditorTarget } from '../lib/proposal-target';
 import {
     editorPlainOffset,
@@ -8,6 +10,11 @@ import {
     restoreEditorPositions,
 } from '../lib/editor-target-anchor';
 import { inlineProposalPosition } from '../lib/inline-proposal-position';
+import {
+    parseProposalMarkdown,
+    proposalPlainTextDocument,
+} from '../lib/proposal-markdown';
+import { prepareProposalDocument } from '../lib/insert-proposal-document';
 import type { KnowledgeEditorHandle } from '../ui/knowledge-editor/knowledge-editor';
 
 export function useKnowledgeEditorHandle(
@@ -89,7 +96,7 @@ export function useKnowledgeEditorHandle(
                 });
                 return targetId;
             },
-            applyProposal(text, action, targetId) {
+            applyProposal(text, action, targetId, format = 'markdown') {
                 if (!editor || disabled) return 'missing';
                 let from = editor.state.doc.content.size;
                 let to = from;
@@ -117,18 +124,26 @@ export function useKnowledgeEditorHandle(
                     from = target.from;
                     to = action === 'replace' ? target.to : target.from;
                 }
-                const content = text.split('\n').map((line) => ({
-                    type: 'paragraph',
-                    ...(line
-                        ? { content: [{ type: 'text', text: line }] }
-                        : {}),
-                }));
-                const applied = editor
-                    .chain()
-                    .focus()
-                    .insertContentAt({ from, to }, content)
-                    .run();
-                if (!applied) return 'missing';
+                let transaction: Transaction | null;
+                try {
+                    const document =
+                        format === 'plain-text'
+                            ? proposalPlainTextDocument(text)
+                            : parseProposalMarkdown(text).document;
+                    transaction = prepareProposalDocument(
+                        editor,
+                        document,
+                        { from, to },
+                        action === 'append',
+                    );
+                } catch {
+                    return 'invalid';
+                }
+                if (!transaction) return 'invalid';
+                editor.view.dispatch(closeHistory(transaction));
+                // Isolate later typing from this one accepted, undoable edit.
+                editor.view.dispatch(closeHistory(editor.state.tr));
+                editor.view.focus();
                 if (targetId) targets.current.delete(targetId);
                 return 'applied';
             },

@@ -11,7 +11,7 @@ export function WorkspaceInlineProposal({
     workspace,
     targetId,
     original,
-    content,
+    formattedContent,
     pending,
     onAccept,
     onClose,
@@ -21,7 +21,7 @@ export function WorkspaceInlineProposal({
     workspace: WorkspaceAssistantProps;
     targetId?: string | undefined;
     original: string;
-    content: string;
+    formattedContent: ReactNode;
     pending: boolean;
     onAccept(): void;
     onClose(): void;
@@ -67,12 +67,12 @@ export function WorkspaceInlineProposal({
             <p className={styles.inlineCaption}>
                 {copy.inlineFrom} · {copy.replace}
             </p>
-            <p className={styles.inlineDiff}>
+            <div className={styles.inlineDiff}>
                 <span className={styles.screenReaderOnly}>
                     {copy.whenAsked}: {original}. {copy.proposed}:{' '}
                 </span>
-                <ins>{content}</ins>
-            </p>
+                {formattedContent}
+            </div>
             <div className={styles.inlineActions}>
                 <button
                     type='button'

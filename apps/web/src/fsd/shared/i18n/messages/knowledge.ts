@@ -1,4 +1,7 @@
 export const knowledgeEn = {
+    'knowledge.proposalPlainText': 'Insert as plain text',
+    'knowledge.proposalInvalid':
+        'The reply could not be inserted. Check its formatting and document limits; your document has not changed.',
     'knowledge.properties': 'Document properties',
     'knowledge.addProperties': 'Properties',
     'knowledge.languages': 'Languages',
@@ -239,6 +242,9 @@ export const knowledgeEn = {
 } as const;
 
 export const knowledgeRu = {
+    'knowledge.proposalPlainText': 'Вставить как обычный текст',
+    'knowledge.proposalInvalid':
+        'Не удалось вставить ответ. Проверьте форматирование и ограничения документа; документ не изменён.',
     'knowledge.properties': 'Свойства документа',
     'knowledge.addProperties': 'Свойства',
     'knowledge.languages': 'Языки',
@@ -476,6 +482,9 @@ export const knowledgeRu = {
 } as const;
 
 export const knowledgeEs = {
+    'knowledge.proposalPlainText': 'Insertar como texto sin formato',
+    'knowledge.proposalInvalid':
+        'No se pudo insertar la respuesta. Revisa el formato y los límites del documento; el documento no ha cambiado.',
     'knowledge.properties': 'Propiedades del documento',
     'knowledge.addProperties': 'Propiedades',
     'knowledge.languages': 'Idiomas',
@@ -718,6 +727,9 @@ export const knowledgeEs = {
 } as const;
 
 export const knowledgeFr = {
+    'knowledge.proposalPlainText': 'Insérer en texte brut',
+    'knowledge.proposalInvalid':
+        'La réponse n’a pas pu être insérée. Vérifiez le format et les limites du document ; le document n’a pas changé.',
     'knowledge.properties': 'Propriétés du document',
     'knowledge.addProperties': 'Propriétés',
     'knowledge.languages': 'Langues',

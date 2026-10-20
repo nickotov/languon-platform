@@ -315,6 +315,7 @@ export function useAssistantPanel(
         turnId: string | null,
         anchor?: ConversationEditorTarget,
         trackedTargetId?: string,
+        format?: 'markdown' | 'plain-text',
     ) {
         let targetId =
             trackedTargetId ??
@@ -328,6 +329,7 @@ export function useAssistantPanel(
                 action,
                 undefined,
                 anchor,
+                format,
             );
             return 'missing';
         }
@@ -335,6 +337,7 @@ export function useAssistantPanel(
             text,
             action,
             targetId,
+            format,
         );
         if (result === 'changed' || result === 'missing')
             props.workspace?.onConflictProposal?.(
@@ -342,6 +345,7 @@ export function useAssistantPanel(
                 action,
                 targetId,
                 anchor,
+                format,
             );
         return result;
     }

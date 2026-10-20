@@ -1,0 +1,33 @@
+{
+    "base": "297aa42",
+    "files": {
+        "apps/backend/tests/support/contextual-assistant-fixture.ts": "50fd1a280a2b11d86fe33704fd2c012722f996509a392f28eec13b2d7086732b",
+        "apps/web/package.json": "1af8025106e41e3be67da301ad4dfb75e9ed9262422afe67f6c5efc76ffa2ea0",
+        "apps/web/src/fsd/features/knowledge-notes/hooks/use-knowledge-editor-handle.ts": "360c1985db905455cf14617772f641e7805563d8d2cfa0a7f26135a2c47a18e3",
+        "apps/web/src/fsd/features/knowledge-notes/index.ts": "5458952fff4664cc36062f897650d34b20a4e9b45bd01f728586d73e9847fec0",
+        "apps/web/src/fsd/features/knowledge-notes/lib/insert-proposal-document.ts": "80017cb61f90f7ff0c65d6fe6e92b8bae5ebacbe567476bef017cd84d65ffb48",
+        "apps/web/src/fsd/features/knowledge-notes/lib/proposal-markdown.ts": "cc52d0f336b740c90eeaa822379803d6eec6fc33046715439b4bda511b05cd26",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx": "418cd398ae0326edff8f42c02d5073f38a894c1bbaf77aee867e074b83dc0f7b",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.module.css": "8adbc9470e4682746bca07d1c2ff056f3305d9c566267b918c5882b2888d2145",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.tsx": "160322b69038afbac31096a7edb250f4d45fc756e41e3b110bebdcf9aeaa928f",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-copy.ts": "0734ae1515e7e5c8001775dd8637ceec36e826b817f5684e425935246ed68d30",
+        "apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-page-actions.ts": "d004d0dab15ae55fa14f5edccd549b64b10545211b00fca20c87fc0dc7a7014f",
+        "apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/workspace-conflict-dialogs.tsx": "778c0c7b53899e30fd67d793a75f46057cbfb37e86a4aae4ec1d1260a059c0d8",
+        "apps/web/src/fsd/shared/i18n/messages/knowledge.ts": "199d143825c7fb50ed0d51475386bb0ee822e21dd10961c61a7d6c52303d546d",
+        "apps/web/src/fsd/widgets/contextual-assistant/hooks/use-assistant-panel.ts": "835b714dba5f1a9312d4beee15cf6c3f57c4711972042e9a48b11908d9a42967",
+        "apps/web/src/fsd/widgets/contextual-assistant/types.ts": "6a3e5dfc883f1057104875a163b3a53471a83b0f736bb330c4ad0ad20277db39",
+        "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.tsx": "a22317ba4c875eb956226fffcc63e80823a61632e8da0babba499ccf3cc4070a",
+        "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx": "8c2dcffd7ea33bd99a5d5a33d44e13bb96682cbb08172fb1b5bdb34fd01cb66e",
+        "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-inline-proposal.tsx": "e004e1985ed5ccc4a49e191333b136ffd99c5f3f385d31221fc2b0039ebd7429",
+        "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-preview.tsx": "0deb7873ebbe7a2318b1c6e9183159bebd858a7cb27a3fb1fd5f93be496e366c",
+        "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-review.tsx": "87efc9187a994ef24288be9d6a3d5f8ce37067144f0097918de0cff27270fe82",
+        "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal.module.css": "0b82a675ad53c332a2b959ab88b8212720ad05a151bbde89c72ed5e6f929c898",
+        "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal.tsx": "27664cf7d70718def3a3982c928f140018892799a6511e6fe8981247ed49fa5a",
+        "apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts": "a5ce3e3b81dbd803d469835aa2b9037fda234911f80a59e8ad2c323056596c75",
+        "apps/web/tests/knowledge-markdown-insertion.test.tsx": "6bb1a0dc86aeeca219343937950a517b50fe195f8c4e6d3f0bda21e57314e9ea",
+        "apps/web/tests/proposal-markdown.test.ts": "1374a76c428dcd957585e0edb46e5dfb97b831369915ebea3faba7cc3b77b0eb",
+        "apps/web/tests/workspace-proposal-conflict.test.tsx": "1b15ab5b1a4406723fb80f35ddf5c394f1cdade950d74cb691d70291ec645a6c",
+        "apps/web/tests/workspace-proposal-review.test.tsx": "8e14b47a0616efaf032bd2cd25fe8974c6eeaa44ce0ab205299e8852d2cab042",
+        "pnpm-lock.yaml": "53b6c3aae9d767aea3ca28b42427f6d32e7f9a1178e5cb645c413b3e715b5f1e"
+    }
+}

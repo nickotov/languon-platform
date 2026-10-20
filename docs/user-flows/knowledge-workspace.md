@@ -8,6 +8,7 @@ surfaces:
     - api
 source_paths:
     - .agent/features/047-knowledge-workspace/**
+    - .agent/features/049-knowledge-markdown-insertion/**
     - apps/backend/src/modules/knowledge/**
     - apps/backend/src/modules/conversations/**
     - apps/backend/drizzle/**
@@ -30,9 +31,11 @@ e2e_scenarios:
     - workspace-restore-preserves-unsaved-branch
     - workspace-text-reference-limit
     - workspace-proposal-target-review
+    - workspace-markdown-insertion
     - workspace-share-copy-revoke
     - workspace-mobile-tutor-sheet
 related_features:
+    - knowledge-markdown-insertion
     - persistent-tutor-modes
     - contextual-language-assistant-and-knowledge
 ---
@@ -136,6 +139,16 @@ pnpm test:e2e:contextual-assistant
    during generation: the original target stays identified. If target wording
    changed, compare or select a new target before replacing it. Accepting a
    proposal changes the working draft as one undoable edit and does not publish.
+   Markdown replies appear as formatted editable document content in preview and
+   on acceptance: paragraphs, bold/italic/strike, inline code, safe links, lists,
+   quotes and tables. Headings map H1 to H2 and H4–H6 to H3 with a notice; H2/H3
+   remain unchanged. Explicit table alignment and link tooltips normalize to the
+   document defaults with a notice. Code blocks, images, task lists, horizontal
+   rules, embedded HTML, unsafe links or malformed tables block formatted
+   insertion without changing the draft. Select **Insert as plain text** to
+   explicitly retain the original source. Oversized input or a result exceeding
+   document limits stays unaccepted and requires shortening. A single formatted
+   phrase fits inline; surrounding learner text remains intact.
 5. Enter a title and body and select **Save**. The same note ID now has a saved
    version; the Knowledge library no longer marks it Draft. Edit again and
    open **Document actions** and select **Save a copy**. **Share**, **Revision history** and
@@ -194,6 +207,11 @@ pnpm test:e2e:contextual-assistant
   during review, be undone, and require comparison when the target itself
   changes before acceptance. A native pointer/keyboard selection and scrolling
   keep the selection toolbar within the visible document area before sending.
+- `workspace-markdown-insertion` proves formatted preview, heading mapping,
+  rich insertion, one-step undo/redo, private recovery, explicit Save/reload and
+  shared rich rendering across the real app. On mobile it proves unsupported
+  Markdown cannot be inserted as rich text and requires explicit plain-text
+  fallback without changing prior formatted content.
 - `workspace-share-copy-revoke` proves saved-only shared reading, independent
   recipient copy and immediate link revocation.
 - `workspace-mobile-tutor-sheet` retains its established scenario ID and proves
@@ -214,6 +232,8 @@ model budget/compaction have focused contract, integration and editor tests.
 - If working recovery fails, show an error and retry without discarding local
   edits. A stale tab creates a conflict branch rather than overwriting work.
 - A changed proposal target requires comparison or a new target before Replace.
+- Unsupported Markdown or unsafe links require explicit plain-text insertion;
+  document limits are checked before acceptance and never truncate content.
 - Invalid or revoked share credentials reveal no note or workspace content.
 - Oversized copied references, editor context or complete model input fail with
   an actionable limit message; no paragraph is silently omitted.

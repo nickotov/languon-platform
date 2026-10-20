@@ -132,9 +132,14 @@ function deterministicModel(
             const ordinal = dispatched++;
             const draft = /draft|save|revise/iu.test(question) && ordinal === 0;
             const progressive = /progressively/iu.test(question);
-            const text = fail
-                ? 'Partial explanation before interruption.'
-                : 'A river bank is the land beside a river. This explanation uses your saved learning context.';
+            let text =
+                'A river bank is the land beside a river. This explanation uses your saved learning context.';
+            if (fail) text = 'Partial explanation before interruption.';
+            else if (question.includes('Markdown grammar mapping fixture'))
+                text =
+                    '# Времена во французском\n\nФранцузская система: **время** и *вид*.\n\n## Настоящее\n\n- Je parle\n- Tu parles\n\n| Temps | Exemple |\n| --- | --- |\n| Présent | Je parle |';
+            else if (question.includes('Unsupported Markdown grammar fixture'))
+                text = '```text\nJe parle français.\n```';
             return {
                 stream: new ReadableStream({
                     async start(controller) {

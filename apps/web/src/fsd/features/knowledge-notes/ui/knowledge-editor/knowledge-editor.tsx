@@ -34,7 +34,8 @@ export type KnowledgeEditorHandle = {
         text: string,
         action: 'insert' | 'append' | 'replace',
         targetId?: string,
-    ): 'applied' | 'changed' | 'missing';
+        format?: 'markdown' | 'plain-text',
+    ): 'applied' | 'changed' | 'missing' | 'invalid';
     getProposalPreview(targetId?: string): {
         original: string;
         current: string;

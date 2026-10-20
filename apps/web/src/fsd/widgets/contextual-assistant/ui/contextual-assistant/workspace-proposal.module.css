@@ -178,7 +178,7 @@
     overflow-wrap: anywhere;
 }
 
-.preview ins {
+.addedContent {
     padding: var(--space-6) var(--space-10);
     border-inline-start: var(--size-2) solid var(--success-default);
     background: var(--success-subtle);
@@ -481,4 +481,13 @@
     .inlineActions button {
         min-height: var(--size-44);
     }
+}
+
+.plainTextChoice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin-top: var(--space-12);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
 }

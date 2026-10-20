@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import type {
@@ -14,12 +15,12 @@ function clip(text: string, maximum: number, fromEnd = false) {
 
 export function WorkspaceProposalPreviewContent({
     action,
-    content,
+    formattedContent,
     preview,
     original,
 }: {
     action: WorkspaceProposalAction;
-    content: string;
+    formattedContent: ReactNode;
     preview: WorkspaceProposalPreview | null;
     original?: string | undefined;
 }) {
@@ -43,7 +44,7 @@ export function WorkspaceProposalPreviewContent({
                     </div>
                     <div>
                         <dt>{copy.proposed}</dt>
-                        <dd dir='auto'>{content}</dd>
+                        <dd dir='auto'>{formattedContent}</dd>
                     </div>
                 </dl>
             </div>
@@ -64,7 +65,7 @@ export function WorkspaceProposalPreviewContent({
                 <p>{clip(preview.before, 70, true)}</p>
             )}
             {action === 'replace' && removed && <del>{removed}</del>}
-            <ins>{content}</ins>
+            <div className={styles.addedContent}>{formattedContent}</div>
             {action === 'insert' && preview?.after && (
                 <p>{clip(preview.after, 50)}</p>
             )}

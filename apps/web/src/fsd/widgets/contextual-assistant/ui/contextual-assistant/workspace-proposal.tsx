@@ -1,5 +1,6 @@
 import {
     useEffect,
+    useMemo,
     useRef,
     useState,
     type KeyboardEvent,
@@ -7,6 +8,13 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import type { ConversationEditorTarget } from '@languon/contracts';
+import {
+    KnowledgeProposalContent,
+    knowledgeProposalLabels,
+    parseProposalMarkdown,
+    proposalPlainTextDocument,
+    ProposalMarkdownError,
+} from '@/fsd/features/knowledge-notes';
 import { useI18n } from '@/fsd/shared/i18n';
 import type {
     WorkspaceAssistantProps,
@@ -47,10 +55,12 @@ export function WorkspaceProposal({
         turnId: string | null,
         anchor?: ConversationEditorTarget,
         trackedTargetId?: string,
-    ): Promise<'applied' | 'changed' | 'missing' | undefined>;
+        format?: 'markdown' | 'plain-text',
+    ): Promise<'applied' | 'changed' | 'missing' | 'invalid' | undefined>;
 }) {
     const { locale } = useI18n();
     const copy = workspaceProposalLabels[locale];
+    const formatCopy = knowledgeProposalLabels[locale];
     const [localOpen, setLocalOpen] = useState(false);
     const [inline, setInline] = useState(false);
     const open = onReviewingProposal
@@ -64,6 +74,38 @@ export function WorkspaceProposal({
     const [action, setAction] = useState<WorkspaceProposalAction>('append');
     const [status, setStatus] = useState('');
     const [pending, setPending] = useState(false);
+    const [plainText, setPlainText] = useState(false);
+    // Parsing is shared by full and inline previews and retained across target updates.
+    const formatted = useMemo(() => {
+        try {
+            const result = plainText
+                ? {
+                      document: proposalPlainTextDocument(content),
+                      headingMapped: false,
+                  }
+                : parseProposalMarkdown(content);
+            return { ...result, error: null };
+        } catch (error) {
+            return {
+                document: null,
+                headingMapped: false,
+                error:
+                    error instanceof ProposalMarkdownError
+                        ? error.code
+                        : 'invalid',
+            };
+        }
+    }, [content, plainText]);
+    const formattedContent = (
+        <KnowledgeProposalContent
+            content={content}
+            format={plainText ? 'plain-text' : 'markdown'}
+        />
+    );
+    function choosePlainText(event: ChangeEvent<HTMLInputElement>) {
+        setPlainText(event.target.checked);
+        setStatus('');
+    }
     const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
     const [restoredTargetId, setRestoredTargetId] = useState<string>();
     const [restoring, setRestoring] = useState(false);
@@ -101,7 +143,7 @@ export function WorkspaceProposal({
         beginReview();
     }
     function reviewInline() {
-        setInline(true);
+        setInline(!formatted.error && !plainText);
         beginReview();
     }
     function beginReview() {
@@ -155,7 +197,7 @@ export function WorkspaceProposal({
         }
     }
     async function accept() {
-        if (pending || restoring) return;
+        if (pending || restoring || formatted.error) return;
         if (
             (action !== 'append' && !targetId && !anchor) ||
             (action === 'replace' && anchor && anchor.from === anchor.to)
@@ -171,10 +213,14 @@ export function WorkspaceProposal({
                 turnId,
                 anchor,
                 previewTargetId,
+                plainText ? 'plain-text' : 'markdown',
             );
             if (result === 'applied') {
                 setStatus(copy.applied);
                 setOpen(false);
+            } else if (result === 'invalid') {
+                setStatus(formatCopy.invalidInsertion);
+                setInline(false);
             } else if (result === 'changed' || result === 'missing') {
                 setStatus(copy.conflict);
             }
@@ -196,7 +242,10 @@ export function WorkspaceProposal({
         <WorkspaceProposalReview
             reviewRef={reviewRef}
             action={action}
-            content={content}
+            formattedContent={formattedContent}
+            plainText={plainText}
+            onPlainText={choosePlainText}
+            formatInvalid={Boolean(formatted.error)}
             preview={preview}
             original={anchor?.originalText}
             status={status}
@@ -219,6 +268,8 @@ export function WorkspaceProposal({
     if (
         open &&
         inline &&
+        !formatted.error &&
+        !plainText &&
         workspace &&
         preview &&
         !preview.changed &&
@@ -230,7 +281,7 @@ export function WorkspaceProposal({
                 workspace={workspace}
                 targetId={previewTargetId}
                 original={preview.original}
-                content={content}
+                formattedContent={formattedContent}
                 pending={pending || restoring}
                 onAccept={handleAccept}
                 onClose={cancel}

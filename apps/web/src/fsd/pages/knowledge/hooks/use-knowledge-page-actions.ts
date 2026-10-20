@@ -18,6 +18,7 @@ export type ProposalConflict = {
     targetId?: string;
     anchor?: ConversationEditorTarget;
     currentDocument?: string;
+    format?: 'markdown' | 'plain-text';
 };
 
 export function useKnowledgePageActions(noteId: string) {
@@ -65,9 +66,11 @@ export function useKnowledgePageActions(noteId: string) {
         text: string,
         action: 'insert' | 'append' | 'replace',
         targetId?: string,
+        format?: 'markdown' | 'plain-text',
     ) {
         return (
-            editor.current?.applyProposal(text, action, targetId) ?? 'missing'
+            editor.current?.applyProposal(text, action, targetId, format) ??
+            'missing'
         );
     }
 
@@ -76,10 +79,12 @@ export function useKnowledgePageActions(noteId: string) {
         action: 'insert' | 'append' | 'replace',
         targetId?: string,
         anchor?: ConversationEditorTarget,
+        format?: 'markdown' | 'plain-text',
     ) {
         setProposalConflict({
             text,
             action,
+            ...(format ? { format } : {}),
             ...(targetId ? { targetId } : {}),
             ...(anchor ? { anchor } : {}),
             ...(editor.current
@@ -184,8 +189,12 @@ export function useKnowledgePageActions(noteId: string) {
         setProposalConflict(null);
     }
 
-    function beginRetarget() {
-        setRetargetProposal(proposalConflict);
+    function beginRetarget(format?: 'markdown' | 'plain-text') {
+        setRetargetProposal(
+            proposalConflict
+                ? { ...proposalConflict, ...(format ? { format } : {}) }
+                : null,
+        );
         setProposalConflict(null);
     }
 
@@ -200,6 +209,7 @@ export function useKnowledgePageActions(noteId: string) {
             retargetProposal.text,
             retargetProposal.action,
             targetId,
+            retargetProposal.format,
         );
         if (outcome === 'applied') {
             setRetargetProposal(null);

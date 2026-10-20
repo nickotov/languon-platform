@@ -66,12 +66,14 @@ export type WorkspaceAssistantProps = {
         text: string,
         action: WorkspaceProposalAction,
         targetId?: string,
-    ): 'applied' | 'changed' | 'missing';
+        format?: 'markdown' | 'plain-text',
+    ): 'applied' | 'changed' | 'missing' | 'invalid';
     onConflictProposal?(
         text: string,
         action: WorkspaceProposalAction,
         targetId?: string,
         anchor?: ConversationEditorTarget,
+        format?: 'markdown' | 'plain-text',
     ): void;
     editorLimit?: number | undefined;
     referenceLimit?: number | undefined;

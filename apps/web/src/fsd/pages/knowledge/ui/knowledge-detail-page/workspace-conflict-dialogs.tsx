@@ -1,11 +1,14 @@
-import { useState, type RefObject } from 'react';
+import { useState, type ChangeEvent, type RefObject } from 'react';
 import type {
     KnowledgeWorkingBranch,
     KnowledgeWorkspace,
 } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Dialog, DialogActions } from '@/fsd/shared/ui';
-import type { KnowledgeEditorHandle } from '@/fsd/features/knowledge-notes';
+import { Button, Dialog, DialogActions, InlineAlert } from '@/fsd/shared/ui';
+import {
+    KnowledgeProposalContent,
+    type KnowledgeEditorHandle,
+} from '@/fsd/features/knowledge-notes';
 import type { ProposalConflict } from '../../hooks/use-knowledge-page-actions';
 import { NotePreview } from './note-preview';
 import styles from './knowledge-detail-page.module.css';
@@ -31,10 +34,21 @@ export function WorkspaceConflictDialogs({
     proposal: ProposalConflict | null;
     editor: RefObject<KnowledgeEditorHandle | null>;
     onCloseProposal(): void;
-    onNewTarget(): void;
+    onNewTarget(format?: 'markdown' | 'plain-text'): void;
 }) {
     const { t, formatDate } = useI18n();
     const [confirmResolve, setConfirmResolve] = useState(false);
+    const [formatChoice, setFormatChoice] = useState<{
+        proposal: ProposalConflict;
+        format: 'markdown' | 'plain-text';
+    } | null>(null);
+    const [failedProposal, setFailedProposal] =
+        useState<ProposalConflict | null>(null);
+    const format =
+        formatChoice?.proposal === proposal
+            ? formatChoice.format
+            : (proposal?.format ?? 'markdown');
+    const failed = Boolean(proposal && failedProposal === proposal);
     const liveComparison = editor.current?.getTargetComparison(
         proposal?.targetId,
     );
@@ -60,8 +74,25 @@ export function WorkspaceConflictDialogs({
     }
     function appendInstead() {
         if (!proposal) return;
-        editor.current?.applyProposal(proposal.text, 'append');
-        onCloseProposal();
+        const result = editor.current?.applyProposal(
+            proposal.text,
+            'append',
+            undefined,
+            format,
+        );
+        if (result === 'applied') onCloseProposal();
+        else setFailedProposal(proposal);
+    }
+    function changeFormat(event: ChangeEvent<HTMLInputElement>) {
+        if (!proposal) return;
+        setFormatChoice({
+            proposal,
+            format: event.target.checked ? 'plain-text' : 'markdown',
+        });
+        setFailedProposal(null);
+    }
+    function newTarget() {
+        onNewTarget(format);
     }
     return (
         <>
@@ -118,7 +149,7 @@ export function WorkspaceConflictDialogs({
                 size='large'
                 footer={
                     <DialogActions>
-                        <Button variant='secondary' onClick={onNewTarget}>
+                        <Button variant='secondary' onClick={newTarget}>
                             {t('knowledge.chooseNewTarget')}
                         </Button>
                         <Button onClick={appendInstead}>
@@ -145,7 +176,25 @@ export function WorkspaceConflictDialogs({
                     </div>
                 )}
                 <h3>{t('knowledge.proposedText')}</h3>
-                <pre className={styles.proposedText}>{proposal?.text}</pre>
+                {proposal && (
+                    <KnowledgeProposalContent
+                        content={proposal.text}
+                        format={format}
+                    />
+                )}
+                <label>
+                    <input
+                        type='checkbox'
+                        checked={format === 'plain-text'}
+                        onChange={changeFormat}
+                    />
+                    {t('knowledge.proposalPlainText')}
+                </label>
+                {failed && (
+                    <InlineAlert tone='error'>
+                        {t('knowledge.proposalInvalid')}
+                    </InlineAlert>
+                )}
             </Dialog>
         </>
     );

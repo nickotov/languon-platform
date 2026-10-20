@@ -1,5 +1,6 @@
-import type { ChangeEvent, KeyboardEvent, Ref } from 'react';
+import type { ChangeEvent, KeyboardEvent, ReactNode, Ref } from 'react';
 import { Crosshair, X } from 'lucide-react';
+import { knowledgeProposalLabels } from '@/fsd/features/knowledge-notes';
 import { useI18n } from '@/fsd/shared/i18n';
 import type {
     WorkspaceProposalAction,
@@ -14,7 +15,10 @@ import styles from './workspace-proposal.module.css';
 export function WorkspaceProposalReview({
     reviewRef,
     action,
-    content,
+    formattedContent,
+    plainText,
+    onPlainText,
+    formatInvalid,
     preview,
     original,
     status,
@@ -32,7 +36,10 @@ export function WorkspaceProposalReview({
 }: {
     reviewRef: Ref<HTMLElement>;
     action: WorkspaceProposalAction;
-    content: string;
+    formattedContent: ReactNode;
+    plainText: boolean;
+    onPlainText(event: ChangeEvent<HTMLInputElement>): void;
+    formatInvalid: boolean;
     preview: WorkspaceProposalPreview | null;
     original: string | undefined;
     status: string;
@@ -50,6 +57,7 @@ export function WorkspaceProposalReview({
 }) {
     const { locale } = useI18n();
     const copy = workspaceProposalLabels[locale];
+    const formatCopy = knowledgeProposalLabels[locale];
     const disabled = pending || restoring;
     return (
         <section
@@ -95,9 +103,18 @@ export function WorkspaceProposalReview({
                     preview={preview}
                     original={original}
                 />
+                <label className={styles.plainTextChoice}>
+                    <input
+                        type='checkbox'
+                        checked={plainText}
+                        onChange={onPlainText}
+                        disabled={disabled}
+                    />
+                    {formatCopy.plainText}
+                </label>
                 <WorkspaceProposalPreviewContent
                     action={action}
-                    content={content}
+                    formattedContent={formattedContent}
                     preview={preview}
                     original={original}
                 />
@@ -121,7 +138,7 @@ export function WorkspaceProposalReview({
                     type='button'
                     onClick={onAccept}
                     className={styles.accept}
-                    disabled={disabled}
+                    disabled={disabled || formatInvalid}
                 >
                     {acceptLabel}
                 </button>
