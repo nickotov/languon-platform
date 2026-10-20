@@ -13,6 +13,9 @@
     min-width: 0;
     padding-inline: var(--space-12);
     border-bottom: 1px solid var(--border-default);
+    margin: 0 0 8px;
+    border-radius: 4px 4px 16px 16px;
+    box-shadow: 0 0 10px 2px rgba(0, 0, 0, .05);
 }
 
 .back,

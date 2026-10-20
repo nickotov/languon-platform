@@ -57,6 +57,9 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+
+    margin-inline: 8px;
+    box-shadow: 0 0 8px 2px rgba(0, 0, 0, .15);
 }
 @media (min-width: 1024px) {
     .layout:where(
@@ -128,6 +131,8 @@
     }
     .layout:where([data-variant='workspace']) .content {
         width: 100%;
+        margin-inline: 0;
+        box-shadow: none;
     }
     .layout:where([data-variant='workspace'][data-mobile-tab='tutor'])
         .content {
