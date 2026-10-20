@@ -1,0 +1,88 @@
+{
+    "captured_on": "2026-10-20",
+    "base_revision": "d44ebca",
+    "tool": "Playwright 1.62.1 / Chromium",
+    "runtime": "real Next.js web3336 + composed Hono/Mastra fixture4006 + exclusive PostgreSQL55444 and Redis56444/1",
+    "test_file": "apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts",
+    "images": [
+        {
+            "file": "workspace-document-actions-desktop.png",
+            "run_id": "workspace-design-saved-artifact-20261020",
+            "viewport": [1440, 1000],
+            "theme": "light",
+            "sha256": "0a7d85a1580f73300dc884d124a86300f6ea19575500d7644f49f66758d5c4b3"
+        },
+        {
+            "file": "workspace-empty-desktop.png",
+            "run_id": "workspace-design-saved-artifact-20261020",
+            "viewport": [1440, 1000],
+            "theme": "light",
+            "sha256": "268cf3bc4e1d2670e271cb548fe45f03f99c23a4402f94ce3402f5a1892a6396"
+        },
+        {
+            "file": "workspace-mobile-editor.png",
+            "run_id": "workspace-design-final-mobile-20261020",
+            "viewport": [390, 844],
+            "theme": "light",
+            "sha256": "39d750036f6e2f408fb11c99681f4e1f4b21c8b63302e965c82b8fca0645661c"
+        },
+        {
+            "file": "workspace-mobile-full-sheet.png",
+            "run_id": "workspace-design-final-mobile-20261020",
+            "viewport": [390, 844],
+            "theme": "light",
+            "sha256": "0079fba0af0b539cd43e379b65cbdc9d3f5518068a163984747313aba3a481be"
+        },
+        {
+            "file": "workspace-proposal-desktop.png",
+            "run_id": "workspace-design-final-target-tablet-20261020",
+            "viewport": [1440, 1000],
+            "theme": "light",
+            "sha256": "73f08b836ee9e732a280215745db7119b7484b31f9df55f131bf4f103a54ac48"
+        },
+        {
+            "file": "workspace-saved-desktop-dark.png",
+            "run_id": "workspace-design-saved-artifact-20261020",
+            "viewport": [1440, 1000],
+            "theme": "dark",
+            "sha256": "c5dee9af09c02fe467d20c6986dec4b5afa2604849fcddbad39a3e5513917abd"
+        },
+        {
+            "file": "workspace-saved-desktop.png",
+            "run_id": "workspace-design-saved-artifact-20261020",
+            "viewport": [1440, 1000],
+            "theme": "light",
+            "sha256": "759ef1659fb9e8b9d8514c00d41b606dd17b0836912ce6209f529dad0866c28c"
+        },
+        {
+            "file": "workspace-share-popover-desktop.png",
+            "run_id": "workspace-design-saved-artifact-20261020",
+            "viewport": [1440, 1000],
+            "theme": "light",
+            "sha256": "0edb5cff8794aca2cb456f1c34b1419753dafee51299f031b862603277c8acab"
+        },
+        {
+            "file": "workspace-tablet-document-review.png",
+            "run_id": "workspace-design-final-mobile-20261020",
+            "viewport": [820, 1000],
+            "theme": "light",
+            "sha256": "95a61701759fd23e37101e76863add9e2b4caea2f1c5f3d6d21e04a0b1b10db9"
+        },
+        {
+            "file": "workspace-tablet-sheet.png",
+            "run_id": "workspace-design-final-mobile-20261020",
+            "viewport": [820, 1000],
+            "theme": "light",
+            "sha256": "10997011d1784cad0bb3dfc71d5ddc3dc8ca7daa8385e7b77c21552a25fc92f4"
+        }
+    ],
+    "synthetic_data_differences": [
+        "Runtime uses deterministic river-bank questions and short learner-written wording instead of the supplied Spanish study example.",
+        "Desktop title and body lengths differ from the source; proposal scenario uses an original target, a neighboring paragraph and an unrelated tail edit to prove target preservation.",
+        "Runtime navigation and authentication reflect the real Languon shell with synthetic example.test accounts.",
+        "Real draft recovery, explicit Save, usage accounting, copied references and private conversations remain active; prototype demo controls are absent.",
+        "Default saved screenshot is settled for publication and reply; its model preference selector is still resolving independently.",
+        "Mobile empty-editor canvas becomes edge-to-edge per the responsive source; tablet captures prove full-width sheet then folded sheet with editor proposal review."
+    ],
+    "evidence_note": "Use these retained files after optimized builds remove .next outputs. Hashes identify exact bytes; successful scenario execution and targeted remediation records are in the active improvement record."
+}

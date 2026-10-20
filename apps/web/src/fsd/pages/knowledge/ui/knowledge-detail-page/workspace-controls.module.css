@@ -1,0 +1,418 @@
+/* The document topbar, status and sharing controls share this presentation. */
+.header {
+    flex: none;
+    min-width: 0;
+    background: var(--background-surface);
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    height: var(--workspace-header-height, var(--size-48));
+    min-width: 0;
+    padding-inline: var(--space-12);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.back,
+.menuTrigger,
+.shareTrigger,
+.openTutor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-6);
+    height: var(--size-32);
+    min-height: var(--size-32);
+    padding: 0 var(--space-8);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: var(--radius-8);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.menuTrigger,
+.shareTrigger {
+    width: var(--size-32);
+    padding: 0;
+}
+
+.divider {
+    width: var(--size-1);
+    height: var(--size-20);
+    background: var(--border-default);
+    flex-shrink: 0;
+    margin-inline: var(--space-4);
+}
+
+.identity {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: var(--space-6);
+    opacity: 0;
+    transition: opacity 200ms ease;
+}
+
+.identity:where([data-visible='true']) {
+    opacity: 1;
+}
+
+.breadcrumbSeparator {
+    color: var(--text-disabled);
+}
+
+.breadcrumb {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+
+.actions,
+.sharingAnchor,
+.saveWrapper,
+.statusCluster {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: var(--space-4);
+}
+
+.save {
+    min-height: var(--size-32);
+    height: var(--size-32);
+    padding-inline: var(--space-14);
+}
+
+.recovery,
+.retrySave {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-width: 0;
+    border: 0;
+    border-radius: var(--radius-6);
+    height: var(--size-32);
+    padding: 0 var(--space-8);
+    color: var(--text-secondary);
+    background: transparent;
+    font-size: var(--size-12);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.statusCluster {
+    min-width: 0;
+    gap: var(--space-2);
+}
+
+.statusLabel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recovery:where([data-state='saved']) > svg:first-child {
+    color: var(--success-default);
+}
+
+.statusDot {
+    width: var(--size-8);
+    height: var(--size-8);
+    border-radius: var(--radius-full);
+    background: var(--text-tertiary);
+    flex: none;
+}
+
+.recovery:where([data-state='dirty']) .statusDot {
+    background: var(--warning-default);
+}
+
+.recoveryWarning {
+    color: var(--warning-default);
+    flex: none;
+}
+
+.recovery:where([data-state='error']),
+.retrySave {
+    color: var(--danger-default);
+}
+
+.recovery:hover,
+.retrySave:hover,
+.shareTrigger:hover,
+.openTutor:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+.recovery:focus-visible,
+.retrySave:focus-visible,
+.shareTrigger:focus-visible,
+.openTutor:focus-visible,
+.layoutOption:focus-visible,
+.mobileTabs button:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.recoveryPanel {
+    width: var(--size-320);
+    padding: var(--space-14);
+}
+
+.sharePanel {
+    width: var(--size-320);
+    padding: var(--space-16);
+}
+
+.recoveryPanel strong,
+.sharePanel strong {
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+
+.recoveryPanel p,
+.sharePanel p {
+    margin: var(--space-8) 0;
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.recoveryPanel p.error {
+    color: var(--danger-default);
+}
+
+.sharedIcon,
+.openTutor > svg {
+    color: var(--primary-default);
+}
+
+.shareLink {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-subtle);
+    padding-inline-start: var(--space-10);
+    margin-top: var(--space-12);
+}
+
+.shareUrl {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--size-12);
+}
+
+.copyButton {
+    height: var(--size-36);
+    min-height: var(--size-36);
+    border-inline-start: 1px solid var(--border-default);
+    border-radius: 0;
+    padding-inline: var(--space-10);
+    font-size: var(--size-12);
+}
+
+.sharePanel p.warning {
+    color: var(--warning-default);
+}
+
+.shareFooter {
+    border-top: 1px solid var(--border-default);
+    margin-top: var(--space-12);
+    padding-top: var(--space-12);
+}
+
+.confirmActions {
+    display: flex;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+}
+
+.disable {
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    cursor: pointer;
+    padding: 0;
+}
+
+.disable:hover {
+    color: var(--danger-default);
+    text-decoration: underline;
+}
+
+.layoutSwitch {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-8);
+    background: var(--background-subtle);
+}
+
+.layoutOption {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: var(--size-32);
+    height: var(--size-28);
+    border: 0;
+    border-radius: var(--radius-6);
+    color: var(--text-tertiary);
+    background: transparent;
+    cursor: pointer;
+}
+
+.layoutOption:hover {
+    color: var(--text-primary);
+}
+
+.layoutOption:where([aria-checked='true']) {
+    color: var(--text-primary);
+    background: var(--background-surface);
+    box-shadow: var(--elevation-sm);
+}
+
+.layoutOption:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.mobileTabs {
+    display: none;
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@container knowledge-document (max-width: 800px) {
+    .openTutor {
+        display: none;
+    }
+
+    .statusCluster {
+        max-width: var(--size-160);
+        flex-shrink: 1;
+    }
+}
+
+@container knowledge-document (max-width: 640px) {
+    .backLabel {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .header {
+        border-bottom: 1px solid var(--border-default);
+    }
+
+    .topbar {
+        border-bottom: 0;
+        padding-inline: var(--space-6);
+        gap: var(--space-4);
+    }
+
+    .back,
+    .menuTrigger,
+    .shareTrigger {
+        width: var(--size-44);
+        height: var(--size-44);
+        min-height: var(--size-44);
+        padding: 0;
+    }
+
+    .backLabel,
+    .divider,
+    .identity,
+    .layoutSwitch,
+    .openTutor {
+        display: none;
+    }
+
+    .shareTrigger {
+        display: none;
+    }
+
+    .statusCluster {
+        flex: 1;
+        max-width: none;
+    }
+
+    .recovery,
+    .retrySave {
+        height: var(--size-44);
+    }
+
+    .save {
+        min-height: var(--size-44);
+        height: var(--size-44);
+        padding-inline: var(--space-12);
+    }
+
+    .mobileTabs {
+        display: flex;
+        gap: var(--space-4);
+        padding: 0 var(--space-8) var(--space-6);
+    }
+
+    .mobileTabs button {
+        display: inline-flex;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-6);
+        height: var(--size-44);
+        border: 0;
+        border-radius: var(--radius-8);
+        color: var(--text-secondary);
+        background: transparent;
+        font-size: var(--size-14);
+        cursor: pointer;
+    }
+
+    .mobileTabs button:where([aria-selected='true']) {
+        background: var(--background-subtle);
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .mobileTabs button > svg {
+        color: var(--primary-default);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinning {
+        animation: none;
+    }
+
+    .identity {
+        transition: none;
+    }
+}

@@ -17,6 +17,7 @@ import {
 } from './tutor-header';
 import type { TutorContextProps } from './tutor-context';
 import { tutorShellCopy } from './shell-copy';
+import { WorkspaceTutorContext } from './workspace-tutor-context';
 import styles from './tutor-shell.module.css';
 export type TutorShellProps = TutorContextProps &
     TutorHeaderActions & {
@@ -27,6 +28,9 @@ export type TutorShellProps = TutorContextProps &
         interrupted: boolean;
         unread: boolean;
         children: ReactNode;
+        workspace?: boolean;
+        editorCharacters?: number | undefined;
+        editorLimit?: number | undefined;
     };
 export function TutorShell({
     folded,
@@ -36,6 +40,9 @@ export function TutorShell({
     interrupted,
     unread,
     children,
+    workspace = false,
+    editorCharacters,
+    editorLimit,
     ...props
 }: TutorShellProps) {
     const { locale } = useI18n();
@@ -57,13 +64,24 @@ export function TutorShell({
         if (focus instanceof HTMLElement && panelRef.current?.contains(focus))
             lastFocus.current = focus;
         onFold();
-        requestAnimationFrame(() =>
-            launcherRef.current?.focus({ preventScroll: true }),
-        );
+        requestAnimationFrame(() => {
+            if (workspace && placement && !placement.detached) {
+                const content = document.getElementById(placement.contentId);
+                const control = window.matchMedia('(max-width: 767px)').matches
+                    ? '[data-workspace-tab="document"]'
+                    : '[data-workspace-layout-mode="focus"]';
+                content
+                    ?.querySelector<HTMLElement>(control)
+                    ?.focus({ preventScroll: true });
+                return;
+            }
+            launcherRef.current?.focus({ preventScroll: true });
+        });
     }
     const placement = useCompanionLayout();
     const hasSlot = Boolean(placement && !placement.detached);
-    const layout = useTutorLayout(fold, hasSlot);
+    const layout = useTutorLayout(fold, hasSlot, workspace);
+    const embedded = workspace && hasSlot && layout.mobile;
     function expand() {
         onExpand();
         requestAnimationFrame(() => {
@@ -87,10 +105,10 @@ export function TutorShell({
     if (layout.mobile) panelWidth = undefined;
     else if (layout.attached) panelWidth = '100%';
     const geometry: CSSProperties = {
-        height: layout.attached ? '100%' : layout.height,
+        height: layout.attached || embedded ? '100%' : layout.height,
         width: panelWidth,
         transform: layout.dragX ? `translateX(${layout.dragX}px)` : undefined,
-        bottom: layout.mobile ? layout.keyboardInset : undefined,
+        bottom: layout.mobile && !embedded ? layout.keyboardInset : undefined,
     };
     let status = copy.title;
     if (active) status = copy.responding;
@@ -99,12 +117,16 @@ export function TutorShell({
     const ready = unread && !active && !interrupted;
     const expandLabel = `${copy.open} — ${status}`;
     const sheetLabel = layout.sheetFull ? copy.partial : copy.expand;
+    const showLauncher = folded && !(workspace && hasSlot);
     return (
         <div
             ref={layout.areaRef}
             className={styles.area}
             data-dock={layout.dock}
             data-attached={layout.attached && !folded}
+            data-workspace={workspace}
+            data-mobile={layout.mobile}
+            data-embedded={embedded}
         >
             <section
                 ref={panelRef}
@@ -120,7 +142,7 @@ export function TutorShell({
                 onPointerUp={layout.onPointerUp}
                 onPointerCancel={layout.onPointerCancel}
             >
-                {layout.mobile && (
+                {layout.mobile && !embedded && (
                     <button
                         type='button'
                         className={styles.sheetHandle}
@@ -138,7 +160,16 @@ export function TutorShell({
                     actions={props}
                     onFold={fold}
                     onPointerDown={layout.onHeaderPointerDown}
+                    workspace={workspace}
+                    embedded={embedded}
                 />
+                {workspace && (
+                    <WorkspaceTutorContext
+                        title={props.contextLabel}
+                        characters={editorCharacters}
+                        limit={editorLimit}
+                    />
+                )}
                 {children}
                 {!layout.mobile && !layout.attached && (
                     <div
@@ -158,7 +189,7 @@ export function TutorShell({
                     </div>
                 )}
             </section>
-            {folded && (
+            {showLauncher && (
                 <Tooltip content={copy.launcher} placement='left'>
                     <button
                         ref={launcherRef}

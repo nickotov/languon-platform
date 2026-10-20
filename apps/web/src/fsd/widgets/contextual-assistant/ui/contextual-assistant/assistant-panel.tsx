@@ -1,7 +1,7 @@
 'use client';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { LoadingState } from '@/fsd/shared/ui';
+import { LoadingState, useCompanionLayout } from '@/fsd/shared/ui';
 import { usePublishedKnowledge } from '../../hooks/use-published-knowledge';
 import { ConversationDeleteConfirmation } from './conversation-delete-confirmation';
 import { useAssistantPanel } from '../../hooks/use-assistant-panel';
@@ -13,6 +13,7 @@ import { PublishedNoteNotice } from './published-note-notice';
 import { KnowledgeDraftCard } from './knowledge-draft-card';
 import { ConversationModel } from './conversation-model';
 import { ConversationErrorNotice } from './conversation-error-notice';
+import { tutorModeCopy } from './tutor-mode-copy';
 import { ConversationHistory } from './conversation-history';
 import { AssistantDialogs } from './assistant-dialogs';
 import { TutorShell } from '../tutor-shell/tutor-shell';
@@ -31,8 +32,14 @@ export function AssistantPanel(
 ) {
     const { locale, formatDate } = useI18n();
     const copy = conversationCopy(locale);
+    const placement = useCompanionLayout();
     const panel = useAssistantPanel(props);
     const { chat, detail } = panel;
+    const modeCopy = tutorModeCopy(locale);
+    const actionRetryLabel =
+        chat.actionFailure?.kind === 'preferences'
+            ? modeCopy.retrySettings
+            : undefined;
     const { published, publishedNote } = usePublishedKnowledge(
         chat.id,
         panel.setEditingDraft,
@@ -59,12 +66,22 @@ export function AssistantPanel(
     const busy = panel.busy || panel.deletingPending;
     const deletePending = Boolean(panel.deleting) && !panel.history;
     const historyDeleting = panel.history ? panel.deleting : null;
-    const canSelect = Boolean(props.selectionRootId);
+    const canSelect = Boolean(props.selectionRootId) && !props.workspace;
     const selectionAction = canSelect ? props.onSelectFromPage : undefined;
+    function foldMobileForReview() {
+        if (props.workspace && placement && !placement.detached) {
+            if (placement.mobile) placement.setMobileTab('document');
+            else if (placement.overlay) placement.setMode('focus');
+            return;
+        }
+        if (window.matchMedia('(max-width: 1023px)').matches) props.onFold();
+    }
+
     const modelControl = (
         <ConversationModel
             actorId={props.actorId}
             request={panel.requestWithSession}
+            embedded={Boolean(props.workspace)}
         />
     );
     const contextPicker =
@@ -91,6 +108,9 @@ export function AssistantPanel(
         ) : undefined;
     return (
         <TutorShell
+            workspace={Boolean(props.workspace)}
+            editorCharacters={props.workspace?.editorCharacters}
+            editorLimit={props.workspace?.editorLimit}
             folded={props.folded}
             onFold={props.onFold}
             onExpand={props.onExpand}
@@ -171,6 +191,9 @@ export function AssistantPanel(
                             }
                             workspaceTargets={panel.proposalTargets}
                             onSuggest={chat.setQuestion}
+                            proposalRootId={props.workspace?.proposalRootId}
+                            onReviewProposal={foldMobileForReview}
+                            workspace={props.workspace}
                         >
                             {detail.drafts.map((draft) => (
                                 <KnowledgeDraftCard
@@ -201,8 +224,29 @@ export function AssistantPanel(
                         </div>
                     )}
                     {chat.actionError && (
-                        <div className={styles.notice}>
-                            <ConversationErrorNotice onRetry={panel.reload} />
+                        <div
+                            className={styles.notice}
+                            data-tutor-action-error={chat.actionFailure?.kind}
+                        >
+                            <ConversationErrorNotice
+                                error={chat.actionFailure?.error}
+                                onRetry={chat.retryAction}
+                                retryLabel={actionRetryLabel}
+                                disabled={busy}
+                            />
+                        </div>
+                    )}
+                    {panel.defaultsFailure && (
+                        <div
+                            className={styles.notice}
+                            data-tutor-defaults-error
+                        >
+                            <ConversationErrorNotice
+                                error={panel.defaultsFailure.error}
+                                onRetry={panel.retryDefaults}
+                                retryLabel={modeCopy.retrySettings}
+                                disabled={busy}
+                            />
                         </div>
                     )}
                     {chat.stream.reconnecting && (
@@ -223,8 +267,9 @@ export function AssistantPanel(
                                 attachments={chat.attachments}
                                 onRemove={panel.removeAttachment}
                                 preferences={preferences}
-                                onPreferences={chat.updatePreferences}
+                                onPreferences={panel.updatePreferences}
                                 onDefaults={panel.defaults}
+                                defaultsSaved={panel.defaultsSaved}
                                 onContext={panel.context}
                                 onSend={panel.send}
                                 onStop={chat.stop}
@@ -238,6 +283,14 @@ export function AssistantPanel(
                                 contextOpen={panel.picker}
                                 onSelectFromPage={selectionAction}
                                 workspace={Boolean(props.workspace)}
+                                editorCharacters={
+                                    props.workspace?.editorCharacters
+                                }
+                                editorLimit={props.workspace?.editorLimit}
+                                workspacePassage={panel.workspacePassage}
+                                onRemoveWorkspacePassage={
+                                    panel.removeWorkspacePassage
+                                }
                             />
                         )}
                     </div>

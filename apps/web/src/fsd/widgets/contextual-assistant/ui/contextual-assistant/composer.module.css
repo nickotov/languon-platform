@@ -6,6 +6,90 @@
     padding: var(--space-12) var(--space-12) var(--space-8);
 }
 
+.workspaceAttachment {
+    display: flex;
+    align-items: start;
+    gap: var(--space-4);
+    min-width: 0;
+    padding: var(--space-8) var(--space-4) var(--space-8) var(--space-10);
+    border: var(--size-1) solid var(--primary-200);
+    border-radius: var(--radius-12);
+    background: var(--primary-subtle);
+}
+
+.workspacePassageBody {
+    flex: 1;
+    min-width: 0;
+    color: var(--primary-default);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.composer > .workspaceAttachment {
+    margin-bottom: var(--space-8);
+}
+
+.workspaceAttachment .attachmentToggle {
+    display: grid;
+    grid-template-columns: var(--size-16) minmax(0, 1fr);
+    min-width: 0;
+    flex: 1;
+    text-align: start;
+    color: var(--primary-default);
+    font-size: var(--size-12);
+}
+
+.workspaceExcerpt {
+    grid-column: 2;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-weight: 400;
+    line-height: var(--size-20);
+    color: var(--text-primary);
+}
+
+.workspaceHint {
+    margin: var(--space-6) var(--space-4) 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    line-height: var(--size-16);
+}
+
+.documentCount {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+@media (max-width: 767px) {
+    .composer:where([data-workspace='true']) .send {
+        height: var(--size-44);
+        width: var(--size-44);
+    }
+
+    .documentCount {
+        display: none;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .composer:where([data-workspace='true'])
+        :where(.send, .contextButton, .stop, .removeAttachment) {
+        min-height: var(--size-44);
+    }
+
+    .composer:where([data-workspace='true']) :where(.send, .removeAttachment) {
+        min-width: var(--size-44);
+    }
+}
+
 .inputFrame {
     border: 1px solid var(--border-default);
     border-radius: var(--radius-16);
@@ -504,4 +588,321 @@
 .result:where([aria-pressed='true']) {
     opacity: 1;
     color: var(--primary-default);
+}
+
+.composer:where([data-workspace='true']) {
+    padding: var(--space-8) var(--space-12) var(--space-12);
+    border-top: 0;
+}
+
+.composer:where([data-workspace='true']) .inputFrame {
+    border-color: var(--border-strong);
+}
+
+.documentChip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: var(--size-24);
+    margin: var(--space-10) var(--space-10) 0;
+    padding-inline: var(--space-6);
+    background: var(--background-subtle);
+    border-radius: var(--radius-6);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.composer:where([data-workspace='true']) .input {
+    padding-block-start: var(--space-8);
+    min-height: var(--size-36);
+    max-height: var(--size-160);
+}
+
+.composer:where([data-workspace='true']) .contextButton {
+    justify-content: center;
+    width: var(--size-32);
+    padding: 0;
+}
+
+.composer:where([data-workspace='true']) .inputActions {
+    justify-content: start;
+    gap: var(--space-2);
+}
+
+.actionSpacer {
+    flex: 1;
+}
+
+.composer:where([data-workspace='true']) .stop {
+    width: var(--size-32);
+    height: var(--size-32);
+    padding: 0;
+}
+
+.composer:where([data-workspace='true']) .attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+}
+
+.composer:where([data-workspace='true']) .attachmentTray {
+    margin: var(--space-6) var(--space-10) 0;
+}
+
+.composer:where([data-workspace='true']) .workspaceAttachment {
+    align-items: center;
+    gap: 0;
+    max-width: 100%;
+    padding: 0;
+    border: var(--size-1) dashed var(--border-strong);
+    border-radius: var(--radius-6);
+    background: transparent;
+}
+
+.composer:where([data-workspace='true'])
+    .workspaceAttachment
+    .attachmentToggle {
+    display: inline-flex;
+    height: var(--size-28);
+    padding: 0 var(--space-4) 0 var(--space-6);
+    color: var(--text-primary);
+}
+
+.composer:where([data-workspace='true']) .attachmentToggle .workspaceExcerpt {
+    display: none;
+}
+
+.composer:where([data-workspace='true']) .removeAttachment {
+    height: var(--size-28);
+    width: var(--size-24);
+}
+
+.settingsTrigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-32);
+    height: var(--size-32);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-8);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.settingsTrigger:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+.workspaceSettings {
+    width: var(--size-320);
+    padding: 0;
+    overflow: auto;
+    color: var(--text-primary);
+    font-size: var(--size-12);
+}
+
+.settingsHeader,
+.settingsFooter {
+    padding: var(--space-10) var(--space-14);
+}
+
+.settingsHeader {
+    border-bottom: var(--size-1) solid var(--border-default);
+}
+
+.settingsHeader strong {
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+
+.settingsHeader p {
+    margin: var(--space-2) 0 0;
+    color: var(--text-tertiary);
+}
+
+.settingsBody {
+    display: grid;
+    gap: var(--space-12);
+    max-height: min(var(--size-384), 50dvh);
+    overflow-y: auto;
+    padding: var(--space-12) var(--space-14);
+}
+
+.languageSetting {
+    display: grid;
+    gap: var(--space-4);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.languageSetting select {
+    min-height: var(--size-32);
+    width: 100%;
+    padding-inline: var(--space-8);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-6);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.settingsGroup {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.settingsGroup legend {
+    margin-bottom: var(--space-4);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.settingsGroup > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.settingsGroup button {
+    height: var(--size-28);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-6);
+    background: transparent;
+    padding-inline: var(--space-8);
+    color: var(--text-secondary);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.settingsGroup button:where([aria-pressed='true']) {
+    border-color: var(--primary-default);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+
+.settingsGroup button:hover {
+    background: var(--background-subtle);
+}
+
+.settingsFooter {
+    border-top: var(--size-1) solid var(--border-default);
+}
+
+.settingsFooter button {
+    min-height: var(--size-28);
+    padding-inline: var(--space-6);
+    border: 0;
+    border-radius: var(--radius-6);
+    background: transparent;
+    color: var(--primary-default);
+    font: inherit;
+    cursor: pointer;
+}
+
+.settingsFooter p {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    color: var(--success-default);
+    margin: var(--space-4) 0 0;
+}
+
+.workspaceSettings :where(button, select):focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.workspaceSettings :where(button):where(:disabled, [aria-disabled='true']) {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.modelSettings {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.limitError {
+    margin: 0 0 var(--space-8);
+    border-radius: var(--radius-8);
+    padding: var(--space-8) var(--space-10);
+    background: var(--danger-subtle);
+    color: var(--danger-default);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+}
+
+@media (max-width: 1023px) {
+    .settingsTrigger,
+    .settingsGroup button,
+    .settingsFooter button,
+    .languageSetting select,
+    .composer:where([data-workspace='true'])
+        :where(.contextButton, .send, .stop, .removeAttachment) {
+        min-height: var(--size-44);
+    }
+
+    .settingsTrigger,
+    .composer:where([data-workspace='true'])
+        :where(.contextButton, .send, .stop, .removeAttachment) {
+        min-width: var(--size-44);
+    }
+}
+
+.contextSetting strong {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.contextSetting p {
+    margin: var(--space-4) 0;
+    color: var(--text-primary);
+}
+
+.contextSetting small {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.composer:where([data-workspace='true'])
+    .workspaceAttachment:where([data-passage='true']) {
+    margin: var(--space-6) var(--space-10) 0;
+    padding-inline-start: var(--space-6);
+    gap: var(--space-4);
+    border: 0;
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+
+.composer:where([data-workspace='true']) .workspacePassageBody {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-width: 0;
+}
+
+.workspacePassageBody > span:first-child {
+    flex-shrink: 0;
+}
+
+.composer:where([data-workspace='true'])
+    .workspacePassageBody
+    .workspaceExcerpt {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.referenceCount {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
 }

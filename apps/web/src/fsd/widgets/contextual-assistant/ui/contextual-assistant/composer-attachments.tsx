@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookA, Quote, X } from 'lucide-react';
+import { BookA, Clipboard, Quote, X } from 'lucide-react';
 import type { CopiedAttachment } from '@languon/contracts';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -34,6 +34,7 @@ export function ComposerAttachments({
                         expanded={expanded === attachment.id}
                         onToggle={toggle}
                         onRemove={onRemove}
+                        workspace={workspace}
                     />
                 ))}
             </ul>
@@ -49,15 +50,27 @@ function AttachmentChip({
     expanded,
     onToggle,
     onRemove,
+    workspace,
 }: {
     attachment: CopiedAttachment;
     expanded: boolean;
     onToggle(id: string): void;
     onRemove(id: string): void;
+    workspace: boolean;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
-    const Icon = attachment.kind === 'dictionary-card' ? BookA : Quote;
+    let Icon = workspace ? Clipboard : Quote;
+    if (attachment.kind === 'dictionary-card') Icon = BookA;
+    const characterCount =
+        attachment.kind === 'dictionary-card'
+            ? null
+            : Array.from(
+                  attachment.content +
+                      (attachment.kind === 'text-reference'
+                          ? (attachment.translation ?? '')
+                          : ''),
+              ).length;
     const removeLabel = `${copy.remove}: ${attachment.label}`;
     function toggle() {
         onToggle(attachment.id);
@@ -66,7 +79,11 @@ function AttachmentChip({
         onRemove(attachment.id);
     }
     return (
-        <li className={styles.attachmentChip}>
+        <li
+            className={
+                workspace ? styles.workspaceAttachment : styles.attachmentChip
+            }
+        >
             <button
                 type='button'
                 onClick={toggle}
@@ -75,7 +92,17 @@ function AttachmentChip({
             >
                 <Icon size={14} aria-hidden='true' />
                 <span dir='auto'>{attachment.label}</span>
+                {workspace && attachment.kind !== 'dictionary-card' && (
+                    <span className={styles.workspaceExcerpt} dir='auto'>
+                        {attachment.content}
+                    </span>
+                )}
             </button>
+            {workspace && characterCount !== null && (
+                <small className={styles.referenceCount}>
+                    {characterCount.toLocaleString(locale)}
+                </small>
+            )}
             <button
                 type='button'
                 onClick={remove}

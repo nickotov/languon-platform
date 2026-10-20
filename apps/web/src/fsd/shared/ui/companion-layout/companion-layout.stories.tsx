@@ -24,11 +24,19 @@ function Companion() {
     function toggleDetached() {
         if (layout) layout.setDetached(!layout.detached);
     }
+    function toggleHalfWidth() {
+        if (layout) layout.setHalfWidth(!layout.halfWidth);
+    }
     if (!layout?.expanded) return null;
     return (
-        <Button onClick={toggleDetached}>
-            {layout.detached ? 'Reattach companion' : 'Detach companion'}
-        </Button>
+        <>
+            <Button onClick={toggleDetached}>
+                {layout.detached ? 'Reattach companion' : 'Detach companion'}
+            </Button>
+            <Button onClick={toggleHalfWidth}>
+                {layout.halfWidth ? 'Use default width' : 'Use half width'}
+            </Button>
+        </>
     );
 }
 function Example() {
@@ -39,3 +47,15 @@ function Example() {
     );
 }
 export const Slots: Story = { render: Example };
+
+export const ResizableWorkspace: Story = {
+    render: () => (
+        <CompanionLayout variant='workspace' companion={<Companion />}>
+            <Source />
+            <p>
+                Drag the companion boundary, or focus it and use arrow keys,
+                Home and End. Escape cancels an active drag.
+            </p>
+        </CompanionLayout>
+    ),
+};

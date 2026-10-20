@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -34,16 +34,45 @@ function SourceAssistant(
     );
     const placement = useCompanionLayout();
     const setExpanded = placement?.setExpanded;
+    const setMode = placement?.setMode;
+    const setMobileTab = placement?.setMobileTab;
+    const isWorkspace = Boolean(props.workspace);
+    const effectiveFolded =
+        isWorkspace && placement && !placement.detached
+            ? placement.mode === 'focus'
+            : folded;
+    const handledRequest = useRef<string | null>(null);
+    const request = props.workspace?.request;
     useEffect(() => {
-        setExpanded?.(started && !folded);
+        if (!request || handledRequest.current === request.id) return;
+        handledRequest.current = request.id;
+        setStarted(true);
+        setFolded(false);
+        setSelecting(false);
+        if (isWorkspace) {
+            setMode?.('split');
+            setMobileTab?.('tutor');
+        }
+    }, [request, isWorkspace, setMode, setMobileTab]);
+    useEffect(() => {
+        setExpanded?.(started && !effectiveFolded);
         return () => setExpanded?.(false);
-    }, [started, folded, setExpanded]);
+    }, [started, effectiveFolded, setExpanded]);
     function expand() {
         setStarted(true);
         setFolded(false);
         setSelecting(false);
+        if (isWorkspace) {
+            setMode?.('split');
+            setMobileTab?.('tutor');
+        }
     }
     function fold() {
+        if (isWorkspace && placement && !placement.detached) {
+            if (window.matchMedia('(max-width: 767px)').matches)
+                setMobileTab?.('document');
+            else setMode?.('focus');
+        }
         setFolded(true);
     }
     function selectFromPage() {
@@ -66,22 +95,24 @@ function SourceAssistant(
             root.contains(selection.anchorNode) &&
             root.contains(selection.focusNode),
         );
-        if (inSource && selection?.toString().trim())
+        if (!props.workspace && inSource && selection?.toString().trim())
             attach(selection.toString());
         else expand();
     }
     return (
         <>
-            <SourceSelection
-                rootId={props.selectionRootId}
-                selecting={selecting}
-                onAttach={attach}
-            />
+            {!props.workspace && (
+                <SourceSelection
+                    rootId={props.selectionRootId}
+                    selecting={selecting}
+                    onAttach={attach}
+                />
+            )}
             {started ? (
                 <AssistantPanel
                     {...props}
                     selectedPassage={passage}
-                    folded={folded}
+                    folded={effectiveFolded}
                     onFold={fold}
                     onExpand={show}
                     onSelectFromPage={selectFromPage}

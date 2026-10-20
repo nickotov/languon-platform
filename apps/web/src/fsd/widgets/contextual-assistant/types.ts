@@ -26,12 +26,42 @@ export type WorkspaceEditorSnapshot = {
 
 export type WorkspaceProposalAction = 'insert' | 'append' | 'replace';
 
+export type WorkspaceProposalPreview = {
+    original: string;
+    current: string;
+    before: string;
+    after: string;
+    end: string;
+    changed: boolean;
+};
+
 export type WorkspaceAssistantProps = {
-    getSnapshot(): WorkspaceEditorSnapshot;
+    request?:
+        | {
+              id: string;
+              passage?: string;
+              prompt?: string;
+              autoSend?: boolean;
+              targetId?: string;
+          }
+        | undefined;
+    proposalRootId?: string | undefined;
+    inlineProposalRootId?: string | undefined;
+    getProposalPosition?(
+        targetId?: string,
+    ): { top: number; left: number; width: number } | null;
+    editorCharacters?: number | undefined;
+    getProposalPreview?(
+        targetId?: string,
+        anchor?: ConversationEditorTarget,
+    ): WorkspaceProposalPreview | null;
+    onShowTarget?(targetId?: string): void;
+    getSnapshot(targetId?: string | null): WorkspaceEditorSnapshot;
     /** Persist the working draft before creating a turn from the frozen snapshot. */
     beforeSend?(): Promise<void>;
     restoreTarget?(anchor: ConversationEditorTarget): Promise<string | null>;
     onSent?(): void;
+    onBusyChange?(busy: boolean): void;
     onAcceptProposal(
         text: string,
         action: WorkspaceProposalAction,

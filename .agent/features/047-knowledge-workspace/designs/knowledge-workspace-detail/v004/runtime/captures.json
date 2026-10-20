@@ -1,0 +1,211 @@
+{
+  "capturedAt": "2026-10-20T11:29:30.096551+00:00",
+  "designRevision": "v004",
+  "providerVersion": 9,
+  "providerArtifactId": "8e368152-98f3-4835-a922-79272a54cc7a",
+  "browser": "Chromium via maintained guarded Playwright journeys",
+  "sourceHashes": "source-hashes.json",
+  "referenceManifest": "../reference/captures.json",
+  "resultManifest": "results.json",
+  "captures": [
+    {
+      "file": "workspace-chat-layout-desktop.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "cf0965d966754c17735658855a4056fa4778bd89a5d457be81cba7547147f924",
+      "reference": "../reference/desktop-chat-layout-1440.png"
+    },
+    {
+      "file": "workspace-document-actions-desktop.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "4d21a0db5be3689322f83890005e68f05349a4506e9615f768ca8aab7b88cde3"
+    },
+    {
+      "file": "workspace-empty-desktop.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "a14ecc5f112d4a6d0a7451518ff2d3fadc89b9a09f4e9facc564c36bac9821e3",
+      "reference": "../reference/desktop-empty-1440.png"
+    },
+    {
+      "file": "workspace-inline-proposal-desktop.png",
+      "runId": "workspace-v9-final-scoped-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "4aeacd6262d392a6c014e145a882b57f07597584fe41c3b6bacbf773bccaa84b",
+      "reference": "../reference/desktop-inline-proposal-1440.png"
+    },
+    {
+      "file": "workspace-inline-proposal-narrow-desktop.png",
+      "runId": "workspace-v9-final-scoped-20261020",
+      "viewport": [
+        1024,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "e3b7e1aa9ebdb1c6a7023cc413a0e70532d84f2d5e2e4bbfcddbafb89ff924ad"
+    },
+    {
+      "file": "workspace-mobile-document-review.png",
+      "runId": "workspace-v9-final-20261020",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "sha256": "993e673194c0bc96df6a7d0c44d849eb56d01adc2a096a763f46f023f7bb4e15"
+    },
+    {
+      "file": "workspace-mobile-editor.png",
+      "runId": "workspace-v9-final-20261020",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "sha256": "3038e7dc5449dd6769159fae8657e554c05b93d113475a5af55d3f562979b55a",
+      "reference": "../reference/mobile-document-390.png"
+    },
+    {
+      "file": "workspace-mobile-outline-chat.png",
+      "runId": "workspace-v9-final-20261020",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "sha256": "0b9ee7b66d1c5536c4f78654c31fe272df3a905f99bf3a4e51d42b4688773cf2"
+    },
+    {
+      "file": "workspace-mobile-tutor-tab.png",
+      "runId": "workspace-v9-final-20261020",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "sha256": "6df5df79cbb1ffb5ea4e4beff0b44eef01b9919a88c311f2080a04d1eacfaae0",
+      "reference": "../reference/mobile-tutor-390.png"
+    },
+    {
+      "file": "workspace-properties-desktop.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "aec21a727bf2bd3f44429e72829fa5bc9a78dfd75f6f912f6fb059345970a073",
+      "reference": "../reference/desktop-properties-1440.png"
+    },
+    {
+      "file": "workspace-proposal-desktop.png",
+      "runId": "workspace-v9-final-scoped-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "514c40847b94b3d3c19bee3d0e512801aa67cf0b2d21cd859f86e20166118765",
+      "reference": "../reference/desktop-proposal-1440.png"
+    },
+    {
+      "file": "workspace-resized-aligned-headers.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "0e17b9c301ac01bbb978fae9ca4c01436bc8476ae456fc44b7d6e724fbb257aa"
+    },
+    {
+      "file": "workspace-saved-desktop-dark.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "dark",
+      "sha256": "13f50dcd81d128b5f355be4f996a4f69553a1367e3e2599232b0da82278be83d",
+      "reference": "../reference/desktop-dark-1440.png"
+    },
+    {
+      "file": "workspace-saved-desktop.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "7aee82d1133fc7f90413cf9e0bf972138f495ec47cd35e6377481ddc72bc56e5",
+      "reference": "../reference/desktop-default-1440.png"
+    },
+    {
+      "file": "workspace-selection-scrolled-desktop.png",
+      "runId": "workspace-v9-final-scoped-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "03b7ffea5be8ffb821b7ec24ae22b11e28178ca62c100f53acccd0a2144654f6"
+    },
+    {
+      "file": "workspace-settings-desktop.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "af9ac7befbbe2d64a6c09efba5cbfc90eb6a227a2b56f621ac950c1f06ab4bba",
+      "reference": "../reference/desktop-settings-1440.png"
+    },
+    {
+      "file": "workspace-share-popover-desktop.png",
+      "runId": "workspace-v9-durable-captures-20261020",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "c8dbb5b83bf8e92c5d828c3ccf5f45cc79113d9e253a39a52266439e3932cfd4"
+    },
+    {
+      "file": "workspace-tablet-overlay.png",
+      "runId": "workspace-v9-final-20261020",
+      "viewport": [
+        820,
+        1000
+      ],
+      "theme": "light",
+      "sha256": "75b908f8ad40997017f868e618d675cdce04396fe5bbdadfed52d9fb0b8e4eba"
+    }
+  ],
+  "visualComparison": "Inspected reference and actual runtime images for desktop empty/populated/properties/layout, consolidated settings, dark, inline/full proposals, selected text after scroll, mobile tabs and tablet overlay. Open canvas, title/prose, compact toolbar/chips, 48px header rows,400px default chat, segmented layouts, composer and440px inline card follow the selected AI-Native source.",
+  "qualifications": [
+    "Source reference uses Russian sample prose and schematic64px nav rail; runtime uses English deterministic fake content and accepted real240px desktopsidebar/64px mobileheader. Compare inner geometry with actual available app area.",
+    "Twelve inherited source primitives were empty; retained published design-system fallback is qualified in reference/captures.json. Its Button --color-primary fallback gives black in controlled rendering; accepted runtime semantic primary remains purple per parent ADR0029 disposition.",
+    "Runtime retains real reply-language control, full-editor snapshot hint and real model catalog/availability; selection-only context is excluded by explicit user decision. The settings body scrolls to remaining catalog controls.",
+    "Prototype controls, fake successful operations, demo alternative directions and unsafe automatic conflict merging are excluded. Existing private recovery/publication/privacy and explicit acceptance contracts remain real.",
+    "Latest final-settings screenshots were removed by subsequent build before copy; the one-case durable-captures run recreated identical-source desktop states and images were copied before handoff. Passing settings/mode/retry behavior remains evidenced by final-settings log."
+  ],
+  "cleanup": "All task source-renderer browser sessions closed and localhost4414 servers stopped. Guarded E2E app processes stopped; existing disposable PostgreSQL/Redis infrastructure retained. next-env.d.ts restored by runner."
+}

@@ -1,6 +1,11 @@
 /* Numeric suffixes are reference CSS pixels at a 16px root, never utility classes.
  * Preserve exact values; semantic aliases in globals.css describe shared roles. */
 :root {
+    --size-360: 22.5rem; /* Magic Patterns v9 split width at 1280–1439px. */
+    /* Magic Patterns Knowledge workspace companion width. */
+    --size-380: 23.75rem;
+    --size-812: 50.75rem;
+    --size-860: 53.75rem;
     --size-2: 0.125rem;
     --size-4: 0.25rem;
     --size-8: 0.5rem;

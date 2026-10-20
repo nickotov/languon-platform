@@ -20,8 +20,15 @@ import { messagesCopy } from '../../lib/messages-copy';
 import { ConversationErrorNotice } from './conversation-error-notice';
 import { ChatMarkdown } from './chat-markdown';
 import { useStreamingText } from '../../hooks/use-streaming-text';
-import type { WorkspaceProposalAction } from '../../types';
+import type {
+    WorkspaceAssistantProps,
+    WorkspaceProposalAction,
+} from '../../types';
 import { WorkspaceProposal } from './workspace-proposal';
+import {
+    WorkspaceMessageMaterials,
+    WorkspaceMessagePassage,
+} from './workspace-message-materials';
 import styles from './conversation-messages.module.css';
 
 export function TutorMessage({
@@ -36,6 +43,11 @@ export function TutorMessage({
     onAcceptWorkspaceProposal,
     workspaceTargetId,
     workspaceAnchor,
+    proposalRootId,
+    onReviewProposal,
+    workspace,
+    reviewingProposalId,
+    onReviewingProposal,
 }: {
     message: ConversationUIMessage;
     changed: boolean;
@@ -47,12 +59,18 @@ export function TutorMessage({
     onPropose(message?: ConversationUIMessage): void;
     workspaceTargetId?: string | undefined;
     workspaceAnchor?: ConversationEditorTarget | undefined;
+    proposalRootId?: string | undefined;
+    onReviewProposal?: (() => void) | undefined;
+    workspace?: WorkspaceAssistantProps | undefined;
+    reviewingProposalId?: string | null | undefined;
+    onReviewingProposal?: ((id: string | null) => void) | undefined;
     onAcceptWorkspaceProposal?:
         | ((
               text: string,
               action: WorkspaceProposalAction,
               turnId: string | null,
               anchor?: ConversationEditorTarget,
+              trackedTargetId?: string,
           ) => Promise<'applied' | 'changed' | 'missing' | undefined>)
         | undefined;
 }) {
@@ -85,6 +103,11 @@ export function TutorMessage({
             part.type === 'tool-propose_knowledge_note',
     );
     const complete = !isUser && canonical.status === 'complete';
+    const workspaceMaterials = isUser && Boolean(onAcceptWorkspaceProposal);
+    const copiedAttachments = materials.map((material) => material.data);
+    const selectedPassage = workspaceMaterials
+        ? canonical.editorTarget?.originalText
+        : undefined;
     const failed =
         turn && (turn.status === 'failed' || turn.status === 'cancelled');
     const incomplete = !isUser && failed;
@@ -113,7 +136,15 @@ export function TutorMessage({
         <article className={styles.message}>
             {changed && <div className={styles.divider}>{copy.changed}</div>}
             <div className={isUser ? styles.userGroup : styles.answer}>
-                {materials.length > 0 && (
+                {selectedPassage && (
+                    <WorkspaceMessagePassage content={selectedPassage} />
+                )}
+                {copiedAttachments.length > 0 && workspaceMaterials && (
+                    <WorkspaceMessageMaterials
+                        attachments={copiedAttachments}
+                    />
+                )}
+                {materials.length > 0 && !workspaceMaterials && (
                     <details className={styles.materials}>
                         <summary>
                             {isUser ? copy.copied : copy.material} ·{' '}
@@ -157,6 +188,7 @@ export function TutorMessage({
                     <ChatMarkdown
                         content={displayedText}
                         streaming={streaming}
+                        workspace={Boolean(onAcceptWorkspaceProposal)}
                     />
                 )}
                 {canonical.sourceProvenance === 'draft' && (
@@ -185,6 +217,21 @@ export function TutorMessage({
                         )}
                     </section>
                 )}
+                {complete && onAcceptWorkspaceProposal && (
+                    <WorkspaceProposal
+                        content={text}
+                        targetId={workspaceTargetId}
+                        anchor={workspaceAnchor}
+                        turnId={canonical.turnId}
+                        onAccept={onAcceptWorkspaceProposal}
+                        rootId={proposalRootId}
+                        onReview={onReviewProposal}
+                        workspace={workspace}
+                        proposalId={message.id}
+                        reviewingProposalId={reviewingProposalId}
+                        onReviewingProposal={onReviewingProposal}
+                    />
+                )}
                 {(complete || showUsage) && (
                     <div className={styles.actions}>
                         {complete && (
@@ -201,15 +248,6 @@ export function TutorMessage({
                                     )}
                                     {copyLabel}
                                 </button>
-                                {onAcceptWorkspaceProposal && (
-                                    <WorkspaceProposal
-                                        content={text}
-                                        targetId={workspaceTargetId}
-                                        anchor={workspaceAnchor}
-                                        turnId={canonical.turnId}
-                                        onAccept={onAcceptWorkspaceProposal}
-                                    />
-                                )}
                                 {!onAcceptWorkspaceProposal && (
                                     <button
                                         type='button'

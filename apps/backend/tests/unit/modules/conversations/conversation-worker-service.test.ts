@@ -55,6 +55,7 @@ function longTurn(): ClaimedConversationTurn {
         conversationCreatedAt: '2026-10-19T00:00:00.000Z',
         source: { kind: 'text', id },
         preferences: {
+            mode: 'auto',
             replyLanguage: 'auto',
             tone: 'neutral',
             explanationLevel: 'auto',

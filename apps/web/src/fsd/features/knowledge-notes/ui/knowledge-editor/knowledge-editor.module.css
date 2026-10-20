@@ -98,3 +98,122 @@
 .content :global(.tiptap) > :last-child {
     margin-bottom: 0;
 }
+
+.workspaceContent {
+    min-width: 0;
+}
+
+.workspaceContent :global(.tiptap) {
+    min-height: var(--size-96);
+    outline: none;
+}
+
+.workspaceToolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+    padding: 0;
+}
+
+.workspaceToolbar select {
+    height: var(--size-32);
+    min-height: var(--size-32);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    font-weight: 500;
+    padding-inline-start: var(--space-8);
+}
+
+.workspaceTool {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-32);
+    height: var(--size-32);
+    border: 0;
+    border-radius: var(--radius-6);
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+}
+
+.workspaceTool:hover,
+.workspaceTool[aria-pressed='true'] {
+    color: var(--primary-default);
+    background: var(--primary-subtle);
+}
+
+.workspaceTool:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.workspaceTool:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.groupStart {
+    margin-inline-start: var(--space-8);
+    position: relative;
+}
+
+.groupStart::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: calc(-1 * var(--size-5));
+    width: var(--size-1);
+    height: var(--size-20);
+    background: var(--border-default);
+}
+
+.moreFormatting {
+    display: none;
+}
+
+.moreTools {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-4);
+}
+
+@container knowledge-document (max-width: 699px) {
+    .extraTool {
+        display: none;
+    }
+
+    .moreFormatting {
+        display: block;
+    }
+}
+
+@media (max-width: 767px) {
+    .workspaceToolbar {
+        overflow-x: auto;
+        padding: 0 var(--space-8);
+    }
+
+    .workspaceTool,
+    .workspaceToolbar select {
+        min-height: var(--size-44);
+        height: var(--size-44);
+    }
+
+    .workspaceTool {
+        width: var(--size-44);
+    }
+
+    .extraTool {
+        display: inline-flex;
+    }
+
+    .moreFormatting {
+        display: none;
+    }
+}

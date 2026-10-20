@@ -1,0 +1,268 @@
+.root {
+    position: relative;
+    min-width: 0;
+}
+
+.prose {
+    max-width: 68ch;
+    margin-inline: auto;
+    font-size: var(--size-18);
+    line-height: 1.75;
+    color: var(--text-primary);
+    caret-color: var(--primary-default);
+    overflow-wrap: anywhere;
+}
+
+.prose :global(.tiptap) > * {
+    margin: 0;
+}
+
+.prose :global(.tiptap) > * + * {
+    margin-top: 0.85em;
+}
+
+.prose :global(.tiptap) h2 {
+    font-size: var(--size-22);
+    line-height: 1.35;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    margin-top: 1.8em;
+}
+
+.prose :global(.tiptap) h3 {
+    font-size: var(--size-18);
+    line-height: 1.4;
+    font-weight: 600;
+    margin-top: 1.5em;
+}
+
+.prose :global(.tiptap) > :first-child {
+    margin-top: 0;
+}
+
+.prose :global(.tiptap) strong {
+    font-weight: 650;
+}
+
+.prose :global(.tiptap) a {
+    color: var(--primary-default);
+    text-decoration: underline;
+    text-underline-offset: var(--size-3);
+}
+
+.prose :global(.tiptap) :where(ul, ol) {
+    padding-inline-start: 1.4em;
+}
+
+.prose :global(.tiptap) ul {
+    list-style: disc;
+}
+
+.prose :global(.tiptap) ol {
+    list-style: decimal;
+}
+
+.prose :global(.tiptap) li + li {
+    margin-top: 0.3em;
+}
+
+.prose :global(.tiptap) li::marker {
+    color: var(--text-tertiary);
+}
+
+.prose :global(.tiptap) blockquote {
+    border-inline-start: 3px solid var(--primary-200);
+    padding: 0.2em 0 0.2em 1em;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+:global([data-theme='dark']) .prose :global(.tiptap) blockquote {
+    border-inline-start-color: var(--primary-800);
+}
+
+.prose :global(.tiptap) table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: var(--size-15);
+    line-height: 1.5;
+    table-layout: fixed;
+}
+
+.prose :global(.tiptap) :where(th, td) {
+    border: 1px solid var(--border-default);
+    padding: 0.45em 0.7em;
+    text-align: start;
+    vertical-align: top;
+}
+
+.prose :global(.tiptap) th {
+    background: var(--background-subtle);
+    font-weight: 600;
+}
+
+.prose :global(.tiptap) :where(th, td) p {
+    margin: 0;
+}
+
+.prose :global(.selectedCell),
+.prose ::selection {
+    background: var(--selection);
+}
+
+.prose[data-empty='true']::before {
+    content: attr(data-placeholder);
+    float: inline-start;
+    height: 0;
+    pointer-events: none;
+    color: var(--text-tertiary);
+}
+
+.bubble {
+    max-width: 100%;
+    overflow-x: auto;
+    position: absolute;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--background-elevated);
+    box-shadow: var(--elevation-lg);
+    white-space: nowrap;
+}
+
+.askTutor,
+.mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--size-32);
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.askTutor {
+    gap: var(--space-6);
+    padding-inline: var(--space-10);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+
+.mark {
+    width: var(--size-32);
+    color: var(--text-secondary);
+    background: transparent;
+}
+
+.mark:hover,
+.mark[aria-pressed='true'] {
+    background: var(--background-subtle);
+    color: var(--primary-default);
+}
+
+.askTutor:focus-visible,
+.mark:focus-visible,
+.suggestion:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+
+.separator {
+    width: var(--size-1);
+    height: var(--size-20);
+    background: var(--border-default);
+    margin-inline: var(--space-2);
+}
+
+.empty {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    margin-top: var(--space-16);
+}
+
+.suggestion {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--size-32);
+    padding-inline: var(--space-10);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    cursor: pointer;
+}
+
+.suggestion > svg {
+    color: var(--text-tertiary);
+}
+
+.suggestion:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.suggestion:disabled,
+.action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.action {
+    height: var(--size-32);
+    padding-inline: var(--space-10);
+    border: 0;
+    border-radius: var(--radius-8);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.action:hover {
+    background: var(--background-subtle);
+}
+
+.action:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+
+.inlineProposalRoot {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.inlineProposalRoot > * {
+    pointer-events: auto;
+}
+
+.prose {
+    min-height: var(--size-96);
+}
+
+@media (max-width: 767px) {
+    .bubble {
+        max-width: calc(100vw - var(--space-32));
+        overflow-x: auto;
+    }
+
+    .askTutor,
+    .mark,
+    .action,
+    .suggestion {
+        min-height: var(--size-44);
+    }
+
+    .mark {
+        width: var(--size-44);
+    }
+}

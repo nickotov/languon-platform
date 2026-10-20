@@ -1,0 +1,11 @@
+9c93110a41f1e2bfaf63d467e1508d7f653a685bdc7b2b813662dda403fc7de5  apps/web/src/fsd/shared/ui/companion-layout/companion-layout.tsx
+b05780103519abaf8e7fae006441ba70d2abb5c1a556b22a7dc418e1051674c2  apps/web/src/fsd/shared/ui/companion-layout/use-companion-resize.ts
+04655f36bad436765c61dc9d73926bd224dd3a81699bdbab3a581a78483a095f  apps/web/src/fsd/shared/ui/companion-layout/companion-layout.module.css
+d33503b5343d2c49c710bf7bce379d251057e4bceaa43b802a198c1666b31566  apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell.module.css
+adbde65177619273ef2160202d00d2810342e53b1e213c129e26dff048176b40  apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-header.tsx
+6a614ca2b689d008a9ef9336603789b2644e02cfe6654e5e2ffc4a190c2561ce  apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/workspace-controls.module.css
+d6ffa1fb0f9e0f69b3584661709158dfa09e45817615cee0eb394a3158af0b07  apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/knowledge-detail-page.tsx
+f0b1efaf78e3f1aa5a95249e432f516f6699f16cef371a7b0f8fe58d3f71753b  apps/web/src/fsd/shared/i18n/messages/knowledge.ts
+e4d8e2949fdf50c255c618dd5db84bcf9677f022f2096a5f270b052486a057ad  apps/web/src/app/styles/geometry-tokens.css
+4367b4ca57bf8a139521408f3c443cac0a365f2f0c98b6f2c38337cfce132e8d  apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts
+e056cc78ad2ed89cffc52a7eca3fb052eb5f01e0bd4e423e871567f1632b47f0  docs/user-flows/knowledge-workspace.md

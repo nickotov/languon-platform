@@ -55,10 +55,10 @@ export function useKnowledgePageActions(noteId: string) {
         navigation.setDirty(state.hasLocalChanges);
     }, [navigation.setDirty, state.hasLocalChanges]);
 
-    function getSnapshot() {
+    function getSnapshot(targetId?: string | null) {
         if (!editor.current)
             throw new Error('The document editor is still loading');
-        return editor.current.getSnapshot();
+        return editor.current.getSnapshot(targetId);
     }
 
     function acceptProposal(
@@ -82,8 +82,8 @@ export function useKnowledgePageActions(noteId: string) {
             action,
             ...(targetId ? { targetId } : {}),
             ...(anchor ? { anchor } : {}),
-            ...(anchor && !targetId && editor.current
-                ? { currentDocument: editor.current.getSnapshot().content }
+            ...(editor.current
+                ? { currentDocument: editor.current.getSnapshot(null).content }
                 : {}),
         });
     }

@@ -24,6 +24,7 @@ requirement IDs for design review and later frontend verification.
 | [Admin sentence management](./admin-sentence-library-management.md) | Per-user discovery, preview, personal/global archive and guarded permanent deletion | v001 backend verified; awaiting generated design ([handoff](../../.agent/features/039-sentence-library-management/DESIGN.md)) |
 
 | [Contextual language tutor widget](./contextual-assistant-widget.md) | Floating desktop chat, mobile bottom sheet, folding, streaming, context and Knowledge drafts | Implemented selected v001 / provider v5 ([handoff](../../.agent/features/044-contextual-language-assistant-and-knowledge/DESIGN.md)) |
+| [Knowledge workspace document editor](./knowledge-workspace-detail.md) | Document editor and its chat touchpoints, with desktop right dock and mobile bottom sheet | Implemented selected v003 / provider v8 ([handoff](../../.agent/features/047-knowledge-workspace/DESIGN.md)) |
 
 Every saved brief also has a [versioned handoff](../../.agent/DESIGN_HANDOFF.md)
 with a frozen prompt, generated-design URL slot, approval history and selected

@@ -6,6 +6,7 @@ import {
     ChevronsUp,
     EllipsisVertical,
     Sparkles,
+    GraduationCap,
     ExternalLink,
     History,
     Minus,
@@ -13,6 +14,7 @@ import {
     PanelRight,
     SquarePen,
     Trash2,
+    X,
 } from 'lucide-react';
 import type { PointerEventHandler } from 'react';
 import { conversationCopy } from '@/fsd/entities/conversation';
@@ -27,10 +29,10 @@ import type { useTutorLayout } from '../../hooks/use-tutor-layout';
 import { TutorContext, type TutorContextProps } from './tutor-context';
 import { tutorShellCopy } from './shell-copy';
 import styles from './tutor-shell.module.css';
-export function TutorMark() {
+export function TutorMark({ workspace = false }: { workspace?: boolean }) {
     return (
         <span className={styles.mark} aria-hidden>
-            <Sparkles />
+            {workspace ? <GraduationCap /> : <Sparkles />}
         </span>
     );
 }
@@ -47,12 +49,16 @@ export function TutorHeader({
     actions,
     onFold,
     onPointerDown,
+    workspace = false,
+    embedded = false,
 }: {
     layout: ReturnType<typeof useTutorLayout>;
     context: TutorContextProps;
     actions: TutorHeaderActions;
     onFold(): void;
     onPointerDown: PointerEventHandler<HTMLDivElement>;
+    workspace?: boolean;
+    embedded?: boolean;
 }) {
     const { locale } = useI18n();
     const copy = tutorShellCopy(locale);
@@ -61,10 +67,14 @@ export function TutorHeader({
     function toggleDetached() {
         if (placement) placement.setDetached(!placement.detached);
     }
+    function toggleHalfWidth() {
+        if (placement) placement.setHalfWidth(!placement.halfWidth);
+    }
     const buttonSize = layout.mobile ? 'large' : 'small';
     const expansionLabel = layout.sheetFull ? copy.partial : copy.expand;
     const expansionIcon = layout.sheetFull ? <ChevronsDown /> : <ChevronsUp />;
-    const foldIcon = layout.mobile ? <ChevronDown /> : <Minus />;
+    let foldIcon = layout.mobile && !embedded ? <ChevronDown /> : <Minus />;
+    if (workspace) foldIcon = <X />;
     const items: MenuItem[] = [
         {
             headingBefore: copy.conversation,
@@ -74,7 +84,7 @@ export function TutorHeader({
             disabled: Boolean(actions.busy),
         },
     ];
-    if (layout.mobile)
+    if (layout.mobile || workspace)
         items.push({
             label: existing.newChat,
             icon: <SquarePen />,
@@ -115,10 +125,23 @@ export function TutorHeader({
                 onSelect: layout.toggleFull,
             },
         );
-    if (placement && !layout.mobile)
+    if (placement && layout.attached && !layout.mobile && !workspace)
         items.push({
             separatorBefore: true,
-            ...(layout.attached ? { headingBefore: copy.layout } : {}),
+            headingBefore: copy.layout,
+            label: copy.halfWidth,
+            checked: placement.halfWidth,
+            icon: placement.halfWidth ? (
+                <Check />
+            ) : (
+                <span className={styles.emptyCheck} />
+            ),
+            closeOnSelect: false,
+            onSelect: toggleHalfWidth,
+        });
+    if (placement && !layout.mobile)
+        items.push({
+            separatorBefore: !layout.attached,
             label: copy.detached,
             checked: placement.detached,
             icon: <ExternalLink />,
@@ -133,14 +156,20 @@ export function TutorHeader({
         onSelect: actions.onDelete,
     });
     return (
-        <div className={styles.header} onPointerDown={onPointerDown}>
-            {!layout.mobile && <TutorMark />}
+        <div
+            className={styles.header}
+            data-tutor-header
+            onPointerDown={onPointerDown}
+        >
+            {(!layout.mobile || workspace) && (
+                <TutorMark workspace={workspace} />
+            )}
             <div className={styles.heading}>
                 <h2>{copy.title}</h2>
-                <TutorContext {...context} />
+                {!workspace && <TutorContext {...context} />}
             </div>
             <div className={styles.actions}>
-                {!layout.mobile && (
+                {(!layout.mobile || workspace) && (
                     <IconButton
                         variant='ghost'
                         size={buttonSize}
@@ -159,7 +188,7 @@ export function TutorHeader({
                     triggerClassName={styles.menuTrigger}
                     menuClassName={styles.menu}
                 />
-                {layout.mobile && (
+                {layout.mobile && !embedded && (
                     <IconButton
                         variant='ghost'
                         size={buttonSize}

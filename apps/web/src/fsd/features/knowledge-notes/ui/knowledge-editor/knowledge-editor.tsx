@@ -1,13 +1,6 @@
 'use client';
 
-import {
-    forwardRef,
-    useEffect,
-    useImperativeHandle,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
@@ -22,18 +15,15 @@ import {
     mapProposalTarget,
     type KnowledgeEditorTarget,
 } from '../../lib/proposal-target';
-import {
-    editorPlainOffset,
-    editorPlainText,
-    hashEditorText,
-    restoreEditorPositions,
-    type EditorTargetAnchor,
-} from '../../lib/editor-target-anchor';
+import { type EditorTargetAnchor } from '../../lib/editor-target-anchor';
+import { useKnowledgeEditorHandle } from '../../hooks/use-knowledge-editor-handle';
 import { EditorToolbar } from './editor-toolbar';
 import styles from './knowledge-editor.module.css';
+import { WorkspaceEditorChrome } from './workspace-editor-chrome';
+import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
 
 export type KnowledgeEditorHandle = {
-    getSnapshot(): {
+    getSnapshot(targetId?: string | null): {
         content: string;
         selectedPassage?: string;
         targetId?: string;
@@ -45,6 +35,18 @@ export type KnowledgeEditorHandle = {
         action: 'insert' | 'append' | 'replace',
         targetId?: string,
     ): 'applied' | 'changed' | 'missing';
+    getProposalPreview(targetId?: string): {
+        original: string;
+        current: string;
+        before: string;
+        after: string;
+        end: string;
+        changed: boolean;
+    } | null;
+    getProposalPosition(
+        targetId: string,
+    ): { top: number; left: number; width: number } | null;
+    showTarget(targetId: string): void;
     getTargetComparison(targetId?: string): {
         original: string;
         current: string;
@@ -56,6 +58,7 @@ export const KnowledgeEditor = forwardRef<
     {
         value: KnowledgeBody;
         onChange(value: KnowledgeBody): void;
+        workspace?: KnowledgeWorkspaceEditorOptions | undefined;
         disabled?: boolean;
         toolbarVariant?: 'full' | 'tutor';
         label?: string;
@@ -69,6 +72,7 @@ export const KnowledgeEditor = forwardRef<
         onValidityChange,
         toolbarVariant = 'full',
         label,
+        workspace,
     },
     ref,
 ) {
@@ -133,125 +137,7 @@ export const KnowledgeEditor = forwardRef<
         },
     });
 
-    useImperativeHandle(
-        ref,
-        () => ({
-            getSnapshot() {
-                if (!editor)
-                    throw new Error('The document editor is still loading.');
-                const { from, to } = editor.state.selection;
-                const selectedText = editor.state.doc.textBetween(
-                    from,
-                    to,
-                    '\n',
-                    '\n',
-                );
-                const targetId = crypto.randomUUID();
-                targets.current.set(targetId, {
-                    id: targetId,
-                    from,
-                    to,
-                    selectedText,
-                    changed: false,
-                });
-                const content = editorPlainText(editor.state.doc);
-                const plainFrom = editorPlainOffset(editor.state.doc, from);
-                const plainTo = editorPlainOffset(editor.state.doc, to);
-                return {
-                    content,
-                    ...(selectedText ? { selectedPassage: selectedText } : {}),
-                    targetId,
-                    editorTarget: {
-                        from: plainFrom,
-                        to: plainTo,
-                        originalText: content.slice(plainFrom, plainTo),
-                    },
-                };
-            },
-            async restoreTarget(anchor) {
-                if (!editor) return null;
-                const doc = editor.state.doc;
-                const content = editorPlainText(doc);
-                if ((await hashEditorText(content)) !== anchor.documentHash)
-                    return null;
-                if (editor.state.doc !== doc) return null;
-                const positions = restoreEditorPositions(doc, anchor);
-                if (!positions) return null;
-                const targetId = crypto.randomUUID();
-                targets.current.set(targetId, {
-                    id: targetId,
-                    ...positions,
-                    selectedText: anchor.originalText,
-                    changed: false,
-                });
-                return targetId;
-            },
-            applyProposal(text, action, targetId) {
-                if (!editor || disabled) return 'missing';
-                let from = editor.state.doc.content.size;
-                let to = from;
-                if (action !== 'append') {
-                    const target = targetId
-                        ? targets.current.get(targetId)
-                        : null;
-                    if (!target) return 'missing';
-                    if (target.changed) return 'changed';
-                    if (action === 'replace' && target.from === target.to)
-                        return 'missing';
-                    if (
-                        target.from > editor.state.doc.content.size ||
-                        target.to > editor.state.doc.content.size ||
-                        target.from > target.to
-                    )
-                        return 'missing';
-                    const current = editor.state.doc.textBetween(
-                        target.from,
-                        target.to,
-                        '\n',
-                        '\n',
-                    );
-                    if (current !== target.selectedText) return 'changed';
-                    from = target.from;
-                    to = action === 'replace' ? target.to : target.from;
-                }
-                const content = text.split('\n').map((line) => ({
-                    type: 'paragraph',
-                    ...(line
-                        ? { content: [{ type: 'text', text: line }] }
-                        : {}),
-                }));
-                const applied = editor
-                    .chain()
-                    .focus()
-                    .insertContentAt({ from, to }, content)
-                    .run();
-                if (!applied) return 'missing';
-                if (targetId) targets.current.delete(targetId);
-                return 'applied';
-            },
-            getTargetComparison(targetId) {
-                const target = targetId ? targets.current.get(targetId) : null;
-                if (!editor || !target) return null;
-                const from = Math.min(
-                    target.from,
-                    target.to,
-                    editor.state.doc.content.size,
-                );
-                const to = Math.min(
-                    Math.max(target.from, target.to),
-                    editor.state.doc.content.size,
-                );
-                const current = editor.state.doc.textBetween(
-                    from,
-                    to,
-                    '\n',
-                    '\n',
-                );
-                return { original: target.selectedText, current };
-            },
-        }),
-        [editor, disabled],
-    );
+    useKnowledgeEditorHandle(editor, disabled, ref, targets);
 
     useEffect(() => {
         editor?.setEditable(!disabled);
@@ -274,6 +160,25 @@ export const KnowledgeEditor = forwardRef<
             setInvalid(true);
         }
     }, [editor, value]);
+
+    if (workspace && editor)
+        return (
+            <WorkspaceEditorChrome
+                editor={editor}
+                disabled={disabled}
+                workspace={workspace}
+            >
+                <EditorContent
+                    editor={editor}
+                    className={styles.workspaceContent}
+                />
+                {invalid && (
+                    <InlineAlert tone='error'>
+                        {t('knowledge.editorError')}
+                    </InlineAlert>
+                )}
+            </WorkspaceEditorChrome>
+        );
 
     return (
         <div className={styles.root} aria-busy={!editor}>

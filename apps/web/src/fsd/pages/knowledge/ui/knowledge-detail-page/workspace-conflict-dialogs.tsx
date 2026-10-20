@@ -38,14 +38,16 @@ export function WorkspaceConflictDialogs({
     const liveComparison = editor.current?.getTargetComparison(
         proposal?.targetId,
     );
-    const comparison =
-        liveComparison ??
-        (proposal?.anchor
-            ? {
-                  original: proposal.anchor.originalText,
-                  current: proposal.currentDocument ?? '',
-              }
-            : null);
+    const hasCurrentTarget = Boolean(liveComparison?.current);
+    let comparison = liveComparison ?? null;
+    if (!hasCurrentTarget) {
+        const original =
+            liveComparison?.original ?? proposal?.anchor?.originalText;
+        comparison =
+            original !== undefined
+                ? { original, current: proposal?.currentDocument ?? '' }
+                : null;
+    }
     function openResolve() {
         setConfirmResolve(true);
     }
@@ -134,7 +136,7 @@ export function WorkspaceConflictDialogs({
                         </div>
                         <div>
                             <h3>
-                                {liveComparison
+                                {hasCurrentTarget
                                     ? t('knowledge.currentTarget')
                                     : t('knowledge.currentDocument')}
                             </h3>

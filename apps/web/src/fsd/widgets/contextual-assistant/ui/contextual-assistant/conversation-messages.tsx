@@ -1,5 +1,5 @@
-import { useMemo, type ReactNode } from 'react';
-import { ArrowDown, CornerDownRight } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { ArrowDown } from 'lucide-react';
 import type {
     ConversationDetail,
     ConversationEditorTarget,
@@ -12,12 +12,15 @@ import {
 } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useMessageScroll } from '../../hooks/use-message-scroll';
-import { emptyStateCopy } from '../../lib/empty-state-copy';
 import { messagesCopy } from '../../lib/messages-copy';
 import { messageScrollSignature } from '../../lib/message-scroll-signature';
 import { TutorMessage } from './tutor-message';
+import { ConversationEmpty } from './conversation-empty';
 import { TutorActivity } from '../tutor-activity/tutor-activity';
-import type { WorkspaceProposalAction } from '../../types';
+import type {
+    WorkspaceAssistantProps,
+    WorkspaceProposalAction,
+} from '../../types';
 import styles from './conversation-messages.module.css';
 
 export function ConversationMessages({
@@ -33,6 +36,9 @@ export function ConversationMessages({
     contextLabel,
     workspaceTargets,
     onAcceptWorkspaceProposal,
+    proposalRootId,
+    onReviewProposal,
+    workspace,
 }: {
     detail: ConversationDetail;
     uiMessages: ConversationUIMessage[];
@@ -45,18 +51,25 @@ export function ConversationMessages({
     sourceKind?: ConversationSource['kind'] | undefined;
     contextLabel?: string | undefined;
     workspaceTargets?: Map<string, string> | undefined;
+    proposalRootId?: string | undefined;
+    onReviewProposal?: (() => void) | undefined;
+    workspace?: WorkspaceAssistantProps | undefined;
     onAcceptWorkspaceProposal?:
         | ((
               text: string,
               action: WorkspaceProposalAction,
               turnId: string | null,
               anchor?: ConversationEditorTarget,
+              trackedTargetId?: string,
           ) => Promise<'applied' | 'changed' | 'missing' | undefined>)
         | undefined;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
     const labels = messagesCopy(locale);
+    const [reviewingProposalId, setReviewingProposalId] = useState<
+        string | null
+    >(null);
     const signature = messageScrollSignature(uiMessages, detail.drafts.length);
     const turns = useMemo(
         () => new Map(detail.turns.map((turn) => [turn.id, turn])),
@@ -122,7 +135,10 @@ export function ConversationMessages({
     const responding = active || pending;
     const queued = pending || activeTurn?.status === 'queued';
     return (
-        <div className={styles.frame}>
+        <div
+            className={styles.frame}
+            data-workspace={Boolean(onAcceptWorkspaceProposal)}
+        >
             <div
                 ref={scroll.ref}
                 onScroll={scroll.onScroll}
@@ -139,6 +155,8 @@ export function ConversationMessages({
                             onSuggest={onSuggest}
                             sourceKind={sourceKind}
                             contextLabel={contextLabel}
+                            workspace={Boolean(onAcceptWorkspaceProposal)}
+                            editorEmpty={workspace?.editorCharacters === 0}
                         />
                     )}
                     {messages.map(({ message, changed, turn }) => (
@@ -167,6 +185,11 @@ export function ConversationMessages({
                             onAcceptWorkspaceProposal={
                                 onAcceptWorkspaceProposal
                             }
+                            proposalRootId={proposalRootId}
+                            onReviewProposal={onReviewProposal}
+                            workspace={workspace}
+                            reviewingProposalId={reviewingProposalId}
+                            onReviewingProposal={setReviewingProposalId}
                         />
                     ))}
                     <TutorActivity
@@ -191,73 +214,5 @@ export function ConversationMessages({
                 </div>
             )}
         </div>
-    );
-}
-
-export function ConversationEmpty({
-    onSuggest,
-    sourceKind,
-    contextLabel,
-}: {
-    onSuggest?: ((text: string) => void) | undefined;
-    sourceKind?: ConversationSource['kind'] | undefined;
-    contextLabel?: string | undefined;
-}) {
-    const { locale } = useI18n();
-    const copy = conversationCopy(locale);
-    const labels = messagesCopy(locale);
-    const sourceCopy = sourceKind ? emptyStateCopy(locale, sourceKind) : null;
-    const heading =
-        sourceCopy && contextLabel
-            ? `${sourceCopy.heading} “${contextLabel}”`
-            : labels.intro;
-    const intro = sourceCopy?.intro ?? copy.empty;
-    const suggestions = sourceCopy?.suggestions ?? [
-        labels.suggestion,
-        labels.suggestionTwo,
-        labels.suggestionThree,
-    ];
-    return (
-        <section className={styles.empty}>
-            <h3>{heading}</h3>
-            <p>{intro}</p>
-            {onSuggest && (
-                <>
-                    <ul className={styles.suggestions}>
-                        {suggestions.map((text) => (
-                            <Suggestion
-                                key={text}
-                                text={text}
-                                onSuggest={onSuggest}
-                            />
-                        ))}
-                    </ul>
-                    <small>{labels.hint}</small>
-                </>
-            )}
-        </section>
-    );
-}
-function Suggestion({
-    text,
-    onSuggest,
-}: {
-    text: string;
-    onSuggest(text: string): void;
-}) {
-    function choose() {
-        onSuggest(text);
-    }
-    return (
-        <li>
-            <button
-                type='button'
-                className={styles.suggestion}
-                onClick={choose}
-            >
-                <CornerDownRight size={14} aria-hidden='true' />
-                {text}
-            </button>
-        </li>
     );
 }

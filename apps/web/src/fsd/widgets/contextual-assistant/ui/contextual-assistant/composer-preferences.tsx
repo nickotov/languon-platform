@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react';
+import { TutorModePreference } from './tutor-mode-preference';
+import { WorkspaceComposerSettings } from './workspace-composer-settings';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
 import type { ChatPreferences } from '@languon/contracts';
@@ -26,11 +29,17 @@ export function ComposerPreferences({
     onChange,
     onDefaults,
     disabled,
+    workspace = false,
+    modelControl,
+    defaultsSaved = false,
 }: {
     value: ChatPreferences;
     onChange(value: ChatPreferences): void;
     onDefaults(): void;
     disabled: boolean;
+    workspace?: boolean;
+    modelControl?: ReactNode;
+    defaultsSaved?: boolean;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
@@ -112,8 +121,28 @@ export function ComposerPreferences({
                 explanationLevel as ChatPreferences['explanationLevel'],
         });
     }
+    if (workspace)
+        return (
+            <WorkspaceComposerSettings
+                value={value}
+                onChange={onChange}
+                onDefaults={onDefaults}
+                disabled={disabled}
+                defaultsSaved={defaultsSaved}
+                languageOptions={languageOptions}
+                tones={tones}
+                levels={levels}
+                modelControl={modelControl}
+            />
+        );
     return (
         <div className={styles.preferences}>
+            <TutorModePreference
+                value={value}
+                onChange={onChange}
+                onDefaults={onDefaults}
+                disabled={disabled}
+            />
             <Preference
                 label={text.reply}
                 fullLabel={copy.language}

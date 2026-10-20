@@ -6,6 +6,7 @@ import {
     type PostgresJsDatabase,
 } from '@languon/database';
 import {
+    ChatPreferencesSchema,
     ConversationDetailSchema,
     ConversationEventSchema,
     SubmitConversationTurnRequestSchema,
@@ -182,6 +183,81 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             });
         }, 120_000);
+        it('persists independent owner defaults and reopened modes while freezing admitted turn preferences', async () => {
+            expect((await store.settings(owner)).mode).toBe('auto');
+            const original = await create();
+            await store.settings(
+                owner,
+                ChatPreferencesSchema.parse({ mode: 'explain' }),
+            );
+            const inherited = await create();
+            expect(inherited.preferences.mode).toBe('explain');
+            expect(
+                (await store.detail(access(), original.id)).conversation
+                    .preferences.mode,
+            ).toBe('auto');
+            expect((await store.settings(learner)).mode).toBe('auto');
+            await store.update(access(), inherited.id, {
+                preferences: ChatPreferencesSchema.parse({ mode: 'correct' }),
+            });
+            expect(
+                (await store.detail(access(), inherited.id)).conversation
+                    .preferences.mode,
+            ).toBe('correct');
+            await store.submit(access(), inherited.id, submit());
+            await store.update(access(), inherited.id, {
+                preferences: ChatPreferencesSchema.parse({ mode: 'practice' }),
+            });
+            const claimed = (await store.claim())!;
+            expect(claimed.preferences.mode).toBe('correct');
+            expect(
+                (await store.detail(access(), inherited.id)).conversation
+                    .preferences.mode,
+            ).toBe('practice');
+            expect((await store.settings(owner)).mode).toBe('explain');
+            await expect(
+                store.update({ ownerId: learner }, inherited.id, {
+                    preferences: ChatPreferencesSchema.parse({ mode: 'auto' }),
+                }),
+            ).rejects.toMatchObject({ code: 'conversation_not_found' });
+            expect(
+                (await store.detail(access(), inherited.id)).conversation
+                    .preferences.mode,
+            ).toBe('practice');
+        });
+        it('normalizes missing modes in stored defaults, conversations and immutable turn snapshots without rewriting history', async () => {
+            const initial = await create();
+            const stored = {
+                replyLanguage: 'auto',
+                tone: 'neutral',
+                explanationLevel: 'auto',
+            };
+            await client`insert into conversation_settings(owner_id,preferences,updated_at) values (${owner},${JSON.stringify(stored)}::jsonb,now())`;
+            await client`update conversation_chats set preferences=${JSON.stringify(stored)}::jsonb where id=${initial.id}`;
+            expect((await store.settings(owner)).mode).toBe('auto');
+            expect((await create()).preferences.mode).toBe('auto');
+            expect(
+                (await store.detail(access(), initial.id)).conversation
+                    .preferences.mode,
+            ).toBe('auto');
+            await store.submit(access(), initial.id, submit());
+            const originalTurn = (await store.claim())!;
+            await store.finish(originalTurn, 'succeeded');
+            // Seed a historical admission directly; the immutable-admission trigger
+            // intentionally prohibits rewriting preferences on an existing turn.
+            const historicalId = randomUUID();
+            await db.transaction(async (tx) => {
+                await lockTextAiCapacity(tx);
+                await tx.execute(sql`insert into conversation_turns(id,conversation_id,owner_id,request_id,request_fingerprint,status,authority,source_snapshot,preferences,execution,usage,created_at,updated_at)
+                    select ${historicalId},conversation_id,owner_id,${randomUUID()},request_fingerprint,'queued',authority,source_snapshot,${JSON.stringify(stored)}::jsonb,execution,usage,created_at,updated_at from conversation_turns where id=${originalTurn.id}`);
+            });
+            await client`insert into conversation_messages(id,conversation_id,turn_id,role,content,attachments,status,source_version,source_provenance,created_at)
+                select ${randomUUID()},conversation_id,${historicalId},role,content,attachments,status,source_version,source_provenance,created_at from conversation_messages where turn_id=${originalTurn.id} and role='user'`;
+            expect((await store.claim())!.preferences.mode).toBe('auto');
+            const [persisted] =
+                await client`select preferences from conversation_turns where id=${historicalId}`;
+            expect(persisted!.preferences).not.toHaveProperty('mode');
+        });
         it('serializes concurrent admission and request replays without duplicate learner messages or accounting', async () => {
             const chat = await create(),
                 input = submit();

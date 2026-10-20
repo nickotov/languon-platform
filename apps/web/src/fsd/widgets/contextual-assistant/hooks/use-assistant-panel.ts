@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
+    ChatPreferences,
     ConversationEditorTarget,
     ConversationTurn,
     CopiedAttachment,
@@ -15,6 +16,9 @@ import { showToast } from '@/fsd/shared/ui';
 import { useConversation } from './use-conversation';
 import { useAssistantNavigation } from './use-assistant-navigation';
 import { useConversationDeletion } from './use-conversation-deletion';
+import { useWorkspacePassage } from './use-workspace-passage';
+import { useWorkspaceAutoSend } from './use-workspace-auto-send';
+import { workspaceCopy } from '../lib/workspace-copy';
 import type { ContextualAssistantProps } from '../types';
 import {
     appendAssistantAttachment,
@@ -49,6 +53,10 @@ export function useAssistantPanel(
     );
     const { navigation, draftDirty, discardRevision } =
         useAssistantNavigation();
+    const workspaceSelection = useWorkspacePassage(
+        props.workspace?.request,
+        chat.id,
+    );
     const [history, setHistory] = useState(false);
     const [picker, setPicker] = useState(false);
     const [editingDraft, setEditingDraft] = useState<string | null>(null);
@@ -69,6 +77,13 @@ export function useAssistantPanel(
         setEditingDraft(null);
     }
     const [defaultsSaved, setDefaultsSaved] = useState(false);
+    const [defaultsFailure, setDefaultsFailure] = useState<{
+        error: unknown;
+        preferences: ChatPreferences;
+    } | null>(null);
+    const [defaultsPending, setDefaultsPending] = useState(false);
+    const defaultsLock = useRef(false);
+    const defaultsRevision = useRef(0);
     const [attachmentError, setAttachmentError] = useState<string | null>(null);
     const [preparing, setPreparing] = useState(false);
     const preparationLock = useRef(false);
@@ -101,12 +116,41 @@ export function useAssistantPanel(
     );
     const initialized = useRef(false);
     const lastPassage = useRef<string | null>(null);
+    const lastRequest = useRef<string | null>(null);
+    const workspaceRequest = props.workspace?.request;
+    useEffect(() => {
+        if (!workspaceRequest || workspaceRequest.id === lastRequest.current)
+            return;
+        lastRequest.current = workspaceRequest.id;
+        if (workspaceRequest.prompt !== undefined)
+            chat.setQuestion(workspaceRequest.prompt);
+        setAttachmentError((current) =>
+            current === workspaceCopy(locale).selectionChanged ? null : current,
+        );
+        setHistory(false);
+    }, [workspaceRequest, chat.setQuestion, locale]);
     const [unread, setUnread] = useState(false);
     const active = Boolean(chat.active);
     const wasActive = useRef(active);
-    const busy = chat.create.isPending || chat.submit.isPending || preparing;
+    const busy =
+        chat.create.isPending ||
+        chat.submit.isPending ||
+        preparing ||
+        Boolean(chat.preferencesPending) ||
+        defaultsPending;
+    const onBusyChange = props.workspace?.onBusyChange;
+    useEffect(() => {
+        onBusyChange?.(busy || active);
+        return () => onBusyChange?.(false);
+    }, [busy, active, onBusyChange]);
     const detail = chat.detail.data;
     const preferences = detail?.conversation.preferences;
+    const preferencesIdentity = JSON.stringify(preferences);
+    useEffect(() => {
+        defaultsRevision.current += 1;
+        setDefaultsFailure(null);
+        setDefaultsSaved(false);
+    }, [chat.id, preferencesIdentity]);
     const unavailable =
         chat.stream.unavailable || chat.detail.isError || chat.list.isError;
 
@@ -131,6 +175,7 @@ export function useAssistantPanel(
     }, [chat.id]);
     useEffect(() => {
         const passage = props.selectedPassage;
+        if (props.workspace) return;
         if (!passage || passage.id === lastPassage.current) return;
         lastPassage.current = passage.id;
         attach({
@@ -138,11 +183,12 @@ export function useAssistantPanel(
             label: copy.selection,
             content: passage.text,
         });
-    }, [props.selectedPassage, copy.selection, attach]);
+    }, [props.selectedPassage, props.workspace, copy.selection, attach]);
 
     function select(id: string) {
         navigation.request(() => {
             chat.select(id);
+            workspaceSelection.remove();
             setHistory(false);
             setEditingDraft(null);
             setPicker(false);
@@ -151,6 +197,7 @@ export function useAssistantPanel(
     function create() {
         navigation.request(() => {
             chat.create.mutate();
+            workspaceSelection.remove();
             setHistory(false);
             setEditingDraft(null);
             setPicker(false);
@@ -171,15 +218,27 @@ export function useAssistantPanel(
             if (preparationLock.current) return;
             let snapshot;
             try {
-                snapshot = props.workspace.getSnapshot();
+                snapshot = props.workspace.getSnapshot(
+                    workspaceSelection.passage?.targetId ?? null,
+                );
                 if (!snapshot.editorTarget)
                     throw new Error('The document editor is still loading.');
             } catch (error) {
                 preparationFailed.current = true;
-                setLocalError(error);
+                if (workspaceSelection.passage)
+                    setAttachmentError(workspaceCopy(locale).selectionChanged);
+                else setLocalError(error);
                 return;
             }
             const editorLimit = props.workspace.editorLimit ?? 40_000;
+            if (
+                workspaceSelection.passage &&
+                workspaceSelection.passage.content !==
+                    snapshot.editorTarget.originalText
+            ) {
+                setAttachmentError(workspaceCopy(locale).selectionChanged);
+                return;
+            }
             if (Array.from(snapshot.content).length > editorLimit) {
                 setAttachmentError(
                     `Editor text exceeds the ${editorLimit.toLocaleString('en-US')}-character tutor limit. Shorten the document before sending.`,
@@ -189,6 +248,8 @@ export function useAssistantPanel(
             const targetId = snapshot.targetId;
             const question = chat.question;
             const copiedAttachments = [...chat.attachments];
+            const selectedPassage = workspaceSelection.passage;
+            setAttachmentError(null);
             preparationLock.current = true;
             setPreparing(true);
             void (async () => {
@@ -217,7 +278,7 @@ export function useAssistantPanel(
                         copiedAttachments,
                         editorContext: {
                             content: snapshot.content,
-                            selectedText: snapshot.selectedPassage,
+                            selectedText: selectedPassage?.content,
                             editorTarget,
                         },
                     });
@@ -226,6 +287,7 @@ export function useAssistantPanel(
                             new Map(previous).set(turn.id, targetId),
                         );
                     props.workspace?.onSent?.();
+                    workspaceSelection.sent(selectedPassage?.id);
                 } catch {
                     // The mutation retains the composer and displays its error.
                 } finally {
@@ -240,13 +302,23 @@ export function useAssistantPanel(
             draftContext: chat.useDraft ? props.currentDraft : undefined,
         });
     }
+    useWorkspaceAutoSend({
+        request: workspaceRequest,
+        question: chat.question,
+        passage: workspaceSelection.passage,
+        ready: Boolean(chat.id && detail && !busy && !active && !unavailable),
+        send,
+    });
     async function acceptProposal(
         text: string,
         action: 'insert' | 'append' | 'replace',
         turnId: string | null,
         anchor?: ConversationEditorTarget,
+        trackedTargetId?: string,
     ) {
-        let targetId = turnId ? proposalTargets.get(turnId) : undefined;
+        let targetId =
+            trackedTargetId ??
+            (turnId ? proposalTargets.get(turnId) : undefined);
         if (!targetId && action !== 'append' && anchor)
             targetId =
                 (await props.workspace?.restoreTarget?.(anchor)) ?? undefined;
@@ -306,17 +378,43 @@ export function useAssistantPanel(
         chat.setAttachments(remaining);
         setAttachmentError(null);
     }
-    async function defaults() {
-        if (!preferences) return;
+    function removeWorkspacePassage() {
+        workspaceSelection.remove();
+        setAttachmentError((current) =>
+            current === workspaceCopy(locale).selectionChanged ? null : current,
+        );
+    }
+    function updatePreferences(value: NonNullable<typeof preferences>) {
+        defaultsRevision.current += 1;
+        setDefaultsFailure(null);
         setDefaultsSaved(false);
+        chat.updatePreferences(value);
+    }
+    async function saveDefaults(value: NonNullable<typeof preferences>) {
+        if (defaultsLock.current) return;
+        defaultsLock.current = true;
+        const revision = ++defaultsRevision.current;
+        setDefaultsPending(true);
+        setDefaultsSaved(false);
+        setDefaultsFailure(null);
         try {
             await requestWithSession((token) =>
-                conversationApi.saveDefaults(token, preferences),
+                conversationApi.saveDefaults(token, value),
             );
-            setDefaultsSaved(true);
+            if (defaultsRevision.current === revision) setDefaultsSaved(true);
         } catch (error) {
-            setLocalError(error);
+            if (defaultsRevision.current === revision)
+                setDefaultsFailure({ error, preferences: value });
+        } finally {
+            defaultsLock.current = false;
+            setDefaultsPending(false);
         }
+    }
+    async function defaults() {
+        if (preferences) await saveDefaults(preferences);
+    }
+    function retryDefaults() {
+        if (defaultsFailure) void saveDefaults(defaultsFailure.preferences);
     }
     function reload() {
         setLocalError(null);
@@ -349,7 +447,12 @@ export function useAssistantPanel(
         editingDraft,
         setEditingDraft,
         defaultsSaved,
+        defaultsFailure,
+        retryDefaults,
+        updatePreferences,
         attachmentError,
+        workspacePassage: workspaceSelection.passage,
+        removeWorkspacePassage,
         requestWithSession,
         navigation,
         draftDirty,

@@ -1,9 +1,19 @@
 'use client';
 
+import { Ellipsis } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useKnowledgeEditorToolbar } from '../../hooks/use-knowledge-editor-toolbar';
-import { Button, Dialog, DialogActions, Input, Select } from '@/fsd/shared/ui';
+import {
+    Button,
+    Dialog,
+    DialogActions,
+    Input,
+    Select,
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+} from '@/fsd/shared/ui';
 import styles from './knowledge-editor.module.css';
 import { EditorTableControls } from './editor-table-controls';
 
@@ -15,13 +25,17 @@ export function EditorToolbar({
 }: {
     editor: Editor;
     disabled: boolean;
-    variant?: 'full' | 'tutor';
+    variant?: 'full' | 'tutor' | 'workspace';
     label?: string | undefined;
 }) {
     const { t } = useI18n();
     const toolbar = useKnowledgeEditorToolbar(editor);
-    const full = variant === 'full';
-    const iconSize = full ? 18 : 14;
+    const workspace = variant === 'workspace';
+    const full = variant !== 'tutor';
+    let iconSize = 18;
+    if (workspace) iconSize = 16;
+    if (!full) iconSize = 14;
+
     const tutorControls = new Set([
         'knowledge.bold',
         'knowledge.italic',
@@ -37,7 +51,7 @@ export function EditorToolbar({
     return (
         <>
             <div
-                className={styles.toolbar}
+                className={workspace ? styles.workspaceToolbar : styles.toolbar}
                 role='group'
                 aria-label={label ?? t('knowledge.explanation')}
             >
@@ -45,6 +59,7 @@ export function EditorToolbar({
                     <Select
                         aria-label={t('knowledge.paragraph')}
                         size='sm'
+                        fullWidth={!workspace}
                         disabled={disabled}
                         value={toolbar.paragraph}
                         onChange={toolbar.changeParagraph}
@@ -58,22 +73,49 @@ export function EditorToolbar({
                         ]}
                     />
                 )}
-                {controls.map(
-                    ({ key, icon: Icon, action, active, unavailable }) => (
-                        <button
-                            key={key}
-                            type='button'
-                            className={styles.tool}
-                            aria-label={t(key)}
-                            title={t(key)}
-                            aria-pressed={active}
-                            disabled={disabled || unavailable}
-                            onMouseDown={preserveSelection}
-                            onClick={action}
-                        >
-                            <Icon aria-hidden size={iconSize} />
-                        </button>
-                    ),
+                {controls.map((control) => (
+                    <ToolbarControl
+                        key={control.key}
+                        control={control}
+                        disabled={disabled}
+                        workspace={workspace}
+                        iconSize={iconSize}
+                    />
+                ))}
+                {workspace && (
+                    <div className={styles.moreFormatting}>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button
+                                    type='button'
+                                    className={styles.workspaceTool}
+                                    aria-label={t('knowledge.moreFormatting')}
+                                    onMouseDown={preserveSelection}
+                                >
+                                    <Ellipsis size={16} aria-hidden />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                side='bottom'
+                                align='end'
+                                autoFocus={false}
+                                className={styles.moreTools}
+                            >
+                                {controls
+                                    .filter(isExtraControl)
+                                    .map((control) => (
+                                        <ToolbarControl
+                                            key={control.key}
+                                            control={control}
+                                            disabled={disabled}
+                                            workspace={workspace}
+                                            iconSize={iconSize}
+                                            inPopover
+                                        />
+                                    ))}
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 )}
             </div>
             {full && (
@@ -110,5 +152,63 @@ export function EditorToolbar({
                 />
             </Dialog>
         </>
+    );
+}
+
+type ToolbarControlModel = ReturnType<
+    typeof useKnowledgeEditorToolbar
+>['controls'][number];
+const extraKeys = new Set([
+    'knowledge.underline',
+    'knowledge.strike',
+    'knowledge.link',
+    'knowledge.table',
+]);
+const groupStarts = new Set([
+    'knowledge.bold',
+    'knowledge.bulletList',
+    'knowledge.link',
+    'knowledge.undo',
+]);
+function isExtraControl(control: ToolbarControlModel) {
+    return extraKeys.has(control.key);
+}
+function ToolbarControl({
+    control,
+    disabled,
+    workspace,
+    inPopover = false,
+    iconSize,
+}: {
+    control: ToolbarControlModel;
+    disabled: boolean;
+    workspace: boolean;
+    inPopover?: boolean;
+    iconSize: number;
+}) {
+    const { t } = useI18n();
+    const Icon = control.icon;
+    const classNames = [workspace ? styles.workspaceTool : styles.tool];
+    if (workspace && extraKeys.has(control.key) && !inPopover)
+        classNames.push(styles.extraTool);
+    if (workspace && groupStarts.has(control.key) && !inPopover)
+        classNames.push(styles.groupStart);
+    const className = classNames.join(' ');
+    function preserveSelection(event: React.MouseEvent) {
+        event.preventDefault();
+    }
+    return (
+        <button
+            type='button'
+            className={className}
+            aria-label={t(control.key)}
+            title={t(control.key)}
+            aria-pressed={control.active}
+            disabled={disabled || control.unavailable}
+            onMouseDown={preserveSelection}
+            onClick={control.action}
+        >
+            <Icon aria-hidden size={iconSize} />
+        </button>
     );
 }

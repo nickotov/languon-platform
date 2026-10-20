@@ -102,6 +102,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     requestFingerprint: 'test',
                     status: 'running',
                     preferences: {
+                        mode: 'auto',
                         replyLanguage: 'auto',
                         tone: 'neutral',
                         explanationLevel: 'auto',

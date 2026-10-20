@@ -1,5 +1,6 @@
 'use client';
 
+import { type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { KnowledgeApiError } from '@/fsd/entities/knowledge';
 import { useSessionStore } from '@/fsd/entities/session';
@@ -7,19 +8,18 @@ import { KnowledgeNoteForm } from '@/fsd/features/knowledge-notes';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
-    AlertDialog,
     Button,
     ButtonLink,
     CompanionLayout,
-    DialogActions,
     InlineAlert,
     LoadingState,
 } from '@/fsd/shared/ui';
 import { useKnowledgePageActions } from '../../hooks/use-knowledge-page-actions';
+import { useWorkspacePresentation } from '../../hooks/use-workspace-presentation';
 import { KnowledgeAuthBoundary } from '../knowledge-auth-boundary/knowledge-auth-boundary';
-import { WorkspaceConflictDialogs } from './workspace-conflict-dialogs';
+import { WorkspaceDocumentPane } from './workspace-document-pane';
+import { WorkspaceDialogs } from './workspace-dialogs';
 import { WorkspaceHeader } from './workspace-header';
-import { WorkspaceHistory } from './workspace-history';
 import { WorkspaceShareControls } from './workspace-share-controls';
 import styles from './knowledge-detail-page.module.css';
 
@@ -35,6 +35,7 @@ export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
 function DetailContent({ noteId }: { noteId: string }) {
     const { t, href } = useI18n();
     const actions = useKnowledgePageActions(noteId);
+    const view = useWorkspacePresentation(actions);
     const {
         state,
         workspace,
@@ -44,7 +45,6 @@ function DetailContent({ noteId }: { noteId: string }) {
         canPublish,
         busy,
         actionError,
-        navigation,
     } = actions;
     const missing =
         state.query.error instanceof KnowledgeApiError &&
@@ -58,7 +58,6 @@ function DetailContent({ noteId }: { noteId: string }) {
             {t('knowledge.back')}
         </ButtonLink>
     );
-
     if (!workspace && state.query.isPending)
         return (
             <main className={styles.page}>
@@ -66,7 +65,6 @@ function DetailContent({ noteId }: { noteId: string }) {
                 <LoadingState>{t('knowledge.loading')}</LoadingState>
             </main>
         );
-
     if (!workspace || !draft)
         return (
             <main className={styles.page}>
@@ -90,11 +88,20 @@ function DetailContent({ noteId }: { noteId: string }) {
         <ContextualAssistant
             source={{ kind: 'knowledge', id: noteId }}
             contextLabel={title}
+            selectionRootId='knowledge-workspace-editor'
             workspace={{
                 getSnapshot: actions.getSnapshot,
+                onBusyChange: view.setTutorBusy,
                 onAcceptProposal: actions.acceptProposal,
                 onConflictProposal: actions.compareProposal,
                 restoreTarget: actions.restoreTarget,
+                getProposalPreview: view.preview,
+                onShowTarget: view.showTarget,
+                proposalRootId: 'knowledge-workspace-proposal',
+                inlineProposalRootId: 'knowledge-workspace-inline-proposal',
+                getProposalPosition: view.proposalPosition,
+                request: view.request,
+                editorCharacters: view.characters,
                 editorLimit: workspace.limits.editorChars,
                 referenceLimit: workspace.limits.referenceChars,
                 onSent: actions.refreshAfterSend,
@@ -102,162 +109,148 @@ function DetailContent({ noteId }: { noteId: string }) {
             }}
         />
     );
-
+    const share =
+        workspace.status === 'saved'
+            ? (
+                  open: boolean,
+                  onOpenChange: (value: boolean) => void,
+                  anchor: ReactNode,
+              ) => (
+                  <WorkspaceShareControls
+                      noteId={noteId}
+                      enabled={workspace.shareEnabled}
+                      dirty={view.dirty}
+                      onChange={state.setShareEnabled}
+                      open={open}
+                      onOpenChange={onOpenChange}
+                      anchor={anchor}
+                  />
+              )
+            : undefined;
     return (
-        <CompanionLayout companion={assistant}>
-            <main className={styles.page}>
-                {back}
+        <CompanionLayout
+            companion={assistant}
+            variant='workspace'
+            resizeLabel={t('knowledge.resizeTutor')}
+        >
+            <main className={styles.workspace} data-workspace-page>
                 <WorkspaceHeader
                     title={title}
                     recovery={state.status}
+                    savedAt={workspace.published?.updatedAt}
                     draft={workspace.status === 'draft'}
+                    dirty={view.dirty}
                     canSave={canSave}
+                    canPublish={canPublish}
                     busy={busy}
+                    share={share}
+                    shareEnabled={workspace.shareEnabled}
+                    titleVisible={view.titleVisible}
+                    saveError={Boolean(actionError)}
+                    stats={
+                        t('knowledge.words', { count: view.words }) +
+                        ' · ' +
+                        t('knowledge.tutorLimit', {
+                            count: view.characters.toLocaleString(),
+                            limit: workspace.limits.editorChars.toLocaleString(),
+                        })
+                    }
+                    onSave={actions.save}
                     onSaveCopy={actions.saveCopy}
                     onHistory={actions.openHistory}
                     onDelete={actions.openDelete}
+                    onRetryRecovery={state.retryRecovery}
                 />
-                {state.status === 'error' && (
-                    <InlineAlert
-                        tone='error'
-                        actions={
-                            <Button onClick={state.retryRecovery}>
-                                {t('knowledge.retry')}
-                            </Button>
-                        }
+                <WorkspaceDocumentPane>
+                    <div
+                        id='knowledge-workspace-toolbar'
+                        className={styles.formatting}
+                    />
+                    <div
+                        className={styles.documentScroll}
+                        data-workspace-scroll
                     >
-                        {t('knowledge.recoveryError')}
-                    </InlineAlert>
-                )}
-                {actionError && (
-                    <InlineAlert tone='error'>
-                        {t('knowledge.saveError')}
-                    </InlineAlert>
-                )}
-                {actions.retargetProposal && (
-                    <InlineAlert
-                        tone='warning'
-                        actions={
-                            <div className={styles.actions}>
-                                <Button
-                                    variant='secondary'
-                                    onClick={actions.cancelRetarget}
-                                >
-                                    {t('knowledge.cancel')}
-                                </Button>
-                                <Button onClick={actions.applyRetarget}>
-                                    {t('knowledge.applyNewTarget')}
-                                </Button>
+                        {(workspace.branches.length > 1 ||
+                            state.status === 'error' ||
+                            actionError ||
+                            actions.retargetProposal) && (
+                            <div className={styles.notices}>
+                                {workspace.branches.length > 1 && (
+                                    <InlineAlert tone='warning'>
+                                        {t('knowledge.resolveBeforeSave')}
+                                    </InlineAlert>
+                                )}
+                                {state.status === 'error' && (
+                                    <InlineAlert
+                                        tone='error'
+                                        actions={
+                                            <Button
+                                                onClick={state.retryRecovery}
+                                            >
+                                                {t('knowledge.retry')}
+                                            </Button>
+                                        }
+                                    >
+                                        {t('knowledge.recoveryError')}
+                                    </InlineAlert>
+                                )}
+                                {actionError && (
+                                    <InlineAlert tone='error'>
+                                        {t('knowledge.saveError')}
+                                    </InlineAlert>
+                                )}
+                                {actions.retargetProposal && (
+                                    <InlineAlert
+                                        tone='warning'
+                                        actions={
+                                            <div className={styles.actions}>
+                                                <Button
+                                                    variant='secondary'
+                                                    onClick={
+                                                        actions.cancelRetarget
+                                                    }
+                                                >
+                                                    {t('knowledge.cancel')}
+                                                </Button>
+                                                <Button
+                                                    onClick={
+                                                        actions.applyRetarget
+                                                    }
+                                                >
+                                                    {t(
+                                                        'knowledge.applyNewTarget',
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        }
+                                    >
+                                        {t('knowledge.retargetHelp')}
+                                    </InlineAlert>
+                                )}
                             </div>
-                        }
-                    >
-                        {t('knowledge.retargetHelp')}
-                    </InlineAlert>
-                )}
-                <section
-                    className={styles.article}
-                    id='knowledge-workspace-editor'
-                >
-                    <KnowledgeNoteForm
-                        ref={actions.editor}
-                        value={draft.content}
-                        onChange={state.change}
-                        onValidityChange={actions.setValid}
-                        disabled={busy !== null}
-                    />
-                    <div className={styles.saveActions}>
-                        <span className={styles.description}>
-                            {workspace.branches.length > 1
-                                ? t('knowledge.resolveBeforeSave')
-                                : workspace.status === 'draft'
-                                  ? t('knowledge.draftHelp')
-                                  : t('knowledge.saveHelp')}
-                        </span>
-                        <Button
-                            disabled={!canPublish || busy !== null}
-                            loading={busy === 'save'}
-                            onClick={actions.save}
-                        >
-                            {t('knowledge.save')}
-                        </Button>
+                        )}
+                        <WorkspaceDialogs actions={actions} />
+                        <KnowledgeNoteForm
+                            ref={actions.editor}
+                            value={draft.content}
+                            onChange={state.change}
+                            onValidityChange={actions.setValid}
+                            disabled={busy !== null}
+                            workspace={{
+                                toolbarRootId: 'knowledge-workspace-toolbar',
+                                editorId: 'knowledge-workspace-editor',
+                                proposalRootId: 'knowledge-workspace-proposal',
+                                inlineProposalRootId:
+                                    'knowledge-workspace-inline-proposal',
+                                onAskTutor: view.askTutor,
+                                onTutorAction: view.tutorAction,
+                                tutorBusy: view.tutorBusy,
+                                onTitleVisibilityChange: view.setTitleVisible,
+                                onAskOutline: view.askOutline,
+                            }}
+                        />
                     </div>
-                </section>
-                {workspace.status === 'saved' && (
-                    <WorkspaceShareControls
-                        noteId={noteId}
-                        enabled={workspace.shareEnabled}
-                        onChange={state.setShareEnabled}
-                    />
-                )}
-                <WorkspaceConflictDialogs
-                    workspace={workspace}
-                    selectedBranchId={draft.branchId}
-                    onChoose={actions.chooseBranch}
-                    onSaveCopy={actions.saveCopy}
-                    onResolve={actions.resolveBranches}
-                    resolving={busy === 'resolve'}
-                    proposal={actions.proposalConflict}
-                    editor={actions.editor}
-                    onCloseProposal={actions.closeProposal}
-                    onNewTarget={actions.beginRetarget}
-                />
-                <WorkspaceHistory
-                    noteId={noteId}
-                    open={actions.historyOpen}
-                    publishedVersion={workspace.published?.version ?? 0}
-                    onClose={actions.closeHistory}
-                    onBeforeRestore={state.flush}
-                    onRestored={state.reload}
-                />
-                <AlertDialog
-                    open={actions.deleting}
-                    onClose={actions.closeDelete}
-                    title={t('knowledge.deleteTitle')}
-                    closeLabel={t('knowledge.cancelDelete')}
-                    footer={
-                        <DialogActions>
-                            <Button
-                                variant='secondary'
-                                onClick={actions.closeDelete}
-                            >
-                                {t('knowledge.cancelDelete')}
-                            </Button>
-                            <Button
-                                variant='danger'
-                                loading={busy === 'delete'}
-                                onClick={actions.remove}
-                            >
-                                {t('knowledge.delete')}
-                            </Button>
-                        </DialogActions>
-                    }
-                >
-                    <p>{t('knowledge.deleteHelp')}</p>
-                </AlertDialog>
-                <AlertDialog
-                    open={navigation.open}
-                    onClose={navigation.keepEditing}
-                    title={t('knowledge.unsavedTitle')}
-                    closeLabel={t('knowledge.keepEditing')}
-                    footer={
-                        <DialogActions>
-                            <Button
-                                variant='secondary'
-                                onClick={navigation.keepEditing}
-                            >
-                                {t('knowledge.keepEditing')}
-                            </Button>
-                            <Button
-                                variant='danger'
-                                onClick={navigation.discard}
-                            >
-                                {t('knowledge.discard')}
-                            </Button>
-                        </DialogActions>
-                    }
-                >
-                    <p>{t('knowledge.unsavedHelp')}</p>
-                </AlertDialog>
+                </WorkspaceDocumentPane>
             </main>
         </CompanionLayout>
     );

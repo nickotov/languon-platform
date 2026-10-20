@@ -72,15 +72,22 @@ const components: Components = {
 export function ChatMarkdown({
     content,
     streaming = false,
+    workspace = false,
 }: {
     content: string;
     streaming?: boolean;
+    workspace?: boolean;
 }) {
     const mode = streaming ? 'streaming' : 'static';
     const animated = streaming ? animation : false;
 
     return (
-        <div data-assistant-content data-streaming={streaming} dir='auto'>
+        <div
+            data-assistant-content
+            data-streaming={streaming}
+            data-workspace={workspace}
+            dir='auto'
+        >
             <Streamdown
                 className={styles.markdown ?? ''}
                 mode={mode}

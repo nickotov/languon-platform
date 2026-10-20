@@ -5,31 +5,26 @@
     min-height: 0;
     flex: 1;
 }
-
 .content {
     min-width: 0;
     min-height: 0;
     flex: 1;
 }
-
 .slot {
     width: 0;
     flex-shrink: 0;
 }
-
 .fill {
     --app-topbar-height: 0px;
     --app-sidebar-width: 0px;
     height: 100%;
     align-items: stretch;
 }
-
 .fill .content {
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
-
 @media (min-width: 1024px) {
     .layout:where([data-expanded='true'][data-detached='false']) .slot {
         position: sticky;
@@ -39,10 +34,173 @@
         margin: var(--space-16);
         z-index: 30;
     }
-
+    .layout:where(
+            [data-expanded='true'][data-detached='false'][data-half-width='true']
+        )
+        .slot {
+        width: calc(50% - var(--space-16));
+    }
     .fill:where([data-expanded='true'][data-detached='false']) .slot {
         top: 0;
         height: auto;
         position: relative;
     }
+}
+.layout:where([data-variant='workspace']) {
+    position: relative;
+    --workspace-header-height: var(--size-48);
+    height: calc(100dvh - var(--app-topbar-height, 0px));
+    align-items: stretch;
+    overflow: hidden;
+}
+.layout:where([data-variant='workspace']) .content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+@media (min-width: 1024px) {
+    .layout:where(
+            [data-variant='workspace'][data-inline='true'][data-expanded='true'][data-detached='false']
+        )
+        .slot {
+        position: relative;
+        top: 0;
+        height: 100%;
+        margin: 0;
+        width: clamp(
+            min(var(--size-340), 50%),
+            var(--companion-width, var(--size-400)),
+            min(
+                var(--size-560),
+                max(var(--size-340), calc(100% - var(--size-480)))
+            )
+        );
+        border-inline-start: 1px solid var(--border-default);
+    }
+}
+@media (min-width: 1024px) and (max-width: 1439px) {
+    .layout:where(
+            [data-variant='workspace'][data-inline='true'][data-expanded='true'][data-detached='false']
+        )
+        .slot {
+        width: clamp(
+            min(var(--size-340), 50%),
+            var(--companion-width, var(--size-360)),
+            min(
+                var(--size-560),
+                max(var(--size-340), calc(100% - var(--size-480)))
+            )
+        );
+    }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+    .layout:where(
+            [data-variant='workspace'][data-inline='true'][data-expanded='true'][data-detached='false']
+        )
+        .slot {
+        width: min(var(--size-340), 50%);
+    }
+    .layout:where([data-variant='workspace']) .resizeHandle {
+        display: none;
+    }
+}
+@media (min-width: 1024px) {
+    .layout:where(
+            [data-variant='workspace'][data-layout-mode='focus'][data-detached='false']
+        )
+        .slot {
+        width: 0;
+        border: 0;
+    }
+    .layout:where(
+            [data-variant='workspace'][data-inline='true'][data-layout-mode='chat'][data-expanded='true'][data-detached='false']
+        )
+        .slot {
+        width: max(
+            min(var(--size-340), 50%),
+            min(60%, calc(100% - var(--size-480)))
+        );
+    }
+}
+@media (max-width: 767px) {
+    .layout:where([data-variant='workspace']) {
+        flex-direction: column;
+    }
+    .layout:where([data-variant='workspace']) .content {
+        width: 100%;
+    }
+    .layout:where([data-variant='workspace'][data-mobile-tab='tutor'])
+        .content {
+        flex: none;
+    }
+    .layout:where([data-variant='workspace']) .slot {
+        display: none;
+    }
+    .layout:where(
+            [data-variant='workspace'][data-mobile-tab='tutor'][data-detached='false']
+        )
+        .slot {
+        display: flex;
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+    }
+    .layout:where([data-variant='workspace'][data-mobile-tab='tutor'])
+        .content
+        [data-workspace-page] {
+        height: auto;
+        flex: none;
+    }
+    .layout:where([data-variant='workspace'][data-mobile-tab='tutor'])
+        .content
+        [data-workspace-document] {
+        display: none;
+    }
+}
+.layout:where([data-resizing='true']) {
+    user-select: none;
+    cursor: col-resize;
+}
+.resizeHandle {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: var(--size-8);
+    translate: -50% 0;
+    z-index: 40;
+    outline: none;
+    cursor: col-resize;
+    touch-action: none;
+}
+.resizeHandle:dir(rtl) {
+    translate: 50% 0;
+}
+.resizeHandle::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: calc(50% - var(--size-1));
+    width: var(--size-2);
+    background: transparent;
+}
+.resizeHandle:hover::after,
+.resizeHandle:focus-visible::after,
+.layout:where([data-resizing='true']) .resizeHandle::after {
+    background: var(--border-focus);
+}
+
+.layout:where(
+        [data-variant='workspace'][data-overlay='true'][data-expanded='true'][data-detached='false']
+    )
+    .slot {
+    position: absolute;
+    inset-block: var(--size-48) 0;
+    inset-inline-end: 0;
+    width: min(var(--size-380), calc(100% - var(--size-24)));
+    height: auto;
+    margin: 0;
+    z-index: 30;
+    border-inline-start: 1px solid var(--border-default);
+    box-shadow: var(--elevation-lg);
 }

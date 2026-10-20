@@ -4,32 +4,38 @@ import {
     forwardRef,
     useEffect,
     useId,
-    useMemo,
     useState,
     type ChangeEvent,
+    type MouseEvent,
 } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
-    KnowledgeCategorySchema,
     KnowledgeNoteContentSchema,
     type KnowledgeWorkingContent,
-    type KnowledgeCategory,
 } from '@languon/contracts';
-import { dictionaryApi } from '@/fsd/entities/dictionary';
-import { knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
 import { useI18n } from '@/fsd/shared/i18n';
-import {
-    Checkbox,
-    Input,
-    Select,
-    Textarea,
-    type SelectOption,
-} from '@/fsd/shared/ui';
+import { Input } from '@/fsd/shared/ui';
 import {
     KnowledgeEditor,
     type KnowledgeEditorHandle,
 } from '../knowledge-editor/knowledge-editor';
 import styles from './knowledge-note-form.module.css';
+import { WorkspaceTitle } from './workspace-title';
+import { NoteMetadata } from './note-metadata';
+
+export type KnowledgeTutorAction =
+    'explain' | 'correct' | 'translate' | 'simplify' | 'rephrase' | 'examples';
+
+export type KnowledgeWorkspaceEditorOptions = {
+    toolbarRootId: string;
+    editorId: string;
+    proposalRootId: string;
+    inlineProposalRootId?: string;
+    onAskTutor(passage: string): void;
+    onAskOutline(): void;
+    onTutorAction?(action: KnowledgeTutorAction, passage: string): void;
+    onTitleVisibilityChange?(visible: boolean): void;
+    tutorBusy?: boolean;
+};
 
 export const KnowledgeNoteForm = forwardRef<
     KnowledgeEditorHandle,
@@ -40,45 +46,18 @@ export const KnowledgeNoteForm = forwardRef<
                 current: KnowledgeWorkingContent,
             ) => KnowledgeWorkingContent,
         ): void;
+        workspace?: KnowledgeWorkspaceEditorOptions;
         disabled?: boolean;
         error?: string | undefined;
         onValidityChange?: ((valid: boolean) => void) | undefined;
     }
 >(function KnowledgeNoteForm(
-    { value, onChange, disabled = false, error, onValidityChange },
+    { value, onChange, disabled = false, error, onValidityChange, workspace },
     ref,
 ) {
-    const { t, locale } = useI18n();
+    const { t } = useI18n();
     const id = useId();
     const [editorValid, setEditorValid] = useState(true);
-    const languages = useQuery({
-        queryKey: ['dictionary-languages'],
-        queryFn: ({ signal }) => dictionaryApi.listLanguages(signal),
-        staleTime: Infinity,
-    });
-    const options = useMemo(() => {
-        const choices: SelectOption[] =
-            languages.data?.languages.map((language) => ({
-                value: language.tag,
-                label: language.displayNames[locale],
-            })) ?? [];
-        for (const language of [
-            value.studiedLanguage,
-            value.explanationLanguage,
-        ]) {
-            if (language && !choices.some((item) => item.value === language))
-                choices.push({
-                    value: language,
-                    label: language,
-                });
-        }
-        return choices;
-    }, [
-        languages.data,
-        locale,
-        value.studiedLanguage,
-        value.explanationLanguage,
-    ]);
     const valid =
         editorValid && KnowledgeNoteContentSchema.safeParse(value).success;
     useEffect(() => {
@@ -93,81 +72,91 @@ export const KnowledgeNoteForm = forwardRef<
     function changeTitle(event: ChangeEvent<HTMLInputElement>) {
         field('title', event.target.value);
     }
-    function changeSummary(event: ChangeEvent<HTMLTextAreaElement>) {
-        field('summary', event.target.value);
-    }
-    function changeStudied(event: ChangeEvent<HTMLSelectElement>) {
-        field('studiedLanguage', event.target.value || null);
-    }
-    function changeExplanation(event: ChangeEvent<HTMLSelectElement>) {
-        field('explanationLanguage', event.target.value || null);
+    function changeWorkspaceTitle(title: string) {
+        field('title', title);
     }
     function changeBody(body: KnowledgeWorkingContent['body']) {
         field('body', body);
     }
-    function changeCategories(categories: KnowledgeCategory[]) {
-        field('categories', categories);
+    function focusDocument(event: MouseEvent<HTMLElement>) {
+        if (workspace && event.target === event.currentTarget) {
+            event.currentTarget
+                .querySelector<HTMLElement>('[role="textbox"]')
+                ?.focus();
+        }
     }
+    const EditorContainer = workspace ? 'article' : 'div';
+    const formClassName = workspace ? styles.workspaceForm : styles.form;
+    const explanationClassName = workspace
+        ? styles.article
+        : styles.explanation;
     return (
-        <div className={styles.form}>
-            <Input
-                label={t('knowledge.noteTitle')}
-                value={value.title}
-                maxLength={200}
-                required
-                disabled={disabled}
-                onChange={changeTitle}
-            />
-            <Textarea
-                label={t('knowledge.summary')}
-                value={value.summary}
-                maxLength={1_000}
-                rows={3}
-                disabled={disabled}
-                onChange={changeSummary}
-            />
-            <fieldset className={styles.categories} disabled={disabled}>
-                <legend>{t('knowledge.categories')}</legend>
-                <div className={styles.categoryOptions}>
-                    {KnowledgeCategorySchema.options.map((category) => (
-                        <NoteCategory
-                            key={category}
-                            category={category}
-                            categories={value.categories}
-                            onChange={changeCategories}
+        <div className={formClassName}>
+            {!workspace && (
+                <Input
+                    label={t('knowledge.noteTitle')}
+                    value={value.title}
+                    maxLength={200}
+                    required
+                    disabled={disabled}
+                    onChange={changeTitle}
+                />
+            )}
+            {!workspace && (
+                <NoteMetadata
+                    value={value}
+                    onChange={onChange}
+                    workspace={false}
+                    disabled={disabled}
+                />
+            )}
+            {workspace && (
+                <div
+                    id={workspace.proposalRootId}
+                    className={styles.proposalRoot}
+                />
+            )}
+            <EditorContainer
+                className={explanationClassName}
+                id={workspace?.editorId}
+                aria-label={workspace ? t('knowledge.document') : undefined}
+                onClick={focusDocument}
+            >
+                <div className={workspace ? styles.readingColumn : undefined}>
+                    {workspace && (
+                        <WorkspaceTitle
+                            value={value.title}
+                            disabled={disabled}
+                            onChange={changeWorkspaceTitle}
+                            onVisibilityChange={
+                                workspace.onTitleVisibilityChange
+                            }
                         />
-                    ))}
+                    )}
+                    {workspace && (
+                        <NoteMetadata
+                            value={value}
+                            onChange={onChange}
+                            workspace
+                            disabled={disabled}
+                        />
+                    )}
+                    {!workspace && (
+                        <span id={id} className={styles.label}>
+                            {t('knowledge.document')}
+                        </span>
+                    )}
+                    <KnowledgeEditor
+                        ref={ref}
+                        workspace={workspace}
+                        value={value.body}
+                        onChange={changeBody}
+                        disabled={disabled}
+                        label={t('knowledge.document')}
+                        onValidityChange={setEditorValid}
+                    />
                 </div>
-            </fieldset>
-            <div className={styles.languages}>
-                <Select
-                    label={t('knowledge.studiedLanguage')}
-                    options={[{ value: '', label: '—' }, ...options]}
-                    value={value.studiedLanguage ?? ''}
-                    disabled={disabled}
-                    onChange={changeStudied}
-                />
-                <Select
-                    label={t('knowledge.explanationLanguage')}
-                    options={[{ value: '', label: '—' }, ...options]}
-                    value={value.explanationLanguage ?? ''}
-                    disabled={disabled}
-                    onChange={changeExplanation}
-                />
-            </div>
-            <div className={styles.explanation}>
-                <span id={id} className={styles.label}>
-                    {t('knowledge.document')}
-                </span>
-                <KnowledgeEditor
-                    ref={ref}
-                    value={value.body}
-                    onChange={changeBody}
-                    disabled={disabled}
-                    label={t('knowledge.document')}
-                    onValidityChange={setEditorValid}
-                />
-            </div>
+            </EditorContainer>
             {error && (
                 <p className={styles.error} role='alert'>
                     {error}
@@ -176,28 +165,3 @@ export const KnowledgeNoteForm = forwardRef<
         </div>
     );
 });
-
-function NoteCategory({
-    category,
-    categories,
-    onChange,
-}: {
-    category: KnowledgeCategory;
-    categories: KnowledgeCategory[];
-    onChange(next: KnowledgeCategory[]): void;
-}) {
-    const { t } = useI18n();
-    function change(event: ChangeEvent<HTMLInputElement>) {
-        const next = event.target.checked
-            ? [...categories, category]
-            : categories.filter((item) => item !== category);
-        onChange(next);
-    }
-    return (
-        <Checkbox
-            label={t(knowledgeCategoryKeys[category])}
-            checked={categories.includes(category)}
-            onChange={change}
-        />
-    );
-}

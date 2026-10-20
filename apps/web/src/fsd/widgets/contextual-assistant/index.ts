@@ -4,4 +4,5 @@ export type {
     WorkspaceAssistantProps,
     WorkspaceEditorSnapshot,
     WorkspaceProposalAction,
+    WorkspaceProposalPreview,
 } from './types';

@@ -27,3 +27,11 @@ apps/*/next-env.d.ts
 .agent/features/044-contextual-language-assistant-and-knowledge/designs/contextual-assistant-widget/v001.prompt.md
 .agent/features/044-contextual-language-assistant-and-knowledge/designs/contextual-assistant-widget/v001/source
 .agent/features/044-contextual-language-assistant-and-knowledge/designs/contextual-assistant-widget/v001/reference/source
+
+# Frozen Knowledge design prompts and exact supplied provider source.
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v001.prompt.md
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v002.prompt.md
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v003/source
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v003/reference
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v004/source
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v004/reference

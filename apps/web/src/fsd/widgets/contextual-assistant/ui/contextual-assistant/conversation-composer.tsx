@@ -1,20 +1,15 @@
-import {
-    useId,
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    type ChangeEvent,
-    type FormEvent,
-    type KeyboardEvent,
-    type ReactNode,
-} from 'react';
-import { ArrowUp, Plus, Square, TextSelect } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { ArrowUp, FileText, Plus, Square, TextSelect } from 'lucide-react';
 import type { ChatPreferences, CopiedAttachment } from '@languon/contracts';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
+import { useConversationComposerInput } from '../../hooks/use-conversation-composer-input';
 import { ComposerAttachments } from './composer-attachments';
 import { ComposerPreferences } from './composer-preferences';
 import { composerCopy } from './composer-copy';
+import { workspaceCopy } from '../../lib/workspace-copy';
+import type { WorkspacePendingPassage } from '../../hooks/use-workspace-passage';
+import { WorkspacePassagePreview } from './workspace-passage-preview';
 import styles from './composer.module.css';
 
 export function ConversationComposer({
@@ -25,6 +20,7 @@ export function ConversationComposer({
     preferences,
     onPreferences,
     onDefaults,
+    defaultsSaved = false,
     onContext,
     onSend,
     onStop,
@@ -35,6 +31,10 @@ export function ConversationComposer({
     onSelectFromPage,
     contextOpen = false,
     workspace = false,
+    editorCharacters,
+    editorLimit = 40_000,
+    workspacePassage,
+    onRemoveWorkspacePassage,
 }: {
     question: string;
     onQuestion(value: string): void;
@@ -43,6 +43,7 @@ export function ConversationComposer({
     preferences: ChatPreferences;
     onPreferences(value: ChatPreferences): void;
     onDefaults(): void;
+    defaultsSaved?: boolean;
     onContext(): void;
     onSend(): void;
     onStop(): void;
@@ -56,61 +57,88 @@ export function ConversationComposer({
     onSelectFromPage?: (() => void) | undefined;
     contextOpen?: boolean;
     workspace?: boolean;
+    editorCharacters?: number | undefined;
+    editorLimit?: number | undefined;
+    workspacePassage?: WorkspacePendingPassage | null | undefined;
+    onRemoveWorkspacePassage?: (() => void) | undefined;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
     const text = composerCopy(locale);
-    const id = useId();
-    const input = useRef<HTMLTextAreaElement>(null);
-    const wasContextOpen = useRef(contextOpen);
-    useEffect(() => {
-        if (wasContextOpen.current && !contextOpen)
-            input.current?.focus({ preventScroll: true });
-        wasContextOpen.current = contextOpen;
-    }, [contextOpen]);
-    const canSend = Boolean(question.trim()) && !busy && !active;
+    const workspaceText = workspaceCopy(locale);
+    let placeholder = text.placeholder;
+    const hasPassage =
+        Boolean(workspacePassage) ||
+        attachments.some(
+            (attachment) =>
+                attachment.kind !== 'text-reference' &&
+                attachment.kind !== 'dictionary-card',
+        );
+    if (workspace)
+        placeholder = hasPassage
+            ? workspaceText.selection
+            : workspaceText.placeholder;
+    const documentCount = `${workspaceText.document} ${(editorCharacters ?? 0).toLocaleString(locale)} / ${editorLimit.toLocaleString(locale)}`;
+    const overLimit = workspace && (editorCharacters ?? 0) > editorLimit;
+    const canSend = Boolean(question.trim()) && !busy && !active && !overLimit;
     const hint = question.trim() ? text.pendingQuestion : text.continueTyping;
-    const hintId = `${id}-hint`;
-    useLayoutEffect(() => {
-        const node = input.current;
-        if (!node) return;
-        node.style.height = 'auto';
-        node.style.height = `${node.scrollHeight}px`;
-    }, [question]);
-    function change(event: ChangeEvent<HTMLTextAreaElement>) {
-        onQuestion(event.target.value);
-    }
-    function key(event: KeyboardEvent<HTMLTextAreaElement>) {
-        if (event.nativeEvent.isComposing) return;
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            if (canSend) onSend();
-        }
-        const before = question.slice(0, event.currentTarget.selectionStart);
-        if (event.key === '/' && (!before || /\s$/.test(before))) {
-            event.preventDefault();
-            onContext();
-        }
-    }
-    function submit(event: FormEvent) {
-        event.preventDefault();
-        if (canSend) onSend();
-    }
+    const { id, input, hintId, change, key, submit } =
+        useConversationComposerInput({
+            question,
+            contextOpen,
+            canSend,
+            workspace,
+            onQuestion,
+            onContext,
+            onSend,
+        });
     return (
-        <form className={styles.composer} onSubmit={submit}>
+        <form
+            className={styles.composer}
+            onSubmit={submit}
+            data-workspace={workspace}
+        >
             {contextPicker}
-            <ComposerAttachments
-                attachments={attachments}
-                onRemove={onRemove}
-                workspace={workspace}
-            />
+            {overLimit && (
+                <p role='alert' className={styles.limitError}>
+                    {workspaceText.limit}: {documentCount}
+                </p>
+            )}
+            {!workspace && (
+                <ComposerAttachments
+                    attachments={attachments}
+                    onRemove={onRemove}
+                />
+            )}
             <div className={styles.inputFrame}>
+                {workspace && (
+                    <span
+                        className={styles.documentChip}
+                        title={workspaceText.hint}
+                    >
+                        <FileText size={14} aria-hidden='true' />
+                        {workspaceText.document}
+                    </span>
+                )}
+                {workspacePassage && onRemoveWorkspacePassage && (
+                    <WorkspacePassagePreview
+                        passage={workspacePassage}
+                        onRemove={onRemoveWorkspacePassage}
+                    />
+                )}
+                {workspace && (
+                    <ComposerAttachments
+                        attachments={attachments}
+                        onRemove={onRemove}
+                        workspace
+                    />
+                )}
                 <textarea
                     ref={input}
                     id={id}
                     aria-label={copy.question}
                     aria-describedby={active ? hintId : undefined}
-                    placeholder={text.placeholder}
+                    placeholder={placeholder}
                     className={styles.input}
                     value={question}
                     onChange={change}
@@ -134,10 +162,14 @@ export function ConversationComposer({
                             }
                         >
                             <Plus size={16} aria-hidden='true' />
-                            <span className={styles.desktopLabel}>
-                                {text.context}
-                            </span>
-                            <kbd className={styles.shortcut}>/</kbd>
+                            {!workspace && (
+                                <span className={styles.desktopLabel}>
+                                    {text.context}
+                                </span>
+                            )}
+                            {!workspace && (
+                                <kbd className={styles.shortcut}>/</kbd>
+                            )}
                         </button>
                         {onSelectFromPage && (
                             <button
@@ -150,18 +182,31 @@ export function ConversationComposer({
                             </button>
                         )}
                     </div>
+                    {workspace && (
+                        <ComposerPreferences
+                            value={preferences}
+                            onChange={onPreferences}
+                            onDefaults={onDefaults}
+                            defaultsSaved={defaultsSaved}
+                            disabled={busy || active}
+                            workspace
+                            modelControl={modelControl}
+                        />
+                    )}
+                    <span className={styles.actionSpacer} />
                     {active ? (
                         <button
                             type='button'
                             onClick={onStop}
                             className={styles.stop}
+                            aria-label={copy.stop}
                         >
                             <Square
                                 size={12}
                                 fill='currentColor'
                                 aria-hidden='true'
                             />
-                            {copy.stop}
+                            {!workspace && copy.stop}
                         </button>
                     ) : (
                         <button
@@ -180,15 +225,17 @@ export function ConversationComposer({
                     {hint}
                 </p>
             )}
-            <div className={styles.preferencesRow}>
-                <ComposerPreferences
-                    value={preferences}
-                    onChange={onPreferences}
-                    onDefaults={onDefaults}
-                    disabled={busy || active}
-                />
-                {modelControl}
-            </div>
+            {!workspace && (
+                <div className={styles.preferencesRow}>
+                    <ComposerPreferences
+                        value={preferences}
+                        onChange={onPreferences}
+                        onDefaults={onDefaults}
+                        disabled={busy || active}
+                    />
+                    {modelControl}
+                </div>
+            )}
         </form>
     );
 }

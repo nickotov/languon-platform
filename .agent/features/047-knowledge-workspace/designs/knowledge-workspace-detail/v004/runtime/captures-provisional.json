@@ -1,0 +1,82 @@
+{
+  "sourceHashes": "source-hashes-initial-full.json",
+  "runOutcome": "8browserpass2fail;4backendpass",
+  "captures": [
+    {
+      "file": "workspace-inline-proposal-desktop.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-4e98f-d-compares-a-changed-target",
+      "sha256": "f96918a1b8b1423e2a326501d673e6ffe012ba8b23a42da0d7cdd361217674b6",
+      "status": "Passing scenario screenshot"
+    },
+    {
+      "file": "workspace-selection-scrolled-desktop.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-4e98f-d-compares-a-changed-target",
+      "sha256": "76406efcf542f4efdf5f3e5ec651d5cade3bc6eff86bb289cf1daba471fa5c43",
+      "status": "Passing scenario screenshot"
+    },
+    {
+      "file": "workspace-proposal-desktop.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-4e98f-d-compares-a-changed-target",
+      "sha256": "9ac53e76c1170017ebd5b904af85c2f00bc12140f3ea5902bd12c597ca7b3fd9",
+      "status": "Passing scenario screenshot"
+    },
+    {
+      "file": "workspace-chat-layout-desktop.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-7f15b-question-and-saves-one-note",
+      "sha256": "cf0965d966754c17735658855a4056fa4778bd89a5d457be81cba7547147f924",
+      "status": "Partial failed scenario; shows preceding verified state only"
+    },
+    {
+      "file": "workspace-resized-aligned-headers.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-7f15b-question-and-saves-one-note",
+      "sha256": "b5bac4719c038d466efb9ad5541ffadec0bb89e45ae6fb99ca9f1dcbb4e85e4d",
+      "status": "Partial failed scenario; shows preceding verified state only"
+    },
+    {
+      "file": "workspace-mobile-outline-chat.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-41c52-s-and-uses-a-tablet-overlay",
+      "sha256": "0b9ee7b66d1c5536c4f78654c31fe272df3a905f99bf3a4e51d42b4688773cf2",
+      "status": "Passing scenario screenshot"
+    },
+    {
+      "file": "workspace-tablet-overlay.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-41c52-s-and-uses-a-tablet-overlay",
+      "sha256": "75b908f8ad40997017f868e618d675cdce04396fe5bbdadfed52d9fb0b8e4eba",
+      "status": "Passing scenario screenshot"
+    },
+    {
+      "file": "workspace-mobile-document-review.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-41c52-s-and-uses-a-tablet-overlay",
+      "sha256": "993e673194c0bc96df6a7d0c44d849eb56d01adc2a096a763f46f023f7bb4e15",
+      "status": "Passing scenario screenshot"
+    },
+    {
+      "file": "workspace-mobile-tutor-tab.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-41c52-s-and-uses-a-tablet-overlay",
+      "sha256": "6df5df79cbb1ffb5ea4e4beff0b44eef01b9919a88c311f2080a04d1eacfaae0",
+      "status": "Passing scenario screenshot"
+    },
+    {
+      "file": "workspace-mobile-editor.png",
+      "runId": "workspace-v9-final-20261020",
+      "scenarioDirectory": "knowledge-workspace.journe-41c52-s-and-uses-a-tablet-overlay",
+      "sha256": "3038e7dc5449dd6769159fae8657e554c05b93d113475a5af55d3f562979b55a",
+      "status": "Passing scenario screenshot"
+    }
+  ],
+  "limitations": [
+    "EN deterministic fake learner content compared to RU source samples.",
+    "Runtime uses real app shell:240px desktopsidebar and64pxmobileheader vs source schematic64pxrail.",
+    "Later focused preference retry/focus fixes require refreshing affected runtime evidence.",
+    "Draft case failed responsive transition assertion before default/properties/saved/dark capture; these rows pending focused rerun."
+  ]
+}

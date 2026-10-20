@@ -12,6 +12,15 @@ import {
 } from '@/fsd/entities/conversation';
 import { useConversationStream } from './use-conversation-stream';
 
+type ActionFailure =
+    | {
+          kind: 'preferences';
+          conversationId: string;
+          preferences: ChatPreferences;
+          error: unknown;
+      }
+    | { kind: 'stop'; conversationId: string; turnId: string; error: unknown };
+
 export function useConversation(
     actorId: string,
     source: ConversationSource,
@@ -23,7 +32,10 @@ export function useConversation(
     const [question, setQuestion] = useState('');
     const [attachments, setAttachments] = useState<CopiedAttachment[]>([]);
     const [useDraft, setUseDraft] = useState(false);
-    const [actionError, setActionError] = useState(false);
+    const [lastActionFailure, setLastActionFailure] =
+        useState<ActionFailure | null>(null);
+    const [preferencesPending, setPreferencesPending] = useState(false);
+    const preferencesLock = useRef(false);
     const composerDrafts = useRef(
         new Map<
             string,
@@ -47,6 +59,12 @@ export function useConversation(
         gcTime: 0,
     });
     const id = selected ?? list.data?.conversations[0]?.id ?? null;
+    const currentConversationId = useRef(id);
+    currentConversationId.current = id;
+    useEffect(() => setLastActionFailure(null), [id]);
+    const actionFailure =
+        lastActionFailure?.conversationId === id ? lastActionFailure : null;
+    const actionError = Boolean(actionFailure);
     const detail = useQuery({
         queryKey: ['conversation', actorId, id],
         queryFn: ({ signal }) =>
@@ -153,31 +171,80 @@ export function useConversation(
             setAttachments((current) =>
                 current.filter((item) => !sentIds.has(item.id)),
             );
-            setActionError(false);
             await refresh(turn.conversationId);
         },
     });
-    async function stop() {
-        if (!active || !id) return;
+    function clearActionFailure(
+        kind: ActionFailure['kind'],
+        conversationId: string,
+    ) {
+        setLastActionFailure((current) =>
+            current?.kind === kind && current.conversationId === conversationId
+                ? null
+                : current,
+        );
+    }
+    async function stopTurn(conversationId: string, turnId: string) {
+        clearActionFailure('stop', conversationId);
         try {
             await request((token) =>
-                conversationApi.stop(token, id, active.id, shareKey),
+                conversationApi.stop(token, conversationId, turnId, shareKey),
             );
-            await refresh();
-        } catch {
-            setActionError(true);
+            await refresh(conversationId);
+        } catch (error) {
+            setLastActionFailure({
+                kind: 'stop',
+                conversationId,
+                turnId,
+                error,
+            });
+        }
+    }
+    async function stop() {
+        if (active && id) await stopTurn(id, active.id);
+    }
+    async function savePreferences(
+        conversationId: string,
+        preferences: ChatPreferences,
+    ) {
+        if (preferencesLock.current) return;
+        preferencesLock.current = true;
+        setPreferencesPending(true);
+        clearActionFailure('preferences', conversationId);
+        try {
+            await request((token) =>
+                conversationApi.update(
+                    token,
+                    conversationId,
+                    preferences,
+                    shareKey,
+                ),
+            );
+            await refresh(conversationId);
+        } catch (error) {
+            if (currentConversationId.current === conversationId)
+                setLastActionFailure({
+                    kind: 'preferences',
+                    conversationId,
+                    preferences,
+                    error,
+                });
+        } finally {
+            preferencesLock.current = false;
+            setPreferencesPending(false);
         }
     }
     async function updatePreferences(preferences: ChatPreferences) {
-        if (!id) return;
-        try {
-            await request((token) =>
-                conversationApi.update(token, id, preferences, shareKey),
+        if (id) await savePreferences(id, preferences);
+    }
+    function retryAction() {
+        if (actionFailure?.kind === 'preferences')
+            void savePreferences(
+                actionFailure.conversationId,
+                actionFailure.preferences,
             );
-            await refresh();
-        } catch {
-            setActionError(true);
-        }
+        else if (actionFailure?.kind === 'stop')
+            void stopTurn(actionFailure.conversationId, actionFailure.turnId);
     }
     async function rename(conversationId: string, title: string) {
         await request((token) =>
@@ -224,6 +291,9 @@ export function useConversation(
         useDraft,
         setUseDraft,
         actionError,
+        actionFailure,
+        retryAction,
+        preferencesPending,
         stop,
         updatePreferences,
         rename,

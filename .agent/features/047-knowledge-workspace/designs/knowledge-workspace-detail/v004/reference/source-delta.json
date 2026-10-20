@@ -1,0 +1,31 @@
+{
+  "selected": "AI-Native B",
+  "geometry": {
+    "desktopHeader": "48px document header aligned to48px tutor title row; tutor context row32px below",
+    "document": "Open white canvas; no bordered card. Centered68ch column;18px body/1.75; desktop title30px, mobile24px. Article top40px desktop/20px mobile. Horizontal padding48px pane>=900,32px>=640,20px narrower;16px mobile.",
+    "toolbar": "Centered max860px; border transparent until title scroll-away; title appears in compact header on scroll.",
+    "chat": "340px minimum; max560px in split plus min480px document. Default400px >=1440,360px1280..1439,340px1024..1279. Below1024 overlay380px max(area-24). Chat layout around60%; source width constrained remaining480px document.",
+    "mobile": "Actual<=767px full-page Document/Tutor tabs;48px topbar + roughly52px tabrow. No bottomsheet.44px touch controls."
+  },
+  "controls": [
+    "Focus/Split/Chat icon radiogroup; saved local layout preference",
+    "Metadata language/category/summary chips/popovers under title; empty Properties control",
+    "Save status popover; Save; shared-link globe; overflow copy/history/share/stats/delete",
+    "Document-aware tutor header; new chat; hide; context line; no visible model selector in header",
+    "Composer card with document/selected-passage/reference chips; plus context; response settings; send",
+    "Empty editor starter buttons: Write, AI outline, Lesson note, Language notes",
+    "Selection quick actions; inline accept/reject/compare; document-side proposal review",
+    "Mobile document/tutor tabs with unread badge"
+  ],
+  "potentialContractGaps": [
+    "Source Chat60% conflicts preceding user explicit max50%; requires precedence decision.",
+    "Local remembered mode/width adds persistence expectation compared in-memory current resize.",
+    "Selection correction/simplification/rephrase and inline review require product mapping; source mocks deterministic replies.",
+    "Revision history/restore, templates and comparison placement must map existing backend capabilities, not simulate unsupported success.",
+    "Source merge helper concatenates changed blocks automatically; real conflict contract expressly requires manual user resolution.",
+    "Source new chat resets one local conversation; real contract supports private multiple conversations/history/delete.",
+    "Source note sharing/copy/delete use mock transitions; retain real saved-vs-draft privacy semantics.",
+    "Source preference selection-only context could conflict complete editor snapshot context policy.",
+    "Schematic nav rail explicitly not real shell; no blanket site navigation redesign implied."
+  ]
+}

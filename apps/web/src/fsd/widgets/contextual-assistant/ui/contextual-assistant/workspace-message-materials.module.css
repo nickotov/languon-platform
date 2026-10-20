@@ -1,0 +1,58 @@
+.material {
+    align-self: stretch;
+    min-width: 0;
+    padding: var(--space-6) var(--space-10);
+    border-inline-start: var(--size-2) solid var(--primary-default);
+    border-radius: var(--radius-8);
+    background: var(--primary-subtle);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+}
+
+.material:where([data-reference='true']) {
+    border: var(--size-1) dashed var(--border-strong);
+    background: var(--background-surface);
+}
+
+.material summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+.material summary::-webkit-details-marker {
+    display: none;
+}
+
+.material summary:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--space-2);
+}
+
+.label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    color: var(--primary-default);
+    font-weight: 500;
+}
+
+.excerpt {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+    color: var(--text-primary);
+}
+
+.full {
+    max-height: var(--size-256);
+    overflow: auto;
+    margin-top: var(--space-8);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.material:where([open]) .excerpt {
+    display: none;
+}

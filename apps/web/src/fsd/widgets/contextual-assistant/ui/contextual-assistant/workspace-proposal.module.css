@@ -1,0 +1,484 @@
+.reviewButton {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--size-28);
+    padding: 0 var(--space-8);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-6);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--size-12);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.reviewButton:where([aria-pressed='true']) {
+    border-color: var(--primary-default);
+    color: var(--primary-default);
+    background: var(--primary-subtle);
+}
+
+.proposalReview {
+    overflow: hidden;
+    margin-block: var(--space-8);
+    border: var(--size-1) solid var(--primary-200);
+    border-radius: var(--radius-16);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    box-shadow: var(--elevation-lg);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+
+.header {
+    display: flex;
+    align-items: start;
+    gap: var(--space-12);
+    padding: var(--space-12) var(--space-16);
+    border-bottom: var(--size-1) solid var(--border-default);
+}
+
+.accentDot {
+    width: var(--size-8);
+    height: var(--size-8);
+    flex-shrink: 0;
+    margin-top: var(--space-6);
+    border-radius: var(--radius-full);
+    background: var(--primary-default);
+}
+
+.header > svg {
+    color: var(--primary-default);
+    flex-shrink: 0;
+}
+
+.heading {
+    flex: 1;
+    min-width: 0;
+}
+
+.heading strong {
+    font-weight: 600;
+}
+
+.heading p {
+    margin: 0;
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+    color: var(--text-secondary);
+}
+
+.showTarget {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: var(--size-28);
+    border: 0;
+    border-radius: var(--radius-6);
+    padding-inline: var(--space-8);
+    color: var(--text-secondary);
+    background: transparent;
+    font: inherit;
+    font-size: var(--size-12);
+    cursor: pointer;
+}
+
+.close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--size-28);
+    width: var(--size-28);
+    border: 0;
+    border-radius: var(--radius-6);
+    color: var(--text-tertiary);
+    background: transparent;
+    cursor: pointer;
+}
+
+.body {
+    padding: var(--space-12) var(--space-16);
+}
+
+.modes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.mode {
+    position: relative;
+    display: flex;
+    align-items: start;
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-10);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-12);
+    font-size: var(--size-14);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.mode input {
+    position: absolute;
+    opacity: 0;
+}
+
+.modeLabel {
+    display: block;
+}
+
+.mode small {
+    display: block;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+    font-weight: 400;
+}
+
+.mode > svg {
+    flex-shrink: 0;
+    margin-top: var(--space-4);
+}
+
+.mode:has(:checked) {
+    border-color: var(--primary-default);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+
+.mode:has(:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.mode:has(:focus-visible),
+.proposalReview:focus-visible,
+.reviewButton:focus-visible,
+.proposalReview button:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.preview {
+    display: grid;
+    gap: var(--space-8);
+    max-height: var(--size-256);
+    overflow: auto;
+    margin-top: var(--space-12);
+    padding: var(--space-12);
+    border-radius: var(--radius-12);
+    background: var(--background-subtle);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.preview ins {
+    padding: var(--space-6) var(--space-10);
+    border-inline-start: var(--size-2) solid var(--success-default);
+    background: var(--success-subtle);
+    text-decoration: none;
+}
+
+.preview p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.previewLabel {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.preview .changed {
+    display: flex;
+    align-items: start;
+    gap: var(--space-8);
+    color: var(--warning-default);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.changed > svg {
+    flex-shrink: 0;
+    margin-top: var(--space-4);
+}
+
+.comparison {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-8);
+    margin: 0;
+}
+
+.comparison > div {
+    padding: var(--space-10);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+}
+
+.comparison dt {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.comparison dd {
+    margin: var(--space-4) 0 0;
+}
+
+.preview del {
+    color: var(--text-secondary);
+    text-decoration-color: var(--danger-default);
+}
+
+.proposalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-8);
+    padding: var(--space-12) var(--space-16);
+    border-top: var(--size-1) solid var(--border-default);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.proposalActions > p {
+    flex: 1;
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.proposalActions button {
+    min-height: var(--size-32);
+    padding-inline: var(--space-12);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.proposalActions .accept {
+    border-color: var(--primary-default);
+    background: var(--primary-default);
+    color: var(--background-surface);
+}
+
+.proposalActions .cancel {
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.proposalReview button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.notice {
+    margin: var(--space-8) 0;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+}
+
+@media (max-width: 640px) {
+    .modes {
+        grid-template-columns: 1fr;
+    }
+
+    .comparison {
+        grid-template-columns: 1fr;
+    }
+
+    .reviewButton,
+    .close,
+    .showTarget,
+    .mode,
+    .proposalActions button {
+        min-height: var(--size-44);
+    }
+
+    .close {
+        min-width: var(--size-44);
+    }
+}
+
+.suggestionCard {
+    margin-top: var(--space-12);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-12);
+    overflow: hidden;
+}
+
+.suggestionCaption {
+    padding: var(--space-10) var(--space-12) 0;
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.suggestionExcerpt {
+    padding: var(--space-4) var(--space-12) var(--space-10);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+
+.suggestionExcerpt p {
+    margin: 0;
+    border-inline-start: var(--size-2) solid var(--success-default);
+    padding-inline-start: var(--space-10);
+}
+
+.suggestionExcerpt del {
+    color: var(--text-secondary);
+    text-decoration-color: var(--danger-default);
+}
+
+.suggestionExcerpt ins {
+    display: block;
+    margin-top: var(--space-4);
+    padding-inline: var(--space-4);
+    border-radius: var(--radius-4);
+    background: var(--success-subtle);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.suggestionFooter {
+    display: flex;
+    flex-wrap: wrap;
+    border-top: var(--size-1) solid var(--border-default);
+    padding: var(--space-4);
+}
+
+.suggestionFooter .reviewButton {
+    min-height: var(--size-32);
+    border: 0;
+    border-radius: var(--radius-8);
+    color: var(--primary-default);
+    background: transparent;
+    font-size: var(--size-14);
+}
+
+.suggestionFooter .reviewButton:hover {
+    background: var(--primary-subtle);
+}
+
+.inlineProposal {
+    position: absolute;
+    z-index: 20;
+    overflow: hidden;
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-12);
+    box-shadow: var(--elevation-lg);
+    background: var(--background-elevated);
+    color: var(--text-primary);
+}
+
+.inlineProposal:focus-visible,
+.inlineProposal button:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.inlineCaption {
+    margin: 0;
+    padding: var(--space-10) var(--space-12) 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 500;
+    line-height: var(--size-16);
+}
+
+.inlineDiff {
+    max-height: var(--size-256);
+    overflow: auto;
+    margin: 0;
+    padding: var(--space-6) var(--space-12) 0;
+    font-size: var(--size-16);
+    line-height: var(--size-28);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.inlineDiff ins {
+    border-radius: var(--radius-4);
+    padding-inline: var(--space-4);
+    background: var(--success-subtle);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.screenReaderOnly {
+    position: absolute;
+    width: var(--size-1);
+    height: var(--size-1);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.inlineActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+    padding: var(--space-6);
+    border-top: var(--size-1) solid var(--border-default);
+}
+
+.inlineActions button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--size-32);
+    padding-inline: var(--space-10);
+    border: 0;
+    border-radius: var(--radius-8);
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: var(--size-14);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.inlineActions .inlineAccept {
+    background: var(--primary-default);
+    color: var(--background-surface);
+}
+
+.inlineActions button:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+.inlineActions .inlineAccept:hover {
+    background: var(--primary-hover);
+    color: var(--background-surface);
+}
+
+.inlineActions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+@media (max-width: 1023px) {
+    .suggestionFooter .reviewButton,
+    .inlineActions button {
+        min-height: var(--size-44);
+    }
+}

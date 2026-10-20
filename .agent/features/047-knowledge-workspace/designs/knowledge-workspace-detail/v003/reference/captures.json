@@ -1,0 +1,125 @@
+{
+  "capturedAt": "2026-10-20T08:36:49.149942+00:00",
+  "providerArtifactId": "4daa1a0f-1e36-43a3-9dc1-a170e44cd749",
+  "providerVersion": 8,
+  "sourceUrl": "https://www.magicpatterns.com/c/3pqoonbgxacst6w72rhiqb",
+  "source": "../source",
+  "sourceManifest": "source-manifest.json",
+  "inheritedDesignSystem": "source/design-system",
+  "inheritedDesignSystemQualification": "Twelve empty artifact primitive files resolved from current published design-system artifact ecb75ac2-c06e-44ed-8e1b-28ec4bff5287 (Languon ds-079806f1-e593-4a64-8818-e922e2f7314d), read 2026-10-20. This is not proof of exact historical v8 inheritance. Original88-file provider snapshot preserved including empty files.",
+  "rendering": "Actual supplied React UI source bundled using previously installed esbuild0.25.12, React18.3.1, lucide-react0.577.0, framer-motion11.18.2, date-fns4.1.0, tailwind-merge2.6.1, Radix popover1.1.2. Controlled Tailwind3.4.17 JSON config uses supplied token mappings. No exported package scripts or JavaScript config executed. Controlled entry renders supplied App. Google font import replaced with previously captured local Inter font stylesheet/files; CSS otherwise unchanged except converting three Tailwind imports into compiler directives.",
+  "review": "React/helper source searched for network/storage/evaluation/external side effects; only local UI timers, DOM editing, clipboard fake share link, focus/keyboard handlers and static fake content. Local browser network restricted by project wrapper.",
+  "browser": "Project-safe pnpm browser wrapper, Chromium",
+  "session": "languon-workspace-v8-reference-392eaad8fb7fa132a55ed5cc6da0f664",
+  "url": "http://127.0.0.1:4413/",
+  "screenshots": [
+    {
+      "file": "desktop-default-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "saved-edits, supplied initial default",
+      "theme": "light"
+    },
+    {
+      "file": "desktop-details-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "saved-edits, Details disclosure expanded",
+      "theme": "light"
+    },
+    {
+      "file": "desktop-actions-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "saved-edits, Document actions open",
+      "theme": "light"
+    },
+    {
+      "file": "desktop-empty-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "new",
+      "theme": "light"
+    },
+    {
+      "file": "desktop-proposal-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "proposal",
+      "theme": "light"
+    },
+    {
+      "file": "mobile-closed-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "saved-edits, real narrow viewport, chat closed",
+      "theme": "light"
+    },
+    {
+      "file": "mobile-sheet-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "saved-edits, Tutor opened, partial sheet",
+      "theme": "light"
+    },
+    {
+      "file": "mobile-expanded-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "saved-edits, Expand chat sheet",
+      "theme": "light"
+    }
+  ],
+  "consoleErrors": [],
+  "consoleInfo": [
+    "React DevTools development build notice"
+  ],
+  "network": "Document/script/styles/font requests local HTTP200; incidental favicon.ico404. No external browser requests.",
+  "limitations": [
+    "Hosted /c browser link was sign-in gated; screenshots are controlled renderings of authenticated connector source.",
+    "Current inherited design-system primitive presentation may differ from original v8 inheritance.",
+    "Supplied prototype demo controls remain visible; no product runtime fidelity claim.",
+    "Local font stylesheet requests normal100..900 weights; browser synthesized italic.",
+    "Captured reference geometry includes supplied schematic64px navigation rail; production app shell may differ."
+  ],
+  "rendererHashes": {
+    "renderer/input.css": "18b137bdeb1d564582c77361813df577bf0244813980ab1be927889e07531b3c",
+    "renderer/tailwind.config.json": "f5cf0aece1105720c117fee8f22c8b1f2b3a764fbc9e09eadab5e40c1c1987fb",
+    "renderer/entry.tsx": "a9b09e5abd7a0cefde7ee0ebbc745862956ebd4095a3f83eb791b7285c499394"
+  },
+  "designSystemHashes": {
+    "source/design-system/components/Tooltip/index.tsx": "4a72c8b2f131010ebce91038de6583b2ec76dfde66e9a0fd62cc7d3b97819c17",
+    "source/design-system/components/Input/index.tsx": "fbfabb5d870fba1c82694510bba151d77b89ae0f4075e56287fae8a0bf5bc4e2",
+    "source/design-system/components/DropdownMenu/index.tsx": "ceaa39920a62104854c531f990bd745165baa9bc7657103885f3f6c384f74b3c",
+    "source/design-system/components/Toast/index.tsx": "c1f9c4d5b070a6cf6c246042b706b9a4b1aa2224d33128cf8fcf8d9112392336",
+    "source/design-system/components/Dialog/index.tsx": "75a54f3ec6c48df04151c1ab3411102b18418c27636adba2bb561e8a27213e7c",
+    "source/design-system/components/Popover/index.tsx": "ac24a14db1bb4eece20aa793124264f538107903e1150e71b684aa815857dd1d",
+    "source/design-system/components/Button/index.tsx": "c78aced08d61b66c3e32e8eaa06a59133102d2178592714a03947265a4973fb3",
+    "source/design-system/components/Logo/index.tsx": "900b2f9f47a23a624c6323b01a70eebffcee70eb4bc81d28d29813ff1023be25",
+    "source/design-system/components/IconButton/index.tsx": "8d4cbc6009fd919bb7b8fe4b641ee052003485efaa9df00010f0404bd517b4b8",
+    "source/design-system/components/NavItem/index.tsx": "d6a4ec011db2f3337f2e3a76752b061aa6d89511d2303cea437483227b51585a",
+    "source/design-system/components/InlineAlert/index.tsx": "9eb4bf37d1d1a1afa1853b5fb00a2ee8d916bbbd8f17e11458b9dc1510dde426",
+    "source/design-system/components/Badge/index.tsx": "4883b3dc1f21cf2f85043ff2e2df1b067ba141af52acd761ee6f3f45177fa5a0"
+  },
+  "cleanup": {
+    "at": "2026-10-20T08:51:38.849375+00:00",
+    "browserSession": "Closed after capture",
+    "referenceServer": "Task-owned Python HTTP server on127.0.0.1:4413 stopped via Ctrl-C; process exited0"
+  }
+}

@@ -5,6 +5,11 @@
     color: var(--text-primary);
 }
 
+:where([data-workspace='true']) > .markdown {
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+
 .markdown :where(p, h2, h3, h4, ul, ol, blockquote, pre, table, hr) {
     margin: 0;
     margin-block-end: var(--space-12);

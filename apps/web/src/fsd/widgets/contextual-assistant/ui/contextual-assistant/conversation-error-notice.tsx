@@ -11,11 +11,13 @@ export function ConversationErrorNotice({
     error,
     code,
     onRetry,
+    retryLabel,
     disabled = false,
 }: {
     error?: unknown;
     code?: string | null;
     onRetry(): void;
+    retryLabel?: string | undefined;
     disabled?: boolean;
 }) {
     const { locale, href } = useI18n();
@@ -23,10 +25,11 @@ export function ConversationErrorNotice({
     const failureCode =
         code ??
         (error instanceof ConversationApiError ? error.detail.code : null);
+    const actionLabel = retryLabel ?? copy.retry;
     let message = copy.error;
     let action = (
         <Button variant='secondary' onClick={onRetry} disabled={disabled}>
-            {copy.retry}
+            {actionLabel}
         </Button>
     );
     if (failureCode === 'model_unavailable') {

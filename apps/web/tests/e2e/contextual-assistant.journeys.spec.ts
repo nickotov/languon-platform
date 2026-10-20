@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:dd229fee825e66b5
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:cf08a97114c6b3f5
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -8,9 +8,11 @@ import {
     type TestInfo,
     type Request,
     type Browser,
+    type Locator,
 } from '@playwright/test';
 import type {
     ConversationDetail,
+    Conversation,
     KnowledgeNote,
     TextFolder,
     TextDocument,
@@ -76,8 +78,11 @@ function runtimeErrors(page: Page) {
     });
     page.on('response', (response) => {
         if (
-            response.headers()['x-synthetic-scenario'] ===
-                'model-unavailable' &&
+            [
+                'model-unavailable',
+                'preference-update-unavailable',
+                'defaults-update-unavailable',
+            ].includes(response.headers()['x-synthetic-scenario'] ?? '') &&
             response.status() === 503
         )
             return;
@@ -379,6 +384,291 @@ async function streamingEvidence(page: Page) {
         });
 }
 
+async function verifyPersistentTutorModes(
+    page: Page,
+    widget: Locator,
+    token: string,
+    sourceId: string,
+    info: TestInfo,
+) {
+    const list = async () =>
+        (await api(
+            page,
+            token,
+            `/conversations?sourceKind=text&sourceId=${sourceId}`,
+        )) as { conversations: Conversation[] };
+    const original = (await list()).conversations[0]!;
+    await api(
+        page,
+        token,
+        `/conversations/${original.id}`,
+        { title: 'Mode primary' },
+        'PATCH',
+    );
+    const { conversation: other } = (await api(page, token, '/conversations', {
+        source: { kind: 'text', id: sourceId },
+    })) as { conversation: Conversation };
+    await api(
+        page,
+        token,
+        `/conversations/${other.id}`,
+        { title: 'Mode control' },
+        'PATCH',
+    );
+    const choose = async (label: string) => {
+        await widget.getByRole('button', { name: /^Mode:/u }).click();
+        const modes = page.getByRole('radiogroup', {
+            name: 'Mode',
+            exact: true,
+        });
+        const selected = modes.getByRole('radio', { name: label, exact: true });
+        await selected.click();
+        await expect(modes).toBeVisible();
+        await expect(
+            modes.getByRole('radio', { name: label, exact: true }),
+        ).toBeEnabled();
+        await expect(
+            modes.getByRole('radio', { name: label, exact: true }),
+        ).toBeChecked();
+        await expect(selected).toBeFocused();
+        expect(
+            (
+                (await api(
+                    page,
+                    token,
+                    `/conversations/${original.id}`,
+                )) as ConversationDetail
+            ).conversation.preferences.mode,
+        ).toBe(label.toLowerCase());
+        await page.keyboard.press('Escape');
+        await expect(
+            widget.getByRole('button', { name: `Mode: ${label}`, exact: true }),
+        ).toBeVisible();
+    };
+    const reopen = async () => {
+        await page.reload();
+        const launcher = page.getByRole('button', {
+            name: /^Open language tutor/u,
+        });
+        await expect(launcher).toBeVisible();
+        await launcher.click();
+        await expect(widget).toBeVisible();
+    };
+    const select = async (title: string) => {
+        await widget
+            .getByRole('button', { name: 'More options', exact: true })
+            .click();
+        await page
+            .getByRole('menuitem', {
+                name: 'Conversation history',
+                exact: true,
+            })
+            .click();
+        await widget
+            .getByRole('button', { name: new RegExp(`^${title}`, 'u') })
+            .click();
+        await expect(widget.getByLabel('Your question')).toBeVisible();
+    };
+    await choose('Practice');
+    await widget
+        .getByRole('button', { name: 'Mode: Practice', exact: true })
+        .click();
+    await expect(
+        page
+            .getByRole('radiogroup', { name: 'Mode', exact: true })
+            .getByRole('radio', { name: 'Practice', exact: true }),
+    ).toBeChecked();
+    await page.keyboard.press('Escape');
+    await reopen();
+    await expect(
+        widget.getByRole('button', { name: 'Mode: Practice', exact: true }),
+    ).toBeVisible();
+    await select('Mode control');
+    await expect(
+        widget.getByRole('button', { name: 'Mode: Auto', exact: true }),
+    ).toBeVisible();
+    await select('Mode primary');
+    await widget
+        .getByRole('button', { name: 'Mode: Practice', exact: true })
+        .click();
+    const defaultsSaved = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'PUT' &&
+            response.url().endsWith('/conversation-settings'),
+    );
+    await page
+        .getByRole('button', { name: 'Use as my defaults', exact: true })
+        .click();
+    expect((await defaultsSaved).status()).toBe(200);
+    await page.keyboard.press('Escape');
+    await widget
+        .getByRole('button', { name: 'New conversation', exact: true })
+        .click();
+    await expect(
+        widget.getByRole('button', { name: 'Mode: Practice', exact: true }),
+    ).toBeVisible();
+    const inherited = (await list()).conversations.find(
+        (conversation) => ![original.id, other.id].includes(conversation.id),
+    )!;
+    expect(inherited.preferences.mode).toBe('practice');
+    await api(
+        page,
+        token,
+        `/conversations/${inherited.id}`,
+        { title: 'Mode inherited' },
+        'PATCH',
+    );
+    await reopen();
+    await select('Mode primary');
+    await choose('Explain');
+    await select('Mode inherited');
+    await expect(
+        widget.getByRole('button', { name: 'Mode: Practice', exact: true }),
+    ).toBeVisible();
+    expect(
+        (
+            (await api(
+                page,
+                token,
+                `/conversations/${other.id}`,
+            )) as ConversationDetail
+        ).conversation.preferences.mode,
+    ).toBe('auto');
+    await select('Mode primary');
+    await expect(
+        widget.getByRole('button', { name: 'Mode: Explain', exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'tutor-persistent-modes-desktop');
+    return original.id;
+}
+
+async function verifyPreferenceFailureRetries(
+    page: Page,
+    widget: Locator,
+    token: string,
+    conversationId: string,
+    info: TestInfo,
+) {
+    let turnAdmissions = 0;
+    const observe = (request: Request) => {
+        if (request.method() === 'POST' && request.url().endsWith('/turns'))
+            turnAdmissions += 1;
+    };
+    page.on('request', observe);
+    const preferencePath = `/api/conversations/${conversationId}`;
+    const requests: { method: string; mode: string }[] = [];
+    let preferenceFails = true;
+    await page.route(`**${preferencePath}`, async (route) => {
+        const request = route.request();
+        if (request.method() !== 'PATCH') {
+            await route.continue();
+            return;
+        }
+        requests.push({
+            method: 'PATCH',
+            mode: request.postDataJSON().preferences.mode,
+        });
+        if (!preferenceFails) {
+            await route.continue();
+            return;
+        }
+        preferenceFails = false;
+        await route.fulfill({
+            status: 503,
+            headers: {
+                'x-synthetic-scenario': 'preference-update-unavailable',
+            },
+            json: {
+                error: {
+                    code: 'service_unavailable',
+                    message: 'Synthetic preference outage',
+                    correlationId: 'synthetic-preference-retry',
+                },
+            },
+        });
+    });
+    try {
+        await widget
+            .getByRole('button', { name: 'Mode: Explain', exact: true })
+            .click();
+        await page
+            .getByRole('radiogroup', { name: 'Mode', exact: true })
+            .getByRole('radio', { name: 'Correct', exact: true })
+            .click();
+        const failure = widget.locator(
+            '[data-tutor-action-error="preferences"]',
+        );
+        await expect(failure).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(
+            widget.getByRole('button', { name: 'Mode: Explain', exact: true }),
+        ).toBeVisible();
+        await failure
+            .getByRole('button', { name: 'Retry settings', exact: true })
+            .click();
+        await expect(
+            widget.getByRole('button', { name: 'Mode: Correct', exact: true }),
+        ).toBeVisible();
+        expect(requests).toEqual([
+            { method: 'PATCH', mode: 'correct' },
+            { method: 'PATCH', mode: 'correct' },
+        ]);
+        expect(turnAdmissions).toBe(0);
+    } finally {
+        await page.unroute(`**${preferencePath}`);
+    }
+    let defaultsFails = true;
+    const defaultsRequests: string[] = [];
+    await page.route('**/api/conversation-settings', async (route) => {
+        const request = route.request();
+        if (request.method() !== 'PUT') {
+            await route.continue();
+            return;
+        }
+        defaultsRequests.push(request.postDataJSON().preferences.mode);
+        if (!defaultsFails) {
+            await route.continue();
+            return;
+        }
+        defaultsFails = false;
+        await route.fulfill({
+            status: 503,
+            headers: { 'x-synthetic-scenario': 'defaults-update-unavailable' },
+            json: {
+                error: {
+                    code: 'service_unavailable',
+                    message: 'Synthetic defaults outage',
+                    correlationId: 'synthetic-defaults-retry',
+                },
+            },
+        });
+    });
+    try {
+        await widget
+            .getByRole('button', { name: 'Mode: Correct', exact: true })
+            .click();
+        await page
+            .getByRole('button', { name: 'Use as my defaults', exact: true })
+            .click();
+        const failure = widget.locator('[data-tutor-defaults-error]');
+        await expect(failure).toBeVisible();
+        await page.keyboard.press('Escape');
+        await failure
+            .getByRole('button', { name: 'Retry settings', exact: true })
+            .click();
+        await expect(failure).toBeHidden();
+        expect(defaultsRequests).toEqual(['correct', 'correct']);
+        expect(turnAdmissions).toBe(0);
+        expect(
+            (await api(page, token, '/conversation-settings')).preferences.mode,
+        ).toBe('correct');
+        await capture(page, info, 'tutor-settings-retries-no-new-turn');
+    } finally {
+        await page.unroute('**/api/conversation-settings');
+        page.off('request', observe);
+    }
+}
+
 // @user-flow contextual-language-assistant-and-knowledge/source-chat-save-knowledge
 test('saved source streams through real SDK into an editable private note and revision history', async ({
     page,
@@ -416,6 +706,38 @@ test('saved source streams through real SDK into an editable private note and re
         })
         .toBe(true);
     await capture(page, info, 'tutor-attached-text-desktop');
+    const defaultTutorWidth = (await widget.boundingBox())!.width;
+    const companionLayout = content.locator('..');
+    await widget
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    const halfWidth = page.getByRole('menuitemcheckbox', {
+        name: 'Half-width chat (50%)',
+        exact: true,
+    });
+    await expect(halfWidth).toHaveAttribute('aria-checked', 'false');
+    await halfWidth.click();
+    await expect(halfWidth).toHaveAttribute('aria-checked', 'true');
+    await expect(companionLayout).toHaveAttribute('data-half-width', 'true');
+    await expect
+        .poll(async () => {
+            const layoutBounds = (await companionLayout.boundingBox())!;
+            const contentBounds = (await content.boundingBox())!;
+            const tutorBounds = (await widget.boundingBox())!;
+            return Math.max(
+                Math.abs(contentBounds.width - tutorBounds.width),
+                Math.max(
+                    0,
+                    tutorBounds.x +
+                        tutorBounds.width -
+                        layoutBounds.x -
+                        layoutBounds.width,
+                ),
+            );
+        })
+        .toBeLessThan(3);
+    await capture(page, info, 'tutor-attached-half-width-desktop');
+    await page.keyboard.press('Escape');
     const retainedQuestion = 'Keep my draft while changing chat placement';
     await widget.getByLabel('Your question').fill(retainedQuestion);
     await widget
@@ -492,6 +814,7 @@ test('saved source streams through real SDK into an editable private note and re
         .click();
     await expect(page.getByRole('menu')).toHaveCount(0);
     await expect(widget.locator('..')).toHaveAttribute('data-attached', 'true');
+    await expect(companionLayout).toHaveAttribute('data-half-width', 'true');
     await expect(widget.getByLabel('Your question')).toHaveValue(
         retainedQuestion,
     );
@@ -504,10 +827,33 @@ test('saved source streams through real SDK into an editable private note and re
             );
         })
         .toBe(true);
+    await widget
+        .getByRole('button', { name: 'More options', exact: true })
+        .click();
+    const attachedHalfWidth = page.getByRole('menuitemcheckbox', {
+        name: 'Half-width chat (50%)',
+        exact: true,
+    });
+    await expect(attachedHalfWidth).toHaveAttribute('aria-checked', 'true');
+    await attachedHalfWidth.click();
+    await expect(companionLayout).toHaveAttribute('data-half-width', 'false');
+    await expect
+        .poll(async () =>
+            Math.abs((await widget.boundingBox())!.width - defaultTutorWidth),
+        )
+        .toBeLessThan(2);
+    await page.keyboard.press('Escape');
 
     await widget.getByRole('button', { name: /^Reply language:/u }).click();
     await capture(page, info, 'tutor-preferences-desktop');
     await page.keyboard.press('Escape');
+    const modeConversationId = await verifyPersistentTutorModes(
+        page,
+        widget,
+        token,
+        text.id,
+        info,
+    );
     // The source remains interactive while the tutor is open: real pointer
     // selection must succeed rather than falling behind a modal overlay.
     const passage = page.getByRole('textbox', {
@@ -543,6 +889,7 @@ test('saved source streams through real SDK into an editable private note and re
         token,
         `/conversations?sourceKind=text&sourceId=${text.id}`,
     )) as { conversations: { id: string }[] };
+    expect(wireConversations[0]!.id).toBe(modeConversationId);
     const wire = await observeWire(page, token, wireConversations[0]!.id);
     try {
         await observeStreaming(page);
@@ -550,6 +897,15 @@ test('saved source streams through real SDK into an editable private note and re
             page,
             'Please draft a standalone explanation of river bank usage progressively.',
         );
+        expect(
+            (
+                (await api(
+                    page,
+                    token,
+                    `/conversations/${modeConversationId}`,
+                )) as ConversationDetail
+            ).conversation.preferences.mode,
+        ).toBe('explain');
         const activity = widget.locator('[data-tutor-activity]');
         await expect(activity).toBeVisible();
         await expect(activity).toHaveAttribute('role', 'status');
@@ -665,6 +1021,13 @@ test('saved source streams through real SDK into an editable private note and re
             .notes,
     ).toHaveLength(0);
     await capture(page, info, 'tutor-draft-card-desktop');
+    await verifyPreferenceFailureRetries(
+        page,
+        widget,
+        token,
+        modeConversationId,
+        info,
+    );
     await page
         .getByRole('button', { name: 'Review and save', exact: true })
         .click();
@@ -730,20 +1093,27 @@ test('saved source streams through real SDK into an editable private note and re
         .getByRole('button', { name: 'Minimize tutor', exact: true })
         .click();
     await page.goto(`/knowledge/${saved.id}`);
-    await expect(
-        page.getByRole('heading', { level: 1, name: saved.title }),
-    ).toBeVisible();
+    await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
+        saved.title,
+    );
+    await page
+        .getByRole('group', { name: 'Document properties', exact: true })
+        .getByRole('button', { name: saved.summary || 'Summary', exact: true })
+        .click();
     await page
         .getByRole('textbox', { name: 'Summary', exact: true })
         .fill('A learner-authored summary saved without model use.');
+    await page.keyboard.press('Escape');
+    await page
+        .getByRole('button', { name: 'Private draft recovery', exact: true })
+        .click();
     await expect(
         page.getByText('Working draft recovered', { exact: true }),
     ).toBeVisible();
-    await page
-        .getByRole('button', { name: 'Save changes', exact: true })
-        .click();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(
-        page.getByRole('button', { name: 'Save changes', exact: true }),
+        page.getByRole('button', { name: 'Save', exact: true }),
     ).toBeVisible();
     const { note: updated } = (await api(
         page,
@@ -752,7 +1122,10 @@ test('saved source streams through real SDK into an editable private note and re
     )) as { note: KnowledgeNote };
     expect(updated.version).toBe(2);
     await page
-        .getByRole('button', { name: 'Revision history', exact: true })
+        .getByRole('button', { name: 'Document actions', exact: true })
+        .click();
+    await page
+        .getByRole('menuitem', { name: 'Revision history', exact: true })
         .click();
     const historical = page.getByRole('button', { name: /^Revision 1 ·/u });
     await expect(historical).toBeVisible();

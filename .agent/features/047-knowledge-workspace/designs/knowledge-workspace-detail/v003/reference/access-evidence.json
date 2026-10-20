@@ -1,0 +1,27 @@
+{
+  "captured_at_utc": "2026-10-20T08:23:39.982719+00:00",
+  "source_url": "https://www.magicpatterns.com/c/3pqoonbgxacst6w72rhiqb",
+  "provider_version": "v8",
+  "artifact_id": "4daa1a0f-1e36-43a3-9dc1-a170e44cd749",
+  "provider_generation_in_progress": false,
+  "browser": "Orca embedded browser",
+  "browser_page_id": "9844cf77-7ba2-4520-a811-78a0052769ce",
+  "viewport_css": {
+    "width": 1125,
+    "height": 1129
+  },
+  "screenshot": "access-gate.png",
+  "screenshot_pixels": {
+    "width": 1562,
+    "height": 1568
+  },
+  "observed_state": "Sign-in gate: Want to view this design? Welcome back! Please sign in to continue.",
+  "preview_iframe_present": false,
+  "rendered_design_verified": false,
+  "missing_evidence": [
+    "Desktop populated/default design",
+    "Mobile design",
+    "Expanded details/menu design"
+  ],
+  "limitation": "Provider source was available through authenticated connector; browser session was unauthenticated. No credentials entered, source executed, design altered, or authentication gate bypassed."
+}

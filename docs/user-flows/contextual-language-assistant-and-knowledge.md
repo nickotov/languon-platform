@@ -2,7 +2,7 @@
 feature: contextual-language-assistant-and-knowledge
 title: Contextual Language Assistant and Knowledge
 status: current
-last_verified: 2026-10-19
+last_verified: 2026-10-20
 surfaces:
     - browser
     - api
@@ -58,6 +58,7 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
+    - persistent-tutor-modes
     - knowledge-workspace
     - texts
     - dictionary-platform
@@ -126,7 +127,11 @@ configuration startup requires its guard and does not own this cleanup.
    scrollable, selectable and clickable. **More options** offers **Detached chat**:
    enable it for the floating chat, with corner docking and reading-size options;
    disable it to return beside the source. Switching placement preserves the
-   unfinished question and conversation. Dictionary add-card and practice actions
+   unfinished question and conversation. While attached on desktop, **Half-width
+   chat (50%)** splits the available workspace evenly between source and tutor;
+   selecting it again restores the default chat width. Detaching leaves the
+   floating chat width unchanged, and reattaching restores the selected split.
+   Dictionary add-card and practice actions
    use icon buttons with descriptive tooltips on desktop.
    On a shared dictionary, a signed-in reader gets the same right-side tutor
    slot. A signed-out visitor sees **Sign in to ask the language assistant**
@@ -150,6 +155,15 @@ configuration startup requires its guard and does not own this cleanup.
    for a second card. Copies expose labeled source, translation, enabled
    definition/transcription/examples and field languages. Reopen after sending;
    the copied content remains readable with appropriate language direction.
+   **Mode** offers **Auto**, **Explain**, **Correct** and **Practice**. The chosen
+   mode belongs to this private conversation and survives closing and refreshing.
+   Another existing conversation retains its own mode. **Use as my defaults**
+   applies the choice to newly created conversations; changing an existing chat
+   does not change the others. Modes preserve the language-tutor scope and do
+   not enable external search or omit the complete document context.
+   If saving a mode or defaults fails, **Retry settings** repeats that settings
+   operation with the chosen values. It never submits the previous question
+   again. A pending selection retains focus and keeps its popover open.
    **Conversation history** opens the source’s saved chats. Deleting a history row
    opens confirmation; cancelling retains it, confirming removes its conversation.
 3. Ask for a Knowledge note. A compact **Knowledge draft** appears. Before saving it,
@@ -159,14 +173,18 @@ configuration startup requires its guard and does not own this cleanup.
    summary, categories, and languages, then select **Save to Knowledge**.
 4. Open **Knowledge**. Search by saved wording and filter by category/studied
    language. Open the saved note in its editor-and-tutor workspace, edit it, and
-   select **Save changes** to publish a revision. **Revision history** exposes
+   select **Save** to publish a revision. Inline property chips beneath the document title open optional summary,
+   category and language editors; **Document actions** → **Revision history** exposes
    earlier content. Restoring an earlier revision creates a new current version.
    The workspace's separate draft recovery, copied Text references and sharing
    journeys are covered in [Knowledge workspace](./knowledge-workspace.md).
 5. Ask about a saved note and request a revision. Change the saved note elsewhere
    before applying the draft. Its update is rejected; the draft remains for
    comparison or **Save as a new note**. No silent overwrite occurs.
-6. On a narrow viewport, the tutor opens as a bottom sheet at full available height.
+6. For text and dictionary contexts on a narrow viewport, the tutor opens as a
+   bottom sheet at full available height. The Knowledge document workspace uses
+   separate Document/Tutor tabs below 768px and a tablet overlay, as covered in
+   the linked Knowledge workspace guide.
    It appears above the dictionary action buttons so they cannot cover the chat.
    Its handle and header controls switch between full and partial heights. Repeat fold/reopen at 390px and 320px and explicitly **Stop** a running
    response. Incomplete output is labeled. Final usage distinguishes reported
@@ -207,13 +225,13 @@ require `X-Languon-Share-Key`; never put the secret into logs or saved examples.
 
 ## E2E coverage
 
-| Scenario                                         | Observable proof                                                                                                                                                                                                                                                    |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source-chat-save-knowledge`                     | Attached text layout, circular launcher tooltip, detached/reattached draft retention, non-modal source selection, first-text waiting and midstream pause indicators, rendered incremental timing, folded editor retention, explicit publication and note revisions. |
-| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation.                                                                                                     |
-| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                                                                                                                         |
-| `durable-close-reopen-stop-retry`                | Narrow bottom-sheet fold/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry.                                                                                                  |
-| `dictionary-card-copies-preserve-visible-fields` | Attached dictionary layout, desktop action tooltip and mobile chat stacking, real card APIs, fold-retained copies, field labels/languages, prompt delivery and readable history.                                                                                    |
+| Scenario                                         | Observable proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `source-chat-save-knowledge`                     | Attached text layout with reversible 50% width, circular launcher tooltip, detached/reattached draft and split retention, non-modal source selection, first-text waiting and midstream pause indicators, rendered incremental timing, folded editor retention, explicit publication and note revisions; persisted tutor modes, independent existing chats, saved defaults and inheritance by new chats; failed preference/default writes retry the same operation without creating a turn. |
+| `knowledge-revision-stale-delete`                | Composed authenticated HTTP, idempotent turn, real SDK proposal/accounting, stale draft retention/new-note path, restore history, deletion and owner isolation.                                                                                                                                                                                                                                                                                                                            |
+| `private-shared-source-lifecycle`                | Real dictionary share capability, private reader conversation, denial to another learner, revocation and independently saved note survival.                                                                                                                                                                                                                                                                                                                                                |
+| `durable-close-reopen-stop-retry`                | Narrow bottom-sheet fold/reopen during work, no duplicate admission, explicit Stop, retained incomplete output, deterministic provider failure and explicit retry.                                                                                                                                                                                                                                                                                                                         |
+| `dictionary-card-copies-preserve-visible-fields` | Attached dictionary layout, desktop action tooltip and mobile chat stacking, real card APIs, fold-retained copies, field labels/languages, prompt delivery and readable history.                                                                                                                                                                                                                                                                                                           |
 
 The `dictionary-card-copies-preserve-visible-fields` scenario also rotates a real sharing capability,
 opens the shared page as a separate authenticated reader and verifies right-side

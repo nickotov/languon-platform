@@ -88,7 +88,7 @@ const chatView = (r: ChatRow) => ({
     id: r.id,
     title: r.title,
     source: r.source,
-    preferences: r.preferences,
+    preferences: ChatPreferencesSchema.parse(r.preferences),
     version: r.version,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
@@ -313,10 +313,9 @@ export class DrizzleConversationStore implements ConversationStore {
                     sourceKind: input.source.kind,
                     sourceId: input.source.id,
                     source: input.source,
-                    preferences:
-                        input.preferences ??
-                        saved?.preferences ??
-                        ChatPreferencesSchema.parse({}),
+                    preferences: ChatPreferencesSchema.parse(
+                        input.preferences ?? saved?.preferences ?? {},
+                    ),
                     createdAt: now,
                     updatedAt: now,
                 })
@@ -373,7 +372,11 @@ export class DrizzleConversationStore implements ConversationStore {
                 .update(chats)
                 .set({
                     ...(changes.preferences
-                        ? { preferences: changes.preferences }
+                        ? {
+                              preferences: ChatPreferencesSchema.parse(
+                                  changes.preferences,
+                              ),
+                          }
                         : {}),
                     ...(changes.title ? { title: changes.title } : {}),
                     version: sql`${chats.version}+1`,
@@ -422,6 +425,7 @@ export class DrizzleConversationStore implements ConversationStore {
     async settings(ownerId: string, preferences?: ChatPreferences) {
         const run = async (tx: ConversationsTransaction) => {
             if (preferences) {
+                preferences = ChatPreferencesSchema.parse(preferences);
                 await tx
                     .insert(settings)
                     .values({ ownerId, preferences, updatedAt: this.now() })
@@ -435,7 +439,7 @@ export class DrizzleConversationStore implements ConversationStore {
                 .select()
                 .from(settings)
                 .where(eq(settings.ownerId, ownerId));
-            return row?.preferences ?? ChatPreferencesSchema.parse({});
+            return ChatPreferencesSchema.parse(row?.preferences ?? {});
         };
         return preferences ? this.transaction(run) : this.readTransaction(run);
     }
@@ -637,7 +641,7 @@ export class DrizzleConversationStore implements ConversationStore {
                     status: 'queued',
                     authority,
                     sourceSnapshot: snapshot,
-                    preferences: chat.preferences,
+                    preferences: ChatPreferencesSchema.parse(chat.preferences),
                     execution,
                     usage: {
                         inputTokens: 0,
@@ -1212,7 +1216,7 @@ export class DrizzleConversationStore implements ConversationStore {
                 authority: row.authority,
                 sourceSnapshot: row.sourceSnapshot,
                 execution: row.execution,
-                preferences: row.preferences,
+                preferences: ChatPreferencesSchema.parse(row.preferences),
                 source: chat.source,
                 conversationCreatedAt: chat.createdAt.toISOString(),
                 message: {

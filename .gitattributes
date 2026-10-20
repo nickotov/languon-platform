@@ -1,0 +1,5 @@
+# Frozen provider inputs retain their captured whitespace for provenance.
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v003/source/** -whitespace
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v003/reference/** -whitespace
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v004/source/** -whitespace
+.agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v004/reference/** -whitespace

@@ -23,6 +23,31 @@
     line-height: var(--size-28);
     color: var(--text-primary);
 }
+
+.frame:where([data-workspace='true']) .answer {
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+
+.workspaceEmpty {
+    padding: var(--space-16);
+    border: var(--size-1) dashed var(--border-default);
+    border-radius: var(--radius-16);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+}
+
+.workspaceEmpty :where(h3) {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+
+.workspaceEmpty :where(p) {
+    margin: var(--space-4) 0 0;
+}
 .userGroup {
     display: flex;
     flex-direction: column;
@@ -112,53 +137,6 @@
     color: var(--text-secondary);
 }
 
-.proposalReview {
-    display: grid;
-    gap: var(--space-8);
-    margin-block: var(--space-8);
-    padding: var(--space-12);
-    border: var(--size-1) solid var(--border-default);
-    border-radius: var(--radius-12);
-    background: var(--background-surface);
-    font-size: var(--size-12);
-}
-
-.proposalReview pre {
-    max-height: var(--size-192);
-    overflow: auto;
-    margin: 0;
-    padding: var(--space-8);
-    border-radius: var(--radius-8);
-    background: var(--background-subtle);
-    font: inherit;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-}
-
-.proposalReview select {
-    min-height: var(--size-36);
-    border: var(--size-1) solid var(--border-default);
-    border-radius: var(--radius-8);
-    background: var(--background-surface);
-    color: var(--text-primary);
-    font: inherit;
-}
-
-.proposalActions {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-8);
-}
-
-.proposalActions button {
-    min-height: var(--size-36);
-    padding-inline: var(--space-12);
-    border: var(--size-1) solid var(--border-default);
-    border-radius: var(--radius-8);
-    background: var(--background-surface);
-    color: var(--text-primary);
-    cursor: pointer;
-}
 .materials :where(summary) {
     cursor: pointer;
     padding-block: var(--space-4);
@@ -261,9 +239,72 @@
     }
 }
 
+@media (min-width: 641px) and (max-width: 1023px) {
+    .frame:where([data-workspace='true']) :where(.quiet, .jump) {
+        min-height: var(--size-44);
+    }
+}
+
 .scroller {
     scrollbar-width: none;
 }
 .scroller::-webkit-scrollbar {
     display: none;
+}
+
+.workspaceEmpty {
+    padding: var(--space-8) var(--space-4) 0;
+    border: 0;
+    border-radius: 0;
+}
+
+.workspaceEmpty :where(h3) {
+    font-size: var(--size-16);
+    font-weight: 600;
+}
+
+.workspaceEmpty .suggestions {
+    margin-top: var(--space-16);
+    gap: var(--space-4);
+}
+
+.workspaceEmpty .suggestion {
+    padding: var(--space-8) var(--space-10);
+    border: 0;
+    border-radius: var(--radius-8);
+    background: transparent;
+}
+
+.workspaceEmpty .suggestion span {
+    min-width: 0;
+    flex: 1;
+}
+
+.workspaceEmpty .suggestion svg {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+    opacity: 0;
+}
+
+.workspaceEmpty .suggestion:where(:hover, :focus-visible) {
+    background: var(--background-subtle);
+}
+
+.workspaceEmpty .suggestion:where(:hover, :focus-visible) svg {
+    opacity: 1;
+}
+
+.frame:where([data-workspace='true']) .messages {
+    gap: var(--space-24);
+}
+
+.frame:where([data-workspace='true']) .quiet {
+    min-height: var(--size-28);
+}
+
+@media (max-width: 1023px) {
+    .frame:where([data-workspace='true']) .quiet,
+    .workspaceEmpty .suggestion {
+        min-height: var(--size-44);
+    }
 }

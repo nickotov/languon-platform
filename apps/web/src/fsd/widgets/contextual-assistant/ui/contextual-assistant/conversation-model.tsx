@@ -24,9 +24,11 @@ import styles from './composer.module.css';
 
 export function ConversationModel({
     request,
+    embedded = false,
 }: {
     actorId: string;
     request: ConversationSessionRequest;
+    embedded?: boolean;
 }) {
     const { locale, href } = useI18n();
     const copy = conversationCopy(locale);
@@ -60,6 +62,72 @@ export function ConversationModel({
     function useLatest() {
         controller.useLatest();
     }
+    const content = (
+        <>
+            <PopoverHeader>{copy.model}</PopoverHeader>
+            {base && (
+                <PopoverItem
+                    selected={draft === 'auto'}
+                    onClick={selectAuto}
+                    disabled={saving}
+                >
+                    {copy.automatic} · DeepSeek Flash
+                </PopoverItem>
+            )}
+            {models.map((model) => (
+                <ModelOption
+                    key={model.id}
+                    model={model}
+                    selected={draft === model.id}
+                    disabled={saving}
+                    onSelect={selectModel}
+                />
+            ))}
+            {(pref.isError || catalog.isError) && (
+                <>
+                    <p role='alert'>{copy.error}</p>
+                    <Button type='button' variant='quiet' onClick={retry}>
+                        {preference.retry}
+                    </Button>
+                </>
+            )}
+            {failed && (
+                <div role='alert' className={styles.hint}>
+                    <p>{preference.saveError}</p>
+                    <Button
+                        type='button'
+                        variant='quiet'
+                        size='compact'
+                        onClick={save}
+                    >
+                        {preference.retry}
+                    </Button>
+                </div>
+            )}
+            {saveState === 'conflict' && (
+                <>
+                    <p role='alert' className={styles.hint}>
+                        {preference.conflict}
+                    </p>
+                    <Button
+                        type='button'
+                        size='compact'
+                        variant='quiet'
+                        onClick={useLatest}
+                        disabled={!controller.latest}
+                    >
+                        {preference.useLatest}
+                    </Button>
+                </>
+            )}
+            <PopoverSeparator />
+            <ButtonLink href={profileLink} size='compact' variant='quiet'>
+                {copy.viewCredits}
+            </ButtonLink>
+        </>
+    );
+    if (embedded)
+        return <section className={styles.modelSettings}>{content}</section>;
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -78,66 +146,7 @@ export function ConversationModel({
                 align='end'
                 className={styles.preferencePopover}
             >
-                <PopoverHeader>{copy.model}</PopoverHeader>
-                {base && (
-                    <PopoverItem
-                        selected={draft === 'auto'}
-                        onClick={selectAuto}
-                        disabled={saving}
-                    >
-                        {copy.automatic} · DeepSeek Flash
-                    </PopoverItem>
-                )}
-                {models.map((model) => (
-                    <ModelOption
-                        key={model.id}
-                        model={model}
-                        selected={draft === model.id}
-                        disabled={saving}
-                        onSelect={selectModel}
-                    />
-                ))}
-                {(pref.isError || catalog.isError) && (
-                    <>
-                        <p role='alert'>{copy.error}</p>
-                        <Button type='button' variant='quiet' onClick={retry}>
-                            {preference.retry}
-                        </Button>
-                    </>
-                )}
-                {failed && (
-                    <div role='alert' className={styles.hint}>
-                        <p>{preference.saveError}</p>
-                        <Button
-                            type='button'
-                            variant='quiet'
-                            size='compact'
-                            onClick={save}
-                        >
-                            {preference.retry}
-                        </Button>
-                    </div>
-                )}
-                {saveState === 'conflict' && (
-                    <>
-                        <p role='alert' className={styles.hint}>
-                            {preference.conflict}
-                        </p>
-                        <Button
-                            type='button'
-                            size='compact'
-                            variant='quiet'
-                            onClick={useLatest}
-                            disabled={!controller.latest}
-                        >
-                            {preference.useLatest}
-                        </Button>
-                    </>
-                )}
-                <PopoverSeparator />
-                <ButtonLink href={profileLink} size='compact' variant='quiet'>
-                    {copy.viewCredits}
-                </ButtonLink>
+                {content}
             </PopoverContent>
         </Popover>
     );

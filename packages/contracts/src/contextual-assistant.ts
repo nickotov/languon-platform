@@ -551,6 +551,9 @@ export const KnowledgeErrorResponseSchema = z.object({
 
 export const ChatPreferencesSchema = z
     .object({
+        mode: z
+            .enum(['auto', 'explain', 'correct', 'practice'])
+            .default('auto'),
         replyLanguage: z
             .union([z.literal('auto'), AssistantLanguageSchema])
             .default('auto'),

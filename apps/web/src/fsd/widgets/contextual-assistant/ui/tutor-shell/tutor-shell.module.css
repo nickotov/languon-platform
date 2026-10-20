@@ -75,6 +75,26 @@
     line-height: var(--size-20);
 }
 
+.workspaceContext {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+}
+
+.area:where([data-workspace='true'][data-attached='true']) .panel {
+    border: 0;
+    border-radius: 0;
+}
+
+.area:where([data-workspace='true']) .header {
+    min-height: var(--size-56);
+    box-sizing: border-box;
+}
+
 .mark {
     display: inline-flex;
     flex-shrink: 0;
@@ -333,58 +353,56 @@
     }
 }
 
-@media (max-width: 767px) {
-    .panel,
-    .area:where([data-dock='left']) .panel {
-        top: auto;
-        right: 0;
-        left: 0;
-        width: 100%;
-        padding-bottom: env(safe-area-inset-bottom);
-        border-bottom: 0;
-        border-radius: var(--radius-24) var(--radius-24) 0 0;
-    }
+.area:where([data-mobile='true']) .panel,
+.area:where([data-dock='left'][data-mobile='true']) .panel {
+    top: auto;
+    right: 0;
+    left: 0;
+    width: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-bottom: 0;
+    border-radius: var(--radius-24) var(--radius-24) 0 0;
+}
 
-    .header {
-        padding-block: var(--space-4);
-        cursor: default;
-    }
+.area:where([data-mobile='true']) .header {
+    padding-block: var(--space-4);
+    cursor: default;
+}
 
-    .context {
-        height: var(--size-32);
-    }
+.area:where([data-mobile='true']) .context {
+    height: var(--size-32);
+}
 
-    .actions .menuTrigger {
-        width: var(--size-48);
-        height: var(--size-48);
-        min-height: var(--size-48);
-    }
+.area:where([data-mobile='true']) .actions .menuTrigger {
+    width: var(--size-48);
+    height: var(--size-48);
+    min-height: var(--size-48);
+}
 
-    .sheetHandle {
-        display: flex;
-        flex-shrink: 0;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: var(--size-24);
-        padding: 0;
-        border: 0;
-        background: transparent;
-        touch-action: none;
-    }
+.area:where([data-mobile='true']) .sheetHandle {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: var(--size-24);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    touch-action: none;
+}
 
-    .sheetHandle span {
-        background: var(--border-strong);
-    }
+.area:where([data-mobile='true']) .sheetHandle span {
+    background: var(--border-strong);
+}
 
-    .pill,
-    .area:where([data-dock='left']) .pill {
-        top: auto;
-        bottom: calc(var(--space-12) + env(safe-area-inset-bottom));
-        left: auto;
-        right: var(--space-16);
-        max-width: calc(100% - var(--space-32));
-    }
+.area:where([data-mobile='true']) .pill,
+.area:where([data-dock='left'][data-mobile='true']) .pill {
+    top: auto;
+    bottom: calc(var(--space-12) + env(safe-area-inset-bottom));
+    left: auto;
+    right: var(--space-16);
+    max-width: calc(100% - var(--space-32));
 }
 
 @keyframes spin {
@@ -452,4 +470,74 @@
     left: calc(-1 * var(--space-4));
     background: var(--background-elevated);
     border-radius: var(--radius-full);
+}
+
+.area:where([data-workspace='true'][data-attached='true']) .header {
+    height: var(--workspace-header-height, var(--size-56));
+    min-height: var(--workspace-header-height, var(--size-56));
+    padding-block: 0;
+}
+
+.area:where([data-workspace='true']) .header {
+    height: var(--workspace-header-height, var(--size-48));
+    min-height: var(--workspace-header-height, var(--size-48));
+    padding-block: 0;
+    border-bottom: 0;
+}
+
+.workspaceContextRow {
+    flex: none;
+    min-width: 0;
+    padding: 0 var(--space-8) var(--space-8);
+    border-bottom: var(--size-1) solid var(--border-default);
+}
+
+.workspaceContextRow .workspaceContext {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    border-radius: var(--radius-6);
+    padding: var(--space-4) var(--space-8);
+    line-height: var(--size-16);
+}
+
+.workspaceContext :where(svg) {
+    flex-shrink: 0;
+}
+
+.workspaceContext :where(span) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.workspaceContext:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+}
+
+.workspaceContextRow:where([data-over-limit='true']) .workspaceContext {
+    background: var(--danger-subtle);
+    color: var(--danger-default);
+}
+
+.area:where([data-embedded='true']) {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 100%;
+    z-index: auto;
+}
+
+.area:where([data-embedded='true']) .panel {
+    inset: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding-bottom: 0;
+}
+
+.area:where([data-workspace='true'][data-mobile='true']) .actions .menuTrigger {
+    width: var(--size-44);
+    height: var(--size-44);
+    min-height: var(--size-44);
 }

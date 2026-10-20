@@ -38,6 +38,7 @@ const detail: ConversationDetail = {
         title: null,
         source: { id: conversationId, kind: 'dictionary' },
         preferences: {
+            mode: 'auto',
             replyLanguage: 'auto',
             tone: 'neutral',
             explanationLevel: 'auto',

@@ -1,0 +1,107 @@
+{
+  "platform": "MacIntel",
+  "events": [
+    {
+      "type": "keydown",
+      "key": "Meta",
+      "prevented": false,
+      "target": "Document",
+      "active": "Document",
+      "selection": "",
+      "anchor": "#text",
+      "anchorOffset": 24,
+      "focus": "#text",
+      "focusOffset": 24
+    },
+    {
+      "type": "keydown",
+      "key": "A",
+      "prevented": true,
+      "target": "Document",
+      "active": "Document",
+      "selection": "The old wording\n\nDifferent paragraph stays",
+      "anchor": "DIV",
+      "anchorOffset": 0,
+      "focus": "DIV",
+      "focusOffset": 2
+    },
+    {
+      "type": "keyup",
+      "key": "A",
+      "prevented": false,
+      "target": "Document",
+      "active": "Document",
+      "selection": "The old wording\n\nDifferent paragraph stays",
+      "anchor": "DIV",
+      "anchorOffset": 0,
+      "focus": "DIV",
+      "focusOffset": 2
+    },
+    {
+      "type": "keyup",
+      "key": "Meta",
+      "prevented": false,
+      "target": "Document",
+      "active": "Document",
+      "selection": "The old wording\n\nDifferent paragraph stays",
+      "anchor": "DIV",
+      "anchorOffset": 0,
+      "focus": "DIV",
+      "focusOffset": 2
+    },
+    {
+      "type": "selectionchange",
+      "prevented": false,
+      "active": "Document",
+      "selection": "The old wording\n\nDifferent paragraph stays",
+      "anchor": "DIV",
+      "anchorOffset": 0,
+      "focus": "DIV",
+      "focusOffset": 2
+    },
+    {
+      "type": "keydown",
+      "key": "ArrowLeft",
+      "prevented": false,
+      "target": "Document",
+      "active": "Document",
+      "selection": "The old wording\n\nDifferent paragraph stays",
+      "anchor": "DIV",
+      "anchorOffset": 0,
+      "focus": "DIV",
+      "focusOffset": 2
+    },
+    {
+      "type": "keyup",
+      "key": "ArrowLeft",
+      "prevented": false,
+      "target": "Document",
+      "active": "Document",
+      "selection": "",
+      "anchor": "#text",
+      "anchorOffset": 0,
+      "focus": "#text",
+      "focusOffset": 0
+    },
+    {
+      "type": "selectionchange",
+      "prevented": false,
+      "active": "Document",
+      "selection": "",
+      "anchor": "#text",
+      "anchorOffset": 0,
+      "focus": "#text",
+      "focusOffset": 0
+    },
+    {
+      "type": "selectionchange",
+      "prevented": false,
+      "active": "Document",
+      "selection": "The old wording\n\nDifferent paragraph stays",
+      "anchor": "DIV",
+      "anchorOffset": 0,
+      "focus": "DIV",
+      "focusOffset": 2
+    }
+  ]
+}

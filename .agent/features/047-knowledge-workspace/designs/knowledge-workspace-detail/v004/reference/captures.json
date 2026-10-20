@@ -1,0 +1,170 @@
+{
+  "capturedAt": "2026-10-20T10:41:22.231708+00:00",
+  "providerArtifactId": "8e368152-98f3-4835-a922-79272a54cc7a",
+  "providerVersion": 9,
+  "sourceUrl": "https://www.magicpatterns.com/c/3pqoonbgxacst6w72rhiqb",
+  "source": "../source",
+  "designDirection": "ai-native (App default B)",
+  "sourceManifest": "../source-manifest.json",
+  "inheritedDesignSystem": "source/design-system",
+  "inheritedDesignSystemQualification": "Twelve empty source primitive files resolved using the retained published design-system snapshot from v003. Its provider artifact ecb75ac2-c06e-44ed-8e1b-28ec4bff5287 was read2026-10-20; exact historical v9 inheritance is not independently proven. Original provider source remains untouched.",
+  "rendering": "Controlled esbuild0.25.12 React18.3.1 bundle using existing cached dependencies from prior v003 renderer. Tailwind3.4.17 compiled against controlled JSON token mapping. No supplied package scripts or JavaScript configs executed. Entry renders supplied App without changing default direction. CSS font import replaced by retained local Inter font stylesheet; three Tailwind imports converted to compiler directives.",
+  "review": "Source searched for network/storage/eval/external effects: browser-local layout localStorage; clipboard copying; static demo links; DOM rich text commands and local UI timers. No fetch/XMLHttpRequest/eval/new Function external calls found. No external links clicked.",
+  "browser": "Project-safe pnpm browser wrapper; Chromium",
+  "session": "languon-workspace-v9-reference-4106ebf3adb177f0e071c8909ca120c8",
+  "url": "http://127.0.0.1:4414/",
+  "screenshots": [
+    {
+      "file": "desktop-default-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "saved-edits; split; category chip retains keyboard focus after closing popover",
+      "theme": "light",
+      "sha256": "7e5e3f12eec4aa68672768c6725411575d605bebb3d934c7656fe2f93993b59b"
+    },
+    {
+      "file": "desktop-properties-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "saved-edits; categories popover expanded",
+      "theme": "light",
+      "sha256": "bdc6d2d72c2a6e0352a3ddc6d86881b6e8ea8636afce233e19f199fc1fde6fb8"
+    },
+    {
+      "file": "desktop-empty-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "new; split",
+      "theme": "light",
+      "sha256": "8e92e723375730633bcfe4b9e59cac4e5b3ef5a4ac42ac101b3386d23d89cfef"
+    },
+    {
+      "file": "desktop-chat-layout-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "saved-edits; Chat layout60%",
+      "theme": "light",
+      "sha256": "f48c93d63033f9fd618af05f7e3692fca106c4e2b8ec51e5f85086eabfd84bc0"
+    },
+    {
+      "file": "desktop-proposal-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "proposal; source document-side review",
+      "theme": "light",
+      "sha256": "7833063fcfb2029382169ca17489260829bf719a5650aaf12237d4629a99a096"
+    },
+    {
+      "file": "desktop-dark-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "dark; saved-edits",
+      "theme": "dark",
+      "sha256": "1f9afa8a917abeea6075ac05c0f889663861b45c8bf47638316d8a9d61d521e1"
+    },
+    {
+      "file": "mobile-document-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "mobile-doc; document tab selected",
+      "theme": "light",
+      "sha256": "5e63b33a5839e893b1702e6614eaedd769e10442531db31f19a75cc92ce76cb5"
+    },
+    {
+      "file": "mobile-tutor-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "state": "mobile-doc; tutor tab selected by interaction",
+      "theme": "light",
+      "sha256": "f52d1a52c291c84e5279890d058be4173598916918898b357fd0955450e82cb8"
+    },
+    {
+      "file": "desktop-inline-proposal-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "inline-correct source scenario; actual440px inline Accept/Compare/Reject card; prototype scrollIntoView scrolled outerdocument slightly, croppingtopbar",
+      "theme": "light",
+      "sha256": "a7c84dc76f5718d9cdfb98855214da997e0ac5a0371495ac52ace6eef19546a8"
+    },
+    {
+      "file": "desktop-settings-1440.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "state": "saved-edits, consolidated Response settings open, source defaults Auto and entire-document context",
+      "theme": "light",
+      "sha256": "9db68750572afcbed4cb91b79538569d2775f74722ff049de5b8630a85311d31"
+    }
+  ],
+  "consoleErrors": [],
+  "consoleInfo": [
+    "React DevTools development-build notice"
+  ],
+  "network": "All document/script/styles/font requests localHTTP200; incidental favicon404. No external browser requests.",
+  "limitations": [
+    "Controlled rendering of connector source; no hosted browser pixel-equivalence claim.",
+    "Published inherited primitive snapshot may differ from original v9 inheritance.",
+    "Russian prototype labels and fake content; prototype controls visibly retained.",
+    "Normal local font weights100..900; browser synthesized italics.",
+    "Source schematic64px navigation rail explicitly marks real shell outside workspace.",
+    "Captured representative states only; no rendering coverage of all19 scenarios or directionsA/C.",
+    "Inherited Button binds --color-primary, absent from supplied v9 token sheet, falling back to slate900. Controlled black Save is therefore unresolved inheritance fallback, not confirmed source-authored primary color; implementation retains accepted semantic purple per ADR0029 and parent disposition. Source inline card explicitly uses primary-default and remains purple."
+  ],
+  "rendererHashes": {
+    "renderer/input.css": "6d3dda0347893d96d508dab94c84771802bafd4090f7011b99057658e0a5d9ed",
+    "renderer/tailwind.config.json": "f81159c6e0ba640a8d1c0deb89ebd0646403b528ac0cea2adce294e71f3cfef0",
+    "renderer/entry.tsx": "a9b09e5abd7a0cefde7ee0ebbc745862956ebd4095a3f83eb791b7285c499394"
+  },
+  "designSystemHashes": {
+    "source/design-system/components/Tooltip/index.tsx": "4a72c8b2f131010ebce91038de6583b2ec76dfde66e9a0fd62cc7d3b97819c17",
+    "source/design-system/components/Input/index.tsx": "fbfabb5d870fba1c82694510bba151d77b89ae0f4075e56287fae8a0bf5bc4e2",
+    "source/design-system/components/DropdownMenu/index.tsx": "ceaa39920a62104854c531f990bd745165baa9bc7657103885f3f6c384f74b3c",
+    "source/design-system/components/Toast/index.tsx": "c1f9c4d5b070a6cf6c246042b706b9a4b1aa2224d33128cf8fcf8d9112392336",
+    "source/design-system/components/Dialog/index.tsx": "75a54f3ec6c48df04151c1ab3411102b18418c27636adba2bb561e8a27213e7c",
+    "source/design-system/components/Popover/index.tsx": "ac24a14db1bb4eece20aa793124264f538107903e1150e71b684aa815857dd1d",
+    "source/design-system/components/Button/index.tsx": "c78aced08d61b66c3e32e8eaa06a59133102d2178592714a03947265a4973fb3",
+    "source/design-system/components/Logo/index.tsx": "900b2f9f47a23a624c6323b01a70eebffcee70eb4bc81d28d29813ff1023be25",
+    "source/design-system/components/IconButton/index.tsx": "8d4cbc6009fd919bb7b8fe4b641ee052003485efaa9df00010f0404bd517b4b8",
+    "source/design-system/components/NavItem/index.tsx": "d6a4ec011db2f3337f2e3a76752b061aa6d89511d2303cea437483227b51585a",
+    "source/design-system/components/InlineAlert/index.tsx": "9eb4bf37d1d1a1afa1853b5fb00a2ee8d916bbbd8f17e11458b9dc1510dde426",
+    "source/design-system/components/Badge/index.tsx": "4883b3dc1f21cf2f85043ff2e2df1b067ba141af52acd761ee6f3f45177fa5a0"
+  },
+  "cleanup": {
+    "at": "2026-10-20T10:41:22.235558+00:00",
+    "browserSession": "Closed via safe wrapper",
+    "referenceServer": "Task-owned localhost4414 Python server stopped Ctrl-C; exit0"
+  },
+  "supplementalCapture": {
+    "capturedAt": "2026-10-20T11:15:07.128871+00:00",
+    "session": "languon-v9-inline-4f5443ab0a66cc4dbd758aff9d2f87f2",
+    "consoleErrors": [],
+    "network": "Local200 assets/fonts; incidental favicon404; no externalrequests",
+    "cleanup": "Safe browser closed and task-owned localhost4414 renderer stoppedexit0"
+  },
+  "supplementalSettingsCapture": {
+    "capturedAt": "2026-10-20T11:23:31.147664+00:00",
+    "session": "languon-v9-settings-aed030740864d3390ba1a25f48439fd3",
+    "consoleErrors": [],
+    "network": "Serverrequests localassets/fonts200, incidental favicon404",
+    "cleanup": "Safe browser closed; task-owned local4414 renderer stoppedexit0"
+  }
+}

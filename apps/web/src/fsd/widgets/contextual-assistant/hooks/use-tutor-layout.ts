@@ -8,7 +8,11 @@ import {
 } from 'react';
 
 /** Geometry is measured in the available app area, including the live sidebar offset. */
-export function useTutorLayout(onFold: () => void, hasSlot = false) {
+export function useTutorLayout(
+    onFold: () => void,
+    hasSlot = false,
+    workspace = false,
+) {
     const areaRef = useRef<HTMLDivElement>(null);
     const [area, setArea] = useState({
         width: 1000,
@@ -35,7 +39,7 @@ export function useTutorLayout(onFold: () => void, hasSlot = false) {
         velocity: number;
     } | null>(null);
     const suppressClick = useRef(false);
-    const attached = hasSlot && area.viewportWidth >= 1024;
+    const attached = hasSlot && (workspace || area.viewportWidth >= 1024);
     const canWiden = area.width >= 900;
     const width = Math.min(wide && canWiden ? 560 : 420, area.width - 48);
     const maxHeight = Math.max(120, area.height - 40);
@@ -94,7 +98,7 @@ export function useTutorLayout(onFold: () => void, hasSlot = false) {
             window.visualViewport?.removeEventListener('resize', measure);
             window.visualViewport?.removeEventListener('scroll', measure);
         };
-    }, []);
+    }, [workspace]);
 
     function setHeight(value: number) {
         const next = Math.max(minHeight, Math.min(value, maxHeight));

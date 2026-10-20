@@ -1,0 +1,100 @@
+{
+  "completedAt": "2026-10-20T11:29:30.096551+00:00",
+  "verdict": "Pass across all10 unique browser journeys and4 composed HTTP journeys, using retained unaffected evidence plus focused remediation runs. Not a claim that the initial all10 invocation was wholly green.",
+  "uniqueBrowserJourneys": 10,
+  "composedHttpJourneys": 4,
+  "scenarioEvidence": {
+    "source-chat-save-knowledge": "workspace-v9-final-settings-20261020",
+    "dictionary-card-copies-preserve-visible-fields": "workspace-v9-final-20261020",
+    "durable-close-reopen-stop-retry": "workspace-v9-final-scoped-20261020",
+    "workspace-draft-chat-save-reopen": "workspace-v9-durable-captures-20261020",
+    "workspace-two-tab-conflict-recovery": "workspace-v9-final-20261020",
+    "workspace-restore-preserves-unsaved-branch": "workspace-v9-final-20261020",
+    "workspace-text-reference-limit": "workspace-v9-final-20261020",
+    "workspace-proposal-target-review": "workspace-v9-final-scoped-20261020",
+    "workspace-share-copy-revoke": "workspace-v9-final-20261020",
+    "workspace-mobile-tutor-sheet": "workspace-v9-final-20261020"
+  },
+  "runs": [
+    {
+      "runId": "workspace-v9-final-20261020",
+      "command": "pnpm test:e2e:contextual-assistant",
+      "backend": {
+        "passed": 4,
+        "failed": 0
+      },
+      "browser": {
+        "passed": 8,
+        "failed": 2
+      },
+      "log": "e2e-initial-full.log",
+      "disposition": "Six unaffected cases retained; the two failed cases and two affected retry/inline cases were remediated/reverified in focused runs."
+    },
+    {
+      "runId": "workspace-v9-final-scoped-20261020",
+      "command": "pnpm test:e2e:contextual-assistant -- --grep 'saved source streams|closing reconnects|an empty workspace|a persisted tutor proposal'",
+      "backend": {
+        "passed": 4,
+        "failed": 0
+      },
+      "browser": {
+        "passed": 2,
+        "failed": 2
+      },
+      "log": "e2e-final-scoped.log",
+      "disposition": "Legacy stop/retry and updated440px inline/proposal/1024px overlay passed. Controlled-radio test mechanism and coherent responsive sampling corrected for remaining cases."
+    },
+    {
+      "runId": "workspace-v9-final-settings-20261020",
+      "command": "pnpm test:e2e:contextual-assistant -- --grep 'saved source streams|an empty workspace'",
+      "backend": {
+        "passed": 4,
+        "failed": 0
+      },
+      "browser": {
+        "passed": 2,
+        "failed": 0
+      },
+      "log": "e2e-final-settings.log",
+      "disposition": "Final mode persistence/default inheritance/isolation, same-operation503retry with zero turn submissions, streaming/publication, responsive resizing/header/settings and saved/dark UI passed."
+    },
+    {
+      "runId": "workspace-v9-durable-captures-20261020",
+      "command": "pnpm test:e2e:contextual-assistant -- --grep 'an empty workspace'",
+      "backend": {
+        "passed": 4,
+        "failed": 0
+      },
+      "browser": {
+        "passed": 1,
+        "failed": 0
+      },
+      "log": "e2e-durable-captures.log",
+      "disposition": "Recreated required desktop visual assets after build cleanup; no application source changes."
+    }
+  ],
+  "infrastructure": {
+    "postgres": "127.0.0.1:55444/languon_auth_assistant_web_test",
+    "redis": "127.0.0.1:56444/1",
+    "explicitDisposableConfirmations": true,
+    "api": "localhost:4006",
+    "web": "localhost:3336",
+    "paidModelCalls": false
+  },
+  "guideRevisions": {
+    "knowledge-workspace": "sha256:04bb63dbf403f96a",
+    "contextual-language-assistant-and-knowledge": "sha256:cf08a97114c6b3f5"
+  },
+  "sourceHashes": "source-hashes.json",
+  "captures": "captures.json",
+  "consoleNetwork": "Passing journeys asserted no page exceptions, non-resource console errors, unexpected transport failures other than expected subscription aborts, or unplanned HTTP5xx. The two explicit settings503 failures carry dedicated synthetic headers and are checked for operation-specific retry/no new turn. Expected stop/abort fixture notices and NO_COLOR/FORCE_COLOR process warnings only. Resource-load console messages are filtered; no claim of exhaustively asserting every4xx request.",
+  "evidenceValidity": "Final scoped changes concern preference/default errors/focus and inline geometry; their affected cases were rerun. Six retained initial cases do not exercise changed error branches or inline replacement geometry; no unrelated full-suite repetition required. Historical contaminated FastRefresh attempt is not used as passing evidence.",
+  "testsAndGuideHashes": {
+    "apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts": "4023854e77e2afc3c675a593afa2925379db3fabcafd558ecc030510e936205d",
+    "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts": "e72c54e51452788bac9f5cb5f5519785e5b1e7e03e726191026c9e128d8e7eb3",
+    "apps/backend/tests/integration/modules/conversations/contextual-assistant.journeys.test.ts": "8fd7dd8fc0a6bddaaab1da60017d0b6bc20f4c1143ce0dd48e42165e1f8ef1a6",
+    "docs/user-flows/knowledge-workspace.md": "3529f9761401d1ffa352f6e1b1870a0fe35678c6a182d615dec133255d258c16",
+    "docs/user-flows/contextual-language-assistant-and-knowledge.md": "4764cc3fb6106b79d3664cc73b184297e7cdd7930b32346814bdd649538b5925"
+  },
+  "cleanup": "Task-owned app/browser/reference processes stopped; runner restored generated next-env.d.ts; disposable infrastructure left intact."
+}

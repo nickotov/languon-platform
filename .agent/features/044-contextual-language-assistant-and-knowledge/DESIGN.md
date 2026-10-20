@@ -42,3 +42,5 @@ Decision history:
 - 2026-10-19 — Implemented selected v001/provider v5. Source/runtime comparisons,43 focused tests,2 API/3 browser journeys, production build and independent review passed; details and qualified fidelity limits in the [completed improvement](../../improvements/contextual-assistant-widget-design.md). No commit made.
 
 - 2026-10-19 — User-directed [Tutor widget polish](../../improvements/contextual-tutor-widget-polish.md) adjusted the implemented v001 entry point, default height, menu alignment, shadow, usage disclosure and opening animation. The frozen source and prompt remain unchanged; the selected design revision is still v001. The incremental record distinguishes these later requested runtime changes from source fidelity.
+
+- 2026-10-20 — The same provider URL now points to v8, selected for the [Knowledge editor and reused tutor integration](../../improvements/knowledge-workspace-design-integration.md). Its retained source is owned by [feature 047 v003](../047-knowledge-workspace/DESIGN.md); this v001/provider-v5 source and historical verification remain unchanged.

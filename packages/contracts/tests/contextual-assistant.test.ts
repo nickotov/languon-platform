@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    ChatPreferencesSchema,
     KnowledgeBodySchema,
     KnowledgeDraftSchema,
     KnowledgeLinkSchema,
@@ -31,6 +32,15 @@ const content = {
     explanationLanguage: 'en',
 };
 describe('contextual assistant rich content contracts', () => {
+    it('defaults omitted tutor modes and validates only the four supported modes', () => {
+        expect(ChatPreferencesSchema.parse({}).mode).toBe('auto');
+        for (const mode of ['auto', 'explain', 'correct', 'practice'])
+            expect(ChatPreferencesSchema.parse({ mode }).mode).toBe(mode);
+        for (const mode of ['search', '', null, 1])
+            expect(ChatPreferencesSchema.safeParse({ mode }).success).toBe(
+                false,
+            );
+    });
     it('rejects invalid persisted chat text and exposes only sanitized tool lifecycle', () => {
         const id = '00000000-0000-4000-8000-000000000001';
         for (const text of ['bad\u0000text', 'bad\uD800text']) {
@@ -83,7 +93,16 @@ describe('contextual assistant rich content contracts', () => {
                 requestId: id,
                 content: 'Explain this text',
                 attachments: [copied],
-                editorContext: { content: '' },
+                editorContext: {
+                    content: '',
+                    editorTarget: {
+                        from: 0,
+                        to: 0,
+                        originalText: '',
+                        documentHash:
+                            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+                    },
+                },
             }).success,
         ).toBe(true);
     });
