@@ -27,6 +27,10 @@ environment:
 6. [Timeweb Cloud appendix](./timeweb-cloud.md) — current control-panel and guest
    OS preparation for the first staging VPS and later split production.
 
+See the [capacity and generation deployment assessment](./capacity-and-generation-deployment-assessment.md)
+for current worker limits, illustrative throughput, generation interruption
+behavior during releases, and the limits of existing resource measurements.
+
 The operator-facing local rehearsal is documented in the
 [release/deployment user-flow guide](../user-flows/release-deployment-platform.md).
 Repository commands remain authoritative if prose and code diverge.
