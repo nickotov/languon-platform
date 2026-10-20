@@ -111,6 +111,54 @@
     line-height: var(--size-20);
     color: var(--text-secondary);
 }
+
+.proposalReview {
+    display: grid;
+    gap: var(--space-8);
+    margin-block: var(--space-8);
+    padding: var(--space-12);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-surface);
+    font-size: var(--size-12);
+}
+
+.proposalReview pre {
+    max-height: var(--size-192);
+    overflow: auto;
+    margin: 0;
+    padding: var(--space-8);
+    border-radius: var(--radius-8);
+    background: var(--background-subtle);
+    font: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.proposalReview select {
+    min-height: var(--size-36);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.proposalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-8);
+}
+
+.proposalActions button {
+    min-height: var(--size-36);
+    padding-inline: var(--space-12);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+}
 .materials :where(summary) {
     cursor: pointer;
     padding-block: var(--space-4);

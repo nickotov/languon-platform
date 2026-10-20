@@ -8,6 +8,7 @@ import { useAssistantPanel } from '../../hooks/use-assistant-panel';
 import { ConversationMessages } from './conversation-messages';
 import { ConversationComposer } from './conversation-composer';
 import { ContextPicker } from './context-picker';
+import { WorkspaceReferencePicker } from './workspace-reference-picker';
 import { PublishedNoteNotice } from './published-note-notice';
 import { KnowledgeDraftCard } from './knowledge-draft-card';
 import { ConversationModel } from './conversation-model';
@@ -39,8 +40,8 @@ export function AssistantPanel(
     const options =
         chat.list.data?.conversations.map((conversation) => ({
             value: conversation.id,
-            label: formatDate(conversation.updatedAt),
-            date: props.contextLabel ?? copy.history,
+            label: conversation.title ?? formatDate(conversation.updatedAt),
+            date: formatDate(conversation.updatedAt),
         })) ?? [];
     const lastTurn = detail?.turns.at(-1);
     const interrupted =
@@ -68,15 +69,25 @@ export function AssistantPanel(
     );
     const contextPicker =
         panel.picker && chat.id ? (
-            <ContextPicker
-                actorId={props.actorId}
-                conversationId={chat.id}
-                request={panel.requestWithSession}
-                shareKey={props.shareKey}
-                attachments={chat.attachments}
-                onAttach={panel.attach}
-                onClose={panel.closePicker}
-            />
+            props.workspace ? (
+                <WorkspaceReferencePicker
+                    actorId={props.actorId}
+                    conversationId={chat.id}
+                    request={panel.requestWithSession}
+                    onAttach={panel.attach}
+                    onClose={panel.closePicker}
+                />
+            ) : (
+                <ContextPicker
+                    actorId={props.actorId}
+                    conversationId={chat.id}
+                    request={panel.requestWithSession}
+                    shareKey={props.shareKey}
+                    attachments={chat.attachments}
+                    onAttach={panel.attach}
+                    onClose={panel.closePicker}
+                />
+            )
         ) : undefined;
     return (
         <TutorShell
@@ -88,8 +99,8 @@ export function AssistantPanel(
             unread={panel.unread}
             sourceKind={props.source.kind}
             contextLabel={props.contextLabel ?? copy.source}
-            hasDraft={Boolean(props.currentDraft)}
-            useDraft={chat.useDraft}
+            hasDraft={Boolean(props.currentDraft) && !props.workspace}
+            useDraft={props.workspace ? true : chat.useDraft}
             onUseDraft={chat.setUseDraft}
             onNew={panel.create}
             onHistory={panel.toggleHistory}
@@ -131,6 +142,7 @@ export function AssistantPanel(
                         onSelect={panel.select}
                         onCreate={panel.create}
                         onDelete={panel.deleteFromHistory}
+                        onRename={chat.rename}
                         onBack={panel.backToChat}
                         deleting={historyDeleting}
                         deletingPending={panel.deletingPending}
@@ -152,6 +164,12 @@ export function AssistantPanel(
                             pending={chat.submit.isPending}
                             onRetry={panel.retry}
                             onPropose={panel.propose}
+                            onAcceptWorkspaceProposal={
+                                props.workspace
+                                    ? panel.acceptProposal
+                                    : undefined
+                            }
+                            workspaceTargets={panel.proposalTargets}
                             onSuggest={chat.setQuestion}
                         >
                             {detail.drafts.map((draft) => (
@@ -219,6 +237,7 @@ export function AssistantPanel(
                                 contextPicker={contextPicker}
                                 contextOpen={panel.picker}
                                 onSelectFromPage={selectionAction}
+                                workspace={Boolean(props.workspace)}
                             />
                         )}
                     </div>

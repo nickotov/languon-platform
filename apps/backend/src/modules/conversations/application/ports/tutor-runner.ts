@@ -2,6 +2,7 @@ import type {
     ChatPreferences,
     KnowledgeNoteContent,
     ConversationToolCall,
+    ConversationEditorTarget,
 } from '@languon/contracts';
 
 /** Application-owned persistence boundary. Implementations fence every write to the claimed turn. */
@@ -13,6 +14,7 @@ export interface TutorMemoryMessage {
     attachments?: TutorContextMaterial[];
     /** Private model parts on the canonical message row; never returned directly to a client. */
     modelContent?: Record<string, unknown>;
+    editorTarget?: ConversationEditorTarget;
 }
 
 export interface TutorMemoryPort {

@@ -11,10 +11,12 @@ export function EditorToolbar({
     editor,
     disabled,
     variant = 'full',
+    label,
 }: {
     editor: Editor;
     disabled: boolean;
     variant?: 'full' | 'tutor';
+    label?: string | undefined;
 }) {
     const { t } = useI18n();
     const toolbar = useKnowledgeEditorToolbar(editor);
@@ -37,7 +39,7 @@ export function EditorToolbar({
             <div
                 className={styles.toolbar}
                 role='group'
-                aria-label={t('knowledge.explanation')}
+                aria-label={label ?? t('knowledge.explanation')}
             >
                 {full && (
                     <Select

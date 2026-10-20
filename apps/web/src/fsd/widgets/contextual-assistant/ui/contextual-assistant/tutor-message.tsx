@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Check, Copy, NotebookPen, ChevronUp } from 'lucide-react';
-import type { ConversationTurn } from '@languon/contracts';
+import type {
+    ConversationEditorTarget,
+    ConversationTurn,
+} from '@languon/contracts';
 import {
     conversationCopy,
     CopiedMaterial,
@@ -17,6 +20,8 @@ import { messagesCopy } from '../../lib/messages-copy';
 import { ConversationErrorNotice } from './conversation-error-notice';
 import { ChatMarkdown } from './chat-markdown';
 import { useStreamingText } from '../../hooks/use-streaming-text';
+import type { WorkspaceProposalAction } from '../../types';
+import { WorkspaceProposal } from './workspace-proposal';
 import styles from './conversation-messages.module.css';
 
 export function TutorMessage({
@@ -28,6 +33,9 @@ export function TutorMessage({
     question,
     onRetry,
     onPropose,
+    onAcceptWorkspaceProposal,
+    workspaceTargetId,
+    workspaceAnchor,
 }: {
     message: ConversationUIMessage;
     changed: boolean;
@@ -37,6 +45,16 @@ export function TutorMessage({
     question: string;
     onRetry(turn: ConversationTurn): void;
     onPropose(message?: ConversationUIMessage): void;
+    workspaceTargetId?: string | undefined;
+    workspaceAnchor?: ConversationEditorTarget | undefined;
+    onAcceptWorkspaceProposal?:
+        | ((
+              text: string,
+              action: WorkspaceProposalAction,
+              turnId: string | null,
+              anchor?: ConversationEditorTarget,
+          ) => Promise<'applied' | 'changed' | 'missing' | undefined>)
+        | undefined;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
@@ -183,15 +201,29 @@ export function TutorMessage({
                                     )}
                                     {copyLabel}
                                 </button>
-                                <button
-                                    type='button'
-                                    className={styles.quiet}
-                                    onClick={propose}
-                                    disabled={active}
-                                >
-                                    <NotebookPen size={14} aria-hidden='true' />
-                                    {copy.propose}
-                                </button>
+                                {onAcceptWorkspaceProposal && (
+                                    <WorkspaceProposal
+                                        content={text}
+                                        targetId={workspaceTargetId}
+                                        anchor={workspaceAnchor}
+                                        turnId={canonical.turnId}
+                                        onAccept={onAcceptWorkspaceProposal}
+                                    />
+                                )}
+                                {!onAcceptWorkspaceProposal && (
+                                    <button
+                                        type='button'
+                                        className={styles.quiet}
+                                        onClick={propose}
+                                        disabled={active}
+                                    >
+                                        <NotebookPen
+                                            size={14}
+                                            aria-hidden='true'
+                                        />
+                                        {copy.propose}
+                                    </button>
+                                )}
                             </>
                         )}
                         {showUsage && turn && (

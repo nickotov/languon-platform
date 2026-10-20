@@ -1,11 +1,18 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState, type ChangeEvent } from 'react';
+import {
+    forwardRef,
+    useEffect,
+    useId,
+    useMemo,
+    useState,
+    type ChangeEvent,
+} from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     KnowledgeCategorySchema,
     KnowledgeNoteContentSchema,
-    type KnowledgeNoteContent,
+    type KnowledgeWorkingContent,
     type KnowledgeCategory,
 } from '@languon/contracts';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
@@ -18,22 +25,29 @@ import {
     Textarea,
     type SelectOption,
 } from '@/fsd/shared/ui';
-import { KnowledgeEditor } from '../knowledge-editor/knowledge-editor';
+import {
+    KnowledgeEditor,
+    type KnowledgeEditorHandle,
+} from '../knowledge-editor/knowledge-editor';
 import styles from './knowledge-note-form.module.css';
 
-export function KnowledgeNoteForm({
-    value,
-    onChange,
-    disabled = false,
-    error,
-    onValidityChange,
-}: {
-    value: KnowledgeNoteContent;
-    onChange(value: KnowledgeNoteContent): void;
-    disabled?: boolean;
-    error?: string | undefined;
-    onValidityChange?: ((valid: boolean) => void) | undefined;
-}) {
+export const KnowledgeNoteForm = forwardRef<
+    KnowledgeEditorHandle,
+    {
+        value: KnowledgeWorkingContent;
+        onChange(
+            update: (
+                current: KnowledgeWorkingContent,
+            ) => KnowledgeWorkingContent,
+        ): void;
+        disabled?: boolean;
+        error?: string | undefined;
+        onValidityChange?: ((valid: boolean) => void) | undefined;
+    }
+>(function KnowledgeNoteForm(
+    { value, onChange, disabled = false, error, onValidityChange },
+    ref,
+) {
     const { t, locale } = useI18n();
     const id = useId();
     const [editorValid, setEditorValid] = useState(true);
@@ -70,11 +84,11 @@ export function KnowledgeNoteForm({
     useEffect(() => {
         onValidityChange?.(valid);
     }, [onValidityChange, valid]);
-    function field<Key extends keyof KnowledgeNoteContent>(
+    function field<Key extends keyof KnowledgeWorkingContent>(
         key: Key,
-        next: KnowledgeNoteContent[Key],
+        next: KnowledgeWorkingContent[Key],
     ) {
-        onChange({ ...value, [key]: next });
+        onChange((current) => ({ ...current, [key]: next }));
     }
     function changeTitle(event: ChangeEvent<HTMLInputElement>) {
         field('title', event.target.value);
@@ -83,12 +97,12 @@ export function KnowledgeNoteForm({
         field('summary', event.target.value);
     }
     function changeStudied(event: ChangeEvent<HTMLSelectElement>) {
-        field('studiedLanguage', event.target.value);
+        field('studiedLanguage', event.target.value || null);
     }
     function changeExplanation(event: ChangeEvent<HTMLSelectElement>) {
-        field('explanationLanguage', event.target.value);
+        field('explanationLanguage', event.target.value || null);
     }
-    function changeBody(body: KnowledgeNoteContent['body']) {
+    function changeBody(body: KnowledgeWorkingContent['body']) {
         field('body', body);
     }
     function changeCategories(categories: KnowledgeCategory[]) {
@@ -109,7 +123,6 @@ export function KnowledgeNoteForm({
                 value={value.summary}
                 maxLength={1_000}
                 rows={3}
-                required
                 disabled={disabled}
                 onChange={changeSummary}
             />
@@ -129,27 +142,29 @@ export function KnowledgeNoteForm({
             <div className={styles.languages}>
                 <Select
                     label={t('knowledge.studiedLanguage')}
-                    options={options}
-                    value={value.studiedLanguage}
+                    options={[{ value: '', label: '—' }, ...options]}
+                    value={value.studiedLanguage ?? ''}
                     disabled={disabled}
                     onChange={changeStudied}
                 />
                 <Select
                     label={t('knowledge.explanationLanguage')}
-                    options={options}
-                    value={value.explanationLanguage}
+                    options={[{ value: '', label: '—' }, ...options]}
+                    value={value.explanationLanguage ?? ''}
                     disabled={disabled}
                     onChange={changeExplanation}
                 />
             </div>
             <div className={styles.explanation}>
                 <span id={id} className={styles.label}>
-                    {t('knowledge.explanation')}
+                    {t('knowledge.document')}
                 </span>
                 <KnowledgeEditor
+                    ref={ref}
                     value={value.body}
                     onChange={changeBody}
                     disabled={disabled}
+                    label={t('knowledge.document')}
                     onValidityChange={setEditorValid}
                 />
             </div>
@@ -160,7 +175,7 @@ export function KnowledgeNoteForm({
             )}
         </div>
     );
-}
+});
 
 function NoteCategory({
     category,

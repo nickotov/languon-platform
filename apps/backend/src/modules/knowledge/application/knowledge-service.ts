@@ -5,6 +5,12 @@ import {
     ListKnowledgeQuerySchema,
     RestoreKnowledgeNoteRequestSchema,
     UpdateKnowledgeNoteRequestSchema,
+    CreateKnowledgeWorkspaceDraftRequestSchema,
+    UpdateKnowledgeWorkingRequestSchema,
+    SaveKnowledgeWorkspaceRequestSchema,
+    SaveKnowledgeCopyRequestSchema,
+    CopySharedKnowledgeRequestSchema,
+    ResolveKnowledgeWorkingRequestSchema,
     type CreateKnowledgeNoteRequest,
     type DeleteKnowledgeNoteRequest,
     type ListKnowledgeQuery,
@@ -133,5 +139,147 @@ export class KnowledgeService {
     }
     private noteId(noteId: string) {
         return KnowledgeNoteIdParamsSchema.parse({ noteId }).noteId;
+    }
+    async listWorkspaces(
+        token: string,
+        context: KnowledgeRequestContext,
+        query: ListKnowledgeQuery,
+    ) {
+        return this.dependencies.store.listWorkspaces(
+            await this.owner(token, context),
+            ListKnowledgeQuerySchema.parse(query),
+        );
+    }
+    async getWorkspace(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+    ) {
+        return this.dependencies.store.getWorkspace(
+            await this.owner(token, context),
+            this.noteId(noteId),
+        );
+    }
+    async createDraft(
+        token: string,
+        context: KnowledgeRequestContext,
+        input: unknown,
+    ) {
+        return this.dependencies.store.createDraft(
+            await this.owner(token, context),
+            CreateKnowledgeWorkspaceDraftRequestSchema.parse(input),
+        );
+    }
+    async updateWorking(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+        input: unknown,
+    ) {
+        return this.dependencies.store.updateWorking(
+            await this.owner(token, context),
+            this.noteId(noteId),
+            UpdateKnowledgeWorkingRequestSchema.parse(input),
+        );
+    }
+    async resolveWorking(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+        input: unknown,
+    ) {
+        return this.dependencies.store.resolveWorking(
+            await this.owner(token, context),
+            this.noteId(noteId),
+            ResolveKnowledgeWorkingRequestSchema.parse(input),
+        );
+    }
+    async saveWorkspace(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+        input: unknown,
+    ) {
+        return this.dependencies.store.saveWorkspace(
+            await this.owner(token, context),
+            this.noteId(noteId),
+            SaveKnowledgeWorkspaceRequestSchema.parse(input),
+        );
+    }
+    async saveWorkspaceCopy(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+        input: unknown,
+    ) {
+        return this.dependencies.store.saveWorkspaceCopy(
+            await this.owner(token, context),
+            this.noteId(noteId),
+            SaveKnowledgeCopyRequestSchema.parse(input),
+        );
+    }
+    async getShare(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+    ) {
+        return this.dependencies.store.getShare(
+            await this.owner(token, context),
+            this.noteId(noteId),
+        );
+    }
+    async issueShare(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+    ) {
+        return this.dependencies.store.issueShare(
+            await this.owner(token, context),
+            this.noteId(noteId),
+        );
+    }
+    async revokeShare(
+        token: string,
+        context: KnowledgeRequestContext,
+        noteId: string,
+    ) {
+        return this.dependencies.store.revokeShare(
+            await this.owner(token, context),
+            this.noteId(noteId),
+        );
+    }
+    async readShared(
+        context: KnowledgeRequestContext,
+        locator: string,
+        key: string,
+    ) {
+        context.signal.throwIfAborted();
+        const rate = await this.dependencies.rateLimiter.consume({
+            scope: 'knowledge-shared',
+            subject: context.clientAddress,
+            limit: 60,
+            windowMs: 60_000,
+            signal: context.signal,
+        });
+        if (!rate.allowed)
+            throw new KnowledgeDomainError(
+                'rate_limited',
+                'Too many requests. Please try again shortly.',
+            );
+        return this.dependencies.store.readShared(locator, key);
+    }
+    async copyShared(
+        token: string,
+        context: KnowledgeRequestContext,
+        locator: string,
+        key: string,
+        input: unknown,
+    ) {
+        return this.dependencies.store.copyShared(
+            await this.owner(token, context),
+            locator,
+            key,
+            CopySharedKnowledgeRequestSchema.parse(input),
+        );
     }
 }

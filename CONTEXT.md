@@ -17,11 +17,40 @@ A future learning companion that guides learning and can use the contextual
 language assistant's explanation and knowledge-saving capabilities.
 
 **Knowledge note**:
-An editable, private, self-contained explanation saved by the learner, including
-the examples and context needed to understand it later. It has no link to an
-originating dictionary, text, or conversation and remains usable independently
-of those sources.
+A learner-owned, editable, self-contained language-learning document, including
+explanations, learner-written essays, study documents and research notes. It
+remains usable independently of the conversations and source material used to
+create it. Notes are private by default; explicit sharing concerns the note,
+not its private conversations.
 _Avoid_: Chat message, when referring to saved knowledge.
+
+**Knowledge workspace**:
+The editing view of a knowledge note, combining its rich-text editor with a
+private contextual conversation selected from that note's conversation history.
+Its editor may remain empty during research. Saving updates that note; the owner's Save a copy creates an independent note
+from the current working draft, without copying conversations.
+_Avoid_: Workspace document, when implying a second kind of saved document.
+
+**Working draft**:
+The learner's private, recoverable document state before explicit Save, retained
+across devices. It may exist before the note's first saved version, with an empty
+editor and private conversations; shared readers see only an explicitly saved note.
+_Avoid_: Knowledge note draft, which denotes an assistant's separate proposal.
+
+**Shared note**:
+The explicitly saved version of a note made readable through an unlisted link.
+Private working drafts and conversations are excluded; recipients can copy the
+saved note into their own Knowledge before editing or using the tutor.
+
+**Note copy**:
+A new, independent note containing the copied document and metadata, without
+its original's chats, message attachments or revision history. Its owner may
+edit it independently of later changes to the original.
+
+**Editor proposal**:
+An assistant-proposed insertion, addition or replacement that the learner can
+review and explicitly accept into the editable note. Accepting a proposal and
+saving a note are distinct learner actions.
 
 **Knowledge note draft**:
 A private, editable proposal retained with its conversation, for either a new
@@ -55,6 +84,16 @@ conversations, while each conversation can override them.
 Content explicitly copied into a chat message and visually distinguished from
 the learner's question. It is a snapshot, independent of later changes or
 availability of the original item, rather than a live resource link.
+
+**Text attachment**:
+An immutable copy of text, and optionally an explicitly selected translation,
+attached to one chat message with a readable preview. It is learning material
+for that conversation, not a live reference or a persistent workspace source.
+
+**Editor context snapshot**:
+The current note editor content, including unsaved edits, captured when the
+learner sends a message. Subsequent edits do not change the wording associated
+with that turn; a later turn receives the then-current editor content.
 
 **Card attachment**:
 A copied attachment containing the learner-visible information from a selected

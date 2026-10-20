@@ -11,6 +11,8 @@ import {
     ListConversationsResponseSchema,
     ConversationTurnResponseSchema,
     ConversationContextResponseSchema,
+    ConversationTextReferencesResponseSchema,
+    ConversationTextReferenceResponseSchema,
     KnowledgeDraftResponseSchema,
     KnowledgeNoteResponseSchema,
     ConversationDeletedResponseSchema,
@@ -151,6 +153,12 @@ export const conversationApi = {
             body: UpdateConversationRequestSchema.parse({ preferences }),
             shareKey,
         }),
+    rename: (token: string, id: string, title: string, shareKey?: string) =>
+        request(token, `/conversations/${id}`, ConversationResponseSchema, {
+            method: 'PATCH',
+            body: UpdateConversationRequestSchema.parse({ title }),
+            shareKey,
+        }),
     delete: (token: string, id: string, shareKey?: string) =>
         request(
             token,
@@ -193,6 +201,30 @@ export const conversationApi = {
             `/conversations/${id}/context?${new URLSearchParams({ query })}`,
             ConversationContextResponseSchema,
             { shareKey, signal },
+        ),
+    references: (
+        token: string,
+        conversationId: string,
+        query: string,
+        signal?: AbortSignal,
+    ) =>
+        request(
+            token,
+            `/conversations/${conversationId}/references?${new URLSearchParams({ q: query })}`,
+            ConversationTextReferencesResponseSchema,
+            { signal },
+        ),
+    reference: (
+        token: string,
+        conversationId: string,
+        textId: string,
+        signal?: AbortSignal,
+    ) =>
+        request(
+            token,
+            `/conversations/${conversationId}/references/${textId}`,
+            ConversationTextReferenceResponseSchema,
+            { signal },
         ),
     readDefaults: (token: string, signal?: AbortSignal) =>
         request(

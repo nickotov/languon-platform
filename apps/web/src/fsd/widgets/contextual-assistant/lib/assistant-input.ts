@@ -1,6 +1,18 @@
 import type { CopiedAttachment } from '@languon/contracts';
 import type { Locale } from '@/fsd/shared/i18n';
 
+export function referenceLength(attachments: CopiedAttachment[]): number {
+    return attachments.reduce(
+        (total, attachment) =>
+            total +
+            Array.from(attachment.content).length +
+            (attachment.kind === 'text-reference'
+                ? Array.from(attachment.translation ?? '').length
+                : 0),
+        0,
+    );
+}
+
 const copy = {
     en: {
         limit: 'You can attach up to 10 items. Remove one before adding another.',
@@ -36,10 +48,19 @@ export function appendAssistantAttachment(
     previous: CopiedAttachment[],
     attachment: CopiedAttachment,
     locale: Locale,
+    referenceLimit?: number,
 ): { attachments: CopiedAttachment[]; error: string | null } {
-    if (previous.length >= 10)
+    if (
+        referenceLimit !== undefined &&
+        referenceLength([...previous, attachment]) > referenceLimit
+    )
+        return {
+            attachments: previous,
+            error: `Reference text exceeds the ${referenceLimit.toLocaleString('en-US')}-character limit. Remove a reference or select a shorter passage.`,
+        };
+    if (referenceLimit === undefined && previous.length >= 10)
         return { attachments: previous, error: copy[locale].limit };
-    if (attachment.content.length > 80_000)
+    if (Array.from(attachment.content).length > 80_000)
         return { attachments: previous, error: copy[locale].tooLarge };
     return { attachments: [...previous, attachment], error: null };
 }

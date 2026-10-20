@@ -385,6 +385,59 @@
     margin-top: var(--space-6);
 }
 
+.referenceEditor {
+    display: grid;
+    gap: var(--space-8);
+    padding: var(--space-8);
+}
+
+.referenceEditor label {
+    display: grid;
+    gap: var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+}
+
+.referenceEditor textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    padding: var(--space-8);
+    font: inherit;
+}
+
+.referenceEditor .referenceCheckbox {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+}
+
+.referenceEditor button {
+    min-height: var(--size-36);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.referenceActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+}
+
+.referenceEditor > .hint {
+    max-height: var(--size-120);
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 @media (max-width: 767px) {
     .input {
         max-height: var(--size-120);

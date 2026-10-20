@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Knowledge workspace](./knowledge-workspace.md) — private research drafts,
+  editor-aware tutor, explicit publication, conflict recovery and saved-only sharing.
+
 - [Development cleanup and architecture diagrams](./development-cleanup-and-architecture-diagrams.md) — reusable retirement/diagram skills and a local source-backed diagram viewer.
 
 - [Contextual Language Assistant and Knowledge](./contextual-language-assistant-and-knowledge.md) — private source conversations, explicit draft publication, independent notes and revisions.

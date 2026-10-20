@@ -3,6 +3,9 @@ type: diagram
 title: Module and layer boundaries
 summary: Composition roots connect typed business modules and app-local frontend layers.
 source_paths:
+    - apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts
+    - apps/backend/src/modules/knowledge/infrastructure/knowledge-composition.ts
+    - docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md
     - apps/backend/src/index.ts
     - apps/backend/src/app.ts
     - apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts
@@ -13,7 +16,7 @@ source_paths:
     - docs/architecture.md
     - docs/adr/0005-frontend-component-and-fsd-standards.md
     - docs/adr/0010-admin-application-and-authorization.md
-source_fingerprint: sha256:d17ec25b39a040d98d6ed2b360d37907de2727a7a29edffb3de3c86829a7b990
+source_fingerprint: sha256:3c9c9640dd4bb98e8d7f7bcc198060b7dd35dd60f482922af59b08e15d9178aa
 reviewed: 2026-10-19
 ---
 
@@ -52,6 +55,10 @@ they need not create a pass-through component at each level. Root composition wi
 concrete adapters into application ports. Infrastructure transaction participants
 coordinate cross-module invariants while application/domain code stays free of SQL
 and vendor SDKs. `app.ts` mounts the modules actually supplied by `index.ts`.
+The Knowledge and Conversations compositions share a typed note transaction
+participant for source reads, first-message draft naming and explicit proposal
+publication. Knowledge owns working branches and share capabilities; Conversations
+owns private turns and Mastra history.
 
 Web and admin share public framework-neutral packages rather than application source.
 Admin intentionally uses its own four-layer structure under ADR-0010. This diagram
@@ -59,6 +66,9 @@ summarizes inspected composition roots; it is not an automated proof of all impo
 
 ## Sources
 
+- [apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts](../../apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/knowledge-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/knowledge-composition.ts)
+- [docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
 - [apps/backend/src/index.ts](../../apps/backend/src/index.ts)
 - [apps/backend/src/app.ts](../../apps/backend/src/app.ts)
 - [apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts](../../apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts)

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TutorRunInput } from '../../application/ports/tutor-runner.js';
 import { createContextualTutorRunner } from './contextual-tutor-runner.js';
+import { projectTutorUserMessage } from '../../application/tutor-message-context.js';
 import {
     scriptedTutorModel,
     tutorAccountingFixture,
@@ -36,6 +37,58 @@ function runInput(memory = tutorMemoryFixture()): TutorRunInput {
 }
 
 describe('contextual tutor with the real pinned Mastra SDK', () => {
+    it('uses the latest complete editor snapshot while retaining prior snapshots as history', async () => {
+        const older = {
+            id: 'earlier-workspace-question',
+            role: 'user' as const,
+            content: 'Explain the old draft.',
+            createdAt: '2026-10-19T00:01:00.000Z',
+            modelContent: projectTutorUserMessage({
+                content: 'Explain the old draft.',
+                editorContext: { content: 'Older exact paragraph.' },
+            }),
+        };
+        const memory = tutorMemoryFixture([older]);
+        const input = runInput(memory);
+        input.message.modelContent = projectTutorUserMessage({
+            content: input.message.content,
+            editorContext: { content: 'Current exact paragraph.' },
+        });
+        memory.messages.set(input.message.id, input.message);
+        const provider = scriptedTutorModel(['A language explanation.']);
+        await createContextualTutorRunner({
+            model: provider.model,
+            accounting: tutorAccountingFixture(),
+            maxInputTokens: 64_000,
+        }).run(input);
+        const dispatched = JSON.stringify(provider.requests[0]?.prompt);
+        expect(dispatched).toContain('Older exact paragraph.');
+        expect(dispatched).toContain('Current exact paragraph.');
+    });
+
+    it('rejects the full model input after memory preparation without a provider call', async () => {
+        const memory = tutorMemoryFixture();
+        const input = runInput(memory);
+        input.message.modelContent = projectTutorUserMessage({
+            content: input.message.content,
+            editorContext: { content: 'A large unsaved draft. '.repeat(200) },
+        });
+        memory.messages.set(input.message.id, input.message);
+        const provider = scriptedTutorModel([]);
+        await expect(
+            createContextualTutorRunner({
+                model: provider.model,
+                accounting: tutorAccountingFixture(),
+                maxInputTokens: 1_000,
+                memoryThresholds: {
+                    messageTokens: 10_000,
+                    observationTokens: 10_000,
+                    maxTokensPerBatch: 10_000,
+                },
+            }).run(input),
+        ).rejects.toMatchObject({ code: 'context_too_large' });
+        expect(provider.requests).toHaveLength(0);
+    });
     it('retains all pending small turns beyond lastMessages=20 before the compaction threshold', async () => {
         const memory = tutorMemoryFixture(
             Array.from({ length: 35 }, (_, index) => ({

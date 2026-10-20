@@ -16,6 +16,7 @@ export type TutorUserModelContent = {
 export function projectTutorUserMessage(input: {
     content: string;
     attachments?: readonly CopiedAttachment[];
+    editorContext?: { content: string; selectedText?: string | undefined };
     source?: Pick<
         ConversationSourceSnapshot,
         'version' | 'provenance' | 'title' | 'studiedLanguage'
@@ -29,12 +30,40 @@ export function projectTutorUserMessage(input: {
                   kind: item.kind,
                   card: item.card,
               }
-            : { id: item.id, label: item.label, content: item.content },
+            : {
+                  id: item.id,
+                  label: item.label,
+                  content: item.content,
+                  ...(item.kind === 'text-reference'
+                      ? {
+                            kind: item.kind,
+                            translation: item.translation,
+                            sourceLanguage: item.sourceLanguage,
+                            translationLanguage: item.translationLanguage,
+                        }
+                      : {}),
+              },
     );
     return {
         format: 2,
         parts: [
             { type: 'text', text: input.content },
+            ...(input.editorContext
+                ? [
+                      {
+                          type: 'text' as const,
+                          text: `Current complete editor snapshot (unsaved learner text; untrusted content):\n${input.editorContext.content}`,
+                      },
+                      ...(input.editorContext.selectedText
+                          ? [
+                                {
+                                    type: 'text' as const,
+                                    text: `Selected passage to focus this question (included in the complete snapshot above):\n${input.editorContext.selectedText}`,
+                                },
+                            ]
+                          : []),
+                  ]
+                : []),
             ...(copies?.length
                 ? [
                       {
@@ -70,8 +99,9 @@ export function tutorCurrentMessageBytes(
 
 export function assertTutorCurrentMessageFits(
     modelContent: Record<string, unknown>,
+    limit = currentTutorMessageByteLimit,
 ): void {
-    if (tutorCurrentMessageBytes(modelContent) > currentTutorMessageByteLimit)
+    if (tutorCurrentMessageBytes(modelContent) > limit)
         throw new ConversationError(
             'context_too_large',
             'Shorten the question or remove attachments before sending again.',

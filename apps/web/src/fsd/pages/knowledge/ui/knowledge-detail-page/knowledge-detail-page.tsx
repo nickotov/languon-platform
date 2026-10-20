@@ -1,20 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, History, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { KnowledgeApiError } from '@/fsd/entities/knowledge';
 import { useSessionStore } from '@/fsd/entities/session';
+import { KnowledgeNoteForm } from '@/fsd/features/knowledge-notes';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useI18n } from '@/fsd/shared/i18n';
-import { useDirtyNavigation } from '@/fsd/shared/lib/navigation/use-dirty-navigation';
-import { Button, ButtonLink, InlineAlert, LoadingState } from '@/fsd/shared/ui';
-import { useKnowledgeNote } from '../../hooks/use-knowledge-note';
+import {
+    AlertDialog,
+    Button,
+    ButtonLink,
+    CompanionLayout,
+    DialogActions,
+    InlineAlert,
+    LoadingState,
+} from '@/fsd/shared/ui';
+import { useKnowledgePageActions } from '../../hooks/use-knowledge-page-actions';
 import { KnowledgeAuthBoundary } from '../knowledge-auth-boundary/knowledge-auth-boundary';
-import { NotePreview } from './note-preview';
-import { NoteHistory } from './note-history';
-import { NoteEditForm } from './note-edit-form';
-import { NoteDialogs } from './note-dialogs';
+import { WorkspaceConflictDialogs } from './workspace-conflict-dialogs';
+import { WorkspaceHeader } from './workspace-header';
+import { WorkspaceHistory } from './workspace-history';
+import { WorkspaceShareControls } from './workspace-share-controls';
 import styles from './knowledge-detail-page.module.css';
 
 export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
@@ -28,56 +34,21 @@ export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
 
 function DetailContent({ noteId }: { noteId: string }) {
     const { t, href } = useI18n();
-    const router = useRouter();
-    const state = useKnowledgeNote(noteId);
-    const navigation = useDirtyNavigation();
-    const [valid, setValid] = useState(true);
-    const [deleting, setDeleting] = useState(false);
-    const [compare, setCompare] = useState(false);
-    const note = state.query.data;
-    const dirty =
-        state.edit !== null &&
-        (!valid ||
-            JSON.stringify(state.edit.content) !==
-                JSON.stringify(state.edit.original));
-    useEffect(() => {
-        navigation.setDirty(dirty);
-    }, [dirty, navigation.setDirty]);
+    const actions = useKnowledgePageActions(noteId);
+    const {
+        state,
+        workspace,
+        draft,
+        title,
+        canSave,
+        canPublish,
+        busy,
+        actionError,
+        navigation,
+    } = actions;
     const missing =
         state.query.error instanceof KnowledgeApiError &&
         state.query.error.status === 404;
-    const conflict =
-        state.conflict ||
-        (state.save.error instanceof KnowledgeApiError &&
-            state.save.error.status === 409);
-    function edit() {
-        if (note) {
-            setValid(true);
-            state.startEditing(note);
-        }
-    }
-    function history() {
-        state.setHistoryOpen(true);
-    }
-    function requestDelete() {
-        state.remove.reset();
-        setDeleting(true);
-    }
-    function showCompare() {
-        setCompare(true);
-    }
-    function reload() {
-        void state.query.refetch();
-    }
-    async function deleteNote() {
-        if (!note) return;
-        try {
-            await state.remove.mutateAsync(note.version);
-            router.push(href('/knowledge'));
-        } catch {
-            /* Confirmation remains open with a retryable error. */
-        }
-    }
     const back = (
         <ButtonLink
             href={href('/knowledge')}
@@ -87,14 +58,16 @@ function DetailContent({ noteId }: { noteId: string }) {
             {t('knowledge.back')}
         </ButtonLink>
     );
-    if (!note && state.query.isPending)
+
+    if (!workspace && state.query.isPending)
         return (
             <main className={styles.page}>
                 {back}
                 <LoadingState>{t('knowledge.loading')}</LoadingState>
             </main>
         );
-    if (!note)
+
+    if (!workspace || !draft)
         return (
             <main className={styles.page}>
                 {back}
@@ -102,7 +75,7 @@ function DetailContent({ noteId }: { noteId: string }) {
                     tone='error'
                     actions={
                         !missing && (
-                            <Button variant='secondary' onClick={reload}>
+                            <Button variant='secondary' onClick={actions.retry}>
                                 {t('knowledge.retry')}
                             </Button>
                         )
@@ -112,89 +85,180 @@ function DetailContent({ noteId }: { noteId: string }) {
                 </InlineAlert>
             </main>
         );
-    const source = { kind: 'knowledge' as const, id: note.id };
+
+    const assistant = (
+        <ContextualAssistant
+            source={{ kind: 'knowledge', id: noteId }}
+            contextLabel={title}
+            workspace={{
+                getSnapshot: actions.getSnapshot,
+                onAcceptProposal: actions.acceptProposal,
+                onConflictProposal: actions.compareProposal,
+                restoreTarget: actions.restoreTarget,
+                editorLimit: workspace.limits.editorChars,
+                referenceLimit: workspace.limits.referenceChars,
+                onSent: actions.refreshAfterSend,
+                beforeSend: actions.beforeSend,
+            }}
+        />
+    );
+
     return (
-        <main className={styles.page}>
-            {back}
-            <header className={styles.header}>
-                <div>
-                    <p className={styles.eyebrow}>
-                        {t(
-                            state.edit
-                                ? 'knowledge.editing'
-                                : 'knowledge.navigation',
-                        )}
-                    </p>
-                    <h1 dir='auto'>{note.title}</h1>
-                </div>
-                {!state.edit && (
-                    <div className={styles.actions}>
-                        <ContextualAssistant
-                            source={source}
-                            contextLabel={note.title}
-                        />
+        <CompanionLayout companion={assistant}>
+            <main className={styles.page}>
+                {back}
+                <WorkspaceHeader
+                    title={title}
+                    recovery={state.status}
+                    draft={workspace.status === 'draft'}
+                    canSave={canSave}
+                    busy={busy}
+                    onSaveCopy={actions.saveCopy}
+                    onHistory={actions.openHistory}
+                    onDelete={actions.openDelete}
+                />
+                {state.status === 'error' && (
+                    <InlineAlert
+                        tone='error'
+                        actions={
+                            <Button onClick={state.retryRecovery}>
+                                {t('knowledge.retry')}
+                            </Button>
+                        }
+                    >
+                        {t('knowledge.recoveryError')}
+                    </InlineAlert>
+                )}
+                {actionError && (
+                    <InlineAlert tone='error'>
+                        {t('knowledge.saveError')}
+                    </InlineAlert>
+                )}
+                {actions.retargetProposal && (
+                    <InlineAlert
+                        tone='warning'
+                        actions={
+                            <div className={styles.actions}>
+                                <Button
+                                    variant='secondary'
+                                    onClick={actions.cancelRetarget}
+                                >
+                                    {t('knowledge.cancel')}
+                                </Button>
+                                <Button onClick={actions.applyRetarget}>
+                                    {t('knowledge.applyNewTarget')}
+                                </Button>
+                            </div>
+                        }
+                    >
+                        {t('knowledge.retargetHelp')}
+                    </InlineAlert>
+                )}
+                <section
+                    className={styles.article}
+                    id='knowledge-workspace-editor'
+                >
+                    <KnowledgeNoteForm
+                        ref={actions.editor}
+                        value={draft.content}
+                        onChange={state.change}
+                        onValidityChange={actions.setValid}
+                        disabled={busy !== null}
+                    />
+                    <div className={styles.saveActions}>
+                        <span className={styles.description}>
+                            {workspace.branches.length > 1
+                                ? t('knowledge.resolveBeforeSave')
+                                : workspace.status === 'draft'
+                                  ? t('knowledge.draftHelp')
+                                  : t('knowledge.saveHelp')}
+                        </span>
                         <Button
-                            variant='secondary'
-                            leadingIcon={<Pencil aria-hidden size={18} />}
-                            onClick={edit}
-                            disabled={state.busy}
+                            disabled={!canPublish || busy !== null}
+                            loading={busy === 'save'}
+                            onClick={actions.save}
                         >
-                            {t('knowledge.edit')}
-                        </Button>
-                        <Button
-                            variant='ghost'
-                            leadingIcon={<History aria-hidden size={18} />}
-                            onClick={history}
-                            disabled={state.busy}
-                        >
-                            {t('knowledge.history')}
-                        </Button>
-                        <Button
-                            variant='ghost'
-                            leadingIcon={<Trash2 aria-hidden size={18} />}
-                            onClick={requestDelete}
-                            disabled={state.busy}
-                        >
-                            {t('knowledge.delete')}
+                            {t('knowledge.save')}
                         </Button>
                     </div>
+                </section>
+                {workspace.status === 'saved' && (
+                    <WorkspaceShareControls
+                        noteId={noteId}
+                        enabled={workspace.shareEnabled}
+                        onChange={state.setShareEnabled}
+                    />
                 )}
-            </header>
-            {missing && (
-                <InlineAlert tone='warning'>
-                    {t('knowledge.missing')}
-                </InlineAlert>
-            )}
-            {state.edit ? (
-                <NoteEditForm
-                    state={state}
-                    navigation={navigation}
-                    valid={valid}
-                    dirty={dirty}
-                    conflict={conflict}
-                    missing={missing}
-                    onValidity={setValid}
-                    onCompare={showCompare}
+                <WorkspaceConflictDialogs
+                    workspace={workspace}
+                    selectedBranchId={draft.branchId}
+                    onChoose={actions.chooseBranch}
+                    onSaveCopy={actions.saveCopy}
+                    onResolve={actions.resolveBranches}
+                    resolving={busy === 'resolve'}
+                    proposal={actions.proposalConflict}
+                    editor={actions.editor}
+                    onCloseProposal={actions.closeProposal}
+                    onNewTarget={actions.beginRetarget}
                 />
-            ) : (
-                <article className={styles.article}>
-                    <NotePreview content={note} />
-                    <p className={styles.disclaimer}>
-                        {t('knowledge.notVerified')}
-                    </p>
-                </article>
-            )}
-            <NoteDialogs
-                state={state}
-                navigation={navigation}
-                deleting={deleting}
-                compare={compare}
-                onDeleting={setDeleting}
-                onCompare={setCompare}
-                onDelete={deleteNote}
-                onValidity={setValid}
-            />
-            <NoteHistory state={state} />
-        </main>
+                <WorkspaceHistory
+                    noteId={noteId}
+                    open={actions.historyOpen}
+                    publishedVersion={workspace.published?.version ?? 0}
+                    onClose={actions.closeHistory}
+                    onBeforeRestore={state.flush}
+                    onRestored={state.reload}
+                />
+                <AlertDialog
+                    open={actions.deleting}
+                    onClose={actions.closeDelete}
+                    title={t('knowledge.deleteTitle')}
+                    closeLabel={t('knowledge.cancelDelete')}
+                    footer={
+                        <DialogActions>
+                            <Button
+                                variant='secondary'
+                                onClick={actions.closeDelete}
+                            >
+                                {t('knowledge.cancelDelete')}
+                            </Button>
+                            <Button
+                                variant='danger'
+                                loading={busy === 'delete'}
+                                onClick={actions.remove}
+                            >
+                                {t('knowledge.delete')}
+                            </Button>
+                        </DialogActions>
+                    }
+                >
+                    <p>{t('knowledge.deleteHelp')}</p>
+                </AlertDialog>
+                <AlertDialog
+                    open={navigation.open}
+                    onClose={navigation.keepEditing}
+                    title={t('knowledge.unsavedTitle')}
+                    closeLabel={t('knowledge.keepEditing')}
+                    footer={
+                        <DialogActions>
+                            <Button
+                                variant='secondary'
+                                onClick={navigation.keepEditing}
+                            >
+                                {t('knowledge.keepEditing')}
+                            </Button>
+                            <Button
+                                variant='danger'
+                                onClick={navigation.discard}
+                            >
+                                {t('knowledge.discard')}
+                            </Button>
+                        </DialogActions>
+                    }
+                >
+                    <p>{t('knowledge.unsavedHelp')}</p>
+                </AlertDialog>
+            </main>
+        </CompanionLayout>
     );
 }

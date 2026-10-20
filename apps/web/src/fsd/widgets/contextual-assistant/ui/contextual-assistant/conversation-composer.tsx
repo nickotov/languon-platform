@@ -34,6 +34,7 @@ export function ConversationComposer({
     contextPicker,
     onSelectFromPage,
     contextOpen = false,
+    workspace = false,
 }: {
     question: string;
     onQuestion(value: string): void;
@@ -54,6 +55,7 @@ export function ConversationComposer({
     contextPicker?: ReactNode;
     onSelectFromPage?: (() => void) | undefined;
     contextOpen?: boolean;
+    workspace?: boolean;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
@@ -100,6 +102,7 @@ export function ConversationComposer({
             <ComposerAttachments
                 attachments={attachments}
                 onRemove={onRemove}
+                workspace={workspace}
             />
             <div className={styles.inputFrame}>
                 <textarea
@@ -126,7 +129,9 @@ export function ConversationComposer({
                             aria-expanded={contextOpen}
                             aria-haspopup='dialog'
                             aria-keyshortcuts='/'
-                            disabled={attachments.length >= 10 || busy}
+                            disabled={
+                                (!workspace && attachments.length >= 10) || busy
+                            }
                         >
                             <Plus size={16} aria-hidden='true' />
                             <span className={styles.desktopLabel}>

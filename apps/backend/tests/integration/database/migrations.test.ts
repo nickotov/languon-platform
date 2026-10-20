@@ -245,6 +245,8 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             'knowledge_note_revisions',
             'knowledge_notes',
             'knowledge_operation_receipts',
+            'knowledge_shares',
+            'knowledge_working_branches',
             'model_price_revisions',
             'password_credentials',
             'sentence_ai_jobs',

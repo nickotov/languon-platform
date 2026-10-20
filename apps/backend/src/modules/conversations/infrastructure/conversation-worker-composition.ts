@@ -42,6 +42,10 @@ export function createConversationWorkerComposition(input: {
                     id,
                 ),
         }),
+        nameUntitledNote: (tx, ownerId, noteId, title) =>
+            new DrizzleKnowledgeTransactionParticipant(
+                tx,
+            ).nameUntitledFromFirstMessage(ownerId, noteId, title),
         admitTurn: conversationAdmission(),
         publishNote: (tx, ownerId, content) =>
             new DrizzleKnowledgeTransactionParticipant(tx).publish(

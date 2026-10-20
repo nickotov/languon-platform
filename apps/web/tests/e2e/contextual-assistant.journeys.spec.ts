@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:933d796afdfaae27
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:dd229fee825e66b5
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -733,15 +733,17 @@ test('saved source streams through real SDK into an editable private note and re
     await expect(
         page.getByRole('heading', { level: 1, name: saved.title }),
     ).toBeVisible();
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
     await page
         .getByRole('textbox', { name: 'Summary', exact: true })
         .fill('A learner-authored summary saved without model use.');
+    await expect(
+        page.getByText('Working draft recovered', { exact: true }),
+    ).toBeVisible();
     await page
         .getByRole('button', { name: 'Save changes', exact: true })
         .click();
     await expect(
-        page.getByRole('button', { name: 'Edit', exact: true }),
+        page.getByRole('button', { name: 'Save changes', exact: true }),
     ).toBeVisible();
     const { note: updated } = (await api(
         page,
@@ -757,7 +759,7 @@ test('saved source streams through real SDK into an editable private note and re
     await historical.click();
     await expect(
         page
-            .getByRole('region', { name: 'Saved revision' })
+            .getByRole('dialog', { name: 'Revision history' })
             .getByText('Distinguish a river bank from a financial bank.', {
                 exact: true,
             }),

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import {
     createDrizzleDatabase,
@@ -24,6 +24,8 @@ import { databaseSchema } from '../../../../src/infrastructure/database/schema';
 import { DrizzleConversationStore } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store';
 import { ConversationSourceResolver } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-source';
 import { DrizzleKnowledgeTransactionParticipant } from '../../../../src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-transaction';
+import { DrizzleKnowledgeStore } from '../../../../src/modules/knowledge/infrastructure/persistence/drizzle/drizzle-knowledge-store';
+import { KnowledgeShareCrypto } from '../../../../src/modules/knowledge/infrastructure/knowledge-share-crypto';
 import { HmacDictionaryCryptography } from '../../../../src/modules/dictionaries/infrastructure/crypto/dictionary-cryptography';
 import { ConversationWorkerService } from '../../../../src/modules/conversations/application/conversation-worker-service';
 import { DrizzleAccountDeletionStore } from '../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-deletion-store';
@@ -61,6 +63,19 @@ const content: KnowledgeNoteContent = {
 const cryptography = new HmacDictionaryCryptography({
     secret: 'disposable-fixture-secret-32-characters',
     entropy: { randomBytes: (length) => new Uint8Array(length) },
+});
+const workspaceContext = (
+    content: string,
+    from = content.length,
+    to = from,
+) => ({
+    content,
+    editorTarget: {
+        from,
+        to,
+        originalText: content.slice(from, to),
+        documentHash: createHash('sha256').update(content).digest('hex'),
+    },
 });
 function latch() {
     let release!: () => void;
@@ -155,6 +170,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             tx,
                         ).getForSource(actor, id),
                 }),
+                nameUntitledNote: (tx, actor, noteId, title) =>
+                    new DrizzleKnowledgeTransactionParticipant(
+                        tx,
+                    ).nameUntitledFromFirstMessage(actor, noteId, title),
                 publishNote: async (tx, actor, input) => {
                     await beforePublish?.();
                     return new DrizzleKnowledgeTransactionParticipant(
@@ -325,6 +344,178 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 detail.messages.find((message) => message.turnId === second.id)
                     ?.sourceVersion,
             ).toBe(next.sourceSnapshot.version);
+        });
+        it('freezes the full Knowledge editor snapshot, copies owned Text references, and names the first conversation turn', async () => {
+            const note = await db.transaction((tx) =>
+                new DrizzleKnowledgeTransactionParticipant(tx).publish(
+                    owner,
+                    { operationId: randomUUID(), content },
+                    clock,
+                ),
+            );
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+            const folder = randomUUID();
+            const textId = randomUUID();
+            const date = clock.toISOString();
+            await client`insert into text_folders(id,owner_id,name,created_at,updated_at) values (${folder},${owner},'Reading',${date},${date})`;
+            await client`insert into texts(id,owner_id,folder_id,title,source_language,target_language,source_text,status,created_at,updated_at) values (${textId},${owner},${folder},'Selected text','es','en','Reference body','draft',${date},${date})`;
+            expect(
+                (await store.textReferences(access(), chat.id, 'Selected'))
+                    .references,
+            ).toEqual([
+                {
+                    id: textId,
+                    title: 'Selected text',
+                    sourceLanguage: 'es',
+                    translationLanguage: null,
+                    hasTranslation: false,
+                },
+            ]);
+            const reference = (
+                await store.textReference(access(), chat.id, textId)
+            ).reference;
+            await expect(
+                store.textReference({ ownerId: learner }, chat.id, textId),
+            ).rejects.toMatchObject({ code: 'conversation_not_found' });
+            const editor =
+                'First paragraph.\nSecond paragraph after unsaved edits.';
+            const turn = await store.submit(access(), chat.id, {
+                ...submit('Explain this phrase'),
+                editorContext: {
+                    ...workspaceContext(editor),
+                    selectedText: 'Second paragraph',
+                },
+                attachments: [
+                    {
+                        id: randomUUID(),
+                        kind: 'text-reference',
+                        label: reference.title,
+                        content: reference.content,
+                        sourceLanguage: reference.sourceLanguage,
+                    },
+                ],
+            });
+            const claimed = (await store.claim())!;
+            expect(claimed.sourceSnapshot.scope).toBe('workspace');
+            expect(claimed.sourceSnapshot.material).toEqual([]);
+            expect(
+                (
+                    claimed.message.modelContent as {
+                        parts: { text: string }[];
+                    }
+                ).parts
+                    .map((part) => part.text)
+                    .join('\n'),
+            ).toContain(editor);
+            expect(JSON.stringify(claimed.message.modelContent)).toContain(
+                reference.content,
+            );
+            expect(claimed.message.editorTarget).toEqual(
+                workspaceContext(editor).editorTarget,
+            );
+            expect(
+                (await store.detail(access(), chat.id)).messages.find(
+                    (message) =>
+                        message.turnId === turn.id &&
+                        message.role === 'assistant',
+                )?.editorTarget,
+            ).toEqual(workspaceContext(editor).editorTarget);
+            expect(
+                (await store.detail(access(), chat.id)).conversation.title,
+            ).toBe('Explain this phrase');
+            await store.stop(access(), chat.id, turn.id);
+        });
+        it('keeps the frozen proposal target and editor snapshot on retry', async () => {
+            const note = await db.transaction((tx) =>
+                new DrizzleKnowledgeTransactionParticipant(tx).publish(
+                    owner,
+                    { operationId: randomUUID(), content },
+                    clock,
+                ),
+            );
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+            const originalContent = 'Original first line.\nTarget paragraph.';
+            const from = originalContent.indexOf('Target');
+            const originalContext = workspaceContext(
+                originalContent,
+                from,
+                originalContent.length,
+            );
+            const first = await store.submit(access(), chat.id, {
+                ...submit('Improve this paragraph'),
+                editorContext: {
+                    ...originalContext,
+                    proposalTarget: {
+                        ...originalContext.editorTarget,
+                        mode: 'replace',
+                    },
+                },
+            });
+            const claimed = (await store.claim())!;
+            const originalModelContent = claimed.message.modelContent;
+            await store.stop(access(), chat.id, first.id);
+            await store.finish(claimed, 'cancelled');
+            const retry = await store.submit(access(), chat.id, {
+                ...submit('Ignored retry placeholder'),
+                retryOf: first.id,
+                editorContext: workspaceContext('Newer unsaved edit.'),
+            });
+            const retryClaim = (await store.claim())!;
+            expect(retryClaim.message.modelContent).toEqual(
+                originalModelContent,
+            );
+            expect(retryClaim.message.editorTarget).toEqual({
+                ...originalContext.editorTarget,
+                proposalMode: 'replace',
+            });
+            expect(
+                (await store.detail(access(), chat.id)).messages.find(
+                    (message) =>
+                        message.turnId === retry.id &&
+                        message.role === 'assistant',
+                )?.editorTarget,
+            ).toEqual(retryClaim.message.editorTarget);
+        });
+        it('starts an empty Knowledge draft conversation and names the draft from its first question', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const workspace = await knowledge.createDraft(owner, {
+                operationId: randomUUID(),
+            });
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: workspace.noteId },
+            });
+            await store.submit(access(), chat.id, {
+                ...submit('Why does this work?'),
+                editorContext: workspaceContext(''),
+            });
+            const reopened = await knowledge.getWorkspace(
+                owner,
+                workspace.noteId,
+            );
+            expect(
+                reopened.branches.find(
+                    (branch) => branch.id === reopened.preferredBranchId,
+                )?.content.title,
+            ).toBe('Why does this');
+            expect(
+                (await store.detail(access(), chat.id)).conversation.title,
+            ).toBe('Why does this');
+            const claimed = (await store.claim())!;
+            expect(claimed.sourceSnapshot.scope).toBe('workspace');
+            expect(claimed.sourceSnapshot.studiedLanguage).toBeNull();
+            expect(JSON.stringify(claimed.message.modelContent)).toContain(
+                '\\"studiedLanguage\\":null',
+            );
         });
         it('separates current shared authority from frozen material, suspends on archive/revocation and restores through a new share', async () => {
             await expect(
@@ -506,7 +697,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         : await store.create(access(), {
                               source: { kind: 'knowledge', id: note.id },
                           });
-                await store.submit(access(), chat.id, submit());
+                await store.submit(
+                    access(),
+                    chat.id,
+                    kind === 'knowledge'
+                        ? {
+                              ...submit(),
+                              editorContext: workspaceContext(
+                                  'Current full note body.',
+                              ),
+                          }
+                        : submit(),
+                );
                 const turn = (await store.claim())!;
                 const draft = await store.propose(turn, content, {
                     noteId: note.id,
@@ -578,7 +780,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: note.id },
             });
-            await store.submit(access(), chat.id, submit());
+            await store.submit(access(), chat.id, {
+                ...submit(),
+                editorContext: workspaceContext('Current full note body.'),
+            });
             const turn = (await store.claim())!;
             const reached = latch(),
                 resume = latch();
@@ -1346,7 +1551,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
             await store.submit(access(), chat.id, {
                 ...submit(),
-                draftContext: { content: 'Unsaved learner explanation.' },
+                editorContext: workspaceContext('Unsaved learner explanation.'),
             });
             const worker = new ConversationWorkerService({
                 store,

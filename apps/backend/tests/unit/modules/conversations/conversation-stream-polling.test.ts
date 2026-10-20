@@ -35,6 +35,7 @@ const turn: ConversationTurn = {
 const detail: ConversationDetail = {
     conversation: {
         id: conversationId,
+        title: null,
         source: { id: conversationId, kind: 'dictionary' },
         preferences: {
             replyLanguage: 'auto',

@@ -42,7 +42,7 @@ export interface ConversationSourceDependencies {
     ): Promise<{
         title: string;
         summary: string;
-        studiedLanguage: string;
+        studiedLanguage: string | null;
         version: number;
         body: KnowledgeBody;
     }>;
@@ -84,7 +84,7 @@ export class ConversationSourceResolver {
             return {
                 authority: { sourceOwnerId: ownerId },
                 snapshot: {
-                    title: note.title,
+                    title: note.title || 'Untitled',
                     description: note.summary,
                     studiedLanguage: note.studiedLanguage,
                     version: String(note.version),

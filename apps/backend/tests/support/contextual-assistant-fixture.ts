@@ -285,6 +285,18 @@ export async function createContextualAssistantFixture(
     }
     try {
         const d = authentication.productDependencies;
+        const consumeRateLimit = d.rateLimiter.consume.bind(d.rateLimiter);
+        // The one guarded browser server shares a loopback client address across
+        // its six synthetic journeys (and the share recipient). Keep the real
+        // Redis limiter, while giving only that test-only client bucket enough
+        // capacity; account and cooldown limits still apply unchanged.
+        d.rateLimiter.consume = async (request) =>
+            consumeRateLimit({
+                ...request,
+                ...(request.scope === 'verification.email_send.client'
+                    ? { limit: Math.max(request.limit, 64) }
+                    : {}),
+            });
         const authenticate = async (token: string) => {
             const claims = await d.accessTokens.verify(token);
             await d.authentication.requireActiveSession(claims);
@@ -340,6 +352,8 @@ export async function createContextualAssistantFixture(
         });
         const knowledge = createKnowledgeService({
             database: d.database,
+            shareSecret: secret,
+            limits: { referenceChars: 40_000, editorChars: 40_000 },
             authenticate,
             rateLimiter: d.rateLimiter,
             lifecycle: {

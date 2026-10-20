@@ -23,6 +23,7 @@ const date = '2026-10-19T10:00:00.000Z';
 const initial = ConversationDetailSchema.parse({
     conversation: {
         id: conversationId,
+        title: null,
         source: { kind: 'text', id: conversationId },
         preferences: {},
         version: 1,

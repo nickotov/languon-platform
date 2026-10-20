@@ -9,9 +9,11 @@ import styles from './composer.module.css';
 export function ComposerAttachments({
     attachments,
     onRemove,
+    workspace = false,
 }: {
     attachments: CopiedAttachment[];
     onRemove(id: string): void;
+    workspace?: boolean;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
@@ -36,7 +38,7 @@ export function ComposerAttachments({
                 ))}
             </ul>
             {open && <AttachmentPreview attachment={open} />}
-            {attachments.length >= 10 && (
+            {!workspace && attachments.length >= 10 && (
                 <p className={styles.hint}>{text.limit}</p>
             )}
         </div>
@@ -86,6 +88,17 @@ function AttachmentChip({
     );
 }
 function AttachmentPreview({ attachment }: { attachment: CopiedAttachment }) {
+    if (attachment.kind === 'text-reference')
+        return (
+            <div className={styles.attachmentPreview} dir='auto'>
+                <p>{attachment.content}</p>
+                {attachment.translation && (
+                    <p lang={attachment.translationLanguage}>
+                        {attachment.translation}
+                    </p>
+                )}
+            </div>
+        );
     if (attachment.kind !== 'dictionary-card')
         return (
             <div className={styles.attachmentPreview} dir='auto'>

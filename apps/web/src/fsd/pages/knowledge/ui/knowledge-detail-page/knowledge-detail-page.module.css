@@ -1,5 +1,5 @@
 .page {
-    max-width: var(--size-max-width-app);
+    width: min(100%, var(--size-max-width-app));
     padding: var(--space-32);
     margin: 0 auto;
     display: flex;
@@ -39,8 +39,65 @@
     gap: var(--space-8);
 }
 .saveActions {
-    justify-content: flex-end;
+    justify-content: space-between;
     padding: var(--space-16) 0;
+}
+
+.recovery {
+    margin: var(--space-8) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+}
+
+.shareControls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.conflicts {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--background-surface);
+    padding: var(--space-24);
+}
+
+.conflicts h2 {
+    margin: 0;
+}
+
+.branchGrid,
+.proposalCompare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+}
+
+.branch {
+    min-width: 0;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-16);
+}
+
+.branch h3 {
+    margin: 0;
+}
+
+.branch .preview {
+    max-height: var(--size-400);
+    overflow: auto;
+}
+
+.proposalCompare pre,
+.proposedText {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: var(--background-surface);
+    padding: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
 }
 .article {
     border: 1px solid var(--border-default);
@@ -96,6 +153,10 @@
     padding: var(--space-16) 0;
 }
 @media (max-width: 768px) {
+    .branchGrid,
+    .proposalCompare {
+        grid-template-columns: minmax(0, 1fr);
+    }
     .page {
         padding: var(--space-16);
     }

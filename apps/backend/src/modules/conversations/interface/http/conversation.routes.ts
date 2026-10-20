@@ -17,6 +17,8 @@ import {
     KnowledgeDraftSchema,
     KnowledgeNoteResponseSchema,
     CopiedAttachmentSchema,
+    ConversationTextReferencesResponseSchema,
+    ConversationTextReferenceResponseSchema,
 } from '@languon/contracts';
 import type { ConversationService } from '../../application/conversation-service';
 import { ConversationError } from '../../domain/conversation';
@@ -59,6 +61,7 @@ const errors = {
 };
 const id = z.object({ conversationId: z.uuid() });
 const draftId = id.extend({ draftId: z.uuid() });
+const referenceId = id.extend({ textId: z.uuid() });
 const security = [{ bearerAuth: [] as string[] }];
 export function createConversationRoutes({
     service,
@@ -294,7 +297,7 @@ export function createConversationRoutes({
                         c.req.valid('param').conversationId,
                         UpdateConversationRequestSchema.parse(
                             c.req.valid('json'),
-                        ).preferences,
+                        ),
                     ),
                 },
                 200,
@@ -400,6 +403,53 @@ export function createConversationRoutes({
                 ),
                 200,
             ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/conversations/{conversationId}/references',
+            security,
+            request: {
+                params: id,
+                query: z.object({ q: z.string().max(200).default('') }),
+            },
+            responses: {
+                200: json(ConversationTextReferencesResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                await service.store.textReferences(
+                    await access(c),
+                    c.req.valid('param').conversationId,
+                    c.req.valid('query').q,
+                ),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/conversations/{conversationId}/references/{textId}',
+            security,
+            request: { params: referenceId },
+            responses: {
+                200: json(ConversationTextReferenceResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) => {
+            const p = c.req.valid('param');
+            return c.json(
+                await service.store.textReference(
+                    await access(c),
+                    p.conversationId,
+                    p.textId,
+                ),
+                200,
+            );
+        },
     );
     app.openapi(
         createRoute({

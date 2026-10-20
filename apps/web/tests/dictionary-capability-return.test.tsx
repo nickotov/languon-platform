@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { AuthProvider } from '@/fsd/features/auth/model/auth-provider';
 import { LoginForm } from '@/fsd/features/auth/ui/login-form';
+import { AuthLinks } from '@/fsd/features/auth/ui/auth-shell';
 import { authApi } from '@/fsd/shared/api/auth-api';
 import {
     capabilityReturnFragment,
@@ -114,6 +115,7 @@ describe('Texts capability authentication continuation', () => {
         '/shared/texts/share-locator-1234',
         '/shared/text-folders/share-locator-1234',
         '/shared/text-folders/share-locator-1234/texts/123e4567-e89b-42d3-a456-426614174000',
+        '/shared/knowledge/share-locator-1234',
     ])('preserves a secret only in the fragment for %s', (path) => {
         const key = 'S'.repeat(43);
         const target = `/login?returnTo=${encodeURIComponent(path)}`;
@@ -122,6 +124,28 @@ describe('Texts capability authentication continuation', () => {
         );
         expect(capabilityReturnFragment(`${path}?key=${key}`, `#${key}`)).toBe(
             '',
+        );
+    });
+});
+
+describe('Knowledge share authentication continuation', () => {
+    it('keeps the shared reader destination when switching from sign in to account creation', () => {
+        const destination = '/shared/knowledge/share-locator-1234';
+        window.history.replaceState(
+            {},
+            '',
+            `/login?returnTo=${encodeURIComponent(destination)}`,
+        );
+        render(
+            <AuthProvider>
+                <AuthLinks mode='login' returnTo={destination} />
+            </AuthProvider>,
+        );
+        expect(
+            screen.getByRole('link', { name: 'Create an account' }),
+        ).toHaveAttribute(
+            'href',
+            `/signup?returnTo=${encodeURIComponent(destination)}`,
         );
     });
 });

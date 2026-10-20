@@ -151,14 +151,14 @@ export function TutorNoteForm({
                 <Select
                     label={t('knowledge.studiedLanguage')}
                     options={options}
-                    value={value.studiedLanguage}
+                    value={value.studiedLanguage ?? ''}
                     disabled={disabled}
                     onChange={changeStudied}
                 />
                 <Select
                     label={t('knowledge.explanationLanguage')}
                     options={options}
-                    value={value.explanationLanguage}
+                    value={value.explanationLanguage ?? ''}
                     disabled={disabled}
                     onChange={changeExplanation}
                 />

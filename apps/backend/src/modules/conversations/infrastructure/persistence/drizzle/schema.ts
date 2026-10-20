@@ -18,6 +18,7 @@ import type {
     CopiedAttachment,
     KnowledgeNoteContent,
     ConversationToolCall,
+    ConversationEditorTarget,
 } from '@languon/contracts';
 import type {
     ConversationSourceSnapshot,
@@ -40,6 +41,7 @@ export const conversationsTable = pgTable(
             .$type<ConversationSource['kind']>(),
         sourceId: uuid('source_id').notNull(),
         source: jsonb('source').notNull().$type<ConversationSource>(),
+        title: text('title'),
         preferences: jsonb('preferences').notNull().$type<ChatPreferences>(),
         version: integer('version').notNull().default(1),
         createdAt: time('created_at'),
@@ -137,6 +139,7 @@ export const conversationMessagesTable = pgTable(
             .default([])
             .$type<ConversationToolCall[]>(),
         modelContent: jsonb('model_content').$type<TutorMemoryMessage[]>(),
+        editorTarget: jsonb('editor_target').$type<ConversationEditorTarget>(),
         status: text('status')
             .notNull()
             .$type<'complete' | 'streaming' | 'incomplete'>(),

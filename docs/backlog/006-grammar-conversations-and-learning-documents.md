@@ -9,6 +9,8 @@ original_tasks: '9'
 evidence:
     - .agent/features/044-contextual-language-assistant-and-knowledge/EVIDENCE.md
     - docs/user-flows/contextual-language-assistant-and-knowledge.md
+    - .agent/features/047-knowledge-workspace/EVIDENCE.md
+    - docs/user-flows/knowledge-workspace.md
 ---
 
 # BL-006 — Grammar conversations and learning documents
@@ -227,6 +229,218 @@ The guide and reference were fetched from Mastra on 2026-10-18 and compared with
 the installed package's bundled reference. This is documentation/source
 evidence, not a runtime compatibility test or measured quality/cost result.
 
+### Knowledge workspace design discovery, 2026-10-19
+
+This follow-up interview records intended product behavior. Delivery of the
+workspace/sharing extension was authorized on 2026-10-19 and is tracked in
+[feature047](../../.agent/features/047-knowledge-workspace/FEATURE.md). Earlier first-delivery
+requirements and evidence above remain historical. The broader task stays
+in-progress. Resolved terms are maintained in [CONTEXT.md](../../CONTEXT.md).
+
+Confirmed in workspace interview Q1–Q3:
+
+- The workspace is the editing view of the existing Knowledge note, not a
+  separately persisted document exported into Knowledge. Notes broaden to
+  learner-written essays, study documents and language-learning research notes.
+  Save updates the same note; Save a copy creates an independent note.
+- The rich-text editor appears on the left and the reused contextual assistant
+  on the right on desktop, with a bottom sheet on mobile. The existing tutor
+  implementation/capabilities are extended rather than duplicated.
+- Conversations remain private and associated with the note. Notes should become
+  shareable and copyable; chat history is neither shared nor copied with them.
+  Exact sharing/access and conversation-cardinality choices remain open.
+- Preserve the current language-learning task limits and uncertainty behavior.
+  Initial research uses model knowledge and supplied learning material; there is
+  no external search. Professional subject matter can be learning material, but
+  unrelated professional work remains outside the assistant's role.
+- A `/` picker allows selecting multiple Texts as references. Adding a Text is
+  rejected in full if the resulting combined character count exceeds 40,000;
+  preserve prior accepted references and show a toast explaining the limit.
+  This is an aggregate size limit, not a fixed count of Texts. Precisely which
+  content contributes, reference lifetime and snapshot/live behavior remain open.
+  A character budget alone is not a claim about total model token capacity.
+- Later: uploaded images, DOCX/PDF and retrieval over those documents. Selecting
+  Knowledge notes as references is a possible later extension, not yet agreed
+  for this delivery.
+- Assistant output enters the editor through reviewed Insert at cursor, Append
+  or Replace selected text proposals, explicit acceptance and undo. Ordinary
+  replies remain in chat. If the learner edits a targeted paragraph while a
+  proposal is generated, compare before replacing the newer wording.
+- The current editor content must be available as tutor context and selections
+  can be explicitly passed to chat. Turn snapshot timing, retention and budget
+  interaction still need agreement.
+
+Confirmed in workspace interview Q4–Q8:
+
+- `/` selections accompany a single message. The submitted message includes the
+  copied content itself with a compact, readable preview in the composer/history;
+  the model receives the content, not a resource ID requiring later resolution.
+  Removing or editing the original does not alter the copy. There is no persistent
+  workspace reference list. App-assisted selection must still authorize access
+  when obtaining the content; no repeated source resolution is required for the
+  copied message afterward.
+- Default aggregate attachment allowance is 40,000 plain-text characters including
+  whitespace. Exactly 40,000 is allowed; reject an addition in full when it would
+  exceed the allowance. Explicitly included translations count toward the same
+  allowance. The editor context has a separate allowance, still to be decided.
+  Configure the reference allowance through environment configuration; later
+  model-specific limits are deferred. Client feedback and authoritative backend
+  validation must use the same effective limit. Suggested toast: “Reference text
+  exceeds the 40,000-character limit. Remove a reference or select a shorter
+  passage.” The displayed number must reflect configuration, not a hardcoded 40,000.
+- Capture the current editor content, including unsaved edits, when each message
+  is sent. That turn uses that snapshot while the learner continues editing;
+  the next turn receives the then-current snapshot. A selected passage focuses
+  the question while surrounding document context remains available.
+- Sharing uses an unlisted read-only link. Signed-in recipients can save an
+  independent copy. Only saved note content is shared/copied; private chat and
+  message attachments are excluded. Editing a copy does not change the original.
+- Automatic Mastra compaction is essential for this workspace. Preserve readable
+  original history and copied content, account for memory work under existing
+  model/credit limits, and distinguish current editor snapshots from historical
+  wording. Exact context placement and capacity/failure behavior need discovery;
+  a character allowance is not a guarantee that a model request fits.
+
+Confirmed in workspace interview Q9–Q12:
+
+- Each turn receives the complete current editor snapshot up to a separately
+  configurable editor allowance. Compact older conversation history automatically.
+  If editor content plus attachments still cannot fit the complete request budget,
+  explain the limit and require a smaller input; never silently omit paragraphs.
+- Recover unfinished private editor drafts automatically. Explicit Save updates
+  the saved note and its shared view; reopening restores unfinished edits.
+  Accepting an AI proposal changes only the working draft. Scope of recovery
+  across tabs/devices and conflict handling still need agreement.
+- A note supports multiple private conversations, reopening the most recent.
+  Users can start another or remove previous chats. A new conversation receives
+  current editor context without other conversations' history or copied material.
+- Shared readers must first save a personal copy to use this workspace's tutor.
+  Their copy and conversations remain independent if the original owner edits,
+  disables sharing or removes the original note. No recipient chat against the
+  shared original is introduced in this delivery.
+
+Confirmed in workspace interview Q13–Q16:
+
+- Default full-editor AI context allowance is 40,000 plain-text characters,
+  configurable through its own environment setting. Larger notes remain editable
+  and saveable within document storage limits, but tutor submission requires a
+  smaller editor snapshot. The complete request still passes model input-budget
+  validation after automatic compaction; separate character caps do not guarantee
+  combined input fits.
+- Working drafts persist privately on the server, recover across devices and
+  expose recovery status. Concurrent tab/device edits preserve both versions
+  and require resolution instead of silently overwriting either. Shared readers
+  continue seeing the last explicitly saved version.
+- Research may start and continue with an empty editor. New note creates an
+  Untitled private draft with stable identity, immediately usable chat, a Draft
+  label in Knowledge and reopen/delete support. This is the draft state of the
+  same note entity, not a second standalone-chat/document model. Sharing is
+  available only after the first explicit Save.
+- After the first user message, derive the default draft title from its first
+  three words unless the user has renamed it to something different from the
+  default. This derivation does not require a model call. Note versus individual
+  conversation naming still needs final confirmation.
+- Insert/Replace proposals remember their original target. Moving the cursor
+  does not redirect them. Edits above/below a target must correctly shift its
+  location while preserving its identity. If target content changes or disappears,
+  require comparison or a new target. Append uses the current document end at
+  acceptance. Each accepted proposal is one undoable edit.
+
+Confirmed in workspace interview Q17–Q21 and media follow-up:
+
+- Name the note from the first user message's first three words only while its
+  title remains the default. Each new conversation receives its own title by
+  that rule. Starting another conversation never renames the note, and manually
+  changed titles remain untouched. Derive these titles without an AI request.
+- Explicit Save requires a title and nonempty editor content. Summary, categories
+  and language metadata become optional. Empty-editor research remains a private,
+  recoverable Draft and cannot be shared. This extends existing stricter saved
+  note validation; implementation must update the relevant contracts and callers.
+- Owner Save a copy saves current working draft content, title and metadata as a
+  new independent note without changing the original. Copy no conversations,
+  message attachments or previous revisions. Shared recipients copy only the
+  saved version visible to them.
+- Conflict resolution shows both drafts and offers continuing with either,
+  manually combining them or saving one as a separate note. Preserve alternatives
+  until explicit resolution; never automatically merge prose or discard a version.
+- Disable sharing invalidates the link immediately. Re-enabling creates a new
+  link; previously issued links remain invalid. Existing independent recipient
+  copies survive revocation.
+- Later document media may include video/YouTube/TikTok, audio, images and article
+  links. Adding/interpreting these media types is outside the first iteration.
+  Existing ordinary hyperlinks remain text/link content; the tutor must not imply
+  it fetched linked articles, watched videos, listened to audio or interpreted
+  images. Media extraction, uploads, transcription/OCR, retrieval and their context
+  treatment need a later design; do not silently enable those tools now.
+
+Current implementation findings for the workspace interview:
+
+- Mastra already uses conversation-scoped Observational Memory with accounted,
+  bounded observation/reflection and preserved canonical messages. Copied
+  message content participates in this history. Current draft snapshots are
+  instead stored on the turn and supplied as source instructions; they are not
+  canonical user-message content. Do not assume compaction removes repeated
+  current-editor context or that summaries supersede the current snapshot.
+- Existing message admission is capped at 8,000 serialized bytes, with separate
+  initial source projection at 12,000 bytes and retrieval at 24,000 bytes. These
+  are existing implementation bounds, not the proposed character allowances.
+  Implementing 40,000-character references requires coordinated request admission,
+  model input budgeting and UI configuration; a UI-only environment value would
+  conflict with current backend behavior.
+- Current source projection can select excerpts rather than include the entire
+  draft. Q9 explicitly requires complete editor coverage in the workspace, so
+  the existing excerpt projection cannot silently implement that requirement.
+  Actual pinned Mastra verification must cover compaction with editor snapshots,
+  copied references, changed wording and exact-history recall.
+
+Evidence: conversation store turn admission/source snapshots, application
+`tutor-message-context.ts` and `conversation-source-context.ts`, the
+`contextual-tutor-runner.ts` memory setup and `conversation-memory-storage.ts`.
+These files are under `apps/backend/src/modules/conversations/` and were
+inspected read-only; no runtime changes were made during the interview.
+
+Design interview closure:
+
+Q1–Q21 are answered. Later answers resolve earlier rounds' open items. No further
+first-iteration product choice is currently identified. The learner authorized
+feature delivery on 2026-10-19.
+Implementation and runtime verification are tracked in feature047. Media/RAG
+and model-specific limits remain future scope.
+
+Expected workspace acceptance scenarios (design only, not executed coverage):
+
+- Start research in an empty, recoverable Draft, name it and its first chat from
+  the first request, and preserve a manual rename or later note title.
+- Reopen private draft edits across devices; preserve conflicting versions and
+  resolve explicitly without changing the shared saved version beforehand.
+- Send the complete current editor snapshot and per-message copied references;
+  change the original or edit the note afterward without changing that turn.
+- Accept exactly each configured character allowance; reject excess reference
+  additions atomically with the effective-limit toast. Keep large notes editable
+  while refusing oversized AI input without silent truncation.
+- Exercise real Mastra automatic compaction with repeated editor revisions and
+  references: retain readable history and exact recall, treat current snapshot
+  as authoritative and validate total model input before answer execution.
+- Move the cursor or edit above/below a pending proposal; preserve its original
+  target. Change/delete the target and require comparison/reselection. Apply an
+  accepted proposal as one undoable working-draft edit without implicit Save.
+- Save with title/body and optional metadata; only explicit Save updates the
+  unlisted shared view. Copy the owner's current draft or the recipient's visible
+  saved note into an independent note, without chats/attachments/old revisions.
+- Start separate private conversations, resume the latest and remove old chats
+  without deleting note content. Preserve existing stop/reconnect, authorization,
+  deletion and accounted model/memory execution boundaries.
+- Disable sharing, reject old links permanently after re-enable, and preserve
+  independently saved recipient copies. Require a copy before recipient tutor use.
+- Treat embedded instructions in material as untrusted. Maintain language-learning
+  purpose, uncertainty, no web search and no claims to have processed future media.
+
+ADR-0037 remains the first-delivery baseline. Accepted
+[ADR-0042](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
+records the authorized workspace extension, including automatic draft snapshots
+and note sharing. Feature047 tracks implementation and verification. Preserve
+accepted ADR-0037 text and historical first-delivery evidence.
+
 ### Earlier requirements retained for staged delivery
 
 The following bullets preserve the original backlog intent as historical input,
@@ -270,9 +484,19 @@ record verification and remaining work. Completion is determined there; this
 broader backlog task remains in progress because exercises and guided tutoring
 are deferred.
 
+The authorized Knowledge workspace extension is delivered by
+[feature047](../../.agent/features/047-knowledge-workspace/FEATURE.md). Its
+[evidence](../../.agent/features/047-knowledge-workspace/EVIDENCE.md) and
+[workspace guide](../user-flows/knowledge-workspace.md) cover recoverable note
+editing, private note conversations, copied Text references, reviewed editor
+proposals, and saved-only sharing with independent recipient copies. This is a
+partial delivery of BL-006; exercise generation and guided lesson flows remain
+future scope.
+
 Exercise formats, attempts, and how existing exercises respond to updated rules
-belong to later delivery scope. Private knowledge is confirmed; sharing is a
-separate future scope rather than an implied consequence of dictionary sharing.
+belong to later delivery scope. Private knowledge is the implemented baseline. The workspace interview above
+explicitly requests note sharing as new scope; unlisted read-only access and independent copying are confirmed for that
+extension. Save visibility and recipient tutor behavior are specified in ADR-0042.
 
 ## First-delivery acceptance scenarios
 

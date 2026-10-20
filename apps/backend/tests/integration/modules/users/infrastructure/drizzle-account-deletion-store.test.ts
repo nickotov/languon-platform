@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { KnowledgeNoteContentSchema } from '@languon/contracts';
 
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -10,7 +11,10 @@ import {
 
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
 import { authSessionsTable } from '../../../../../src/modules/authentication/infrastructure/persistence/drizzle/schema';
-import { adminMembershipsTable } from '../../../../../src/modules/administration/infrastructure/persistence/drizzle/schema';
+import {
+    adminAuditEventsTable,
+    adminMembershipsTable,
+} from '../../../../../src/modules/administration/infrastructure/persistence/drizzle/schema';
 import {
     dictionariesTable,
     dictionarySettingsTable,
@@ -18,8 +22,19 @@ import {
 import { DrizzleDictionaryStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
 import { DictionaryVersionConflictError } from '../../../../../src/modules/dictionaries/application/dictionary-errors';
 import { DrizzleAccountDeletionStore } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-deletion-store';
+import { DrizzleAdministrationStore } from '../../../../../src/modules/administration/infrastructure/persistence/drizzle/drizzle-administration-store';
+import { DrizzleKnowledgeStore } from '../../../../../src/modules/knowledge/infrastructure/persistence/drizzle/drizzle-knowledge-store';
+import { KnowledgeShareCrypto } from '../../../../../src/modules/knowledge/infrastructure/knowledge-share-crypto';
+import {
+    knowledgeNotesTable,
+    knowledgeOperationReceiptsTable,
+    knowledgeSharesTable,
+} from '../../../../../src/modules/knowledge/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
-import { usersTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
+import {
+    usersTable,
+    userEmailsTable,
+} from '../../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { AccountDeletionOwnerTransferRequiredError } from '../../../../../src/modules/users/application/account-deletion-service';
 import { InMemoryAccountDeletionRecoveryJournal } from '../../../../../src/modules/users/infrastructure/recovery/in-memory-account-deletion-recovery-journal';
 import { runAccountDeletionRecoveryGate } from '../../../../../src/modules/users/infrastructure/recovery/account-deletion-recovery-gate';
@@ -93,8 +108,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
         beforeEach(async () => {
             await database.delete(accountDeletionRequestsTable);
+            await database.delete(adminAuditEventsTable);
             await database.delete(adminMembershipsTable);
             await database.delete(dictionariesTable);
+            await database.delete(knowledgeNotesTable);
+            await database.delete(knowledgeOperationReceiptsTable);
             await database.delete(authSessionsTable);
             await database.delete(usersTable);
         });
@@ -146,6 +164,119 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(request?.purgeAt.getTime()).toBe(
                 request!.scheduledAt.getTime() + 30 * 24 * 60 * 60_000,
             );
+        });
+        it('keeps old Knowledge links revoked after administrator cancellation and permits a fresh link', async () => {
+            const input = await seed();
+            const knowledge = new DrizzleKnowledgeStore(
+                database,
+                { beforeNoteDeletion: async () => {} },
+                new KnowledgeShareCrypto(
+                    'knowledge-deletion-lifecycle-test-secret',
+                ),
+            );
+            const content = KnowledgeNoteContentSchema.parse({
+                title: 'Article usage',
+                summary: '',
+                categories: [],
+                studiedLanguage: null,
+                explanationLanguage: null,
+                body: {
+                    schemaVersion: 1,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'paragraph',
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: 'Use an before a vowel sound.',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            });
+            const note = await knowledge.create(input.userId, {
+                operationId: randomUUID(),
+                content,
+            });
+            const old = await knowledge.issueShare(input.userId, note.id);
+            expect((await knowledge.readShared(old.locator, old.key)).id).toBe(
+                note.id,
+            );
+            await store.schedule({ ...input, beforeCommit: async () => {} });
+            expect(await database.select().from(knowledgeSharesTable)).toEqual(
+                [],
+            );
+            await expect(
+                knowledge.readShared(old.locator, old.key),
+            ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
+            const adminId = randomUUID(),
+                adminSessionId = randomUUID(),
+                now = new Date();
+            await database
+                .insert(usersTable)
+                .values({ id: adminId, status: 'active' });
+            await database.insert(userEmailsTable).values([
+                {
+                    id: randomUUID(),
+                    userId: input.userId,
+                    email: 'learner-cancel@example.test',
+                    canonicalEmail: 'learner-cancel@example.test',
+                    verifiedAt: now,
+                },
+                {
+                    id: randomUUID(),
+                    userId: adminId,
+                    email: 'admin-cancel@example.test',
+                    canonicalEmail: 'admin-cancel@example.test',
+                    verifiedAt: now,
+                },
+            ]);
+            await database.insert(adminMembershipsTable).values({
+                id: randomUUID(),
+                userId: adminId,
+                grantedByUserId: adminId,
+                grantReason: 'Verified test administrator',
+            });
+            await database.insert(authSessionsTable).values({
+                id: adminSessionId,
+                userId: adminId,
+                familyId: randomUUID(),
+                authenticationMethod: 'password',
+                authenticatedAt: now,
+                absoluteExpiresAt: new Date(now.getTime() + 3600_000),
+                refreshTokenDigest: 'C'.repeat(43),
+                createdAt: now,
+                updatedAt: now,
+            });
+            const admin = new DrizzleAdministrationStore(database, {
+                recordCancellation: async () => {},
+            });
+            await admin.cancelUserDeletion({
+                actorSessionId: adminSessionId,
+                actorUserId: adminId,
+                targetUserId: input.userId,
+                expectedVersion: 2,
+                reason: 'Reviewed cancellation request',
+                audit: {
+                    id: randomUUID(),
+                    correlationId: randomUUID(),
+                    occurredAt: now,
+                    expiresAt: new Date(now.getTime() + 180 * 24 * 3600_000),
+                },
+            });
+            await expect(
+                knowledge.readShared(old.locator, old.key),
+            ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+            const fresh = await knowledge.issueShare(input.userId, note.id);
+            expect(fresh.locator).not.toBe(old.locator);
+            expect(
+                (await knowledge.readShared(fresh.locator, fresh.key)).id,
+            ).toBe(note.id);
         });
 
         it('rolls back all removal effects when the independent journal rejects', async () => {

@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ConversationTurn, CopiedAttachment } from '@languon/contracts';
+import type {
+    ConversationEditorTarget,
+    ConversationTurn,
+    CopiedAttachment,
+} from '@languon/contracts';
 import {
     conversationApi,
     conversationCopy,
@@ -7,6 +11,7 @@ import {
 } from '@/fsd/entities/conversation';
 import { useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
+import { showToast } from '@/fsd/shared/ui';
 import { useConversation } from './use-conversation';
 import { useAssistantNavigation } from './use-assistant-navigation';
 import { useConversationDeletion } from './use-conversation-deletion';
@@ -15,6 +20,16 @@ import {
     appendAssistantAttachment,
     knowledgeProposalQuestion,
 } from '../lib/assistant-input';
+
+async function hashEditorContent(content: string): Promise<string> {
+    const digest = await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(content),
+    );
+    return Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, '0'),
+    ).join('');
+}
 
 export function useAssistantPanel(
     props: ContextualAssistantProps & {
@@ -55,7 +70,13 @@ export function useAssistantPanel(
     }
     const [defaultsSaved, setDefaultsSaved] = useState(false);
     const [attachmentError, setAttachmentError] = useState<string | null>(null);
+    const [preparing, setPreparing] = useState(false);
+    const preparationLock = useRef(false);
+    const preparationFailed = useRef(false);
     const attachmentSnapshot = useRef(chat.attachments);
+    const [proposalTargets, setProposalTargets] = useState(
+        () => new Map<string, string>(),
+    );
     attachmentSnapshot.current = chat.attachments;
     const attach = useCallback(
         (attachment: CopiedAttachment) => {
@@ -63,19 +84,27 @@ export function useAssistantPanel(
                 attachmentSnapshot.current,
                 attachment,
                 locale,
+                props.workspace?.referenceLimit,
             );
             attachmentSnapshot.current = result.attachments;
             chat.setAttachments(result.attachments);
             setAttachmentError(result.error);
+            if (result.error && props.workspace)
+                showToast({
+                    content: result.error,
+                    dismissLabel: 'Dismiss',
+                    tone: 'warning',
+                });
+            return !result.error;
         },
-        [chat.setAttachments, locale],
+        [chat.setAttachments, locale, props.workspace],
     );
     const initialized = useRef(false);
     const lastPassage = useRef<string | null>(null);
     const [unread, setUnread] = useState(false);
     const active = Boolean(chat.active);
     const wasActive = useRef(active);
-    const busy = chat.create.isPending || chat.submit.isPending;
+    const busy = chat.create.isPending || chat.submit.isPending || preparing;
     const detail = chat.detail.data;
     const preferences = detail?.conversation.preferences;
     const unavailable =
@@ -138,10 +167,111 @@ export function useAssistantPanel(
         if (chat.id) deleteFromHistory(chat.id);
     }
     function send() {
+        if (props.workspace) {
+            if (preparationLock.current) return;
+            let snapshot;
+            try {
+                snapshot = props.workspace.getSnapshot();
+                if (!snapshot.editorTarget)
+                    throw new Error('The document editor is still loading.');
+            } catch (error) {
+                preparationFailed.current = true;
+                setLocalError(error);
+                return;
+            }
+            const editorLimit = props.workspace.editorLimit ?? 40_000;
+            if (Array.from(snapshot.content).length > editorLimit) {
+                setAttachmentError(
+                    `Editor text exceeds the ${editorLimit.toLocaleString('en-US')}-character tutor limit. Shorten the document before sending.`,
+                );
+                return;
+            }
+            const targetId = snapshot.targetId;
+            const question = chat.question;
+            const copiedAttachments = [...chat.attachments];
+            preparationLock.current = true;
+            setPreparing(true);
+            void (async () => {
+                let editorTarget;
+                try {
+                    await props.workspace?.beforeSend?.();
+                    const documentHash = await hashEditorContent(
+                        snapshot.content,
+                    );
+                    editorTarget = {
+                        ...snapshot.editorTarget,
+                        documentHash,
+                    };
+                } catch (error) {
+                    preparationFailed.current = true;
+                    setLocalError(error);
+                    preparationLock.current = false;
+                    setPreparing(false);
+                    return;
+                }
+                preparationFailed.current = false;
+                setLocalError(null);
+                try {
+                    const { turn } = await chat.submit.mutateAsync({
+                        content: question,
+                        copiedAttachments,
+                        editorContext: {
+                            content: snapshot.content,
+                            selectedText: snapshot.selectedPassage,
+                            editorTarget,
+                        },
+                    });
+                    if (targetId)
+                        setProposalTargets((previous) =>
+                            new Map(previous).set(turn.id, targetId),
+                        );
+                    props.workspace?.onSent?.();
+                } catch {
+                    // The mutation retains the composer and displays its error.
+                } finally {
+                    preparationLock.current = false;
+                    setPreparing(false);
+                }
+            })();
+            return;
+        }
         chat.submit.mutate({
             content: chat.question,
             draftContext: chat.useDraft ? props.currentDraft : undefined,
         });
+    }
+    async function acceptProposal(
+        text: string,
+        action: 'insert' | 'append' | 'replace',
+        turnId: string | null,
+        anchor?: ConversationEditorTarget,
+    ) {
+        let targetId = turnId ? proposalTargets.get(turnId) : undefined;
+        if (!targetId && action !== 'append' && anchor)
+            targetId =
+                (await props.workspace?.restoreTarget?.(anchor)) ?? undefined;
+        if (!targetId && action !== 'append') {
+            props.workspace?.onConflictProposal?.(
+                text,
+                action,
+                undefined,
+                anchor,
+            );
+            return 'missing';
+        }
+        const result = props.workspace?.onAcceptProposal(
+            text,
+            action,
+            targetId,
+        );
+        if (result === 'changed' || result === 'missing')
+            props.workspace?.onConflictProposal?.(
+                text,
+                action,
+                targetId,
+                anchor,
+            );
+        return result;
     }
     function propose(message?: ConversationUIMessage) {
         const explanation = message?.parts
@@ -194,6 +324,10 @@ export function useAssistantPanel(
         void chat.refresh();
     }
     function retrySubmission() {
+        if (preparationFailed.current) {
+            send();
+            return;
+        }
         if (chat.submit.variables) chat.submit.mutate(chat.submit.variables);
         else if (!chat.id) create();
         else reload();
@@ -229,6 +363,8 @@ export function useAssistantPanel(
         cancelDelete,
         confirmDelete,
         send,
+        acceptProposal,
+        proposalTargets,
         propose,
         retry,
         context,

@@ -21,6 +21,7 @@ import {
     type ConversationPersistenceDependencies,
 } from './persistence/drizzle/drizzle-conversation-store';
 import { createConversationRoutes } from '../interface/http/conversation.routes';
+import type { WorkspaceContextLimits } from '../application/workspace-turn-context';
 export interface ConversationsCompositionDependencies extends Pick<
     ConversationPersistenceDependencies,
     'database' | 'admitTurn' | 'settleInterrupted'
@@ -32,6 +33,7 @@ export interface ConversationsCompositionDependencies extends Pick<
     dictionaryHmacSecret: string | Uint8Array;
     entropy: DictionaryEntropySource;
     clock: { now(): Date };
+    workspaceContextLimits?: WorkspaceContextLimits;
     createRunner?: (
         store: DrizzleConversationStore,
         turn: ClaimedConversationTurn,
@@ -61,6 +63,13 @@ export function createConversationsComposition(
     const store = new DrizzleConversationStore({
         database: dependencies.database,
         sources,
+        ...(dependencies.workspaceContextLimits
+            ? { workspaceContextLimits: dependencies.workspaceContextLimits }
+            : {}),
+        nameUntitledNote: (tx, ownerId, noteId, title) =>
+            new DrizzleKnowledgeTransactionParticipant(
+                tx,
+            ).nameUntitledFromFirstMessage(ownerId, noteId, title),
         now: () => dependencies.clock.now(),
         admitTurn: dependencies.admitTurn,
         publishNote: (tx, ownerId, input) =>

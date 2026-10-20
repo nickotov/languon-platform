@@ -17,6 +17,7 @@ import {
     knowledgeNoteRevisionsTable,
     knowledgeNotesTable,
     knowledgeOperationReceiptsTable,
+    knowledgeWorkingBranchesTable,
 } from './schema';
 
 export type KnowledgeDatabase = PostgresJsDatabase<typeof databaseSchema>;
@@ -62,11 +63,11 @@ export function knowledgeNote(
         updatedAt: row.updatedAt.toISOString(),
     });
 }
-export async function getOwnedKnowledgeNote(
+export async function getOwnedKnowledgeRow(
     tx: KnowledgeTransaction,
     ownerId: string,
     noteId: string,
-): Promise<KnowledgeNote> {
+) {
     await lockKnowledgeOwner(tx, ownerId);
     const [row] = await tx
         .select()
@@ -79,6 +80,15 @@ export async function getOwnedKnowledgeNote(
         )
         .for('update');
     if (!row) throw knowledgeUnavailable();
+    return row;
+}
+export async function getOwnedKnowledgeNote(
+    tx: KnowledgeTransaction,
+    ownerId: string,
+    noteId: string,
+): Promise<KnowledgeNote> {
+    const row = await getOwnedKnowledgeRow(tx, ownerId, noteId);
+    if (row.status !== 'saved') throw knowledgeUnavailable();
     return knowledgeNote(row);
 }
 function canonicalJson(value: unknown): string {
@@ -176,7 +186,60 @@ export class DrizzleKnowledgeTransactionParticipant {
             )
             .for('share');
         if (!row) throw knowledgeUnavailable();
-        return knowledgeNote(row);
+        if (row.status === 'saved') {
+            const note = knowledgeNote(row);
+            return {
+                title: note.title,
+                summary: note.summary,
+                studiedLanguage: note.studiedLanguage,
+                version: note.version,
+                body: note.body,
+            };
+        }
+        const [branch] = await this.tx
+            .select()
+            .from(knowledgeWorkingBranchesTable)
+            .where(
+                eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId!),
+            );
+        if (!branch) throw knowledgeUnavailable();
+        return {
+            title: branch.content.title,
+            summary: branch.content.summary,
+            studiedLanguage: branch.content.studiedLanguage,
+            version: branch.version,
+            body: branch.content.body,
+        };
+    }
+    async nameUntitledFromFirstMessage(
+        ownerId: string,
+        noteId: string,
+        title: string,
+    ): Promise<void> {
+        const row = await getOwnedKnowledgeRow(this.tx, ownerId, noteId);
+        if (!row.autoTitleEligible) return;
+        await this.tx
+            .update(knowledgeNotesTable)
+            .set({
+                autoTitleEligible: false,
+                title: row.title === 'Untitled' ? title : row.title,
+            })
+            .where(eq(knowledgeNotesTable.id, noteId));
+        if (row.title !== 'Untitled') return;
+        const [branch] = await this.tx
+            .select()
+            .from(knowledgeWorkingBranchesTable)
+            .where(eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId!))
+            .for('update');
+        if (branch?.content.title === 'Untitled')
+            await this.tx
+                .update(knowledgeWorkingBranchesTable)
+                .set({
+                    content: { ...branch.content, title },
+                    version: branch.version + 1,
+                    updatedAt: new Date(),
+                })
+                .where(eq(knowledgeWorkingBranchesTable.id, branch.id));
     }
     async publish(
         ownerId: string,
@@ -184,6 +247,11 @@ export class DrizzleKnowledgeTransactionParticipant {
         now = new Date(),
     ): Promise<KnowledgeNote> {
         const content = KnowledgeNoteContentSchema.parse(input.content);
+        if (!knowledgeBodyPlainText(content.body))
+            throw new KnowledgeDomainError(
+                'invalid_request',
+                'Add document content before saving.',
+            );
         if (
             (input.noteId === undefined) !==
             (input.expectedVersion === undefined)
@@ -251,6 +319,19 @@ async function createKnowledgeContent(
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId: id, version: 1, content, createdAt: now });
+    const branchId = randomUUID();
+    await tx.insert(knowledgeWorkingBranchesTable).values({
+        id: branchId,
+        noteId: id,
+        version: 1,
+        basePublishedVersion: 1,
+        content,
+        updatedAt: now,
+    });
+    await tx
+        .update(knowledgeNotesTable)
+        .set({ preferredBranchId: branchId })
+        .where(eq(knowledgeNotesTable.id, id));
     return knowledgeNote(row!);
 }
 export async function replaceKnowledgeContent(
@@ -291,5 +372,49 @@ export async function replaceKnowledgeContent(
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId, version: row.version, content, createdAt: now });
+    if (row.preferredBranchId) {
+        const [branch] = await tx
+            .select()
+            .from(knowledgeWorkingBranchesTable)
+            .where(eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId))
+            .for('update');
+        if (
+            branch &&
+            branch.basePublishedVersion === expectedVersion &&
+            knowledgeFingerprint(branch.content) ===
+                knowledgeFingerprint(currentContentFromNote(current))
+        ) {
+            await tx
+                .update(knowledgeWorkingBranchesTable)
+                .set({
+                    content,
+                    version: branch.version + 1,
+                    basePublishedVersion: row.version,
+                    updatedAt: now,
+                })
+                .where(eq(knowledgeWorkingBranchesTable.id, branch.id));
+        } else if (branch) {
+            // A published revision changed while the learner has a distinct
+            // working draft. Keep both versions available for comparison.
+            await tx.insert(knowledgeWorkingBranchesTable).values({
+                id: randomUUID(),
+                noteId,
+                version: 1,
+                basePublishedVersion: row.version,
+                content,
+                updatedAt: now,
+            });
+        }
+    }
     return knowledgeNote(row);
+}
+function currentContentFromNote(note: KnowledgeNote): KnowledgeNoteContent {
+    return {
+        title: note.title,
+        summary: note.summary,
+        body: note.body,
+        categories: note.categories,
+        studiedLanguage: note.studiedLanguage,
+        explanationLanguage: note.explanationLanguage,
+    };
 }

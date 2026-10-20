@@ -3,6 +3,9 @@ type: diagram
 title: System context
 summary: Applications, durable state and external services in the implemented development system.
 source_paths:
+    - docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md
+    - apps/web/src/fsd/pages/knowledge/ui/shared-knowledge-page/shared-knowledge-page.tsx
+    - apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts
     - apps/backend/src/index.ts
     - apps/backend/src/app.ts
     - apps/backend/src/infrastructure/worker/dictionary-worker-command.ts
@@ -14,7 +17,7 @@ source_paths:
     - docs/architecture.md
     - docs/adr/0040-preproduction-owner-scoped-audio-retirement.md
     - apps/backend/src/modules/speech/infrastructure/composition.ts
-source_fingerprint: sha256:e037cd47e4c2c8792bd1e1ce80f5e647bcb3440b721debc40e49eac4de8f3427
+source_fingerprint: sha256:5593eca6f6617ea9d420146c9471561bb25df18fff4c7c515ddd08e91e56035b
 reviewed: 2026-10-19
 ---
 
@@ -25,7 +28,8 @@ Applications, durable state and external services in the implemented development
 ```mermaid
 flowchart LR
     Learner["Learner browser"] --> Web["Next.js web
-Dictionaries, Texts, Knowledge, learning"]
+Dictionaries, Texts, Knowledge workspace, learning"]
+    Reader["Unlisted Knowledge reader"] -->|"Read saved note; sign in to copy"| Web
     Operator["Operator browser"] --> Admin["Vite / Refine admin
 Users, AI settings, audit, recordings"]
     Web -->|"/api proxy: typed JSON and event replay"| API["Hono HTTP backend"]
@@ -50,6 +54,9 @@ names. Read [AI job lifecycle](ai-job-lifecycle.md) for the asynchronous boundar
 [development and deployment](development-and-deployment.md) for runtime topology.
 This is an implementation map, not a claim that every flag or external service is
 currently enabled. The user confirms the project has no production deployment.
+The unlisted Knowledge reader reaches the same web/backend processes. The
+fragment capability becomes a header on saved-note read/copy requests; it does
+not expose the owner's working branches or private conversations.
 
 **Reconciliation:** the opening sketch and backend paragraph in `docs/architecture.md`
 still call document storage/scanning/parsing planned. The worker command already
@@ -60,6 +67,9 @@ journeys shown here.
 
 ## Sources
 
+- [docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
+- [apps/web/src/fsd/pages/knowledge/ui/shared-knowledge-page/shared-knowledge-page.tsx](../../apps/web/src/fsd/pages/knowledge/ui/shared-knowledge-page/shared-knowledge-page.tsx)
+- [apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts](../../apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts)
 - [apps/backend/src/index.ts](../../apps/backend/src/index.ts)
 - [apps/backend/src/app.ts](../../apps/backend/src/app.ts)
 - [apps/backend/src/infrastructure/worker/dictionary-worker-command.ts](../../apps/backend/src/infrastructure/worker/dictionary-worker-command.ts)

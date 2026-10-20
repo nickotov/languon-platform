@@ -110,19 +110,24 @@ export function useConversation(
         mutationFn: async ({
             content,
             draftContext,
+            editorContext,
+            copiedAttachments,
             retryOf,
         }: {
             content: string;
             draftContext?: string | undefined;
+            editorContext?: SubmitConversationTurnRequest['editorContext'];
+            copiedAttachments?: CopiedAttachment[];
             retryOf?: string | undefined;
         }) => {
             if (!id) throw new Error('Conversation is unavailable.');
             const candidate = {
                 content,
-                attachments,
+                attachments: copiedAttachments ?? attachments,
                 draftContext: draftContext
                     ? { content: draftContext }
                     : undefined,
+                editorContext,
                 retryOf,
             };
             const signature = JSON.stringify(candidate);
@@ -138,11 +143,16 @@ export function useConversation(
                 };
             const response = await stream.submit(pendingRequest.current!);
             pendingRequest.current = null;
-            return response;
+            return { ...response, sentAttachments: candidate.attachments };
         },
-        onSuccess: async ({ turn }) => {
-            setQuestion('');
-            setAttachments([]);
+        onSuccess: async ({ turn, sentAttachments }, variables) => {
+            setQuestion((current) =>
+                current === variables.content ? '' : current,
+            );
+            const sentIds = new Set(sentAttachments.map((item) => item.id));
+            setAttachments((current) =>
+                current.filter((item) => !sentIds.has(item.id)),
+            );
             setActionError(false);
             await refresh(turn.conversationId);
         },
@@ -168,6 +178,12 @@ export function useConversation(
         } catch {
             setActionError(true);
         }
+    }
+    async function rename(conversationId: string, title: string) {
+        await request((token) =>
+            conversationApi.rename(token, conversationId, title, shareKey),
+        );
+        await refresh(conversationId);
     }
     async function remove(conversationId = id) {
         if (!conversationId) return;
@@ -210,6 +226,7 @@ export function useConversation(
         actionError,
         stop,
         updatePreferences,
+        rename,
         remove,
         select,
         refresh,

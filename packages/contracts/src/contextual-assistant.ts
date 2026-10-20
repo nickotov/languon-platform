@@ -2,6 +2,16 @@ import { z } from 'zod';
 
 const validAssistantText = (value: string) =>
     !/[\uD800-\uDFFF]/u.test(value) && !value.includes('\u0000');
+const longAssistantText = (minimum = 0) =>
+    z
+        .string()
+        .min(minimum)
+        .max(160_000)
+        .refine(
+            (value) => Array.from(value).length <= 80_000,
+            'Text exceeds 80,000 characters.',
+        )
+        .refine(validAssistantText);
 
 export const KnowledgeCategorySchema = z.enum([
     'grammar',
@@ -315,7 +325,6 @@ export const KnowledgeNoteContentSchema = z
         summary: z
             .string()
             .trim()
-            .min(1)
             .max(1_000)
             .refine(
                 (text) =>
@@ -324,16 +333,19 @@ export const KnowledgeNoteContentSchema = z
         body: KnowledgeBodySchema,
         categories: z
             .array(KnowledgeCategorySchema)
-            .min(1)
             .max(7)
             .refine(
                 (items) => new Set(items).size === items.length,
                 'Categories must be unique.',
             ),
-        studiedLanguage: AssistantLanguageSchema,
-        explanationLanguage: AssistantLanguageSchema,
+        studiedLanguage: AssistantLanguageSchema.nullable(),
+        explanationLanguage: AssistantLanguageSchema.nullable(),
     })
     .strict();
+/** Incomplete private edits are recoverable; publication applies the stricter note rules. */
+export const KnowledgeWorkingContentSchema = KnowledgeNoteContentSchema.extend({
+    title: z.string().max(200).refine(validAssistantText),
+});
 export const KnowledgeNoteSchema = KnowledgeNoteContentSchema.extend({
     id: z.uuid(),
     version: z.number().int().positive(),
@@ -386,11 +398,12 @@ export const UpdateKnowledgeNoteRequestSchema =
 export const DeleteKnowledgeNoteRequestSchema = z
     .object({
         operationId: z.uuid(),
-        expectedVersion: z.number().int().positive(),
+        expectedVersion: z.number().int().nonnegative(),
     })
     .strict();
 export const RestoreKnowledgeNoteRequestSchema =
     DeleteKnowledgeNoteRequestSchema.extend({
+        expectedVersion: z.number().int().positive(),
         revisionVersion: z.number().int().positive(),
     });
 export const KnowledgeNoteResponseSchema = z.object({
@@ -408,6 +421,112 @@ export const KnowledgeRevisionsResponseSchema = z.object({
 export const KnowledgeDeletedResponseSchema = z.object({
     deleted: z.literal(true),
 });
+export const KnowledgeWorkingBranchSchema = z.object({
+    id: z.uuid(),
+    noteId: z.uuid(),
+    version: z.number().int().positive(),
+    basePublishedVersion: z.number().int().nonnegative(),
+    content: KnowledgeWorkingContentSchema,
+    updatedAt: z.iso.datetime(),
+});
+export const KnowledgeWorkspaceSchema = z.object({
+    noteId: z.uuid(),
+    status: z.enum(['draft', 'saved']),
+    published: KnowledgeNoteSchema.nullable(),
+    branches: z.array(KnowledgeWorkingBranchSchema),
+    preferredBranchId: z.uuid(),
+    shareEnabled: z.boolean(),
+    limits: z.object({
+        referenceChars: z.number().int().positive(),
+        editorChars: z.number().int().positive(),
+    }),
+});
+export const KnowledgeWorkspaceResponseSchema = z.object({
+    workspace: KnowledgeWorkspaceSchema,
+});
+export const KnowledgeWorkspaceSummarySchema = z.object({
+    id: z.uuid(),
+    title: z.string(),
+    status: z.enum(['draft', 'saved']),
+    hasUnsavedChanges: z.boolean(),
+    updatedAt: z.iso.datetime(),
+});
+export const ListKnowledgeWorkspacesResponseSchema = z.object({
+    workspaces: z.array(KnowledgeWorkspaceSummarySchema),
+    total: z.number().int().nonnegative(),
+    offset: z.number().int().nonnegative(),
+    limit: z.number().int().positive(),
+});
+export const CreateKnowledgeWorkspaceDraftRequestSchema = z
+    .object({ operationId: z.uuid() })
+    .strict();
+export const UpdateKnowledgeWorkingRequestSchema = z
+    .object({
+        operationId: z.uuid(),
+        branchId: z.uuid(),
+        expectedVersion: z.number().int().positive(),
+        content: KnowledgeWorkingContentSchema,
+    })
+    .strict();
+export const UpdateKnowledgeWorkingResponseSchema = z.object({
+    branch: KnowledgeWorkingBranchSchema,
+    conflict: z.boolean(),
+    branches: z.array(KnowledgeWorkingBranchSchema),
+});
+export const ResolveKnowledgeWorkingRequestSchema = z
+    .object({
+        operationId: z.uuid(),
+        keepBranchId: z.uuid(),
+        keepVersion: z.number().int().positive(),
+        discardBranches: z
+            .array(
+                z
+                    .object({
+                        id: z.uuid(),
+                        expectedVersion: z.number().int().positive(),
+                    })
+                    .strict(),
+            )
+            .min(1),
+    })
+    .strict()
+    .refine(
+        (request) =>
+            request.discardBranches.every(
+                (branch) => branch.id !== request.keepBranchId,
+            ) &&
+            new Set(request.discardBranches.map((branch) => branch.id)).size ===
+                request.discardBranches.length,
+    );
+export const SaveKnowledgeWorkspaceRequestSchema = z
+    .object({
+        operationId: z.uuid(),
+        branchId: z.uuid(),
+        expectedVersion: z.number().int().positive(),
+        expectedPublishedVersion: z.number().int().nonnegative(),
+    })
+    .strict();
+export const SaveKnowledgeCopyRequestSchema = z
+    .object({
+        operationId: z.uuid(),
+        branchId: z.uuid(),
+        expectedVersion: z.number().int().positive(),
+    })
+    .strict();
+export const KnowledgeShareResponseSchema = z.object({
+    locator: z.string().min(1).max(200),
+    key: z.string().min(1).max(200),
+});
+export const KnowledgeShareDisabledResponseSchema = z.object({
+    disabled: z.literal(true),
+});
+export const SharedKnowledgeNoteResponseSchema = KnowledgeNoteResponseSchema;
+export const CopySharedKnowledgeRequestSchema = z
+    .object({
+        operationId: z.uuid(),
+        expectedVersion: z.number().int().positive(),
+    })
+    .strict();
 export const KnowledgeErrorCodeSchema = z.enum([
     'invalid_request',
     'authentication_required',
@@ -416,6 +535,8 @@ export const KnowledgeErrorCodeSchema = z.enum([
     'version_conflict',
     'idempotency_conflict',
     'deletion_busy',
+    'draft_not_saveable',
+    'working_conflict',
     'rate_limited',
     'service_unavailable',
     'internal_error',
@@ -510,13 +631,19 @@ export type CopiedDictionaryCard = z.infer<typeof CopiedDictionaryCardSchema>;
 const CopiedAttachmentBaseSchema = z.object({
     id: z.uuid(),
     label: z.string().trim().min(1).max(200).refine(validAssistantText),
-    content: z.string().min(1).max(80_000).refine(validAssistantText),
+    content: longAssistantText(1),
 });
 /** Missing kind is a legacy/plain-text copy and remains an inert text attachment. */
 export const CopiedAttachmentSchema = z
     .discriminatedUnion('kind', [
         CopiedAttachmentBaseSchema.extend({
             kind: z.literal('text').optional(),
+        }).strict(),
+        CopiedAttachmentBaseSchema.extend({
+            kind: z.literal('text-reference'),
+            translation: longAssistantText().optional(),
+            sourceLanguage: AssistantLanguageSchema.optional(),
+            translationLanguage: AssistantLanguageSchema.optional(),
         }).strict(),
         CopiedAttachmentBaseSchema.extend({
             kind: z.literal('dictionary-card'),
@@ -581,6 +708,7 @@ export const ConversationSchema = z
     .object({
         id: z.uuid(),
         source: ConversationSourceSchema,
+        title: z.string().max(200).nullable(),
         preferences: ChatPreferencesSchema,
         version: z.number().int().positive(),
         createdAt: z.iso.datetime(),
@@ -596,19 +724,36 @@ export const ConversationToolCallSchema = z
     })
     .strict();
 export type ConversationToolCall = z.infer<typeof ConversationToolCallSchema>;
+/** UTF-16 offsets in the exact plain editor snapshot sent with a turn. */
+export const ConversationEditorAnchorSchema = z
+    .object({
+        from: z.number().int().nonnegative(),
+        to: z.number().int().nonnegative(),
+        originalText: longAssistantText(),
+        documentHash: z.string().regex(/^[a-f0-9]{64}$/u),
+    })
+    .strict();
+export const ConversationEditorTargetSchema =
+    ConversationEditorAnchorSchema.extend({
+        proposalMode: z.enum(['insert', 'append', 'replace']).optional(),
+    }).strict();
+export type ConversationEditorTarget = z.infer<
+    typeof ConversationEditorTargetSchema
+>;
 export const ConversationMessageSchema = z
     .object({
         id: z.uuid(),
         conversationId: z.uuid(),
         role: z.enum(['user', 'assistant']),
         content: z.string().max(160_000),
-        attachments: z.array(CopiedAttachmentSchema).max(100),
+        attachments: z.array(CopiedAttachmentSchema),
         toolCalls: z.array(ConversationToolCallSchema).max(10).default([]),
         status: z.enum(['complete', 'streaming', 'incomplete']),
         sourceVersion: z.string().max(100).nullable(),
         sourceProvenance: z.enum(['saved', 'draft']),
         createdAt: z.iso.datetime(),
         turnId: z.uuid().nullable(),
+        editorTarget: ConversationEditorTargetSchema.optional(),
     })
     .strict();
 export const ConversationUsageSchema = z
@@ -676,8 +821,17 @@ export const CreateConversationRequestSchema = z
     })
     .strict();
 export const UpdateConversationRequestSchema = z
-    .object({ preferences: ChatPreferencesSchema })
-    .strict();
+    .object({
+        preferences: ChatPreferencesSchema.optional(),
+        title: z.string().trim().min(1).max(200).optional(),
+    })
+    .strict()
+    .refine(
+        (value) => value.preferences !== undefined || value.title !== undefined,
+    );
+export type UpdateConversationRequest = z.infer<
+    typeof UpdateConversationRequestSchema
+>;
 export const SubmitConversationTurnRequestSchema = z
     .object({
         requestId: z.uuid(),
@@ -687,7 +841,20 @@ export const SubmitConversationTurnRequestSchema = z
             .min(1)
             .max(20_000)
             .refine(validAssistantText),
-        attachments: z.array(CopiedAttachmentSchema).max(10).default([]),
+        attachments: z.array(CopiedAttachmentSchema).default([]),
+        editorContext: z
+            .object({
+                content: longAssistantText(),
+                selectedText: longAssistantText().optional(),
+                editorTarget: ConversationEditorAnchorSchema,
+                proposalTarget: ConversationEditorAnchorSchema.extend({
+                    mode: z.enum(['insert', 'append', 'replace']),
+                })
+                    .strict()
+                    .optional(),
+            })
+            .strict()
+            .optional(),
         draftContext: z
             .object({
                 content: z.string().max(80_000).refine(validAssistantText),
@@ -713,7 +880,35 @@ export const PublishKnowledgeDraftRequestSchema = z
     .strict();
 export type KnowledgeCategory = z.infer<typeof KnowledgeCategorySchema>;
 export type KnowledgeNoteContent = z.infer<typeof KnowledgeNoteContentSchema>;
+export type KnowledgeWorkingContent = z.infer<
+    typeof KnowledgeWorkingContentSchema
+>;
 export type KnowledgeNote = z.infer<typeof KnowledgeNoteSchema>;
+export type KnowledgeWorkingBranch = z.infer<
+    typeof KnowledgeWorkingBranchSchema
+>;
+export type KnowledgeWorkspace = z.infer<typeof KnowledgeWorkspaceSchema>;
+export type KnowledgeWorkspaceSummary = z.infer<
+    typeof KnowledgeWorkspaceSummarySchema
+>;
+export type CreateKnowledgeWorkspaceDraftRequest = z.infer<
+    typeof CreateKnowledgeWorkspaceDraftRequestSchema
+>;
+export type UpdateKnowledgeWorkingRequest = z.infer<
+    typeof UpdateKnowledgeWorkingRequestSchema
+>;
+export type ResolveKnowledgeWorkingRequest = z.infer<
+    typeof ResolveKnowledgeWorkingRequestSchema
+>;
+export type SaveKnowledgeWorkspaceRequest = z.infer<
+    typeof SaveKnowledgeWorkspaceRequestSchema
+>;
+export type SaveKnowledgeCopyRequest = z.infer<
+    typeof SaveKnowledgeCopyRequestSchema
+>;
+export type CopySharedKnowledgeRequest = z.infer<
+    typeof CopySharedKnowledgeRequestSchema
+>;
 export type KnowledgeNoteRevision = z.infer<typeof KnowledgeNoteRevisionSchema>;
 export type KnowledgeDraft = z.infer<typeof KnowledgeDraftSchema>;
 export type ListKnowledgeQuery = z.infer<typeof ListKnowledgeQuerySchema>;
@@ -760,6 +955,22 @@ export const ConversationTurnResponseSchema = z.object({
 export const ConversationContextResponseSchema = z.object({
     material: z.array(CopiedAttachmentSchema),
     total: z.number().int().nonnegative(),
+});
+export const ConversationTextReferenceSummarySchema = z.object({
+    id: z.uuid(),
+    title: z.string().min(1).max(200),
+    sourceLanguage: AssistantLanguageSchema,
+    translationLanguage: AssistantLanguageSchema.nullable(),
+    hasTranslation: z.boolean(),
+});
+export const ConversationTextReferencesResponseSchema = z.object({
+    references: z.array(ConversationTextReferenceSummarySchema),
+});
+export const ConversationTextReferenceResponseSchema = z.object({
+    reference: ConversationTextReferenceSummarySchema.extend({
+        content: z.string(),
+        translation: z.string().nullable(),
+    }),
 });
 export const KnowledgeDraftResponseSchema = z.object({
     draft: KnowledgeDraftSchema,

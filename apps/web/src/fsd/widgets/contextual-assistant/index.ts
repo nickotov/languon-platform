@@ -1,2 +1,7 @@
 export { ContextualAssistant } from './ui/contextual-assistant/contextual-assistant';
-export type { ContextualAssistantProps } from './types';
+export type {
+    ContextualAssistantProps,
+    WorkspaceAssistantProps,
+    WorkspaceEditorSnapshot,
+    WorkspaceProposalAction,
+} from './types';

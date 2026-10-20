@@ -1,4 +1,62 @@
 export const knowledgeEn = {
+    'knowledge.newNote': 'New note',
+    'knowledge.untitled': 'Untitled',
+    'knowledge.createError': 'Could not create the draft. Try again.',
+    'knowledge.draft': 'Draft',
+    'knowledge.workingChanges': 'Working changes',
+    'knowledge.workspace': 'Knowledge workspace',
+    'knowledge.recovery.saved': 'Working draft recovered',
+    'knowledge.recovery.saving': 'Saving working draft…',
+    'knowledge.recovery.unsaved': 'Working draft has local changes',
+    'knowledge.recovery.error': 'Working draft could not be recovered',
+    'knowledge.recovery.conflict': 'Another working version was preserved',
+    'knowledge.recoveryError':
+        'Could not recover this draft. Retry before leaving.',
+    'knowledge.saveCopy': 'Save a copy',
+    'knowledge.draftHelp':
+        'Research can continue here. Save when your note has content.',
+    'knowledge.saveHelp':
+        'Save updates the version visible through your shared link.',
+    'knowledge.branchConflict': 'Working versions need your decision',
+    'knowledge.branchConflictHelp':
+        'Both versions are preserved. Choose one to continue editing.',
+    'knowledge.resolveBeforeSave':
+        'Compare and resolve the working versions before saving this note.',
+    'knowledge.currentBranch': 'Current version',
+    'knowledge.continueBranch': 'Continue this version',
+    'knowledge.manualCombineHelp':
+        'To combine them, copy the wording you want into the current editor.',
+    'knowledge.saveBranchCopy': 'Save current version as a separate note',
+    'knowledge.resolveBranches': 'Resolve working versions',
+    'knowledge.resolveBranchesHelp':
+        'Keep the current version and discard the other preserved working versions. You can save a copy first.',
+    'knowledge.confirmResolve': 'Keep current version',
+    'knowledge.proposalChanged': 'The proposal target changed',
+    'knowledge.proposalChangedHelp':
+        'Compare the wording before choosing where to put the proposed text.',
+    'knowledge.chooseNewTarget': 'Choose a new target',
+    'knowledge.retargetHelp':
+        'Select a new passage or cursor position in the editor, then apply the reviewed proposal.',
+    'knowledge.applyNewTarget': 'Apply at new target',
+    'knowledge.appendInstead': 'Append to the end',
+    'knowledge.originalTarget': 'Original target',
+    'knowledge.currentTarget': 'Current wording',
+    'knowledge.currentDocument': 'Current document',
+    'knowledge.proposedText': 'Proposed text',
+    'knowledge.enableSharing': 'Enable sharing',
+    'knowledge.disableSharing': 'Disable sharing',
+    'knowledge.copyLink': 'Copy read-only link',
+    'knowledge.linkCopied': 'Link copied',
+    'knowledge.shareError': 'Sharing could not be updated. Try again.',
+    'knowledge.sharedNote': 'Shared note',
+    'knowledge.sharedReadOnly':
+        'This is the last saved version. Make your own copy to edit it or use the tutor.',
+    'knowledge.sharedUnavailable':
+        'This shared note is unavailable or its link was disabled.',
+    'knowledge.copyShared': 'Save my own copy',
+    'knowledge.signInToCopy': 'Sign in to save a copy',
+    'knowledge.copySharedError':
+        'The note changed or copying failed. Refresh and try again.',
     'knowledge.saveAsNew': 'Save as a new note',
     'knowledge.signIn': 'Sign in',
     'knowledge.historyError': 'Revision history is unavailable. Try again.',
@@ -9,13 +67,13 @@ export const knowledgeEn = {
     'knowledge.navigation': 'Knowledge',
     'knowledge.title': 'Knowledge',
     'knowledge.description':
-        'Your saved language-learning explanations and examples.',
+        'Your language-learning notes, research, and writing.',
     'knowledge.search': 'Search notes',
     'knowledge.allCategories': 'All categories',
     'knowledge.allLanguages': 'All languages',
     'knowledge.emptyTitle': 'Your knowledge starts here',
     'knowledge.emptyHelp':
-        'Save an explanation from a dictionary or text conversation to find it here.',
+        'Start a draft to research, write, and ask your AI tutor.',
     'knowledge.noResults': 'No notes match these filters',
     'knowledge.loading': 'Loading knowledge…',
     'knowledge.retry': 'Try again',
@@ -24,6 +82,7 @@ export const knowledgeEn = {
     'knowledge.noteTitle': 'Title',
     'knowledge.summary': 'Summary',
     'knowledge.explanation': 'Explanation',
+    'knowledge.document': 'Document',
     'knowledge.categories': 'Categories',
     'knowledge.studiedLanguage': 'Language being studied',
     'knowledge.explanationLanguage': 'Explanation language',
@@ -44,11 +103,11 @@ export const knowledgeEn = {
     'knowledge.deleting': 'Deleting…',
     'knowledge.cancelDelete': 'Keep note',
     'knowledge.unsavedTitle': 'Discard unsaved changes?',
-    'knowledge.unsavedHelp': 'Your changes have not been saved.',
+    'knowledge.unsavedHelp':
+        'These changes have not reached private draft recovery yet.',
     'knowledge.discard': 'Discard changes',
     'knowledge.keepEditing': 'Keep editing',
-    'knowledge.invalid':
-        'Complete the title, summary, categories, languages, and explanation.',
+    'knowledge.invalid': 'Add a title and document content before saving.',
     'knowledge.saveError':
         'Your changes could not be saved. They are still here.',
     'knowledge.conflict':
@@ -96,6 +155,62 @@ export const knowledgeEn = {
 } as const;
 
 export const knowledgeRu = {
+    'knowledge.newNote': 'Новая заметка',
+    'knowledge.untitled': 'Без названия',
+    'knowledge.createError': 'Не удалось создать черновик. Попробуйте снова.',
+    'knowledge.draft': 'Черновик',
+    'knowledge.workingChanges': 'Черновые изменения',
+    'knowledge.workspace': 'Рабочая область знаний',
+    'knowledge.recovery.saved': 'Черновик сохранён',
+    'knowledge.recovery.saving': 'Сохраняем черновик…',
+    'knowledge.recovery.unsaved': 'Есть локальные изменения',
+    'knowledge.recovery.error': 'Не удалось сохранить черновик',
+    'knowledge.recovery.conflict': 'Другая версия сохранена отдельно',
+    'knowledge.recoveryError':
+        'Не удалось сохранить черновик. Повторите перед уходом.',
+    'knowledge.saveCopy': 'Сохранить копию',
+    'knowledge.draftHelp':
+        'Можно продолжить исследование. Сохраните заметку, когда добавите текст.',
+    'knowledge.saveHelp': 'Сохранение обновит версию, доступную по ссылке.',
+    'knowledge.branchConflict': 'Выберите рабочую версию',
+    'knowledge.branchConflictHelp':
+        'Обе версии сохранены. Выберите одну для продолжения.',
+    'knowledge.resolveBeforeSave':
+        'Сравните и разрешите конфликт рабочих версий перед сохранением заметки.',
+    'knowledge.currentBranch': 'Текущая версия',
+    'knowledge.continueBranch': 'Продолжить эту версию',
+    'knowledge.manualCombineHelp':
+        'Чтобы объединить версии, перенесите нужный текст в текущий редактор.',
+    'knowledge.saveBranchCopy': 'Сохранить текущую версию отдельно',
+    'knowledge.resolveBranches': 'Разрешить конфликт версий',
+    'knowledge.resolveBranchesHelp':
+        'Оставить текущую версию и удалить другие черновые версии. При необходимости сначала сохраните копию.',
+    'knowledge.confirmResolve': 'Оставить текущую версию',
+    'knowledge.proposalChanged': 'Исходный фрагмент изменился',
+    'knowledge.proposalChangedHelp':
+        'Сравните формулировки перед вставкой предложенного текста.',
+    'knowledge.chooseNewTarget': 'Выбрать новый фрагмент',
+    'knowledge.retargetHelp':
+        'Выберите новый фрагмент или место курсора в редакторе, затем примените просмотренное предложение.',
+    'knowledge.applyNewTarget': 'Применить к новому месту',
+    'knowledge.appendInstead': 'Добавить в конец',
+    'knowledge.originalTarget': 'Исходный фрагмент',
+    'knowledge.currentTarget': 'Текущий текст',
+    'knowledge.currentDocument': 'Текущий документ',
+    'knowledge.proposedText': 'Предложенный текст',
+    'knowledge.enableSharing': 'Открыть доступ по ссылке',
+    'knowledge.disableSharing': 'Отключить доступ',
+    'knowledge.copyLink': 'Скопировать ссылку для чтения',
+    'knowledge.linkCopied': 'Ссылка скопирована',
+    'knowledge.shareError': 'Не удалось изменить доступ. Попробуйте снова.',
+    'knowledge.sharedNote': 'Общая заметка',
+    'knowledge.sharedReadOnly':
+        'Это последняя сохранённая версия. Создайте копию, чтобы редактировать и использовать чат.',
+    'knowledge.sharedUnavailable': 'Заметка недоступна или ссылка отключена.',
+    'knowledge.copyShared': 'Сохранить свою копию',
+    'knowledge.signInToCopy': 'Войдите, чтобы создать копию',
+    'knowledge.copySharedError':
+        'Заметка изменилась или копирование не удалось. Обновите страницу.',
     'knowledge.saveAsNew': 'Сохранить как новую заметку',
     'knowledge.signIn': 'Войти',
     'knowledge.historyError': 'История версий недоступна. Попробуйте снова.',
@@ -106,13 +221,13 @@ export const knowledgeRu = {
     'knowledge.navigation': 'Знания',
     'knowledge.title': 'Знания',
     'knowledge.description':
-        'Сохранённые объяснения и примеры для изучения языков.',
+        'Заметки, исследования и тексты для изучения языков.',
     'knowledge.search': 'Поиск заметок',
     'knowledge.allCategories': 'Все категории',
     'knowledge.allLanguages': 'Все языки',
     'knowledge.emptyTitle': 'Здесь начинаются ваши знания',
     'knowledge.emptyHelp':
-        'Сохраните объяснение из чата со словарём или текстом, чтобы найти его здесь.',
+        'Создайте черновик, чтобы исследовать тему, писать и задавать вопросы ИИ.',
     'knowledge.noResults': 'Нет заметок по этим фильтрам',
     'knowledge.loading': 'Загружаем знания…',
     'knowledge.retry': 'Повторить',
@@ -121,6 +236,7 @@ export const knowledgeRu = {
     'knowledge.noteTitle': 'Заголовок',
     'knowledge.summary': 'Краткое описание',
     'knowledge.explanation': 'Объяснение',
+    'knowledge.document': 'Документ',
     'knowledge.categories': 'Категории',
     'knowledge.studiedLanguage': 'Изучаемый язык',
     'knowledge.explanationLanguage': 'Язык объяснения',
@@ -141,11 +257,12 @@ export const knowledgeRu = {
     'knowledge.deleting': 'Удаляем…',
     'knowledge.cancelDelete': 'Оставить заметку',
     'knowledge.unsavedTitle': 'Отменить несохранённые изменения?',
-    'knowledge.unsavedHelp': 'Ваши изменения ещё не сохранены.',
+    'knowledge.unsavedHelp':
+        'Эти изменения ещё не сохранены в приватном черновике.',
     'knowledge.discard': 'Отменить изменения',
     'knowledge.keepEditing': 'Продолжить редактирование',
     'knowledge.invalid':
-        'Заполните заголовок, описание, категории, языки и объяснение.',
+        'Добавьте заголовок и текст документа перед сохранением.',
     'knowledge.saveError': 'Не удалось сохранить изменения. Они не потеряны.',
     'knowledge.conflict':
         'Заметка изменена в другом месте. Сравните с последней версией перед сохранением.',
@@ -192,6 +309,65 @@ export const knowledgeRu = {
 } as const;
 
 export const knowledgeEs = {
+    'knowledge.newNote': 'Nueva nota',
+    'knowledge.untitled': 'Sin título',
+    'knowledge.createError':
+        'No se pudo crear el borrador. Inténtalo de nuevo.',
+    'knowledge.draft': 'Borrador',
+    'knowledge.workingChanges': 'Cambios de trabajo',
+    'knowledge.workspace': 'Espacio de conocimiento',
+    'knowledge.recovery.saved': 'Borrador recuperado',
+    'knowledge.recovery.saving': 'Guardando borrador…',
+    'knowledge.recovery.unsaved': 'Hay cambios locales',
+    'knowledge.recovery.error': 'No se pudo recuperar el borrador',
+    'knowledge.recovery.conflict': 'Se conservó otra versión',
+    'knowledge.recoveryError':
+        'No se pudo recuperar el borrador. Reintenta antes de salir.',
+    'knowledge.saveCopy': 'Guardar una copia',
+    'knowledge.draftHelp':
+        'Puedes seguir investigando. Guarda cuando la nota tenga contenido.',
+    'knowledge.saveHelp':
+        'Guardar actualiza la versión visible mediante el enlace.',
+    'knowledge.branchConflict': 'Elige una versión de trabajo',
+    'knowledge.branchConflictHelp':
+        'Se conservaron ambas versiones. Elige una para continuar.',
+    'knowledge.resolveBeforeSave':
+        'Compara y resuelve las versiones de trabajo antes de guardar esta nota.',
+    'knowledge.currentBranch': 'Versión actual',
+    'knowledge.continueBranch': 'Continuar esta versión',
+    'knowledge.manualCombineHelp':
+        'Para combinarlas, copia el texto deseado al editor actual.',
+    'knowledge.saveBranchCopy': 'Guardar la versión actual como otra nota',
+    'knowledge.resolveBranches': 'Resolver versiones de trabajo',
+    'knowledge.resolveBranchesHelp':
+        'Conserva la versión actual y elimina las demás versiones. Puedes guardar una copia antes.',
+    'knowledge.confirmResolve': 'Conservar versión actual',
+    'knowledge.proposalChanged': 'Cambió el destino de la propuesta',
+    'knowledge.proposalChangedHelp':
+        'Compara el texto antes de colocar la propuesta.',
+    'knowledge.chooseNewTarget': 'Elegir otro destino',
+    'knowledge.retargetHelp':
+        'Selecciona otro fragmento o posición del cursor y aplica la propuesta revisada.',
+    'knowledge.applyNewTarget': 'Aplicar en el nuevo destino',
+    'knowledge.appendInstead': 'Añadir al final',
+    'knowledge.originalTarget': 'Destino original',
+    'knowledge.currentTarget': 'Texto actual',
+    'knowledge.currentDocument': 'Documento actual',
+    'knowledge.proposedText': 'Texto propuesto',
+    'knowledge.enableSharing': 'Activar enlace compartido',
+    'knowledge.disableSharing': 'Desactivar enlace',
+    'knowledge.copyLink': 'Copiar enlace de lectura',
+    'knowledge.linkCopied': 'Enlace copiado',
+    'knowledge.shareError': 'No se pudo cambiar el acceso. Inténtalo de nuevo.',
+    'knowledge.sharedNote': 'Nota compartida',
+    'knowledge.sharedReadOnly':
+        'Esta es la última versión guardada. Crea una copia para editarla y usar el tutor.',
+    'knowledge.sharedUnavailable':
+        'La nota no está disponible o el enlace fue desactivado.',
+    'knowledge.copyShared': 'Guardar mi propia copia',
+    'knowledge.signInToCopy': 'Inicia sesión para crear una copia',
+    'knowledge.copySharedError':
+        'La nota cambió o no se pudo copiar. Actualiza e inténtalo de nuevo.',
     'knowledge.saveAsNew': 'Guardar como nota nueva',
     'knowledge.signIn': 'Iniciar sesión',
     'knowledge.historyError':
@@ -203,13 +379,13 @@ export const knowledgeEs = {
     'knowledge.navigation': 'Conocimientos',
     'knowledge.title': 'Conocimientos',
     'knowledge.description':
-        'Tus explicaciones y ejemplos guardados para aprender idiomas.',
+        'Tus notas, investigaciones y escritos para aprender idiomas.',
     'knowledge.search': 'Buscar notas',
     'knowledge.allCategories': 'Todas las categorías',
     'knowledge.allLanguages': 'Todos los idiomas',
     'knowledge.emptyTitle': 'Tus conocimientos empiezan aquí',
     'knowledge.emptyHelp':
-        'Guarda una explicación de un chat sobre un diccionario o texto para encontrarla aquí.',
+        'Inicia un borrador para investigar, escribir y preguntar a tu tutor de IA.',
     'knowledge.noResults': 'Ninguna nota coincide con estos filtros',
     'knowledge.loading': 'Cargando conocimientos…',
     'knowledge.retry': 'Reintentar',
@@ -219,6 +395,7 @@ export const knowledgeEs = {
     'knowledge.noteTitle': 'Título',
     'knowledge.summary': 'Resumen',
     'knowledge.explanation': 'Explicación',
+    'knowledge.document': 'Documento',
     'knowledge.categories': 'Categorías',
     'knowledge.studiedLanguage': 'Idioma de estudio',
     'knowledge.explanationLanguage': 'Idioma de la explicación',
@@ -239,11 +416,11 @@ export const knowledgeEs = {
     'knowledge.deleting': 'Eliminando…',
     'knowledge.cancelDelete': 'Conservar nota',
     'knowledge.unsavedTitle': '¿Descartar los cambios sin guardar?',
-    'knowledge.unsavedHelp': 'Tus cambios no se han guardado.',
+    'knowledge.unsavedHelp':
+        'Estos cambios aún no se han recuperado en tu borrador privado.',
     'knowledge.discard': 'Descartar cambios',
     'knowledge.keepEditing': 'Seguir editando',
-    'knowledge.invalid':
-        'Completa el título, resumen, categorías, idiomas y explicación.',
+    'knowledge.invalid': 'Añade un título y contenido antes de guardar.',
     'knowledge.saveError': 'No se pudieron guardar los cambios. Siguen aquí.',
     'knowledge.conflict':
         'Esta nota cambió en otro lugar. Compara la última versión antes de guardar.',
@@ -290,6 +467,65 @@ export const knowledgeEs = {
 } as const;
 
 export const knowledgeFr = {
+    'knowledge.newNote': 'Nouvelle note',
+    'knowledge.untitled': 'Sans titre',
+    'knowledge.createError': 'Impossible de créer le brouillon. Réessayez.',
+    'knowledge.draft': 'Brouillon',
+    'knowledge.workingChanges': 'Modifications en cours',
+    'knowledge.workspace': 'Espace de connaissances',
+    'knowledge.recovery.saved': 'Brouillon récupéré',
+    'knowledge.recovery.saving': 'Enregistrement du brouillon…',
+    'knowledge.recovery.unsaved': 'Modifications locales en cours',
+    'knowledge.recovery.error': 'Impossible de récupérer le brouillon',
+    'knowledge.recovery.conflict': 'Une autre version a été conservée',
+    'knowledge.recoveryError':
+        'Impossible de récupérer le brouillon. Réessayez avant de partir.',
+    'knowledge.saveCopy': 'Enregistrer une copie',
+    'knowledge.draftHelp':
+        'Vous pouvez continuer vos recherches. Enregistrez lorsque la note contient du texte.',
+    'knowledge.saveHelp':
+        'Enregistrer met à jour la version visible avec votre lien partagé.',
+    'knowledge.branchConflict': 'Choisissez une version de travail',
+    'knowledge.branchConflictHelp':
+        'Les deux versions ont été conservées. Choisissez celle à modifier.',
+    'knowledge.resolveBeforeSave':
+        'Comparez et résolvez les versions de travail avant d’enregistrer cette note.',
+    'knowledge.currentBranch': 'Version actuelle',
+    'knowledge.continueBranch': 'Continuer cette version',
+    'knowledge.manualCombineHelp':
+        'Pour les réunir, copiez le texte souhaité dans l’éditeur actuel.',
+    'knowledge.saveBranchCopy':
+        'Enregistrer cette version comme une autre note',
+    'knowledge.resolveBranches': 'Résoudre les versions de travail',
+    'knowledge.resolveBranchesHelp':
+        'Conservez la version actuelle et supprimez les autres. Vous pouvez d’abord enregistrer une copie.',
+    'knowledge.confirmResolve': 'Conserver la version actuelle',
+    'knowledge.proposalChanged': 'La cible de la proposition a changé',
+    'knowledge.proposalChangedHelp':
+        'Comparez les formulations avant de placer le texte proposé.',
+    'knowledge.chooseNewTarget': 'Choisir une nouvelle cible',
+    'knowledge.retargetHelp':
+        'Sélectionnez un autre passage ou une position du curseur, puis appliquez la proposition examinée.',
+    'knowledge.applyNewTarget': 'Appliquer à la nouvelle cible',
+    'knowledge.appendInstead': 'Ajouter à la fin',
+    'knowledge.originalTarget': 'Cible initiale',
+    'knowledge.currentTarget': 'Texte actuel',
+    'knowledge.currentDocument': 'Document actuel',
+    'knowledge.proposedText': 'Texte proposé',
+    'knowledge.enableSharing': 'Activer le partage',
+    'knowledge.disableSharing': 'Désactiver le partage',
+    'knowledge.copyLink': 'Copier le lien en lecture seule',
+    'knowledge.linkCopied': 'Lien copié',
+    'knowledge.shareError': 'Impossible de modifier le partage. Réessayez.',
+    'knowledge.sharedNote': 'Note partagée',
+    'knowledge.sharedReadOnly':
+        'Voici la dernière version enregistrée. Créez une copie pour la modifier et utiliser le tuteur.',
+    'knowledge.sharedUnavailable':
+        'Cette note est indisponible ou son lien a été désactivé.',
+    'knowledge.copyShared': 'Enregistrer ma propre copie',
+    'knowledge.signInToCopy': 'Connectez-vous pour créer une copie',
+    'knowledge.copySharedError':
+        'La note a changé ou la copie a échoué. Actualisez la page.',
     'knowledge.saveAsNew': 'Enregistrer une nouvelle note',
     'knowledge.signIn': 'Se connecter',
     'knowledge.historyError': 'L’historique est indisponible. Réessayez.',
@@ -300,13 +536,13 @@ export const knowledgeFr = {
     'knowledge.navigation': 'Connaissances',
     'knowledge.title': 'Connaissances',
     'knowledge.description':
-        'Vos explications et exemples enregistrés pour apprendre les langues.',
+        'Vos notes, recherches et textes pour apprendre les langues.',
     'knowledge.search': 'Rechercher des notes',
     'knowledge.allCategories': 'Toutes les catégories',
     'knowledge.allLanguages': 'Toutes les langues',
     'knowledge.emptyTitle': 'Vos connaissances commencent ici',
     'knowledge.emptyHelp':
-        'Enregistrez une explication depuis une discussion sur un dictionnaire ou un texte pour la retrouver ici.',
+        'Commencez un brouillon pour rechercher, écrire et interroger votre tuteur IA.',
     'knowledge.noResults': 'Aucune note ne correspond à ces filtres',
     'knowledge.loading': 'Chargement des connaissances…',
     'knowledge.retry': 'Réessayer',
@@ -315,6 +551,7 @@ export const knowledgeFr = {
     'knowledge.noteTitle': 'Titre',
     'knowledge.summary': 'Résumé',
     'knowledge.explanation': 'Explication',
+    'knowledge.document': 'Document',
     'knowledge.categories': 'Catégories',
     'knowledge.studiedLanguage': 'Langue étudiée',
     'knowledge.explanationLanguage': 'Langue de l’explication',
@@ -335,11 +572,11 @@ export const knowledgeFr = {
     'knowledge.deleting': 'Suppression…',
     'knowledge.cancelDelete': 'Conserver la note',
     'knowledge.unsavedTitle': 'Abandonner les modifications ?',
-    'knowledge.unsavedHelp': 'Vos modifications n’ont pas été enregistrées.',
+    'knowledge.unsavedHelp':
+        'Ces modifications ne sont pas encore conservées dans votre brouillon privé.',
     'knowledge.discard': 'Abandonner les modifications',
     'knowledge.keepEditing': 'Continuer la modification',
-    'knowledge.invalid':
-        'Renseignez le titre, le résumé, les catégories, les langues et l’explication.',
+    'knowledge.invalid': 'Ajoutez un titre et du contenu avant d’enregistrer.',
     'knowledge.saveError':
         'Vos modifications n’ont pas pu être enregistrées. Elles sont conservées ici.',
     'knowledge.conflict':

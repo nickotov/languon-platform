@@ -113,3 +113,35 @@
     flex-shrink: 0;
     margin-inline-end: var(--space-4);
 }
+
+.rename {
+    flex-shrink: 0;
+}
+
+.renameForm {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+    padding: var(--space-6);
+}
+
+.renameForm input {
+    flex: 1;
+    min-width: var(--size-120);
+    min-height: var(--size-36);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    padding-inline: var(--space-8);
+    font: inherit;
+}
+
+.renameError {
+    flex-basis: 100%;
+    color: var(--danger-default);
+    font-size: var(--size-12);
+}

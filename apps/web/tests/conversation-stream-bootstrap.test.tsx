@@ -29,6 +29,7 @@ function detail(id: string, content?: string): ConversationDetail {
     return ConversationDetailSchema.parse({
         conversation: {
             id,
+            title: null,
             source: { kind: 'text', id },
             preferences: {},
             version: 1,

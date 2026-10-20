@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { ArrowDown, CornerDownRight } from 'lucide-react';
 import type {
     ConversationDetail,
+    ConversationEditorTarget,
     ConversationTurn,
     ConversationSource,
 } from '@languon/contracts';
@@ -16,6 +17,7 @@ import { messagesCopy } from '../../lib/messages-copy';
 import { messageScrollSignature } from '../../lib/message-scroll-signature';
 import { TutorMessage } from './tutor-message';
 import { TutorActivity } from '../tutor-activity/tutor-activity';
+import type { WorkspaceProposalAction } from '../../types';
 import styles from './conversation-messages.module.css';
 
 export function ConversationMessages({
@@ -29,6 +31,8 @@ export function ConversationMessages({
     children,
     sourceKind,
     contextLabel,
+    workspaceTargets,
+    onAcceptWorkspaceProposal,
 }: {
     detail: ConversationDetail;
     uiMessages: ConversationUIMessage[];
@@ -40,6 +44,15 @@ export function ConversationMessages({
     children?: ReactNode;
     sourceKind?: ConversationSource['kind'] | undefined;
     contextLabel?: string | undefined;
+    workspaceTargets?: Map<string, string> | undefined;
+    onAcceptWorkspaceProposal?:
+        | ((
+              text: string,
+              action: WorkspaceProposalAction,
+              turnId: string | null,
+              anchor?: ConversationEditorTarget,
+          ) => Promise<'applied' | 'changed' | 'missing' | undefined>)
+        | undefined;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
@@ -143,6 +156,17 @@ export function ConversationMessages({
                             }
                             onRetry={onRetry}
                             onPropose={onPropose}
+                            workspaceTargetId={
+                                message.metadata?.turnId
+                                    ? workspaceTargets?.get(
+                                          message.metadata.turnId,
+                                      )
+                                    : undefined
+                            }
+                            workspaceAnchor={message.metadata?.editorTarget}
+                            onAcceptWorkspaceProposal={
+                                onAcceptWorkspaceProposal
+                            }
                         />
                     ))}
                     <TutorActivity

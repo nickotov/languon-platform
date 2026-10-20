@@ -2,6 +2,7 @@ import type {
     KnowledgeBody,
     KnowledgeCategory,
     KnowledgeNoteContent,
+    KnowledgeWorkingContent,
 } from '@languon/contracts';
 import { sql } from 'drizzle-orm';
 import {
@@ -11,6 +12,7 @@ import {
     jsonb,
     pgTable,
     primaryKey,
+    boolean,
     text,
     timestamp,
     uniqueIndex,
@@ -32,10 +34,18 @@ export const knowledgeNotesTable = pgTable(
             .array()
             .$type<KnowledgeCategory[]>()
             .notNull(),
-        studiedLanguage: text('studied_language').notNull(),
-        explanationLanguage: text('explanation_language').notNull(),
+        studiedLanguage: text('studied_language'),
+        explanationLanguage: text('explanation_language'),
         plainText: text('plain_text').notNull(),
         version: integer('version').notNull().default(1),
+        status: text('status')
+            .$type<'draft' | 'saved'>()
+            .notNull()
+            .default('saved'),
+        preferredBranchId: uuid('preferred_branch_id'),
+        autoTitleEligible: boolean('auto_title_eligible')
+            .notNull()
+            .default(false),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
     },
@@ -49,24 +59,68 @@ export const knowledgeNotesTable = pgTable(
             t.ownerId,
             t.studiedLanguage,
         ),
-        check('knowledge_notes_version_positive', sql`${t.version} > 0`),
+        check('knowledge_notes_version_nonnegative', sql`${t.version} >= 0`),
+        check('knowledge_notes_status', sql`${t.status} in ('draft','saved')`),
+        check(
+            'knowledge_notes_status_version',
+            sql`(${t.status} = 'draft' and ${t.version} = 0) or (${t.status} = 'saved' and ${t.version} > 0)`,
+        ),
         check(
             'knowledge_notes_title_length',
-            sql`char_length(${t.title}) between 1 and 200`,
+            sql`(${t.status} = 'draft' and char_length(${t.title}) between 0 and 200) or (${t.status} = 'saved' and char_length(${t.title}) between 1 and 200)`,
         ),
         check(
             'knowledge_notes_summary_length',
-            sql`char_length(${t.summary}) between 1 and 1000`,
+            sql`char_length(${t.summary}) between 0 and 1000`,
         ),
         check(
             'knowledge_notes_categories',
-            sql`cardinality(${t.categories}) between 1 and 7 and ${t.categories} <@ ARRAY['grammar','vocabulary','usage','pronunciation','etymology','culture','learning-tips']::text[]`,
+            sql`cardinality(${t.categories}) between 0 and 7 and ${t.categories} <@ ARRAY['grammar','vocabulary','usage','pronunciation','etymology','culture','learning-tips']::text[]`,
         ),
         check(
             'knowledge_notes_body_version',
             sql`${t.body}->>'schemaVersion' = '1'`,
         ),
     ],
+);
+export const knowledgeWorkingBranchesTable = pgTable(
+    'knowledge_working_branches',
+    {
+        id: uuid('id').primaryKey(),
+        noteId: uuid('note_id')
+            .notNull()
+            .references(() => knowledgeNotesTable.id, { onDelete: 'cascade' }),
+        version: integer('version').notNull().default(1),
+        basePublishedVersion: integer('base_published_version')
+            .notNull()
+            .default(0),
+        content: jsonb('content').$type<KnowledgeWorkingContent>().notNull(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+    },
+    (t) => [
+        index('knowledge_working_branches_note_idx').on(t.noteId, t.updatedAt),
+        check(
+            'knowledge_working_branches_version_positive',
+            sql`${t.version} > 0`,
+        ),
+        check(
+            'knowledge_working_branches_base_nonnegative',
+            sql`${t.basePublishedVersion} >= 0`,
+        ),
+    ],
+);
+export const knowledgeSharesTable = pgTable(
+    'knowledge_shares',
+    {
+        noteId: uuid('note_id')
+            .primaryKey()
+            .references(() => knowledgeNotesTable.id, { onDelete: 'cascade' }),
+        locator: text('locator').notNull().unique(),
+        keyDigest: text('key_digest').notNull(),
+        version: integer('version').notNull().default(1),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    },
+    (t) => [check('knowledge_shares_version_positive', sql`${t.version} > 0`)],
 );
 export const knowledgeNoteRevisionsTable = pgTable(
     'knowledge_note_revisions',

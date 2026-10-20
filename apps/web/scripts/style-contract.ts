@@ -130,8 +130,9 @@ function utilityClass(value: string, classContext: boolean): string[] {
                 )
             )
                 return false;
-            // This domain resource name is an API/query discriminator, not a color utility.
-            if (base === 'text-folders') return false;
+            // Domain resource and copied-material discriminators are not color utilities.
+            if (base === 'text-folders' || base === 'text-reference')
+                return false;
             // AI SDK protocol discriminants are not class names. JSX class contexts stay checked.
             if (/^text-(?:start|delta|end)$/.test(base)) return false;
             if (/^text-ai-(?:request|preference|catalog)$/.test(base))

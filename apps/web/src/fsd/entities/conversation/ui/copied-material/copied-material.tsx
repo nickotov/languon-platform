@@ -12,9 +12,32 @@ export function CopiedMaterial({
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
-    const summary = caption
-        ? `${attachment.label} · ${caption}`
-        : attachment.label;
+    const summary =
+        caption && caption !== attachment.label
+            ? `${attachment.label} · ${caption}`
+            : attachment.label;
+    if (attachment.kind === 'text-reference')
+        return (
+            <details className={styles.root}>
+                <summary dir='auto'>{summary}</summary>
+                <div
+                    className={styles.text}
+                    lang={attachment.sourceLanguage}
+                    dir='auto'
+                >
+                    {attachment.content}
+                </div>
+                {attachment.translation && (
+                    <div
+                        className={styles.text}
+                        lang={attachment.translationLanguage}
+                        dir='auto'
+                    >
+                        {attachment.translation}
+                    </div>
+                )}
+            </details>
+        );
     if (attachment.kind !== 'dictionary-card')
         return (
             <details className={styles.root}>

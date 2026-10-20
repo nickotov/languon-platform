@@ -107,6 +107,18 @@ const RawEnvironmentSchema = z
             .enum(['true', 'false'])
             .default('false'),
         DICTIONARY_HMAC_SECRET: DictionarySecretSchema,
+        KNOWLEDGE_REFERENCE_CHAR_LIMIT: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(80_000)
+            .default(40_000),
+        KNOWLEDGE_EDITOR_CONTEXT_CHAR_LIMIT: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(80_000)
+            .default(40_000),
         LEARNING_SENTENCE_GENERATION_FORMAT: z
             .enum(['sentence-generation:v1', 'sentence-generation:v2'])
             .default('sentence-generation:v1'),

@@ -365,11 +365,31 @@ content versions. Each admitted turn freezes the wording discussed; ordinary
 source edits refresh subsequent turns. Permanent primary-source deletion removes
 associated chat/memory/drafts, while independently saved notes survive.
 
-The separate `knowledge` module owns private independent explanations, optimistic
-version checks, immutable revisions and explicit learner publication. No note
-stores an origin dictionary/text/chat reference. Tools may retrieve authorized
-material and propose validated note content; only authenticated application
-commands publish. Restoring a revision creates a new version.
+The separate `knowledge` module owns independent notes, including learner-written
+documents. A new note starts as a private, empty Draft with a stable ID. Server
+working branches recover unpublished edits; version-checked autosave creates a
+separate branch on conflict, and explicit resolution discards only named
+alternatives. Explicit Save publishes the selected branch as an immutable
+revision; Save a copy creates another independent note. No note stores an origin
+dictionary/text/chat reference. Tools may retrieve authorized material and
+propose validated note content; only authenticated application commands publish.
+Restoring a revision creates a new version; if unpublished prose differs, the
+restored publication appears as an alternative branch and Save waits for
+explicit resolution. A revocable unlisted capability reads
+only the last published note; signed-in readers copy that version before editing
+or chatting. Scheduling account deletion revokes those capabilities.
+
+Every Knowledge workspace turn freezes the complete current editor plain text,
+including unsaved changes, any selected passage, and a validated target anchor
+bound to that exact snapshot. The anchor is persisted with the private turn and
+reply, allowing safe proposal placement after reopening; changed wording
+requires comparison or a new target. Owned Text references are
+authorized and copied into that one message; original changes do not rewrite
+the copy. Separate configured character limits govern editor and copied
+material, followed by a complete model-input budget check after memory
+compaction. Multiple private conversations belong to the note but never appear
+in the shared response. Existing dictionary/text source chat keeps its own
+draft/excerpt behavior.
 
 Mastra Memory1.26.0/Core1.57.0 use an application-owned transactional adapter.
 Observation, reflection and actor calls share bounded per-turn execution and
@@ -385,6 +405,8 @@ a restricted, versioned ProseMirror contract and fixed safe rendering. Chat
 Markdown remains separate and uses a restricted Streamdown renderer. Active SSE
 delivery and native incremental SDK projections retain durable replay; localized
 work/tool/writing activity stays visible before text and during pauses. See
-[ADR-0041](adr/0041-durable-tutor-streaming-presentation.md), [ADR-0037](adr/0037-independent-knowledge-and-agent-proposals.md)
-and [feature044](../.agent/features/044-contextual-language-assistant-and-knowledge/FEATURE.md)
+[ADR-0041](adr/0041-durable-tutor-streaming-presentation.md), [ADR-0037](adr/0037-independent-knowledge-and-agent-proposals.md),
+[ADR-0042](adr/0042-knowledge-workspace-document-and-context-boundaries.md),
+[feature044](../.agent/features/044-contextual-language-assistant-and-knowledge/FEATURE.md)
+and [feature047](../.agent/features/047-knowledge-workspace/FEATURE.md)
 for decisions and implementation evidence.

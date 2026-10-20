@@ -27,7 +27,59 @@ function fixture() {
         updatedAt: now,
     };
     const owner = randomUUID();
+    const branch = {
+        id: randomUUID(),
+        noteId: note.id,
+        version: 1,
+        basePublishedVersion: 1,
+        content,
+        updatedAt: now,
+    };
+    const workspace = {
+        noteId: note.id,
+        status: 'saved' as const,
+        published: note,
+        branches: [branch],
+        preferredBranchId: branch.id,
+        shareEnabled: false,
+        limits: { referenceChars: 40000, editorChars: 40000 },
+    };
     const store = {
+        listWorkspaces: vi.fn(async () => ({
+            workspaces: [
+                {
+                    id: note.id,
+                    title: note.title,
+                    status: 'saved' as const,
+                    hasUnsavedChanges: false,
+                    updatedAt: now,
+                },
+            ],
+            total: 1,
+            offset: 0,
+            limit: 20,
+        })),
+        getWorkspace: vi.fn(async () => workspace),
+        createDraft: vi.fn(async () => workspace),
+        updateWorking: vi.fn(async () => ({
+            branch,
+            conflict: false,
+            branches: [branch],
+        })),
+        resolveWorking: vi.fn(async () => workspace),
+        saveWorkspace: vi.fn(async () => note),
+        saveWorkspaceCopy: vi.fn(async () => note),
+        getShare: vi.fn(async () => ({
+            locator: 'a'.repeat(32),
+            key: 'b'.repeat(43),
+        })),
+        issueShare: vi.fn(async () => ({
+            locator: 'a'.repeat(32),
+            key: 'b'.repeat(43),
+        })),
+        revokeShare: vi.fn(async () => ({ disabled: true as const })),
+        readShared: vi.fn(async () => note),
+        copyShared: vi.fn(async () => note),
         list: vi.fn(async () => ({
             notes: [note],
             total: 1,
@@ -141,6 +193,45 @@ describe('Knowledge HTTP boundary', () => {
         expect(await response.json()).toMatchObject({
             error: { code: 'version_conflict' },
         });
+    });
+    it('keeps the share key in a header and serves the published note without caching', async () => {
+        const { app, store, note } = fixture();
+        const path = `/knowledge/shared/${'a'.repeat(32)}`;
+        expect((await app.request(path)).status).toBe(400);
+        expect(store.readShared).not.toHaveBeenCalled();
+        const response = await app.request(path, {
+            headers: { 'X-Languon-Share-Key': 'b'.repeat(43) },
+        });
+        expect(response.status).toBe(200);
+        expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+        expect(await response.json()).toMatchObject({ note: { id: note.id } });
+    });
+    it('requires authentication before copying a shared note', async () => {
+        const { app, store } = fixture();
+        const path = `/knowledge/shared/${'a'.repeat(32)}/copy`;
+        const request = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Languon-Share-Key': 'b'.repeat(43),
+            },
+            body: JSON.stringify({
+                operationId: randomUUID(),
+                expectedVersion: 1,
+            }),
+        };
+        expect((await app.request(path, request)).status).toBe(401);
+        expect(store.copyShared).not.toHaveBeenCalled();
+        const response = await app.request(path, {
+            ...request,
+            headers: {
+                ...request.headers,
+                Authorization: 'Bearer synthetic.payload.signature',
+            },
+        });
+        expect(response.status).toBe(201);
+        expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+        expect(store.copyShared).toHaveBeenCalledOnce();
     });
     it('generates the public OpenAPI document for versioned rich content', () => {
         const { app } = fixture();

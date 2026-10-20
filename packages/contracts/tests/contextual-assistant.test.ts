@@ -4,10 +4,13 @@ import {
     KnowledgeDraftSchema,
     KnowledgeLinkSchema,
     KnowledgeNoteContentSchema,
+    KnowledgeWorkingContentSchema,
     type KnowledgeNode,
     CopiedAttachmentSchema,
     SubmitConversationTurnRequestSchema,
     ConversationToolCallSchema,
+    UpdateConversationRequestSchema,
+    ResolveKnowledgeWorkingRequestSchema,
 } from '../src/contextual-assistant';
 const paragraph: KnowledgeNode = {
     type: 'paragraph',
@@ -66,6 +69,23 @@ describe('contextual assistant rich content contracts', () => {
                 arguments: { shareKey: 'private' },
             }).success,
         ).toBe(false);
+    });
+    it('admits exactly 40,000 non-BMP copied characters for the configured workspace allowance', () => {
+        const id = '00000000-0000-4000-8000-000000000001';
+        const copied = CopiedAttachmentSchema.parse({
+            id,
+            kind: 'text-reference',
+            label: 'Copied text',
+            content: '😀'.repeat(40_000),
+        });
+        expect(
+            SubmitConversationTurnRequestSchema.safeParse({
+                requestId: id,
+                content: 'Explain this text',
+                attachments: [copied],
+                editorContext: { content: '' },
+            }).success,
+        ).toBe(true);
     });
     it('retains meaningful language examples and a rectangular comparison table', () => {
         const rich = {
@@ -233,6 +253,59 @@ describe('contextual assistant rich content contracts', () => {
         expect(
             KnowledgeDraftSchema.safeParse({ ...draft, expectedNoteVersion: 1 })
                 .success,
+        ).toBe(false);
+    });
+    it('allows a draft with optional note metadata and a manually renamed chat', () => {
+        expect(
+            KnowledgeNoteContentSchema.safeParse({
+                ...content,
+                title: 'Untitled',
+                summary: '',
+                categories: [],
+                studiedLanguage: null,
+                explanationLanguage: null,
+            }).success,
+        ).toBe(true);
+        expect(
+            UpdateConversationRequestSchema.safeParse({
+                title: 'Research notes',
+            }).success,
+        ).toBe(true);
+        expect(UpdateConversationRequestSchema.safeParse({}).success).toBe(
+            false,
+        );
+        expect(
+            KnowledgeWorkingContentSchema.safeParse({ ...content, title: '' })
+                .success,
+        ).toBe(true);
+        expect(
+            KnowledgeNoteContentSchema.safeParse({ ...content, title: '' })
+                .success,
+        ).toBe(false);
+    });
+    it('requires distinct stale-checked branches for explicit conflict resolution', () => {
+        const request = {
+            operationId: '00000000-0000-4000-8000-000000000001',
+            keepBranchId: '00000000-0000-4000-8000-000000000002',
+            keepVersion: 2,
+            discardBranches: [
+                {
+                    id: '00000000-0000-4000-8000-000000000003',
+                    expectedVersion: 1,
+                },
+            ],
+        };
+        expect(
+            ResolveKnowledgeWorkingRequestSchema.safeParse(request).success,
+        ).toBe(true);
+        expect(
+            ResolveKnowledgeWorkingRequestSchema.safeParse({
+                ...request,
+                discardBranches: [
+                    ...request.discardBranches,
+                    request.discardBranches[0],
+                ],
+            }).success,
         ).toBe(false);
     });
 });

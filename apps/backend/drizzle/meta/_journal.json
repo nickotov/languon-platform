@@ -526,6 +526,13 @@
       "when": 1792409320622,
       "tag": "0074_retire_dictionary_audio",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792440994364,
+      "tag": "0075_yielding_molly_hayes",
+      "breakpoints": true
     }
   ]
 }

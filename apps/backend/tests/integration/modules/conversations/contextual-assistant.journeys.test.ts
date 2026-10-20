@@ -1,5 +1,6 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:933d796afdfaae27
-import { randomUUID } from 'node:crypto';
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:dd229fee825e66b5
+import { createHash, randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import {
     ConversationResponseSchema,
@@ -16,6 +17,74 @@ import {
     createContextualAssistantFixture,
     proposedContent,
 } from '../../../support/contextual-assistant-fixture';
+
+async function waitForAdmittedTurn<
+    T extends {
+        turns: { id: string; status: string }[];
+    },
+>(
+    turnId: string,
+    read: () => Promise<T>,
+    drive: () => Promise<unknown>,
+    timeoutMs = 30_000,
+): Promise<T> {
+    const deadline = Date.now() + timeoutMs;
+    let result = await read();
+    while (Date.now() < deadline) {
+        const status = result.turns.find((turn) => turn.id === turnId)?.status;
+        if (
+            status === 'succeeded' ||
+            status === 'failed' ||
+            status === 'cancelled'
+        )
+            return result;
+        if (status === 'queued') await drive();
+        else if (status === 'running') await delay(50);
+        else throw new Error(`Admitted conversation turn ${turnId} vanished.`);
+        result = await read();
+    }
+    const status = result.turns.find((turn) => turn.id === turnId)?.status;
+    throw new Error(
+        `Admitted conversation turn ${turnId} did not finish within ${timeoutMs}ms (status: ${status ?? 'missing'}).`,
+    );
+}
+
+describe('admitted conversation turn synchronization', () => {
+    it('drives another queued turn first, then waits for the admitted turn', async () => {
+        let ticks = 0;
+        const result = await waitForAdmittedTurn(
+            'admitted',
+            async () => ({
+                turns: [
+                    { id: 'other', status: ticks ? 'succeeded' : 'queued' },
+                    {
+                        id: 'admitted',
+                        status: ticks < 2 ? 'queued' : 'succeeded',
+                    },
+                ],
+            }),
+            async () => {
+                ticks += 1;
+            },
+            1_000,
+        );
+        expect(ticks).toBe(2);
+        expect(result.turns[1]?.status).toBe('succeeded');
+    });
+
+    it('reports a worker that remains running past the deadline', async () => {
+        await expect(
+            waitForAdmittedTurn(
+                'admitted',
+                async () => ({
+                    turns: [{ id: 'admitted', status: 'running' }],
+                }),
+                async () => undefined,
+                10,
+            ),
+        ).rejects.toThrow(/did not finish.*status: running/u);
+    });
+});
 
 describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
     'Contextual assistant composed HTTP journeys',
@@ -81,11 +150,33 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 ),
             );
         }
-        async function draft(token: string, id: string, key?: string) {
+        async function draft(
+            token: string,
+            id: string,
+            key?: string,
+            workspace = false,
+        ) {
+            const workspaceContent =
+                'River bank means the land alongside a river.';
             const input = {
                 requestId: randomUUID(),
                 content:
                     'Please draft a standalone explanation of river bank usage.',
+                ...(workspace
+                    ? {
+                          editorContext: {
+                              content: workspaceContent,
+                              editorTarget: {
+                                  from: workspaceContent.length,
+                                  to: workspaceContent.length,
+                                  originalText: '',
+                                  documentHash: createHash('sha256')
+                                      .update(workspaceContent)
+                                      .digest('hex'),
+                              },
+                          },
+                      }
+                    : {}),
             };
             const admitted = ConversationTurnResponseSchema.parse(
                 await checked(
@@ -106,8 +197,14 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 ),
             ).turn;
             expect(replay.id).toBe(admitted.id);
-            await fixture.conversations.worker!.processNext(signal);
-            const result = await detail(token, id, key);
+            // The guarded fixture shares a durable queue with the browser
+            // server. A tick may claim another turn; a browser worker may own
+            // this one. Completion must be observed for the admitted turn.
+            const result = await waitForAdmittedTurn(
+                admitted.id,
+                () => detail(token, id, key),
+                () => fixture.conversations.worker!.processNext(signal),
+            );
             expect(
                 result.turns.find((turn) => turn.id === admitted.id)?.status,
             ).toBe('succeeded');
@@ -181,7 +278,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 (await fixture.request(`/conversations/${chat.id}`, stranger))
                     .status,
             ).toBe(404);
-            const proposed = await draft(owner, chat.id);
+            const proposed = await draft(owner, chat.id, undefined, true);
             const edited = KnowledgeNoteResponseSchema.parse(
                 await checked(
                     `/knowledge/${note.id}`,

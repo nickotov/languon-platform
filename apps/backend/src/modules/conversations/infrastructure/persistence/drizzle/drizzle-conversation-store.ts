@@ -1,5 +1,17 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { and, eq, asc, desc, inArray, gt, lt, isNull, sql } from 'drizzle-orm';
+import {
+    and,
+    or,
+    eq,
+    asc,
+    desc,
+    inArray,
+    gt,
+    lt,
+    isNull,
+    ilike,
+    sql,
+} from 'drizzle-orm';
 import {
     ChatPreferencesSchema,
     KnowledgeNoteContentSchema,
@@ -13,6 +25,7 @@ import {
     type KnowledgeNote,
     type PublishKnowledgeDraftRequest,
     type ConversationEvent,
+    type UpdateConversationRequest,
 } from '@languon/contracts';
 import type {
     ConversationStore,
@@ -27,6 +40,12 @@ import {
     assertTutorCurrentMessageFits,
     projectTutorUserMessage,
 } from '../../../application/tutor-message-context';
+import {
+    assertWorkspaceTurnContext,
+    defaultWorkspaceContextLimits,
+    firstThreeWords,
+    type WorkspaceContextLimits,
+} from '../../../application/workspace-turn-context';
 import {
     ConversationError,
     conversationUnavailable,
@@ -56,6 +75,10 @@ import {
     conversationMemoryTable as memory,
     conversationSettingsTable as settings,
 } from './schema';
+import {
+    textsTable,
+    textFoldersTable,
+} from '../../../../texts/infrastructure/persistence/drizzle/schema';
 
 type ChatRow = typeof chats.$inferSelect;
 type TurnRow = typeof turns.$inferSelect;
@@ -63,6 +86,7 @@ type MessageRow = typeof messages.$inferSelect;
 type DraftRow = typeof drafts.$inferSelect;
 const chatView = (r: ChatRow) => ({
     id: r.id,
+    title: r.title,
     source: r.source,
     preferences: r.preferences,
     version: r.version,
@@ -90,6 +114,7 @@ const messageView = (r: MessageRow) => ({
     role: r.role,
     content: r.content,
     attachments: r.attachments,
+    ...(r.editorTarget ? { editorTarget: r.editorTarget } : {}),
     toolCalls: r.toolCalls,
     status: r.status,
     sourceVersion: r.sourceVersion,
@@ -111,6 +136,13 @@ const conflict = (message: string) =>
 export interface ConversationPersistenceDependencies {
     database: ConversationsDatabase;
     sources: ConversationSourceResolver;
+    workspaceContextLimits?: WorkspaceContextLimits;
+    nameUntitledNote?: (
+        tx: ConversationsTransaction,
+        ownerId: string,
+        noteId: string,
+        title: string,
+    ) => Promise<void>;
     now?: () => Date;
     admitTurn: (
         tx: ConversationsTransaction,
@@ -333,14 +365,17 @@ export class DrizzleConversationStore implements ConversationStore {
     async update(
         access: ConversationAccess,
         id: string,
-        preferences: ChatPreferences,
+        changes: UpdateConversationRequest,
     ) {
         return this.transaction(async (tx) => {
             await this.authorize(tx, access, id);
             const [chat] = await tx
                 .update(chats)
                 .set({
-                    preferences,
+                    ...(changes.preferences
+                        ? { preferences: changes.preferences }
+                        : {}),
+                    ...(changes.title ? { title: changes.title } : {}),
                     version: sql`${chats.version}+1`,
                     updatedAt: this.now(),
                 })
@@ -414,7 +449,7 @@ export class DrizzleConversationStore implements ConversationStore {
                 tx,
                 access,
                 id,
-                true,
+                !input.editorContext && !input.retryOf,
             );
             const fingerprint = createHash('sha256')
                 .update(JSON.stringify(input))
@@ -450,8 +485,22 @@ export class DrizzleConversationStore implements ConversationStore {
                     'response_active',
                     'A response is already active.',
                 );
+            const workspace = chat.sourceKind === 'knowledge' && !input.retryOf;
+            if (workspace)
+                assertWorkspaceTurnContext(
+                    input,
+                    this.dependencies.workspaceContextLimits ??
+                        defaultWorkspaceContextLimits,
+                );
+            else if (input.editorContext && chat.sourceKind !== 'knowledge')
+                throw new ConversationError(
+                    'invalid_editor_context',
+                    'Editor context is only available in a Knowledge workspace.',
+                );
             let learnerContent = input.content;
             let learnerAttachments = input.attachments;
+            let retryModelContent: Record<string, unknown> | undefined;
+            let retryEditorTarget: MessageRow['editorTarget'] = null;
             if (input.retryOf) {
                 const [previous] = await tx
                     .select()
@@ -481,9 +530,23 @@ export class DrizzleConversationStore implements ConversationStore {
                 if (!original) throw conversationUnavailable();
                 learnerContent = original.content;
                 learnerAttachments = original.attachments;
+                retryModelContent = original.modelContent?.[0]?.modelContent;
+                retryEditorTarget = original.editorTarget;
                 Object.assign(snapshot, previous.sourceSnapshot);
+                if (snapshot.scope !== 'workspace')
+                    assertTutorCurrentMessageFits(
+                        projectTutorUserMessage({
+                            content: learnerContent,
+                            attachments: learnerAttachments,
+                        }),
+                    );
             }
-            if (input.draftContext && !input.retryOf) {
+            if (input.editorContext && !input.retryOf) {
+                snapshot.provenance = 'draft';
+                snapshot.version = `draft:${snapshot.version}`;
+                snapshot.scope = 'workspace';
+                snapshot.material = [];
+            } else if (input.draftContext && !input.retryOf) {
                 snapshot.provenance = 'draft';
                 snapshot.version = `draft:${snapshot.version}`;
                 snapshot.material = [
@@ -494,20 +557,68 @@ export class DrizzleConversationStore implements ConversationStore {
                     },
                 ];
             }
-            const modelContent = projectTutorUserMessage({
-                content: learnerContent,
-                attachments: learnerAttachments,
-                source: {
-                    sourceKind: chat.sourceKind,
-                    version: snapshot.version,
-                    provenance: snapshot.provenance,
-                    title: snapshot.title,
-                    studiedLanguage: snapshot.studiedLanguage,
-                },
-            });
+            if (!input.retryOf && !chat.title) {
+                const generatedTitle = firstThreeWords(learnerContent);
+                await tx
+                    .update(chats)
+                    .set({ title: generatedTitle, updatedAt: this.now() })
+                    .where(eq(chats.id, id));
+                if (chat.sourceKind === 'knowledge') {
+                    await this.dependencies.nameUntitledNote?.(
+                        tx,
+                        access.ownerId,
+                        chat.sourceId,
+                        generatedTitle,
+                    );
+                    const updated = await this.dependencies.sources.resolve(
+                        tx,
+                        access.ownerId,
+                        chat.source,
+                        { authority },
+                        false,
+                    );
+                    snapshot.title = updated.snapshot.title;
+                    snapshot.version =
+                        snapshot.scope === 'workspace'
+                            ? `draft:${updated.snapshot.version}`
+                            : updated.snapshot.version;
+                }
+            }
+            const modelContent =
+                retryModelContent ??
+                projectTutorUserMessage({
+                    content: learnerContent,
+                    attachments: learnerAttachments,
+                    ...(input.editorContext && !input.retryOf
+                        ? { editorContext: input.editorContext }
+                        : {}),
+                    source: {
+                        sourceKind: chat.sourceKind,
+                        version: snapshot.version,
+                        provenance: snapshot.provenance,
+                        title: snapshot.title,
+                        studiedLanguage: snapshot.studiedLanguage,
+                    },
+                });
+            const editorTarget = input.retryOf
+                ? retryEditorTarget
+                : input.editorContext?.proposalTarget
+                  ? {
+                        from: input.editorContext.proposalTarget.from,
+                        to: input.editorContext.proposalTarget.to,
+                        originalText:
+                            input.editorContext.proposalTarget.originalText,
+                        documentHash:
+                            input.editorContext.proposalTarget.documentHash,
+                        proposalMode: input.editorContext.proposalTarget.mode,
+                    }
+                  : (input.editorContext?.editorTarget ?? null);
             // Reject synchronously before reserving credits or inserting queued
             // work. Accepted visible copies are retained whole and unchanged.
-            assertTutorCurrentMessageFits(modelContent);
+            assertTutorCurrentMessageFits(
+                modelContent,
+                snapshot.scope === 'workspace' ? 170_000 : undefined,
+            );
             const turnId = randomUUID();
             const execution = await this.dependencies.admitTurn(tx, {
                 ownerId: access.ownerId,
@@ -557,6 +668,7 @@ export class DrizzleConversationStore implements ConversationStore {
                     content: learnerContent,
                     attachments: learnerAttachments,
                     modelContent: [modelUserMessage],
+                    editorTarget,
                     status: 'complete',
                     sourceVersion: snapshot.version,
                     sourceProvenance: snapshot.provenance,
@@ -572,6 +684,7 @@ export class DrizzleConversationStore implements ConversationStore {
                     role: 'assistant',
                     content: '',
                     attachments: [],
+                    editorTarget,
                     status: 'streaming',
                     sourceVersion: snapshot.version,
                     sourceProvenance: snapshot.provenance,
@@ -630,6 +743,107 @@ export class DrizzleConversationStore implements ConversationStore {
                         .includes(normalized),
             );
             return { material: matches.slice(0, 24), total: matches.length };
+        });
+    }
+    async textReferences(
+        access: ConversationAccess,
+        id: string,
+        query: string,
+    ) {
+        return this.readTransaction(async (tx) => {
+            await this.authorize(tx, access, id, false, '', false);
+            const escaped = query.replaceAll(/[\\%_]/gu, '\\$&');
+            const pattern = `%${escaped}%`;
+            const rows = await tx
+                .select({
+                    id: textsTable.id,
+                    title: textsTable.title,
+                    sourceLanguage: textsTable.sourceLanguage,
+                    translationLanguage: textsTable.targetLanguage,
+                    alignment: textsTable.alignment,
+                })
+                .from(textsTable)
+                .innerJoin(
+                    textFoldersTable,
+                    eq(textFoldersTable.id, textsTable.folderId),
+                )
+                .where(
+                    and(
+                        eq(textsTable.ownerId, access.ownerId),
+                        eq(textsTable.lifecycle, 'active'),
+                        eq(textFoldersTable.ownerId, access.ownerId),
+                        eq(textFoldersTable.lifecycle, 'active'),
+                        query
+                            ? or(
+                                  ilike(textsTable.title, pattern),
+                                  ilike(textsTable.sourceText, pattern),
+                              )
+                            : undefined,
+                    ),
+                )
+                .orderBy(desc(textsTable.updatedAt))
+                .limit(20);
+            return {
+                references: rows.map((row) => ({
+                    id: row.id,
+                    title: row.title,
+                    sourceLanguage: row.sourceLanguage,
+                    translationLanguage: row.alignment
+                        ? row.translationLanguage
+                        : null,
+                    hasTranslation: !!row.alignment,
+                })),
+            };
+        });
+    }
+    async textReference(
+        access: ConversationAccess,
+        id: string,
+        textId: string,
+    ) {
+        return this.readTransaction(async (tx) => {
+            await this.authorize(tx, access, id, false, '', false);
+            const [row] = await tx
+                .select({
+                    id: textsTable.id,
+                    title: textsTable.title,
+                    content: textsTable.sourceText,
+                    sourceLanguage: textsTable.sourceLanguage,
+                    translationLanguage: textsTable.targetLanguage,
+                    alignment: textsTable.alignment,
+                })
+                .from(textsTable)
+                .innerJoin(
+                    textFoldersTable,
+                    eq(textFoldersTable.id, textsTable.folderId),
+                )
+                .where(
+                    and(
+                        eq(textsTable.id, textId),
+                        eq(textsTable.ownerId, access.ownerId),
+                        eq(textsTable.lifecycle, 'active'),
+                        eq(textFoldersTable.ownerId, access.ownerId),
+                        eq(textFoldersTable.lifecycle, 'active'),
+                    ),
+                );
+            if (!row) throw conversationUnavailable();
+            return {
+                reference: {
+                    id: row.id,
+                    title: row.title,
+                    content: row.content,
+                    sourceLanguage: row.sourceLanguage,
+                    translationLanguage: row.alignment
+                        ? row.translationLanguage
+                        : null,
+                    hasTranslation: !!row.alignment,
+                    translation: row.alignment
+                        ? row.alignment.translation
+                              .map((part) => part.text)
+                              .join('\n')
+                        : null,
+                },
+            };
         });
     }
     async events(
@@ -1006,6 +1220,9 @@ export class DrizzleConversationStore implements ConversationStore {
                     role: message.role,
                     content: message.content,
                     attachments: message.attachments,
+                    ...(message.editorTarget
+                        ? { editorTarget: message.editorTarget }
+                        : {}),
                     createdAt: message.createdAt.toISOString(),
                     ...(message.modelContent?.[0]?.modelContent
                         ? { modelContent: message.modelContent[0].modelContent }

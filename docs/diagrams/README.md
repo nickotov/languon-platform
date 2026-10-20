@@ -11,17 +11,17 @@ Open the local viewer with `pnpm diagrams`; validate the maintained catalog with
 on 2026-10-19. They do not assert that optional providers, flags or deployment hosts
 are active. Start with the system view and follow a narrower flow.
 
-| View                                                                      | Question                                                                                                                  |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| [System context](system-context.md)                                       | Applications, durable state and external services in the implemented development system.                                  |
-| [Module and layer boundaries](module-boundaries.md)                       | Composition roots connect typed business modules and app-local frontend layers.                                           |
-| [Authentication and session refresh](authentication.md)                   | Password/passkey login creates a durable session and browser refresh rotates an opaque credential.                        |
-| [AI job lifecycle and accounting](ai-job-lifecycle.md)                    | Managed admission pins model and price; dictionary fixture mode and bounded execution have explicit branches.             |
-| [Dictionaries and learning](dictionaries-and-learning.md)                 | Authored vocabulary, review-first AI generation and personal practice use distinct ownership and revision rules.          |
-| [Texts and contextual vocabulary](texts-and-vocabulary.md)                | Translation becomes saved aligned text only on Save; selected-phrase Add authorizes atomic dictionary publication.        |
-| [Conversations and independent Knowledge](conversations-and-knowledge.md) | Durable contextual chat produces editable private drafts; only an explicit learner command publishes an independent note. |
-| [Speech reuse, generation and pricing](speech-and-pricing.md)             | Saved-source authorization precedes shared recording reuse or confirmed generation with success-only settlement.          |
-| [Development and deployment tooling](development-and-deployment.md)       | Local process topology and implemented release mechanics are distinct from an actually deployed environment.              |
+| View                                                                    | Question                                                                                                                              |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [System context](system-context.md)                                     | Applications, durable state and external services in the implemented development system.                                              |
+| [Module and layer boundaries](module-boundaries.md)                     | Composition roots connect typed business modules and app-local frontend layers.                                                       |
+| [Authentication and session refresh](authentication.md)                 | Password/passkey login creates a durable session and browser refresh rotates an opaque credential.                                    |
+| [AI job lifecycle and accounting](ai-job-lifecycle.md)                  | Managed admission pins model and price; dictionary fixture mode and bounded execution have explicit branches.                         |
+| [Dictionaries and learning](dictionaries-and-learning.md)               | Authored vocabulary, review-first AI generation and personal practice use distinct ownership and revision rules.                      |
+| [Texts and contextual vocabulary](texts-and-vocabulary.md)              | Translation becomes saved aligned text only on Save; selected-phrase Add authorizes atomic dictionary publication.                    |
+| [Conversations and Knowledge workspace](conversations-and-knowledge.md) | Source chat and note workspaces share durable tutor turns; working drafts, publication and unlisted sharing have separate boundaries. |
+| [Speech reuse, generation and pricing](speech-and-pricing.md)           | Saved-source authorization precedes shared recording reuse or confirmed generation with success-only settlement.                      |
+| [Development and deployment tooling](development-and-deployment.md)     | Local process topology and implemented release mechanics are distinct from an actually deployed environment.                          |
 
 ## Maintained format
 

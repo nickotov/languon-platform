@@ -2,7 +2,7 @@
 type: reference
 title: Product backlog context and lifecycle
 created: 2026-10-01
-updated: 2026-10-18
+updated: 2026-10-19
 ---
 
 # Product backlog
@@ -35,8 +35,9 @@ These definitions clarify this backlog; they do not rename existing contracts.
   state such as the current item and the items requiring another round.
 - **Progress:** a learner's persisted history and learning status, associated with
   the relevant content.
-- **Knowledge note:** a private, editable, independently understandable
-  language-learning explanation explicitly saved by the learner. See the
+- **Knowledge note:** a learner-owned, editable, self-contained language-learning
+  document, including explanations, essays, study documents and research notes.
+  It is private by default; explicit sharing excludes private conversations. See the
   [learning-assistance glossary](../../CONTEXT.md).
 - **Grammar document:** the earlier BL-006 term for a grammar-focused saved
   explanation, now covered by independent knowledge notes. Follow-up

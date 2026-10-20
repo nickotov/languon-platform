@@ -1,13 +1,15 @@
 'use client';
-import { type ChangeEvent } from 'react';
+import { type ChangeEvent, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Search } from 'lucide-react';
 import {
     KnowledgeCategorySchema,
-    type KnowledgeNote,
+    type KnowledgeWorkspaceSummary,
 } from '@languon/contracts';
 import { useSessionStore } from '@/fsd/entities/session';
-import { knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
+import { knowledgeApi, knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
+import { useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     Badge,
@@ -34,7 +36,12 @@ export function KnowledgeLibraryPage() {
 }
 
 function LibraryContent() {
-    const { t, locale } = useI18n();
+    const { t, locale, href } = useI18n();
+    const { requestWithSession } = useAuth();
+    const router = useRouter();
+    const [creating, setCreating] = useState(false);
+    const [createError, setCreateError] = useState(false);
+    const createId = useRef(crypto.randomUUID());
     const library = useKnowledgeLibrary();
     const languageOptions =
         library.languages.data?.languages.map((language) => ({
@@ -61,14 +68,43 @@ function LibraryContent() {
     function more() {
         void library.notes.fetchNextPage();
     }
+    async function create() {
+        setCreating(true);
+        setCreateError(false);
+        try {
+            const workspace = await requestWithSession((token) =>
+                knowledgeApi.createDraft(token, createId.current),
+            );
+            createId.current = crypto.randomUUID();
+            router.push(href(`/knowledge/${workspace.noteId}`));
+        } catch {
+            setCreateError(true);
+        } finally {
+            setCreating(false);
+        }
+    }
     return (
         <main className={styles.page}>
-            <header>
-                <h1 className={styles.title}>{t('knowledge.title')}</h1>
-                <p className={styles.description}>
-                    {t('knowledge.description')}
-                </p>
+            <header className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>{t('knowledge.title')}</h1>
+                    <p className={styles.description}>
+                        {t('knowledge.description')}
+                    </p>
+                </div>
+                <Button
+                    leadingIcon={<Plus aria-hidden size={18} />}
+                    loading={creating}
+                    onClick={create}
+                >
+                    {t('knowledge.newNote')}
+                </Button>
             </header>
+            {createError && (
+                <InlineAlert tone='error'>
+                    {t('knowledge.createError')}
+                </InlineAlert>
+            )}
             <div className={styles.filters}>
                 <Input
                     label={t('knowledge.search')}
@@ -127,7 +163,8 @@ function LibraryResults({ library }: { library: Library }) {
                 {t('knowledge.loadError')}
             </InlineAlert>
         );
-    const notes = library.notes.data?.pages.flatMap((page) => page.notes) ?? [];
+    const notes =
+        library.notes.data?.pages.flatMap((page) => page.workspaces) ?? [];
     const hasFilters = Boolean(
         library.search || library.category || library.language,
     );
@@ -144,43 +181,29 @@ function LibraryResults({ library }: { library: Library }) {
     return (
         <ul className={styles.notes}>
             {notes.map((note) => (
-                <KnowledgeResult
-                    key={note.id}
-                    note={note}
-                    languages={library.languages.data?.languages ?? []}
-                />
+                <KnowledgeResult key={note.id} note={note} />
             ))}
         </ul>
     );
 }
 
-function KnowledgeResult({
-    note,
-    languages,
-}: {
-    note: KnowledgeNote;
-    languages: NonNullable<Library['languages']['data']>['languages'];
-}) {
-    const { t, locale, href, formatDate } = useI18n();
-    const language =
-        languages.find((item) => item.tag === note.studiedLanguage)
-            ?.displayNames[locale] ?? note.studiedLanguage;
+function KnowledgeResult({ note }: { note: KnowledgeWorkspaceSummary }) {
+    const { t, href, formatDate } = useI18n();
     return (
         <li>
             <Link href={href(`/knowledge/${note.id}`)} className={styles.note}>
-                <h2 dir='auto'>{note.title}</h2>
-                <p className={styles.summary} dir='auto'>
-                    {note.summary}
-                </p>
+                <h2 dir='auto'>
+                    {note.title.trim() || t('knowledge.untitled')}
+                </h2>
                 <div className={styles.categories}>
-                    {note.categories.map((category) => (
-                        <Badge key={category}>
-                            {t(knowledgeCategoryKeys[category])}
-                        </Badge>
-                    ))}
+                    {note.status === 'draft' && (
+                        <Badge>{t('knowledge.draft')}</Badge>
+                    )}
+                    {note.hasUnsavedChanges && (
+                        <Badge>{t('knowledge.workingChanges')}</Badge>
+                    )}
                 </div>
                 <div className={styles.meta}>
-                    <span>{language}</span>
                     <time dateTime={note.updatedAt}>
                         {t('knowledge.updated', {
                             date: formatDate(note.updatedAt),

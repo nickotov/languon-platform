@@ -58,6 +58,7 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
+    - knowledge-workspace
     - texts
     - dictionary-platform
     - magic-profile-page
@@ -157,8 +158,11 @@ configuration startup requires its guard and does not own this cleanup.
    Edit its title, explanation,
    summary, categories, and languages, then select **Save to Knowledge**.
 4. Open **Knowledge**. Search by saved wording and filter by category/studied
-   language. Open the saved note, edit it, and save. **Revision history** exposes
+   language. Open the saved note in its editor-and-tutor workspace, edit it, and
+   select **Save changes** to publish a revision. **Revision history** exposes
    earlier content. Restoring an earlier revision creates a new current version.
+   The workspace's separate draft recovery, copied Text references and sharing
+   journeys are covered in [Knowledge workspace](./knowledge-workspace.md).
 5. Ask about a saved note and request a revision. Change the saved note elsewhere
    before applying the draft. Its update is rejected; the draft remains for
    comparison or **Save as a new note**. No silent overwrite occurs.
@@ -254,8 +258,11 @@ accounting behavior have separate real composed HTTP/integration coverage.
   response preserves durable work; wait briefly and retry the connection.
 - A question and its attachments have an aggregate encoded limit of 8,000 UTF-8
   bytes, including private source metadata and a 1,024-byte transport allowance.
-  An oversized request returns `context_too_large` before queuing or reserving
-  credits. Shorten the question or remove attachments, then send again.
+  This applies to dictionary/text chat. Knowledge workspace turns have separate
+  configurable editor and copied-reference character allowances, plus a full
+  model-input budget check after compaction. An oversized request returns
+  `context_too_large` before an answer proceeds; shorten the question, editor
+  or references, then send again.
 - Unsaved source content participates only after **Use current draft**. Saved
   source edits refresh the next admitted turn; earlier wording is preserved.
 - Model/source text cannot authorize saving, deleting, or reading another source.

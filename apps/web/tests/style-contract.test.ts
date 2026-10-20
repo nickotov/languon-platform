@@ -74,6 +74,10 @@ describe('CSS-only styling contract', () => {
         expect(inspectMarkup('<div className="text-folders" />')).toEqual([
             'Tailwind utility: text-folders',
         ]);
+        expect(inspectMarkup('const kind = "text-reference";')).toEqual([]);
+        expect(inspectMarkup('<div className="text-reference" />')).toEqual([
+            'Tailwind utility: text-reference',
+        ]);
     });
 
     it('rejects variants and arbitrary utility values without splitting their internal colon', () => {

@@ -12,6 +12,7 @@ import type {
     PublishKnowledgeDraftRequest,
     KnowledgeNote,
     ConversationToolCall,
+    UpdateConversationRequest,
 } from '@languon/contracts';
 import type {
     ConversationSourceSnapshot,
@@ -46,7 +47,7 @@ export interface ConversationStore {
     update(
         access: ConversationAccess,
         id: string,
-        preferences: ChatPreferences,
+        changes: UpdateConversationRequest,
     ): Promise<Conversation>;
     delete(access: ConversationAccess, id: string): Promise<void>;
     submit(
@@ -69,6 +70,34 @@ export interface ConversationStore {
         id: string,
         query: string,
     ): Promise<{ material: SourceMaterial[]; total: number }>;
+    textReferences(
+        access: ConversationAccess,
+        conversationId: string,
+        query: string,
+    ): Promise<{
+        references: {
+            id: string;
+            title: string;
+            sourceLanguage: string;
+            translationLanguage: string | null;
+            hasTranslation: boolean;
+        }[];
+    }>;
+    textReference(
+        access: ConversationAccess,
+        conversationId: string,
+        textId: string,
+    ): Promise<{
+        reference: {
+            id: string;
+            title: string;
+            content: string;
+            sourceLanguage: string;
+            translation: string | null;
+            translationLanguage: string | null;
+            hasTranslation: boolean;
+        };
+    }>;
     settings(
         ownerId: string,
         preferences?: ChatPreferences,

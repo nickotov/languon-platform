@@ -26,8 +26,8 @@ export function ContextualAssistant(props: ContextualAssistantProps) {
 function SourceAssistant(
     props: ContextualAssistantProps & { actorId: string },
 ) {
-    const [started, setStarted] = useState(false);
-    const [folded, setFolded] = useState(true);
+    const [started, setStarted] = useState(Boolean(props.workspace));
+    const [folded, setFolded] = useState(!props.workspace);
     const [selecting, setSelecting] = useState(false);
     const [passage, setPassage] = useState<{ id: string; text: string } | null>(
         null,

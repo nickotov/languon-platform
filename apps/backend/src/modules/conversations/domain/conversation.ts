@@ -26,8 +26,8 @@ export type ConversationSourceSnapshot = {
     version: string;
     title: string;
     description: string | null;
-    studiedLanguage: string;
+    studiedLanguage: string | null;
     provenance: 'saved' | 'draft';
     material: SourceMaterial[];
-    scope?: 'complete' | 'selected-material';
+    scope?: 'complete' | 'selected-material' | 'workspace';
 };

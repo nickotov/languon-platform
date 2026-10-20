@@ -123,7 +123,10 @@ export function projectConversationSource(
     snapshot: ConversationSourceSnapshot,
     question: string,
 ) {
-    const material = boundedMaterial(snapshot.material);
+    const material =
+        snapshot.scope === 'workspace'
+            ? []
+            : boundedMaterial(snapshot.material);
     function select(
         query: string,
         limit: number,
@@ -165,7 +168,9 @@ export function projectConversationSource(
         description: snapshot.description
             ? boundedText(snapshot.description, 3_000)
             : null,
-        studiedLanguage: boundedText(snapshot.studiedLanguage, 100),
+        studiedLanguage: snapshot.studiedLanguage
+            ? boundedText(snapshot.studiedLanguage, 100)
+            : null,
         provenance: snapshot.provenance,
         sourceKind: kind,
         snapshotScope: snapshot.scope ?? 'complete',
@@ -175,14 +180,15 @@ export function projectConversationSource(
         ...metadata,
         scope:
             items.length === material.length &&
-            snapshot.scope !== 'selected-material'
+            snapshot.scope !== 'selected-material' &&
+            snapshot.scope !== 'workspace'
                 ? 'complete'
                 : 'partial',
         includedMaterialCount: items.length,
         ...(kind === 'dictionary' ? {} : { material: items }),
     });
     const initial =
-        kind === 'dictionary'
+        kind === 'dictionary' || snapshot.scope === 'workspace'
             ? []
             : select(
                   question,

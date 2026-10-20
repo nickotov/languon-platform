@@ -4,6 +4,7 @@ import {
     toTutorModelMessage,
 } from './conversation-memory-storage.js';
 import { tutorMemoryFixture } from './tutor-test-fixtures.js';
+import { projectTutorUserMessage } from '../../application/tutor-message-context.js';
 
 function fixture() {
     const memory = tutorMemoryFixture([
@@ -55,6 +56,36 @@ describe('conversation-bound Mastra memory storage', () => {
         ]);
         expect(memory.messages.get('admitted-user')?.content).toBe(
             'Explain casa.',
+        );
+    });
+
+    it('keeps successive complete editor snapshots in their own historical messages', async () => {
+        const { memory, storage } = fixture();
+        const first = memory.messages.get('admitted-user')!;
+        first.modelContent = projectTutorUserMessage({
+            content: first.content,
+            editorContext: { content: 'Older unsaved paragraph.' },
+        });
+        const second = {
+            ...first,
+            id: 'second-user',
+            content: 'What changed?',
+            modelContent: projectTutorUserMessage({
+                content: 'What changed?',
+                editorContext: { content: 'Newer unsaved paragraph.' },
+            }),
+        };
+        memory.messages.set(second.id, second);
+        const result = await storage.listMessages({
+            threadId: 'conversation-1',
+            orderBy: { direction: 'ASC' },
+            perPage: 10,
+        });
+        expect(JSON.stringify(result.messages[0]?.content)).toContain(
+            'Older unsaved paragraph.',
+        );
+        expect(JSON.stringify(result.messages[1]?.content)).toContain(
+            'Newer unsaved paragraph.',
         );
     });
 

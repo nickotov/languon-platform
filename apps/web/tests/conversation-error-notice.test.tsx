@@ -104,6 +104,7 @@ it('associates each failed/cancelled Retry with its original learner question', 
     const detail = ConversationDetailSchema.parse({
         conversation: {
             id: conversationId,
+            title: null,
             source: { kind: 'text', id: conversationId },
             preferences: {},
             version: 1,
@@ -179,6 +180,7 @@ it.each([
         const detail = ConversationDetailSchema.parse({
             conversation: {
                 id,
+                title: null,
                 source: { kind: 'text', id },
                 preferences: {},
                 version: 1,

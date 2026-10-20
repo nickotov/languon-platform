@@ -10,7 +10,8 @@ const env = Object.fromEntries(
 );
 export default defineConfig({
     testDir: '..',
-    testMatch: 'contextual-assistant.journeys.spec.ts',
+    testMatch:
+        /(?:contextual-assistant|knowledge-workspace)\.journeys\.spec\.ts/,
     workers: 1,
     fullyParallel: false,
     timeout: 120_000,

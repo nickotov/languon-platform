@@ -22,7 +22,7 @@ export function useKnowledgeLibrary() {
         initialPageParam: 0,
         queryFn: ({ signal, pageParam }) =>
             requestWithSession((token) =>
-                knowledgeApi.list(
+                knowledgeApi.listWorkspaces(
                     token,
                     {
                         offset: pageParam,
@@ -35,8 +35,9 @@ export function useKnowledgeLibrary() {
                 ),
             ),
         getNextPageParam: (page) =>
-            page.notes.length && page.offset + page.notes.length < page.total
-                ? page.offset + page.notes.length
+            page.workspaces.length &&
+            page.offset + page.workspaces.length < page.total
+                ? page.offset + page.workspaces.length
                 : undefined,
         enabled: Boolean(actorId),
         gcTime: 0,

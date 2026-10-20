@@ -225,6 +225,11 @@ const textSelections = createTextSelectionApiModule({
 });
 const knowledge = createKnowledgeService({
     database: authentication.productDependencies.database,
+    shareSecret: environment.DICTIONARY_HMAC_SECRET,
+    limits: {
+        referenceChars: environment.KNOWLEDGE_REFERENCE_CHAR_LIMIT,
+        editorChars: environment.KNOWLEDGE_EDITOR_CONTEXT_CHAR_LIMIT,
+    },
     authenticate: authenticateTextActor,
     rateLimiter: authentication.productDependencies.rateLimiter,
     lifecycle: {
@@ -247,6 +252,10 @@ const knowledge = createKnowledgeService({
 const conversations = createConversationsComposition({
     ...authentication.productDependencies,
     dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
+    workspaceContextLimits: {
+        editorCharacters: environment.KNOWLEDGE_EDITOR_CONTEXT_CHAR_LIMIT,
+        referenceCharacters: environment.KNOWLEDGE_REFERENCE_CHAR_LIMIT,
+    },
     policy: authentication.options.policy,
     admitTurn: conversationAdmission(textsSelectionPolicy),
     settleInterrupted: settleInterruptedConversationCalls,

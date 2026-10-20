@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { ConversationError } from '../../domain/conversation.js';
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm';
 import type {
     TutorAccountingPort,
@@ -65,6 +66,7 @@ export function createTutorModelGate(options: {
     ]);
     let calls = 0;
     let memoryCalls = 0;
+    let contextExceeded = false;
     const maxCalls = options.maxCalls ?? 5;
     const maxMemoryCalls = options.maxMemoryCalls ?? 2;
 
@@ -83,12 +85,18 @@ export function createTutorModelGate(options: {
                     }),
                     'utf8',
                 );
+            if (inputTokenEstimate > options.maxInputTokens) {
+                contextExceeded = true;
+                throw new ConversationError(
+                    'context_too_large',
+                    'The complete editor, references and conversation exceed the model input limit after compaction. Reduce the editor text or references and try again.',
+                );
+            }
             if (
                 Date.now() >= deadline ||
                 calls >= maxCalls ||
                 !Number.isSafeInteger(inputTokenEstimate) ||
                 inputTokenEstimate < 0 ||
-                inputTokenEstimate > options.maxInputTokens ||
                 (purpose !== 'answer' &&
                     (memoryCalls >= maxMemoryCalls || calls >= maxCalls - 1))
             ) {
@@ -304,6 +312,9 @@ export function createTutorModelGate(options: {
         wrap,
         signal,
         abort: (reason?: unknown) => controller.abort(reason),
+        get contextExceeded() {
+            return contextExceeded;
+        },
         get calls() {
             return calls;
         },

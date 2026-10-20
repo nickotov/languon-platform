@@ -13,6 +13,17 @@ import {
     ListKnowledgeResponseSchema,
     RestoreKnowledgeNoteRequestSchema,
     UpdateKnowledgeNoteRequestSchema,
+    CreateKnowledgeWorkspaceDraftRequestSchema,
+    UpdateKnowledgeWorkingRequestSchema,
+    ResolveKnowledgeWorkingRequestSchema,
+    SaveKnowledgeWorkspaceRequestSchema,
+    SaveKnowledgeCopyRequestSchema,
+    CopySharedKnowledgeRequestSchema,
+    KnowledgeWorkspaceResponseSchema,
+    ListKnowledgeWorkspacesResponseSchema,
+    UpdateKnowledgeWorkingResponseSchema,
+    KnowledgeShareResponseSchema,
+    KnowledgeShareDisabledResponseSchema,
     type KnowledgeErrorCode,
 } from '@languon/contracts';
 import type { KnowledgeService } from '../../application/knowledge-service';
@@ -49,6 +60,10 @@ const security = [{ bearerAuth: [] as string[] }];
 const envelope = (code: KnowledgeErrorCode, message: string) => ({
     error: { code, message, correlationId: randomUUID() },
 });
+const SharedLocatorParamsSchema = z.object({
+    locator: z.string().regex(/^[A-Za-z0-9_-]{32}$/),
+});
+const SharedKeySchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 
 export function createKnowledgeRoutes({
     service,
@@ -112,7 +127,7 @@ export function createKnowledgeRoutes({
             );
             c.header(
                 'Access-Control-Allow-Headers',
-                'Authorization, Content-Type, X-Correlation-ID',
+                'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key',
             );
             c.header('Vary', 'Origin');
             return c.body(null, 204);
@@ -172,6 +187,99 @@ export function createKnowledgeRoutes({
             { signal: metadata.signal, clientAddress: metadata.clientAddress },
         ] as const;
     };
+    const requestContext = (
+        c: Parameters<typeof authenticationRequestMetadata>[0],
+    ) => {
+        const metadata = authenticationRequestMetadata(c, policy);
+        return {
+            signal: metadata.signal,
+            clientAddress: metadata.clientAddress,
+        };
+    };
+    const shareKey = (c: Parameters<typeof authenticationRequestMetadata>[0]) =>
+        SharedKeySchema.parse(c.req.header('X-Languon-Share-Key'));
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/knowledge/workspaces',
+            security,
+            request: { query: ListKnowledgeQuerySchema },
+            responses: {
+                200: json(ListKnowledgeWorkspacesResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                await service.listWorkspaces(...auth(c), c.req.valid('query')),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/knowledge/drafts',
+            security,
+            request: { body: body(CreateKnowledgeWorkspaceDraftRequestSchema) },
+            responses: {
+                201: json(KnowledgeWorkspaceResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    workspace: await service.createDraft(
+                        ...auth(c),
+                        c.req.valid('json'),
+                    ),
+                },
+                201,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/knowledge/shared/{locator}',
+            request: { params: SharedLocatorParamsSchema },
+            responses: { 200: json(KnowledgeNoteResponseSchema), ...errors },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    note: await service.readShared(
+                        requestContext(c),
+                        c.req.valid('param').locator,
+                        shareKey(c),
+                    ),
+                },
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/knowledge/shared/{locator}/copy',
+            security,
+            request: {
+                params: SharedLocatorParamsSchema,
+                body: body(CopySharedKnowledgeRequestSchema),
+            },
+            responses: { 201: json(KnowledgeNoteResponseSchema), ...errors },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    note: await service.copyShared(
+                        ...auth(c),
+                        c.req.valid('param').locator,
+                        shareKey(c),
+                        c.req.valid('json'),
+                    ),
+                },
+                201,
+            ),
+    );
     app.openapi(
         createRoute({
             method: 'get',
@@ -220,6 +328,175 @@ export function createKnowledgeRoutes({
                         c.req.valid('param').noteId,
                     ),
                 },
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/knowledge/{noteId}/workspace',
+            security,
+            request: { params: KnowledgeNoteIdParamsSchema },
+            responses: {
+                200: json(KnowledgeWorkspaceResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    workspace: await service.getWorkspace(
+                        ...auth(c),
+                        c.req.valid('param').noteId,
+                    ),
+                },
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'patch',
+            path: '/knowledge/{noteId}/working',
+            security,
+            request: {
+                params: KnowledgeNoteIdParamsSchema,
+                body: body(UpdateKnowledgeWorkingRequestSchema),
+            },
+            responses: {
+                200: json(UpdateKnowledgeWorkingResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                await service.updateWorking(
+                    ...auth(c),
+                    c.req.valid('param').noteId,
+                    c.req.valid('json'),
+                ),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/knowledge/{noteId}/resolve-working',
+            security,
+            request: {
+                params: KnowledgeNoteIdParamsSchema,
+                body: body(ResolveKnowledgeWorkingRequestSchema),
+            },
+            responses: {
+                200: json(KnowledgeWorkspaceResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    workspace: await service.resolveWorking(
+                        ...auth(c),
+                        c.req.valid('param').noteId,
+                        c.req.valid('json'),
+                    ),
+                },
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/knowledge/{noteId}/save',
+            security,
+            request: {
+                params: KnowledgeNoteIdParamsSchema,
+                body: body(SaveKnowledgeWorkspaceRequestSchema),
+            },
+            responses: { 200: json(KnowledgeNoteResponseSchema), ...errors },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    note: await service.saveWorkspace(
+                        ...auth(c),
+                        c.req.valid('param').noteId,
+                        c.req.valid('json'),
+                    ),
+                },
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/knowledge/{noteId}/save-copy',
+            security,
+            request: {
+                params: KnowledgeNoteIdParamsSchema,
+                body: body(SaveKnowledgeCopyRequestSchema),
+            },
+            responses: { 201: json(KnowledgeNoteResponseSchema), ...errors },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    note: await service.saveWorkspaceCopy(
+                        ...auth(c),
+                        c.req.valid('param').noteId,
+                        c.req.valid('json'),
+                    ),
+                },
+                201,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/knowledge/{noteId}/share',
+            security,
+            request: { params: KnowledgeNoteIdParamsSchema },
+            responses: { 200: json(KnowledgeShareResponseSchema), ...errors },
+        }),
+        async (c) =>
+            c.json(
+                await service.getShare(...auth(c), c.req.valid('param').noteId),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/knowledge/{noteId}/share',
+            security,
+            request: { params: KnowledgeNoteIdParamsSchema },
+            responses: { 200: json(KnowledgeShareResponseSchema), ...errors },
+        }),
+        async (c) =>
+            c.json(
+                await service.issueShare(
+                    ...auth(c),
+                    c.req.valid('param').noteId,
+                ),
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'delete',
+            path: '/knowledge/{noteId}/share',
+            security,
+            request: { params: KnowledgeNoteIdParamsSchema },
+            responses: {
+                200: json(KnowledgeShareDisabledResponseSchema),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                await service.revokeShare(
+                    ...auth(c),
+                    c.req.valid('param').noteId,
+                ),
                 200,
             ),
     );

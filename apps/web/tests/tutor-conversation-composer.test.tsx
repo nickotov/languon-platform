@@ -25,6 +25,7 @@ it('retains the initial selected passage through delayed creation and restores e
     const detail = ConversationDetailSchema.parse({
         conversation: {
             id,
+            title: null,
             source,
             preferences: {},
             version: 1,

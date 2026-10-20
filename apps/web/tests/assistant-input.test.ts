@@ -3,6 +3,7 @@ import type { CopiedAttachment } from '@languon/contracts';
 import {
     appendAssistantAttachment,
     knowledgeProposalQuestion,
+    referenceLength,
 } from '@/fsd/widgets/contextual-assistant/lib/assistant-input';
 
 function attachment(content = 'A learning passage'): CopiedAttachment {
@@ -40,6 +41,46 @@ describe('assistant input bounds', () => {
         expect(result.attachments).toHaveLength(10);
         expect(result.attachments[9]).toBe(last);
         expect(result.error).toBeNull();
+    });
+    it('counts original reference bodies and explicitly selected translations together', () => {
+        const first: CopiedAttachment = {
+            id: crypto.randomUUID(),
+            kind: 'text-reference',
+            label: 'First Text',
+            content: '🦉'.repeat(10_000),
+            translation: 'a'.repeat(20_000),
+        };
+        const exact: CopiedAttachment = {
+            id: crypto.randomUUID(),
+            kind: 'text-reference',
+            label: 'Second Text',
+            content: 'b'.repeat(10_000),
+        };
+        expect(referenceLength([first, exact])).toBe(40_000);
+        expect(appendAssistantAttachment([first], exact, 'en', 40_000)).toEqual(
+            {
+                attachments: [first, exact],
+                error: null,
+            },
+        );
+        const over = { ...exact, content: `${exact.content}c` };
+        const rejected = appendAssistantAttachment([first], over, 'en', 40_000);
+        expect(rejected.attachments).toEqual([first]);
+        expect(rejected.error).toBe(
+            'Reference text exceeds the 40,000-character limit. Remove a reference or select a shorter passage.',
+        );
+    });
+    it('accepts exactly 40,000 non-BMP reference characters', () => {
+        const text: CopiedAttachment = {
+            id: crypto.randomUUID(),
+            kind: 'text-reference',
+            label: 'Owl passage',
+            content: '🦉'.repeat(40_000),
+        };
+        expect(appendAssistantAttachment([], text, 'en', 40_000)).toEqual({
+            attachments: [text],
+            error: null,
+        });
     });
     it('identifies the full earlier answer with a bounded Unicode-safe excerpt', () => {
         const answer = '🦉'.repeat(30_000) + 'not copied';

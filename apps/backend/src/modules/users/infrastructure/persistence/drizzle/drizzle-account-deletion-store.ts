@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
@@ -11,6 +11,10 @@ import {
 } from '../../../../authentication/infrastructure/persistence/drizzle/schema';
 import { adminMembershipsTable } from '../../../../administration/infrastructure/persistence/drizzle/schema';
 import { dictionariesTable } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
+import {
+    knowledgeNotesTable,
+    knowledgeSharesTable,
+} from '../../../../knowledge/infrastructure/persistence/drizzle/schema';
 import { activeOwnerMutationLock } from '../../../../administration/infrastructure/persistence/drizzle/owner-lock';
 import { usersTable } from './schema';
 import { accountDeletionRequestsTable } from './account-deletion-schema';
@@ -190,6 +194,19 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                     version: sql`${dictionariesTable.version} + 1`,
                 })
                 .where(eq(dictionariesTable.ownerId, input.userId));
+            await transaction
+                .delete(knowledgeSharesTable)
+                .where(
+                    inArray(
+                        knowledgeSharesTable.noteId,
+                        transaction
+                            .select({ id: knowledgeNotesTable.id })
+                            .from(knowledgeNotesTable)
+                            .where(
+                                eq(knowledgeNotesTable.ownerId, input.userId),
+                            ),
+                    ),
+                );
             await transaction.insert(authSecurityEventsTable).values({
                 correlationId: randomUUID(),
                 eventType: 'auth.account_deletion_scheduled',
