@@ -319,6 +319,7 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         attempt: number;
         jobId: string;
         jobKind?: AiCreditJobKind;
+        interviewCreditsBypass?: boolean;
         maximumCredits: bigint;
         ownerId: string;
         reservationId: string;
@@ -334,8 +335,12 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
                 'text-selection-card',
                 'speech-generation',
                 'conversation-turn',
+                'portrait-interview',
             ].includes(jobKind)
         ) {
+            throw new AiCreditReservationStateError();
+        }
+        if (input.interviewCreditsBypass && jobKind !== 'portrait-interview') {
             throw new AiCreditReservationStateError();
         }
         validatePositiveCreditAmount(input.maximumCredits);
@@ -373,14 +378,11 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
                 reservedCredits: existing.reservedCredits,
             };
         }
-        const policy =
-            input.attempt === 1
-                ? await this.currentPolicy(input.ownerId, input.at)
-                : await this.admissionPolicy(
-                      input.ownerId,
-                      input.jobId,
-                      jobKind,
-                  );
+        const policy = input.interviewCreditsBypass
+            ? { mode: 'unlimited' as const, unlimitedUntil: null }
+            : input.attempt === 1
+              ? await this.currentPolicy(input.ownerId, input.at)
+              : await this.admissionPolicy(input.ownerId, input.jobId, jobKind);
         const reservedCredits =
             policy.mode === 'unlimited' ? 0n : input.maximumCredits;
         const allocations =

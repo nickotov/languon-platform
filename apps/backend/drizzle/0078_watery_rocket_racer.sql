@@ -1,0 +1,1 @@
+ALTER TABLE "conversation_turns" ADD COLUMN "portrait_context" jsonb;

@@ -101,6 +101,12 @@ function renderChrome() {
 }
 
 describe('session-aware global application shell', () => {
+    it('gives the portrait interview its supplied focused layout without the app sidebar', () => {
+        pathname = '/portrait/interview';
+        renderChrome();
+        expect(screen.getByRole('main')).toHaveTextContent('Page body');
+        expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    });
     beforeEach(() => {
         pathname = '/dictionaries';
         push.mockReset();

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision global-app-shell sha256:bda4f902cf35d0cf
+// @user-flow-revision global-app-shell sha256:f7fc8c1e60ee8183
 
 const runId =
     process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
@@ -165,7 +165,13 @@ test('guest settings persist across pages and reload, including the native mobil
         .locator('header')
         .getByRole('link', { name: 'Languon home' })
         .click();
-    await expect(page.locator('#main-content')).toHaveText('WIP');
+    await expect(
+        page.getByRole('heading', {
+            level: 1,
+            name: 'Welcome back',
+            exact: true,
+        }),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/$/);
     for (const route of missingRoutes) {
         await page.goto(route);
@@ -201,7 +207,13 @@ test('global navigation follows login, logout and a different authenticated iden
     await expect(sidebar.getByRole('link', { name: firstName })).toBeVisible();
     await sidebar.getByRole('link', { name: 'Languon home' }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('#main-content')).toHaveText('WIP');
+    await expect(
+        page.getByRole('heading', {
+            level: 1,
+            name: 'Welcome back',
+            exact: true,
+        }),
+    ).toBeVisible();
     await sidebar
         .getByRole('button', { name: 'Dictionaries', exact: true })
         .click();

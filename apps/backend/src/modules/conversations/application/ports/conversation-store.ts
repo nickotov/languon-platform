@@ -29,6 +29,7 @@ export type ClaimedConversationTurn = {
     authority: SourceAuthority;
     sourceSnapshot: ConversationSourceSnapshot;
     execution: Record<string, unknown>;
+    portraitContext?: unknown;
     preferences: ChatPreferences;
     message: TutorMemoryMessage;
     conversationCreatedAt: string;

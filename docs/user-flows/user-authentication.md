@@ -49,6 +49,7 @@ e2e_scenarios:
     - password-reset-session-revocation
     - passkey-lifecycle
 related_features:
+    - learner-portrait
     - global-app-shell
     - web-i18n-support
     - user-flow-testing-guides
@@ -252,7 +253,8 @@ development context.
    is inferred. Another Add starts the same direct flow.
 5. Select **Sign out here**, then select **Sign in with a passkey** on `/login`.
 6. Choose the discoverable credential and complete user verification. Expect an
-   authenticated WIP home page with real identity in the shell. Open the account
+   authenticated home page with the **Welcome back** heading and real identity
+   in the shell. Open the account
    menu, choose **Profile**, and select the **Security** tab.
 7. Select the row's accessible **Rename** icon, enter a unique name in the
    dialog, and save. Expect the new name immediately. A failed rename keeps

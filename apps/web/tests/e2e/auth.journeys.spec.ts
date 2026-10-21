@@ -6,7 +6,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision user-authentication sha256:98448206f9eab407
+// @user-flow-revision user-authentication sha256:c83f9080a60d3713
 
 const initialPassword = 'E2e!Initial-password-2026';
 const replacementPassword = 'E2e!Replacement-password-2026';
@@ -298,7 +298,13 @@ test.describe('authentication journeys', () => {
             .getByRole('button', { name: 'Sign in with a passkey' })
             .click();
         await expect(page).toHaveURL(/\/$/);
-        await expect(page.locator('#main-content')).toHaveText('WIP');
+        await expect(
+            page.getByRole('heading', {
+                level: 1,
+                name: 'Welcome back',
+                exact: true,
+            }),
+        ).toBeVisible();
         await expect(page.getByText(email, { exact: true })).toBeVisible();
         await page
             .getByRole('button', { name: 'Account menu, Your account' })

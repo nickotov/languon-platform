@@ -80,6 +80,66 @@ The learner's preferred reply language, tone, and explanation level for
 contextual conversations. Profile settings define defaults for new
 conversations, while each conversation can override them.
 
+### Learner personalization
+
+**Learner portrait**:
+A learner-approved description of their learning needs, preferences, and
+background for personalizing learning assistance. It captures confirmed
+information as editable items with a consistent readable summary, leaves
+unanswered areas unknown, and excludes diagnostic labels.
+_Avoid_: Psychological profile, diagnostic assessment.
+
+**Portrait interview**:
+An optional conversation that helps a learner describe and refine their
+learning needs and preferences, with skippable questions and optional deeper
+exploration. It proposes a portrait rather than approving one on the learner's behalf.
+An account has at most one unfinished portrait interview, resumable across devices.
+
+**Learning accommodation**:
+A learner-confirmed adjustment to how assistance is presented, such as short
+steps or reminders, without requiring or retaining a diagnostic label in the
+portrait.
+
+**Portrait draft**:
+A proposed learner portrait or update awaiting the learner's review,
+correction, and explicit approval. A proposed update does not replace the
+previously approved portrait before approval.
+
+**Portrait item**:
+An individually editable fact or preference that the learner confirms for
+their portrait. Confirmed items are authoritative for its readable summary.
+
+**Interview answer**:
+A concise response to one portrait-interview question, selected or written
+directly or proposed as a summary of a chat response. A proposed interpretation
+remains subject to learner review before becoming an approved portrait item.
+
+**Portrait summary**:
+A readable description of the portrait's confirmed items, consistent with
+those items and containing no additional inferred facts.
+
+**Language self-description**:
+A learner's own description of their ability in one language, including any
+differences between skills. It is not a proficiency assessment and is distinct
+from whether the learner is currently studying or wants explanations in that language.
+
+**Portrait use**:
+The learner's separate choice to enable or disable use of their approved
+portrait in AI assistance. Having an approved portrait does not itself mean
+its use is enabled; disabling use stops supplying the portrait but does not
+erase information already present in conversation history.
+
+**Global portrait use**:
+The learner's account-wide permission to supply their approved portrait to
+AI chats. It starts disabled and takes precedence over per-chat choices.
+
+**Chat portrait exclusion**:
+A learner's choice to omit their portrait from one conversation even when
+global portrait use is enabled. Removing this exclusion cannot override
+disabled global use.
+
+### Conversation context
+
 **Copied attachment**:
 Content explicitly copied into a chat message and visually distinguished from
 the learner's question. It is a snapshot, independent of later changes or

@@ -1,0 +1,17 @@
+.section {
+    display: grid;
+    gap: var(--space-12);
+}
+
+.heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin: 0;
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+
+.heading svg {
+    color: var(--primary-default);
+}

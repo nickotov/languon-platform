@@ -8,6 +8,10 @@ surfaces:
     - api
     - system
 source_paths:
+    - .agent/features/051-learner-portrait/**
+    - apps/backend/src/modules/learner-portraits/**
+    - packages/contracts/src/learner-portrait.ts
+    - packages/contracts/src/portrait-interview.ts
     - apps/backend/src/modules/speech/**
     - .agent/features/026-profile-account-controls/**
     - apps/web/src/fsd/features/account-controls/**
@@ -29,6 +33,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-handle-security-and-removal
 related_features:
+    - learner-portrait
     - contextual-language-assistant-and-knowledge
     - shared-pronunciation-playback
     - flashcard-training-backend

@@ -60,7 +60,9 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         input: Parameters<TextAiAdmissionParticipant['resolve']>[0],
     ) {
         const tx = this.transaction;
-        const conversation = input.format === 'conversation:v1';
+        const conversation =
+            input.format === 'conversation:v1' ||
+            input.format === 'portrait-interview:v1';
         const learning = textAiSentenceFormats.some(
             (format) => format === input.format,
         );

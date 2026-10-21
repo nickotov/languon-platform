@@ -170,7 +170,7 @@ export const aiCreditReservationsTable = pgTable(
     (table) => [
         check(
             'ai_credit_reservations_job_kind_closed',
-            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check', 'speech-generation', 'text-detection', 'text-translation', 'text-selection-card', 'conversation-turn')`,
+            sql`${table.jobKind} in ('dictionary-generation', 'sentence-generation', 'sentence-check', 'speech-generation', 'text-detection', 'text-translation', 'text-selection-card', 'conversation-turn', 'portrait-interview')`,
         ),
         check(
             'ai_credit_reservations_attempt_positive',

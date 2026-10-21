@@ -14,13 +14,17 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Knowledge workspace](./knowledge-workspace.md) — private research drafts,
   editor-aware tutor, explicit publication, conflict recovery and saved-only sharing.
 
+- [Learner portrait and AI interview](./learner-portrait.md) — learner-owned
+  preference drafts, explicit approval/use, bounded interview operations and
+  scoped AI accounting, with the selected-design web interview and manual editor.
+
 - [Development cleanup and architecture diagrams](./development-cleanup-and-architecture-diagrams.md) — reusable retirement/diagram skills and a local source-backed diagram viewer.
 
 - [Contextual Language Assistant and Knowledge](./contextual-language-assistant-and-knowledge.md) — private source conversations, explicit draft publication, independent notes and revisions.
 
 - [Shared pronunciation playback](./shared-pronunciation-playback.md) — shared audio, explicit paid generation, retained recordings and editable model prices.
 
-- [Global App Shell](./global-app-shell.md) — session-aware navigation, guest settings, preference persistence, responsive drawer focus, and the WIP home page.
+- [Global App Shell](./global-app-shell.md) — session-aware navigation, guest settings, preference persistence, responsive drawer focus, and the portrait home entry.
 
 - [Sentence Practice and Model Preferences Web](./sentence-practice-web.md) —
   model persistence, real sentence jobs and personal free reference review.

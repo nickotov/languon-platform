@@ -10,6 +10,7 @@ import {
     conversationCopy,
     type ConversationUIMessage,
 } from '@/fsd/entities/conversation';
+import { mergeDisplayedPreferences } from '@/fsd/features/conversation-preferences';
 import { useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import { showToast } from '@/fsd/shared/ui';
@@ -144,7 +145,9 @@ export function useAssistantPanel(
         return () => onBusyChange?.(false);
     }, [busy, active, onBusyChange]);
     const detail = chat.detail.data;
-    const preferences = detail?.conversation.preferences;
+    const manualPreferences = detail?.conversation.preferences;
+    const preferences =
+        detail?.conversation.effectivePreferences ?? manualPreferences;
     const preferencesIdentity = JSON.stringify(preferences);
     useEffect(() => {
         defaultsRevision.current += 1;
@@ -162,7 +165,7 @@ export function useAssistantPanel(
             !initialized.current
         ) {
             initialized.current = true;
-            chat.create.mutate();
+            chat.create.mutate(undefined);
         }
     }, [props.folded, chat.id, chat.list.isSuccess, chat.create.mutate]);
     useEffect(() => {
@@ -196,7 +199,25 @@ export function useAssistantPanel(
     }
     function create() {
         navigation.request(() => {
-            chat.create.mutate();
+            chat.create.mutate(undefined);
+            workspaceSelection.remove();
+            setHistory(false);
+            setEditingDraft(null);
+            setPicker(false);
+        });
+    }
+    function createWithoutPortrait() {
+        if (!manualPreferences) return;
+        const next = {
+            ...manualPreferences,
+            portrait: {
+                enabled: false,
+                inheritedFields:
+                    manualPreferences.portrait?.inheritedFields ?? [],
+            },
+        };
+        navigation.request(() => {
+            chat.create.mutate(next);
             workspaceSelection.remove();
             setHistory(false);
             setEditingDraft(null);
@@ -392,7 +413,14 @@ export function useAssistantPanel(
         defaultsRevision.current += 1;
         setDefaultsFailure(null);
         setDefaultsSaved(false);
-        chat.updatePreferences(value);
+        if (manualPreferences && preferences)
+            chat.updatePreferences(
+                mergeDisplayedPreferences(
+                    manualPreferences,
+                    preferences,
+                    value,
+                ),
+            );
     }
     async function saveDefaults(value: NonNullable<typeof preferences>) {
         if (defaultsLock.current) return;
@@ -415,7 +443,7 @@ export function useAssistantPanel(
         }
     }
     async function defaults() {
-        if (preferences) await saveDefaults(preferences);
+        if (manualPreferences) await saveDefaults(manualPreferences);
     }
     function retryDefaults() {
         if (defaultsFailure) void saveDefaults(defaultsFailure.preferences);
@@ -463,6 +491,7 @@ export function useAssistantPanel(
         discardRevision,
         select,
         create,
+        createWithoutPortrait,
         toggleHistory,
         backToChat,
         remove,

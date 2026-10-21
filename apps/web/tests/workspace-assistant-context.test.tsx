@@ -218,6 +218,7 @@ it('accepts against the target already restored for review instead of rechecking
         'Proposed wording',
         'replace',
         'mapped-review-target',
+        undefined,
     );
     expect(workspace.restoreTarget).not.toHaveBeenCalled();
 });

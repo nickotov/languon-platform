@@ -24,6 +24,8 @@ import {
 } from './development-server-policy';
 
 export interface CanonicalMastraOptions {
+    /** Operation-bound only: Studio deliberately has no learner identity or execution route. */
+    learnerInterviewer?: Agent;
     /** Only operation-bound production instances; no default learner identity in Studio. */
     contextualTutor?: {
         agent: Agent;
@@ -95,6 +97,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
     if (
         !development &&
         !options.contextualTutor &&
+        !options.learnerInterviewer &&
         !textsAgents &&
         !dictionaryCardAuthoringAgent &&
         !dictionaryCardGenerationAgent &&
@@ -108,6 +111,9 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
         return new Mastra({
             tools: options.contextualTutor?.tools ?? {},
             agents: {
+                ...(options.learnerInterviewer
+                    ? { learnerInterviewer: options.learnerInterviewer }
+                    : {}),
                 ...(options.contextualTutor
                     ? { contextualLanguageTutor: options.contextualTutor.agent }
                     : {}),
@@ -131,6 +137,9 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
     }
 
     return createDevelopmentMastra({
+        ...(options.learnerInterviewer
+            ? { learnerInterviewer: options.learnerInterviewer }
+            : {}),
         ...(options.contextualTutor
             ? { contextualTutor: options.contextualTutor }
             : {}),
@@ -145,6 +154,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 }
 
 function createDevelopmentMastra(options: {
+    learnerInterviewer?: Agent;
     contextualTutor?: NonNullable<CanonicalMastraOptions['contextualTutor']>;
     textsAgents: ReturnType<typeof createTextsAgents> | undefined;
     development: ReturnType<typeof createDevelopmentHarnessPrimitives>;
@@ -173,6 +183,9 @@ function createDevelopmentMastra(options: {
     return new Mastra({
         tools: options.contextualTutor?.tools ?? {},
         agents: {
+            ...(options.learnerInterviewer
+                ? { learnerInterviewer: options.learnerInterviewer }
+                : {}),
             ...(options.contextualTutor
                 ? { contextualLanguageTutor: options.contextualTutor.agent }
                 : {}),

@@ -20,6 +20,7 @@ e2e_tests:
 e2e_scenarios:
     - profile-empty-coming-soon-and-header-navigation
 related_features:
+    - learner-portrait
     - contextual-language-assistant-and-knowledge
     - global-app-shell
     - sentence-practice-web
@@ -82,7 +83,8 @@ test database and Redis services.
    global `languon-theme` cookie to change while the route remains `/profile`.
    Expect the real handle or Account fallback, email, Profile link, interface
    language, System/Light/Dark choices, and Sign out action to remain reachable.
-7. Click the Languon logo. Expect navigation to `/` with only WIP in the page body;
+7. Click the Languon logo. Expect navigation to `/` with a dated welcome heading
+   and the learner portrait entry;
    dictionary navigation and the account menu remain available in the shell.
 8. Repeat at 320px width and at 200% zoom. Expect a compact top bar and modal
    navigation drawer instead of the desktop sidebar. The drawer closes on
@@ -94,7 +96,7 @@ test database and Redis services.
 - `profile-empty-coming-soon-and-header-navigation` signs up and verifies a fake
   account, opens the profile route, validates truthful empty states, selects
   tabs, exercises a coming-soon action, persists an account-menu theme choice,
-  checks the compact navigation drawer, and returns to the WIP home page through the
+  checks the compact navigation drawer, and returns to the welcome heading through the
   shell logo.
 
 Detailed tab keyboard semantics and signed-out/loading boundaries remain in

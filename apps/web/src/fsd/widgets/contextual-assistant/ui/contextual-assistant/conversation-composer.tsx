@@ -18,6 +18,7 @@ export function ConversationComposer({
     attachments,
     onRemove,
     preferences,
+    portrait,
     onPreferences,
     onDefaults,
     defaultsSaved = false,
@@ -41,6 +42,7 @@ export function ConversationComposer({
     attachments: CopiedAttachment[];
     onRemove(id: string): void;
     preferences: ChatPreferences;
+    portrait?: Parameters<typeof ComposerPreferences>[0]['portrait'];
     onPreferences(value: ChatPreferences): void;
     onDefaults(): void;
     defaultsSaved?: boolean;
@@ -185,10 +187,11 @@ export function ConversationComposer({
                     {workspace && (
                         <ComposerPreferences
                             value={preferences}
+                            portrait={portrait}
                             onChange={onPreferences}
                             onDefaults={onDefaults}
                             defaultsSaved={defaultsSaved}
-                            disabled={busy || active}
+                            disabled={busy}
                             workspace
                             modelControl={modelControl}
                         />
@@ -229,9 +232,10 @@ export function ConversationComposer({
                 <div className={styles.preferencesRow}>
                     <ComposerPreferences
                         value={preferences}
+                        portrait={portrait}
                         onChange={onPreferences}
                         onDefaults={onDefaults}
-                        disabled={busy || active}
+                        disabled={busy}
                     />
                     {modelControl}
                 </div>

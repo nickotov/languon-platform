@@ -61,3 +61,5 @@ The handoffs retain unchanged frozen prompt/source identities and record final
 implementation proof and mechanical backlog-path mappings.
 
 | [Texts](./texts.md) | Folders, whole-text AI translation, aligned reading/editing, contextual vocabulary, sharing and independent copies | v002 backend verified; awaiting generated design ([handoff](../../.agent/features/043-texts/DESIGN.md)) |
+
+| [Learner portrait and AI interview](./learner-portrait.md) | Dashboard/settings entry, guided interview, manual portrait, review/use controls and recovery | Selected Magic Patterns v001 implemented and verified ([handoff](../../.agent/features/051-learner-portrait/DESIGN.md)) |

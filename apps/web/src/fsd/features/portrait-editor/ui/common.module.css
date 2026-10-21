@@ -1,0 +1,214 @@
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.section {
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--background-surface);
+    padding: var(--space-16);
+    min-width: 0;
+}
+
+.header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-8);
+    margin-bottom: var(--space-16);
+}
+
+.title {
+    font-size: var(--size-16);
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.description {
+    font-size: var(--size-14);
+    line-height: 1.428571;
+    color: var(--text-secondary);
+    margin: var(--space-4) 0 0;
+}
+
+.meta {
+    font-size: var(--size-12);
+    line-height: 1.333333;
+    color: var(--text-tertiary);
+}
+
+.addButton:disabled {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-primary);
+    opacity: 0.5;
+}
+
+.fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-20);
+}
+
+.chips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: var(--size-44);
+    padding: var(--space-8) var(--space-16);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-full);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--size-14);
+    font-weight: 500;
+    text-align: start;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.chip:hover {
+    background: var(--background-subtle);
+    border-color: var(--border-strong);
+}
+
+.selected {
+    border-color: var(--primary-default);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+
+.chip:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.chip:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.icon {
+    width: var(--size-16);
+    height: var(--size-16);
+    flex-shrink: 0;
+}
+
+.inline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+
+.grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.counter {
+    display: block;
+    margin-top: var(--space-4);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.language {
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-16);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.row {
+    display: flex;
+    gap: var(--space-8);
+    justify-content: space-between;
+    align-items: center;
+}
+
+.grid {
+    align-items: end;
+    display: grid;
+    gap: var(--space-12);
+}
+
+.empty {
+    border-radius: var(--radius-md);
+    background: var(--background-subtle);
+    padding: var(--space-16);
+    color: var(--text-secondary);
+}
+
+@media (min-width: 640px) {
+    .section {
+        padding: var(--space-24);
+    }
+
+    .inline {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .grid {
+        align-items: end;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.emptyLanguages {
+    border: var(--size-1) dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-12) var(--space-16);
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+}
+
+.noteRow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+}
+
+.noteRemove {
+    margin-top: var(--space-24);
+}
+
+.legend {
+    margin: 0 0 var(--space-4);
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+
+@media (min-width: 640px) {
+    .addButton {
+        margin-top: var(--space-24);
+    }
+}

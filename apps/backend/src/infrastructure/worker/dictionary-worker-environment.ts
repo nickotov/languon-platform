@@ -280,6 +280,7 @@ export function loadDictionaryWorkerEnvironment(
         const unsupportedFormats = supportedFormats.filter(
             (format) =>
                 format !== 'conversation:v1' &&
+                format !== 'portrait-interview:v1' &&
                 !provider.catalogModel.supportedFormats.includes(format),
         );
         if (unsupportedFormats.length > 0) {

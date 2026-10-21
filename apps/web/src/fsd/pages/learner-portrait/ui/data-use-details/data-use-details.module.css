@@ -1,0 +1,46 @@
+.details {
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-16);
+    background: var(--background-surface);
+}
+
+.summary {
+    display: flex;
+    min-height: var(--size-44);
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-12) var(--space-16);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.summary > svg {
+    color: var(--primary-default);
+    flex-shrink: 0;
+}
+
+.summary::after {
+    content: '⌄';
+    margin-left: auto;
+    color: var(--text-tertiary);
+}
+
+.details:where([open]) .summary::after {
+    content: '⌃';
+}
+
+.summary:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+    border-radius: var(--radius-16);
+}
+
+.list {
+    margin: 0;
+    padding: 0 var(--space-16) var(--space-16) var(--space-48);
+    display: grid;
+    gap: var(--space-8);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    line-height: 1.625;
+}

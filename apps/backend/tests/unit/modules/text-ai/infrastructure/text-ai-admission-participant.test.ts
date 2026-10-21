@@ -11,6 +11,8 @@ import { resolveTextAiExecutionSnapshot } from '../../../../../src/modules/text-
 
 import {
     sentenceExecutionObservationId,
+    portraitInterviewExecutionObservationId,
+    conversationExecutionObservationId,
     textsExecutionObservationId,
     textsCapacityObservationId,
 } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
@@ -396,5 +398,72 @@ describe('transactional text AI admission selection', () => {
                 historical.aggregateBudget,
             ).id,
         ).toBe(defaultModel!.id);
+    });
+});
+
+describe('portrait interview admission', () => {
+    const model = defaultModel!;
+    const workerId = 'interview-worker';
+    const observation = {
+        id: portraitInterviewExecutionObservationId(
+            workerId,
+            model.providerId,
+            model.id,
+        ),
+        workerId,
+        providerId: model.providerId,
+        modelId: model.id,
+        status: 'available',
+        textAiSelectionRevision: 1,
+        textAiCapacityRevision: 1,
+        textsCapacityRevision: 1,
+        conversationCapacityRevision: 1,
+        conversationExecutionRevision: 1,
+        creditSettlementRevision: 1,
+        textAiSupportedFormats: ['portrait-interview:v1'],
+    };
+    const interviewInput = { ...input, format: 'portrait-interview:v1' };
+    it('pins Flash for Auto independently of platform default and requires exact interview executor', async () => {
+        const result = await participant([
+            [],
+            [{ id: 'global', snapshot: snapshot(selectedModel!) }],
+            [observation],
+            [],
+        ]).resolve(interviewInput);
+        expect(result.snapshot?.modelId).toBe('deepseek-flash');
+        expect(result.snapshot?.supportedFormats).toEqual([
+            'portrait-interview:v1',
+        ]);
+        expect(result.selectionVersion).toBe(1);
+        for (const changed of [
+            {
+                id: conversationExecutionObservationId(
+                    workerId,
+                    model.providerId,
+                    model.id,
+                ),
+            },
+            { textAiSupportedFormats: ['conversation:v1'] },
+            { conversationExecutionRevision: null },
+        ]) {
+            await expect(
+                participant([
+                    [],
+                    [{ id: 'global', snapshot: snapshot() }],
+                    [{ ...observation, ...changed }],
+                ]).resolve(interviewInput),
+            ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+        }
+    });
+    it('fails closed for absent configuration or unsupported explicit selection', async () => {
+        await expect(
+            participant([[], []]).resolve(interviewInput),
+        ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+        await expect(
+            participant([
+                [{ mode: 'explicit', modelId: selectedModel!.id }],
+                [{ id: 'global', snapshot: snapshot() }],
+            ]).resolve(interviewInput),
+        ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
     });
 });

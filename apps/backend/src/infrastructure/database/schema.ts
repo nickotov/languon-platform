@@ -1,3 +1,5 @@
+import * as portraitCallSchema from '../../modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';
+import * as learnerPortraitSchema from '../../modules/learner-portraits/infrastructure/persistence/drizzle/schema';
 import { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
 export { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
 import * as knowledgeSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/schema';
@@ -135,6 +137,8 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    ...learnerPortraitSchema,
+    ...portraitCallSchema,
     speechAudioBlobs: speechAudioBlobsTable,
     ...knowledgeSchema,
     ...conversationSchema,
@@ -215,3 +219,7 @@ export * from '../../modules/dictionaries/infrastructure/persistence/drizzle/sel
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/schema';
 export * from '../../modules/conversations/infrastructure/persistence/drizzle/schema';
 export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-provider-call-schema';
+
+export * from '../../modules/learner-portraits/infrastructure/persistence/drizzle/schema';
+
+export * from '../../modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';

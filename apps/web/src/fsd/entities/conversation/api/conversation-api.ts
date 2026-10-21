@@ -126,10 +126,18 @@ export const conversationApi = {
             { shareKey, signal },
         );
     },
-    create: (token: string, source: ConversationSource, shareKey?: string) =>
+    create: (
+        token: string,
+        source: ConversationSource,
+        shareKey?: string,
+        preferences?: ChatPreferences,
+    ) =>
         request(token, '/conversations', ConversationResponseSchema, {
             method: 'POST',
-            body: CreateConversationRequestSchema.parse({ source }),
+            body: CreateConversationRequestSchema.parse({
+                source,
+                preferences,
+            }),
             shareKey,
         }),
     detail: (

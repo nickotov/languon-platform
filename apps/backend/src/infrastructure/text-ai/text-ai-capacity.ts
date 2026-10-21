@@ -26,7 +26,7 @@ export interface TextAiProviderBudgetUsage {
 export async function lockTextAiCapacity(tx: Transaction): Promise<void> {
     await tx.execute(sql`select pg_advisory_xact_lock(${textAiCapacityLock})`);
     await tx.execute(
-        sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true), set_config('languon.conversation_capacity_revision', '1', true)`,
+        sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true), set_config('languon.conversation_capacity_revision', '1', true), set_config('languon.portrait_capacity_revision', '1', true)`,
     );
 }
 
@@ -117,6 +117,8 @@ export async function readTextAiCapacity(
         select owner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from dictionary_text_selection_jobs
         union all
         select owner_id as actor_id, status as execution_state, created_at, created_at as next_attempt_at, not cancel_requested as runnable from conversation_turns
+        union all
+        select owner_id as actor_id, state as execution_state, created_at, created_at as next_attempt_at, not cancel_requested as runnable from learner_portrait_interview_operations
     ) select
         count(*) filter (where execution_state='queued') as global_queued,
         count(*) filter (where execution_state='queued' and actor_id=${actorId}::uuid) as actor_queued,
@@ -153,6 +155,12 @@ export async function readTextAiCapacity(
             actual_cost_micros, actual_input_tokens, actual_output_tokens,
             input_cost_micros_per_million_tokens, output_cost_micros_per_million_tokens,
             max_cost_micros_per_attempt, max_input_tokens_per_attempt, max_output_tokens_per_attempt from conversation_provider_calls
+        union all
+        select id, owner_id as actor_id, case when state='settled' then 'settled' else 'active' end as provider_reservation_state, settled_at as provider_reservation_settled_at,
+            reserved_cost_micros, reserved_input_tokens, reserved_output_tokens,
+            actual_cost_micros, actual_input_tokens, actual_output_tokens,
+            input_cost_micros_per_million_tokens, output_cost_micros_per_million_tokens,
+            max_cost_micros_per_attempt, max_input_tokens_per_attempt, max_output_tokens_per_attempt from learner_portrait_interview_provider_calls
     ), cohorts as (
         select * from live_jobs where provider_input_cost_micros_per_million_tokens=${budget.inputCostMicrosPerMillionTokens}
             and provider_output_cost_micros_per_million_tokens=${budget.outputCostMicrosPerMillionTokens}

@@ -8,11 +8,14 @@ import {
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type PropsWithChildren } from 'react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
     ChatPreferencesSchema,
+    PortraitStateSchema,
     ConversationDetailSchema,
 } from '@languon/contracts';
+import { portraitApi } from '../src/fsd/entities/learner-portrait';
+import { dictionaryApi } from '../src/fsd/entities/dictionary';
 import { conversationApi } from '../src/fsd/entities/conversation';
 import { I18nProvider, type Locale } from '../src/fsd/shared/i18n';
 import { en } from '../src/fsd/shared/i18n/messages/en';
@@ -20,7 +23,7 @@ import { es } from '../src/fsd/shared/i18n/messages/es';
 import { fr } from '../src/fsd/shared/i18n/messages/fr';
 import { ru } from '../src/fsd/shared/i18n/messages/ru';
 import { TutorModeControl } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-mode-control';
-import { WorkspaceComposerSettings } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-composer-settings';
+import { ComposerPreferences } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer-preferences';
 import { useConversation } from '../src/fsd/widgets/contextual-assistant/hooks/use-conversation';
 
 vi.mock(
@@ -28,6 +31,11 @@ vi.mock(
     () => ({ useConversationStream: () => ({}) }),
 );
 afterEach(() => vi.restoreAllMocks());
+beforeEach(() => {
+    vi.spyOn(dictionaryApi, 'listLanguages').mockResolvedValue({
+        languages: [],
+    });
+});
 const preferences = ChatPreferencesSchema.parse({
     tone: 'academic',
     replyLanguage: 'es',
@@ -35,11 +43,16 @@ const preferences = ChatPreferencesSchema.parse({
 });
 const catalogs = { en, es, fr, ru };
 function wrapper(locale: Locale = 'en') {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
     return function Provider({ children }: PropsWithChildren) {
         return (
-            <I18nProvider locale={locale} messages={catalogs[locale]}>
-                {children}
-            </I18nProvider>
+            <QueryClientProvider client={client}>
+                <I18nProvider locale={locale} messages={catalogs[locale]}>
+                    {children}
+                </I18nProvider>
+            </QueryClientProvider>
         );
     };
 }
@@ -111,7 +124,7 @@ it('uses the real defaults callback and does not claim success before the caller
         tones: [],
         levels: [],
     };
-    const view = render(<WorkspaceComposerSettings {...props} />, {
+    const view = render(<ComposerPreferences {...props} />, {
         wrapper: wrapper(),
     });
     await user.click(screen.getByRole('button', { name: 'Response settings' }));
@@ -123,7 +136,7 @@ it('uses the real defaults callback and does not claim success before the caller
     );
     expect(defaults).toHaveBeenCalledOnce();
     expect(screen.queryByRole('status')).toBeNull();
-    view.rerender(<WorkspaceComposerSettings {...props} defaultsSaved />);
+    view.rerender(<ComposerPreferences {...props} defaultsSaved />);
     expect(screen.getByRole('status')).toBeVisible();
 });
 
@@ -238,15 +251,12 @@ it('keeps the settings popover and focused radio stable throughout a pending pre
             };
         }
         return (
-            <WorkspaceComposerSettings
+            <ComposerPreferences
                 value={value}
                 onChange={change}
                 onDefaults={vi.fn()}
                 disabled={pending}
                 defaultsSaved={false}
-                languageOptions={[{ value: 'es', label: 'Spanish' }]}
-                tones={[]}
-                levels={[]}
             />
         );
     }
@@ -267,4 +277,108 @@ it('keeps the settings popover and focused radio stable throughout a pending pre
     expect(screen.getByRole('dialog')).toBeVisible();
     expect(practice).toBeChecked();
     expect(practice).toHaveFocus();
+});
+
+it('global portrait off cannot be silently enabled by a chat and manual values remain visible', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(portraitApi, 'read').mockResolvedValue(
+        PortraitStateSchema.parse({
+            version: 1,
+            approvedVersion: 1,
+            generation: 0,
+            useEnabled: false,
+            approved: {
+                locale: 'en',
+                updatedAt: '2026-10-20T00:00:00.000Z',
+                summary: 'You prefer short examples.',
+                items: { goals: ['Travel'] },
+            },
+            draft: null,
+        }),
+    );
+    const change = vi.fn();
+    render(
+        <ComposerPreferences
+            value={preferences}
+            onChange={change}
+            onDefaults={vi.fn()}
+            disabled={false}
+            portrait={{
+                ownerId: 'actor',
+                requestWithSession: (operation) => operation('synthetic-token'),
+                onFreshChat: vi.fn(),
+            }}
+        />,
+        { wrapper: wrapper() },
+    );
+    await user.click(screen.getByRole('button', { name: 'Response settings' }));
+    const control = await screen.findByRole('switch', {
+        name: 'Use portrait in this chat',
+    });
+    expect(control).toBeDisabled();
+    expect(control).not.toBeChecked();
+    await user.click(control);
+    expect(change).not.toHaveBeenCalled();
+    expect(
+        screen.getByText('Your portrait is off for all chats'),
+    ).toBeVisible();
+    expect(screen.getAllByText('Manual')).toHaveLength(5);
+});
+
+it('per-chat exclusion warns about retained history and offers a real fresh chat action', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(portraitApi, 'read').mockResolvedValue(
+        PortraitStateSchema.parse({
+            version: 1,
+            approvedVersion: 1,
+            generation: 0,
+            useEnabled: true,
+            approved: {
+                locale: 'en',
+                updatedAt: '2026-10-20T00:00:00.000Z',
+                summary: 'You prefer short examples.',
+                items: { goals: ['Travel'] },
+            },
+            draft: null,
+        }),
+    );
+    const fresh = vi.fn();
+    function Settings() {
+        const [value, setValue] = useState(
+            ChatPreferencesSchema.parse({
+                ...preferences,
+                portrait: { enabled: true, inheritedFields: ['tone'] },
+            }),
+        );
+        return (
+            <ComposerPreferences
+                value={value}
+                onChange={setValue}
+                onDefaults={vi.fn()}
+                disabled={false}
+                portrait={{
+                    ownerId: 'actor',
+                    requestWithSession: (operation) =>
+                        operation('synthetic-token'),
+                    onFreshChat: fresh,
+                }}
+            />
+        );
+    }
+    render(<Settings />, { wrapper: wrapper() });
+    await user.click(screen.getByRole('button', { name: 'Response settings' }));
+    const control = await screen.findByRole('switch', {
+        name: 'Use portrait in this chat',
+    });
+    await user.click(control);
+    expect(control).not.toBeChecked();
+    expect(
+        screen.getByText(
+            /Earlier messages may still contain personal information/,
+        ),
+    ).toBeVisible();
+    await user.click(
+        screen.getByRole('button', { name: 'Start a fresh chat' }),
+    );
+    expect(fresh).toHaveBeenCalledOnce();
 });

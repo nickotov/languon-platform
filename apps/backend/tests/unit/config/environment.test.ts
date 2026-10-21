@@ -46,6 +46,22 @@ function values(
 }
 
 describe('loadEnvironment authentication settings', () => {
+    it('defaults interview bypass off and accepts only explicit boolean strings', () => {
+        expect(
+            loadEnvironment(values('test')).AI_INTERVIEW_CREDITS_BYPASS,
+        ).toBe(false);
+        expect(
+            loadEnvironment(
+                values('test', { AI_INTERVIEW_CREDITS_BYPASS: 'true' }),
+            ).AI_INTERVIEW_CREDITS_BYPASS,
+        ).toBe(true);
+        expect(() =>
+            loadEnvironment(
+                values('test', { AI_INTERVIEW_CREDITS_BYPASS: 'yes' }),
+            ),
+        ).toThrow();
+    });
+
     it.each([
         ['development', true],
         ['test', true],

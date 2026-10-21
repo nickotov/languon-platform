@@ -131,3 +131,19 @@ GRANT SELECT (owner_id), DELETE ON TABLE conversation_settings TO :"account_purg
 GRANT SELECT (id, owner_id), DELETE ON TABLE knowledge_notes TO :"account_purge_role";
 GRANT SELECT (owner_id), DELETE ON TABLE knowledge_operation_receipts TO :"account_purge_role";
 GRANT SELECT (id) ON TABLE texts TO :"account_purge_role";
+
+-- Portrait erasure reads only opaque identities, lifecycle and pinned execution
+-- pricing. It can overwrite private fields with tombstones without reading them.
+GRANT SELECT (id, owner_id, interview_id, state, execution, cancel_requested, lease_until),
+    UPDATE (state, cancel_requested, error_code, lease_until, lease_token,
+        fingerprint, input, context, result), DELETE
+    ON TABLE learner_portrait_interview_operations TO :"account_purge_role";
+GRANT SELECT (id, owner_id, expires_at), DELETE
+    ON TABLE learner_portrait_interviews TO :"account_purge_role";
+GRANT SELECT (owner_id), DELETE ON TABLE learner_portraits TO :"account_purge_role";
+-- This table contains numerical provider accounting only, with no prompt/body.
+GRANT SELECT, DELETE ON TABLE learner_portrait_interview_provider_calls TO :"account_purge_role";
+GRANT UPDATE (state, settled_at, actual_input_tokens, actual_output_tokens, actual_cost_micros)
+    ON TABLE learner_portrait_interview_provider_calls TO :"account_purge_role";
+GRANT SELECT ON TABLE ai_credit_reservation_allocations TO :"account_purge_role";
+GRANT UPDATE (settled_credits) ON TABLE ai_credit_reservation_allocations TO :"account_purge_role";

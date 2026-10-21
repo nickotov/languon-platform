@@ -1,0 +1,37 @@
+.card {
+    padding: var(--space-16);
+    border: var(--size-1) dashed var(--primary-default);
+    border-radius: var(--radius-12);
+    background: var(--background-surface);
+}
+
+.heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    font-size: var(--size-12);
+    font-weight: 500;
+    color: var(--primary-default);
+}
+
+.badge {
+    padding: var(--space-2) var(--space-8);
+    border-radius: var(--radius-6);
+    background: var(--background-subtle);
+    color: var(--text-secondary);
+}
+
+.body {
+    margin: var(--space-8) 0;
+    font-size: var(--size-14);
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    margin-top: var(--space-12);
+}

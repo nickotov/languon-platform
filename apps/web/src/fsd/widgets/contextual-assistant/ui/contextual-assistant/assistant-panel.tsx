@@ -77,6 +77,12 @@ export function AssistantPanel(
         if (window.matchMedia('(max-width: 1023px)').matches) props.onFold();
     }
 
+    const portrait = {
+        ownerId: props.actorId,
+        requestWithSession: panel.requestWithSession,
+        origins: detail?.conversation.preferenceOrigins,
+        onFreshChat: panel.createWithoutPortrait,
+    };
     const modelControl = (
         <ConversationModel
             actorId={props.actorId}
@@ -267,6 +273,7 @@ export function AssistantPanel(
                                 attachments={chat.attachments}
                                 onRemove={panel.removeAttachment}
                                 preferences={preferences}
+                                portrait={portrait}
                                 onPreferences={panel.updatePreferences}
                                 onDefaults={panel.defaults}
                                 defaultsSaved={panel.defaultsSaved}

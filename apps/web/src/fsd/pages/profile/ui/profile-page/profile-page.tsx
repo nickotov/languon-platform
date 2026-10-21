@@ -27,6 +27,7 @@ import {
 import { LanguageSwitcher } from '@/fsd/features/change-locale';
 import { SecuritySettings, useAuth } from '@/fsd/features/auth';
 import { ConversationDefaults } from '@/fsd/features/conversation-preferences';
+import { PortraitEntryCard } from '@/fsd/features/portrait-entry';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     ModelPreferenceSection,
@@ -394,6 +395,9 @@ function AccountTab({
                     {t('profile.otherDetailsComingSoon')}
                 </p>
             </SettingsSection>
+            <div id='learner-portrait'>
+                <PortraitEntryCard variant='settings' requestWithSession={requestWithSession} />
+            </div>
             <ModelPreferenceSection
                 onDirtyChange={onModelDirtyChange}
                 onOpenCredits={onOpenCredits}

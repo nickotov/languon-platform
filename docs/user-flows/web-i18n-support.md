@@ -25,6 +25,7 @@ e2e_scenarios:
     - ssr-locale-routing
     - language-switch-persistence
 related_features:
+    - learner-portrait
     - user-authentication
     - global-app-shell
 ---
@@ -61,7 +62,7 @@ localization checks themselves do not create database records.
 
 1. In a fresh browser context without a locale cookie, open
    `http://localhost:3333/` with Russian as the preferred browser language.
-   Expect the literal **WIP** home body and localized shell controls,
+   Expect the **С возвращением** welcome heading and localized shell controls,
    `<html lang="ru">`, and an unchanged `/` URL.
 2. Repeat with English, French, and Spanish request-language preferences. Expect
    the same URL and page structure with matching localized copy and document

@@ -549,8 +549,33 @@ export const KnowledgeErrorResponseSchema = z.object({
     }),
 });
 
+export const PortraitPreferenceFieldSchema = z.enum([
+    'replyLanguage',
+    'tone',
+    'explanationLevel',
+    'detail',
+    'wording',
+    'approach',
+]);
+export const ChatPreferenceOriginsSchema = z
+    .object({
+        replyLanguage: z.enum(['manual', 'portrait']),
+        tone: z.enum(['manual', 'portrait']),
+        explanationLevel: z.enum(['manual', 'portrait']),
+        detail: z.enum(['manual', 'portrait']).optional(),
+        wording: z.enum(['manual', 'portrait']).optional(),
+        approach: z.enum(['manual', 'portrait']).optional(),
+    })
+    .strict();
 export const ChatPreferencesSchema = z
     .object({
+        portrait: z
+            .object({
+                enabled: z.boolean(),
+                inheritedFields: z.array(PortraitPreferenceFieldSchema).max(6),
+            })
+            .strict()
+            .optional(),
         mode: z
             .enum(['auto', 'explain', 'correct', 'practice'])
             .default('auto'),
@@ -563,6 +588,9 @@ export const ChatPreferencesSchema = z
         explanationLevel: z
             .enum(['auto', 'beginner', 'detailed'])
             .default('auto'),
+        detail: z.enum(['concise', 'detailed']).optional(),
+        wording: z.enum(['simple', 'balanced', 'academic']).optional(),
+        approach: z.enum(['examples-first', 'theory-first', 'balanced']).optional(),
     })
     .strict();
 export const ChatPreferencesResponseSchema = z.object({
@@ -713,6 +741,8 @@ export const ConversationSchema = z
         source: ConversationSourceSchema,
         title: z.string().max(200).nullable(),
         preferences: ChatPreferencesSchema,
+        preferenceOrigins: ChatPreferenceOriginsSchema.optional(),
+        effectivePreferences: ChatPreferencesSchema.optional(),
         version: z.number().int().positive(),
         createdAt: z.iso.datetime(),
         updatedAt: z.iso.datetime(),

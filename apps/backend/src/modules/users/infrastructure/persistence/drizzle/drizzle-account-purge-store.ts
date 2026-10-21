@@ -1,4 +1,8 @@
 import {
+    portraitDeletionBusy,
+    eraseOwnerLearnerPortrait,
+} from '../../../../learner-portraits/infrastructure/persistence/drizzle/portrait-deletion-participant';
+import {
     conversationDeletionBusy,
     eraseOwnerConversations,
 } from '../../../../conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
@@ -129,6 +133,9 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
     }
 
     public async inspectOwner(input: ClaimedAccountPurge) {
+        const portraitBusy = await this.database.transaction((tx) =>
+            portraitDeletionBusy(tx, input.userId),
+        );
         const conversationBusy = await this.database.transaction((tx) =>
             conversationDeletionBusy(tx, { ownerId: input.userId }),
         );
@@ -176,7 +183,8 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 (active[0]?.count ?? 0) +
                 (sentenceBusy ? 1 : 0) +
                 (textsBusy ? 1 : 0) +
-                (conversationBusy ? 1 : 0),
+                (conversationBusy ? 1 : 0) +
+                (portraitBusy ? 1 : 0),
             objects,
         };
     }
@@ -262,6 +270,8 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 )
             )
                 throw new Error('Conversation work is not quiescent');
+            if (await portraitDeletionBusy(tx, input.userId, input.now))
+                throw new Error('Portrait work is not quiescent');
             if (await textsDeletionBusy(tx, input.userId))
                 throw new Error('Text work is not quiescent');
             if (await sentenceDeletionBusy(tx, sentenceScope))
@@ -332,6 +342,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await tx
                 .delete(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.ownerId, input.userId));
+            await eraseOwnerLearnerPortrait(tx, input.userId, input.now);
             await eraseOwnerConversations(tx, input.userId, input.now);
             await eraseOwnerKnowledge(tx, input.userId);
             await eraseTextsOwnedContent(tx, input.userId, input.now);

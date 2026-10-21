@@ -6,7 +6,8 @@ export type AiCreditJobKind =
     | 'text-translation'
     | 'text-selection-card'
     | 'speech-generation'
-    | 'conversation-turn';
+    | 'conversation-turn'
+    | 'portrait-interview';
 
 import type {
     AiCreditGrantSource,
@@ -99,6 +100,8 @@ export interface AiCreditTransactionParticipant {
         attempt: number;
         jobId: string;
         jobKind?: AiCreditJobKind;
+        /** Server-resolved, operation-pinned interview policy; never an account entitlement. */
+        interviewCreditsBypass?: boolean;
         maximumCredits: bigint;
         ownerId: string;
         reservationId: string;

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision web-i18n-support sha256:52b7f07a4eba4dcf
+// @user-flow-revision web-i18n-support sha256:0ce5df69537051bd
 
 function captureBrowserErrors(page: Page) {
     const errors: string[] = [];
@@ -34,7 +34,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'en-US,en;q=0.9',
                 'en',
-                'WIP',
+                'Welcome back',
                 'Sign in · Languon',
                 'This page could not be found',
                 'Page not found · Languon',
@@ -42,7 +42,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'ru-RU,ru;q=0.9',
                 'ru',
-                'WIP',
+                'С возвращением',
                 'Вход · Languon',
                 'Страница не найдена',
                 'Страница не найдена · Languon',
@@ -50,7 +50,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'fr-CA,fr;q=0.9',
                 'fr',
-                'WIP',
+                'Bon retour',
                 'Connexion · Languon',
                 'Cette page est introuvable',
                 'Page introuvable · Languon',
@@ -58,7 +58,7 @@ test.describe('web internationalization journeys', () => {
             [
                 'es-ES,es;q=0.9',
                 'es',
-                'WIP',
+                'Te damos la bienvenida',
                 'Iniciar sesión · Languon',
                 'No se encontró esta página',
                 'Página no encontrada · Languon',
@@ -86,7 +86,11 @@ test.describe('web internationalization journeys', () => {
                     locale,
                 );
                 await expect(
-                    page.getByText(copy, { exact: true }),
+                    page.getByRole('heading', {
+                        level: 1,
+                        name: copy,
+                        exact: true,
+                    }),
                 ).toBeVisible();
 
                 await page.goto('/login');

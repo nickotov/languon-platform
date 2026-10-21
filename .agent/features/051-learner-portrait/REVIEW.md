@@ -1,0 +1,91 @@
+# Learner portrait backend checkpoint review
+
+Reviewed: 2026-10-21
+Verdict: Backend checkpoint passes — functional and security reviews closed; UI awaits design
+
+## Boundary
+
+Initial backend checkpoint over main5efaafe including new learner-portraits module, shared contracts/prompts, credit/accounting/readiness/worker composition, ordinary chat context and erasure integration. No UI source/design has been supplied. Source identity: evidence/backend-source-sha256.json. Separate tester verified real PostgreSQL/Redis journey and coordinated21 persistence/35 conversation tests.
+
+## Security findings and remediation
+
+### S1 — Medium: retained answer fingerprint
+
+Location: portrait-deletion-participant.ts /0079 snapshot guards. A low-entropy answer hash remained after transcript erasure. Fixed by atomically replacing fingerprint with a non-content-derived erased sentinel during guarded privacy scrub. Real persistence approve/discard/delete tests verify it. Security remediation closed.
+
+### S2 — Medium: erasure could wait indefinitely for interview worker
+
+Location: portrait-deletion-participant.ts / account purge. Queued work and expired running leases could remain busy when the executor disappeared. Fixed queued immediate cancellation, executor-independent bounded expired-lease numerical settlement/terminalization, shared lock order, and protection of live leases. Real no-worker purge tests pass. Security remediation closed.
+
+### S3 — Medium: known diagnostic labels accepted as reusable preferences
+
+Location: domain/portrait-policy.ts. Expanded normalized all-field rejection for common supported-locale labels, explicit diagnostic statements, zero-width/punctuation evasions; functional needs remain accepted. HTTP gives a safe actionable rewording message. 45 focused tests passed. Security reviewer closed to the explicitly documented deterministic boundary; unknown semantic disclosures remain a residual limitation, not an exhaustive classifier guarantee.
+
+## Security verdict
+
+No critical/high/material medium findings remain. Specialist checked owner/auth fences, no client billing override, SQL-bound free policy, immutable admission/accounting, dispatch/lease fences, numerical liability through erasure, no prompt logs/tracing, strict model proposals and ordinary memory isolation. Provider-side behavior and all frontend surfaces remain outside evidence.
+
+## Functional review
+
+Independent initial review covered the full backend checkpoint over main5efaafe and captured runtime/test manifest. F2/F3 require remediation; F4 is fixed. No other material correctness, DDD/package, accounting, concurrency, deletion, capacity or performance findings were reported. Focused remediation review passed on the final resume patch and evidence. Full feature completion review remains required after later UI delivery and browser/fidelity evidence.
+
+### S4 — Author-preflight production role integration gap, resolved
+
+Location: infra/deploy/sql/account-purge-worker-role.sql / portrait-deletion-participant.ts. Added least-privilege portrait lifecycle/numerical and allocation-settlement grants, with no private payload SELECT. Narrowed recovery query to opaque identities/lifecycle/pricing fields; real restricted-role recovery+purge proof passes and private payload reads fail. Final persistence suite21/21 passes. Focused security delta review passed. The actual deployment-role test also settles a paid provider call, limited reservation and allocation before erasure while denying private fields and lease-token reads; the two-test composed journey passes.
+
+
+### Functional F1 — Requested locale persistence, withdrawn
+
+Full transaction inspection confirmed enqueue already persists requestedLocale. Completion preserves a later explicit locale choice. No implementation defect; focused regression evidence is being added.
+
+### Functional F2 — Medium: cross-device interview resume, resolved and independently re-reviewed
+
+Location: DrizzleInterviewStore.start / InterviewService.start. Resume synthesized the opening question and omitted the active operation handle, so a resumed learner could lose current options and fail to reconnect or stop queued/running work. Fixed by restoring the latest validated question without stale proposal fields, exposing separate recoverable pending output with base-version/generation/stale metadata, and returning a sanitized active-operation handle. Completed/failed-after-success/queued/running resume and poll/stop tests pass.
+
+### Functional F3 — Medium: stale items on resume, resolved and independently re-reviewed
+
+Location: DrizzleInterviewStore.start. A resumed context could retain older approved/draft items after manual edits. Fixed by refreshing these from the current locked portrait aggregate without extending inactivity or silently resolving version conflicts; real PostgreSQL tests pass.
+
+### Functional F4 — Low: affected-guide discovery, resolved
+
+Added portrait feature/module/contracts source mappings and related_features to the contextual assistant and account-control guides. Both mapping checks and the 26-guide validator pass. No existing journey prose/revision or browser behavior was changed.
+
+The earlier proposed expired-interview tombstone finding was withdrawn: live resume already returns expiresAt; retaining a post-expiry notice would add unrequested retention behavior.
+
+## Final backend checkpoint verdict
+
+2026-10-21 — Independent focused remediation review passes F2/F3/F4 with no remaining material findings. The reviewer inspected shared strict response schemas, store/service/HTTP paths, real persistence regressions and guide mappings, and independently confirmed all82 source hashes. Same-owner/live-interview recovery exposes only bounded public handles/proposals; proposals remain separate from authoritative items and carry stale/base-version metadata. Passive resume does not extend expiry/activity. Existing security pass plus the restricted-role paid recovery proof remain valid.
+
+Accepted evidence: E1 full1079 unit/src baseline plus final53 focused tests, E2 contracts132/prompts5, E3 PostgreSQL21, E4 conversation PostgreSQL35, E5 composed journeys2, and final backend lint/typecheck/build plus web consumer build/typecheck and guide checks. No critical/high/material medium findings remain in the backend checkpoint.
+
+This is not full-feature approval. Returned design, UI, browser/fidelity/localization/client-state evidence and final feature completion review remain required.
+
+
+## UI/additive-backend independent security review — 2026-10-21
+
+Boundary: current tracked and untracked UI/additive backend changes from backend checkpoint `dc02e53`. Independent security reviewer inspected owner-scoped API/cache/session retry, interview status/resume, bounded contracts, scoped credit bypass, React rendering, diagnostic safeguards, prompt/tool boundaries and logging. Unchanged backend billing/tenant-isolation evidence above was reused; broad suites were not rerun by the reviewer. Final UI source manifest will identify the completed tree.
+
+- **UI-S1 Medium — resolved.** An account change during refresh could send ownerless portrait mutations with another learner token, or contaminate another owner cache. Generic session transport now pins owner before dispatch/retry/receipt; portrait management, entry and interview orchestration also enforce captured owner identity between steps. Seven helper race tests and three auth refresh regressions cover the boundary. Combined auth/helper/entry/shell/management/privacy remediation:52tests pass.
+- **UI-S2 Medium — resolved.** Privacy/deletion copy implied stronger confidentiality/erasure than application code establishes. All four locales now scope privacy to the account in Languon, disclose sending current interview and approved context to the selected model provider before Start, and distinguish active application deletion from provider/backup copies. Eight rendered copy regressions pass, with lint/typecheck.
+
+Security verdict: no unresolved material security findings in the reviewed UI/backend delta. Natural-language diagnosis recognition is deliberately non-exhaustive; explicit review/server safeguards remain necessary. Provider/backup erasure is an operational policy boundary, not application-code proof. Independent functional/fidelity completion review remains required.
+
+
+## Initial full-feature completion review — 2026-10-21
+
+Boundary: `dc02e53..7f0fbbe`, current219path manifest; whole POR01–14 and source-fidelity inventory, with unchanged backendcheckpoint independently reviewed/reused. Reviewer confirmed all219runtime/test hashes and82frozen export hashes. Design adaptations are materially faithful, including the25px mobile-sheet difference for44px touch targets/native dialog. Evidence is otherwise proportionate/coherent; no other material DDD/FSD, contract, cache, auth, rendering, performance or acceptance gap reported.
+
+### UI-C1 — Medium: local mutation status survives owner changes, resolved
+
+Locations: use-portrait-management.ts29–66; portrait-entry-card.tsx37,65–90. Request/cache fences prevent cross-account data disclosure, but local pending/error state can survive A→B. Management's old-owner finally skips clearing pending, leaving B disabled; entry's old rejection can display A's generic error under B. Accepted for remediation with owner/request-scoped state and deferred-promise tests proving B usability and that late A settlement cannot alter a newer B request.
+
+Verdict: Changes requested until UI-C1 is fixed and independently re-reviewed. No critical/high/material security findings. Reviewer reused historical backend proof and confirmed representative runtime/fidelity coverage; live-provider/external-erasure and corrupt-source-PNG limitations remain as documented.
+
+UI-C1 remediation implemented: management and entry-enable hooks derive mutation status only for the current owner epoch and unique request. Synchronous request refs prevent duplicate starts; all receipt/catch/finally/cache work rechecks both identities, including A→B→A. The entry behavior is extracted into its owned hook to preserve component boundaries/size. Four deferred-promise regressions plus existing owner/entry/management checks pass22tests; full web typecheck, scoped lint and whitespace checks pass. Focused independent remediation review requested; finding remains pending that verdict.
+
+
+## Final full-feature completion verdict — Pass
+
+Focused independent remediation review of `7f0fbbe..d823163` closes UI-C1 with no new material findings. Owner epochs and unique request identity isolate pending/error/cache/return state, including A→B→A. Four deferred regressions and22focused tests, lint/typecheck, production build/post-build typecheck and the final real API/browser run are sufficient. The reviewer independently confirms all221manifest paths match current bytes, including the two intentional deletions; no remediation source differs from d823163.
+
+All critical/high/material security and relevant medium findings are resolved. The initial full-feature fidelity/coverage assessment remains valid, including the documented44px touch/native-dialog adaptation. EVIDENCE.md owns the accepted tests, actual runtime/source comparison, styling baseline and external-provider/source-capture limitations. No further implementation or review work remains.

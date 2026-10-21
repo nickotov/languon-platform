@@ -1,3 +1,6 @@
+import { createLearnerPortraitModule } from './modules/learner-portraits/infrastructure/learner-portrait-composition';
+import { createLearnerPortraitRoutes } from './modules/learner-portraits/interface/http/learner-portrait.routes';
+import { readApprovedPortraitForConversation } from './modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-portrait-store';
 import { createKnowledgeService } from './modules/knowledge/infrastructure/knowledge-composition';
 import { createKnowledgeRoutes } from './modules/knowledge/interface/http/knowledge.routes';
 import { KnowledgeDomainError } from './modules/knowledge/domain/knowledge';
@@ -249,6 +252,11 @@ const knowledge = createKnowledgeService({
         },
     },
 });
+const learnerPortraits = createLearnerPortraitModule({
+    database: authentication.productDependencies.database,
+    creditsBypass: environment.AI_INTERVIEW_CREDITS_BYPASS,
+    selectionPolicy: textsSelectionPolicy,
+});
 const conversations = createConversationsComposition({
     ...authentication.productDependencies,
     dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
@@ -258,9 +266,18 @@ const conversations = createConversationsComposition({
     },
     policy: authentication.options.policy,
     admitTurn: conversationAdmission(textsSelectionPolicy),
+    readPortrait: readApprovedPortraitForConversation,
     settleInterrupted: settleInterruptedConversationCalls,
 });
 const app = createApp({
+    learnerPortraits: createLearnerPortraitRoutes({
+        portraits: learnerPortraits.portraits,
+        interviews: learnerPortraits.interviews,
+        authenticate: authenticateTextActor,
+        rateLimiter: authentication.productDependencies.rateLimiter,
+        policy: authentication.options.policy,
+        creditsBypass: environment.AI_INTERVIEW_CREDITS_BYPASS,
+    }),
     conversations: conversations.routes,
     knowledge: createKnowledgeRoutes({
         service: knowledge,

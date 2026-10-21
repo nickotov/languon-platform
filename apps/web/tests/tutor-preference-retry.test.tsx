@@ -85,10 +85,17 @@ function fixture() {
             }),
         { wrapper: Provider },
     );
-    function setPreferences(next: typeof preferences) {
+    function setPreferences(
+        next: typeof preferences,
+        effective?: typeof preferences,
+    ) {
         detail = {
             ...detail,
-            conversation: { ...detail.conversation, preferences: next },
+            conversation: {
+                ...detail.conversation,
+                preferences: next,
+                effectivePreferences: effective,
+            },
         };
         client.setQueryData(['conversation', 'actor', id], detail);
         return { conversation: detail.conversation };
@@ -243,5 +250,93 @@ it('clears preference and defaults retry operations when navigating to another c
     expect(update).toHaveBeenCalledTimes(1);
     expect(defaults).toHaveBeenCalledTimes(1);
     expect(stream.submit).not.toHaveBeenCalled();
+    client.clear();
+});
+
+it('displays effective portrait values while saving only the changed manual field', async () => {
+    const { result, client, setPreferences } = fixture();
+    await waitFor(() => expect(result.current.preferences).toBeDefined());
+    const manual = ChatPreferencesSchema.parse({
+        mode: 'practice',
+        replyLanguage: 'en',
+        tone: 'academic',
+        detail: 'concise',
+        wording: 'academic',
+        approach: 'theory-first',
+        portrait: {
+            enabled: true,
+            inheritedFields: [
+                'replyLanguage',
+                'tone',
+                'detail',
+                'wording',
+                'approach',
+            ],
+        },
+    });
+    const effective = ChatPreferencesSchema.parse({
+        ...manual,
+        replyLanguage: 'es',
+        tone: 'conversational',
+        detail: 'detailed',
+        wording: 'simple',
+        approach: 'examples-first',
+    });
+    act(() => {
+        setPreferences(manual, effective);
+    });
+    await waitFor(() =>
+        expect(result.current.preferences?.replyLanguage).toBe('es'),
+    );
+    const update = vi
+        .spyOn(conversationApi, 'update')
+        .mockImplementation(async (_token, _id, next) => setPreferences(next));
+    act(() =>
+        result.current.updatePreferences({ ...effective, wording: 'balanced' }),
+    );
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    expect(update.mock.calls[0]?.[2]).toMatchObject({
+        mode: 'practice',
+        replyLanguage: 'en',
+        tone: 'academic',
+        detail: 'concise',
+        wording: 'balanced',
+        approach: 'theory-first',
+    });
+    expect(update.mock.calls[0]?.[2].portrait?.inheritedFields).toEqual([
+        'replyLanguage',
+        'tone',
+        'detail',
+        'approach',
+    ]);
+    client.clear();
+});
+
+it('creates a fresh excluded chat in the first request while keeping manual settings', async () => {
+    const { result, client, setPreferences } = fixture();
+    await waitFor(() => expect(result.current.preferences).toBeDefined());
+    const manual = ChatPreferencesSchema.parse({
+        mode: 'correct',
+        replyLanguage: 'en',
+        tone: 'academic',
+        portrait: { enabled: true, inheritedFields: ['tone'] },
+    });
+    act(() => {
+        setPreferences(manual, { ...manual, tone: 'conversational' });
+    });
+    await waitFor(() =>
+        expect(result.current.preferences?.mode).toBe('correct'),
+    );
+    const create = vi
+        .spyOn(conversationApi, 'create')
+        .mockResolvedValue(setPreferences(manual));
+    act(() => result.current.createWithoutPortrait());
+    await waitFor(() => expect(create).toHaveBeenCalledOnce());
+    expect(create.mock.calls[0]?.[3]).toMatchObject({
+        mode: 'correct',
+        replyLanguage: 'en',
+        tone: 'academic',
+        portrait: { enabled: false, inheritedFields: ['tone'] },
+    });
     client.clear();
 });

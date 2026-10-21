@@ -724,3 +724,35 @@ it('shares one polling slot fairly among dictionary, conversation, sentence, tex
     await runtime.shutdown('SIGTERM');
     expect(release).toHaveBeenCalledTimes(5);
 });
+
+it('shares a bounded slot with portrait interviews and releases their worker on shutdown', async () => {
+    const order: string[] = [];
+    const release = vi.fn(async () => undefined);
+    const run = (kind: string) => async () => {
+        order.push(kind);
+        if (order.length === 4) void runtime.shutdown('SIGTERM');
+        return true;
+    };
+    const runtime = new DictionaryWorkerRuntime({
+        concurrency: 1,
+        drainTimeoutMs: 100,
+        pollIntervalMs: 1,
+        readinessTimeoutMs: 100,
+        supportedFormats: ['portrait-interview:v1'],
+        workerId: 'portrait-worker',
+        logger: { info: vi.fn(), error: vi.fn() },
+        service: {
+            readiness: async () => undefined,
+            processNext: run('dictionary'),
+            releaseWorkerLeases: release,
+        },
+        portraitInterviewService: {
+            processNext: run('portrait'),
+            releaseWorkerLeases: release,
+        },
+    });
+    await runtime.run();
+    expect(order).toEqual(['dictionary', 'portrait', 'dictionary', 'portrait']);
+    await runtime.shutdown('SIGTERM');
+    expect(release).toHaveBeenCalledTimes(2);
+});

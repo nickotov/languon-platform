@@ -112,8 +112,10 @@ export function useConversation(
         pendingRequest.current = null;
     }
     const create = useMutation({
-        mutationFn: () =>
-            request((token) => conversationApi.create(token, source, shareKey)),
+        mutationFn: (preferences?: ChatPreferences) =>
+            request((token) =>
+                conversationApi.create(token, source, shareKey, preferences),
+            ),
         onSuccess: async ({ conversation }) => {
             // The first conversation adopts a passage attached while creation runs.
             if (id) {

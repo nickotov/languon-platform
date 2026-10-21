@@ -35,3 +35,7 @@ apps/*/next-env.d.ts
 .agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v003/reference
 .agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v004/source
 .agent/features/047-knowledge-workspace/designs/knowledge-workspace-detail/v004/reference
+
+# Frozen learner portrait prompt and exact selected provider source.
+.agent/features/051-learner-portrait/designs/learner-portrait/v001.prompt.md
+.agent/features/051-learner-portrait/designs/learner-portrait/v001/source

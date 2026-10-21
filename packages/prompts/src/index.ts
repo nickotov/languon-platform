@@ -1,3 +1,4 @@
+import { learnerInterviewerPrompt } from './local/learner-interviewer';
 import { textTranslationPrompt, textDetectionPrompt } from './local/texts';
 import { sentenceGenerationPrompt } from './local/sentence-generation';
 import { sentenceCheckPrompt } from './local/sentence-check';
@@ -12,6 +13,7 @@ import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring
 import { contextualLanguageTutorPrompt } from './local/contextual-language-tutor';
 
 const localPrompts = {
+    [learnerInterviewerPrompt.name]: learnerInterviewerPrompt.system,
     [contextualLanguageTutorPrompt.name]: contextualLanguageTutorPrompt.system,
     [textTranslationPrompt.name]: textTranslationPrompt.system,
     [textDetectionPrompt.name]: textDetectionPrompt.system,

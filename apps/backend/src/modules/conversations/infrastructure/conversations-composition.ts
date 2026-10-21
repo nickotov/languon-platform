@@ -24,7 +24,7 @@ import { createConversationRoutes } from '../interface/http/conversation.routes'
 import type { WorkspaceContextLimits } from '../application/workspace-turn-context';
 export interface ConversationsCompositionDependencies extends Pick<
     ConversationPersistenceDependencies,
-    'database' | 'admitTurn' | 'settleInterrupted'
+    'database' | 'admitTurn' | 'settleInterrupted' | 'readPortrait'
 > {
     accessTokens: AccessTokenSigner;
     authentication: Pick<AuthenticationService, 'requireActiveSession'>;
@@ -62,6 +62,9 @@ export function createConversationsComposition(
     });
     const store = new DrizzleConversationStore({
         database: dependencies.database,
+        ...(dependencies.readPortrait
+            ? { readPortrait: dependencies.readPortrait }
+            : {}),
         sources,
         ...(dependencies.workspaceContextLimits
             ? { workspaceContextLimits: dependencies.workspaceContextLimits }

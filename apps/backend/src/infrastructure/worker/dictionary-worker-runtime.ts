@@ -36,6 +36,7 @@ export interface DictionaryWorkerRuntimeOptions {
     sentencePreparation?: {
         tick(context: { now: Date; signal: AbortSignal }): Promise<boolean>;
     };
+    portraitMaintenance?: { tick(): Promise<void> };
     sentenceService?: {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
@@ -45,6 +46,10 @@ export interface DictionaryWorkerRuntimeOptions {
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
     };
     conversationService?: {
+        processNext(signal: AbortSignal): Promise<boolean>;
+        releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
+    };
+    portraitInterviewService?: {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
     };
@@ -124,6 +129,7 @@ export class DictionaryWorkerRuntime {
     readonly #logger: DictionaryWorkerLogger;
     readonly #options: DictionaryWorkerRuntimeOptions;
     #loops: Promise<void>[] = [];
+    #nextPortraitMaintenanceAt = 0;
     #operationalLoop?: Promise<void>;
     readonly #operationalObservationIntervalMs: number;
     readonly #shutdownComplete: Promise<void>;
@@ -238,6 +244,7 @@ export class DictionaryWorkerRuntime {
                         this.#options.textsService,
                         this.#options.selectionService,
                         this.#options.conversationService,
+                        this.#options.portraitInterviewService,
                     ]
                         .filter((service) => service !== undefined)
                         .map((service) =>
@@ -271,6 +278,13 @@ export class DictionaryWorkerRuntime {
         let turn = index;
         while (!signal.aborted) {
             try {
+                if (
+                    this.#options.portraitMaintenance &&
+                    Date.now() >= this.#nextPortraitMaintenanceAt
+                ) {
+                    this.#nextPortraitMaintenanceAt = Date.now() + 60_000;
+                    await this.#options.portraitMaintenance.tick();
+                }
                 const dictionary = () =>
                     this.#options.service.processNext({
                         signal,
@@ -303,6 +317,14 @@ export class DictionaryWorkerRuntime {
                           ]
                         : []),
                     ...(this.#options.sentenceService ? [sentence] : []),
+                    ...(this.#options.portraitInterviewService
+                        ? [
+                              () =>
+                                  this.#options.portraitInterviewService!.processNext(
+                                      signal,
+                                  ),
+                          ]
+                        : []),
                     ...(this.#options.textsService
                         ? [
                               () =>

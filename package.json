@@ -70,6 +70,7 @@
         "web-dev-panel:check": "pnpm --filter @languon/web-dev-panel catalog:check",
         "test:e2e:user-ai-model-preferences-backend": "node scripts/run-user-ai-model-preferences-e2e.mjs",
         "test:e2e:sentence-practice-backend": "node scripts/run-sentence-practice-e2e.mjs",
+        "test:e2e:learner-portrait": "node scripts/run-learner-portrait-e2e.mjs",
         "search:ast": "ast-grep",
         "test:code-search": "node --test scripts/code-search.test.mjs",
         "styles:check": "pnpm --filter @languon/web styles:check",

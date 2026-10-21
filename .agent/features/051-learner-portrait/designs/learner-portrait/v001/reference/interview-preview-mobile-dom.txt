@@ -1,0 +1,91 @@
+- generic [ref=e1] clickable [onclick]
+  - banner
+    - button "Leave interview (progress is kept)" [ref=e3]
+    - heading "Learner portrait interview" [level=1, ref=e4]
+    - button "Languages · 1 of 5 Show topic details" [expanded=false, ref=e5]
+      - StaticText "Languages · 1 of 5"
+      - StaticText "Show topic details"
+    - button "Hide draft preview" [ref=e6]
+    - button "Pause interview" [ref=e7]
+    - button "Review" [ref=e8]
+      - StaticText "Review"
+  - main
+    - log "Interview conversation"
+      - article "Message from Interviewer" [ref=e11]
+        - StaticText "Interviewer"
+        - time
+          - StaticText "3:13 PM"
+        - paragraph
+          - StaticText "Hi! I’ll ask a few short questions about your languages, goals, and how you like things explained. Skip anything you like — you can review your portrait at any time."
+      - article "Message from Interviewer" [ref=e12]
+        - StaticText "Interviewer"
+        - time
+          - StaticText "3:13 PM"
+        - paragraph
+          - StaticText "Which languages do you know, and which are you learning now?"
+    - region "Current question" [ref=e9]
+      - paragraph
+        - StaticText "LANGUAGES · YOU CAN SKIP THIS"
+      - heading "Which languages do you know, and which are you learning now?" [level=2, ref=e13]
+      - paragraph
+        - StaticText "Describe each in your own words — this isn’t a test."
+      - group "Languages you know"
+        - paragraph
+          - StaticText "Languages you know"
+        - paragraph
+          - StaticText "Select all that apply."
+        - checkbox "English" [checked=false, ref=e19]
+          - StaticText "English"
+        - checkbox "Spanish" [checked=false, ref=e20]
+          - StaticText "Spanish"
+        - checkbox "French" [checked=false, ref=e21]
+          - StaticText "French"
+        - checkbox "Russian" [checked=false, ref=e22]
+          - StaticText "Russian"
+        - checkbox "German" [checked=false, ref=e23]
+          - StaticText "German"
+        - checkbox "Italian" [checked=false, ref=e24]
+          - StaticText "Italian"
+        - checkbox "Portuguese" [checked=false, ref=e25]
+          - StaticText "Portuguese"
+        - checkbox "Japanese" [checked=false, ref=e26]
+          - StaticText "Japanese"
+      - LabelText
+        - StaticText "Your own answer (optional)"
+      - textbox "Your own answer (optional)" [ref=e27]
+      - paragraph
+        - StaticText "Short answer for this question · up to 200 characters"
+      - paragraph
+        - StaticText "Custom answer · 0 / 200"
+      - button "Skip" [ref=e14]
+      - button "Continue" [ref=e15]
+    - form "Message the interviewer"
+      - generic
+        - textbox "Message the interviewer — ask what a question means or answer in your own words" [ref=e29]
+        - button "Send message" [disabled, ref=e30]
+      - paragraph
+        - StaticText "0/1,000 characters · free"
+  - dialog "Draft preview"
+    - generic [ref=e10] clickable [onclick]
+    - group
+      - paragraph
+        - StaticText "DRAFT PREVIEW"
+      - StaticText "Not saved"
+      - button "Hide draft preview" [ref=e16]
+      - region "Your portrait so far" [ref=e17]
+        - heading "Your portrait so far" [level=2, ref=e28]
+        - paragraph
+          - StaticText "Nothing to save yet"
+        - paragraph
+          - StaticText "Add at least one item — a language, goal, or preference — and a summary will appear here. We won’t invent one for you."
+      - DescriptionList
+        - term "Items in draft"
+        - definition
+          - StaticText "0"
+        - term "Awaiting your review"
+        - definition
+          - StaticText "0"
+      - button "Review portrait" [ref=e18]
+      - paragraph
+        - StaticText "Paused interviews resume on any device until Nov 3, 2026."
+  - button "Prototype" [expanded=false, ref=e2]

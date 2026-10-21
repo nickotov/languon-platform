@@ -66,6 +66,13 @@ export function conversationExecutionObservationId(
 ): string {
     return `conversation-execution:v1/${identity(workerId, providerId, modelId)}`;
 }
+export function portraitInterviewExecutionObservationId(
+    workerId: string,
+    providerId: string,
+    modelId: string,
+): string {
+    return `portrait-interview-execution:v1/${identity(workerId, providerId, modelId)}`;
+}
 interface WorkerCapabilityObservation {
     id: string;
     workerId: string;
@@ -121,6 +128,11 @@ export function isTextsCapacityCapableObservation(
         observation.textAiCapacityRevision === 1 &&
         observation.textsCapacityRevision === 1 &&
         [
+            portraitInterviewExecutionObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
             conversationCapacityObservationId(
                 observation.workerId,
                 observation.providerId,
@@ -176,6 +188,11 @@ export function isConversationCapacityCapableObservation(
         observation.textsCapacityRevision === 1 &&
         observation.conversationCapacityRevision === 1 &&
         [
+            portraitInterviewExecutionObservationId(
+                observation.workerId,
+                observation.providerId,
+                observation.modelId,
+            ),
             conversationCapacityObservationId(
                 observation.workerId,
                 observation.providerId,
@@ -194,12 +211,14 @@ export function isConversationExecutionCapableObservation(
     format: string = 'conversation:v1',
 ): boolean {
     return (
-        format === 'conversation:v1' &&
+        (format === 'conversation:v1' || format === 'portrait-interview:v1') &&
         isConversationCapacityCapableObservation(observation, format) &&
         observation.conversationExecutionRevision === 1 &&
         observation.creditSettlementRevision === 1 &&
         observation.id ===
-            conversationExecutionObservationId(
+            (format === 'portrait-interview:v1'
+                ? portraitInterviewExecutionObservationId
+                : conversationExecutionObservationId)(
                 observation.workerId,
                 observation.providerId,
                 observation.modelId,

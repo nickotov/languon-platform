@@ -424,3 +424,33 @@ describe('immutable typed copied dictionary cards', () => {
         });
     });
 });
+
+it('keeps independent portrait explanation settings and accepts all inherited fields', () => {
+    const parsed = ChatPreferencesSchema.parse({
+        mode: 'practice',
+        detail: 'concise',
+        wording: 'academic',
+        approach: 'examples-first',
+        portrait: {
+            enabled: true,
+            inheritedFields: [
+                'replyLanguage',
+                'tone',
+                'explanationLevel',
+                'detail',
+                'wording',
+                'approach',
+            ],
+        },
+    });
+    expect(parsed).toMatchObject({
+        mode: 'practice',
+        detail: 'concise',
+        wording: 'academic',
+        approach: 'examples-first',
+    });
+    expect(
+        ChatPreferencesSchema.safeParse({ ...parsed, wording: 'diagnosed' })
+            .success,
+    ).toBe(false);
+});

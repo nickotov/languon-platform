@@ -41,7 +41,10 @@ export function textAiProviderMaximumPricedCostMicros(
     });
 }
 
-export const textAiConversationFormats = ['conversation:v1'] as const;
+export const textAiConversationFormats = [
+    'conversation:v1',
+    'portrait-interview:v1',
+] as const;
 
 export const textAiTextsFormats = [
     'text-detection:v1',

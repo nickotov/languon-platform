@@ -73,6 +73,8 @@ export interface TutorRunInput {
     preferences: ChatPreferences;
     /** Authorized, bounded source metadata/current text. No share secrets or source instructions. */
     sourceContext: Record<string, unknown>;
+    /** Ephemeral approved data, never persisted as a message or memory state. */
+    portraitContext?: unknown;
     memory: TutorMemoryPort;
     signal: AbortSignal;
     onDelta(input: { messageId: string; text: string }): Promise<void>;

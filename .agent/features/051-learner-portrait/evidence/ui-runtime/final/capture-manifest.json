@@ -1,0 +1,111 @@
+{
+  "runId": "portrait-final-owner-scoped",
+  "sourceIdentity": "../../final-source-sha256.json",
+  "data": "Synthetic local test accounts only; real application and disposable DB/cache; deterministic external models.",
+  "captures": [
+    {
+      "file": "portrait-conflict-desktop.png",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 1440,
+        "height": 3191
+      },
+      "sha256": "1f87ca3ec9140645269b176913b0080662c856a4eb6d1d7738a64699be69f0ff"
+    },
+    {
+      "file": "portrait-delete-mobile.png",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 390,
+        "height": 1605
+      },
+      "sha256": "70f1e1e68d798ebb8864f35ac996fc318906f50435331dc08c603725762b8b49"
+    },
+    {
+      "file": "portrait-interview-desktop.png",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 1440,
+        "height": 930
+      },
+      "sha256": "7097ed6e3bd967494de4aa3153533191e1a91f0d21caf2f5a3db21b3f18262e6"
+    },
+    {
+      "file": "portrait-interview-intro-desktop.png",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "e623e5700c63c0c95f9bef06b1bc82e2673027cf2764230841c36f9f7b4315f9"
+    },
+    {
+      "file": "portrait-interview-preview-desktop.png",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 1440,
+        "height": 930
+      },
+      "sha256": "c3eeb74f53c55d10186572abb4f3cd424c8678f57c4152981a1a82e04b6c9a09"
+    },
+    {
+      "file": "portrait-interview-review-desktop.png",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 1440,
+        "height": 3552
+      },
+      "sha256": "3d4d04019c328282feceac3917a16e4356616ac603c5ab5a4b93f4f983d55e3e"
+    },
+    {
+      "file": "portrait-manual-editor-desktop.png",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 1440,
+        "height": 2632
+      },
+      "sha256": "7d240b4c5efa0f0cdf9486d9510d066ce0dcdfe5fa82bc6064f1e027a9ded8f8"
+    },
+    {
+      "file": "portrait-manual-editor-populated-desktop.png",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fullPage": true,
+      "pngPixels": {
+        "width": 1440,
+        "height": 2840
+      },
+      "sha256": "78a3764ac164d001f7e4ce4376d9c4cc79e417b920d1f40d0be7cd2388ad3d83"
+    }
+  ]
+}

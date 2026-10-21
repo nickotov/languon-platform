@@ -1,5 +1,5 @@
 import type { AuthenticationSuccessResponse } from '@languon/contracts';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -110,6 +110,117 @@ describe('web access-token refresh', () => {
         expect(operation).toHaveBeenNthCalledWith(1, 'expired-access-token');
         expect(operation).toHaveBeenNthCalledWith(2, 'refreshed-access-token');
         expect(authApi.refresh).toHaveBeenCalledTimes(2);
+    });
+
+    it('never retries an earlier owner request after the account switches', async () => {
+        let rejectRequest!: (error: unknown) => void;
+        const operation = vi.fn(
+            () =>
+                new Promise<string>((_resolve, reject) => {
+                    rejectRequest = reject;
+                }),
+        );
+        const user = userEvent.setup();
+        render(
+            <AuthProvider>
+                <RequestHarness operation={operation} />
+            </AuthProvider>,
+        );
+        await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
+        useSessionStore.getState().authenticate(expiredSession);
+        await user.click(
+            screen.getByRole('button', { name: 'Run protected request' }),
+        );
+        await act(async () => {
+            useSessionStore
+                .getState()
+                .authenticate({
+                    ...refreshedSession,
+                    user: {
+                        ...refreshedSession.user,
+                        id: '20000000-0000-4000-8000-000000000001',
+                    },
+                });
+            rejectRequest(
+                new DictionaryApiError(401, {
+                    code: 'authentication_required',
+                    correlationId: 'expired',
+                    message: 'Sign in.',
+                }),
+            );
+        });
+        await expect(screen.findByText('failed')).resolves.toBeVisible();
+        expect(operation).toHaveBeenCalledTimes(1);
+        expect(authApi.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects a refresh for a different owner before retrying the operation', async () => {
+        const operation = vi.fn(async () => {
+            throw new DictionaryApiError(401, {
+                code: 'authentication_required',
+                correlationId: 'expired',
+                message: 'Sign in.',
+            });
+        });
+        const user = userEvent.setup();
+        render(
+            <AuthProvider>
+                <RequestHarness operation={operation} />
+            </AuthProvider>,
+        );
+        await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
+        useSessionStore.getState().authenticate(expiredSession);
+        vi.mocked(authApi.refresh).mockResolvedValueOnce({
+            ...refreshedSession,
+            user: {
+                ...refreshedSession.user,
+                id: '20000000-0000-4000-8000-000000000001',
+            },
+        });
+        await user.click(
+            screen.getByRole('button', { name: 'Run protected request' }),
+        );
+        await expect(screen.findByText('failed')).resolves.toBeVisible();
+        expect(operation).toHaveBeenCalledTimes(1);
+        expect(authApi.refresh).toHaveBeenCalledTimes(2);
+    });
+
+    it('discards a completed private response after the account switches', async () => {
+        let finishRequest!: (value: string) => void;
+        const operation = vi.fn(
+            () =>
+                new Promise<string>((resolve) => {
+                    finishRequest = resolve;
+                }),
+        );
+        const user = userEvent.setup();
+        render(
+            <AuthProvider>
+                <RequestHarness operation={operation} />
+            </AuthProvider>,
+        );
+        await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
+        useSessionStore.getState().authenticate(expiredSession);
+        await user.click(
+            screen.getByRole('button', { name: 'Run protected request' }),
+        );
+        await act(async () => {
+            useSessionStore
+                .getState()
+                .authenticate({
+                    ...refreshedSession,
+                    user: {
+                        ...refreshedSession.user,
+                        id: '20000000-0000-4000-8000-000000000001',
+                    },
+                });
+            finishRequest('private earlier-owner response');
+        });
+        await expect(screen.findByText('failed')).resolves.toBeVisible();
+        expect(
+            screen.queryByText('private earlier-owner response'),
+        ).not.toBeInTheDocument();
+        expect(operation).toHaveBeenCalledTimes(1);
     });
 
     it('does not refresh a genuine forbidden dictionary response', async () => {

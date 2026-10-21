@@ -65,6 +65,9 @@ export class ConversationWorkerService {
                 message: turn.message,
                 preferences: turn.preferences,
                 sourceContext: source.initialContext,
+                ...(turn.portraitContext
+                    ? { portraitContext: turn.portraitContext }
+                    : {}),
                 memory: this.dependencies.store.memory(turn),
                 signal: combined,
                 onDelta: async ({ text }) => {

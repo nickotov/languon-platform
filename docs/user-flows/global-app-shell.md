@@ -21,6 +21,7 @@ e2e_scenarios:
     - guest-settings-persistence
     - session-aware-global-navigation
 related_features:
+    - learner-portrait
     - contextual-language-assistant-and-knowledge
     - magic-profile-page
     - user-authentication
@@ -33,13 +34,17 @@ related_features:
 ## What this verifies
 
 All normal web pages share desktop expanded/rail navigation and a mobile top bar
-with a modal drawer. Home displays only **WIP** in every locale. Every Languon
+with a modal drawer. Home shows a dated, localized welcome heading, with the
+learner portrait entry available only to signed-in learners. Every Languon
 logo leads to `/`. Guests can sign in and change locale or appearance; they
 cannot see owner dictionary links, create actions, or account identity. During
 session restoration, the footer shows a pending identity instead of Sign in.
 Signed-in users retain dictionary navigation and the account menu on home,
 authentication, profile, shared-reader, and not-found pages. Fullscreen learning
-and existing page access checks retain their established behavior.
+and existing page access checks retain their established behavior. The focused
+`/portrait/interview` route uses its own interview header, back/pause/review
+controls and language selector, without the application sidebar or mobile
+navigation drawer. Other portrait routes retain the normal application shell.
 
 ## Start the development environment
 
@@ -67,7 +72,8 @@ These tests use ordinary signup and manual dictionaries and call no model servic
 4. At 390px width, open navigation and then Settings. Select Light inside the
    drawer. Press Escape once: only Settings closes and focus returns to its gear.
    Press Escape again: the drawer closes and focus returns to Open navigation.
-5. Follow the mobile logo. Expect `/` with WIP. Open a nonexistent route and a
+5. Follow the mobile logo. Expect `/` with the localized welcome heading and no
+   private portrait actions. Open a nonexistent route and a
    shared dictionary route with no valid capability. Confirm the normal shell is
    still available, the page retains its error state, and no private dictionary
    listing request is issued. Lookalike routes `/dictionaries-other`,
@@ -76,8 +82,9 @@ These tests use ordinary signup and manual dictionaries and call no model servic
    Valid shared-reader access remains covered by the
    [dictionary platform guide](dictionary-platform.md).
 6. Sign up and verify a fresh synthetic learner, create a manual dictionary,
-   and follow the sidebar logo to `/`. Expect WIP with the dictionary link and
-   real account identity still in the shell. The guest Settings gear is absent;
+   and follow the sidebar logo to `/`. Expect the welcome heading and portrait
+   entry, with the dictionary link and real account identity still in the shell.
+   The guest Settings gear is absent;
    locale and System/Light/Dark remain in the account menu.
 7. Sign out, then sign up a different learner in the same browser. Expect the
    previous learner's dictionary links to disappear immediately. Create another
@@ -97,7 +104,9 @@ These tests use ordinary signup and manual dictionaries and call no model servic
 
 Bootstrap gating and direct identity changes in one mounted query client are
 covered in component tests. Valid shared capabilities and fullscreen learning
-remain covered by their existing journey suites.
+remain covered by their existing journey suites. The focused interview chrome
+boundary is checked in `tests/app-shell.test.tsx`; the interview's resumable
+browser journey belongs to the [learner portrait guide](learner-portrait.md).
 
 ## Expected failure and edge cases
 

@@ -6,6 +6,7 @@ import {
     textsExecutionObservationId,
     conversationCapacityObservationId,
     conversationExecutionObservationId,
+    portraitInterviewExecutionObservationId,
 } from '../persistence/drizzle/text-ai-worker-readiness';
 import { lte } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -38,6 +39,7 @@ export async function publishTextAiWorkerObservations(options: {
     textsCapacityEnabled?: boolean;
     conversationCapacityEnabled?: boolean;
     conversationExecutionEnabled?: boolean;
+    portraitInterviewExecutionEnabled?: boolean;
     sentencePreparationExecutionEnabled?: boolean;
     supportedFormats: readonly string[];
     ttlMs?: number;
@@ -104,6 +106,7 @@ export async function publishTextAiWorkerObservations(options: {
             capacity: boolean = false,
             conversationCapacity: boolean = false,
             conversationExecution: boolean = false,
+            portraitInterviewExecution: boolean = false,
         ) => {
             if (formats.length === 0) return;
             await options.database
@@ -118,26 +121,34 @@ export async function publishTextAiWorkerObservations(options: {
                     textsExecutionRevision: texts ? 1 : null,
                     conversationCapacityRevision:
                         options.conversationCapacityEnabled ? 1 : null,
-                    conversationExecutionRevision: conversationExecution
-                        ? 1
-                        : null,
+                    conversationExecutionRevision:
+                        conversationExecution || portraitInterviewExecution
+                            ? 1
+                            : null,
                     learningExecutionRevision: learning ? 1 : null,
                     creditSettlementRevision:
-                        learning || texts || conversationExecution ? 1 : null,
+                        learning ||
+                        texts ||
+                        conversationExecution ||
+                        portraitInterviewExecution
+                            ? 1
+                            : null,
                     textAiSupportedFormats: [...formats],
                     checkedAt,
                     expiresAt,
-                    id: (conversationExecution
-                        ? conversationExecutionObservationId
-                        : conversationCapacity
-                          ? conversationCapacityObservationId
-                          : texts
-                            ? textsExecutionObservationId
-                            : capacity
-                              ? textsCapacityObservationId
-                              : learning
-                                ? sentenceExecutionObservationId
-                                : textAiCapacityObservationId)(
+                    id: (portraitInterviewExecution
+                        ? portraitInterviewExecutionObservationId
+                        : conversationExecution
+                          ? conversationExecutionObservationId
+                          : conversationCapacity
+                            ? conversationCapacityObservationId
+                            : texts
+                              ? textsExecutionObservationId
+                              : capacity
+                                ? textsCapacityObservationId
+                                : learning
+                                  ? sentenceExecutionObservationId
+                                  : textAiCapacityObservationId)(
                         options.workerId,
                         model.providerId,
                         model.id,
@@ -159,12 +170,16 @@ export async function publishTextAiWorkerObservations(options: {
                         textsExecutionRevision: texts ? 1 : null,
                         conversationCapacityRevision:
                             options.conversationCapacityEnabled ? 1 : null,
-                        conversationExecutionRevision: conversationExecution
-                            ? 1
-                            : null,
+                        conversationExecutionRevision:
+                            conversationExecution || portraitInterviewExecution
+                                ? 1
+                                : null,
                         learningExecutionRevision: learning ? 1 : null,
                         creditSettlementRevision:
-                            learning || texts || conversationExecution
+                            learning ||
+                            texts ||
+                            conversationExecution ||
+                            portraitInterviewExecution
                                 ? 1
                                 : null,
                         textAiSupportedFormats: [...formats],
@@ -194,6 +209,7 @@ export async function publishTextAiWorkerObservations(options: {
             supportedFormats.filter(
                 (format) =>
                     format !== 'conversation:v1' &&
+                    format !== 'portrait-interview:v1' &&
                     !sentenceFormats.includes(format) &&
                     !textAiTextsFormats.some(
                         (candidate) => candidate === format,
@@ -206,6 +222,7 @@ export async function publishTextAiWorkerObservations(options: {
                 supportedFormats.filter(
                     (format) =>
                         format !== 'conversation:v1' &&
+                        format !== 'portrait-interview:v1' &&
                         !textAiTextsFormats.some(
                             (candidate) => candidate === format,
                         ),
@@ -231,7 +248,9 @@ export async function publishTextAiWorkerObservations(options: {
         ) {
             await publish(
                 supportedFormats.filter(
-                    (format) => format !== 'conversation:v1',
+                    (format) =>
+                        format !== 'conversation:v1' &&
+                        format !== 'portrait-interview:v1',
                 ),
                 !!options.learningExecutionEnabled,
                 !!options.textsExecutionEnabled,
@@ -249,6 +268,23 @@ export async function publishTextAiWorkerObservations(options: {
                     false,
                     true,
                 );
+        }
+        if (
+            options.portraitInterviewExecutionEnabled &&
+            options.conversationCapacityEnabled &&
+            options.textsCapacityEnabled
+        ) {
+            await publish(
+                supportedFormats.filter(
+                    (format) => format === 'portrait-interview:v1',
+                ),
+                false,
+                false,
+                false,
+                false,
+                false,
+                true,
+            );
         }
         if (options.learningExecutionEnabled)
             await publish(

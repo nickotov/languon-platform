@@ -113,6 +113,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         let client: PostgresClient;
         let db: PostgresJsDatabase<typeof databaseSchema>;
         let store: DrizzleConversationStore;
+        let portraitPolicy: { enabled: boolean; portrait: unknown | null };
         let owner: string,
             learner: string,
             dictionary: string,
@@ -152,12 +153,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             admitted.mockClear();
             interrupted.mockClear();
             beforePublish = undefined;
+            portraitPolicy = { enabled: false, portrait: null };
             await client`insert into users(id,status) values (${owner},'active'),(${learner},'active')`;
             await client`insert into dictionaries(id,owner_id,name,source_language_tag,target_language_tag,created_at,updated_at) values (${dictionary},${owner},'Spanish verbs','es','en',${clock.toISOString()},${clock.toISOString()})`;
             await client`insert into dictionary_settings(dictionary_id,definition_enabled,transcription_enabled) values (${dictionary},true,false)`;
             await client`insert into dictionary_cards(id,dictionary_id,authorship,source,normalized_source,translation,definition,transcription,example,example_translation,translation_context,sort_key) values (${card},${dictionary},'human','ser','ser','to be','identity','PRIVATE HIDDEN','Soy médico.','I am a doctor.','PRIVATE AUTHORING',1)`;
             store = new DrizzleConversationStore({
                 database: db,
+                readPortrait: async () => portraitPolicy,
                 now: () => clock,
                 admitTurn: admitted,
                 settleInterrupted: interrupted,
@@ -183,6 +186,118 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             });
         }, 120_000);
+        it('freezes approved portrait at admission, applies next-message changes and removes terminal snapshots', async () => {
+            portraitPolicy = {
+                enabled: true,
+                portrait: {
+                    locale: 'en',
+                    updatedAt: clock.toISOString(),
+                    summary: 'Display summary',
+                    items: {
+                        explanationLanguages: ['es'],
+                        tone: 'friendly',
+                        goals: ['PORTRAIT_SNAPSHOT'],
+                    },
+                },
+            };
+            const chat = await create();
+            expect(chat.effectivePreferences?.replyLanguage).toBe('es');
+            expect(chat.preferenceOrigins?.tone).toBe('portrait');
+            await store.submit(access(), chat.id, submit());
+            portraitPolicy.enabled = false;
+            await expect(
+                client`update conversation_turns set portrait_context=null where conversation_id=${chat.id} and status='queued'`,
+            ).rejects.toMatchObject({ code: '23514' });
+            const claimed = (await store.claim())!;
+            expect(claimed.preferences.replyLanguage).toBe('es');
+            expect(JSON.stringify(claimed.portraitContext)).toContain(
+                'PORTRAIT_SNAPSHOT',
+            );
+            expect(
+                JSON.stringify(
+                    (await store.detail(access(), chat.id)).messages,
+                ),
+            ).not.toContain('PORTRAIT_SNAPSHOT');
+            await store.finish(claimed, 'succeeded');
+            const [terminal] =
+                await client`select portrait_context from conversation_turns where id=${claimed.id}`;
+            expect(terminal!.portrait_context).toBeNull();
+            await store.submit(access(), chat.id, submit());
+            const next = (await store.claim())!;
+            expect(next.portraitContext).toBeUndefined();
+            expect(next.preferences.replyLanguage).toBe('auto');
+            await store.finish(next, 'succeeded');
+            portraitPolicy = {
+                enabled: true,
+                portrait: {
+                    locale: 'en',
+                    updatedAt: clock.toISOString(),
+                    summary: '',
+                    items: {
+                        explanationLanguages: ['de'],
+                        goals: ['UPDATED_PORTRAIT'],
+                    },
+                },
+            };
+            await store.submit(access(), chat.id, submit());
+            const updated = (await store.claim())!;
+            expect(updated.preferences.replyLanguage).toBe('de');
+            expect(JSON.stringify(updated.portraitContext)).toContain(
+                'UPDATED_PORTRAIT',
+            );
+            expect(JSON.stringify(updated.portraitContext)).not.toContain(
+                'PORTRAIT_SNAPSHOT',
+            );
+            await store.finish(updated, 'succeeded');
+        });
+        it('keeps legacy chats manual until explicit adoption and honors per-chat exclusion', async () => {
+            portraitPolicy = {
+                enabled: true,
+                portrait: {
+                    locale: 'en',
+                    updatedAt: clock.toISOString(),
+                    summary: '',
+                    items: { explanationLanguages: ['es'], tone: 'friendly' },
+                },
+            };
+            const chat = await create();
+            const legacy = ChatPreferencesSchema.parse({
+                replyLanguage: 'en',
+                tone: 'academic',
+            });
+            await client`update conversation_chats set preferences=${JSON.stringify(legacy)}::jsonb where id=${chat.id}`;
+            expect(
+                (await store.detail(access(), chat.id)).conversation
+                    .effectivePreferences,
+            ).toEqual(legacy);
+            await store.update(access(), chat.id, {
+                preferences: {
+                    ...legacy,
+                    portrait: {
+                        enabled: true,
+                        inheritedFields: ['replyLanguage'],
+                    },
+                },
+            });
+            const adopted = (await store.detail(access(), chat.id))
+                .conversation;
+            expect(adopted.effectivePreferences?.replyLanguage).toBe('es');
+            expect(adopted.effectivePreferences?.tone).toBe('academic');
+            await store.update(access(), chat.id, {
+                preferences: {
+                    ...legacy,
+                    portrait: {
+                        enabled: false,
+                        inheritedFields: ['replyLanguage'],
+                    },
+                },
+            });
+            await store.submit(access(), chat.id, submit());
+            const next = (await store.claim())!;
+            expect(next.portraitContext).toBeUndefined();
+            expect(next.preferences.replyLanguage).toBe('en');
+            await store.finish(next, 'succeeded');
+        });
         it('persists independent owner defaults and reopened modes while freezing admitted turn preferences', async () => {
             expect((await store.settings(owner)).mode).toBe('auto');
             const original = await create();

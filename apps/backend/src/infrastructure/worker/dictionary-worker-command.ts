@@ -1,3 +1,5 @@
+import { expireLearnerPortraitInterviews } from '../../modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-interview-store';
+import { createLearnerPortraitWorkerComposition } from '../../modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createConversationWorkerComposition } from '../../modules/conversations/infrastructure/conversation-worker-composition';
 import { createTextSelectionWorkerComposition } from '../../modules/dictionaries/infrastructure/text-selection-composition';
 import { createTextsCryptography } from '../../modules/texts/infrastructure/texts-composition';
@@ -128,6 +130,9 @@ export function publishWorkerTextAiObservations(
 ) {
     return publishTextAiWorkerObservations({
         conversationCapacityEnabled: true,
+        portraitInterviewExecutionEnabled:
+            environment.providerFixtureMode !== 'deterministic' &&
+            environment.supportedFormats.includes('portrait-interview:v1'),
         conversationExecutionEnabled:
             environment.providerFixtureMode !== 'deterministic' &&
             environment.supportedFormats.includes('conversation:v1'),
@@ -516,6 +521,14 @@ async function main(values = process.argv.slice(2)): Promise<void> {
               credentials: environment.providerCredentials,
           })
         : undefined;
+    const portraitInterviewWorker =
+        environment.supportedFormats.includes('portrait-interview:v1') &&
+        environment.providerFixtureMode !== 'deterministic'
+            ? createLearnerPortraitWorkerComposition({
+                  database,
+                  credentials: environment.providerCredentials,
+              })
+            : undefined;
     const observationWorkerId = `${environment.releaseSha}:${hostname().slice(0, 64)}`;
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
@@ -525,12 +538,20 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
         sentenceService: sentenceWorker,
+        ...(portraitInterviewWorker
+            ? { portraitInterviewService: portraitInterviewWorker }
+            : {}),
         ...(conversationWorker
             ? { conversationService: conversationWorker }
             : {}),
         ...(textsWorker ? { textsService: textsWorker } : {}),
         ...(selectionWorker ? { selectionService: selectionWorker } : {}),
         sentencePreparation,
+        portraitMaintenance: {
+            tick: async () => {
+                await expireLearnerPortraitInterviews(database);
+            },
+        },
         supportedFormats: environment.supportedFormats,
         workerId,
     });

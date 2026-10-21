@@ -150,9 +150,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         async <T,>(
             operation: (accessToken: string) => Promise<T>,
         ): Promise<T> => {
+            let ownerId = useSessionStore.getState().user?.id ?? null;
             let token = currentAccessToken();
 
             if (!token) token = (await refreshSession())?.accessToken ?? null;
+
+            ownerId ??= useSessionStore.getState().user?.id ?? null;
+            function assertOwner() {
+                if (
+                    !ownerId ||
+                    useSessionStore.getState().user?.id !== ownerId
+                ) {
+                    throw new AuthApiError(401, {
+                        code: 'authentication_required',
+                        correlationId: 'client-session-changed',
+                        message: 'Your account changed. Please try again.',
+                    });
+                }
+            }
 
             if (!token) {
                 throw new AuthApiError(401, {
@@ -162,16 +177,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 });
             }
 
+            assertOwner();
             try {
-                return await operation(token);
+                const result = await operation(token);
+                assertOwner();
+                return result;
             } catch (error) {
+                assertOwner();
                 if (!isAuthenticationRequiredError(error)) throw error;
 
                 const refreshed = await refreshSession();
 
                 if (!refreshed) throw error;
 
-                return operation(refreshed.accessToken);
+                assertOwner();
+                const result = await operation(refreshed.accessToken);
+                assertOwner();
+                return result;
             }
         },
         [refreshSession],

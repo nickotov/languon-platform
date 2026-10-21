@@ -15,3 +15,22 @@
 .error {
     color: var(--danger-default);
 }
+
+.controls[data-portrait-settings='true'] {
+    grid-template-columns: 1fr;
+    gap: var(--space-16);
+}
+
+.field {
+    display: grid;
+    gap: var(--space-6);
+}
+
+.source {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-8);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+}

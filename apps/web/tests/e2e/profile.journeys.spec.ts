@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision magic-profile-page sha256:19162749cd4b4b44
+// @user-flow-revision magic-profile-page sha256:dbac6cd8adf1450a
 // @user-flow-revision profile-account-controls sha256:81a95391b604fcc4
 
 const password = 'E2e!Profile-password-2026';
@@ -111,7 +111,13 @@ test('shows truthful account placeholders and the authenticated application shel
 
     await page.getByRole('link', { name: 'Languon home' }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('#main-content')).toHaveText('WIP');
+    await expect(
+        page.getByRole('heading', {
+            level: 1,
+            name: 'Welcome back',
+            exact: true,
+        }),
+    ).toBeVisible();
     assertNoBrowserErrors();
 });
 

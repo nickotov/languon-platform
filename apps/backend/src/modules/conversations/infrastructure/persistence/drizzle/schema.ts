@@ -87,6 +87,8 @@ export const conversationTurnsTable = pgTable(
         execution: jsonb('execution')
             .notNull()
             .$type<Record<string, unknown>>(),
+        portraitContext:
+            jsonb('portrait_context').$type<Record<string, unknown>>(),
         failureCode: text('failure_code'),
         leaseToken: uuid('lease_token'),
         leaseUntil: timestamp('lease_until', { withTimezone: true }),

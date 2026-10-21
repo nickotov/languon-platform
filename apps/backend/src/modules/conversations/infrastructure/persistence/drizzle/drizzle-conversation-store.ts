@@ -1,3 +1,8 @@
+import {
+    resolveConversationPortrait,
+    portraitPreferenceFields,
+    type ConversationPortraitPolicy,
+} from '../../../application/portrait-context';
 import { createHash, randomUUID } from 'node:crypto';
 import {
     and,
@@ -135,6 +140,10 @@ const conflict = (message: string) =>
     new ConversationError('version_conflict', message);
 export interface ConversationPersistenceDependencies {
     database: ConversationsDatabase;
+    readPortrait?: (
+        tx: ConversationsTransaction,
+        ownerId: string,
+    ) => Promise<ConversationPortraitPolicy>;
     sources: ConversationSourceResolver;
     workspaceContextLimits?: WorkspaceContextLimits;
     nameUntitledNote?: (
@@ -291,6 +300,31 @@ export class DrizzleConversationStore implements ConversationStore {
             ).map(chatView);
         });
     }
+    private async personalizedView(
+        tx: ConversationsTransaction,
+        chat: ChatRow,
+    ) {
+        const resolved = resolveConversationPortrait(
+            ChatPreferencesSchema.parse(chat.preferences),
+            await this.portraitPolicy(tx, chat.ownerId),
+        );
+        return {
+            ...chatView(chat),
+            effectivePreferences: resolved.preferences,
+            preferenceOrigins: resolved.origins,
+        };
+    }
+    private async portraitPolicy(
+        tx: ConversationsTransaction,
+        ownerId: string,
+    ) {
+        return (
+            this.dependencies.readPortrait?.(tx, ownerId) ?? {
+                enabled: false,
+                portrait: null,
+            }
+        );
+    }
     async create(access: ConversationAccess, input: CreateConversationRequest) {
         return this.transaction(async (tx) => {
             await this.dependencies.sources.resolve(
@@ -304,6 +338,16 @@ export class DrizzleConversationStore implements ConversationStore {
                 .select()
                 .from(settings)
                 .where(eq(settings.ownerId, access.ownerId));
+            const manual = ChatPreferencesSchema.parse(
+                input.preferences ?? saved?.preferences ?? {},
+            );
+            if (!manual.portrait)
+                manual.portrait = {
+                    enabled: true,
+                    inheritedFields: input.preferences
+                        ? []
+                        : [...portraitPreferenceFields],
+                };
             const now = this.now();
             const [chat] = await tx
                 .insert(chats)
@@ -313,14 +357,12 @@ export class DrizzleConversationStore implements ConversationStore {
                     sourceKind: input.source.kind,
                     sourceId: input.source.id,
                     source: input.source,
-                    preferences: ChatPreferencesSchema.parse(
-                        input.preferences ?? saved?.preferences ?? {},
-                    ),
+                    preferences: manual,
                     createdAt: now,
                     updatedAt: now,
                 })
                 .returning();
-            return chatView(chat!);
+            return this.personalizedView(tx, chat!);
         });
     }
     private async readDetail(tx: ConversationsTransaction, chat: ChatRow) {
@@ -347,7 +389,7 @@ export class DrizzleConversationStore implements ConversationStore {
                 .orderBy(asc(drafts.createdAt)),
         ]);
         return {
-            conversation: chatView(chat),
+            conversation: await this.personalizedView(tx, chat),
             messages: history.map(messageView),
             turns: operations.map(turnView),
             drafts: proposals.map(draftView),
@@ -367,7 +409,26 @@ export class DrizzleConversationStore implements ConversationStore {
         changes: UpdateConversationRequest,
     ) {
         return this.transaction(async (tx) => {
-            await this.authorize(tx, access, id);
+            const { chat: original } = await this.authorize(tx, access, id);
+            if (changes.preferences && !changes.preferences.portrait) {
+                const prior = ChatPreferencesSchema.parse(original.preferences);
+                if (prior.portrait)
+                    changes = {
+                        ...changes,
+                        preferences: {
+                            ...changes.preferences,
+                            portrait: {
+                                ...prior.portrait,
+                                inheritedFields:
+                                    prior.portrait.inheritedFields.filter(
+                                        (field) =>
+                                            changes.preferences![field] ===
+                                            prior[field],
+                                    ),
+                            },
+                        },
+                    };
+            }
             const [chat] = await tx
                 .update(chats)
                 .set({
@@ -384,7 +445,7 @@ export class DrizzleConversationStore implements ConversationStore {
                 })
                 .where(eq(chats.id, id))
                 .returning();
-            return chatView(chat!);
+            return this.personalizedView(tx, chat!);
         });
     }
     async delete(access: ConversationAccess, id: string) {
@@ -624,6 +685,10 @@ export class DrizzleConversationStore implements ConversationStore {
                 snapshot.scope === 'workspace' ? 170_000 : undefined,
             );
             const turnId = randomUUID();
+            const personalization = resolveConversationPortrait(
+                ChatPreferencesSchema.parse(chat.preferences),
+                await this.portraitPolicy(tx, access.ownerId),
+            );
             const execution = await this.dependencies.admitTurn(tx, {
                 ownerId: access.ownerId,
                 turnId,
@@ -641,8 +706,9 @@ export class DrizzleConversationStore implements ConversationStore {
                     status: 'queued',
                     authority,
                     sourceSnapshot: snapshot,
-                    preferences: ChatPreferencesSchema.parse(chat.preferences),
+                    preferences: personalization.preferences,
                     execution,
+                    portraitContext: personalization.context ?? null,
                     usage: {
                         inputTokens: 0,
                         outputTokens: 0,
@@ -1216,6 +1282,9 @@ export class DrizzleConversationStore implements ConversationStore {
                 authority: row.authority,
                 sourceSnapshot: row.sourceSnapshot,
                 execution: row.execution,
+                ...(row.portraitContext
+                    ? { portraitContext: row.portraitContext }
+                    : {}),
                 preferences: ChatPreferencesSchema.parse(row.preferences),
                 source: chat.source,
                 conversationCreatedAt: chat.createdAt.toISOString(),
@@ -1377,6 +1446,7 @@ export class DrizzleConversationStore implements ConversationStore {
             .set({
                 status,
                 failureCode: failureCode ?? null,
+                portraitContext: null,
                 leaseToken: null,
                 leaseUntil: null,
                 updatedAt: this.now(),

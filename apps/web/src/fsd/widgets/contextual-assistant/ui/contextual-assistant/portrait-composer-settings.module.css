@@ -1,0 +1,49 @@
+.trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-36);
+    height: var(--size-36);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.trigger:hover {
+    background: var(--background-subtle);
+}
+
+.trigger:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.panel {
+    display: grid;
+    gap: var(--space-24);
+    width: var(--size-360);
+    max-width: calc(100vw - var(--space-32));
+    max-height: min(80dvh, var(--size-640));
+    overflow-y: auto;
+    padding: var(--space-20);
+}
+
+.section {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.section h3 {
+    margin: 0;
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+
+.section p {
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    line-height: 1.5;
+}

@@ -10,6 +10,8 @@ export function ApplicationChrome({ children }: { children: ReactNode }) {
         pathname,
     );
     const publicText = /^\/shared\/(?:texts|text-folders)\//.test(pathname);
+    const portraitInterview = pathname === '/portrait/interview';
+    if (portraitInterview) return <div id='main-content'>{children}</div>;
     if (fullscreen || publicText)
         return <main id='main-content'>{children}</main>;
     return <AppShell>{children}</AppShell>;

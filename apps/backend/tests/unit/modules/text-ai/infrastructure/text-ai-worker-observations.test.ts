@@ -9,6 +9,8 @@ import {
     isTextAiCapacityCapableObservation,
     isTextAiSelectionCapableObservation,
     textAiSelectionObservationId,
+    portraitInterviewExecutionObservationId,
+    conversationExecutionObservationId,
 } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 type Observation = Parameters<
     typeof isSentenceExecutionCapableObservation
@@ -408,4 +410,115 @@ describe('conversation worker capabilities', () => {
             ).toEqual([]);
         },
     );
+});
+
+describe('portrait interview worker capabilities', () => {
+    it.each([
+        {},
+        { portraitInterviewExecutionEnabled: true },
+        {
+            portraitInterviewExecutionEnabled: true,
+            conversationCapacityEnabled: true,
+        },
+        {
+            conversationCapacityEnabled: true,
+            textsCapacityEnabled: true,
+            conversationExecutionEnabled: true,
+        },
+    ])(
+        'does not advertise interview execution without exact opt-in and all capacity flags: %j',
+        async (flags) => {
+            const f = fixture();
+            await publishTextAiWorkerObservations({
+                database: f.database,
+                credentials: {},
+                now,
+                readinessTimeoutMs: 20,
+                supportedFormats: ['portrait-interview:v1'],
+                workerId: 'worker',
+                ...flags,
+            });
+            expect(f.rows).toEqual([]);
+        },
+    );
+    it('advertises Flash interview in an isolated namespace and rejects borrowed chat identity', async () => {
+        const f = fixture();
+        await publishTextAiWorkerObservations({
+            database: f.database,
+            credentials: {},
+            now,
+            readinessTimeoutMs: 20,
+            supportedFormats: ['portrait-interview:v1', 'conversation:v1'],
+            workerId: 'worker',
+            portraitInterviewExecutionEnabled: true,
+            conversationExecutionEnabled: true,
+            conversationCapacityEnabled: true,
+            textsCapacityEnabled: true,
+        });
+        const interviews = f.rows.filter((row) =>
+            isConversationExecutionCapableObservation(
+                row,
+                'portrait-interview:v1',
+            ),
+        );
+        expect(interviews).toHaveLength(1);
+        const interview = interviews[0]!;
+        expect(interview.modelId).toBe('deepseek-flash');
+        expect(interview.id).toBe(
+            portraitInterviewExecutionObservationId(
+                interview.workerId,
+                interview.providerId,
+                interview.modelId,
+            ),
+        );
+        expect(interview.textAiSupportedFormats).toEqual([
+            'portrait-interview:v1',
+        ]);
+        expect(isConversationExecutionCapableObservation(interview)).toBe(
+            false,
+        );
+        expect(
+            isConversationCapacityCapableObservation(
+                interview,
+                'portrait-interview:v1',
+            ),
+        ).toBe(true);
+        expect(
+            isTextsCapacityCapableObservation(
+                interview,
+                'portrait-interview:v1',
+            ),
+        ).toBe(true);
+        const chatId = conversationExecutionObservationId(
+            interview.workerId,
+            interview.providerId,
+            interview.modelId,
+        );
+        expect(
+            isConversationExecutionCapableObservation(
+                { ...interview, id: chatId },
+                'portrait-interview:v1',
+            ),
+        ).toBe(false);
+        expect(
+            isConversationExecutionCapableObservation(
+                { ...interview, textAiSupportedFormats: ['conversation:v1'] },
+                'conversation:v1',
+            ),
+        ).toBe(false);
+        for (const missing of [
+            'textAiCapacityRevision',
+            'textsCapacityRevision',
+            'conversationCapacityRevision',
+            'conversationExecutionRevision',
+            'creditSettlementRevision',
+        ] as const) {
+            expect(
+                isConversationExecutionCapableObservation(
+                    { ...interview, [missing]: null },
+                    'portrait-interview:v1',
+                ),
+            ).toBe(false);
+        }
+    });
 });

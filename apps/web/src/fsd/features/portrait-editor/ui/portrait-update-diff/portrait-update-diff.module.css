@@ -1,0 +1,51 @@
+.list {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-16) 0 0;
+}
+
+.row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-12);
+    padding: var(--space-12) 0;
+    border-bottom: var(--size-1) solid var(--border-default);
+}
+
+.row:last-child {
+    border-bottom: 0;
+}
+
+.body {
+    min-width: 0;
+    font-size: var(--size-14);
+    overflow-wrap: anywhere;
+}
+
+.body p {
+    margin: 0;
+}
+
+.added {
+    color: var(--success-default);
+    font-weight: 500;
+}
+
+.changed {
+    color: var(--info-default);
+    font-weight: 500;
+}
+
+.removed {
+    color: var(--danger-default);
+    font-weight: 500;
+}
+
+.value {
+    color: var(--text-primary);
+}
+
+.removedValue {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}

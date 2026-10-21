@@ -1,0 +1,328 @@
+{
+  "source": "https://www.magicpatterns.com/c/wfhhgj71csfpmjd8jyunam",
+  "renderOrigin": "https://80c0d47f-8bcc-4c85-8f90-4c6557e9811b-render.magicpatterns.app",
+  "pageId": "b7ea52b3-cede-4fdd-9219-0e82b0ad1e97",
+  "capturedOn": "2026-10-21",
+  "scope": "External reference screenshots only. No local application verification or fidelity claim.",
+  "data": "Only the supplied prototype fake learner Maya Chen and its built-in scenarios. No real learner data or provider calls.",
+  "method": [
+    "Read version-matched Orca browser guide. Operated only the dedicated external reference page.",
+    "Snapshot after every UI-state change. Native DOM button activation used after pointer clicks did not activate controls; no React internals, app data injection, CSS changes, artifact edits or publishing.",
+    "Mobile: documented iPhone 12 emulation; innerWidth=390, innerHeight=844, devicePixelRatio=3 confirmed.",
+    "Desktop: host browser zoom produced incorrect CSS dimensions from nominal viewport. Compensated using documented set viewport 1000 625 1.44; verified innerWidth=1440, innerHeight=900, devicePixelRatio approximately 1; PNG dimensions 1440x900. Native scrollbar yields visualViewport.width approximately 1418.4.",
+    "Theme selected through supplied Prototype controls. html[data-theme] verified; root class remains light in both themes. Dark body background rgb(18,20,23); source interviewer teal bubbles remain light in dark theme.",
+    "Screenshots decoded from Orca JSON result.data directly to PNG; base64 was not printed. Prior reference files are retained as historical captures and do not gain verified matching geometry."
+  ],
+  "limitations": [
+    "Reference contains prototype-only controls and shell excluded from production implementation by recorded authority.",
+    "These are viewport captures; they do not establish visibility of every lower form control or every source state.",
+    "Desktop matched captures use 1440x900 CSS pixels, not 1440x1000, because 900 is exactly representable through the reference host zoom without changing page CSS.",
+    "Mobile preview PNG compositor corruption: interview-preview-mobile.png repeats fixed header/transcript layers and omits part of sheet body. The full-screenshot attempt repeats the same layers. Neither image supports full-body pixel comparison; use interview-preview-mobile-dom.json and .txt for actual rendered geometry/control evidence, alongside the clean guarded local runtime screenshot."
+  ],
+  "captures": [
+    {
+      "file": "intro-desktop-matched.png",
+      "route": "/portrait/intro",
+      "state": "First-time learner; no portrait or interview; free notice; disclosure closed",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "0666a1ac20edc1eb5dac11179c4f19a9e05698428a597659434d18c368331fe2"
+    },
+    {
+      "file": "manual-empty-desktop-matched.png",
+      "route": "/portrait/manual",
+      "state": "First-time empty manual editor; save disabled",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "c5bae4c6ea0738a4598873f76823287c043fe013f88a0af28b8b71e6ea974706"
+    },
+    {
+      "file": "interview-desktop-matched.png",
+      "route": "/portrait/interview",
+      "state": "New interview; first languages question; empty draft; preview closed",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "78680ef9e58877ed2455f8855d16d7d25ce1bb0d853dbdc5768e2b443c1384b3"
+    },
+    {
+      "file": "interview-preview-desktop-matched.png",
+      "route": "/portrait/interview",
+      "state": "New interview; first languages question; empty draft; desktop preview open",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "3a34010b144ca3949cd4a7e0fa6c63791b3130fe34c52d562ed8a2a64cf085c0"
+    },
+    {
+      "file": "review-desktop-matched.png",
+      "route": "/portrait/review",
+      "state": "Unfinished interview fixture; three listed languages; no saved portrait; no conflicts",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "4afbc60af64bfac6ff93f79d0c3a853b5f0e5c86eca07870bcdad892ab2ac383"
+    },
+    {
+      "file": "review-conflict-desktop-matched.png",
+      "route": "/portrait/review",
+      "state": "Stale-draft conflict fixture; saved portrait from phone; tone and learning-needs choices unselected",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "f1c5bbcad6864de0a991d74f3aa5e1abe03c70e0508ecd370db63c5701ea2373"
+    },
+    {
+      "file": "overview-populated-desktop-matched.png",
+      "route": "/portrait",
+      "state": "In-use approved portrait fixture; English/Spanish/French, travel/work goals, accommodations and interests",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "99e3e76e39f85abf812a20ba49a6af15f34d46399750f00ce030607175947c4c"
+    },
+    {
+      "file": "delete-desktop-matched.png",
+      "route": "/portrait",
+      "state": "In-use approved portrait fixture; delete confirmation open; no deletion confirmed",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "107c2bcd538af865bcb4ef6abb11b3fac488d5e4eb4926c84830e38fa5dd2794"
+    },
+    {
+      "file": "chat-settings-desktop-matched.png",
+      "route": "/texts/en-el-mercado",
+      "state": "In-use portrait fixture; existing chat; original manual settings; desktop settings sidebar; modal closed",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "0ebe32cbd26562a136c596ee5d95b53ce4419abb8baa37bb299def0f018e10d5"
+    },
+    {
+      "file": "chat-settings-dialog-desktop-matched.png",
+      "route": "/texts/en-el-mercado",
+      "state": "In-use portrait fixture; existing chat; original manual settings; chat settings modal open",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "582cf7b6c1c38a19c07fd843a7473c0b7e39b32f65ed5c527fa4ed125696be8a"
+    },
+    {
+      "file": "overview-populated-mobile.png",
+      "route": "/portrait",
+      "state": "In-use approved portrait fixture; overview at top",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "devicePixelRatio": 3,
+      "pngPixels": {
+        "width": 1170,
+        "height": 2532
+      },
+      "sha256": "8b14a8e1322eb8ea392da57e7fb0b15c8e7980a1b630064916478b568655a753"
+    },
+    {
+      "file": "delete-mobile.png",
+      "route": "/portrait",
+      "state": "In-use approved portrait fixture; delete confirmation open; no deletion confirmed",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "devicePixelRatio": 3,
+      "pngPixels": {
+        "width": 1170,
+        "height": 2532
+      },
+      "sha256": "f4cbd6f5cd8d482065b2edc72db1b70a31711db5c4fc0f03b9b5b6445a564693"
+    },
+    {
+      "file": "review-conflict-mobile.png",
+      "route": "/portrait/review",
+      "state": "Stale-draft conflict fixture; choices unselected; mobile save bar visible",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "devicePixelRatio": 3,
+      "pngPixels": {
+        "width": 1170,
+        "height": 2532
+      },
+      "sha256": "69d4e9951ef0176d7f777a57779836122874ae3f6df682ab1fffb4b451958f84"
+    },
+    {
+      "file": "review-mobile.png",
+      "route": "/portrait/review",
+      "state": "Unfinished interview fixture; three listed languages; no conflicts; mobile save bar visible",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "devicePixelRatio": 3,
+      "pngPixels": {
+        "width": 1170,
+        "height": 2532
+      },
+      "sha256": "d17ed8438aef8833a0f396f0faa9a1dad290e8f3f42df1eb13c1afc86d2f77db"
+    },
+    {
+      "file": "interview-preview-mobile.png",
+      "route": "/portrait/interview",
+      "state": "New interview; first languages question; empty draft; mobile preview sheet open",
+      "theme": "light",
+      "locale": "en",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "devicePixelRatio": 3,
+      "pngPixels": {
+        "width": 1170,
+        "height": 2532
+      },
+      "sha256": "6f97f128bd7b7816056a053cf2b563183d34c3378dc5482b57d4582bb07f8cbd",
+      "evidenceDisposition": "Corrupted reference compositor capture; partial header only. Do not use as full-body visual proof."
+    },
+    {
+      "file": "interview-mobile-dark.png",
+      "route": "/portrait/interview",
+      "state": "New interview; first languages question; empty draft; preview closed",
+      "theme": "dark",
+      "locale": "en",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "devicePixelRatio": 3,
+      "pngPixels": {
+        "width": 1170,
+        "height": 2532
+      },
+      "sha256": "67960dea0546cb97bb8886da288c4e74cdbf33e4a5a6db6654535e130f953142"
+    },
+    {
+      "file": "chat-settings-mobile-dark.png",
+      "route": "/texts/en-el-mercado",
+      "state": "In-use portrait fixture; existing chat; original manual settings; mobile settings dialog open",
+      "theme": "dark",
+      "locale": "en",
+      "cssViewport": {
+        "width": 390,
+        "height": 844
+      },
+      "devicePixelRatio": 3,
+      "pngPixels": {
+        "width": 1170,
+        "height": 2532
+      },
+      "sha256": "e78538738096d91a8320751d931d12e03f4bb777d82bf1224127d206d543ec71"
+    }
+  ],
+  "supplementalEvidence": [
+    {
+      "file": "interview-preview-mobile-dom.json",
+      "purpose": "Actual source sheet rendered geometry, computed styles and viewport intersection, 390x844 CSS px; no pixel-fidelity claim"
+    },
+    {
+      "file": "interview-preview-mobile-dom.txt",
+      "purpose": "Actual source accessibility state with full preview summary/counts/CTA/expiry"
+    },
+    {
+      "file": "interview-preview-mobile-full-attempt.png",
+      "purpose": "Failed alternative full-screenshot compositor capture retained transparently; not visual fidelity proof"
+    }
+  ]
+}

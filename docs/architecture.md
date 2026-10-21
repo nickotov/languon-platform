@@ -8,6 +8,8 @@ source_paths:
     - apps/web/src/fsd/pages/knowledge
     - apps/web/src/fsd/pages/texts
     - apps/web/src/fsd/features/text-reading
+    - apps/web/src/fsd/pages/learner-portrait
+    - apps/web/src/fsd/entities/learner-portrait
 ---
 
 # Architecture
@@ -145,7 +147,8 @@ with an expanded/collapsed desktop sidebar and mobile top bar/modal drawer.
 Private navigation queries are enabled only for authenticated users and scoped
 by user identity. Guests have Sign in and a Settings preference popover; signed-in
 users retain the account menu. Both reuse locale/theme controls. The logo leads
-to the temporary WIP home at /. ADR-0030 replaces only ADR-0007's original
+to the home dashboard at /, which includes the optional learner-portrait entry.
+The focused /portrait/interview route renders without the sidebar. ADR-0030 replaces only ADR-0007's original
 top-right preference placement; its locale/persistence contract remains active.
 
 ## Mobile
@@ -410,3 +413,39 @@ work/tool/writing activity stays visible before text and during pauses. See
 [feature044](../.agent/features/044-contextual-language-assistant-and-knowledge/FEATURE.md)
 and [feature047](../.agent/features/047-knowledge-workspace/FEATURE.md)
 for decisions and implementation evidence.
+
+
+## Learner portraits and guided interviews
+
+The backend `learner-portraits` module owns approved bounded items, their consistent
+summary, a separately approved draft, and one resumable unfinished interview.
+Version counters prevent stale approvals; generation and lease fences prevent
+pending work from recreating deleted content. The standalone interview uses its
+own private operation/context store, not ordinary conversation memory. Approval,
+discard and fourteen-day inactivity cleanup erase interview content while
+retaining necessary numerical provider accounting. Account purge explicitly
+participates in this domain.
+
+The interviewer produces reviewable proposals from the current interview and
+approved portrait only. It cannot read other chats or publish/enable changes.
+Manual edits derive the summary without a model call. Shared text-AI admission
+pins model/pricing and the server-only `AI_INTERVIEW_CREDITS_BYPASS` policy per
+operation; free interviews retain provider cost/capacity records and do not
+change ordinary AI charging.
+
+Conversation admission reads the current approved portrait and global/per-chat
+use controls in the transaction that freezes response context. Explicit manual
+fields win; inherited fields resolve from the portrait with saved defaults as
+fallback. Existing conversations require explicit adoption for their prior
+settings. Portrait context is transient to actor response generation and is not
+added to observation/reflection memory; disabling cannot erase ordinary history.
+
+The web portrait entity validates private API DTOs and keeps owner-scoped query
+state with monotonic versions. Management, editor, interview and entry slices
+compose real routes and shared primitives. Session transport pins owner identity
+through authentication retries, and multi-step portrait flows recheck it before
+dispatch and response use. Interview input remains in mounted UI or the
+server-owned unfinished interview, never a new browser storage archive.
+See [ADR-0044](adr/0044-learner-portrait-approval-and-use-boundaries.md),
+[the verified journey](user-flows/learner-portrait.md), and
+[feature051 evidence](../.agent/features/051-learner-portrait/EVIDENCE.md).

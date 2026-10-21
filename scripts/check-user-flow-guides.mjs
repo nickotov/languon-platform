@@ -15,6 +15,7 @@ export const e2eCommands = new Map([
     ['texts-web', 'node scripts/run-texts-web-e2e.mjs'],
     ['texts', 'node scripts/run-texts-all-e2e.mjs'],
     ['sentence-practice-backend', 'node scripts/run-sentence-practice-e2e.mjs'],
+    ['learner-portrait', 'node scripts/run-learner-portrait-e2e.mjs'],
     [
         'flashcard-training-backend',
         'node scripts/run-flashcard-training-e2e.mjs',

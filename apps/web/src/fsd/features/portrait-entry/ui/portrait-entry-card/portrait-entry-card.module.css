@@ -1,0 +1,113 @@
+.card {
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-16);
+    background: var(--background-surface);
+    padding: var(--space-16);
+}
+
+.layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.icon {
+    display: flex;
+    width: var(--size-44);
+    height: var(--size-44);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: var(--radius-12);
+    color: var(--primary-default);
+    background: var(--primary-subtle);
+}
+
+.content {
+    flex: 1;
+    min-width: 0;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.eyebrow {
+    margin: 0;
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    font-weight: 500;
+}
+
+.title {
+    margin: var(--space-4) 0 0;
+    font-size: var(--size-18);
+    line-height: 1.5;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.body {
+    margin: var(--space-4) 0 0;
+    max-width: 65ch;
+    font-size: var(--size-14);
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    margin-top: var(--space-16);
+}
+
+.pending {
+    margin-top: var(--space-16);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+    padding: var(--space-12);
+    border-radius: var(--radius-12);
+    background: var(--background-subtle);
+    font-size: var(--size-14);
+}
+
+.pending > p {
+    margin: 0;
+    flex: 1;
+    min-width: var(--size-160);
+}
+
+.pending > svg {
+    color: var(--info-default);
+}
+
+.skeleton {
+    height: var(--size-96);
+    margin-top: var(--space-12);
+    border-radius: var(--radius-12);
+    background: var(--background-subtle);
+}
+
+@media (min-width: 640px) {
+    .card {
+        padding: var(--space-24);
+    }
+
+    .layout {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}

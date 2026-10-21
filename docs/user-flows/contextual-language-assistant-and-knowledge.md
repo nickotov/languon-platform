@@ -7,6 +7,10 @@ surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/051-learner-portrait/**
+    - apps/backend/src/modules/learner-portraits/**
+    - packages/contracts/src/learner-portrait.ts
+    - packages/contracts/src/portrait-interview.ts
     - .agent/features/044-contextual-language-assistant-and-knowledge/**
     - apps/backend/src/modules/conversations/**
     - apps/backend/src/modules/authentication/application/ports/rate-limiter.ts
@@ -38,6 +42,7 @@ source_paths:
     - apps/web/src/fsd/features/conversation-preferences/**
     - apps/web/src/fsd/features/knowledge-notes/**
     - apps/web/src/fsd/entities/conversation/**
+    - apps/web/src/fsd/entities/learner-portrait/**
     - apps/web/src/fsd/entities/knowledge/**
     - apps/web/src/fsd/pages/knowledge/**
     - apps/web/src/fsd/pages/profile/**
@@ -58,6 +63,7 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
+    - learner-portrait
     - persistent-tutor-modes
     - knowledge-workspace
     - texts
@@ -285,6 +291,17 @@ accounting behavior have separate real composed HTTP/integration coverage.
   source edits refresh the next admitted turn; earlier wording is preserved.
 - Model/source text cannot authorize saving, deleting, or reading another source.
   AI explanations are not marked verified and may contain mistakes.
+
+## Related learner portrait coverage
+
+**Response settings** includes the per-chat portrait switch, independent manual
+preferences and **From portrait** / **Manual** origins. Global off disables
+portrait use for every conversation; changing a preference applies from the next
+message and does not erase earlier personal context in chat history. The
+[learner portrait guide](learner-portrait.md) owns its approval, separate
+enablement and global-off browser scenario. This guide's existing scenarios
+continue to own source access, modes, streaming, Knowledge publication and
+recovery; they do not claim complete portrait preference coverage.
 
 ## Automated regression checks
 
