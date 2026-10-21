@@ -46,11 +46,13 @@ export function createApp(options?: {
     conversations?: OpenAPIHono;
     learnerPortraits?: OpenAPIHono;
     knowledge?: OpenAPIHono;
+    navigation?: OpenAPIHono;
     textsAi?: OpenAPIHono;
     textSelections?: OpenAPIHono;
     userProfiles?: UserProfileRouteDependencies;
 }): OpenAPIHono {
     const app = new OpenAPIHono();
+    if (options?.navigation) app.route('/', options.navigation);
 
     app.route('/', createHealthRoutes(options?.operational));
     if (options?.authentication) {

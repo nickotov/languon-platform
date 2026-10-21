@@ -7,6 +7,8 @@ import {
     KnowledgeNoteContentSchema,
 } from '@languon/contracts';
 import { createApp } from '../../src/app';
+import { createNavigationService } from '../../src/modules/navigation/infrastructure/navigation-composition';
+import { createNavigationRoutes } from '../../src/modules/navigation/interface/http/navigation.routes';
 import { loadEnvironment } from '../../src/config/environment';
 import { createAuthenticationComposition } from '../../src/modules/authentication/infrastructure/authentication-composition';
 import { createDictionaryComposition } from '../../src/modules/dictionaries/infrastructure/dictionary-composition';
@@ -372,6 +374,14 @@ export async function createContextualAssistantFixture(
             },
         });
         const app = createApp({
+            navigation: createNavigationRoutes({
+                service: createNavigationService({
+                    database: d.database,
+                    authenticate,
+                    rateLimiter: d.rateLimiter,
+                }),
+                policy: authentication.options.policy,
+            }),
             authentication: authentication.options,
             dictionaries: createDictionaryComposition({
                 ...d,

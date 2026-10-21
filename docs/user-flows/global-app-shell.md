@@ -2,11 +2,12 @@
 feature: global-app-shell
 title: Global App Shell
 status: current
-last_verified: 2026-10-12
+last_verified: 2026-10-21
 surfaces:
     - browser
 source_paths:
     - .agent/features/041-global-app-shell/**
+    - .agent/features/050-sidebar-navigation/**
     - apps/web/src/fsd/widgets/app-shell/**
     - apps/web/src/fsd/features/dictionary-library/**
     - apps/web/src/fsd/pages/home/**
@@ -22,6 +23,7 @@ e2e_scenarios:
     - session-aware-global-navigation
 related_features:
     - learner-portrait
+    - sidebar-navigation
     - contextual-language-assistant-and-knowledge
     - magic-profile-page
     - user-authentication
@@ -33,13 +35,14 @@ related_features:
 
 ## What this verifies
 
-All normal web pages share desktop expanded/rail navigation and a mobile top bar
-with a modal drawer. Home shows a dated, localized welcome heading, with the
+All normal web pages share a 240 px expanded desktop sidebar or 64 px rail,
+with a mobile top bar and modal drawer. Tablets start in the rail and expand
+into the drawer. Home shows a dated, localized welcome heading, with the
 learner portrait entry available only to signed-in learners. Every Languon
 logo leads to `/`. Guests can sign in and change locale or appearance; they
 cannot see owner dictionary links, create actions, or account identity. During
 session restoration, the footer shows a pending identity instead of Sign in.
-Signed-in users retain dictionary navigation and the account menu on home,
+Signed-in users retain resource navigation and the account menu on home,
 authentication, profile, shared-reader, and not-found pages. Fullscreen learning
 and existing page access checks retain their established behavior. The focused
 `/portrait/interview` route uses its own interview header, back/pause/review
@@ -123,6 +126,14 @@ browser journey belongs to the [learner portrait guide](learner-portrait.md).
   mobile drawer. Escape closes the inner popup before the native modal drawer.
 - Existing navigation loading, error/retry, empty state, create dialog, and
   sign-out failure behavior remain unchanged.
+
+## Related sidebar coverage
+
+The [sidebar navigation guide](sidebar-navigation.md) owns whole-library title
+search, synced recents/pins, flyouts, Create actions and responsive rendering.
+The shell scenarios here retain session, guest preference and focus coverage.
+Text editors retain the desktop shell; [Texts](texts.md) owns optional membership
+and unsaved-work protection.
 
 ## Related contextual assistant coverage
 

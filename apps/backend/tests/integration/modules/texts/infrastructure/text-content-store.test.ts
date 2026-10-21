@@ -115,6 +115,307 @@ run('Texts content persistence', () => {
         });
         return { ...fixtureData, text };
     }
+    it('creates, lists, resolves and archives independent texts without a folder', async () => {
+        const draft = await store.createText(owner, {
+            folderId: null,
+            sourceLanguage: 'en',
+            targetLanguage: 'es',
+            sourceText: 'Independent.',
+        });
+        expect(draft.folderId).toBeNull();
+        expect(
+            (await store.listTexts(owner, null, { limit: 10 })).items.map(
+                (text) => text.id,
+            ),
+        ).toEqual([draft.id]);
+        expect(
+            (await store.listTexts(reader, null, { limit: 10 })).items,
+        ).toEqual([]);
+        const resolved = await db.transaction((tx) =>
+            resolveTextSource(
+                tx,
+                { actorId: owner, textId: draft.id, version: 1 },
+                () => false,
+            ),
+        );
+        expect(resolved.document.folderId).toBeNull();
+        const archived = await store.textLifecycle(
+            owner,
+            draft.id,
+            1,
+            'archived',
+        );
+        expect(
+            (await store.listTexts(owner, null, { limit: 10 })).items,
+        ).toEqual([]);
+        expect(
+            (
+                await store.listTexts(owner, null, {
+                    limit: 10,
+                    lifecycle: 'archived',
+                })
+            ).items[0]?.id,
+        ).toBe(draft.id);
+        await expect(
+            store.moveText(owner, draft.id, {
+                folderId: null,
+                expectedVersion: archived.version,
+            }),
+        ).rejects.toMatchObject({ code: 'text_not_found' });
+    });
+    it('moves atomically without changing content, direct shares or earlier revisions', async () => {
+        const { folder, text } = await translated();
+        const direct = await store.issueShare(
+            owner,
+            'text',
+            text.id,
+            text.version,
+        );
+        const independent = await store.moveText(owner, text.id, {
+            folderId: null,
+            expectedVersion: text.version,
+        });
+        expect(independent).toMatchObject({
+            id: text.id,
+            folderId: null,
+            alignment: text.alignment,
+            sourceText: text.sourceText,
+            version: text.version + 1,
+        });
+        const access = {
+            kind: 'text' as const,
+            locator: direct.locator,
+            key: direct.key,
+        };
+        expect(
+            (await store.readShared(access, { limit: 10 })).texts[0]?.id,
+        ).toBe(text.id);
+        const copied = await store.copyShared(reader, access, {
+            destinationFolderId: null,
+            expectedVersion: independent.version,
+            idempotencyKey: randomUUID(),
+        });
+        expect((await store.getText(reader, copied.id)).folderId).toBeNull();
+        await expect(
+            store.moveText(owner, text.id, {
+                folderId: folder.id,
+                expectedVersion: text.version,
+            }),
+        ).rejects.toMatchObject({ code: 'version_conflict' });
+        const movedBack = await store.moveText(owner, text.id, {
+            folderId: folder.id,
+            expectedVersion: independent.version,
+        });
+        expect(movedBack.folderId).toBe(folder.id);
+        const revisions = await db
+            .select()
+            .from(textRevisionsTable)
+            .where(eq(textRevisionsTable.textId, text.id));
+        expect(revisions).toHaveLength(4);
+        expect(
+            revisions.find((row) => row.version === text.version)?.snapshot
+                .folderId,
+        ).toBe(folder.id);
+    });
+    it('requires current shared-folder acknowledgment and removes inherited access after moving out', async () => {
+        const { folder, text } = await translated();
+        const destination = await store.createFolder(owner, {
+            name: 'Shared',
+            description: null,
+        });
+        const share = await store.issueShare(
+            owner,
+            'folder',
+            destination.id,
+            destination.version,
+        );
+        const listed = (
+            await store.listFolders(owner, { limit: 100 })
+        ).items.find((item) => item.id === destination.id)!;
+        const request = {
+            folderId: destination.id,
+            expectedVersion: text.version,
+        };
+        await expect(
+            store.moveText(owner, text.id, request),
+        ).rejects.toMatchObject({
+            code: 'shared_folder_confirmation_required',
+        });
+        const confirmed = {
+            shareId: listed.shareId!,
+            shareVersion: listed.shareVersion!,
+        };
+        await store.issueShare(
+            owner,
+            'folder',
+            destination.id,
+            destination.version,
+        );
+        await expect(
+            store.moveText(owner, text.id, {
+                ...request,
+                sharedFolderConfirmation: confirmed,
+            }),
+        ).rejects.toMatchObject({
+            code: 'shared_folder_confirmation_required',
+        });
+        const latest = (
+            await store.listFolders(owner, { limit: 100 })
+        ).items.find((item) => item.id === destination.id)!;
+        const moved = await store.moveText(owner, text.id, {
+            ...request,
+            sharedFolderConfirmation: {
+                shareId: latest.shareId!,
+                shareVersion: latest.shareVersion!,
+            },
+        });
+        const freshShare = await store.issueShare(
+            owner,
+            'folder',
+            destination.id,
+            destination.version,
+        );
+        const access = {
+            kind: 'folder' as const,
+            locator: freshShare.locator,
+            key: freshShare.key,
+        };
+        expect(
+            (await store.readShared(access, { limit: 10 })).texts[0]?.id,
+        ).toBe(text.id);
+        await store.moveText(owner, text.id, {
+            folderId: folder.id,
+            expectedVersion: moved.version,
+        });
+        expect((await store.readShared(access, { limit: 10 })).texts).toEqual(
+            [],
+        );
+        // The original capability was rotated, never resurrected by membership changes.
+        await expect(
+            store.readShared({ ...access, key: share.key }, { limit: 10 }),
+        ).rejects.toMatchObject({ code: 'text_not_found' });
+    });
+    it('checks shared destinations again when creating or copying a text', async () => {
+        const { text } = await translated();
+        const direct = await store.issueShare(
+            owner,
+            'text',
+            text.id,
+            text.version,
+        );
+        const destination = await store.createFolder(reader, {
+            name: 'Reader shared folder',
+            description: null,
+        });
+        await store.issueShare(
+            reader,
+            'folder',
+            destination.id,
+            destination.version,
+        );
+        const listed = (await store.listFolders(reader, { limit: 10 }))
+            .items[0]!;
+        const confirmation = {
+            shareId: listed.shareId!,
+            shareVersion: listed.shareVersion!,
+        };
+        const draft = {
+            folderId: destination.id,
+            sourceLanguage: 'en' as const,
+            targetLanguage: 'es' as const,
+            sourceText: 'A future translation.',
+        };
+        await expect(store.createText(reader, draft)).rejects.toMatchObject({
+            code: 'shared_folder_confirmation_required',
+        });
+        expect(
+            (
+                await store.createText(reader, {
+                    ...draft,
+                    sharedFolderConfirmation: confirmation,
+                })
+            ).folderId,
+        ).toBe(destination.id);
+        const copy = {
+            destinationFolderId: destination.id,
+            expectedVersion: text.version,
+            idempotencyKey: randomUUID(),
+        };
+        await expect(
+            store.copyShared(reader, { kind: 'text', ...direct }, copy),
+        ).rejects.toMatchObject({
+            code: 'shared_folder_confirmation_required',
+        });
+        expect(
+            (
+                await store.copyShared(
+                    reader,
+                    { kind: 'text', ...direct },
+                    { ...copy, sharedFolderConfirmation: confirmation },
+                )
+            ).id,
+        ).toBeDefined();
+        await store.revokeShare(
+            reader,
+            'folder',
+            destination.id,
+            destination.version,
+        );
+        await expect(
+            store.createText(reader, {
+                ...draft,
+                sharedFolderConfirmation: confirmation,
+            }),
+        ).rejects.toMatchObject({
+            code: 'shared_folder_confirmation_required',
+        });
+    });
+    it('serializes concurrent moves and rejects foreign or archived destinations', async () => {
+        const { text } = await translated();
+        const destination = await store.createFolder(owner, {
+            name: 'Destination',
+            description: null,
+        });
+        const results = await Promise.allSettled([
+            store.moveText(owner, text.id, {
+                folderId: null,
+                expectedVersion: text.version,
+            }),
+            store.moveText(owner, text.id, {
+                folderId: destination.id,
+                expectedVersion: text.version,
+            }),
+        ]);
+        expect(
+            results.filter((result) => result.status === 'fulfilled'),
+        ).toHaveLength(1);
+        expect(
+            results.filter((result) => result.status === 'rejected'),
+        ).toHaveLength(1);
+        const current = await store.getText(owner, text.id);
+        const foreign = await store.createFolder(reader, {
+            name: 'Foreign',
+            description: null,
+        });
+        await expect(
+            store.moveText(owner, text.id, {
+                folderId: foreign.id,
+                expectedVersion: current.version,
+            }),
+        ).rejects.toMatchObject({ code: 'text_not_found' });
+        await store.folderLifecycle(
+            owner,
+            destination.id,
+            destination.version,
+            'archived',
+        );
+        await expect(
+            store.moveText(owner, text.id, {
+                folderId: destination.id,
+                expectedVersion: current.version,
+            }),
+        ).rejects.toMatchObject({ code: 'text_not_found' });
+    });
     it('replays concurrent explicit draft creation once and rejects changed payload or operation kind', async () => {
         const folder = await store.createFolder(owner, {
             name: 'Stories',
@@ -198,8 +499,15 @@ run('Texts content persistence', () => {
         expect(await store.getText(owner, text.id)).toMatchObject({
             isShared: true,
         });
+        const sharedDestination = (
+            await store.listFolders(owner, { limit: 10 })
+        ).items[0]!;
         const another = await store.createText(owner, {
             folderId: folder.id,
+            sharedFolderConfirmation: {
+                shareId: sharedDestination.shareId!,
+                shareVersion: sharedDestination.shareVersion!,
+            },
             sourceLanguage: 'en',
             targetLanguage: 'es',
             sourceText: text.sourceText,

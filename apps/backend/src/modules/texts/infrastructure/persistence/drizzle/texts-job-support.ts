@@ -1,6 +1,6 @@
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import {
     TextAiJobSchema,
     TextTranslationProposalSchema,
@@ -18,7 +18,10 @@ export function exposeTextsJob(job: TextsJobRow) {
     return TextAiJobSchema.parse({
         id: job.id,
         kind: job.jobKind,
-        state: job.executionState,
+        state:
+            job.executionState === 'completed' && job.cancellationRequestedAt
+                ? 'cancelled'
+                : job.executionState,
         failureCode: job.failureCategory,
         result: job.resultPayload,
         createdAt: job.createdAt.toISOString(),
@@ -29,7 +32,7 @@ export async function authorizeTextsJob(
     tx: TextsTransaction,
     input: {
         ownerId: string;
-        folderId: string;
+        folderId: string | null;
         textId?: string | null | undefined;
         expectedTextVersion?: number | null | undefined;
     },
@@ -41,17 +44,19 @@ export async function authorizeTextsJob(
         .for('share');
     if (!owner || owner.status !== 'active')
         throw new TextsAiError('access_revoked');
-    const [folder] = await tx
-        .select()
-        .from(folders)
-        .where(
-            and(
-                eq(folders.id, input.folderId),
-                eq(folders.ownerId, input.ownerId),
-            ),
-        )
-        .for('share');
-    if (!folder || folder.lifecycle !== 'active')
+    const [folder] = input.folderId
+        ? await tx
+              .select()
+              .from(folders)
+              .where(
+                  and(
+                      eq(folders.id, input.folderId),
+                      eq(folders.ownerId, input.ownerId),
+                  ),
+              )
+              .for('share')
+        : [];
+    if (input.folderId && (!folder || folder.lifecycle !== 'active'))
         throw new TextsAiError('folder_not_found');
     if (input.textId) {
         const [text] = await tx
@@ -61,7 +66,9 @@ export async function authorizeTextsJob(
                 and(
                     eq(texts.id, input.textId),
                     eq(texts.ownerId, input.ownerId),
-                    eq(texts.folderId, input.folderId),
+                    input.folderId === null
+                        ? isNull(texts.folderId)
+                        : eq(texts.folderId, input.folderId),
                 ),
             )
             .for('share');
@@ -78,7 +85,7 @@ export async function loadTextTranslationProposal(
         jobId: string;
         textId: string;
         expectedVersion: number;
-        folderId?: string;
+        folderId?: string | null;
         now?: Date;
     },
 ) {
@@ -92,11 +99,12 @@ export async function loadTextTranslationProposal(
         throw new TextsAiError('generation_proposal_expired');
     if (
         job.executionState !== 'completed' ||
+        !!job.cancellationRequestedAt ||
         job.jobKind !== 'text-translation' ||
         !job.resultPayload
     )
         throw new TextsAiError('generation_not_reviewable');
-    if (input.folderId && input.folderId !== job.folderId)
+    if (input.folderId !== undefined && input.folderId !== job.folderId)
         throw new TextsAiError('version_conflict');
     if (
         job.textId &&
@@ -132,6 +140,7 @@ export async function resolveTextTranslationProposal(
         throw new TextsAiError('generation_proposal_expired');
     if (
         job.executionState !== 'completed' ||
+        !!job.cancellationRequestedAt ||
         job.jobKind !== 'text-translation' ||
         !job.resultPayload ||
         job.appliedTextId

@@ -1,0 +1,136 @@
+.item {
+    display: flex;
+    justify-content: center;
+}
+
+.button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-8);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    height: var(--size-40);
+    justify-content: center;
+    width: var(--size-40);
+}
+
+.button:hover {
+    background: var(--background-elevated);
+    color: var(--text-primary);
+}
+
+.active {
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+}
+
+.button:focus-visible,
+.heading:focus-visible,
+.create:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.panel {
+    width: var(--size-288);
+    padding: 0;
+}
+
+.header {
+    display: flex;
+    gap: var(--space-8);
+    align-items: center;
+    padding: var(--space-12) var(--space-12) var(--space-8);
+}
+
+.icon {
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-28);
+    height: var(--size-28);
+    border-radius: var(--radius-6);
+}
+
+.heading {
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 600;
+    text-decoration: none;
+    flex: 1;
+}
+
+.heading:hover {
+    text-decoration: underline;
+}
+
+.create {
+    border: 0;
+    border-radius: var(--radius-8);
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+    font: inherit;
+    font-size: var(--size-12);
+    font-weight: 500;
+    cursor: pointer;
+    height: var(--size-32);
+    padding-inline: var(--space-8);
+}
+
+.create:hover {
+    background: var(--background-subtle);
+}
+
+.filter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin-inline: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    height: var(--size-36);
+    padding-inline: var(--space-10);
+    background: var(--background-subtle);
+    color: var(--text-tertiary);
+}
+
+.filter:focus-within {
+    outline: 2px solid var(--border-focus);
+}
+
+:where(.filter) input {
+    background: transparent;
+    border: 0;
+    outline: none;
+    min-width: 0;
+    width: 100%;
+    font: inherit;
+    font-size: var(--size-14);
+    color: var(--text-primary);
+}
+
+.list {
+    padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.button {
+    position: relative;
+}
+
+.active:before {
+    content: '';
+    position: absolute;
+    inset-inline-start: calc(var(--size-12) * -1);
+    inset-block: var(--space-8);
+    width: var(--size-4);
+    background: var(--primary-default);
+    border-start-end-radius: var(--radius-full);
+    border-end-end-radius: var(--radius-full);
+}

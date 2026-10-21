@@ -2,6 +2,8 @@ import { createLearnerPortraitModule } from './modules/learner-portraits/infrast
 import { createLearnerPortraitRoutes } from './modules/learner-portraits/interface/http/learner-portrait.routes';
 import { readApprovedPortraitForConversation } from './modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-portrait-store';
 import { createKnowledgeService } from './modules/knowledge/infrastructure/knowledge-composition';
+import { createNavigationService } from './modules/navigation/infrastructure/navigation-composition';
+import { createNavigationRoutes } from './modules/navigation/interface/http/navigation.routes';
 import { createKnowledgeRoutes } from './modules/knowledge/interface/http/knowledge.routes';
 import { KnowledgeDomainError } from './modules/knowledge/domain/knowledge';
 import { createConversationsComposition } from './modules/conversations/infrastructure/conversations-composition';
@@ -198,6 +200,14 @@ const authenticateTextActor = async (token: string) => {
     return { userId: claims.userId, sessionId: claims.sessionId };
 };
 const textsEnabled = textsAiAdmissionsEnabled(process.env);
+const navigation = createNavigationRoutes({
+    service: createNavigationService({
+        database: authentication.productDependencies.database,
+        authenticate: authenticateTextActor,
+        rateLimiter: authentication.productDependencies.rateLimiter,
+    }),
+    policy: authentication.options.policy,
+});
 const textsSelectionPolicy = defaultTextAiAvailabilityPolicy();
 const texts = createTextsContentComposition({
     ...authentication.productDependencies,
@@ -278,6 +288,7 @@ const app = createApp({
         policy: authentication.options.policy,
         creditsBypass: environment.AI_INTERVIEW_CREDITS_BYPASS,
     }),
+    navigation,
     conversations: conversations.routes,
     knowledge: createKnowledgeRoutes({
         service: knowledge,

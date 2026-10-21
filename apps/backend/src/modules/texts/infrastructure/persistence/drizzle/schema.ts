@@ -49,9 +49,7 @@ export const textsTable = pgTable(
         ownerId: uuid('owner_id')
             .notNull()
             .references(() => usersTable.id),
-        folderId: uuid('folder_id')
-            .notNull()
-            .references(() => textFoldersTable.id),
+        folderId: uuid('folder_id').references(() => textFoldersTable.id),
         title: text('title').notNull(),
         sourceLanguage: text('source_language').notNull(),
         targetLanguage: text('target_language').notNull(),

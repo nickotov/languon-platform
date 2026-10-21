@@ -1,9 +1,9 @@
-import { TextWorkspacePage } from '@/fsd/pages/texts';
+import { redirect } from 'next/navigation';
 export default async function Page({
     params,
 }: {
     params: Promise<{ folderId: string; textId: string }>;
 }) {
-    const values = await params;
-    return <TextWorkspacePage {...values} />;
+    const { textId } = await params;
+    redirect(`/texts/${textId}`);
 }

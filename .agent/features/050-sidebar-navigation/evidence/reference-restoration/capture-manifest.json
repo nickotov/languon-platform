@@ -1,0 +1,69 @@
+{
+  "capturedOn": "2026-10-21",
+  "source": "https://www.magicpatterns.com/c/h9kvac9aphfz1v5lvxhhrm",
+  "artifact": "d331e500-740c-4e3e-83ec-7f1f2e9acfe3",
+  "renderOrigin": "https://d331e500-740c-4e3e-83ec-7f1f2e9acfe3-render.magicpatterns.app",
+  "pageId": "befb4f58-a701-4034-8a1a-67cadf2aacb5",
+  "method": "Read-only Orca dedicated external reference page. Existing prototype controls activated by accessibility click or native DOM button.click. Source fake Anna Volkova data only. No artifact edits, publication, CSS changes, React-internal access or generated replacement design.",
+  "desktop": "Initial set viewport1000x625 DPR1.44 compensates hostzoom; DOM initially verified1440x900 DPR1 and sidebar239.996px expanded /63.990px rail. Later screenshot compositor scaling changed; do not use all PNGs for pixel equality.",
+  "mobileLimitation": "iPhone12 emulation requested390x844 DPR3. Host reported inconsistent innerWidth590 then1266 and screenshot stale/desktop rail. source-responsive-host-mismatch.png is retained as failed attempt, not mobile proof; source-drawer-tree.txt records transient mobile header/controls but not matched pixel evidence.",
+  "scope": "Representative original sidebar rendering and structural fidelity review; source mock main content excluded. Existing real local mobile evidence and current root responsive checks establish implementation behavior.",
+  "captures": [
+    {
+      "file": "source-account-light-desktop.png",
+      "sha256": "c843685cec647c00f55bf795150606b7326f07e15ad81b70e74c8977cc9d3133",
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "file": "source-expanded-dark-desktop.png",
+      "sha256": "5b2c95bd9ba5262822a6ba3c8445b8853cd3b221daf35236e961d31d3add3202",
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "file": "source-expanded-light-desktop.png",
+      "sha256": "462400d2498cd9e08f78b86a5227d984904f3f11de1cce76ea43957bada2235c",
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "file": "source-flyout-dark-desktop.png",
+      "sha256": "7e85bd913530cdc5c9e791cf6b10bec469aa5974adc1541b16cbe036b9355474",
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "file": "source-palette-light-desktop.png",
+      "sha256": "9d1047e27176181639485ae578f07df9741d7a1c6547cb4d382445e5c4aa77a8",
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "file": "source-rail-dark-desktop.png",
+      "sha256": "440ac1eb721330a464e69d6c717a509784cdd2c0fa4b445cbb1f22a6f39a279a",
+      "pngPixels": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "file": "source-responsive-host-mismatch.png",
+      "sha256": "0bfe88292e4ee386d8c35bea2bdf0261ca637ebb487abd361ec4e9b8c1283091",
+      "pngPixels": {
+        "width": 1758,
+        "height": 1568
+      }
+    }
+  ]
+}

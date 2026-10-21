@@ -8,7 +8,9 @@ import {
     PlusIcon,
     Share2Icon,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useAuth } from '@/fsd/features/auth';
+import { NewTextDialog } from '@/fsd/features/text-management';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     Badge,
@@ -34,7 +36,11 @@ export function FolderHeader({
     onRestore(): void;
 }) {
     const { t, href } = useI18n();
-    const router = useRouter();
+    const { requestWithSession } = useAuth();
+    const [creating, setCreating] = useState(false);
+    function closeCreate() {
+        setCreating(false);
+    }
     const archived = folder.lifecycle === 'archived';
     const canShare = (folder.translatedCount ?? 0) > 0;
     let shareLabel = t('texts.library.shareDisabled');
@@ -56,7 +62,7 @@ export function FolderHeader({
     }
 
     function add() {
-        router.push(href(`/texts/folders/${folder.id}/new`));
+        setCreating(true);
     }
 
     const items: MenuItem[] = [
@@ -98,6 +104,12 @@ export function FolderHeader({
 
     return (
         <>
+            <NewTextDialog
+                open={creating}
+                initialFolderId={folder.id}
+                onClose={closeCreate}
+                requestWithSession={requestWithSession}
+            />
             <Breadcrumb items={crumbs} ariaLabel={t('texts.library.folders')} />
             <header className={styles.header}>
                 <div className={styles.headerCopy}>

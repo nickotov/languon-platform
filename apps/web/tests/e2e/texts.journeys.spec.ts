@@ -1,4 +1,4 @@
-// @user-flow-revision texts sha256:4df9322d0beb2f55
+// @user-flow-revision texts sha256:911a4b49af2922ff
 
 import {
     expect,
@@ -45,7 +45,7 @@ async function signup(page: Page, info: TestInfo, role: string) {
     await expect(page).toHaveURL(/\/texts$/);
     return auth.accessToken;
 }
-function errors(page: Page) {
+function errors(page: Page, strictHttp = false) {
     const failures: string[] = [];
     page.on('pageerror', (e) => failures.push(e.message));
     page.on('console', (message) => {
@@ -62,7 +62,13 @@ function errors(page: Page) {
             );
     });
     page.on('response', (r) => {
-        if (r.status() >= 500)
+        const path = new URL(r.url()).pathname;
+        const expectedGuestRefresh =
+            r.status() === 401 && path.endsWith('/auth/refresh');
+        if (
+            r.status() >= 500 ||
+            (strictHttp && r.status() >= 400 && !expectedGuestRefresh)
+        )
             failures.push(`${r.status()} ${new URL(r.url()).pathname}`);
     });
     return () => expect(failures).toEqual([]);
@@ -96,6 +102,137 @@ async function viewportBounded(page: Page, element: Locator) {
             );
         })
         .toBe(true);
+}
+async function verifyLibraryOrganization(page: Page, info: TestInfo) {
+    const main = page.locator('#main-content');
+    const header = main.locator('header');
+    const newText = header.getByRole('button', {
+        name: 'New text',
+        exact: true,
+    });
+    const newFolder = header.getByRole('button', {
+        name: 'New folder',
+        exact: true,
+    });
+    const folders = main.locator('summary').filter({
+        has: page.getByRole('heading', { name: 'Folders', exact: true }),
+    });
+    const independent = main.locator('summary').filter({
+        has: page.getByRole('heading', {
+            name: 'Independent texts',
+            exact: true,
+        }),
+    });
+    for (const disclosure of [folders, independent]) {
+        await expect(disclosure.locator('..')).toHaveAttribute('open', '');
+        await expect(disclosure).toHaveAccessibleName(
+            /Folders|Independent texts/,
+        );
+        await disclosure.focus();
+        await disclosure.press('Space');
+        await expect(disclosure.locator('..')).not.toHaveAttribute('open');
+        await disclosure.press('Enter');
+        await expect(disclosure.locator('..')).toHaveAttribute('open', '');
+    }
+    for (const viewport of [
+        { width: 1440, height: 1000 },
+        { width: 390, height: 844 },
+    ]) {
+        await page.setViewportSize(viewport);
+        await expect(newText).toBeEnabled();
+        await expect(newFolder).toBeEnabled();
+        for (const [action, label] of [
+            [newText, 'New text'],
+            [newFolder, 'New folder'],
+        ] as const) {
+            await expect(
+                action.getByText(label, { exact: true }),
+            ).toBeVisible();
+            await expect
+                .poll(() =>
+                    action
+                        .getByText(label, { exact: true })
+                        .evaluate((element) => {
+                            const box = element.getBoundingClientRect();
+                            const style = getComputedStyle(element);
+                            return (
+                                box.width > 1 &&
+                                box.height > 1 &&
+                                style.clipPath === 'none'
+                            );
+                        }),
+                )
+                .toBe(true);
+            await expect
+                .poll(async () => (await action.boundingBox())?.height)
+                .toBe(44);
+        }
+        await expect
+            .poll(async () => {
+                const [text, folder] = await Promise.all([
+                    newText.boundingBox(),
+                    newFolder.boundingBox(),
+                ]);
+                return Boolean(
+                    text &&
+                    folder &&
+                    Math.abs(text.y - folder.y) <= 0.25 &&
+                    Math.abs(
+                        text.y + text.height - (folder.y + folder.height),
+                    ) <= 0.25,
+                );
+            })
+            .toBe(true);
+        await main.getByRole('tab', { name: 'Active', exact: true }).click();
+        await expect(
+            main.getByRole('link', { name: /Shared destination/ }),
+        ).toBeVisible();
+        await noOverflow(page);
+        await capture(page, info, `texts-library-active-${viewport.width}`);
+        await main.getByRole('tab', { name: 'Archived', exact: true }).click();
+        const emptyTitle = main.getByRole('heading', {
+            name: 'Nothing archived',
+            exact: true,
+        });
+        const emptyHelp = main.getByText(
+            'Archived folders appear here. You can restore them anytime.',
+            { exact: true },
+        );
+        await expect(emptyTitle).toBeVisible();
+        await expect(emptyHelp).toBeVisible();
+        await expect(
+            main.getByText('No independent texts.', { exact: true }),
+        ).toBeVisible();
+        const empty = emptyTitle.locator(
+            'xpath=ancestor::div[span[@aria-hidden="true"]][1]',
+        );
+        const icon = empty.locator(':scope > span[aria-hidden="true"]');
+        await expect
+            .poll(async () => {
+                const [iconBox, titleBox, helpBox] = await Promise.all([
+                    icon.boundingBox(),
+                    emptyTitle.boundingBox(),
+                    emptyHelp.boundingBox(),
+                ]);
+                if (!iconBox || !titleBox || !helpBox) return false;
+                const iconGap = titleBox.y - iconBox.y - iconBox.height;
+                const copyGap = helpBox.y - titleBox.y - titleBox.height;
+                return (
+                    iconGap >= 12 &&
+                    iconGap <= 20 &&
+                    copyGap >= 0 &&
+                    copyGap <= 8
+                );
+            })
+            .toBe(true);
+        await noOverflow(page);
+        await capture(page, info, `texts-library-archived-${viewport.width}`);
+    }
+    await main.getByRole('tab', { name: 'Active', exact: true }).click();
+    await expect(
+        main.getByRole('link', { name: /Shared destination/ }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 1000 });
 }
 async function responsiveAction(page: Page, name: string) {
     const action = page
@@ -157,6 +294,10 @@ async function translated(page: Page, info: TestInfo, role: string) {
         .getByRole('button', { name: 'Add text', exact: true })
         .first()
         .click();
+    await expect(page.getByLabel('Destination', { exact: true })).toHaveValue(
+        new URL(page.url()).pathname.split('/').at(-1)!,
+    );
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page.getByLabel('Title', { exact: true }).fill(`Morning ${role}`);
     const source = page.getByLabel('Source text', { exact: true });
     const target = page.getByLabel('Translation language', { exact: true });
@@ -469,6 +610,7 @@ async function verifyFrenchArticleCollection(page: Page, info: TestInfo) {
         .getByRole('button', { name: 'Add text', exact: true })
         .first()
         .click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page
         .getByLabel('Title', { exact: true })
         .fill('French contextual noun');
@@ -842,6 +984,7 @@ test('anonymous reader views and authenticated visitor copies before owner revok
     await reader
         .getByRole('button', { name: 'Copy to my folders', exact: true })
         .click();
+    await reader.locator('input[name="copyDestination"][value="new"]').check();
     await reader
         .getByLabel('New folder name', { exact: true })
         .fill(`Independent ${runId}`);
@@ -961,5 +1104,225 @@ test('phone reader selects and collects without horizontal overflow', async ({
     await expect(page.getByText('Hello', { exact: true })).toBeVisible();
     await verifyCardPadding(page, 'Hello');
     await capture(page, info, 'phone-persisted-card-padding');
+    assertErrors();
+});
+
+// @user-flow texts/web-independent-text-membership
+test('independent text keeps its identity through shared-folder moves and guards unsaved navigation', async ({
+    page,
+}, info) => {
+    const assertErrors = errors(page, true);
+    const token = await signup(page, info, 'independent-owner');
+    const headers = { Authorization: `Bearer ${token}` };
+    page.on('request', (request) => {
+        const authorization = request.headers()['authorization'];
+        if (authorization?.startsWith('Bearer '))
+            headers.Authorization = authorization;
+    });
+    const folderResponse = await page.request.post(
+        'http://127.0.0.1:4005/text-folders',
+        {
+            headers,
+            data: { name: `Shared destination ${runId}` },
+        },
+    );
+    expect(folderResponse.status(), await folderResponse.text()).toBe(201);
+    const { folder } = await folderResponse.json();
+    const shareResponse = await page.request.post(
+        `http://127.0.0.1:4005/text-folders/${folder.id}/share`,
+        {
+            headers,
+            data: { expectedVersion: folder.version },
+        },
+    );
+    expect(shareResponse.status(), await shareResponse.text()).toBe(200);
+    await page.reload();
+    await verifyLibraryOrganization(page, info);
+    await page
+        .getByRole('button', { name: 'New text', exact: true })
+        .first()
+        .click();
+    const create = page.getByRole('dialog', { name: 'New text', exact: true });
+    await expect(create.getByLabel('Destination', { exact: true })).toHaveValue(
+        '',
+    );
+    await create.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(page).toHaveURL(/\/texts\/new$/);
+    await page
+        .getByLabel('Title', { exact: true })
+        .fill(`Independent passage ${runId}`);
+    await page
+        .getByLabel('Source language', { exact: true })
+        .selectOption('en');
+    await page
+        .getByLabel('Translation language', { exact: true })
+        .selectOption('es');
+    await page.getByLabel('Source text', { exact: true }).fill('Hello world.');
+    const saved = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname.endsWith('/texts'),
+    );
+    await page
+        .getByRole('button', { name: 'Save draft', exact: true })
+        .filter({ visible: true })
+        .first()
+        .click();
+    const { text } = await (await saved).json();
+    expect(text.folderId).toBeNull();
+    await expect(page).toHaveURL(new RegExp(`/texts/${text.id}$`));
+    await page.reload();
+    const sidebar = page.getByRole('complementary', {
+        name: 'Application sidebar',
+    });
+    await expect(sidebar).toBeVisible();
+    async function move(destination: string) {
+        await page
+            .getByRole('button', { name: 'Text options', exact: true })
+            .click();
+        await page
+            .getByRole('menuitem', { name: 'Move text', exact: true })
+            .click();
+        const dialog = page.getByRole('dialog', {
+            name: 'Move text',
+            exact: true,
+        });
+        await dialog
+            .getByLabel('Destination', { exact: true })
+            .selectOption(destination);
+        return dialog;
+    }
+    const shared = await move(folder.id);
+    await expect(
+        shared.getByRole('button', { name: 'Move', exact: true }),
+    ).toBeDisabled();
+    await expect(shared).toContainText(/draft|translated|translation/i);
+    await capture(page, info, 'independent-shared-folder-confirmation');
+    await shared
+        .getByRole('checkbox', {
+            name: 'I understand and want to share this text through the folder.',
+            exact: true,
+        })
+        .check();
+    await shared.getByRole('button', { name: 'Move', exact: true }).click();
+    await expect(shared).not.toBeVisible();
+    const moved = await page.request.get(
+        `http://127.0.0.1:4005/texts/${text.id}`,
+        { headers },
+    );
+    expect((await moved.json()).text).toMatchObject({
+        id: text.id,
+        folderId: folder.id,
+        sourceText: 'Hello world.',
+    });
+    await page.goto(`/texts/folders/${folder.id}/texts/${text.id}`);
+    await expect(page).toHaveURL(new RegExp(`/texts/${text.id}$`));
+    const independent = await move('');
+    await independent
+        .getByRole('button', { name: 'Move', exact: true })
+        .click();
+    await expect(independent).not.toBeVisible();
+    const restored = await page.request.get(
+        `http://127.0.0.1:4005/texts/${text.id}`,
+        { headers },
+    );
+    expect((await restored.json()).text).toMatchObject({
+        id: text.id,
+        folderId: null,
+        sourceText: 'Hello world.',
+    });
+    await sidebar.getByRole('link', { name: 'Texts', exact: true }).click();
+    await expect(page).toHaveURL(/\/texts$/);
+    await page
+        .locator('#main-content')
+        .getByRole('link', {
+            name: `Independent passage ${runId}`,
+            exact: true,
+        })
+        .click();
+    await expect(page).toHaveURL(new RegExp(`/texts/${text.id}$`));
+    await page
+        .getByLabel('Source text', { exact: true })
+        .fill('Hello world. Unsaved changes.');
+    await sidebar.getByRole('link', { name: 'Home', exact: true }).click();
+    await expect(
+        page.getByRole('button', { name: 'Keep editing', exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole('button', { name: 'Keep editing', exact: true })
+        .click();
+    await expect(page).toHaveURL(new RegExp(`/texts/${text.id}$`));
+    await expect(page.getByLabel('Source text', { exact: true })).toHaveValue(
+        'Hello world. Unsaved changes.',
+    );
+    await sidebar.getByRole('button', { name: 'Search', exact: true }).click();
+    const palette = page.getByRole('dialog', { name: 'Search', exact: true });
+    await palette.getByRole('combobox').fill('Settings');
+    await palette
+        .getByRole('row', { name: 'Settings', exact: true })
+        .getByRole('button')
+        .first()
+        .click();
+    await page
+        .getByRole('button', { name: 'Keep editing', exact: true })
+        .click();
+    await expect(page).toHaveURL(new RegExp(`/texts/${text.id}$`));
+    // Trigger native traversal without waiting for a document load: the guard
+    // deliberately cancels it until the user makes an explicit choice.
+    await page.evaluate(() => window.history.back());
+    await page
+        .getByRole('button', { name: 'Keep editing', exact: true })
+        .click();
+    await expect(page).toHaveURL(new RegExp(`/texts/${text.id}$`));
+    await expect(page.getByLabel('Source text', { exact: true })).toHaveValue(
+        'Hello world. Unsaved changes.',
+    );
+    await capture(page, info, 'independent-unsaved-editor-with-sidebar');
+    await sidebar.getByRole('link', { name: 'Home', exact: true }).click();
+    await page
+        .getByRole('button', { name: 'Discard and close', exact: true })
+        .click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+        sidebar.getByRole('button', { name: /Account menu/ }),
+    ).toBeVisible();
+    await page.goto(`/texts/${text.id}`);
+    await page
+        .getByRole('button', { name: 'Translate via AI', exact: true })
+        .filter({ visible: true })
+        .first()
+        .click();
+    await expect(page.locator('[data-reading-pair]').first()).toBeVisible();
+    await expect(
+        page.getByRole('button', { name: 'Save', exact: true }),
+    ).toBeEnabled();
+    await page.reload();
+    await expect(page.locator('[data-reading-pair]').first()).toBeVisible();
+    await expect(
+        page.getByText('Hola mundo.', { exact: true }).first(),
+    ).toBeVisible();
+    await capture(page, info, 'independent-recovered-translation-proposal');
+    const translated = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'PUT' &&
+            new URL(response.url()).pathname.endsWith(`/texts/${text.id}`),
+    );
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    const translatedResponse = await translated;
+    expect(translatedResponse.status(), await translatedResponse.text()).toBe(
+        200,
+    );
+    const { text: savedTranslation } = await translatedResponse.json();
+    expect(savedTranslation).toMatchObject({
+        id: text.id,
+        folderId: null,
+        status: 'translated',
+        sourceText: 'Hello world.',
+    });
+    expect(savedTranslation.alignment.source.length).toBeGreaterThan(0);
+    await page.reload();
+    await expect(
+        page.getByText('Hola mundo.', { exact: true }).first(),
+    ).toBeVisible();
     assertErrors();
 });

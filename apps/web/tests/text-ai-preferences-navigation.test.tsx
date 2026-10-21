@@ -3,8 +3,25 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useModelPreferenceNavigation } from '@/fsd/pages/profile/hooks/use-model-preference-navigation';
 import { useHistoryPositionTracking } from '@/fsd/shared/lib/navigation/history-position';
+import { requestGuardedNavigation } from '@/fsd/shared/lib/navigation/guarded-navigation';
 
 describe('unsaved model preference navigation', () => {
+    it('guards programmatic palette actions and removes the guard on unmount', () => {
+        const navigate = vi.fn();
+        const { result, unmount } = renderHook(useModelPreferenceNavigation);
+        act(() => result.current.setDirty(true));
+        act(() => requestGuardedNavigation(navigate));
+        expect(result.current.open).toBe(true);
+        expect(navigate).not.toHaveBeenCalled();
+        act(() => result.current.keepEditing());
+        expect(navigate).not.toHaveBeenCalled();
+        act(() => requestGuardedNavigation(navigate));
+        act(() => result.current.discard());
+        expect(navigate).toHaveBeenCalledOnce();
+        unmount();
+        requestGuardedNavigation(navigate);
+        expect(navigate).toHaveBeenCalledTimes(2);
+    });
     it('keeps editing without navigation, then permits one deliberate discard', () => {
         const navigate = vi.fn();
         const { result } = renderHook(useModelPreferenceNavigation);

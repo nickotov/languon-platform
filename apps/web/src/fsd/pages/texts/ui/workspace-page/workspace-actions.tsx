@@ -36,7 +36,7 @@ export function WorkspaceActions({
                     desktopIconOnly
                     onClick={save}
                     loading={ws.saving}
-                    disabled={ws.previewExpired}
+                    disabled={ws.previewExpired || ws.requiresFolderConsent}
                     leadingIcon={<Save />}
                 >
                     {ws.document?.alignment ? copy('saveNew') : copy('save')}
@@ -82,7 +82,10 @@ export function WorkspaceActions({
                 variant='secondary'
                 onClick={save}
                 loading={ws.saving}
-                disabled={ws.input.sourceLanguage === 'auto'}
+                disabled={
+                    ws.input.sourceLanguage === 'auto' ||
+                    ws.requiresFolderConsent
+                }
                 leadingIcon={<Save />}
             >
                 {copy('saveDraft')}

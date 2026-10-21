@@ -26,6 +26,7 @@ export function WorkspaceHeader({
     onRename,
     onShare,
     onArchive,
+    onMove,
     onRetranslate,
 }: {
     ws: TextWorkspace;
@@ -35,6 +36,7 @@ export function WorkspaceHeader({
     onRename(): void;
     onShare(): void;
     onArchive(): void;
+    onMove(): void;
     onRetranslate(): void;
 }) {
     const { copy } = useWorkspaceCopy();
@@ -61,6 +63,11 @@ export function WorkspaceHeader({
     }
 
     const menuItems: MenuItem[] = [
+        {
+            label: t('texts.organization.move'),
+            onSelect: onMove,
+            disabled: ws.unsaved || ws.aiActive,
+        },
         { label: copy('rename'), icon: <Pencil />, onSelect: onRename },
         {
             label: ws.mode === 'read' ? copy('share') : copy('shareDisabled'),
@@ -97,7 +104,9 @@ export function WorkspaceHeader({
             </Button>
             <div className={styles.heading}>
                 <p>
-                    {t('texts.library.title')} / {ws.folder.data?.name}
+                    {t('texts.library.title')} /{' '}
+                    {ws.folder.data?.name ??
+                        t('texts.organization.independent')}
                 </p>
                 <h1>
                     <span>{title}</span>

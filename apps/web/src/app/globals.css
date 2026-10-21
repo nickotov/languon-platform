@@ -174,10 +174,10 @@
     --size-input-height: var(--size-44);
     --size-chat-bubble-max-width: var(--size-480);
     --size-nav-sidebar-width: var(--size-240);
-    --size-nav-rail-width: var(--size-72);
-    --size-nav-drawer-width: var(--size-304);
+    --size-nav-rail-width: var(--size-64);
+    --size-nav-drawer-width: var(--size-320);
     --size-nav-drawer-gutter: var(--size-32);
-    --size-topbar-height: var(--size-64);
+    --size-topbar-height: var(--size-56);
     --radius-xs: var(--radius-4);
     --radius-sm: var(--radius-8);
     --radius-md: var(--radius-12);

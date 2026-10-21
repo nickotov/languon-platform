@@ -47,6 +47,49 @@ describe('texts API boundary', () => {
             'Bearer token',
         );
     });
+    it('recovers an owner pending job with a nullable validated result', async () => {
+        vi.mocked(fetch).mockResolvedValue(json({ job: null }));
+        await expect(textsApi.getPendingAiJob('token', uuid)).resolves.toEqual({
+            job: null,
+        });
+        expect(vi.mocked(fetch).mock.calls[0]![0]).toBe(
+            `/api/texts/${uuid}/pending-job`,
+        );
+    });
+    it('lists independent documents without a folder route and keeps lifecycle pagination', async () => {
+        vi.mocked(fetch).mockResolvedValue(
+            json({ data: [], nextCursor: null }),
+        );
+        await textsApi.listIndependentTexts('token', {
+            lifecycle: 'archived',
+            limit: 7,
+        });
+        expect(vi.mocked(fetch).mock.calls[0]![0]).toBe(
+            '/api/texts?limit=7&lifecycle=archived',
+        );
+    });
+    it('validates and forwards versioned moves to an independent destination', async () => {
+        vi.mocked(fetch).mockResolvedValue(json(failure, 409));
+        await expect(
+            textsApi.moveText('token', uuid, {
+                folderId: null,
+                expectedVersion: 2,
+            }),
+        ).rejects.toBeInstanceOf(TextsApiError);
+        const [url, init] = vi.mocked(fetch).mock.calls[0]!;
+        expect(url).toBe(`/api/texts/${uuid}/folder`);
+        expect(init?.method).toBe('PATCH');
+        expect(JSON.parse(String(init?.body))).toEqual({
+            folderId: null,
+            expectedVersion: 2,
+        });
+        expect(() =>
+            textsApi.moveText('token', uuid, {
+                folderId: null,
+                expectedVersion: 0,
+            }),
+        ).toThrow();
+    });
     it('preserves exact Unicode and caller operation identity on AI admission', async () => {
         vi.mocked(fetch).mockResolvedValue(json(failure, 409));
         const body = {

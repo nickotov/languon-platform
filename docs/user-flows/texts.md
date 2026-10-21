@@ -2,13 +2,14 @@
 feature: texts
 title: Texts folders and aligned reading
 status: current
-last_verified: 2026-10-17
+last_verified: 2026-10-21
 surfaces:
     - api
     - system
     - browser
 source_paths:
     - .agent/features/043-texts/**
+    - .agent/features/050-sidebar-navigation/**
     - apps/backend/src/modules/texts/**
     - apps/backend/src/modules/dictionaries/application/text-selection-*.ts
     - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/*text-selection*.ts
@@ -49,7 +50,9 @@ e2e_scenarios:
     - web-owner-reading-and-collection
     - web-public-copy-and-revocation
     - web-phone-reading-selection
+    - web-independent-text-membership
 related_features:
+    - sidebar-navigation
     - contextual-language-assistant-and-knowledge
     - dictionary-platform
     - user-ai-model-preferences-backend
@@ -61,8 +64,9 @@ related_features:
 
 ## What this verifies
 
-The web Texts section sits beside Dictionaries and organizes passages in flat
-folders. A fullscreen workspace explicitly detects/confirms languages, translates
+The web Texts section organizes passages in optional flat folders and an
+Independent texts block. The editor keeps desktop navigation available and
+explicitly detects/confirms languages, translates
 whole passages, saves drafts/proposals and edits paired sentences. Readers enable
 matching, select contextual vocabulary into dictionaries, and share/copy saved
 translations. Backend journeys also verify versioning, capacity and privacy.
@@ -133,7 +137,7 @@ or shared/staging/production data are used.
    request paths or queries. Public responses are no-store/no-referrer/no-index.
 2. Anonymous readers see translated active content. A shared folder is live and
    includes later saved translations and edits, but excludes untranslated drafts.
-3. After signing in, copy one text into an owned active folder or copy the entire
+3. After signing in, copy one text independently or into an owned active folder, or copy the entire
    shared folder privately. Copies have independent IDs and editing/lifecycle.
    Collecting vocabulary requires an authenticated active learner and uses their
    own dictionary and AI credits.
@@ -141,6 +145,16 @@ or shared/staging/production data are used.
    It becomes unavailable without revealing owner identity or existence details.
    Archiving a folder also hides its children. Restoring does not reactivate old
    sharing links. Previously completed copies and cards remain independent.
+
+### Optional membership and stable addresses
+
+Texts have an owner and zero or one folder. Create with `folderId: null` for an
+independent text. A version-checked membership change preserves its ID, source,
+translation, direct share and history. Moving into a shared folder requires an
+explicit confirmation bound to the current share identity/version; its saved
+translation becomes visible there, including a draft after future publication.
+Moving out removes inherited folder access. Archived resources require restoration;
+active AI work and stale versions reject a move without changing membership.
 
 ## Expected failure and edge cases
 
@@ -171,6 +185,17 @@ or shared/staging/production data are used.
 ## System verification
 
 ### Deployment boundary
+
+Apply migration `0076_sidebar_navigation` before admitting independent texts.
+It preserves existing folder memberships and permits null folder membership in
+texts and Texts jobs. Independent detection uses `text-detection:v2`; independent
+translation uses `text-translation:v3`. Deploy workers that understand both before
+enabling those admissions, retaining legacy detection v1 and translation v1/v2
+support for queued work. Include the new formats consistently in every API
+admission/read/accept/cancel/discard vector and worker processable formats. Before
+worker rollback, stop new admissions and drain independent-format jobs; a worker
+that only understands folder-bound jobs is not a compatible rollback target.
+This guide authorizes no production migration, activation or rollback.
 
 Apply migration0068 before v2 admissions. Compatible workers must process
 text-translation:v1 and text-translation:v2; v1 remains for queued work. In local
@@ -234,7 +259,7 @@ Scenario `texts/web-owner-reading-and-collection`:
    and explicitly Create and add. Observe processing and success with Open dictionary.
    The selection trigger follows the word. The dictionary panel remains inside the
    viewport when the window is shortened, and its fields remain clickable and
-   keyboard-focusable inside the fullscreen reader.
+   keyboard-focusable inside the reader.
    The two-icon trigger has no unused minimum-width space around its controls.
 5. Follow the toast link and verify the generated full card is persisted. Return
    to Texts and verify the real saved/translated folder count.
@@ -255,6 +280,33 @@ Scenario `texts/web-public-copy-and-revocation`:
    and Open folder; the copied source/translation is saved independently.
 4. Owner revokes through the share dialog confirmation. Reloading the public link
    gives the uniform unavailable state; the saved independent copy still reads.
+
+### Independent texts, moves and navigation protection
+
+Scenario `texts/web-independent-text-membership`:
+
+1. From Texts choose New text. Independent texts is the global default; the
+   Destination selector lists active folders and New folder creates a destination.
+   Add text in a folder
+   preselects that folder. Save an independent draft and reload its canonical
+   `/texts/{textId}` address. Folders and Independent texts start expanded; the
+   Active/Archived selector applies to both. New text is the primary header
+   action and New folder is secondary; both have equal 44 px height on desktop
+   and phone. The spaced section bars include a leading icon and disclosure
+   chevron and support keyboard collapse/expand through native details controls.
+2. Move the text into a folder through Text options. Its address and content stay
+   unchanged. An old folder-based bookmark redirects to the canonical address.
+   Remove it from the folder and verify it returns to Independent texts.
+3. Create or move into a shared folder. Review and confirm inherited access, including
+   future visibility after a draft is translated and saved. Direct text links
+   remain valid after moving out. Copying into an existing shared folder requires
+   the same explicit confirmation.
+4. Make an unsaved edit and follow Home. Cancel the warning to retain the address
+   and edit; confirm leaving to navigate. Search and browser history use the same
+   unsaved-work protection.
+5. Reopen the independent draft and Translate via AI. Reload before saving the
+   completed proposal; recover the unsaved translation, then explicitly Save.
+   Reload again and verify both aligned languages persist without a folder.
 
 ### Phone reading and selection
 
@@ -298,6 +350,9 @@ real browser scenarios in `apps/web/tests/e2e/texts.journeys.spec.ts`:
 - `web-owner-reading-and-collection`: explicit proposal/save/edit and contextual card.
 - `web-public-copy-and-revocation`: actual unlisted sharing, independent copy, revoke.
 - `web-phone-reading-selection`: tabs/counterpart/collection at 390 px and 320 px.
+- `web-independent-text-membership`: independent creation, stable bookmarks,
+  membership changes, shared-folder confirmation, unsaved navigation and
+  independent translation proposal recovery followed by explicit publication.
 
 | Scenario                              | Test file                                                             | Outcome                                                                                         |
 | ------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |

@@ -1,5 +1,5 @@
 import { EnqueueTextTranslationRequestSchema } from '@languon/contracts';
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHmac, randomUUID, randomBytes } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { eq, isNotNull, or, sql } from 'drizzle-orm';
 import { beforeAll, beforeEach, afterAll, describe, it, expect } from 'vitest';
@@ -11,6 +11,8 @@ import {
 } from '../../../../src/modules/texts/infrastructure/persistence/drizzle/schema';
 import { textsAiJobsTable as jobs } from '../../../../src/modules/texts/infrastructure/persistence/drizzle/texts-job-schema';
 import { DrizzleTextsJobStore } from '../../../../src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store';
+import { DrizzleTextContentStore } from '../../../../src/modules/texts/infrastructure/persistence/drizzle/drizzle-text-content-store';
+import { createTextsCryptography } from '../../../../src/modules/texts/infrastructure/texts-composition';
 import { TextsWorkerService } from '../../../../src/modules/texts/application/texts-worker-service';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { aiCreditReservationsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
@@ -46,8 +48,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             userConcurrency: 5,
             supportedFormats: [
                 'text-detection:v1',
+                'text-detection:v2',
                 'text-translation:v1',
                 'text-translation:v2',
+                'text-translation:v3',
             ] as const,
         };
         const context = () => ({ now, signal: new AbortController().signal });
@@ -147,6 +151,220 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 context(),
             );
+        it('admits independent jobs only to workers advertising nullable-folder formats', async () => {
+            const job = await store.enqueue(
+                owner,
+                'text-detection',
+                {
+                    folderId: null,
+                    operationId: randomUUID(),
+                    sourceText: 'Independent.',
+                },
+                context(),
+            );
+            const [row] = await db
+                .select()
+                .from(jobs)
+                .where(eq(jobs.id, job.id));
+            expect(row?.folderId).toBeNull();
+            expect(row?.format).toBe('text-detection:v2');
+            expect(
+                await store.claimNext(
+                    {
+                        ...claimOptions,
+                        supportedFormats: [
+                            'text-detection:v1',
+                            'text-translation:v1',
+                            'text-translation:v2',
+                        ],
+                    },
+                    context(),
+                ),
+            ).toBeNull();
+            expect(
+                await store.claimNext(claimOptions, context()),
+            ).not.toBeNull();
+        });
+        it('rejects independent admission when only legacy workers are ready', async () => {
+            await db.update(dictionaryAiWorkerObservationsTable).set({
+                textAiSupportedFormats: [
+                    'text-detection:v1',
+                    'text-translation:v1',
+                    'text-translation:v2',
+                    'text-selection-card:v1',
+                ],
+            });
+            await expect(
+                store.enqueue(
+                    owner,
+                    'text-detection',
+                    {
+                        folderId: null,
+                        operationId: randomUUID(),
+                        sourceText: 'Independent.',
+                    },
+                    context(),
+                ),
+            ).rejects.toMatchObject({
+                name: 'TextAiSelectionUnavailableError',
+            });
+        });
+        it('blocks moves during AI work and unapplied proposals, and allows explicit discard', async () => {
+            const contentStore = new DrizzleTextContentStore(
+                db,
+                { generate: randomUUID },
+                { now: () => now },
+                createTextsCryptography(
+                    'synthetic-text-content-secret-at-least-32-bytes',
+                    { randomBytes },
+                ),
+            );
+            const draft = await contentStore.createText(owner, {
+                folderId: folder,
+                sourceText: 'Hello.',
+                sourceLanguage: 'en',
+                targetLanguage: 'es',
+            });
+            const job = await store.enqueue(
+                owner,
+                'text-translation',
+                {
+                    folderId: folder,
+                    textId: draft.id,
+                    expectedTextVersion: draft.version,
+                    operationId: randomUUID(),
+                    sourceText: draft.sourceText,
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es',
+                },
+                context(),
+            );
+            expect(
+                await contentStore.pendingJob(owner, draft.id),
+            ).toMatchObject({ id: job.id, state: 'queued' });
+            await expect(
+                contentStore.pendingJob(randomUUID(), draft.id),
+            ).rejects.toMatchObject({ code: 'text_not_found' });
+            await expect(
+                contentStore.moveText(owner, draft.id, {
+                    folderId: null,
+                    expectedVersion: draft.version,
+                }),
+            ).rejects.toMatchObject({ code: 'text_busy' });
+            const worker = new TextsWorkerService({
+                ...claimOptions,
+                store,
+                provider: {
+                    run: async (call) => ({
+                        draft: {
+                            translation:
+                                call.input.kind === 'text-translation'
+                                    ? call.input.segments.map((segment) => ({
+                                          pairId: segment.pairId,
+                                          text: 'Hola.',
+                                      }))
+                                    : [],
+                        },
+                        usage: { inputTokens: 100, outputTokens: 10 },
+                    }),
+                },
+                clock: { now: () => now },
+                heartbeatMs: 1000,
+                timeoutMs: 5000,
+                maxAttempts: 3,
+                retryDelayMs: 100,
+            });
+            expect(await worker.processNext(context().signal)).toBe(true);
+            expect((await store.get(owner, job.id, context())).state).toBe(
+                'completed',
+            );
+            // A fresh repository (browser reload) recovers only the public proposal shape.
+            const reloadedStore = new DrizzleTextContentStore(
+                db,
+                { generate: randomUUID },
+                { now: () => now },
+                createTextsCryptography(
+                    'synthetic-text-content-secret-at-least-32-bytes',
+                    { randomBytes },
+                ),
+            );
+            const recovered = await reloadedStore.pendingJob(owner, draft.id);
+            expect(recovered).toMatchObject({ id: job.id, state: 'completed' });
+            expect(recovered).not.toHaveProperty('inputPayload');
+            expect(recovered).not.toHaveProperty('selectedExecutionSnapshot');
+            await expect(
+                contentStore.moveText(owner, draft.id, {
+                    folderId: null,
+                    expectedVersion: draft.version,
+                }),
+            ).rejects.toMatchObject({ code: 'text_busy' });
+            expect(
+                (await store.cancel(owner, recovered!.id, context())).state,
+            ).toBe('cancelled');
+            expect(await reloadedStore.pendingJob(owner, draft.id)).toBeNull();
+            expect(
+                (
+                    await contentStore.moveText(owner, draft.id, {
+                        folderId: null,
+                        expectedVersion: draft.version,
+                    })
+                ).folderId,
+            ).toBeNull();
+        });
+        it('recovers stale active jobs for cancellation after another tab saves', async () => {
+            const contentStore = new DrizzleTextContentStore(
+                db,
+                { generate: randomUUID },
+                { now: () => now },
+                createTextsCryptography(
+                    'synthetic-text-content-secret-at-least-32-bytes',
+                    { randomBytes },
+                ),
+            );
+            const draft = await contentStore.createText(owner, {
+                folderId: folder,
+                sourceText: 'Hello.',
+                sourceLanguage: 'en',
+                targetLanguage: 'es',
+            });
+            await store.enqueue(
+                owner,
+                'text-translation',
+                {
+                    folderId: folder,
+                    textId: draft.id,
+                    expectedTextVersion: draft.version,
+                    operationId: randomUUID(),
+                    sourceText: draft.sourceText,
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es',
+                },
+                context(),
+            );
+            const saved = await contentStore.saveText(owner, draft.id, {
+                kind: 'metadata',
+                expectedVersion: draft.version,
+                title: 'Changed in another tab',
+            });
+            const pending = await contentStore.pendingJob(owner, draft.id);
+            expect(pending).toMatchObject({ state: 'queued' });
+            await expect(
+                contentStore.moveText(owner, draft.id, {
+                    folderId: null,
+                    expectedVersion: saved.version,
+                }),
+            ).rejects.toMatchObject({ code: 'text_busy' });
+            await store.cancel(owner, pending!.id, context());
+            expect(
+                (
+                    await contentStore.moveText(owner, draft.id, {
+                        folderId: null,
+                        expectedVersion: saved.version,
+                    })
+                ).folderId,
+            ).toBeNull();
+            expect(await store.claimNext(claimOptions, context())).toBeNull();
+        });
         it('admits, dispatches and completes with immutable policy and measured credit settlement', async () => {
             const job = await enqueue();
             const worker = new TextsWorkerService({
@@ -321,7 +539,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     id: randomUUID(),
                     operationId: randomUUID(),
                     jobKind: 'text-detection',
-                    format: 'text-detection:v2',
+                    format: 'text-detection:v999',
                 }),
             ).rejects.toMatchObject({
                 cause: {

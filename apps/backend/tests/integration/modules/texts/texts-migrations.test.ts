@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
     grantDisposableMigrationPurpose,
     runPostgresMigrations,
@@ -18,9 +18,12 @@ import {
 describe.runIf(isDatabaseIntegrationEnabled())(
     'Texts fresh and existing-schema migration',
     () => {
-        const client = createTestPostgresClient();
+        let client: ReturnType<typeof createTestPostgresClient>;
+        beforeAll(() => {
+            client = createTestPostgresClient();
+        });
         afterAll(async () => {
-            await client.end();
+            await client?.end();
         });
         it('upgrades the pre-Texts schema with existing user data and retries safely', async () => {
             await resetTestDatabase(client);

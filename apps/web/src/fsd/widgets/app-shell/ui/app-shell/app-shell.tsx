@@ -1,155 +1,147 @@
 'use client';
-
-import { Menu } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Menu, Search } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 import { useSessionStore } from '@/fsd/entities/session';
-
 import { useAuth } from '@/fsd/features/auth';
 import {
     LibraryCreateDialog,
     useDictionaryNavigation,
 } from '@/fsd/features/dictionary-library';
+import { NewTextDialog } from '@/fsd/features/text-management';
 import { useI18n } from '@/fsd/shared/i18n';
 import { IconButton, Logo } from '@/fsd/shared/ui';
-
 import { useAppShellState } from '../../hooks/use-app-shell-state';
-import { isRouteWithin } from '../../lib/is-route-within';
+import { useShellCreation } from '../../hooks/use-shell-creation';
+import { ShellNavigationContext } from '../../model/navigation-context';
+import { CommandPalette } from '../command-palette/command-palette';
 import { MobileDrawer } from '../mobile-drawer/mobile-drawer';
 import { Sidebar } from '../sidebar/sidebar';
 import styles from './app-shell.module.css';
 
 export function AppShell({ children }: { children: ReactNode }) {
-    const pathname = usePathname();
-
     const { requestWithSession } = useAuth();
-
     const { href, t } = useI18n();
-
     const shell = useAppShellState();
-
-    const navigation = useDictionaryNavigation(requestWithSession);
+    const navigation = useDictionaryNavigation(requestWithSession, false);
+    const creation = useShellCreation(
+        requestWithSession,
+        navigation.openCreate,
+    );
     const status = useSessionStore((state) => state.status);
     const userId = useSessionStore((state) => state.user?.id ?? null);
     const authenticated = status === 'authenticated' && userId !== null;
-
-    const dictionaryId = pathname.startsWith('/dictionaries/')
-        ? pathname.split('/')[2]
-        : null;
-
-    const currentDictionary = dictionaryId
-        ? navigation.list.find((dictionary) => dictionary.id === dictionaryId)
-        : null;
-
-    function resolvePageTitle() {
-        if (pathname === '/') return 'Languon';
-        if (isRouteWithin(pathname, '/knowledge')) return t('knowledge.title');
-        if (isRouteWithin(pathname, '/texts'))
-            return t('texts.manage.navigation');
-        if (isRouteWithin(pathname, '/profile')) {
-            return t('profile.title');
-        }
-        if (isRouteWithin(pathname, '/dictionaries'))
-            return currentDictionary?.name ?? t('dictionary.library.title');
-        if (pathname === '/login') return t('login.title');
-        if (pathname === '/signup') return t('signup.title');
-        if (pathname === '/verify-email') return t('verify.title');
-        if (pathname === '/forgot-password') return t('forgot.title');
-        if (pathname === '/reset-password') return t('reset.title');
-        if (isRouteWithin(pathname, '/shared/dictionaries'))
-            return t('shell.sharedDictionary');
-        return 'Languon';
-    }
-
-    const pageTitle = resolvePageTitle();
-
     const shellClassName = shell.railCollapsed
         ? `${styles.shell} ${styles.railShell}`
         : styles.shell;
     const variant = shell.railCollapsed ? 'rail' : 'expanded';
-    // Only the visible modal drawer may open its footer overlay. The desktop
-    // sidebar remains mounted for stable layout but must not portal a duplicate.
     const desktopShell = {
         ...shell,
         accountOpen: shell.accountOpen && !shell.drawerOpen,
     };
-
     function openDrawer() {
         shell.setDrawerOpen(true);
     }
-
+    function openSearch() {
+        if (authenticated) {
+            shell.setDrawerOpen(false);
+            shell.setPaletteOpen(true);
+        }
+    }
+    function closeSearch() {
+        shell.setPaletteOpen(false);
+    }
+    const context = {
+        requestWithSession,
+        openSearch,
+        create: creation.create,
+        creating: creation.creating,
+    };
     useEffect(() => {
-        shell.setAccountOpen(false);
-        shell.setDrawerOpen(false);
-    }, [status, userId, shell.setAccountOpen, shell.setDrawerOpen]);
-
-    useEffect(() => {
-        const query = window.matchMedia('(min-width: 1024px)');
-
-        const adaptToBreakpoint = () => {
-            shell.setAccountOpen(false);
-
-            if (query.matches) shell.setDrawerOpen(false);
-        };
-
-        query.addEventListener('change', adaptToBreakpoint);
-
-        return () => query.removeEventListener('change', adaptToBreakpoint);
-    }, [shell.setAccountOpen, shell.setDrawerOpen]);
-
+        function shortcut(event: KeyboardEvent) {
+            if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+            if (event.key.toLowerCase() === 'k' && authenticated) {
+                event.preventDefault();
+                shell.setDrawerOpen(false);
+                shell.setPaletteOpen((current) => !current);
+            }
+            if (event.key === '\\') {
+                event.preventDefault();
+                shell.toggleRail();
+            }
+        }
+        window.addEventListener('keydown', shortcut);
+        return () => window.removeEventListener('keydown', shortcut);
+    }, [authenticated, shell]);
     return (
-        <div className={shellClassName}>
-            <a className={styles.skipLink} href='#main-content'>
-                {t('dictionary.skipToContent')}
-            </a>
-            <aside
-                aria-label={t('shell.sidebar')}
-                className={styles.desktopSidebar}
-            >
-                <Sidebar
-                    authenticated={authenticated}
-                    navigation={navigation}
-                    pending={status === 'bootstrapping'}
-                    shell={desktopShell}
-                    variant={variant}
-                />
-            </aside>
-            <header className={styles.mobileTopBar}>
-                <IconButton
-                    aria-controls='mobile-navigation-drawer'
-                    aria-expanded={shell.drawerOpen}
-                    className={styles.mobileMenuButton}
-                    icon={<Menu />}
-                    label={t('shell.openNavigation')}
-                    onClick={openDrawer}
-                    ref={shell.menuButtonRef}
-                    showTooltip={false}
-                    variant='ghost'
-                />
-                <span className={styles.mobileLogo}>
-                    <Logo
-                        href={href('/')}
-                        label={t('auth.brandHome')}
-                        monogram
+        <ShellNavigationContext.Provider value={context}>
+            <div className={shellClassName}>
+                <a className={styles.skipLink} href='#main-content'>
+                    {t('dictionary.skipToContent')}
+                </a>
+                <aside
+                    aria-label={t('shell.sidebar')}
+                    className={styles.desktopSidebar}
+                >
+                    <Sidebar
+                        authenticated={authenticated}
+                        pending={status === 'bootstrapping'}
+                        shell={desktopShell}
+                        variant={variant}
                     />
-                </span>
-                <span aria-hidden className={styles.mobileDivider} />
-                <p className={styles.mobileTitle} title={pageTitle}>
-                    {pageTitle}
-                </p>
-            </header>
-            <MobileDrawer
-                authenticated={authenticated}
-                navigation={navigation}
-                pending={status === 'bootstrapping'}
-                shell={shell}
-            />
-            <div className={styles.content} id='main-content' tabIndex={-1}>
-                {children}
+                </aside>
+                <header className={styles.mobileTopBar}>
+                    <IconButton
+                        aria-controls='mobile-navigation-drawer'
+                        aria-expanded={shell.drawerOpen}
+                        className={styles.mobileMenuButton}
+                        icon={<Menu />}
+                        label={t('shell.openNavigation')}
+                        onClick={openDrawer}
+                        ref={shell.menuButtonRef}
+                        showTooltip={false}
+                        variant='ghost'
+                    />
+                    <Logo href={href('/')} label={t('auth.brandHome')} />
+                    {authenticated ? (
+                        <IconButton
+                            className={styles.mobileSearchButton}
+                            icon={<Search />}
+                            label={t('shell.search')}
+                            onClick={openSearch}
+                            showTooltip={false}
+                            variant='ghost'
+                        />
+                    ) : null}
+                </header>
+                <MobileDrawer
+                    authenticated={authenticated}
+                    pending={status === 'bootstrapping'}
+                    shell={shell}
+                />
+                <div className={styles.content} id='main-content' tabIndex={-1}>
+                    {children}
+                </div>
+                {authenticated ? (
+                    <>
+                        <LibraryCreateDialog
+                            key={`dictionary-${userId}`}
+                            state={navigation}
+                        />
+                        <NewTextDialog
+                            key={`text-${userId}`}
+                            onClose={creation.closeText}
+                            open={creation.textOpen}
+                            requestWithSession={requestWithSession}
+                        />
+                        {shell.paletteOpen ? (
+                            <CommandPalette
+                                key={userId}
+                                onClose={closeSearch}
+                            />
+                        ) : null}
+                    </>
+                ) : null}
             </div>
-            {authenticated ? (
-                <LibraryCreateDialog key={userId} state={navigation} />
-            ) : null}
-        </div>
+        </ShellNavigationContext.Provider>
     );
 }

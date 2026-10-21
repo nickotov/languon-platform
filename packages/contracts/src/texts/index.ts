@@ -119,12 +119,14 @@ export const TextFolderSchema = z
         textCount: z.number().int().nonnegative().optional(),
         translatedCount: z.number().int().nonnegative().optional(),
         isShared: z.boolean().optional(),
+        shareId: TextIdSchema.nullable().optional(),
+        shareVersion: TextVersionSchema.nullable().optional(),
     })
     .strict();
 export const TextSchema = z
     .object({
         id: TextIdSchema,
-        folderId: TextIdSchema,
+        folderId: TextIdSchema.nullable(),
         isShared: z.boolean().optional(),
         title: TextTitleSchema,
         sourceLanguage: TextLanguageSchema,
@@ -190,15 +192,30 @@ const differentLanguages = (v: {
     sourceLanguage: string;
     targetLanguage: string;
 }) => v.sourceLanguage !== v.targetLanguage;
+export const SharedTextFolderConfirmationSchema = z
+    .object({
+        shareId: TextIdSchema,
+        shareVersion: TextVersionSchema,
+    })
+    .strict();
 export const CreateTextRequestSchema = z
     .object({
-        folderId: TextIdSchema,
+        folderId: TextIdSchema.nullable(),
+        sharedFolderConfirmation: SharedTextFolderConfirmationSchema.optional(),
         operationId: TextIdSchema.optional(),
         title: TextTitleSchema.optional(),
         ...ContentFields,
     })
     .strict()
     .refine(differentLanguages, 'Languages must differ');
+export const MoveTextRequestSchema = z
+    .object({
+        folderId: TextIdSchema.nullable(),
+        expectedVersion: TextVersionSchema,
+        sharedFolderConfirmation: SharedTextFolderConfirmationSchema.optional(),
+    })
+    .strict();
+export type MoveTextRequest = z.infer<typeof MoveTextRequestSchema>;
 export const TextPairEditSchema = z
     .object({
         pairId: TextIdSchema,
@@ -289,14 +306,14 @@ export const TextFolderIdParamsSchema = z
 export const TextJobIdParamsSchema = z.object({ jobId: TextIdSchema }).strict();
 export const EnqueueTextDetectionRequestSchema = z
     .object({
-        folderId: TextIdSchema,
+        folderId: TextIdSchema.nullable(),
         sourceText: TextSourceSchema,
         operationId: TextIdSchema,
     })
     .strict();
 export const EnqueueTextTranslationRequestSchema = z
     .object({
-        folderId: TextIdSchema,
+        folderId: TextIdSchema.nullable(),
         ...ContentFields,
         operationId: TextIdSchema,
         textId: TextIdSchema.optional(),
@@ -385,6 +402,9 @@ export const TextAiJobSchema = z
 export const TextAiJobResponseSchema = z
     .object({ job: TextAiJobSchema })
     .strict();
+export const TextPendingJobResponseSchema = z
+    .object({ job: TextAiJobSchema.nullable() })
+    .strict();
 export const TextShareIdSchema = z
     .string()
     .min(16)
@@ -409,7 +429,8 @@ export const TextShareResponseSchema = z
     .strict();
 export const CopySharedTextRequestSchema = z
     .object({
-        folderId: TextIdSchema.optional(),
+        folderId: TextIdSchema.nullable().optional(),
+        sharedFolderConfirmation: SharedTextFolderConfirmationSchema.optional(),
         newFolderName: plainText(120, true, true).optional(),
         expectedVersion: TextVersionSchema,
         operationId: TextIdSchema,
@@ -419,7 +440,7 @@ export const CopySharedTextRequestSchema = z
         (value) =>
             (value.folderId !== undefined) !==
             (value.newFolderName !== undefined),
-        { message: 'Choose exactly one destination folder' },
+        { message: 'Choose Independent or one destination folder' },
     );
 export const CopySharedTextFolderRequestSchema = z
     .object({
@@ -490,6 +511,8 @@ export const TextErrorCodeSchema = z.enum([
     'invalid_alignment',
     'invalid_selection',
     'version_conflict',
+    'shared_folder_confirmation_required',
+    'text_busy',
     'idempotency_conflict',
     'generation_not_available',
     'generation_proposal_expired',

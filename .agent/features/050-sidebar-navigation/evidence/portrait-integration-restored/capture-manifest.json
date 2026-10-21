@@ -1,0 +1,55 @@
+{
+  "runId": "portrait-restored-sidebar-final",
+  "command": "pnpm test:e2e:learner-portrait -- --output=/private/tmp/portrait-restored-sidebar-final",
+  "backendTests": 2,
+  "browserTests": 2,
+  "browser": "Desktop Chrome",
+  "desktopViewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "mobileViewport": {
+    "width": 390,
+    "height": 844
+  },
+  "consoleAndPageErrors": [],
+  "unexpected5xxAndNavigation404": [],
+  "captures": [
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-interview-desktop.png",
+      "sha256": "7097ed6e3bd967494de4aa3153533191e1a91f0d21caf2f5a3db21b3f18262e6"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-interview-intro-desktop.png",
+      "sha256": "2598f6b0685827f3596ef221e7d50239e8c9bb602f3f70285e5e8b712acb8f16"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-interview-preview-desktop.png",
+      "sha256": "c3eeb74f53c55d10186572abb4f3cd424c8678f57c4152981a1a82e04b6c9a09"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-interview-review-desktop.png",
+      "sha256": "b59d37237b38069e86b7470318aef1fd6028dee5b174559dd0338116371d0604"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-conflict-desktop.png",
+      "sha256": "3f33fe16e8913476739f3224fa4d4a6b9d82b3c1d458ca616c9befea037b013a"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-delete-mobile.png",
+      "sha256": "1d7930fdc6fae6c3d341389b751fa787dacfa29a17dbd06fe09dd178eb27c484"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-manual-editor-desktop.png",
+      "sha256": "086edd71c84cfb24379424004846a0d2fc0da1e67fb6942485f793e1cd00017e"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-manual-editor-populated-desktop.png",
+      "sha256": "bfb579b0c837a7a4024cc381d183f7aa69f3519c050202ec764486b514fa8560"
+    },
+    {
+      "path": ".agent/features/050-sidebar-navigation/evidence/portrait-integration-restored/portrait-overview-restored-sidebar-desktop.png",
+      "sha256": "fb51765369037611a9558d00c4a80883d0cf656797b4e048d3e88a105b935272"
+    }
+  ]
+}

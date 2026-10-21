@@ -3,8 +3,10 @@ import type {
     UpdateTextFolderRequest,
     CreateTextRequest,
     SaveTextRequest,
+    MoveTextRequest,
     TextFolder,
     TextDocument,
+    TextAiJob,
 } from '@languon/contracts';
 export interface TextPage {
     limit: number;
@@ -44,9 +46,15 @@ export interface TextContentStore {
     ): Promise<TextFolder>;
     listTexts(
         ownerId: string,
-        folderId: string,
+        folderId: string | null,
         page: TextPage,
     ): Promise<{ items: TextDocument[]; nextCursor: string | null }>;
+    pendingJob(ownerId: string, id: string): Promise<TextAiJob | null>;
+    moveText(
+        ownerId: string,
+        id: string,
+        request: MoveTextRequest,
+    ): Promise<TextDocument>;
     createText(
         ownerId: string,
         request: CreateTextRequest,
@@ -87,7 +95,11 @@ export interface TextContentStore {
         ownerId: string,
         access: TextShareAccess,
         request: {
-            destinationFolderId?: string;
+            destinationFolderId?: string | null;
+            sharedFolderConfirmation?: {
+                shareId: string;
+                shareVersion: number;
+            };
             newFolderName?: string;
             sourceTextId?: string;
             name?: string;

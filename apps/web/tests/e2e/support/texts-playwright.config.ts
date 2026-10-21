@@ -6,7 +6,11 @@ const env = Object.fromEntries(
 );
 export default defineConfig({
     testDir: '..',
-    testMatch: 'texts.journeys.spec.ts',
+    testMatch: [
+        'texts.journeys.spec.ts',
+        'sidebar-navigation.journeys.spec.ts',
+        'app-shell.journeys.spec.ts',
+    ],
     workers: 1,
     fullyParallel: false,
     timeout: 90_000,

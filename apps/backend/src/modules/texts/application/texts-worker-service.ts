@@ -26,7 +26,11 @@ export interface TextsWorkerDependencies {
     maxAttempts: number;
     retryDelayMs: number;
     supportedFormats: readonly (
-        'text-detection:v1' | 'text-translation:v1' | 'text-translation:v2'
+        | 'text-detection:v1'
+        | 'text-detection:v2'
+        | 'text-translation:v1'
+        | 'text-translation:v2'
+        | 'text-translation:v3'
     )[];
 }
 export class TextsWorkerService {

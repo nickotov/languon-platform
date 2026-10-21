@@ -1,6 +1,16 @@
 import * as c from '@languon/contracts';
 import { id, request } from './transport';
 export const jobsApi = {
+    getPendingAiJob: (
+        accessToken: string,
+        textId: string,
+        signal?: AbortSignal,
+    ) =>
+        request(
+            `/texts/${id(textId)}/pending-job`,
+            c.TextPendingJobResponseSchema,
+            { accessToken, signal },
+        ),
     detectLanguage: (
         accessToken: string,
         body: c.EnqueueTextDetectionRequest,

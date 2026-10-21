@@ -1,0 +1,63 @@
+{
+  "runId": "sidebar-portrait-restoration-final",
+  "tests": 4,
+  "result": "pass",
+  "captures": [
+    {
+      "path": "sidebar-expanded-1440-981b8d39ad1b3d3f75613e6f5942ca29b117d7a2.png",
+      "sha256": "79f6827ad588ca032f49880a81660f44ca3cd1174496713f7379d221ba4dcf45"
+    },
+    {
+      "path": "sidebar-expanded-dark-1440-0d2cfef7114da3e6a8f7e577b11d9b74516cc925.png",
+      "sha256": "8de0a067d6de3c532ab46a97ced67d3ffcf5ede5e99ca3b47989bcc0c96196a2"
+    },
+    {
+      "path": "sidebar-mobile-drawer-390-79a7248f073c903fe9c434b9701e3cbc76930842.png",
+      "sha256": "9565cd51cec5695f9f94c0478f433bb568703a34273807aa63abf3bfca525d30"
+    },
+    {
+      "path": "sidebar-rail-flyout-1440-3efa6b4a4dd14818e906ce9a0aab42fd2b32e527.png",
+      "sha256": "d11d75eae6259108b2600fa05d187059d1d885b6fb2e9e28ec1e48427658d5ef"
+    },
+    {
+      "path": "sidebar-tablet-drawer-900-b722d3c680becef284f3f2da1d02a7adc583e7ba.png",
+      "sha256": "c172ca613456e98e694c202943f3f94cccd14d14f390fcf76df32e261db8b93f"
+    },
+    {
+      "path": "sidebar-unified-create-menu-8f086916e3ef538c244dcc38a270f2c2b7895fba.png",
+      "sha256": "dc99226621f8e329e51ba33130749848f4504561fd35bcf20c74281afd2e7411"
+    },
+    {
+      "path": "sidebar-owned-whole-library-search-311d4dba34aba9b3c3fcf6d0d21e9d84ce37ffd5.png",
+      "sha256": "07c6ca413896432981b24cb4a24b1e0a8ecbb923be21fcaa6c826ce6ff17b270"
+    },
+    {
+      "path": "independent-recovered-translation-proposal-a649d435d6b45f245ad0d583639d587dee7bdf46.png",
+      "sha256": "d184bb75d2a23502b1a7fa1fd090411bdb6d45c76f787af9a7817059a97234f2"
+    },
+    {
+      "path": "independent-shared-folder-confirmation-cd1ed6e047050e8142b74d62483c8835dd167d8f.png",
+      "sha256": "74b8c21c2909b003763ed81b8371147eafc8f45602e68f99975602cb9ad9d912"
+    },
+    {
+      "path": "independent-unsaved-editor-with-sidebar-34be28651730bafb080b02170aaf5c8441c68abb.png",
+      "sha256": "4bbee0fd39c31affffab6646b8bec803dcb0eca96725938e9524c37dbed36566"
+    },
+    {
+      "path": "texts-library-active-1440-ce4dedcd367f000cf8bccd93e4bb4f49c74a6e3e.png",
+      "sha256": "86f4e448391de2d7c0fefc77b0f656ff4f46d91b11c8ff2fa309a53d3d2f2f9c"
+    },
+    {
+      "path": "texts-library-active-390-8751c8cff25f7440aa946f36fa085e5956dd8981.png",
+      "sha256": "3c53e4664b578a41a93ee2a017f966acca7ee8764329f26173d29e7d7c1a967b"
+    },
+    {
+      "path": "texts-library-archived-1440-4f2bc5df7f8fd8b83ea14f5d0590d62b308899fd.png",
+      "sha256": "02da61af655dffea1373ddbd91720c11e2e72fd6f6f86351a96335b0886095e5"
+    },
+    {
+      "path": "texts-library-archived-390-cf484453ede7e87c30e9892a3dfb037553144186.png",
+      "sha256": "c8db9a408b1386473c901172ace4bb82135ee4863cc1b9159f4569ad6ef38a02"
+    }
+  ]
+}

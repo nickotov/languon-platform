@@ -6,9 +6,11 @@ import {
     useState,
     useRef,
     useId,
+    useEffect,
     type ReactNode,
 } from 'react';
 import styles from './companion-layout.module.css';
+import { useNavigationLayout } from '../../lib/navigation/use-navigation-layout';
 import { useCompanionResize } from './use-companion-resize';
 import {
     useWorkspaceLayout,
@@ -71,6 +73,16 @@ export function CompanionLayout({
         view.mode === 'split';
     const resize = useCompanionResize(resizable, root);
     const companionId = useId();
+    const publishLayout = useNavigationLayout((state) => state.publish);
+    const removeLayout = useNavigationLayout((state) => state.remove);
+    const tutorVisible = expanded && (!workspace || view.mode !== 'focus');
+    useEffect(() => {
+        publishLayout(companionId, tutorVisible);
+    }, [companionId, tutorVisible, publishLayout]);
+    useEffect(
+        () => () => removeLayout(companionId),
+        [companionId, removeLayout],
+    );
     const { halfWidth, setHalfWidth } = resize;
     const contentId = `${companionId}-document`;
     const placement = {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     CreateTextRequestSchema,
+    MoveTextRequestSchema,
+    EnqueueTextDetectionRequestSchema,
     CopySharedTextRequestSchema,
     CopySharedTextFolderRequestSchema,
     TextFolderSchema,
@@ -33,6 +35,63 @@ const alignment = {
     editedPairIds: [],
 };
 describe('Texts contracts', () => {
+    it('accepts explicit independent membership for creation, copying and jobs', () => {
+        expect(
+            CreateTextRequestSchema.parse({ folderId: null, ...content })
+                .folderId,
+        ).toBeNull();
+        expect(
+            EnqueueTextDetectionRequestSchema.parse({
+                folderId: null,
+                operationId: id,
+                sourceText: 'Hello.',
+            }).folderId,
+        ).toBeNull();
+        expect(
+            EnqueueTextTranslationRequestSchema.parse({
+                folderId: null,
+                operationId: id,
+                ...content,
+            }).folderId,
+        ).toBeNull();
+        expect(
+            CopySharedTextRequestSchema.parse({
+                folderId: null,
+                operationId: id,
+                expectedVersion: 1,
+            }).folderId,
+        ).toBeNull();
+        expect(
+            CopySharedTextRequestSchema.safeParse({
+                folderId: null,
+                newFolderName: 'Folder',
+                operationId: id,
+                expectedVersion: 1,
+            }).success,
+        ).toBe(false);
+    });
+    it('requires a version and exact shared-folder confirmation shape on moves', () => {
+        expect(
+            MoveTextRequestSchema.parse({ folderId: null, expectedVersion: 1 }),
+        ).toEqual({ folderId: null, expectedVersion: 1 });
+        expect(
+            MoveTextRequestSchema.parse({
+                folderId: id,
+                expectedVersion: 2,
+                sharedFolderConfirmation: { shareId: other, shareVersion: 3 },
+            }).sharedFolderConfirmation?.shareVersion,
+        ).toBe(3);
+        expect(MoveTextRequestSchema.safeParse({ folderId: id }).success).toBe(
+            false,
+        );
+        expect(
+            MoveTextRequestSchema.safeParse({
+                folderId: id,
+                expectedVersion: 1,
+                sharedFolderConfirmation: { shareId: other },
+            }).success,
+        ).toBe(false);
+    });
     it('counts Unicode code points and preserves source whitespace', () => {
         expect(TextSourceSchema.parse(' \nHello.\n ')).toBe(' \nHello.\n ');
         expect(TextSourceSchema.safeParse('😀'.repeat(20_000)).success).toBe(

@@ -115,11 +115,13 @@ export function SharedTextsPage({
         closeCopy();
         const action = (
             <ButtonLink
-                href={href(`/texts/folders/${folderId}`)}
+                href={href(folderId ? `/texts/folders/${folderId}` : '/texts')}
                 size='compact'
                 variant='quiet'
             >
-                {t('texts.public.openFolder')}
+                {folderId
+                    ? t('texts.public.openFolder')
+                    : t('texts.library.title')}
             </ButtonLink>
         );
         showToast({

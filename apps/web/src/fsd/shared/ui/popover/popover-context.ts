@@ -13,6 +13,8 @@ type PopoverContextValue = {
     floatingStyles: CSSProperties;
     isPositioned: boolean;
     open: boolean;
+    nestedPanels: Set<MutableRefObject<HTMLDivElement | null>>;
+    registerNested(panel: MutableRefObject<HTMLDivElement | null>): () => void;
     setOpen(open: boolean): void;
     setPosition(placement: Placement, sideOffset: number): void;
     setFloating(node: HTMLDivElement | null): void;

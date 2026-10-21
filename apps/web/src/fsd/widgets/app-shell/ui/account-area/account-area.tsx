@@ -1,8 +1,14 @@
 'use client';
 
-import { ChevronUp, LogOut, UserRound } from 'lucide-react';
+import {
+    ChevronsUpDown,
+    LogOut,
+    Settings,
+    Sparkles,
+    UserRound,
+} from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
@@ -70,7 +76,7 @@ export function AccountArea({
                             {email || t('profile.learner')}
                         </span>
                     </span>
-                    <ChevronUp aria-hidden size={16} />
+                    <ChevronsUpDown aria-hidden size={16} />
                 </>
             )}
         </button>
@@ -78,7 +84,7 @@ export function AccountArea({
 
     if (drawer)
         return (
-            <div className={styles.footer}>
+            <div className={rail ? styles.railFooter : styles.footer}>
                 {trigger}
                 {accountOpen ? (
                     <div className={styles.inlineMenu}>
@@ -89,7 +95,7 @@ export function AccountArea({
         );
 
     return (
-        <div className={styles.footer}>
+        <div className={rail ? styles.railFooter : styles.footer}>
             <Popover open={accountOpen} onOpenChange={onAccountOpenChange}>
                 <PopoverTrigger asChild>{trigger}</PopoverTrigger>
                 <PopoverContent
@@ -114,6 +120,8 @@ function AccountMenuContent({
 }) {
     const { href, t } = useI18n();
 
+    const user = useSessionStore((state) => state.user);
+    const identity = user?.handle ? `@${user.handle}` : t('profile.account');
     const { signOutHere } = useAuth();
 
     const [signOutPending, setSignOutPending] = useState(false);
@@ -147,17 +155,42 @@ function AccountMenuContent({
 
     return (
         <div className={styles.menuContent}>
+            <div className={styles.menuIdentity}>
+                <Avatar name={identity} size='md' />
+                <div className={styles.identity}>
+                    <strong className={styles.identityHandle}>
+                        {identity}
+                    </strong>
+                    <span className={styles.identityDescription}>
+                        {user?.primaryEmail}
+                    </span>
+                </div>
+            </div>
             {popover ? (
                 <PopoverClose asChild>{profileLink}</PopoverClose>
             ) : (
                 profileLink
             )}
+            <AccountSettingsLink
+                href={href('/profile')}
+                icon={<Settings aria-hidden size={16} />}
+                label={t('shell.settings')}
+                onNavigate={onNavigate}
+                popover={popover}
+            />
+            <AccountSettingsLink
+                href={href('/profile#ai-preferences')}
+                icon={<Sparkles aria-hidden size={16} />}
+                label={t('shell.aiPreferences')}
+                onNavigate={onNavigate}
+                popover={popover}
+            />
             <div className={styles.divider} />
             <PreferencesControls />
             <div className={styles.divider} />
             <button
                 aria-busy={signOutPending || undefined}
-                className={styles.menuRow}
+                className={`${styles.menuRow} ${styles.signOut}`}
                 disabled={signOutPending}
                 onClick={signOut}
                 type='button'
@@ -167,4 +200,30 @@ function AccountMenuContent({
             </button>
         </div>
     );
+}
+
+function AccountSettingsLink({
+    href,
+    icon,
+    label,
+    onNavigate,
+    popover,
+}: {
+    href: string;
+    icon: ReactNode;
+    label: string;
+    onNavigate?: (() => void) | undefined;
+    popover: boolean;
+}) {
+    const link = (
+        <Link
+            className={styles.menuRow}
+            href={href}
+            {...(onNavigate ? { onClick: onNavigate } : {})}
+        >
+            {icon}
+            {label}
+        </Link>
+    );
+    return popover ? <PopoverClose asChild>{link}</PopoverClose> : link;
 }

@@ -57,7 +57,11 @@ export function useTextWorkspaceJob(
     async function start(
         body:
             | EnqueueTextTranslationRequest
-            | { folderId: string; sourceText: string; operationId: string },
+            | {
+                  folderId: string | null;
+                  sourceText: string;
+                  operationId: string;
+              },
         detect = false,
     ) {
         if (starting.current || active) return;
@@ -120,6 +124,16 @@ export function useTextWorkspaceJob(
         }
     }
 
+    function restore(next: TextAiJob) {
+        if (
+            starting.current ||
+            (job && job.state !== 'cancelled' && job.state !== 'failed')
+        )
+            return false;
+        setJob(next);
+        setError(null);
+        return true;
+    }
     function clear() {
         generation.current += 1;
         starting.current = false;
@@ -134,6 +148,7 @@ export function useTextWorkspaceJob(
         pending,
         active: active || pending,
         start,
+        restore,
         cancel,
         clear,
     };

@@ -48,8 +48,10 @@ export const textAiConversationFormats = [
 
 export const textAiTextsFormats = [
     'text-detection:v1',
+    'text-detection:v2',
     'text-translation:v1',
     'text-translation:v2',
+    'text-translation:v3',
     'text-selection-card:v1',
 ] as const;
 
@@ -209,7 +211,8 @@ export function textAiExecutionLimits(
         model.providerId === 'deepseek' &&
         model.id === 'deepseek-flash' &&
         formats.length === 1 &&
-        formats[0] === 'text-translation:v2'
+        (formats[0] === 'text-translation:v2' ||
+            formats[0] === 'text-translation:v3')
     )
         return {
             perCallMaxInputTokens: 128_000,

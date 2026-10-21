@@ -1,33 +1,31 @@
 'use client';
-
-import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
-
-import type { DictionaryNavigationState } from '@/fsd/features/dictionary-library';
+import { House, PanelLeftClose, PanelLeftOpen, Search, X } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { IconButton, Logo } from '@/fsd/shared/ui';
-
+import { IconButton, Logo, Tooltip } from '@/fsd/shared/ui';
+import { useModifierKeyLabel } from '../../hooks/use-modifier-key-label';
 import type { AppShellState } from '../../hooks/use-app-shell-state';
+import { navigationSections } from '../../lib/navigation-sections';
+import { useShellNavigation } from '../../model/navigation-context';
 import type { NavigationVariant } from '../../types';
 import { AccountArea } from '../account-area/account-area';
+import { CreateMenu } from '../create-menu/create-menu';
 import { GuestArea } from '../guest-area/guest-area';
-import { KnowledgeNavigation } from './knowledge-navigation';
-import { TextsNavigation } from './texts-navigation';
-import { DictionariesNavigation } from './dictionaries-navigation';
+import { RailFlyout } from '../rail-flyout/rail-flyout';
+import { ResourceSection } from '../resource-section/resource-section';
 import styles from './sidebar-common.module.css';
 
 type Props = {
     authenticated: boolean;
-    navigation: DictionaryNavigationState;
     pending: boolean;
     onClose?: (() => void) | undefined;
     onNavigate?: (() => void) | undefined;
     shell: AppShellState;
     variant: NavigationVariant;
 };
-
 export function Sidebar({
     authenticated,
-    navigation,
     pending,
     onClose,
     onNavigate,
@@ -35,59 +33,142 @@ export function Sidebar({
     variant,
 }: Props) {
     const { href, t } = useI18n();
-
+    const { openSearch } = useShellNavigation();
+    const pathname = usePathname();
+    const modifier = useModifierKeyLabel();
     const rail = variant === 'rail';
-
-    const drawer = variant === 'drawer';
-
-    function resolveSidebarContent() {
-        if (rail) {
-            return null;
-        }
-
-        if (drawer) {
-            return (
-                <IconButton
-                    className={styles.touchButton}
-                    icon={<X />}
-                    label={t('shell.closeNavigation')}
-                    onClick={onClose}
-                    showTooltip={false}
-                    variant='ghost'
-                />
-            );
-        }
-
-        return (
-            <IconButton
-                icon={<PanelLeftClose />}
-                label={t('shell.collapseSidebar')}
-                onClick={shell.toggleRail}
-                tooltipPlacement='bottom'
-                variant='ghost'
-            />
-        );
-    }
-
-    const resolvedSidebarContent = resolveSidebarContent();
-
+    const touch = variant === 'drawer';
+    const brandClass = rail ? styles.railBrand : styles.brand;
+    const toolsClass = rail ? styles.railTools : styles.tools;
+    const searchClass = touch
+        ? `${styles.search} ${styles.touchSearch}`
+        : styles.search;
+    const homeClass = [
+        styles.home,
+        pathname === '/' ? styles.homeActive : '',
+        rail ? styles.railHome : '',
+        touch ? styles.touchHome : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
+    const homeLink = (
+        <Link
+            aria-current={pathname === '/' ? 'page' : undefined}
+            aria-label={rail ? t('shell.home') : undefined}
+            className={homeClass}
+            href={href('/')}
+            {...(onNavigate ? { onClick: onNavigate } : {})}
+        >
+            <House aria-hidden size={rail ? 20 : 18} strokeWidth={1.75} />
+            {rail ? null : t('shell.home')}
+        </Link>
+    );
     return (
         <div className={styles.sidebarContent}>
-            <div className={rail ? styles.railBrand : styles.brand}>
+            <div className={brandClass}>
                 <Logo
+                    className={rail ? styles.railLogo : undefined}
                     href={href('/')}
                     label={t('auth.brandHome')}
                     monogram={rail}
                 />
-                {resolvedSidebarContent}
+                {rail ? null : (
+                    <IconButton
+                        className={touch ? styles.touchButton : styles.collapse}
+                        size='compact'
+                        icon={touch ? <X /> : <PanelLeftClose />}
+                        label={t(
+                            touch
+                                ? 'shell.closeNavigation'
+                                : 'shell.collapseSidebar',
+                        )}
+                        onClick={touch ? onClose : shell.toggleRail}
+                        tooltipPlacement='bottom'
+                        variant='ghost'
+                    />
+                )}
             </div>
+            {authenticated ? (
+                <div className={toolsClass}>
+                    {rail ? (
+                        <IconButton
+                            className={styles.railControl}
+                            icon={<Search size={20} />}
+                            label={t('shell.search')}
+                            onClick={openSearch}
+                            tooltipPlacement='right'
+                            variant='ghost'
+                        />
+                    ) : (
+                        <button
+                            aria-keyshortcuts='Meta+K Control+K'
+                            className={searchClass}
+                            onClick={openSearch}
+                            type='button'
+                        >
+                            <Search aria-hidden size={16} />
+                            <span>{t('shell.search')}</span>
+                            {!touch ? (
+                                <span aria-hidden className={styles.shortcut}>
+                                    <kbd>{modifier}</kbd>
+                                    <kbd>K</kbd>
+                                </span>
+                            ) : null}
+                        </button>
+                    )}
+                    <CreateMenu rail={rail} touch={touch} />
+                </div>
+            ) : null}
             <nav
                 aria-label={t('shell.mainNavigation')}
                 className={rail ? styles.railNavigation : styles.navigation}
             >
+                {authenticated ? (
+                    <>
+                        {rail ? (
+                            <div className={styles.railHomeSlot}>
+                                <Tooltip
+                                    content={t('shell.home')}
+                                    placement='right'
+                                >
+                                    {homeLink}
+                                </Tooltip>
+                            </div>
+                        ) : (
+                            homeLink
+                        )}
+                        <div
+                            className={
+                                rail ? styles.railDivider : styles.groupHeading
+                            }
+                        >
+                            {rail ? null : t('shell.library')}
+                        </div>
+                        <ul className={styles.navList}>
+                            {navigationSections.map((section) =>
+                                rail ? (
+                                    <RailFlyout
+                                        key={section.kind}
+                                        section={section}
+                                    />
+                                ) : (
+                                    <ResourceSection
+                                        key={section.kind}
+                                        onNavigate={onNavigate}
+                                        section={section}
+                                        shell={shell}
+                                        touch={touch}
+                                    />
+                                ),
+                            )}
+                        </ul>
+                    </>
+                ) : null}
+            </nav>
+            <div className={rail ? styles.railFooter : undefined}>
                 {rail ? (
                     <IconButton
-                        className={styles.railControl}
+                        className={`${styles.expand} ${styles.railControl}`}
                         icon={<PanelLeftOpen />}
                         label={t('shell.expandSidebar')}
                         onClick={shell.toggleRail}
@@ -95,45 +176,23 @@ export function Sidebar({
                         variant='ghost'
                     />
                 ) : null}
-                <ul className={styles.navList}>
-                    {authenticated ? (
-                        <DictionariesNavigation
-                            navigation={navigation}
-                            onNavigate={onNavigate}
-                            shell={shell}
-                            variant={variant}
-                        />
-                    ) : null}
-                    {authenticated ? (
-                        <>
-                            <TextsNavigation
-                                rail={rail}
-                                onNavigate={onNavigate}
-                            />
-                            <KnowledgeNavigation
-                                rail={rail}
-                                onNavigate={onNavigate}
-                            />
-                        </>
-                    ) : null}
-                </ul>
-            </nav>
-            {authenticated ? (
-                <AccountArea
-                    accountOpen={shell.accountOpen}
-                    onAccountOpenChange={shell.setAccountOpen}
-                    onNavigate={onNavigate}
-                    variant={variant}
-                />
-            ) : (
-                <GuestArea
-                    accountOpen={shell.accountOpen}
-                    onAccountOpenChange={shell.setAccountOpen}
-                    onNavigate={onNavigate}
-                    pending={pending}
-                    variant={variant}
-                />
-            )}
+                {authenticated ? (
+                    <AccountArea
+                        accountOpen={shell.accountOpen}
+                        onAccountOpenChange={shell.setAccountOpen}
+                        onNavigate={onNavigate}
+                        variant={variant}
+                    />
+                ) : (
+                    <GuestArea
+                        accountOpen={shell.accountOpen}
+                        onAccountOpenChange={shell.setAccountOpen}
+                        onNavigate={onNavigate}
+                        pending={pending}
+                        variant={variant}
+                    />
+                )}
+            </div>
         </div>
     );
 }

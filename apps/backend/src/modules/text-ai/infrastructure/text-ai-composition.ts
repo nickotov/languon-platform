@@ -33,8 +33,8 @@ export function textsAiAdmissionsEnabled(
     )
         return true;
     const required = [
-        'text-detection:v1',
-        'text-translation:v2',
+        'text-detection:v2',
+        'text-translation:v3',
         'text-selection-card:v1',
     ];
     const api = (environment.DICTIONARY_JOB_API_ENQUEUED_FORMATS ?? '')

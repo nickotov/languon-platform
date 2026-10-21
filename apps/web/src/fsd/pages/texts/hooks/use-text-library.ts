@@ -40,7 +40,12 @@ export function useTextLibrary(requestWithSession: RequestWithTextSession) {
     });
 
     async function refresh() {
-        await client.invalidateQueries({ queryKey: ['texts', userId] });
+        await Promise.all([
+            client.invalidateQueries({ queryKey: ['texts', userId] }),
+            client.invalidateQueries({
+                queryKey: ['library-navigation', userId],
+            }),
+        ]);
     }
 
     const restore = useMutation({

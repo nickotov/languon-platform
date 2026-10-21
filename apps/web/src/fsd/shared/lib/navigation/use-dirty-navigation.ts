@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { registerNavigationGuard } from './guarded-navigation';
 import {
     readHistoryPosition,
     subscribeHistoryTraversalGuard,
@@ -18,6 +19,10 @@ export function useDirtyNavigation() {
         [dirty],
     );
     const keepEditing = useCallback(() => setPending(null), []);
+    useLayoutEffect(() => {
+        if (!dirty) return;
+        return registerNavigationGuard(request);
+    }, [dirty, request]);
     const discard = useCallback(() => {
         allowLeave.current = true;
         setDirty(false);

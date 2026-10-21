@@ -60,6 +60,7 @@ afterEach(() => {
 describe('workspace account isolation', () => {
     it('never renders A cached document when B opens the same URL, during pending fetch or after 404', async () => {
         actor('actor-a');
+        vi.spyOn(textsApi, 'getPendingAiJob').mockResolvedValue({ job: null });
         vi.spyOn(textsApi, 'listFolders').mockImplementation(async (token) => ({
             data:
                 token === 'actor-a'

@@ -14,7 +14,7 @@ describe('Texts rollout admissions', () => {
         'requires every API and worker format in %s',
         (APP_ENV) => {
             const formats =
-                'text-detection:v1,text-translation:v1,text-translation:v2,text-selection-card:v1';
+                'text-detection:v1,text-detection:v2,text-translation:v1,text-translation:v2,text-translation:v3,text-selection-card:v1';
             const environment = {
                 APP_ENV,
                 TEXTS_AI_ENABLED: 'true',

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision global-app-shell sha256:f7fc8c1e60ee8183
+// @user-flow-revision global-app-shell sha256:f0d2870d2e703ee4
 
 const runId =
     process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
@@ -27,7 +27,8 @@ function observeBrowser(page: Page) {
         const url = new URL(request.url());
         if (
             url.origin === new URL(page.url()).origin &&
-            url.pathname === '/api/dictionaries' &&
+            (url.pathname === '/api/dictionaries' ||
+                url.pathname.startsWith('/api/navigation/')) &&
             request.method() === 'GET'
         )
             privateRequests.push(request.url());
@@ -61,7 +62,10 @@ async function signUp(page: Page, testInfo: TestInfo, identity: string) {
 }
 
 async function createDictionary(page: Page, name: string) {
-    await page.getByRole('button', { name: 'New dictionary' }).click();
+    await page
+        .locator('#main-content')
+        .getByRole('button', { name: 'New dictionary' })
+        .click();
     await page.getByLabel('Name').fill(name);
     await page.getByLabel('Translate from').selectOption('en');
     await page.getByLabel('Translate to').selectOption('es');
@@ -87,13 +91,13 @@ test('guest settings persist across pages and reload, including the native mobil
         sidebar.getByRole('link', { name: 'Sign in', exact: true }),
     ).toHaveAttribute('href', '/login');
     await expect(
-        sidebar.getByRole('link', { name: 'All dictionaries' }),
+        sidebar.getByRole('link', { name: 'Dictionaries', exact: true }),
     ).toHaveCount(0);
     await expect(
         sidebar.getByRole('button', { name: /Account menu/ }),
     ).toHaveCount(0);
     await expect(
-        sidebar.getByRole('button', { name: 'Create a dictionary' }),
+        sidebar.getByRole('button', { name: 'Create new', exact: true }),
     ).toHaveCount(0);
     await sidebar
         .getByRole('button', { name: 'Settings', exact: true })
@@ -176,7 +180,11 @@ test('guest settings persist across pages and reload, including the native mobil
     for (const route of missingRoutes) {
         await page.goto(route);
         await expect(menu).toBeVisible();
-        await expect(page.getByTitle('Languon', { exact: true })).toBeVisible();
+        await expect(
+            page
+                .locator('header')
+                .getByRole('link', { name: 'Languon home', exact: true }),
+        ).toBeVisible();
         await expect(
             page.getByRole('heading', { name: 'This page could not be found' }),
         ).toBeVisible();
@@ -214,9 +222,6 @@ test('global navigation follows login, logout and a different authenticated iden
             exact: true,
         }),
     ).toBeVisible();
-    await sidebar
-        .getByRole('button', { name: 'Dictionaries', exact: true })
-        .click();
     await expect(sidebar.getByRole('link', { name: firstName })).toBeVisible();
     await expect(sidebar.getByText(firstEmail, { exact: true })).toBeVisible();
     await expect(
@@ -238,12 +243,18 @@ test('global navigation follows login, logout and a different authenticated iden
     await expect(sidebar.getByText(secondEmail, { exact: true })).toBeVisible();
     await page.goto('/login');
     if (
-        (await sidebar
-            .getByRole('button', { name: 'Dictionaries', exact: true })
-            .getAttribute('aria-expanded')) === 'false'
+        await sidebar
+            .getByRole('button', {
+                name: 'Show recent: Dictionaries',
+                exact: true,
+            })
+            .count()
     )
         await sidebar
-            .getByRole('button', { name: 'Dictionaries', exact: true })
+            .getByRole('button', {
+                name: 'Show recent: Dictionaries',
+                exact: true,
+            })
             .click();
     await expect(sidebar.getByRole('link', { name: secondName })).toBeVisible();
     await sidebar.getByRole('link', { name: 'Languon home' }).click();

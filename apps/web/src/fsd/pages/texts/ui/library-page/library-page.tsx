@@ -1,18 +1,27 @@
 'use client';
 import { useState } from 'react';
 import type { TextFolder } from '@languon/contracts';
-import { ArchiveIcon, FolderPlusIcon, RefreshCwIcon } from 'lucide-react';
+import {
+    ArchiveIcon,
+    ChevronRightIcon,
+    FileTextIcon,
+    FolderIcon,
+    FolderPlusIcon,
+    RefreshCwIcon,
+} from 'lucide-react';
 import { useAuth } from '@/fsd/features/auth';
 import {
+    NewTextDialog,
     ArchiveTextDialog,
     FolderFormDialog,
     TextShareDialog,
     TextsAuthBoundary,
 } from '@/fsd/features/text-management';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, EmptyState, InlineAlert, Tabs } from '@/fsd/shared/ui';
+import { Button, InlineAlert, Tabs } from '@/fsd/shared/ui';
 import { useTextLibrary } from '../../hooks/use-text-library';
 import { FolderGrid, FolderGridSkeleton } from './folder-grid';
+import { IndependentTexts } from './independent-texts';
 import styles from './library-page.module.css';
 
 type Dialog =
@@ -32,18 +41,18 @@ function LibraryContent() {
     const { t } = useI18n();
     const { requestWithSession } = useAuth();
     const library = useTextLibrary(requestWithSession);
+    const [creatingText, setCreatingText] = useState(false);
+    function newText() {
+        setCreatingText(true);
+    }
+    function closeText() {
+        setCreatingText(false);
+    }
     const [view, setView] = useState<'active' | 'archived'>('active');
     const [dialog, setDialog] = useState<Dialog>(null);
     const folders = library.folders.filter(
         (folder) => folder.lifecycle === view,
     );
-    const activeCount = library.folders.filter(
-        (folder) => folder.lifecycle === 'active',
-    ).length;
-    const archivedCount = library.folders.filter(
-        (folder) => folder.lifecycle === 'archived',
-    ).length;
-    const hasFolders = activeCount + archivedCount > 0;
     const ready = library.isSuccess;
 
     function create() {
@@ -91,13 +100,11 @@ function LibraryContent() {
     const tabs = [
         {
             value: 'active',
-            label: t('texts.library.folders'),
-            badge: activeCount,
+            label: t('texts.organization.active'),
         },
         {
             value: 'archived',
             label: t('texts.library.archived'),
-            badge: archivedCount,
             icon: <ArchiveIcon className={styles.actionIcon} />,
         },
     ];
@@ -121,7 +128,6 @@ function LibraryContent() {
         );
     const newButton = (
         <Button
-            desktopIconOnly
             onClick={create}
             leadingIcon={<FolderPlusIcon className={styles.actionIcon} />}
         >
@@ -151,19 +157,33 @@ function LibraryContent() {
                         {t('texts.library.description')}
                     </p>
                 </div>
-                <Button
-                    desktopIconOnly
-                    size='large'
-                    onClick={create}
-                    leadingIcon={
-                        <FolderPlusIcon className={styles.largeIcon} />
-                    }
-                    disabled={!ready}
-                >
-                    {t('texts.library.newFolder')}
-                </Button>
+                <div className={styles.headerButtons}>
+                    <Button
+                        className={styles.headerAction}
+                        size='default'
+                        onClick={newText}
+                        disabled={!ready}
+                        leadingIcon={
+                            <FileTextIcon className={styles.actionIcon} />
+                        }
+                    >
+                        {t('texts.organization.newText')}
+                    </Button>
+                    <Button
+                        className={styles.headerAction}
+                        size='default'
+                        variant='secondary'
+                        onClick={create}
+                        leadingIcon={
+                            <FolderPlusIcon className={styles.actionIcon} />
+                        }
+                        disabled={!ready}
+                    >
+                        {t('texts.library.newFolder')}
+                    </Button>
+                </div>
             </header>
-            {ready && hasFolders && (
+            {ready && (
                 <Tabs
                     className={styles.tabs!}
                     variant='segmented'
@@ -174,51 +194,90 @@ function LibraryContent() {
                     items={tabs}
                 />
             )}
-            <section
-                className={styles.section}
-                aria-label={sectionLabel}
-                aria-busy={library.isPending}
-            >
-                {library.isPending && <FolderGridSkeleton />}
-                {library.isError && (
-                    <InlineAlert
-                        tone='error'
-                        title={t('texts.library.errorTitle')}
-                        actions={retryButton}
-                    >
-                        {t('texts.library.errorHelp')}
-                    </InlineAlert>
-                )}
-                {library.restore.isError && (
-                    <InlineAlert tone='error'>
-                        {t('texts.library.mutationError')}
-                    </InlineAlert>
-                )}
-                {ready && folders.length === 0 && (
-                    <div className={styles.empty}>
-                        <span className={styles.emptyIcon} aria-hidden='true'>
-                            {emptyIcon}
-                        </span>
-                        <EmptyState
-                            title={emptyTitle}
-                            action={view === 'active' ? newButton : undefined}
-                        >
-                            {emptyHelp}
-                        </EmptyState>
-                    </div>
-                )}
-                {ready && folders.length > 0 && (
-                    <FolderGrid
-                        key={view}
-                        folders={folders}
-                        onEdit={edit}
-                        onShare={share}
-                        onArchive={archive}
-                        onRestore={restore}
-                        pending={library.restore.isPending}
+            <details open className={styles.section}>
+                <summary className={styles.sectionHeading}>
+                    <FolderIcon aria-hidden className={styles.sectionIcon} />
+                    <h2 className={styles.sectionTitle}>
+                        {t('texts.organization.folders')}
+                    </h2>
+                    <ChevronRightIcon
+                        aria-hidden
+                        className={styles.sectionChevron}
                     />
-                )}
-            </section>
+                </summary>
+                <section
+                    className={styles.sectionContent}
+                    aria-label={sectionLabel}
+                    aria-busy={library.isPending}
+                >
+                    {library.isPending && <FolderGridSkeleton />}
+                    {library.isError && (
+                        <InlineAlert
+                            tone='error'
+                            title={t('texts.library.errorTitle')}
+                            actions={retryButton}
+                        >
+                            {t('texts.library.errorHelp')}
+                        </InlineAlert>
+                    )}
+                    {library.restore.isError && (
+                        <InlineAlert tone='error'>
+                            {t('texts.library.mutationError')}
+                        </InlineAlert>
+                    )}
+                    {ready && folders.length === 0 && (
+                        <div className={styles.empty}>
+                            <span
+                                className={styles.emptyIcon}
+                                aria-hidden='true'
+                            >
+                                {emptyIcon}
+                            </span>
+                            <div className={styles.emptyCopy}>
+                                <h3 className={styles.emptyTitle}>
+                                    {emptyTitle}
+                                </h3>
+                                <p className={styles.emptyHelp}>{emptyHelp}</p>
+                            </div>
+                            {view === 'active' ? newButton : null}
+                        </div>
+                    )}
+                    {ready && folders.length > 0 && (
+                        <FolderGrid
+                            key={view}
+                            folders={folders}
+                            onEdit={edit}
+                            onShare={share}
+                            onArchive={archive}
+                            onRestore={restore}
+                            pending={library.restore.isPending}
+                        />
+                    )}
+                </section>
+            </details>
+            <details open className={styles.section}>
+                <summary className={styles.sectionHeading}>
+                    <FileTextIcon aria-hidden className={styles.sectionIcon} />
+                    <h2 className={styles.sectionTitle}>
+                        {t('texts.organization.independent')}
+                    </h2>
+                    <ChevronRightIcon
+                        aria-hidden
+                        className={styles.sectionChevron}
+                    />
+                </summary>
+                <div className={styles.sectionContent}>
+                    <IndependentTexts
+                        lifecycle={view}
+                        requestWithSession={requestWithSession}
+                    />
+                </div>
+            </details>
+            <NewTextDialog
+                open={creatingText}
+                onClose={closeText}
+                requestWithSession={requestWithSession}
+            />
             <FolderFormDialog
                 open={formOpen}
                 {...(initial ? { initial } : {})}

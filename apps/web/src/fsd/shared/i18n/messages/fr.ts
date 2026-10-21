@@ -1,3 +1,4 @@
+import { navigationFr } from './navigation';
 import { knowledgeFr } from './knowledge';
 import { textsLibraryFr } from './texts-library';
 import { textsReadingFr } from './texts-reading';
@@ -8,6 +9,7 @@ import { profileFeatureMessages, type Messages } from './en';
 import { trainingFr } from './training';
 
 export const fr = {
+    ...navigationFr,
     ...knowledgeFr,
     ...textsLibraryFr,
     ...textsReadingFr,

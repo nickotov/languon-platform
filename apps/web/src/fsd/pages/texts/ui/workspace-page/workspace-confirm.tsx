@@ -42,9 +42,16 @@ export function WorkspaceConfirm({
     }
     async function accept() {
         if (kind === 'close') {
+            if (ws.proposal) {
+                try {
+                    await ws.discardProposal();
+                } catch {
+                    return;
+                }
+            }
             if (running) {
                 try {
-                    if (ws.cancelAi) ws.cancelAi();
+                    if (ws.cancelAi) await ws.cancelAi();
                     else await ws.translation.cancel();
                 } catch {
                     return;
@@ -63,7 +70,7 @@ export function WorkspaceConfirm({
             return;
         }
         if (kind === 'cancel-edit') ws.cancelEdit();
-        else ws.discardProposal();
+        else await ws.discardProposal();
         onClose();
     }
     async function saveClose() {
@@ -77,6 +84,7 @@ export function WorkspaceConfirm({
 
     const canSave =
         kind === 'close' &&
+        !ws.requiresFolderConsent &&
         !running &&
         !ws.previewExpired &&
         (ws.proposal ||

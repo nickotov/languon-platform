@@ -1,3 +1,4 @@
+import { navigationEn } from './navigation';
 import { knowledgeEn } from './knowledge';
 import { textsLibraryEn } from './texts-library';
 import { textsReadingEn } from './texts-reading';
@@ -299,6 +300,7 @@ export const profileFeatureMessages = {
 } as const;
 
 export const en = {
+    ...navigationEn,
     ...knowledgeEn,
     ...textsLibraryEn,
     ...textsReadingEn,

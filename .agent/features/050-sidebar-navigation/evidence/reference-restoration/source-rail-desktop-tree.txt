@@ -1,0 +1,105 @@
+- generic [ref=e1] clickable [onclick]
+  - complementary "Main navigation"
+    - link "Languon home" [ref=e2]
+      - image "Languon"
+    - button "Search" [ref=e3]
+    - button "Create new…" [expanded=false, ref=e8]
+    - navigation "Main navigation" [ref=e4]
+      - list
+        - listitem [level=1]
+          - link "Home" [ref=e16]
+      - StaticText "Library"
+      - list
+        - listitem [level=1]
+          - button "Dictionaries" [expanded=false, ref=e17]
+        - listitem [level=1]
+          - button "Texts" [expanded=false, ref=e18]
+        - listitem [level=1]
+          - button "Knowledge" [expanded=false, ref=e19]
+    - button "Expand sidebar" [ref=e5]
+    - button "Account and preferences — Anna Volkova" [expanded=false, ref=e6]
+      - image "Anna Volkova"
+  - main
+    - navigation "Breadcrumb" [ref=e7]
+      - link "Knowledge" [ref=e9]
+      - StaticText "Present Perfect vs Past Simple"
+    - status
+      - StaticText "Saved"
+    - article
+      - heading [level=1, ref=e10] editable [contenteditable]: Present Perfect vs Past Simple
+        - StaticText "Present Perfect vs Past Simple"
+      - generic "Document body" [ref=e11] editable [contenteditable]: Both tenses describe the past, but they answer different questions. The Present Perfect connects a past action to the present moment; the Past Simple places it at a finished time.
+
+Present Perfect
+
+Use it for experiences, recent changes and unfinished time periods: “I have visited Paris twice.” “She has just finished the report.”
+
+Past Simple
+
+Use it when the time is finished or stated: “I visited Paris in 2019.” “She finished the report yesterday.”
+
+Signal words
+
+Present Perfect: already, yet, ever, never, since, for. Past Simple: yesterday, ago, last week, in 2019.
+
+AI suggestion
+
+I ___ (never / be) to Lisbon.
+She ___ (move) to Berlin in 2021.
+We ___ (already / finish) the first module.
+        - paragraph
+          - StaticText "Both tenses describe the past, but they answer different questions. The Present Perfect connects a past action to the present moment; the Past Simple places it at a finished time."
+        - generic
+          - heading "Present Perfect" [level=2, ref=e20]
+          - paragraph
+            - StaticText "Use it for experiences, recent changes and unfinished time periods: “I have visited Paris twice.” “She has just finished the report.”"
+        - generic
+          - heading "Past Simple" [level=2, ref=e21]
+          - paragraph
+            - StaticText "Use it when the time is finished or stated: “I visited Paris in 2019.” “She finished the report yesterday.”"
+        - generic
+          - heading "Signal words" [level=2, ref=e22]
+          - paragraph
+            - StaticText "Present Perfect: already, yet, ever, never, since, for. Past Simple: yesterday, ago, last week, in 2019."
+        - paragraph
+          - StaticText "AI suggestion"
+        - list
+          - listitem [level=1]
+            - ListMarker "1. "
+            - StaticText "I ___ (never / be) to Lisbon."
+          - listitem [level=1]
+            - ListMarker "2. "
+            - StaticText "She ___ (move) to Berlin in 2021."
+          - listitem [level=1]
+            - ListMarker "3. "
+            - StaticText "We ___ (already / finish) the first module."
+    - complementary
+      - heading "AI assistant" [level=2, ref=e12]
+      - paragraph
+        - StaticText "Context: this document"
+      - button "Close AI assistant" [ref=e13]
+      - log
+        - list
+          - listitem "Your message" [level=1, ref=e23]
+            - paragraph
+              - StaticText "Can you add three practice sentences to the “Signal words” section?"
+            - StaticText "Sent"
+          - listitem [level=1]
+            - article "Message from Languon AI" [ref=e25]
+              - StaticText "Languon AI"
+              - paragraph
+                - StaticText "Sure — here are three gap-fill sentences. I’ve inserted them as a suggestion below “Signal words”; accept or edit them in the document."
+          - listitem "Your message" [level=1, ref=e24]
+            - paragraph
+              - StaticText "Why is “I have seen him yesterday” wrong?"
+            - StaticText "Sent"
+          - listitem [level=1]
+            - article "Message from Languon AI" [ref=e26]
+              - StaticText "Languon AI"
+              - paragraph
+                - StaticText "“Yesterday” marks a finished time, so English requires the Past Simple: “I saw him yesterday.” Use the Present Perfect only without a finished time marker."
+      - form
+        - LabelText
+          - StaticText "Ask about this document…"
+        - textbox "Ask about this document…" [ref=e14]
+        - button "Send" [disabled, ref=e15]

@@ -1,6 +1,7 @@
 import type { TextDocument, TextFolder } from '@languon/contracts';
 import type { RequestWithTextSession } from '@/fsd/entities/texts';
 import {
+    MoveTextDialog,
     ArchiveTextDialog,
     FolderFormDialog,
     RenameTextDialog,
@@ -59,6 +60,14 @@ export function FolderDialogs({
                     resource={folder}
                     onClose={onClose}
                     onChanged={onChanged}
+                    requestWithSession={requestWithSession}
+                />
+            )}
+            {textDialog?.type === 'move-text' && (
+                <MoveTextDialog
+                    document={textDialog.document}
+                    onClose={onClose}
+                    onSaved={onSaved}
                     requestWithSession={requestWithSession}
                 />
             )}

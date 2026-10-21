@@ -15,7 +15,8 @@ import { Badge, Button, Menu, type MenuItem } from '@/fsd/shared/ui';
 import { libraryRelativeTime } from '../../lib/library-relative-time';
 import styles from './folder-page.module.css';
 
-export type TextRowAction = 'rename' | 'share-text' | 'archive-text';
+export type TextRowAction =
+    'rename' | 'share-text' | 'archive-text' | 'move-text';
 
 export function TextRow({
     document,
@@ -32,9 +33,7 @@ export function TextRow({
 }) {
     const { t, href, locale } = useI18n();
     const archived = document.lifecycle === 'archived';
-    const target = href(
-        `/texts/folders/${document.folderId}/texts/${document.id}`,
-    );
+    const target = href(`/texts/${document.id}`);
     const canShare = document.status !== 'draft';
     const shareLabel = canShare
         ? t('texts.folder.share')
@@ -57,6 +56,10 @@ export function TextRow({
         onAction('share-text', document);
     }
 
+    function move() {
+        onAction('move-text', document);
+    }
+
     function archive() {
         onAction('archive-text', document);
     }
@@ -66,6 +69,7 @@ export function TextRow({
     }
 
     const items: MenuItem[] = [
+        { label: t('texts.organization.move'), onSelect: move },
         {
             label: t('texts.folder.rename'),
             icon: <PencilIcon className={styles.actionIcon} />,

@@ -76,6 +76,28 @@ export const contentApi = {
             c.ListTextsResponseSchema,
             { accessToken, signal },
         ),
+    listIndependentTexts: (
+        accessToken: string,
+        values: Query = {},
+        signal?: AbortSignal,
+    ) =>
+        request(`/texts${query(values)}`, c.ListTextsResponseSchema, {
+            accessToken,
+            signal,
+        }),
+    moveText: (
+        accessToken: string,
+        textId: string,
+        body: c.MoveTextRequest,
+        signal?: AbortSignal,
+    ) =>
+        request(
+            `/texts/${id(textId)}/folder`,
+            c.TextResponseSchema,
+            { accessToken, signal },
+            'PATCH',
+            c.MoveTextRequestSchema.parse(body),
+        ),
     getText: (accessToken: string, textId: string, signal?: AbortSignal) =>
         request(`/texts/${id(textId)}`, c.TextResponseSchema, {
             accessToken,

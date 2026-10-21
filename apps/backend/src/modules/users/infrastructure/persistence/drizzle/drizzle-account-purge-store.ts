@@ -7,6 +7,7 @@ import {
     eraseOwnerConversations,
 } from '../../../../conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
 import { eraseOwnerKnowledge } from '../../../../knowledge/infrastructure/persistence/drizzle/knowledge-deletion-participant';
+import { eraseNavigationOwnedMetadata } from '../../../../navigation/infrastructure/persistence/drizzle/navigation-deletion-participant';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
 import {
     eraseTextsOwnedContent,
@@ -346,6 +347,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await eraseOwnerConversations(tx, input.userId, input.now);
             await eraseOwnerKnowledge(tx, input.userId);
             await eraseTextsOwnedContent(tx, input.userId, input.now);
+            await eraseNavigationOwnedMetadata(tx, input.userId);
             await eraseSentenceDerivedContent(tx, {
                 ...sentenceScope,
                 now: input.now,

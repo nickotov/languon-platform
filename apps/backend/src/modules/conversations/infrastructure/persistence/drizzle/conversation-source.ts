@@ -299,11 +299,14 @@ export class ConversationSourceResolver {
             .where(eq(textsTable.id, source.id));
         if (!candidate) throw conversationUnavailable();
         await this.owner(tx, candidate.ownerId);
-        const [folder] = await tx
-            .select()
-            .from(textFoldersTable)
-            .where(eq(textFoldersTable.id, candidate.folderId))
-            .for('share');
+        const [folder] =
+            candidate.folderId === null
+                ? []
+                : await tx
+                      .select()
+                      .from(textFoldersTable)
+                      .where(eq(textFoldersTable.id, candidate.folderId))
+                      .for('share');
         const [document] = await tx
             .select()
             .from(textsTable)
@@ -312,7 +315,11 @@ export class ConversationSourceResolver {
         if (
             !document ||
             document.lifecycle !== 'active' ||
-            folder?.lifecycle !== 'active'
+            document.folderId !== candidate.folderId ||
+            document.ownerId !== candidate.ownerId ||
+            (document.folderId !== null &&
+                (folder?.lifecycle !== 'active' ||
+                    folder.ownerId !== document.ownerId))
         )
             throw conversationUnavailable();
         const authority: SourceAuthority = { sourceOwnerId: document.ownerId };

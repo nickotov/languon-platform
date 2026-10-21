@@ -1,0 +1,115 @@
+.row {
+    display: flex;
+    align-items: center;
+    position: relative;
+    height: var(--size-40);
+    border-radius: var(--radius-8);
+    gap: var(--space-2);
+    padding-inline-end: var(--space-4);
+    color: var(--text-secondary);
+}
+
+.row:hover {
+    background: var(--background-elevated);
+}
+
+.active {
+    background: var(--background-elevated);
+    color: var(--text-primary);
+}
+
+.active:before {
+    content: '';
+    background: var(--primary-default);
+    border-radius: var(--radius-full);
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block: var(--space-12);
+    width: var(--size-2);
+}
+
+.link {
+    align-items: center;
+    color: inherit;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    gap: var(--space-12);
+    padding-inline: var(--space-12);
+    height: 100%;
+    text-decoration: none;
+    font-size: var(--size-14);
+    font-weight: 500;
+    border-radius: var(--radius-8);
+}
+
+:where(.link) span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:where(.link) svg {
+    flex-shrink: 0;
+}
+
+.create,
+.disclosure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--size-28);
+    width: var(--size-28);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-6);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.create {
+    opacity: 0;
+}
+
+:where(.row:hover, .row:focus-within) .create {
+    opacity: 1;
+}
+
+.create:hover,
+.disclosure:hover {
+    color: var(--text-primary);
+    background: var(--background-canvas);
+}
+
+.touch {
+    height: var(--size-44);
+}
+
+:where(.touch) .create,
+:where(.touch) .disclosure {
+    height: var(--size-44);
+    width: var(--size-44);
+    opacity: 1;
+}
+
+.link:focus-visible,
+.create:focus-visible,
+.disclosure:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+:where(.disclosure) svg {
+    transition: transform var(--duration-normal);
+}
+
+.openChevron {
+    transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :where(.disclosure) svg {
+        transition: none;
+    }
+}

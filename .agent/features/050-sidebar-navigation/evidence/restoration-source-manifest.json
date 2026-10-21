@@ -1,0 +1,1102 @@
+{
+  "mainBase": "a574884",
+  "savedSidebar": "e5c4c24",
+  "files": [
+    {
+      "path": "apps/backend/drizzle/0080_luxuriant_lake.sql",
+      "sha256": "956c00ccba30b80ba94689d9f8f9a821adbeab302886cead5cee1023874938b4",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0080_snapshot.json",
+      "sha256": "ba4d560f109fbada1dc46ee3e374f0241d628a982080a1c56db2e262a5e129fa",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/drizzle/meta/_journal.json",
+      "sha256": "5b10a1d438be95f6f8837e91792cccb87396fbf0be8f1a9e9283d44371eed75b",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/src/app.ts",
+      "sha256": "33e7039b6c46689a8c5398eff81ecb8f3b8fd18d585ab1a442a600575a250325",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/src/index.ts",
+      "sha256": "cc042ff184b235cbe9e465221a90849bd1bd56a0c3c5909926111d97ca1fe8bf",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/src/infrastructure/database/schema.ts",
+      "sha256": "7816418b86561b9746bb2a5d40fc584a65325bb03ab351a6521ce7ede6e93dfa",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+      "sha256": "5978efd45d8cdc22fc2270a5b509d2804f720379540157ae3153b996d312b2d5",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts",
+      "sha256": "59bcf9632e65a452808af2dc4d666cd1469573e00c4f9f53850059fd9ad0e43b",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/navigation-reader.ts",
+      "sha256": "7049a8828ba2c76fcc3ceef5977c64c16e1d63cf0b043c61206ba1e47b7e19d8",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/navigation-reader.ts",
+      "sha256": "a97af78e41ea87424813da9073bd07ce23421ea0dabbd014d43b0e62d6de59df",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/application/navigation-ports.ts",
+      "sha256": "4ead994d43dda809c38cb7f49e61cbd1b69282681b1570ef126beddd15c5f6e0",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/application/navigation-service.ts",
+      "sha256": "1e7e74f151c07d7d7b214ef12cdbca25d50a17ce4dea65056249c341b967a1fc",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/navigation-composition.ts",
+      "sha256": "1ae413154e4f7822a611b2af29cf9dddfd68753c0768dbe3bec491538a86a60a",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/navigation-reader.ts",
+      "sha256": "5101c68ff8106afb208a0d74a40c21699cc837b9d17e54a84c8d34a8395297f1",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/drizzle-navigation-metadata-store.ts",
+      "sha256": "845f3f037f500b7e87f284baafcad05a7087413f552f0a7866b299881b06057a",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/navigation-deletion-participant.ts",
+      "sha256": "d262cc970bef9e077a2dad6560f94c330f3de9245c81977c8f4005bd912f817b",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/navigation-store.test.ts",
+      "sha256": "5a1609d65517c7f0a467c9aca061c907f32f60ce0535e2d2e87651ed0cb5e577",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/schema.ts",
+      "sha256": "1b50680c252f3eacc19dc7af9da207cb2f6cf99208d4b7b65431d889b51b9b24",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/interface/http/navigation.routes.test.ts",
+      "sha256": "7c809a355d6a3a12639f6b83154dd9ff2b2d709ee570e704e174975c31228d10",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/interface/http/navigation.routes.ts",
+      "sha256": "b85b7df23dc8af1da2f97c4af1df8aa379b80ff514321fb136722fd117a13e83",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts",
+      "sha256": "5f90fccc1bf5a8c495fc413701a1c8c021568928dd6c478c4bf820388257b4b3",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/text-ai-composition.ts",
+      "sha256": "1a0f18d0a4bd673e9c424bcddaf21da666015ba29c9f2705112ec67c4f09510f",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/ports/text-content-store.ts",
+      "sha256": "e0d182b9cedd33b00d5c998dffc279ff175f01f792ed9f4aaaaa3d85dfbcd5f1",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/ports/texts-job-store.ts",
+      "sha256": "d93dbe1b7d8787438db09285c6fe068131a2e93081c2633d31e64157e6176ee3",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/text-content-service.ts",
+      "sha256": "a0d3d0f950b1eabbf67ec7018fdd2631d57650ee3cd5418e37d555877a4acf84",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/texts-worker-service.ts",
+      "sha256": "980b1f63cc7b8b2557d36033e105eec992ebb20636b640318a591a27e9098d7c",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/navigation-reader.ts",
+      "sha256": "c423c43c9fd4d50a16b64b964ab8653ac3298167ad668eb8058a1236b7a25d39",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-text-content-store.ts",
+      "sha256": "b9b18f1ba7c3be459c663e49f2c75546faee3f2c699775e9a95bc41195848ece",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts",
+      "sha256": "1c16f0a9f2260a8e92c6a4a9b2f5697b09f7e176fd6a6a3122f1d64a5b29708a",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/schema.ts",
+      "sha256": "16549d1d62d578d2cebb543fa9dd93682852fe016d47dde477f83eb1e8da51b7",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-source-resolver.ts",
+      "sha256": "44d63e5b6fab6b5368d623857dfb89ea23b2d994b1e67fca1e6f054c28691ae9",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-schema.ts",
+      "sha256": "d000e0947c41bde2ae7a84385c560c01c0b2352fcdb4267b570f091894c34de1",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-support.ts",
+      "sha256": "1d30273d367db26b7a2fb035b67f8bdc8e9d78c9c9fa74198f53caeb5a7e063a",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/interface/http/text-content.routes.ts",
+      "sha256": "304c2d20f0c79575f6bcf59e8421a7dea8793fa497b2281537f02a928df7f3f6",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store.ts",
+      "sha256": "78f3a84086bec065d43c0c76769683023816d61e329371506f508a8a4d253393",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-migrations.test.ts",
+      "sha256": "dc573b9fa4bf640476a9336a8da5e0a9f330f80567c4a8004c4639cdf6859a99",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/sidebar-text-source.test.ts",
+      "sha256": "5b06c2e187da40cd067f6d898412906baac131bf2fc5d2915830eed76cacc1fd",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/infrastructure/text-content-store.test.ts",
+      "sha256": "9a1af313f818c259c6f01289c132d76aacafe34d6e86f6f55c50dd1c21f3d1e5",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/sidebar-migration.test.ts",
+      "sha256": "2c8eb672f179385a16cc802af3371729c78f2da189a1cb2686dcc98755ccb535",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-job-store.test.ts",
+      "sha256": "58bd60b3e419bb0486a5ecb76447b963a7af94ca8ae4c9d1ec50087d6193adb6",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-migrations.test.ts",
+      "sha256": "b40185092b4599cdbb33b1fa56c89eb2e62145d6fb161bf404adb4d0bc974d6b",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts.journeys.test.ts",
+      "sha256": "5638e9689b9362d1b230a8f0f54d273fa72b83f77e12a10282291c266ebee4a3",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-fixture.ts",
+      "sha256": "af148117432ff3548a208765a19d0d77c08e591b004ef5f14960d6698c5ca097",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/backend/tests/support/learner-portrait-web-fixture.ts",
+      "sha256": "d83c3fe9c929b77126200ae207603c64d90dbd089a60f2aa174a9ae9a81539db",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/tests/support/texts-web-server.ts",
+      "sha256": "6ae7df5872013399157ed24116b7d4847a745d1627fafa091fadde400a53d814",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/texts-admission-gate.test.ts",
+      "sha256": "e6fa7acd7db5d07a2bb61d02e7df8b596fb037fa5fed48e5c0102e3ff4911f6f",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/globals.css",
+      "sha256": "b4e77f783d933aede8657695b2288406528a29854b6941da457928c43fab8ca7",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/texts/[textId]/page.tsx",
+      "sha256": "70ef67bc9ac44d9484e1041964ad5291f6fa5b8f01ef4e32e5c0cf59239d7ea5",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/texts/folders/[folderId]/new/page.tsx",
+      "sha256": "70d7d5045d2d8e58f3780fd9afbc6f6abd5761e18615d150c13b7e120954c37f",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/texts/folders/[folderId]/texts/[textId]/page.tsx",
+      "sha256": "6c0724ea44bb0a3531c3cd6f28bbd8015e48accaff80afc8502d12b22df9a991",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/texts/new/page.tsx",
+      "sha256": "9633e70d17f47bd32757c8a1dcfee31c5e72eb6a7b0eb4ec8a9863b8260befc0",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/entities/texts/api/content.ts",
+      "sha256": "17537d888ba0355bde17286a63962eefaf710642fa0178533c86ba4df58cd6c2",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/entities/texts/api/jobs.ts",
+      "sha256": "5417bc559db66fb2d49707758b2e6afc4bdc17b4d3e62c6a01c6e7ebde78493e",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-library/hooks/use-dictionary-navigation.ts",
+      "sha256": "255ec6675ff4c32fc8492ef14198908e46ab92cedc95c360b10c7369ad93b3be",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/library-navigation/api/navigation-api.ts",
+      "sha256": "5e7506b6981f5add8c5fce71e2096d53147eeb7a59f25afc0128dc4eb993f9e0",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/library-navigation/hooks/use-library-navigation.ts",
+      "sha256": "6c18f94809e8c0756d1dec254d1d7b13897156bb55f082965f7d6d8a6508c4d7",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/library-navigation/index.ts",
+      "sha256": "0eac121159dd0a557362be6635cf93c04b839a40049eb83d15da79dc33073b35",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-management/hooks/use-text-destinations.ts",
+      "sha256": "39e792dc16660f8f12a26641d3e46a427c7a69754625a8edf7a24a3b69263435",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-management/hooks/use-text-mutation.ts",
+      "sha256": "fcb365eab5d86daff0f1d8c56ca005b3e5790ccd74afc947233c47e02c48c08c",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-management/index.ts",
+      "sha256": "d61e422fa3fec4cedcfe6d9a25f537301444c771ff1f5c5bddc0efce5d160399",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-management/ui/move-text-dialog/move-text-dialog.tsx",
+      "sha256": "4d166f1a6a5f1de241db24027dfbf5705a831a38509c6b6f95069cca26820fbe",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-management/ui/new-text-dialog/new-text-dialog.tsx",
+      "sha256": "1d84bffb895d7ac0e819c2965928f98872b9bcc8bae2c553d42ca8f9489a8211",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-page-actions.ts",
+      "sha256": "78f596fc6c18c1305e314aa206c5c107824284f0447f40343257f8cc7036762c",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/workspace-controls.module.css",
+      "sha256": "26664b0355360cdd328746d0c4a74a7dd6b5e5137932fc83fb7112eae95d0343",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/profile-page.tsx",
+      "sha256": "a72f51fe3f3a1f372f49ece6c5f54ad8de1655fbe53efc0e64d2b8d0f9ab81b7",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-shared-text-copy.ts",
+      "sha256": "6964388d4518e2cb65512412559fcecb71954e024426d6bbde7f6367889d5cbf",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-text-folder.ts",
+      "sha256": "42e5ecd8c79ec8bac62a153f6cc48c0ca36151e306a307136470fcf8a4dbcde2",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-text-library.ts",
+      "sha256": "7f3612ef2f5d70598c98ee3a9dc652e034e7a3d06a70ea56805db2f122bf3209",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-text-workspace-auto.ts",
+      "sha256": "ce434137090bfa04577c4f25c91799566dca23ee61eaab5ee3325a078de8cd17",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-text-workspace-data.ts",
+      "sha256": "d550780313330dea1134496486229bf886bd55687795b2dd9b97fda91f1ef5ae",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-text-workspace-job.ts",
+      "sha256": "ca46a5d7e4d89d1aa42b5ef0fd3cddb8e649f26416f0df0bdf8195ca0fdec67f",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-text-workspace-save.ts",
+      "sha256": "ee6da8e221e0ba3a25d01f9fe0e1df7f6c314f4179c550f7298af2d4ff0175d8",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/hooks/use-text-workspace.ts",
+      "sha256": "05b79fdb47f9d3f2df77b66f63cc23ef016acccdf10a94a2fd06afa174020d57",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/lib/workspace-save.ts",
+      "sha256": "16a1666b803e65f41db1ff2a05c34c3ca25a0293836077be07abc250e7f089ed",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/folder-page/folder-dialogs.tsx",
+      "sha256": "3b16c1416bae86dbfaf7922ddb7e8105b55e8afa5d3a9f4f4c0053dcad2ccc98",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/folder-page/folder-header.tsx",
+      "sha256": "adcde728a6fc9bb425f98cffa22ec4714a36c1a12baad0c73b843fe848841af4",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/folder-page/folder-text-list.tsx",
+      "sha256": "495979c781f4a4cd6c047ece6a9350f93d310c60d471e2c90ef38bf63b627fff",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/folder-page/text-row.tsx",
+      "sha256": "aff614ce10fe31e501b2cec42f433562dcb036b24f95362dea5d3e80903ec249",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/library-page/independent-texts.tsx",
+      "sha256": "37a1ad7f5e8a880bb0bf3dc96f6a8aacff3326db237ea084941999cea1edefa4",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/library-page/library-page.module.css",
+      "sha256": "fe03d161161bc49ce641ab47b78350bfecd2ff005d0de068fd733b4bd5ae9edb",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/library-page/library-page.tsx",
+      "sha256": "6d068c142069959f47cf5c9907be32a85c99a22178222a7ba31d2184ba5cbc6b",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/public-page/copy-dialog.tsx",
+      "sha256": "4a860a7566b18fde1a51b03463fdae3527bfa4c0d9a7185136314ef4c243fbba",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/public-page/shared-texts-page.tsx",
+      "sha256": "1dac17ebbf0b1859f263e19f1593c3cadea89c9af2dbc3f0f90cc194cf364bab",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/text-workspace.tsx",
+      "sha256": "29bc377c904528707dceb2f5fc32641b112525e0f43f7db85728dbb34ddbe4d2",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/workspace-actions.tsx",
+      "sha256": "de4ebbf3c7fc8bb49e958acca511f00d8a68716b8dc7a8fef6a2def7910791db",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/workspace-confirm.tsx",
+      "sha256": "c9a43e3fa8983c0f53ebdafb0e818dc93a00c880974c2f47ae2fe7ebefa3f7fa",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/workspace-document.tsx",
+      "sha256": "8171a981f7179f62fd28806c83b1f1b19b0cfa9caf65b6159edecbbf254011a5",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/workspace-header.tsx",
+      "sha256": "ecb2da6ba92a242d8f5cb1e28c26dde8fcdea84fcf41c5fba2ebdbe758cda598",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/workspace-management.tsx",
+      "sha256": "6823c3c1d92b6752021130ed7df154a499bdce2fb60d717308f885e5d8783c73",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/workspace-page.module.css",
+      "sha256": "16c89eba5604060bc9fe774643df11c08969a2de5b290c267a94590b1069b49c",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/pages/texts/ui/workspace-page/workspace-page.tsx",
+      "sha256": "a5325c68e61a367561435143e34e7b071f885e2040d1a6b156221f230e8268e5",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/en.ts",
+      "sha256": "c713a64b9fcfdf41602333c55d9eeffc25502d0fc8ad07adbb3d04c409fa5ebb",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/es.ts",
+      "sha256": "1f7d2869ed8f98673115101be60ec8446dacccff9d578972f6e046b9f0e0ea04",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/fr.ts",
+      "sha256": "ca89847871a2a4634c0b6bdc1ca71775fcea40c98787dafbe564d1f16fa9a8b0",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/navigation.ts",
+      "sha256": "4d2c4bb38464ec416df640d82edaae292aafdb185441d9dfde9e3610a80827ef",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/ru.ts",
+      "sha256": "24a31ab432894ed0869ea7e6b22e6f664a7530d5b2ab73cc2e87d5683d051671",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/navigation/guarded-navigation.ts",
+      "sha256": "d6edb761f02e3f8fcad2b8f687dbebfc1511f578139030c7b19d5a1dfa26d3d2",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/navigation/use-dirty-navigation.ts",
+      "sha256": "56e53e36adc965c52ae534017cde08e599d396fb10c2899fbab8aebb7092a9fc",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/navigation/use-navigation-layout.ts",
+      "sha256": "c45b8ca953f6743b59eb8612afe73396378b4e5f260568bed8067fb9bcfd1e7f",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/companion-layout.module.css",
+      "sha256": "60b22db04199fe09214d3d4a2e3177267902b771497454381c3838508ab49a15",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/companion-layout.tsx",
+      "sha256": "c4515ac535cbfee741b680718734a231ad6413e873e3bfe7ffc533de5ceebac3",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/menu.tsx",
+      "sha256": "79ed1294794b2d4cb77daf3ce5825c6fc88cf1a497ca94f1f78ef02d6a3b43f7",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/types.ts",
+      "sha256": "0a0ea51d3c3d1755ca48961ed638678597741727ebc4688922ee701fb8097fe1",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover-content.tsx",
+      "sha256": "2ef58543ba621262d03e18d31b23f4a7d8e375c8c360d098792335fe7616ea8b",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover-context.ts",
+      "sha256": "a0d52be31e595b5749f81cb0c043678d4e4abab0c95f5d8c6c35f1a614a29fb3",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover.stories.tsx",
+      "sha256": "f5ae20b1497e1817e6b27e685218d8e6d0c9a393c891d923ecf2d86f6d5fba49",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover.tsx",
+      "sha256": "6ef66ebb3d99e3bb7b33572dc01b638f6abf6c59ea04f64cc193dfb192105585",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/hooks/use-app-shell-state.ts",
+      "sha256": "b78d3fda4a4f40ed1a330d5c76ad1ac673ebafb114605c63b7082c914e077306",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/hooks/use-hover-intent.ts",
+      "sha256": "cc97c139ebf1f46aeec8ca722b70a3f306decee7f14aa1fef4540a08fd3d1a59",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/hooks/use-modifier-key-label.ts",
+      "sha256": "853bdf2a6b72f7216dab385424723b4a71981d544a50f40651f3b8257495e1cf",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/hooks/use-palette.ts",
+      "sha256": "9f6389fb4319f4f43929f58f4072425944c5a60785da9c5e0f2e7fce6c25ff72",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/hooks/use-shell-creation.ts",
+      "sha256": "15c00aca4330e508f7cb2b3ec64eecbf6c64c929819154b8ce4f91991ce108ef",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/lib/navigation-display.ts",
+      "sha256": "a8ffb29338a1330e4892945f254cda0e0e045fc79215838a3202c184b51b293c",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/lib/navigation-sections.ts",
+      "sha256": "1a49b1958efff6005efb9ca45189d15d236bbfab4e1ce321840f222fe630be0c",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/model/navigation-context.tsx",
+      "sha256": "354bff94693ea61646fd4ccac9ba2bbd10ac373558294b93f52d1cd952651bfb",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/account-area/account-area.module.css",
+      "sha256": "0c2146fabbc8a9e2071aed00800e167165a8d9372a63eebcd285318acdb65571",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/account-area/account-area.tsx",
+      "sha256": "8b07a35954255da4fc700ac07d38c90b37d52363ab9d8fa2adb74045b984ab51",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/app-shell/app-shell.module.css",
+      "sha256": "8c54d2330e4bb3e46940f9a093fbcc1d1c3624ab7111b407095c682357022994",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/app-shell/app-shell.tsx",
+      "sha256": "9da3550884355e31654d328f6a2de3fb77238361564c297a5ab0873c3048f7b3",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/application-chrome/application-chrome.tsx",
+      "sha256": "1c100b9c6aa01073212b5392cb6f3e6616a0b95baae0d4d367e3674cbc4a8a57",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/command-palette/command-palette.module.css",
+      "sha256": "68942cf9c667fd305efaba9c9f1b7e13bc5d7dbcd0332d80cc421c06cd47c9b4",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/command-palette/command-palette.tsx",
+      "sha256": "a57020ca6b1e546bb7488a9bb02c0126f47a5240fdf5ab52309c863696770324",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/command-palette/palette-row.tsx",
+      "sha256": "7d18965c65e4f23a1c5b0926194b73dc58477f8b9f932fe165c8663c35ea9e76",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/create-menu/create-menu.module.css",
+      "sha256": "9c05c92d98b9592ea4c63a09f8be82a6431326d436beec4f1d0f4c80d8622305",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/create-menu/create-menu.tsx",
+      "sha256": "111583cd2f48aa980859446d2e08df4bc93f1ed0c82d9cd60a7298e470a713ac",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/mobile-drawer/mobile-drawer.tsx",
+      "sha256": "02bd4c162d6250277d4b18c17048d970f6a54966f9382578c44b2746e76fc001",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/rail-flyout/rail-flyout.module.css",
+      "sha256": "f0379aa7b4181c7d462cd3a4ea6bb9f0c67379a783c947bbb900151c33a4b9d4",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/rail-flyout/rail-flyout.tsx",
+      "sha256": "0bba993ff1799639bcf52ad56f54901f0927f6d795942fede031d41410256671",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/resource-list/resource-list.module.css",
+      "sha256": "e0a7dd89ac164205c70327891458a9afd16ad4269b284962eacda531a3baea2d",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/resource-list/resource-list.tsx",
+      "sha256": "5f3afd5a6955dec7cd36019f8a35b91cc8497ab5d7398dac7c0db30799e5a147",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/resource-list/resource-row.tsx",
+      "sha256": "82c795e9d6365c5e2ebc5df7c854c908bee1f7ed83a4e9d89e64e4bd0d5a4776",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/resource-section/resource-section.module.css",
+      "sha256": "c39e465160c5cb9dff1e11c8446d1ed5a6d40b90c56e7a54baf84f356c957647",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/resource-section/resource-section.tsx",
+      "sha256": "50f0c9514e8cc2f83b36a204d53697967641ba882f95fef2b47aa9558ad1a5cb",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/sidebar/dictionaries-navigation.tsx",
+      "sha256": null,
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/sidebar/knowledge-navigation.tsx",
+      "sha256": null,
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/sidebar/navigation-items.tsx",
+      "sha256": null,
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/sidebar/sidebar-common.module.css",
+      "sha256": "621da43c34dba8b53e37b1add11f6f071bfaa513c870a975c995bcb91499deb3",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/sidebar/sidebar.tsx",
+      "sha256": "76a26aea03edb37303f7e3a9044a805b88cadc56fde5295cf160f0f20136bfb2",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/sidebar/texts-navigation.module.css",
+      "sha256": null,
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/app-shell/ui/sidebar/texts-navigation.tsx",
+      "sha256": null,
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/dictionary-editor/ui/dictionary-editor/dictionary-editor.tsx",
+      "sha256": "ada79669e9f006e2bdc6b9f735d777f1af404fb1f75d08a8b2b53914270ac6cc",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/app-shell.test.tsx",
+      "sha256": "0460a84bb01f73e852de4b14cad617c310995560aec25b5e8682a93d96095b11",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/web/tests/e2e/app-shell.journeys.spec.ts",
+      "sha256": "28f5721d4aae7e33780b82a9c1d5dbe6a765f35ccb933ec10c2084f76c11eb0d",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts",
+      "sha256": "e2343deda1913067e4413dbf1df6eaaf7f3f4ab79f21a02ae4b7d51f989e2f1d",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/e2e/learner-portrait.journeys.spec.ts",
+      "sha256": "1156a18e8b65aac1a620cd0ddb108c194d9a2053b85d6aa225862093fd33d7b7",
+      "identicalTo": []
+    },
+    {
+      "path": "apps/web/tests/e2e/sidebar-navigation.journeys.spec.ts",
+      "sha256": "da72e796355349fee7225999d93bf8f0e922b2cfd0624af616c2578175e00b85",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/e2e/support/texts-playwright.config.ts",
+      "sha256": "c1741ba6dc4766259cbd8d22c319e6ac8ba47b61a4394e344b2e65f39592d3ee",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/e2e/texts.journeys.spec.ts",
+      "sha256": "c37465da9860d4ec5c170585444bcf7c3b418d8216281eea188c7f82ca4e64b9",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/library-navigation.test.tsx",
+      "sha256": "0df8b00db72f90958a1ddcde59b79c3c0a750daf09035fd34c5d712d1d7d4e9f",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/nested-popover.test.tsx",
+      "sha256": "b3cc89c2dd724492203d84f6f78ceb5408e1ad7accddf3c4b5bb9d50226058cb",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/sidebar-hover-intent.test.tsx",
+      "sha256": "6280ecf3538b718dd636a97808185fa0a8198f0792823f5c2d685240cabf7237",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/text-ai-preferences-navigation.test.tsx",
+      "sha256": "8b4c3ac3e037744ca849ce4744ca974b2c3d86305dcba288a7022b84471d61d4",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/texts-api.test.ts",
+      "sha256": "9596def8c203ead3924f25b187ce6eac53aee40016ed873e4d6f8f5e74ed27b5",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/texts-organization.test.tsx",
+      "sha256": "fa89427137fa30a3f8363664faba76292cadce106d4c1ac5df32805f7501d9ed",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/texts-public-copy.test.tsx",
+      "sha256": "904d2807f81618ceb7a77314bef7013e0cf475dd868224463fc6dc54328b00c9",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-account.test.tsx",
+      "sha256": "59aef07bd8e5c16c7a1fb7e5386201406460ec689b0a22898b89d82274dc9297",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-job.test.tsx",
+      "sha256": "72a6e2c6b2b14c29608378a5858a4a2f0d12fdd1cc52a8750805392ba0503baf",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "infra/deploy/sql/account-purge-worker-role.sql",
+      "sha256": "c1d2327940cece4b3fdde6493372a140c3f96b6e8abf7fcd80b79aff850eda84",
+      "identicalTo": []
+    },
+    {
+      "path": "packages/contracts/src/index.ts",
+      "sha256": "d71d7fc41199459fbd8569db14746cadad74777237bee835ce4b463939461b68",
+      "identicalTo": []
+    },
+    {
+      "path": "packages/contracts/src/navigation.ts",
+      "sha256": "c11a48c5cda8051487f0763cb5a41c7a4c5741f2a4e493857021f6b27b9e42a0",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "packages/contracts/src/texts/index.ts",
+      "sha256": "9310d406527098f122a0cd693e631e43890f9c0d3ba15a08fa1e49e808518cac",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    },
+    {
+      "path": "packages/contracts/tests/texts.test.ts",
+      "sha256": "577a04124db5543614eaee90878116372d20ea94a6e3cdf9b176c16e53025c72",
+      "identicalTo": [
+        "e5c4c24"
+      ]
+    }
+  ]
+}

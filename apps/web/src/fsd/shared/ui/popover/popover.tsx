@@ -12,6 +12,7 @@ import {
 } from '@floating-ui/react';
 import {
     useCallback,
+    useContext,
     useEffect,
     useId,
     useRef,
@@ -37,6 +38,11 @@ export function Popover({
     onOpenChange,
     open: controlledOpen,
 }: PopoverRootProps) {
+    const parent = useContext(PopoverContext);
+    const registerInParent = parent?.registerNested;
+    const nestedPanels = useRef(
+        new Set<React.MutableRefObject<HTMLDivElement | null>>(),
+    );
     const [internalOpen, setInternalOpen] = useState(defaultOpen);
     const [placement, setPlacement] = useState<Placement>('bottom');
     const [sideOffset, setSideOffset] = useState(8);
@@ -95,6 +101,19 @@ export function Popover({
         refs.setFloating(contentRef.current);
     }, [open, refs, virtualReference]);
 
+    const registerNested = useCallback(
+        (panel: React.MutableRefObject<HTMLDivElement | null>) => {
+            nestedPanels.current.add(panel);
+            const removeFromAncestor = registerInParent?.(panel);
+            return () => {
+                nestedPanels.current.delete(panel);
+                removeFromAncestor?.();
+            };
+        },
+        [registerInParent],
+    );
+    useEffect(() => registerInParent?.(contentRef), [registerInParent]);
+
     return (
         <PopoverContext.Provider
             value={{
@@ -105,6 +124,8 @@ export function Popover({
                 floatingStyles,
                 isPositioned,
                 open,
+                nestedPanels: nestedPanels.current,
+                registerNested,
                 setOpen,
                 setPosition,
                 triggerRef,

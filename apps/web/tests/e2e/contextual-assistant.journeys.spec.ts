@@ -21,6 +21,89 @@ import type {
 } from '@languon/contracts';
 
 const liveTokens = new WeakMap<Page, string>();
+
+test('editor and real tutor collapse the sidebar below 1280 and preserve explicit expansion', async ({
+    page,
+}, info) => {
+    const assertClean = runtimeErrors(page);
+    const httpFailures: string[] = [];
+    const turnRequests: string[] = [];
+    page.on('response', (response) => {
+        const path = new URL(response.url()).pathname;
+        if (
+            response.status() >= 400 &&
+            !(response.status() === 401 && path.endsWith('/auth/refresh'))
+        )
+            httpFailures.push(`${response.status()} ${path}`);
+    });
+    page.on('request', (request) => {
+        const path = new URL(request.url()).pathname;
+        if (
+            request.method() === 'POST' &&
+            /\/conversations\/[^/]+\/turns$/.test(path)
+        )
+            turnRequests.push(path);
+    });
+    await page.setViewportSize({ width: 1200, height: 1000 });
+    const token = await signup(page, info);
+    const { text } = await api(page, token, '/texts', {
+        folderId: null,
+        title: 'Independent tutor layout',
+        sourceText: 'We rested on the bank.',
+        sourceLanguage: 'en',
+        targetLanguage: 'es',
+    });
+    await page.goto(`/texts/${text.id}`);
+    await expect(page.getByLabel('Source text', { exact: true })).toHaveValue(
+        'We rested on the bank.',
+    );
+    const sidebar = page.getByRole('complementary', {
+        name: 'Application sidebar',
+        exact: true,
+    });
+    await expect
+        .poll(async () => (await sidebar.boundingBox())?.width)
+        .toBe(240);
+    const created = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname.endsWith('/conversations') &&
+            response.status() === 200,
+    );
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    const { conversation } = await (await created).json();
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    await expect(tutor).toBeVisible();
+    await expect(page.getByLabel('Your question')).toBeEnabled();
+    await expect
+        .poll(async () => (await sidebar.boundingBox())?.width)
+        .toBe(64);
+    await noOverflow(page);
+    await capture(page, info, 'sidebar-editor-tutor-auto-rail-1200');
+    await sidebar
+        .getByRole('button', { name: 'Expand sidebar', exact: true })
+        .click();
+    await expect
+        .poll(async () => (await sidebar.boundingBox())?.width)
+        .toBe(240);
+    await expect(tutor).toBeVisible();
+    await page.setViewportSize({ width: 1180, height: 1000 });
+    await expect
+        .poll(async () => (await sidebar.boundingBox())?.width)
+        .toBe(240);
+    await expect(tutor).toBeVisible();
+    await noOverflow(page);
+    await capture(page, info, 'sidebar-editor-tutor-explicit-expanded-1180');
+    const detail = await api(page, token, `/conversations/${conversation.id}`);
+    expect(detail.turns).toEqual([]);
+    expect(turnRequests).toEqual([]);
+    expect(httpFailures).toEqual([]);
+    assertClean();
+});
+
 async function signup(page: Page, info: TestInfo) {
     page.on('response', async (response) => {
         if (

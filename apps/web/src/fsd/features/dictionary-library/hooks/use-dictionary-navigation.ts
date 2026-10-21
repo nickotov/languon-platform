@@ -25,6 +25,7 @@ import { retainIdempotencyAttempt } from '../lib/idempotency-attempt';
 
 export function useDictionaryNavigation(
     requestWithSession: RequestWithSession,
+    loadList = true,
 ) {
     const { href } = useI18n();
     const router = useRouter();
@@ -49,7 +50,7 @@ export function useDictionaryNavigation(
         staleTime: Infinity,
     });
     const dictionaries = useInfiniteQuery({
-        enabled,
+        enabled: enabled && loadList,
         queryKey: ['dictionaries-navigation', 'active', userId],
         initialPageParam: undefined as string | undefined,
         queryFn: ({ pageParam, signal }) =>
@@ -71,9 +72,9 @@ export function useDictionaryNavigation(
     const { fetchNextPage, hasNextPage, isFetchingNextPage } = dictionaries;
 
     useEffect(() => {
-        if (!enabled || !hasNextPage || isFetchingNextPage) return;
+        if (!enabled || !loadList || !hasNextPage || isFetchingNextPage) return;
         void fetchNextPage();
-    }, [enabled, fetchNextPage, hasNextPage, isFetchingNextPage]);
+    }, [enabled, loadList, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     useEffect(() => {
         setCreateOpen(false);

@@ -3,6 +3,7 @@ import type {
     UpdateTextFolderRequest,
     CreateTextRequest,
     SaveTextRequest,
+    MoveTextRequest,
 } from '@languon/contracts';
 import type { RateLimiter } from '../../authentication/application/ports/rate-limiter';
 import type {
@@ -96,13 +97,31 @@ export class TextContentService {
     async listTexts(
         token: string,
         context: TextRequestContext,
-        id: string,
+        id: string | null,
         page: TextPage,
     ) {
         return this.dependencies.store.listTexts(
             await this.owner(token, context),
             id,
             page,
+        );
+    }
+    async pendingJob(token: string, context: TextRequestContext, id: string) {
+        return this.dependencies.store.pendingJob(
+            await this.owner(token, context),
+            id,
+        );
+    }
+    async moveText(
+        token: string,
+        context: TextRequestContext,
+        id: string,
+        request: MoveTextRequest,
+    ) {
+        return this.dependencies.store.moveText(
+            await this.owner(token, context),
+            id,
+            request,
         );
     }
     async createText(
@@ -188,7 +207,11 @@ export class TextContentService {
         context: TextRequestContext,
         access: TextShareAccess,
         request: {
-            destinationFolderId?: string;
+            destinationFolderId?: string | null;
+            sharedFolderConfirmation?: {
+                shareId: string;
+                shareVersion: number;
+            };
             newFolderName?: string;
             sourceTextId?: string;
             name?: string;

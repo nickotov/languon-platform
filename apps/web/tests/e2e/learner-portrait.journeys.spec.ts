@@ -26,8 +26,9 @@ function runtimeErrors(page: Page) {
             failures.push(message.text());
     });
     page.on('response', (response) => {
-        if (response.status() >= 500)
-            failures.push(`${response.status()} ${new URL(response.url()).pathname}`);
+        const path = new URL(response.url()).pathname;
+        if (response.status() >= 500 || (response.status() === 404 && path.includes('/navigation/')))
+            failures.push(`${response.status()} ${path}`);
     });
     return () => expect(failures).toEqual([]);
 }
@@ -42,12 +43,21 @@ async function noOverflow(page: Page) {
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 }
 
+async function restoredSidebar(page: Page) {
+    await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Create new', exact: true })).toBeVisible();
+}
+
 // @user-flow learner-portrait/manual-approval-global-off-and-delete-warning
 test('manual portrait is approved separately from use, persists, and global off wins', async ({ page }, info) => {
     const assertNoRuntimeErrors = runtimeErrors(page);
     await signup(page, info);
+    await restoredSidebar(page);
+    await capture(page, info, 'portrait-overview-restored-sidebar-desktop');
 
     await page.goto('/portrait/manual');
+    await restoredSidebar(page);
     await expect(page.getByRole('heading', { name: 'Fill in your portrait' })).toBeVisible();
     await capture(page, info, 'portrait-manual-editor-desktop');
     await page
@@ -132,6 +142,8 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
     await page.getByRole('button', { name: 'Start interview', exact: true }).click();
     await expect(page).toHaveURL(/\/portrait\/interview$/);
     await expect(page.getByRole('heading', { name: 'Learner portrait interview' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Main navigation' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Create new', exact: true })).toHaveCount(0);
 
     await page.reload();
     await expect(

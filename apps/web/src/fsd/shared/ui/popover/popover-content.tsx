@@ -51,6 +51,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
             setFloating,
             open,
             isPositioned,
+            nestedPanels,
         } = context;
         const [mounted, setMounted] = useState(false);
         const setContent = useCallback(
@@ -100,13 +101,25 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                 return (
                     target instanceof Node &&
                     (panel!.contains(target) ||
-                        triggerRef.current?.contains(target))
+                        triggerRef.current?.contains(target) ||
+                        [...nestedPanels].some((child) =>
+                            child.current?.contains(target),
+                        ))
                 );
             }
             function dismiss(event: PointerEvent) {
                 if (!contains(event.target)) setOpen(false);
             }
             function escape(event: KeyboardEvent) {
+                // Native document listeners run in registration order. Let the
+                // innermost open layer handle dismissal and keyboard traversal.
+                if (
+                    event.defaultPrevented ||
+                    [...nestedPanels].some(
+                        (child) => child.current?.isConnected,
+                    )
+                )
+                    return;
                 if (
                     event.key === 'Tab' &&
                     typeof panel!.showPopover !== 'function'
@@ -147,7 +160,14 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                     );
             }
             function blur(event: FocusEvent) {
-                if (closeOnFocusOut && !contains(event.relatedTarget))
+                // Native popover removal and disabled invokers can briefly
+                // clear focus. Pointer dismissal still handles outside clicks;
+                // only an actual new focus target establishes focus leaving.
+                if (
+                    closeOnFocusOut &&
+                    event.relatedTarget !== null &&
+                    !contains(event.relatedTarget)
+                )
                     setOpen(false);
             }
             function sync(event: Event) {
@@ -171,6 +191,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
             contentRef,
             isPositioned,
             mounted,
+            nestedPanels,
             open,
             returnFocus,
             setOpen,

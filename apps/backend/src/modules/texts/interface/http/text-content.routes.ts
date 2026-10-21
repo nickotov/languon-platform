@@ -8,6 +8,8 @@ import {
     TextVersionRequestSchema,
     CreateTextRequestSchema,
     SaveTextRequestSchema,
+    MoveTextRequestSchema,
+    TextAiJobSchema,
     ListTextFoldersQuerySchema,
     ListTextsQuerySchema,
     TextFolderResponseSchema,
@@ -156,7 +158,9 @@ export function createTextContentRoutes({
             message = error.message;
             status = code.includes('not_found')
                 ? 404
-                : code.includes('conflict')
+                : code.includes('conflict') ||
+                    code === 'text_busy' ||
+                    code === 'shared_folder_confirmation_required'
                   ? 409
                   : code === 'rate_limited'
                     ? 429
@@ -215,6 +219,76 @@ export function createTextContentRoutes({
             );
             return c.json({ data: r.items, nextCursor: r.nextCursor }, 200);
         },
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/texts',
+            security,
+            request: { query: ListTextsQuerySchema },
+            responses: { 200: json(ListTextsResponseSchema), ...errors },
+        }),
+        async (c) => {
+            const result = await service.listTexts(
+                token(c),
+                context(c),
+                null,
+                c.req.valid('query'),
+            );
+            return c.json(
+                { data: result.items, nextCursor: result.nextCursor },
+                200,
+            );
+        },
+    );
+    app.openapi(
+        createRoute({
+            method: 'get',
+            path: '/texts/{textId}/pending-job',
+            security,
+            request: { params: TextIdParamsSchema },
+            responses: {
+                200: json(
+                    z.object({ job: TextAiJobSchema.nullable() }).strict(),
+                ),
+                ...errors,
+            },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    job: await service.pendingJob(
+                        token(c),
+                        context(c),
+                        c.req.valid('param').textId,
+                    ),
+                },
+                200,
+            ),
+    );
+    app.openapi(
+        createRoute({
+            method: 'patch',
+            path: '/texts/{textId}/folder',
+            security,
+            request: {
+                params: TextIdParamsSchema,
+                body: body(MoveTextRequestSchema),
+            },
+            responses: { 200: json(TextResponseSchema), ...errors },
+        }),
+        async (c) =>
+            c.json(
+                {
+                    text: await service.moveText(
+                        token(c),
+                        context(c),
+                        c.req.valid('param').textId,
+                        MoveTextRequestSchema.parse(c.req.valid('json')),
+                    ),
+                },
+                200,
+            ),
     );
     app.openapi(
         createRoute({
@@ -516,6 +590,12 @@ export function createTextContentRoutes({
                               );
                               return {
                                   idempotencyKey: value.operationId,
+                                  ...(value.sharedFolderConfirmation
+                                      ? {
+                                            sharedFolderConfirmation:
+                                                value.sharedFolderConfirmation,
+                                        }
+                                      : {}),
                                   ...(value.folderId !== undefined
                                       ? { destinationFolderId: value.folderId }
                                       : {}),
@@ -578,6 +658,12 @@ export function createTextContentRoutes({
                     },
                     {
                         sourceTextId: c.req.valid('param').textId,
+                        ...(request.sharedFolderConfirmation
+                            ? {
+                                  sharedFolderConfirmation:
+                                      request.sharedFolderConfirmation,
+                              }
+                            : {}),
                         ...(request.folderId !== undefined
                             ? { destinationFolderId: request.folderId }
                             : {}),

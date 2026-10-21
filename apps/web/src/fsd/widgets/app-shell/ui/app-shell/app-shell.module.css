@@ -1,5 +1,5 @@
 .shell {
-    --app-topbar-height: var(--size-64);
+    --app-topbar-height: var(--size-56);
     --app-sidebar-center-offset: var(--size-120);
     --app-sidebar-width: var(--size-nav-sidebar-width);
     background: var(--background-canvas);
@@ -7,12 +7,12 @@
 }
 
 .railShell {
-    --app-sidebar-center-offset: var(--size-36);
+    --app-sidebar-center-offset: var(--size-32);
     --app-sidebar-width: var(--size-nav-rail-width);
 }
 
 .desktopSidebar {
-    background: var(--background-surface);
+    background: var(--background-subtle);
     border-inline-end: 1px solid var(--border-default);
     display: none;
     inset-block: 0;
@@ -20,6 +20,7 @@
     position: fixed;
     width: var(--app-sidebar-width);
     z-index: 40;
+    transition: width var(--duration-normal) var(--easing-standard);
 }
 
 .content {
@@ -32,47 +33,31 @@
     background: var(--background-surface);
     border-bottom: 1px solid var(--border-default);
     display: flex;
-    gap: var(--space-8);
-    height: var(--size-64);
-    padding: 0 var(--space-8);
+    gap: var(--space-4);
+    height: var(--size-56);
+    padding-inline: var(--space-8);
     position: sticky;
     top: 0;
     z-index: 30;
 }
 
-.mobileMenuButton {
+.mobileMenuButton,
+.mobileSearchButton {
     height: var(--size-44);
     width: var(--size-44);
 }
 
-.mobileLogo {
-    flex: none;
-}
-
-.mobileDivider {
-    background: var(--border-default);
-    height: var(--size-20);
-    width: var(--size-1);
-}
-
-.mobileTitle {
-    flex: 1;
-    font-size: var(--size-14);
-    font-weight: 600;
-    margin: 0;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.mobileSearchButton {
+    margin-inline-start: auto;
 }
 
 .skipLink {
     background: var(--background-surface);
     border: 2px solid var(--border-focus);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-6);
     color: var(--text-primary);
-    inset-block-start: var(--size-8);
-    inset-inline-start: var(--size-8);
+    inset-block-start: var(--space-8);
+    inset-inline-start: var(--space-8);
     padding: var(--space-10) var(--space-16);
     position: fixed;
     transform: translateY(-160%);
@@ -83,18 +68,16 @@
     transform: translateY(0);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
     .shell {
         --app-topbar-height: 0px;
     }
     .desktopSidebar {
         display: block;
     }
-
     .mobileTopBar {
         display: none;
     }
-
     .content {
         padding-inline-start: var(--app-sidebar-width);
         transition: padding-inline-start var(--duration-normal)
@@ -103,7 +86,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .content {
+    .content,
+    .desktopSidebar {
         transition: none;
     }
 }

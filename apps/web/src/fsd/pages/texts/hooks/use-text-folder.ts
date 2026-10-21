@@ -10,7 +10,7 @@ import { textsApi, type RequestWithTextSession } from '@/fsd/entities/texts';
 import { useSessionStore } from '@/fsd/entities/session';
 
 export function useTextFolder(
-    folderId: string,
+    folderId: string | null,
     lifecycle: 'active' | 'archived',
     requestWithSession: RequestWithTextSession,
     enabled: boolean,
@@ -23,23 +23,38 @@ export function useTextFolder(
         initialPageParam: undefined as string | undefined,
         queryFn: ({ signal, pageParam }) =>
             requestWithSession((token) =>
-                textsApi.listTexts(
-                    token,
-                    folderId,
-                    {
-                        lifecycle,
-                        limit: 25,
-                        ...(pageParam ? { cursor: pageParam } : {}),
-                    },
-                    signal,
-                ),
+                folderId === null
+                    ? textsApi.listIndependentTexts(
+                          token,
+                          {
+                              lifecycle,
+                              limit: 25,
+                              ...(pageParam ? { cursor: pageParam } : {}),
+                          },
+                          signal,
+                      )
+                    : textsApi.listTexts(
+                          token,
+                          folderId,
+                          {
+                              lifecycle,
+                              limit: 25,
+                              ...(pageParam ? { cursor: pageParam } : {}),
+                          },
+                          signal,
+                      ),
             ),
         getNextPageParam: (page) => page.nextCursor ?? undefined,
         enabled,
     });
 
     async function refresh() {
-        await client.invalidateQueries({ queryKey: ['texts', userId] });
+        await Promise.all([
+            client.invalidateQueries({ queryKey: ['texts', userId] }),
+            client.invalidateQueries({
+                queryKey: ['library-navigation', userId],
+            }),
+        ]);
     }
 
     const restore = useMutation({

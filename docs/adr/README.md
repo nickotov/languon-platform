@@ -61,6 +61,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0040](./0040-preproduction-owner-scoped-audio-retirement.md)         | Preproduction owner-scoped pronunciation retirement   | Accepted               |
 | [ADR-0041](./0041-durable-tutor-streaming-presentation.md)                | Durable tutor streaming presentation                  | Accepted               |
 | [ADR-0042](./0042-knowledge-workspace-document-and-context-boundaries.md) | Knowledge workspace document and context boundaries   | Accepted               |
+| [ADR-0043](./0043-sidebar-navigation-and-optional-text-folders.md) | Synced resource navigation and optional Texts folders | Accepted |
 | [ADR-0044](./0044-learner-portrait-approval-and-use-boundaries.md) | Learner portrait approval and use boundaries | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant

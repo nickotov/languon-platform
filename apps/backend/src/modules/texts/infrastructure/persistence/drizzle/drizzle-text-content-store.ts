@@ -2,9 +2,11 @@ import {
     getTableColumns,
     and,
     asc,
+    desc,
     eq,
     gt,
     inArray,
+    isNull,
     ne,
     or,
     sql,
@@ -14,6 +16,7 @@ import type {
     UpdateTextFolderRequest,
     CreateTextRequest,
     SaveTextRequest,
+    MoveTextRequest,
     TextAlignment,
 } from '@languon/contracts';
 import type {
@@ -43,6 +46,8 @@ import {
     type TextRow,
 } from './text-content-support';
 import { textNotFound } from './text-source-resolver';
+import { exposeTextsJob } from './texts-job-support';
+import { textsAiJobsTable } from './texts-job-schema';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 
 export interface TextProposalSaveInput {
@@ -50,7 +55,7 @@ export interface TextProposalSaveInput {
     jobId: string;
     textId: string;
     expectedVersion: number;
-    folderId: string;
+    folderId: string | null;
     now: Date;
 }
 export type TextProposalLoader = (
@@ -110,7 +115,9 @@ export class DrizzleTextContentStore implements TextContentStore {
             .from(textsTable)
             .where(and(eq(textsTable.id, id), eq(textsTable.ownerId, ownerId)));
         if (!candidate) throw textNotFound();
-        await this.folder(tx, ownerId, candidate.folderId);
+        await this.activeOwner(tx, ownerId);
+        if (candidate.folderId)
+            await this.folder(tx, ownerId, candidate.folderId);
         const [row] = await tx
             .select()
             .from(textsTable)
@@ -118,6 +125,11 @@ export class DrizzleTextContentStore implements TextContentStore {
             .for('update');
         if (!row || (active && row.lifecycle !== 'active'))
             throw textNotFound();
+        if (row.folderId !== candidate.folderId)
+            throw new TextDomainError(
+                'version_conflict',
+                'The text moved. Reload it and try again.',
+            );
         return row;
     }
     private async revision(tx: TextsContentTransaction, row: TextRow) {
@@ -136,6 +148,12 @@ export class DrizzleTextContentStore implements TextContentStore {
                 ...getTableColumns(textFoldersTable),
                 textCount: sql<number>`(select count(*)::int from texts t where t.owner_id = "text_folders"."owner_id" and t.folder_id = "text_folders"."id" and t.lifecycle = 'active')`,
                 translatedCount: sql<number>`(select count(*)::int from texts t where t.owner_id = "text_folders"."owner_id" and t.folder_id = "text_folders"."id" and t.lifecycle = 'active' and t.status <> 'draft')`,
+                shareId: sql<
+                    string | null
+                >`(select s.id from text_shares s where s.kind = 'folder' and s.resource_id = "text_folders"."id")`,
+                shareVersion: sql<
+                    number | null
+                >`(select s.version from text_shares s where s.kind = 'folder' and s.resource_id = "text_folders"."id")`,
                 isShared: sql<boolean>`${textFoldersTable.lifecycle} = 'active' and exists(select 1 from text_shares s where s.kind = 'folder' and s.resource_id = "text_folders"."id")`,
             })
             .from(textFoldersTable)
@@ -156,6 +174,8 @@ export class DrizzleTextContentStore implements TextContentStore {
                 textCount: row.textCount,
                 translatedCount: row.translatedCount,
                 isShared: row.isShared,
+                shareId: row.shareId,
+                shareVersion: row.shareVersion,
             })),
             nextCursor:
                 rows.length > page.limit ? rows[page.limit - 1]!.id : null,
@@ -249,9 +269,10 @@ export class DrizzleTextContentStore implements TextContentStore {
             return textFolder(updated!);
         });
     }
-    async listTexts(ownerId: string, folderId: string, page: TextPage) {
+    async listTexts(ownerId: string, folderId: string | null, page: TextPage) {
         return this.db.transaction(async (tx) => {
-            await this.folder(tx, ownerId, folderId);
+            await this.activeOwner(tx, ownerId);
+            if (folderId) await this.folder(tx, ownerId, folderId);
             const rows = await tx
                 .select({
                     ...getTableColumns(textsTable),
@@ -261,7 +282,9 @@ export class DrizzleTextContentStore implements TextContentStore {
                 .where(
                     and(
                         eq(textsTable.ownerId, ownerId),
-                        eq(textsTable.folderId, folderId),
+                        folderId === null
+                            ? isNull(textsTable.folderId)
+                            : eq(textsTable.folderId, folderId),
                         eq(textsTable.lifecycle, page.lifecycle ?? 'active'),
                         page.cursor
                             ? gt(textsTable.id, page.cursor)
@@ -280,11 +303,194 @@ export class DrizzleTextContentStore implements TextContentStore {
             };
         });
     }
+    private async confirmDestination(
+        tx: TextsContentTransaction,
+        folderId: string,
+        confirmed?: { shareId: string; shareVersion: number },
+    ) {
+        const [share] = await tx
+            .select()
+            .from(textSharesTable)
+            .where(
+                and(
+                    eq(textSharesTable.kind, 'folder'),
+                    eq(textSharesTable.resourceId, folderId),
+                ),
+            )
+            .for('update');
+        if (
+            (share &&
+                (!confirmed ||
+                    confirmed.shareId !== share.id ||
+                    confirmed.shareVersion !== share.version)) ||
+            (!share && confirmed)
+        )
+            throw new TextDomainError(
+                'shared_folder_confirmation_required',
+                'Folder sharing changed. Confirm that saved translations, including future translations, will be visible through this folder.',
+            );
+    }
+    async pendingJob(ownerId: string, id: string) {
+        return this.db.transaction(async (tx) => {
+            const row = await this.text(tx, ownerId, id);
+            const [job] = await tx
+                .select()
+                .from(textsAiJobsTable)
+                .where(
+                    and(
+                        eq(textsAiJobsTable.ownerId, ownerId),
+                        eq(textsAiJobsTable.textId, id),
+                        or(
+                            inArray(textsAiJobsTable.executionState, [
+                                'queued',
+                                'running',
+                            ]),
+                            and(
+                                eq(
+                                    textsAiJobsTable.executionState,
+                                    'completed',
+                                ),
+                                eq(
+                                    textsAiJobsTable.jobKind,
+                                    'text-translation',
+                                ),
+                                eq(
+                                    textsAiJobsTable.expectedTextVersion,
+                                    row.version,
+                                ),
+                                row.folderId === null
+                                    ? isNull(textsAiJobsTable.folderId)
+                                    : eq(
+                                          textsAiJobsTable.folderId,
+                                          row.folderId,
+                                      ),
+                                gt(
+                                    textsAiJobsTable.expiresAt,
+                                    this.clock.now(),
+                                ),
+                                isNull(
+                                    textsAiJobsTable.cancellationRequestedAt,
+                                ),
+                                isNull(textsAiJobsTable.appliedTextId),
+                            ),
+                        ),
+                    ),
+                )
+                .orderBy(
+                    sql`case when ${textsAiJobsTable.executionState} in ('queued','running') then 0 else 1 end`,
+                    sql`case when ${textsAiJobsTable.executionState} in ('queued','running') then ${textsAiJobsTable.createdAt} end asc`,
+                    desc(textsAiJobsTable.createdAt),
+                    desc(textsAiJobsTable.id),
+                )
+                .limit(1);
+            return job ? exposeTextsJob(job) : null;
+        });
+    }
+    async moveText(ownerId: string, id: string, request: MoveTextRequest) {
+        return this.db.transaction(async (tx) => {
+            await this.activeOwner(tx, ownerId);
+            const [candidate] = await tx
+                .select()
+                .from(textsTable)
+                .where(
+                    and(eq(textsTable.id, id), eq(textsTable.ownerId, ownerId)),
+                );
+            if (!candidate) throw textNotFound();
+            // All membership operations lock both folders in stable order before the text.
+            const folders = [
+                ...new Set(
+                    [candidate.folderId, request.folderId].filter(
+                        (value): value is string => value !== null,
+                    ),
+                ),
+            ].sort();
+            for (const folderId of folders)
+                await this.folder(tx, ownerId, folderId);
+            const [row] = await tx
+                .select()
+                .from(textsTable)
+                .where(eq(textsTable.id, id))
+                .for('update');
+            if (!row || row.lifecycle !== 'active') throw textNotFound();
+            assertTextVersion(row.version, request.expectedVersion);
+            if (row.folderId !== candidate.folderId)
+                throw new TextDomainError(
+                    'version_conflict',
+                    'The text moved. Reload it and try again.',
+                );
+            if (row.folderId === request.folderId) return textDocument(row);
+            const [busy] = await tx
+                .select({ id: textsAiJobsTable.id })
+                .from(textsAiJobsTable)
+                .where(
+                    and(
+                        eq(textsAiJobsTable.ownerId, ownerId),
+                        eq(textsAiJobsTable.textId, id),
+                        or(
+                            inArray(textsAiJobsTable.executionState, [
+                                'queued',
+                                'running',
+                            ]),
+                            and(
+                                eq(
+                                    textsAiJobsTable.executionState,
+                                    'completed',
+                                ),
+                                eq(
+                                    textsAiJobsTable.jobKind,
+                                    'text-translation',
+                                ),
+                                isNull(textsAiJobsTable.appliedTextId),
+                                isNull(
+                                    textsAiJobsTable.cancellationRequestedAt,
+                                ),
+                                gt(
+                                    textsAiJobsTable.expiresAt,
+                                    this.clock.now(),
+                                ),
+                                eq(
+                                    textsAiJobsTable.expectedTextVersion,
+                                    row.version,
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+                .limit(1);
+            if (busy)
+                throw new TextDomainError(
+                    'text_busy',
+                    'Finish or discard the translation before moving this text.',
+                );
+            if (request.folderId)
+                await this.confirmDestination(
+                    tx,
+                    request.folderId,
+                    request.sharedFolderConfirmation,
+                );
+            const [updated] = await tx
+                .update(textsTable)
+                .set({
+                    folderId: request.folderId,
+                    version: row.version + 1,
+                    updatedAt: this.clock.now(),
+                })
+                .where(eq(textsTable.id, id))
+                .returning();
+            await this.revision(tx, updated!);
+            return textDocument(updated!);
+        });
+    }
     async createText(ownerId: string, request: CreateTextRequest) {
         return this.db.transaction(async (tx) => {
-            const { operationId, ...content } = request;
+            const { operationId, sharedFolderConfirmation, ...content } =
+                request;
             const fingerprint = operationId
-                ? this.crypto.fingerprint({ kind: 'create-text', ...content })
+                ? this.crypto.fingerprint({
+                      kind: 'create-text',
+                      ...content,
+                      sharedFolderConfirmation,
+                  })
                 : undefined;
             if (operationId) {
                 await tx.execute(
@@ -310,7 +516,15 @@ export class DrizzleTextContentStore implements TextContentStore {
                     );
                 }
             }
-            await this.folder(tx, ownerId, request.folderId);
+            await this.activeOwner(tx, ownerId);
+            if (request.folderId) {
+                await this.folder(tx, ownerId, request.folderId);
+                await this.confirmDestination(
+                    tx,
+                    request.folderId,
+                    sharedFolderConfirmation,
+                );
+            }
             const now = this.clock.now();
             const [row] = await tx
                 .insert(textsTable)
@@ -633,7 +847,11 @@ export class DrizzleTextContentStore implements TextContentStore {
         ownerId: string,
         access: TextShareAccess,
         request: {
-            destinationFolderId?: string;
+            destinationFolderId?: string | null;
+            sharedFolderConfirmation?: {
+                shareId: string;
+                shareVersion: number;
+            };
             newFolderName?: string;
             sourceTextId?: string;
             name?: string;
@@ -655,6 +873,7 @@ export class DrizzleTextContentStore implements TextContentStore {
                 sourceTextId: request.sourceTextId,
                 name: request.name,
                 expectedVersion: request.expectedVersion,
+                sharedFolderConfirmation: request.sharedFolderConfirmation,
             });
             const [prior] = await tx
                 .select()
@@ -686,7 +905,7 @@ export class DrizzleTextContentStore implements TextContentStore {
             if (!candidate) throw textNotFound();
             await this.activeOwner(tx, ownerId);
             await this.activeOwner(tx, candidate.ownerId);
-            let sourceFolderId = candidate.resourceId;
+            let sourceFolderId: string | null = candidate.resourceId;
             if (access.kind === 'text') {
                 const [source] = await tx
                     .select()
@@ -700,7 +919,7 @@ export class DrizzleTextContentStore implements TextContentStore {
                 .from(textFoldersTable)
                 .where(
                     inArray(textFoldersTable.id, [
-                        sourceFolderId,
+                        ...(sourceFolderId ? [sourceFolderId] : []),
                         ...(request.destinationFolderId
                             ? [request.destinationFolderId]
                             : []),
@@ -762,12 +981,19 @@ export class DrizzleTextContentStore implements TextContentStore {
                         updatedAt: now,
                     });
                 }
-                if (!folderId)
+                if (folderId === undefined)
                     throw new TextDomainError(
                         'invalid_request',
-                        'Choose a destination folder.',
+                        'Choose Independent or a destination folder.',
                     );
-                await this.folder(tx, ownerId, folderId);
+                if (folderId) {
+                    await this.folder(tx, ownerId, folderId);
+                    await this.confirmDestination(
+                        tx,
+                        folderId,
+                        request.sharedFolderConfirmation,
+                    );
+                }
             }
             const sources = child
                 ? [child]
@@ -821,7 +1047,7 @@ export class DrizzleTextContentStore implements TextContentStore {
                         ...source,
                         id,
                         ownerId,
-                        folderId: folderId!,
+                        folderId: folderId ?? null,
                         alignment,
                         version: 1,
                         createdAt: now,

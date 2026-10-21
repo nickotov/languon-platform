@@ -1,0 +1,25 @@
+.trigger {
+    background: var(--background-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    height: var(--size-36);
+    min-height: 0;
+    width: var(--size-36);
+    padding: 0;
+    color: var(--text-secondary);
+}
+
+.trigger:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.rail {
+    height: var(--size-40);
+    width: var(--size-40);
+}
+
+.touch {
+    height: var(--size-44);
+    width: var(--size-44);
+}

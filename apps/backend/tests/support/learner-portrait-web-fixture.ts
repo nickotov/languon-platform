@@ -22,6 +22,8 @@ import { createContextualTutorRunner } from '../../src/modules/conversations/inf
 import type { TutorProviderModel } from '../../src/modules/conversations/infrastructure/ai/accounted-tutor-model';
 import { createKnowledgeService } from '../../src/modules/knowledge/infrastructure/knowledge-composition';
 import { createKnowledgeRoutes } from '../../src/modules/knowledge/interface/http/knowledge.routes';
+import { createNavigationService } from '../../src/modules/navigation/infrastructure/navigation-composition';
+import { createNavigationRoutes } from '../../src/modules/navigation/interface/http/navigation.routes';
 import { eraseConversationSource } from '../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
 import { createTextAiModule } from '../../src/modules/text-ai/infrastructure/text-ai-composition';
 import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
@@ -492,6 +494,14 @@ export async function createLearnerPortraitWebFixture(
         });
         const app = createApp({
             authentication: authentication.options,
+            navigation: createNavigationRoutes({
+                service: createNavigationService({
+                    database: d.database,
+                    authenticate,
+                    rateLimiter: d.rateLimiter,
+                }),
+                policy: authentication.options.policy,
+            }),
             learnerPortraits: createLearnerPortraitRoutes({
                 portraits: learnerPortraits.portraits,
                 interviews: learnerPortraits.interviews,

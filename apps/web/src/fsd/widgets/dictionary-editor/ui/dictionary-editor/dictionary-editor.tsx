@@ -3,6 +3,7 @@
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
 import { languageDirection, languageLabel } from '@/fsd/entities/dictionary';
 import { useSessionStore } from '@/fsd/entities/session';
+import { useRecordResourceOpen } from '@/fsd/features/library-navigation';
 import {
     TrainingLauncher,
     type TrainingLauncherProps,
@@ -50,6 +51,17 @@ export function DictionaryEditor({
     const sessionStatus = useSessionStore((state) => state.status);
 
     const { dictionary, languages, cards } = model.queries;
+    const loaded =
+        dictionary.isSuccess &&
+        languages.isSuccess &&
+        cards.isSuccess &&
+        !dictionary.isPlaceholderData;
+    useRecordResourceOpen(
+        'dictionary',
+        dictionaryId,
+        loaded,
+        requestWithSession,
+    );
 
     const { t, href } = model.state;
 

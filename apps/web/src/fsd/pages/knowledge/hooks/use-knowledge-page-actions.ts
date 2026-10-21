@@ -7,6 +7,7 @@ import type {
 import { knowledgeApi } from '@/fsd/entities/knowledge';
 import type { KnowledgeEditorHandle } from '@/fsd/features/knowledge-notes';
 import { useAuth } from '@/fsd/features/auth';
+import { useRecordResourceOpen } from '@/fsd/features/library-navigation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useDirtyNavigation } from '@/fsd/shared/lib/navigation/use-dirty-navigation';
 import { hasKnowledgeText } from '../lib/workspace-document';
@@ -26,6 +27,12 @@ export function useKnowledgePageActions(noteId: string) {
     const router = useRouter();
     const { requestWithSession } = useAuth();
     const state = useKnowledgeWorkspace(noteId);
+    useRecordResourceOpen(
+        'knowledge',
+        noteId,
+        state.query.isSuccess && !!state.workspace,
+        requestWithSession,
+    );
     const navigation = useDirtyNavigation();
     const editor = useRef<KnowledgeEditorHandle>(null);
     const deleteOperation = useRef(crypto.randomUUID());

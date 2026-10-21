@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 
-import type { DictionaryNavigationState } from '@/fsd/features/dictionary-library';
 import { useI18n } from '@/fsd/shared/i18n';
 
 import type { AppShellState } from '../../hooks/use-app-shell-state';
@@ -11,12 +10,10 @@ import styles from './mobile-drawer.module.css';
 
 export function MobileDrawer({
     authenticated,
-    navigation,
     pending,
     shell,
 }: {
     authenticated: boolean;
-    navigation: DictionaryNavigationState;
     pending: boolean;
     shell: AppShellState;
 }) {
@@ -69,10 +66,13 @@ export function MobileDrawer({
             ref={dialogRef}
         >
             {shell.drawerOpen ? (
-                <div className={styles.panel}>
+                <div
+                    aria-label={t('shell.sidebar')}
+                    className={styles.panel}
+                    role='region'
+                >
                     <Sidebar
                         authenticated={authenticated}
-                        navigation={navigation}
                         pending={pending}
                         onClose={closeDrawer}
                         onNavigate={navigate}

@@ -4,7 +4,9 @@ import {
     PlusIcon,
     RefreshCwIcon,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useAuth } from '@/fsd/features/auth';
+import { NewTextDialog } from '@/fsd/features/text-management';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, EmptyState, InlineAlert, Skeleton } from '@/fsd/shared/ui';
 import type { TextDocument } from '@languon/contracts';
@@ -33,11 +35,15 @@ export function FolderTextList({
     onRestore(document: TextDocument): void;
     onPreview(): void;
 }) {
-    const { t, href } = useI18n();
-    const router = useRouter();
+    const { t } = useI18n();
+    const { requestWithSession } = useAuth();
+    const [creating, setCreating] = useState(false);
+    function closeCreate() {
+        setCreating(false);
+    }
 
     function add() {
-        router.push(href(`/texts/folders/${folderId}/new`));
+        setCreating(true);
     }
 
     function more() {
@@ -86,6 +92,12 @@ export function FolderTextList({
 
     return (
         <section className={styles.section} aria-busy={list.isPending}>
+            <NewTextDialog
+                open={creating}
+                initialFolderId={folderId}
+                onClose={closeCreate}
+                requestWithSession={requestWithSession}
+            />
             {list.isPending && (
                 <div className={styles.rows}>
                     {[0, 1, 2].map((index) => (

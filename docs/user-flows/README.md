@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Sidebar navigation](./sidebar-navigation.md) — whole-library title search,
+  synced recents/pins, contextual flyouts and responsive navigation.
+
 - [Knowledge workspace](./knowledge-workspace.md) — private research drafts,
   editor-aware tutor, explicit publication, conflict recovery and saved-only sharing.
 
@@ -59,7 +62,7 @@ evidence with a repeatable manual/browser/API/device recipe.
   HTTP API.
 - [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md) — private
   saved-field playback for authenticated learners, on-demand generation and cached audio.
-- [Texts folders and aligned reading](./texts.md) — private folders, whole-text translation, contextual vocabulary, sharing and independent copies; frontend awaits design.
+- [Texts folders and aligned reading](./texts.md) — optional folders, whole-text translation, contextual vocabulary, sharing and independent copies.
 - [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
   card authoring, lifecycle recovery, unlisted reading, and private forks.
 - [Flashcard training backend](./flashcard-training-backend.md) — bounded card

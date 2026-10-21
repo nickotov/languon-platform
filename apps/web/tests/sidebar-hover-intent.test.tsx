@@ -1,0 +1,44 @@
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PointerEvent } from 'react';
+import { useHoverIntent } from '@/fsd/widgets/app-shell/hooks/use-hover-intent';
+const mouse = { pointerType: 'mouse' } as PointerEvent;
+const touch = { pointerType: 'touch' } as PointerEvent;
+afterEach(() => vi.useRealTimers());
+describe('rail contextual flyout intent', () => {
+    it('waits 180ms to open and gives 240ms to travel to its panel', () => {
+        vi.useFakeTimers();
+        const { result } = renderHook(useHoverIntent);
+        act(() => result.current.onPointerEnter(mouse));
+        act(() => vi.advanceTimersByTime(179));
+        expect(result.current.open).toBe(false);
+        act(() => vi.advanceTimersByTime(1));
+        expect(result.current.open).toBe(true);
+        expect(result.current.pinned).toBe(false);
+        act(() => result.current.onPointerLeave(mouse));
+        act(() => vi.advanceTimersByTime(239));
+        expect(result.current.open).toBe(true);
+        act(() => result.current.onPointerEnter(mouse));
+        act(() => vi.advanceTimersByTime(1000));
+        expect(result.current.open).toBe(true);
+        act(() => result.current.onPointerLeave(mouse));
+        act(() => vi.advanceTimersByTime(240));
+        expect(result.current.open).toBe(false);
+    });
+    it('ignores touch hover and retains explicitly pinned panels until dismissal', () => {
+        vi.useFakeTimers();
+        const { result, unmount } = renderHook(useHoverIntent);
+        act(() => result.current.onPointerEnter(touch));
+        act(() => vi.advanceTimersByTime(500));
+        expect(result.current.open).toBe(false);
+        act(() => result.current.setOpen(true));
+        act(() => result.current.onPointerLeave(mouse));
+        act(() => vi.advanceTimersByTime(500));
+        expect(result.current.open).toBe(true);
+        act(() => result.current.setOpen(false));
+        expect(result.current.open).toBe(false);
+        act(() => result.current.onPointerEnter(mouse));
+        unmount();
+        expect(vi.getTimerCount()).toBe(0);
+    });
+});

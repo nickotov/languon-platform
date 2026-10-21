@@ -34,6 +34,24 @@ function wrapper({ children }: PropsWithChildren) {
 }
 afterEach(() => vi.restoreAllMocks());
 describe('workspace durable job fencing', () => {
+    it('restores a completed proposal after reload and explicitly discards it on the server', async () => {
+        const completed = {
+            ...job,
+            state: 'completed' as const,
+            completedAt: job.createdAt,
+        };
+        const cancel = vi.spyOn(textsApi, 'cancelAiJob').mockResolvedValue({
+            job: { ...job, state: 'cancelled', completedAt: job.createdAt },
+        });
+        const { result } = renderHook(() => useTextWorkspaceJob(request), {
+            wrapper,
+        });
+        act(() => result.current.restore(completed));
+        expect(result.current.job).toEqual(completed);
+        await act(() => result.current.cancel());
+        expect(cancel).toHaveBeenCalledWith('test-token', id);
+        expect(result.current.job?.state).toBe('cancelled');
+    });
     it('reuses enqueue operation identity after a transport failure and never saves a draft', async () => {
         const create = vi.spyOn(textsApi, 'createText');
         const enqueue = vi

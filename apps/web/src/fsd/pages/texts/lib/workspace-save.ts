@@ -1,5 +1,6 @@
 import {
     TextLanguageSchema,
+    type MoveTextRequest,
     type TextDocument,
     type TextTranslationProposal,
 } from '@languon/contracts';
@@ -12,7 +13,8 @@ import {
 } from './workspace-content';
 export async function persistWorkspace(options: {
     request: RequestWithTextSession;
-    folderId: string;
+    folderId: string | null;
+    sharedFolderConfirmation?: MoveTextRequest['sharedFolderConfirmation'];
     document: TextDocument | null;
     input: WorkspaceInput;
     proposal: TextTranslationProposal | null;
@@ -47,6 +49,12 @@ export async function persistWorkspace(options: {
             await request((token) =>
                 textsApi.createText(token, {
                     folderId,
+                    ...(options.sharedFolderConfirmation
+                        ? {
+                              sharedFolderConfirmation:
+                                  options.sharedFolderConfirmation,
+                          }
+                        : {}),
                     ...(operationId ? { operationId } : {}),
                     title: workspaceTitle(input),
                     ...content,

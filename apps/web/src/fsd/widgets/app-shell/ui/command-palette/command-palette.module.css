@@ -1,0 +1,184 @@
+.dialog {
+    padding: 0;
+    overflow: hidden;
+}
+
+.body {
+    padding: 0;
+}
+
+.search {
+    display: flex;
+    height: var(--size-56);
+    align-items: center;
+    gap: var(--space-12);
+    padding-inline: var(--space-16);
+    border-bottom: 1px solid var(--border-default);
+    color: var(--text-tertiary);
+}
+
+:where(.search) input {
+    min-width: 0;
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--size-16);
+    outline: none;
+}
+
+:where(.search) input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-8);
+    max-height: var(--size-384);
+    overflow-y: auto;
+}
+
+.heading {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 500;
+    padding: var(--space-12) var(--space-12) var(--space-4);
+}
+
+.row {
+    display: flex;
+    border-radius: var(--radius-8);
+    height: var(--size-44);
+    align-items: center;
+}
+
+.row:hover,
+.active {
+    background: var(--background-subtle);
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    flex: 1;
+    min-width: 0;
+    padding-inline: var(--space-12);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-8);
+    color: var(--text-tertiary);
+    font: inherit;
+    cursor: pointer;
+    height: 100%;
+    text-align: start;
+}
+
+:where(.active) .option > svg:first-child {
+    color: var(--primary-default);
+}
+
+.title {
+    color: var(--text-primary);
+    min-width: 0;
+    flex: 1;
+    font-size: var(--size-14);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meta {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    max-width: 35%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pinMenu {
+    width: var(--size-32);
+    height: var(--size-32);
+    padding: 0;
+    opacity: 0;
+}
+
+:where(.row:hover, .row:focus-within, .active) .pinMenu {
+    opacity: 1;
+}
+
+.message {
+    font-size: var(--size-13);
+    color: var(--text-tertiary);
+    padding: var(--space-12);
+}
+
+:where(.message) button {
+    color: var(--primary-default);
+    background: transparent;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.footer {
+    border-top: 1px solid var(--border-default);
+    display: flex;
+    gap: var(--space-16);
+    align-items: center;
+    padding: var(--space-10) var(--space-16);
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+}
+
+:where(.footer) span {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+:where(.footer) kbd {
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--size-20);
+    min-width: var(--size-20);
+    background: var(--background-subtle);
+    font-weight: 500;
+    font-size: var(--size-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-4);
+    padding-inline: var(--space-4);
+}
+
+.option:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+
+@media (max-width: 639px) {
+    .footer {
+        display: none;
+    }
+    .meta {
+        display: none;
+    }
+    .pinMenu {
+        height: var(--size-44);
+        min-height: var(--size-44);
+        width: var(--size-44);
+        opacity: 1;
+    }
+}
+
+.primaryCell {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+}
+.option {
+    width: 100%;
+}

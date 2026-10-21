@@ -3,13 +3,37 @@ import { dictionaryApi } from '@/fsd/entities/dictionary';
 import { textsApi, type RequestWithTextSession } from '@/fsd/entities/texts';
 
 export function useTextWorkspaceData(
-    folderId: string,
+    folderId: string | null,
     textId: string | undefined,
     request: RequestWithTextSession,
     actorId: string,
 ) {
+    const remote = useQuery({
+        queryKey: ['text', actorId, textId],
+        queryFn: ({ signal }) =>
+            request((token) => textsApi.getText(token, textId!, signal)),
+        enabled: Boolean(textId),
+        refetchOnWindowFocus: false,
+    });
+
+    const pendingJob = useQuery({
+        queryKey: ['texts-pending-job', actorId, textId],
+        queryFn: ({ signal }) =>
+            request((token) =>
+                textsApi.getPendingAiJob(token, textId!, signal),
+            ),
+        enabled: Boolean(
+            textId &&
+            remote.isSuccess &&
+            remote.data.text.lifecycle === 'active',
+        ),
+        staleTime: 0,
+        refetchOnWindowFocus: false,
+    });
+    const membership = remote.data ? remote.data.text.folderId : folderId;
     const folder = useQuery({
-        queryKey: ['texts-workspace-folder', actorId, folderId],
+        queryKey: ['texts-workspace-folder', actorId, membership],
+        enabled: membership !== null,
         queryFn: async ({ signal }) => {
             let cursor: string | undefined;
             do {
@@ -20,20 +44,14 @@ export function useTextWorkspaceData(
                         signal,
                     ),
                 );
-                const found = result.data.find((item) => item.id === folderId);
+                const found = result.data.find(
+                    (item) => item.id === membership,
+                );
                 if (found) return found;
                 cursor = result.nextCursor ?? undefined;
             } while (cursor);
             return null;
         },
-    });
-
-    const remote = useQuery({
-        queryKey: ['text', actorId, textId],
-        queryFn: ({ signal }) =>
-            request((token) => textsApi.getText(token, textId!, signal)),
-        enabled: Boolean(textId),
-        refetchOnWindowFocus: false,
     });
 
     const languages = useQuery({
@@ -42,5 +60,5 @@ export function useTextWorkspaceData(
         staleTime: Infinity,
     });
 
-    return { folder, remote, languages };
+    return { folder, remote, languages, pendingJob };
 }

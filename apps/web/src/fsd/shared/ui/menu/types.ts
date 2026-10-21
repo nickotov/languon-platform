@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { TooltipProps } from '../tooltip/tooltip';
 
 export type MenuItem = {
     separatorBefore?: boolean;
@@ -26,4 +27,5 @@ export type MenuProps = {
     variant?: 'default' | 'secondary';
     showChevron?: boolean;
     showTooltip?: boolean;
+    tooltipPlacement?: TooltipProps['placement'];
 };

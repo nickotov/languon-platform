@@ -6,7 +6,7 @@ import {
     grantDisposableMigrationPurpose,
     runPostgresMigrations,
 } from '@languon/database';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
     createTestPostgresClient,
     getMigrationsFolder,
@@ -18,8 +18,11 @@ import {
 describe.runIf(isDatabaseIntegrationEnabled())(
     'conversation existing-schema migration',
     () => {
-        const client = createTestPostgresClient();
-        afterAll(async () => client.end());
+        let client: ReturnType<typeof createTestPostgresClient>;
+        beforeAll(() => {
+            client = createTestPostgresClient();
+        });
+        afterAll(async () => client?.end());
         it('upgrades pre-conversation data and queued legacy work without rewriting it, and reruns safely', async () => {
             await resetTestDatabase(client);
             const folder = await mkdtemp(

@@ -27,24 +27,32 @@ export async function lockTextSource(
         .where(eq(usersTable.id, candidate.ownerId))
         .for('share');
     if (owner?.status !== 'active') throw textNotFound();
-    const [folder] = await tx
-        .select()
-        .from(textFoldersTable)
-        .where(eq(textFoldersTable.id, candidate.folderId))
-        .for('update');
+    const [folder] = candidate.folderId
+        ? await tx
+              .select()
+              .from(textFoldersTable)
+              .where(eq(textFoldersTable.id, candidate.folderId))
+              .for('update')
+        : [];
     const [text] = await tx
         .select()
         .from(textsTable)
         .where(eq(textsTable.id, textId))
         .for('update');
     if (
-        !folder ||
         !text ||
-        text.ownerId !== folder.ownerId ||
-        folder.lifecycle !== 'active' ||
+        (candidate.folderId !== null &&
+            (!folder ||
+                text.ownerId !== folder.ownerId ||
+                folder.lifecycle !== 'active')) ||
         text.lifecycle !== 'active'
     )
         throw textNotFound();
+    if (text.folderId !== candidate.folderId)
+        throw new TextDomainError(
+            'version_conflict',
+            'The text moved. Reload it and try again.',
+        );
     return { folder, text };
 }
 export async function resolveTextSource(

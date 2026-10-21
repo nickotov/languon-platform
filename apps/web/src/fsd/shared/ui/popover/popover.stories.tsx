@@ -135,3 +135,22 @@ export const OversizedContent: StoryObj<typeof meta> = {
     },
     parameters: { viewport: { defaultViewport: 'mobile1' } },
 };
+
+export const NestedPanel: StoryObj<typeof meta> = {
+    args: {
+        children: (
+            <>
+                <PopoverTrigger>Open library flyout</PopoverTrigger>
+                <PopoverContent aria-label='Library flyout' side='right'>
+                    <p>Escape dismisses one layer at a time.</p>
+                    <Popover>
+                        <PopoverTrigger>Resource actions</PopoverTrigger>
+                        <PopoverContent aria-label='Resource actions'>
+                            <button type='button'>Pin resource</button>
+                        </PopoverContent>
+                    </Popover>
+                </PopoverContent>
+            </>
+        ),
+    },
+};

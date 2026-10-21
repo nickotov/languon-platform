@@ -1,6 +1,6 @@
-import { type TextDocument } from '@languon/contracts';
+import { type MoveTextRequest, type TextDocument } from '@languon/contracts';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { textsApi, type RequestWithTextSession } from '@/fsd/entities/texts';
 import {
     emptyWorkspaceInput,
@@ -20,10 +20,11 @@ import { useTextWorkspaceJob } from './use-text-workspace-job';
 import { useTextWorkspaceAuto } from './use-text-workspace-auto';
 
 export function useTextWorkspace(
-    folderId: string,
+    folderId: string | null,
     textId: string | undefined,
     sessionRequest: RequestWithTextSession,
     actorId: string,
+    sharedFolderConfirmation?: MoveTextRequest['sharedFolderConfirmation'],
 ) {
     const { request, isCurrent } = useTextWorkspaceSession(
         actorId,
@@ -42,9 +43,10 @@ export function useTextWorkspace(
     const [expired, setExpired] = useState(false);
     const translation = useTextWorkspaceJob(request, actorId, sessionRequest);
     const detection = useTextWorkspaceJob(request, actorId, sessionRequest);
+    const membership = document ? document.folderId : folderId;
     const auto = useTextWorkspaceAuto({
         input,
-        folderId,
+        folderId: membership,
         document,
         detection,
         translation,
@@ -53,7 +55,7 @@ export function useTextWorkspace(
     });
     const [suggestionDismissed, setSuggestionDismissed] = useState(false);
 
-    const { folder, remote, languages } = useTextWorkspaceData(
+    const { folder, remote, languages, pendingJob } = useTextWorkspaceData(
         folderId,
         textId,
         request,
@@ -71,11 +73,21 @@ export function useTextWorkspace(
         setShowErrors(false);
         client.setQueryData(['text', actorId, next.id], { text: next });
         void client.invalidateQueries({ queryKey: ['texts'] });
+        void client.invalidateQueries({
+            queryKey: ['library-navigation', actorId],
+        });
     }
 
     useEffect(() => {
         if (remote.data && !document) adopt(remote.data.text);
     }, [remote.data, document]);
+
+    const recovered = useRef(new Set<string>());
+    useEffect(() => {
+        const pending = pendingJob.data?.job;
+        if (!document || !pending || recovered.current.has(pending.id)) return;
+        if (translation.restore(pending)) recovered.current.add(pending.id);
+    }, [document, pendingJob.data, translation.job?.state]);
 
     const result = translation.job?.result;
     const proposal = result && 'alignment' in result ? result : null;
@@ -110,7 +122,7 @@ export function useTextWorkspace(
         setSuggestionDismissed(false);
         await detection.start(
             {
-                folderId,
+                folderId: membership,
                 sourceText: input.sourceText,
                 operationId: crypto.randomUUID(),
             },
@@ -120,7 +132,8 @@ export function useTextWorkspace(
 
     const { saving, saveError, save, clearSaveError } = useTextWorkspaceSave({
         request,
-        folderId,
+        folderId: membership,
+        sharedFolderConfirmation,
         document,
         input,
         mode,
@@ -174,13 +187,22 @@ export function useTextWorkspace(
         setConflict(null);
     }
 
-    function discardProposal() {
+    async function discardProposal() {
+        if (translation.job?.state === 'completed') await translation.cancel();
         translation.clear();
         setExpired(false);
+        await pendingJob.refetch();
+    }
+
+    async function cancelAi() {
+        if (translation.job) recovered.current.delete(translation.job.id);
+        await auto.cancel();
+        if (textId) await pendingJob.refetch();
     }
 
     function updateMetadata(next: TextDocument) {
         setDocument(next);
+        client.setQueryData(['text', actorId, next.id], { text: next });
         setInput((previous) => ({ ...previous, title: next.title }));
         setBaseline((previous) => ({ ...previous, title: next.title }));
     }
@@ -206,8 +228,17 @@ export function useTextWorkspace(
 
     return {
         requestWithSession: request,
+        requiresFolderConsent:
+            !document &&
+            Boolean(folder.data?.isShared) &&
+            !(
+                sharedFolderConfirmation?.shareId === folder.data?.shareId &&
+                sharedFolderConfirmation?.shareVersion ===
+                    folder.data?.shareVersion
+            ),
         folder,
         remote,
+        pendingJob,
         languages,
         document,
         input,
@@ -223,7 +254,7 @@ export function useTextWorkspace(
         autoDetecting: auto.detecting,
         autoError: auto.error,
         aiActive: auto.detecting || translation.active || detection.active,
-        cancelAi: auto.invalidate,
+        cancelAi,
         detection,
         detectionResult,
         suggestionDismissed,

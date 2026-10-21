@@ -62,6 +62,53 @@ describe('public text copy idempotency', () => {
             nextCursor: null,
         });
     });
+    it('requires a current shared-folder confirmation before copying into it', async () => {
+        vi.mocked(textsApi.listFolders).mockResolvedValue({
+            data: [
+                {
+                    id: 'destination',
+                    name: 'Shared',
+                    lifecycle: 'active',
+                    isShared: true,
+                    shareId: 'share-target',
+                    shareVersion: 2,
+                } as never,
+            ],
+            nextCursor: null,
+        });
+        vi.mocked(textsApi.copySharedText).mockResolvedValue({
+            id: 'new-copy',
+        } as never);
+        vi.mocked(textsApi.getText).mockResolvedValue({
+            text: { folderId: 'destination' },
+        } as never);
+        const { result } = setup();
+        await waitFor(() =>
+            expect(result.current.folders.isSuccess).toBe(true),
+        );
+        act(() => {
+            result.current.setDestination('existing');
+            result.current.setFolderId('destination');
+        });
+        expect(result.current.valid).toBe(false);
+        await act(async () => {
+            await result.current.submit();
+        });
+        expect(textsApi.copySharedText).not.toHaveBeenCalled();
+        act(() => result.current.confirmShare(true));
+        await act(async () => {
+            await result.current.submit();
+        });
+        expect(
+            vi.mocked(textsApi.copySharedText).mock.calls[0]![3],
+        ).toMatchObject({
+            folderId: 'destination',
+            sharedFolderConfirmation: {
+                shareId: 'share-target',
+                shareVersion: 2,
+            },
+        });
+    });
     it('locks immediate duplicate clicks and reuses an operation after an ambiguous failure', async () => {
         let reject!: (reason: Error) => void;
         vi.mocked(textsApi.copySharedText).mockImplementationOnce(
@@ -94,7 +141,7 @@ describe('public text copy idempotency', () => {
         const calls = vi.mocked(textsApi.copySharedText).mock.calls;
         expect(calls[0]![3].operationId).toBe(calls[1]![3].operationId);
         expect(calls[1]![3]).toMatchObject({
-            newFolderName: 'My copy',
+            folderId: null,
             expectedVersion: 3,
         });
         expect(onDone).toHaveBeenCalledWith('destination');

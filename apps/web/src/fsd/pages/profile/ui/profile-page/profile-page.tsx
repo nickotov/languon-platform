@@ -396,13 +396,18 @@ function AccountTab({
                 </p>
             </SettingsSection>
             <div id='learner-portrait'>
-                <PortraitEntryCard variant='settings' requestWithSession={requestWithSession} />
+                <PortraitEntryCard
+                    variant='settings'
+                    requestWithSession={requestWithSession}
+                />
             </div>
-            <ModelPreferenceSection
-                onDirtyChange={onModelDirtyChange}
-                onOpenCredits={onOpenCredits}
-                requestWithSession={requestWithSession}
-            />
+            <div id='ai-preferences'>
+                <ModelPreferenceSection
+                    onDirtyChange={onModelDirtyChange}
+                    onOpenCredits={onOpenCredits}
+                    requestWithSession={requestWithSession}
+                />
+            </div>
             <ConversationDefaults
                 requestWithSession={requestWithSession}
                 onDirtyChange={onChatDirtyChange}

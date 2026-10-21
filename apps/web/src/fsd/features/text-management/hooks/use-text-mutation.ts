@@ -31,6 +31,7 @@ export function useTextMutation(request: RequestWithTextSession) {
             await Promise.all([
                 query.invalidateQueries({ queryKey: ['texts'] }),
                 query.invalidateQueries({ queryKey: ['text-folders'] }),
+                query.invalidateQueries({ queryKey: ['library-navigation'] }),
             ]);
             if (actor !== useSessionStore.getState().user?.id) return;
             saved(result);
@@ -42,11 +43,13 @@ export function useTextMutation(request: RequestWithTextSession) {
                 });
         } catch (cause) {
             if (actor !== useSessionStore.getState().user?.id) return;
-            const message =
-                cause instanceof TextsApiError &&
-                cause.detail.code === 'version_conflict'
-                    ? t('texts.manage.conflict')
-                    : t('texts.manage.failed');
+            let message = t('texts.manage.failed');
+            if (cause instanceof TextsApiError) {
+                if (cause.detail.code === 'version_conflict')
+                    message = t('texts.manage.conflict');
+                else if (cause.detail.code === 'text_busy')
+                    message = t('texts.organization.busy');
+            }
             setError(message);
             showToast({
                 content: message,

@@ -12,3 +12,4 @@ export * from './texts';
 export * from './contextual-assistant';
 export * from './learner-portrait';
 export * from './portrait-interview';
+export * from './navigation';

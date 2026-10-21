@@ -29,9 +29,9 @@ export const textsAiJobsTable = pgTable(
         ownerId: uuid('owner_id')
             .notNull()
             .references(() => usersTable.id, { onDelete: 'cascade' }),
-        folderId: uuid('folder_id')
-            .notNull()
-            .references(() => textFoldersTable.id, { onDelete: 'cascade' }),
+        folderId: uuid('folder_id').references(() => textFoldersTable.id, {
+            onDelete: 'cascade',
+        }),
         textId: uuid('text_id').references(() => textsTable.id, {
             onDelete: 'cascade',
         }),
@@ -149,7 +149,7 @@ export const textsAiJobsTable = pgTable(
         index('texts_ai_jobs_expiry_idx').on(t.expiresAt),
         check(
             'texts_ai_jobs_kind_format',
-            sql`(${t.jobKind}='text-detection' and ${t.format}='text-detection:v1') or (${t.jobKind}='text-translation' and ${t.format} in ('text-translation:v1','text-translation:v2'))`,
+            sql`(${t.jobKind}='text-detection' and ${t.format} in ('text-detection:v1','text-detection:v2')) or (${t.jobKind}='text-translation' and ${t.format} in ('text-translation:v1','text-translation:v2','text-translation:v3'))`,
         ),
         check(
             'texts_ai_jobs_versions',

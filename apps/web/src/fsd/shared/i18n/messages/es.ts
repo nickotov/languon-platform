@@ -1,3 +1,4 @@
+import { navigationEs } from './navigation';
 import { knowledgeEs } from './knowledge';
 import { textsLibraryEs } from './texts-library';
 import { textsReadingEs } from './texts-reading';
@@ -8,6 +9,7 @@ import { profileFeatureMessages, type Messages } from './en';
 import { trainingEs } from './training';
 
 export const es = {
+    ...navigationEs,
     ...knowledgeEs,
     ...textsLibraryEs,
     ...textsReadingEs,

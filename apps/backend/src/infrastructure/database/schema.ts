@@ -1,6 +1,8 @@
 import * as portraitCallSchema from '../../modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';
 import * as learnerPortraitSchema from '../../modules/learner-portraits/infrastructure/persistence/drizzle/schema';
 import { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
+import { navigationResourcesTable } from '../../modules/navigation/infrastructure/persistence/drizzle/schema';
+export { navigationResourcesTable } from '../../modules/navigation/infrastructure/persistence/drizzle/schema';
 export { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
 import * as knowledgeSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/schema';
 import * as conversationSchema from '../../modules/conversations/infrastructure/persistence/drizzle/schema';
@@ -139,6 +141,7 @@ import {
 export const databaseSchema = {
     ...learnerPortraitSchema,
     ...portraitCallSchema,
+    navigationResources: navigationResourcesTable,
     speechAudioBlobs: speechAudioBlobsTable,
     ...knowledgeSchema,
     ...conversationSchema,

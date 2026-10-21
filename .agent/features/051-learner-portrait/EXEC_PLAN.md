@@ -3,6 +3,10 @@
 Feature: [FEATURE.md](FEATURE.md)
 Last updated: 2026-10-21
 
+Integration correction, 2026-10-21: user requires previously implemented feature050 sidebar retained alongside portrait051. The earlier decision to isolate portrait on main omitted that expected working UI. Restoration proceeds under feature050 on feature/sidebar-portrait-restoration; preserve portrait screens, profile entry and focused interview route. Excluding the portrait prototype sidebar remains correct; excluding the user's already built sidebar was not.
+
+Verified correction: saved sidebar restored, both feature compositions retained, real combined portrait journeys backend2/browser2 and sidebar/Text/auth browser4/4 pass. Main portrait-owned core files remain unchanged. Feature050 E11/source manifest and independent expanded review bind the integrated source. Canonical portrait migration history0000–0079 is preserved and sidebar0080 follows it. Local development startup and HTTP health pass with restored sidebar metadata; original branches/stash/database/backups remain intact.
+
 ## Goal and specification
 
 Implement backend logic, verify it, then publish the detailed Magic Patterns prompt for the user. After the selected generated design returns, deliver and verify UI. FEATURE.md owns POR-01–POR-14; design LP-01–LP-30 owns confirmed decisions.

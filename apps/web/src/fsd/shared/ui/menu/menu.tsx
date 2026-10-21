@@ -30,6 +30,7 @@ export function Menu({
     variant = 'default',
     showChevron = false,
     showTooltip = false,
+    tooltipPlacement = 'top',
 }: MenuProps) {
     const id = useId();
     const panelRef = useRef<HTMLDivElement>(null);
@@ -170,7 +171,11 @@ export function Menu({
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <div className={styles.root}>
-                <Tooltip content={label} disabled={!showTooltip}>
+                <Tooltip
+                    content={label}
+                    disabled={!showTooltip}
+                    placement={tooltipPlacement}
+                >
                     <PopoverAnchor asChild>
                         <button
                             aria-controls={id}

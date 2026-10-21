@@ -32,9 +32,12 @@ export function useSharedTextCopy({
     const authority = useRef(0);
     const mounted = useRef(true);
     const controller = useRef<AbortController | null>(null);
-    const [destination, setDestination] = useState('new');
+    const [destination, setDestination] = useState(
+        target.mode === 'text' ? 'independent' : 'new',
+    );
     const [name, setName] = useState(target.defaultName);
     const [folderId, setFolderId] = useState('');
+    const [confirmedShare, setConfirmedShare] = useState<string | null>(null);
     const [state, setState] = useState<'idle' | 'working' | 'failed'>('idle');
     const operation = useRef<{ fingerprint: string; id: string } | null>(null);
     const busy = useRef(false);
@@ -52,9 +55,9 @@ export function useSharedTextCopy({
             controller.current?.abort();
             busy.current = false;
             operation.current = null;
-            initialized.current = false;
-            setDestination('new');
+            setDestination(target.mode === 'text' ? 'independent' : 'new');
             setFolderId('');
+            setConfirmedShare(null);
             setName(target.defaultName);
             setState('idle');
         });
@@ -105,26 +108,25 @@ export function useSharedTextCopy({
         },
     });
 
-    const initialized = useRef(false);
-
-    useEffect(() => {
-        if (initialized.current || !folders.data) return;
-        initialized.current = true;
-        const first = folders.data[0];
-        if (
-            target.mode === 'text' &&
-            first &&
-            state === 'idle' &&
-            !operation.current
-        ) {
-            setDestination('existing');
-            setFolderId(first.id);
-        }
-    }, [folders.data, target.mode, state]);
+    const selectedFolder =
+        destination === 'existing'
+            ? folders.data?.find((folder) => folder.id === folderId)
+            : undefined;
+    const shareSnapshot = selectedFolder?.isShared
+        ? `${selectedFolder.shareId}:${selectedFolder.shareVersion}`
+        : null;
+    const needsConfirmation = Boolean(
+        shareSnapshot && confirmedShare !== shareSnapshot,
+    );
+    function confirmShare(value: boolean) {
+        setConfirmedShare(value ? shareSnapshot : null);
+    }
     const overLimit = target.mode === 'folder' && target.total > 500;
-    const valid =
-        destination === 'existing' ? Boolean(folderId) : Boolean(name.trim());
+    const validDestination =
+        destination === 'independent' ||
+        (destination === 'existing' ? Boolean(folderId) : Boolean(name.trim()));
 
+    const valid = validDestination && !needsConfirmation;
     async function submit() {
         if (busy.current || overLimit || !valid || !allowed(authority.current))
             return;
@@ -143,10 +145,11 @@ export function useSharedTextCopy({
         setState('working');
         try {
             const operationId = operation.current.id;
-            const destinationBody =
-                destination === 'existing'
-                    ? { folderId }
-                    : { newFolderName: name.trim() };
+            const destinationBody = copyDestination(
+                destination,
+                folderId,
+                name,
+            );
             const result = await requestWithSession((token) => {
                 assertActor(epoch);
                 if (target.mode === 'folder')
@@ -164,6 +167,16 @@ export function useSharedTextCopy({
                     operationId,
                     expectedVersion: target.version!,
                     ...destinationBody,
+                    ...(shareSnapshot &&
+                    selectedFolder?.shareId &&
+                    selectedFolder.shareVersion != null
+                        ? {
+                              sharedFolderConfirmation: {
+                                  shareId: selectedFolder.shareId,
+                                  shareVersion: selectedFolder.shareVersion,
+                              },
+                          }
+                        : {}),
                 };
                 if (kind === 'folder')
                     return textsApi.copySharedFolderText(
@@ -190,9 +203,14 @@ export function useSharedTextCopy({
                     return textsApi.getText(token, result.id, abort.signal);
                 });
                 assertActor(epoch);
-                destinationId = copied.text.folderId;
+                destinationId = copied.text.folderId ?? '';
             }
-            await client.invalidateQueries({ queryKey: ['texts', userId] });
+            await Promise.all([
+                client.invalidateQueries({ queryKey: ['texts', userId] }),
+                client.invalidateQueries({
+                    queryKey: ['library-navigation', userId],
+                }),
+            ]);
             assertActor(epoch);
             onDone(destinationId);
         } catch {
@@ -204,6 +222,12 @@ export function useSharedTextCopy({
 
     return {
         folders,
+        needsConfirmation,
+        sharedDestination: Boolean(shareSnapshot),
+        confirmedShare: Boolean(
+            shareSnapshot && confirmedShare === shareSnapshot,
+        ),
+        confirmShare,
         destination,
         setDestination,
         name,
@@ -215,4 +239,14 @@ export function useSharedTextCopy({
         valid,
         submit,
     };
+}
+
+function copyDestination(
+    destination: string,
+    folderId: string,
+    name: string,
+): { folderId: string | null } | { newFolderName: string } {
+    if (destination === 'independent') return { folderId: null };
+    if (destination === 'existing') return { folderId };
+    return { newFolderName: name.trim() };
 }

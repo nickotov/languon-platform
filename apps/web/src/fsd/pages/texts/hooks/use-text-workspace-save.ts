@@ -1,4 +1,8 @@
-import type { TextDocument, TextTranslationProposal } from '@languon/contracts';
+import type {
+    MoveTextRequest,
+    TextDocument,
+    TextTranslationProposal,
+} from '@languon/contracts';
 import { useRef, useState } from 'react';
 import {
     textsApi,
@@ -13,7 +17,8 @@ import {
 import { persistWorkspace } from '../lib/workspace-save';
 type Options = {
     request: RequestWithTextSession;
-    folderId: string;
+    folderId: string | null;
+    sharedFolderConfirmation?: MoveTextRequest['sharedFolderConfirmation'];
     document: TextDocument | null;
     input: WorkspaceInput;
     mode: 'compose' | 'read' | 'edit';
@@ -101,6 +106,12 @@ export function useTextWorkspaceSave(options: Options) {
                 operationId: creationOperation.current.id,
                 request,
                 folderId,
+                ...(options.sharedFolderConfirmation
+                    ? {
+                          sharedFolderConfirmation:
+                              options.sharedFolderConfirmation,
+                      }
+                    : {}),
                 document,
                 input,
                 proposal,

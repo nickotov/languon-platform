@@ -15,8 +15,6 @@
     flex-shrink: 0;
 }
 .fill {
-    --app-topbar-height: 0px;
-    --app-sidebar-width: 0px;
     height: 100%;
     align-items: stretch;
 }
@@ -58,8 +56,8 @@
     flex-direction: column;
     overflow: hidden;
 
-    margin-inline: 8px;
-    box-shadow: 0 0 8px 2px rgba(0, 0, 0, .15);
+    margin-inline: var(--space-8);
+    box-shadow: 0 0 var(--size-8) var(--size-2) rgba(0, 0, 0, 0.15);
 }
 @media (min-width: 1024px) {
     .layout:where(

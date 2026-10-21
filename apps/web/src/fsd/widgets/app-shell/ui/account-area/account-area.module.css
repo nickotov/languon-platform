@@ -1,7 +1,7 @@
 .footer {
     border-top: 1px solid var(--border-default);
     flex: none;
-    padding: var(--space-12);
+    padding: var(--space-8);
 }
 
 .trigger,
@@ -16,20 +16,20 @@
 }
 
 .trigger {
-    border-radius: var(--radius-md);
-    gap: var(--space-12);
-    min-height: var(--size-52);
+    border-radius: var(--radius-8);
+    gap: var(--space-10);
+    min-height: var(--size-48);
     padding: var(--space-6) var(--space-8);
     text-align: start;
     width: 100%;
 }
 
 .railTrigger {
-    border-radius: var(--radius-full);
-    height: var(--size-44);
+    border-radius: var(--radius-8);
+    height: var(--size-40);
     justify-content: center;
     margin: 0 auto;
-    width: var(--size-44);
+    width: var(--size-40);
 }
 
 .trigger:hover,
@@ -72,15 +72,15 @@
 }
 
 .popover {
-    max-width: min(var(--size-272), calc(100vw - var(--size-24)));
+    max-width: min(var(--size-288), calc(100vw - var(--size-24)));
     padding: 0;
-    width: var(--size-272);
+    width: var(--size-288);
 }
 
 .inlineMenu {
     background: var(--background-elevated);
     border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-8);
     margin-top: var(--space-8);
 }
 
@@ -102,7 +102,7 @@
     font-size: var(--size-14);
     font-weight: 500;
     gap: var(--space-10);
-    min-height: var(--size-40);
+    min-height: var(--size-36);
     padding: var(--space-8);
     text-align: start;
     text-decoration: none;
@@ -121,4 +121,24 @@
 .divider {
     background: var(--border-default);
     height: var(--size-1);
+}
+
+.railFooter {
+    flex: none;
+    padding: 0;
+}
+
+.menuIdentity {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-8) var(--space-8) var(--space-12);
+}
+
+.signOut {
+    color: var(--danger-default);
+}
+
+.signOut:hover:not(:disabled) {
+    background: var(--danger-subtle);
 }

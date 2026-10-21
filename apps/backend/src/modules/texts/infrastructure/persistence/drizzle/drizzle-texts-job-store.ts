@@ -157,8 +157,12 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
             }
             const format =
                 kind === 'text-translation'
-                    ? 'text-translation:v2'
-                    : 'text-detection:v1';
+                    ? input.folderId === null
+                        ? 'text-translation:v3'
+                        : 'text-translation:v2'
+                    : input.folderId === null
+                      ? 'text-detection:v2'
+                      : 'text-detection:v1';
             const execution = await this.policy!.resolveExecution(
                 tx,
                 ownerId,
@@ -295,6 +299,22 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     .from(jobs)
                     .where(eq(jobs.id, job.id));
                 return exposeTextsJob(updated!);
+            }
+            if (
+                job.executionState === 'completed' &&
+                job.jobKind === 'text-translation' &&
+                !job.appliedTextId
+            ) {
+                const [discarded] = await tx
+                    .update(jobs)
+                    .set({
+                        cancellationRequestedAt: context.now,
+                        resultPayload: null,
+                        updatedAt: context.now,
+                    })
+                    .where(eq(jobs.id, job.id))
+                    .returning();
+                return exposeTextsJob(discarded!);
             }
             return exposeTextsJob(job);
         });

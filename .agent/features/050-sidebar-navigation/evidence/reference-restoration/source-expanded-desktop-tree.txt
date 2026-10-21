@@ -1,0 +1,167 @@
+- generic [ref=e1] clickable [onclick]
+  - complementary "Main navigation"
+    - link "Languon home" [ref=e2]
+      - image "Languon"
+        - StaticText "Languon"
+    - button "Collapse sidebar (⌘ \\)" [ref=e3]
+    - button "Search" [ref=e4]
+      - StaticText "Search"
+    - button "Create new…" [expanded=false, ref=e8]
+    - navigation "Main navigation" [ref=e5]
+      - group
+        - list
+          - listitem [level=1]
+            - link "Home" [ref=e23]
+              - StaticText "Home"
+      - group "Library"
+        - paragraph
+          - StaticText "Library"
+        - list
+          - listitem [level=1]
+            - generic
+              - link "Dictionaries" [ref=e24]
+                - StaticText "Dictionaries"
+              - generic
+                - button "New dictionary" [ref=e29]
+                - button "Hide recent: Dictionaries" [expanded=true, ref=e30]
+            - list
+              - listitem [level=2]
+                - link "Business English EN → RU" [ref=e35]
+                  - StaticText "Business English"
+                  - StaticText "EN → RU"
+              - listitem [level=2]
+                - link "Phrasal verbs EN → RU" [ref=e36]
+                  - StaticText "Phrasal verbs"
+                  - StaticText "EN → RU"
+              - listitem [level=2]
+                - link "Français — vocabulaire B1 FR → RU" [ref=e37]
+                  - StaticText "Français — vocabulaire B1"
+                  - StaticText "FR → RU"
+              - listitem [level=2]
+                - link "IELTS Academic Word List — Sublist 3 EN → RU" [ref=e38]
+                  - StaticText "IELTS Academic Word List — Sublist 3"
+                  - StaticText "EN → RU"
+            - link "View all dictionaries · 6" [ref=e25]
+              - StaticText "View all dictionaries"
+              - StaticText "· "
+              - StaticText "6"
+          - listitem [level=1]
+            - generic
+              - link "Texts" [ref=e26]
+                - StaticText "Texts"
+              - generic
+                - button "New text" [ref=e31]
+                - button "Show recent: Texts" [expanded=false, ref=e32]
+          - listitem [level=1]
+            - generic
+              - link "Knowledge" [ref=e27]
+                - StaticText "Knowledge"
+              - generic
+                - button "New document" [ref=e33]
+                - button "Hide recent: Knowledge" [expanded=true, ref=e34]
+            - list
+              - listitem [level=2]
+                - link "Present Perfect vs Past Simple Pinned" [ref=e39]
+                  - StaticText "Present Perfect vs Past Simple"
+                  - image "Pinned"
+              - listitem [level=2]
+                - link "Le subjonctif : quand l’utiliser" [ref=e40]
+                  - StaticText "Le subjonctif : quand l’utiliser"
+              - listitem [level=2]
+                - link "Phrasal verbs with “get” — cheat sheet" [ref=e41]
+                  - StaticText "Phrasal verbs with “get” — cheat sheet"
+              - listitem [level=2]
+                - link "Conditionals 0–3 overview" [ref=e42]
+                  - StaticText "Conditionals 0–3 overview"
+            - link "View all documents · 5" [ref=e28]
+              - StaticText "View all documents"
+              - StaticText "· "
+              - StaticText "5"
+    - button "Account and preferences" [expanded=false, ref=e6]
+      - image "Anna Volkova"
+      - StaticText "Anna Volkova"
+      - StaticText "anna.volkova@gmail.com"
+  - main
+    - navigation "Breadcrumb" [ref=e7]
+      - link "Knowledge" [ref=e9]
+      - StaticText "Present Perfect vs Past Simple"
+    - status
+      - StaticText "Saved"
+    - article
+      - heading [level=1, ref=e10] editable [contenteditable]: Present Perfect vs Past Simple
+        - StaticText "Present Perfect vs Past Simple"
+      - generic "Document body" [ref=e11] editable [contenteditable]: Both tenses describe the past, but they answer different questions. The Present Perfect connects a past action to the present moment; the Past Simple places it at a finished time.
+
+Present Perfect
+
+Use it for experiences, recent changes and unfinished time periods: “I have visited Paris twice.” “She has just finished the report.”
+
+Past Simple
+
+Use it when the time is finished or stated: “I visited Paris in 2019.” “She finished the report yesterday.”
+
+Signal words
+
+Present Perfect: already, yet, ever, never, since, for. Past Simple: yesterday, ago, last week, in 2019.
+
+AI suggestion
+
+I ___ (never / be) to Lisbon.
+She ___ (move) to Berlin in 2021.
+We ___ (already / finish) the first module.
+        - paragraph
+          - StaticText "Both tenses describe the past, but they answer different questions. The Present Perfect connects a past action to the present moment; the Past Simple places it at a finished time."
+        - generic
+          - heading "Present Perfect" [level=2, ref=e16]
+          - paragraph
+            - StaticText "Use it for experiences, recent changes and unfinished time periods: “I have visited Paris twice.” “She has just finished the report.”"
+        - generic
+          - heading "Past Simple" [level=2, ref=e17]
+          - paragraph
+            - StaticText "Use it when the time is finished or stated: “I visited Paris in 2019.” “She finished the report yesterday.”"
+        - generic
+          - heading "Signal words" [level=2, ref=e18]
+          - paragraph
+            - StaticText "Present Perfect: already, yet, ever, never, since, for. Past Simple: yesterday, ago, last week, in 2019."
+        - paragraph
+          - StaticText "AI suggestion"
+        - list
+          - listitem [level=1]
+            - ListMarker "1. "
+            - StaticText "I ___ (never / be) to Lisbon."
+          - listitem [level=1]
+            - ListMarker "2. "
+            - StaticText "She ___ (move) to Berlin in 2021."
+          - listitem [level=1]
+            - ListMarker "3. "
+            - StaticText "We ___ (already / finish) the first module."
+    - complementary
+      - heading "AI assistant" [level=2, ref=e12]
+      - paragraph
+        - StaticText "Context: this document"
+      - button "Close AI assistant" [ref=e13]
+      - log
+        - list
+          - listitem "Your message" [level=1, ref=e19]
+            - paragraph
+              - StaticText "Can you add three practice sentences to the “Signal words” section?"
+            - StaticText "Sent"
+          - listitem [level=1]
+            - article "Message from Languon AI" [ref=e21]
+              - StaticText "Languon AI"
+              - paragraph
+                - StaticText "Sure — here are three gap-fill sentences. I’ve inserted them as a suggestion below “Signal words”; accept or edit them in the document."
+          - listitem "Your message" [level=1, ref=e20]
+            - paragraph
+              - StaticText "Why is “I have seen him yesterday” wrong?"
+            - StaticText "Sent"
+          - listitem [level=1]
+            - article "Message from Languon AI" [ref=e22]
+              - StaticText "Languon AI"
+              - paragraph
+                - StaticText "“Yesterday” marks a finished time, so English requires the Past Simple: “I saw him yesterday.” Use the Present Perfect only without a finished time marker."
+      - form
+        - LabelText
+          - StaticText "Ask about this document…"
+        - textbox "Ask about this document…" [ref=e14]
+        - button "Send" [disabled, ref=e15]

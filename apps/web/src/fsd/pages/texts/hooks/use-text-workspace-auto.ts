@@ -7,7 +7,7 @@ type Job = ReturnType<typeof useTextWorkspaceJob>;
 
 export function useTextWorkspaceAuto(options: {
     input: WorkspaceInput;
-    folderId: string;
+    folderId: string | null;
     document: TextDocument | null;
     detection: Job;
     translation: Job;
@@ -36,13 +36,20 @@ export function useTextWorkspaceAuto(options: {
         setError(null);
     }
 
-    function invalidate() {
+    function cancel() {
         reset();
-        if (detection.active) void detection.cancel().catch(() => undefined);
+        const cancellations: Promise<unknown>[] = [];
+        if (detection.active)
+            cancellations.push(detection.cancel().catch(() => undefined));
         if (translation.active)
-            void translation.cancel().catch(() => undefined);
+            cancellations.push(translation.cancel().catch(() => undefined));
         detection.clear();
         translation.clear();
+        return Promise.all(cancellations);
+    }
+
+    function invalidate() {
+        void cancel();
     }
 
     useEffect(() => {
@@ -123,5 +130,5 @@ export function useTextWorkspaceAuto(options: {
         options.setInput?.(next);
     }
 
-    return { start, invalidate, detecting, error, changeInput };
+    return { start, invalidate, cancel, detecting, error, changeInput };
 }

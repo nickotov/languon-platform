@@ -1,4 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
+import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
+import { createNavigationService } from '../../src/modules/navigation/infrastructure/navigation-composition';
+import { createNavigationRoutes } from '../../src/modules/navigation/interface/http/navigation.routes';
+import { createKnowledgeService } from '../../src/modules/knowledge/infrastructure/knowledge-composition';
+import { createKnowledgeRoutes } from '../../src/modules/knowledge/interface/http/knowledge.routes';
+import { createLearningComposition } from '../../src/modules/learning/infrastructure/learning-composition';
+import { createSentenceComposition } from '../../src/modules/learning/infrastructure/sentence-composition';
 import {
     AuthenticationSuccessResponseSchema,
     SignUpResponseSchema,
@@ -111,6 +119,20 @@ async function start() {
         }),
     );
     const d = authentication.productDependencies;
+    // The full suite shares one loopback IP. Keep the real Redis limiter and
+    // production per-account limits; bound only this explicit fixture's shared
+    // address email budget above the number of synthetic test identities.
+    const consumeAuthenticationLimit = d.rateLimiter.consume.bind(
+        d.rateLimiter,
+    );
+    d.rateLimiter.consume = (input) =>
+        consumeAuthenticationLimit({
+            ...input,
+            limit:
+                input.scope === 'verification.email_send.client'
+                    ? 40
+                    : input.limit,
+        });
     const authenticate = async (token: string) => {
         const claims = await d.accessTokens.verify(token);
         await d.authentication.requireActiveSession(claims);
@@ -157,8 +179,10 @@ async function start() {
         retryDelayMs: 1,
         supportedFormats: [
             'text-detection:v1',
+            'text-detection:v2',
             'text-translation:v1',
             'text-translation:v2',
+            'text-translation:v3',
         ],
         provider: {
             async run({ input, execution, signal }) {
@@ -168,8 +192,10 @@ async function start() {
                     input.kind === 'text-translation' &&
                     (execution.modelId !== 'deepseek-flash' ||
                         execution.supportedFormats.length !== 1 ||
-                        execution.supportedFormats[0] !==
-                            'text-translation:v2' ||
+                        ![
+                            'text-translation:v2',
+                            'text-translation:v3',
+                        ].includes(execution.supportedFormats[0] ?? '') ||
                         execution.perCallMaxInputTokens !== 128000 ||
                         execution.perCallMaxOutputTokens !== 32768)
                 )
@@ -305,7 +331,53 @@ async function start() {
             },
         },
     });
+    // Dashboard entry cards use the real portrait stores and authenticated routes.
+    // This Texts-only fixture starts no interview worker or external model client.
+    const learnerPortraits = createLearnerPortraitModule({
+        database: d.database,
+        creditsBypass: true,
+        selectionPolicy,
+    });
     app = createApp({
+        learnerPortraits: createLearnerPortraitRoutes({
+            portraits: learnerPortraits.portraits,
+            interviews: learnerPortraits.interviews,
+            authenticate,
+            rateLimiter: d.rateLimiter,
+            policy: authentication.options.policy,
+            creditsBypass: true,
+        }),
+        learning: createLearningComposition({
+            ...d,
+            dictionaryHmacSecret: secret,
+            enabled: true,
+            policy: authentication.options.policy,
+        }).routes,
+        sentenceLearning: createSentenceComposition({
+            ...d,
+            dictionaryHmacSecret: secret,
+            enabled: false,
+            policy: authentication.options.policy,
+        }).routes,
+        navigation: createNavigationRoutes({
+            service: createNavigationService({
+                database: d.database,
+                authenticate,
+                rateLimiter: d.rateLimiter,
+            }),
+            policy: authentication.options.policy,
+        }),
+        knowledge: createKnowledgeRoutes({
+            service: createKnowledgeService({
+                database: d.database,
+                authenticate,
+                rateLimiter: d.rateLimiter,
+                shareSecret: secret,
+                limits: { referenceChars: 20000, editorChars: 40000 },
+                lifecycle: { async beforeNoteDeletion() {} },
+            }),
+            policy: authentication.options.policy,
+        }),
         authentication: authentication.options,
         texts: content.routes,
         dictionaries: createDictionaryComposition({

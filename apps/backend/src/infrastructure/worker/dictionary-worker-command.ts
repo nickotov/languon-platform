@@ -451,11 +451,15 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             format,
         ): format is
             | 'text-detection:v1'
+            | 'text-detection:v2'
             | 'text-translation:v1'
-            | 'text-translation:v2' =>
+            | 'text-translation:v2'
+            | 'text-translation:v3' =>
             format === 'text-detection:v1' ||
+            format === 'text-detection:v2' ||
             format === 'text-translation:v1' ||
-            format === 'text-translation:v2',
+            format === 'text-translation:v2' ||
+            format === 'text-translation:v3',
     );
     const textsWorker = textsFormats.length
         ? createTextsWorkerComposition({

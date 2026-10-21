@@ -40,7 +40,7 @@ export function PublicCopyDialog(props: {
         value: folder.id,
         label: folder.name,
     }));
-    const canChoose = props.target.mode === 'text' && options.length > 0;
+    const canChoose = props.target.mode === 'text';
 
     function close() {
         if (!working) props.onClose();
@@ -50,6 +50,9 @@ export function PublicCopyDialog(props: {
         copy.setDestination(event.target.value);
     }
 
+    function confirmShare(event: ChangeEvent<HTMLInputElement>) {
+        copy.confirmShare(event.target.checked);
+    }
     function name(event: ChangeEvent<HTMLInputElement>) {
         copy.setName(event.target.value);
     }
@@ -61,6 +64,30 @@ export function PublicCopyDialog(props: {
     function retryFolders() {
         void copy.folders.refetch();
     }
+
+    let destinationField = null;
+    if (copy.destination === 'existing')
+        destinationField = (
+            <Select
+                label={t('texts.public.folder')}
+                value={copy.folderId}
+                options={options}
+                onChange={folder}
+                disabled={locked}
+                placeholder={t('texts.public.folder')}
+            />
+        );
+    else if (copy.destination === 'new')
+        destinationField = (
+            <Input
+                label={t('texts.public.name')}
+                value={copy.name}
+                onChange={name}
+                disabled={locked}
+                maxLength={120}
+                required
+            />
+        );
 
     const footer = (
         <DialogActions>
@@ -116,6 +143,17 @@ export function PublicCopyDialog(props: {
                             <input
                                 type='radio'
                                 name='copyDestination'
+                                value='independent'
+                                checked={copy.destination === 'independent'}
+                                onChange={destination}
+                                disabled={locked}
+                            />
+                            {t('texts.organization.independent')}
+                        </label>
+                        <label>
+                            <input
+                                type='radio'
+                                name='copyDestination'
                                 value='existing'
                                 checked={copy.destination === 'existing'}
                                 onChange={destination}
@@ -136,24 +174,22 @@ export function PublicCopyDialog(props: {
                         </label>
                     </fieldset>
                 )}
-                {copy.destination === 'existing' ? (
-                    <Select
-                        label={t('texts.public.folder')}
-                        value={copy.folderId}
-                        options={options}
-                        onChange={folder}
-                        disabled={locked}
-                        placeholder={t('texts.public.folder')}
-                    />
-                ) : (
-                    <Input
-                        label={t('texts.public.name')}
-                        value={copy.name}
-                        onChange={name}
-                        disabled={locked}
-                        maxLength={120}
-                        required
-                    />
+                {destinationField}
+                {copy.sharedDestination && (
+                    <>
+                        <InlineAlert tone='warning'>
+                            {t('texts.organization.sharedWarning')}
+                        </InlineAlert>
+                        <label>
+                            <input
+                                type='checkbox'
+                                checked={copy.confirmedShare}
+                                onChange={confirmShare}
+                                disabled={locked}
+                            />{' '}
+                            {t('texts.organization.confirmShared')}
+                        </label>
+                    </>
                 )}
                 {working && <p role='status'>{t('texts.public.working')}</p>}
                 {copy.state === 'failed' && (

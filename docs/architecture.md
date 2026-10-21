@@ -143,13 +143,23 @@ updates only the cookie and refreshes the unchanged route. ADR-0007 defines this
 contract.
 
 The root web layout owns one session-aware sidebar shell on all normal pages,
-with an expanded/collapsed desktop sidebar and mobile top bar/modal drawer.
+with a 240px expanded desktop sidebar, 64px collapsed rail, tablet rail/drawer
+and mobile top bar/modal drawer. Text editors remain within this chrome.
 Private navigation queries are enabled only for authenticated users and scoped
 by user identity. Guests have Sign in and a Settings preference popover; signed-in
 users retain the account menu. Both reuse locale/theme controls. The logo leads
 to the home dashboard at /, which includes the optional learner-portrait entry.
 The focused /portrait/interview route renders without the sidebar. ADR-0030 replaces only ADR-0007's original
 top-right preference placement; its locale/persistence contract remains active.
+
+The navigation module stores owner-scoped last-opened/pin metadata; Dictionaries,
+Texts and Knowledge supply bounded current-summary reads through focused adapters.
+Whole-library title search does not preload private contents into the browser.
+Successful document loads record recency, while hover/prefetch do not. Account
+purge explicitly erases metadata while retaining the minimal user tombstone.
+Typed companion-layout visibility lets narrow desktop editors temporarily yield
+the sidebar to the rail without replacing user preferences. See
+[ADR-0043](adr/0043-sidebar-navigation-and-optional-text-folders.md).
 
 ## Mobile
 
@@ -351,6 +361,14 @@ only through its edit action. Public capabilities remain in URL fragments and
 ephemeral client state; authentication continuation retains only supported share
 paths. The selected Magic Patterns source is adapted through existing primitives,
 CSS Modules and runtime tokens (ADR-0029).
+
+Texts now have optional zero-or-one same-owner folder membership. Independent texts
+are listed separately from folders; canonical editor URLs identify the text rather
+than its current folder. Version-checked moves preserve content and direct shares;
+shared destinations require acknowledgment of the current share identity/version.
+Owner/folder/share authority is rechecked for nullable membership at job admission,
+proposal publication and vocabulary collection. Independent detection:v2 and
+translation:v3 formats keep incompatible older workers from claiming that work.
 
 Translation v2 pins a task-specific reviewed capacity profile into the existing
 immutable model snapshot; dictionary and legacy request caps remain unchanged.

@@ -21,6 +21,9 @@ GRANT SELECT (user_id) ON TABLE auth_verification_challenges, auth_passkeys,
     password_credentials, auth_sessions, user_emails TO :"account_purge_role";
 GRANT DELETE ON TABLE user_text_ai_preferences TO :"account_purge_role";
 GRANT SELECT (user_id) ON TABLE user_text_ai_preferences TO :"account_purge_role";
+-- Purged accounts keep their user tombstone; erase personal navigation explicitly.
+GRANT DELETE ON TABLE navigation_resources TO :"account_purge_role";
+GRANT SELECT (owner_id) ON TABLE navigation_resources TO :"account_purge_role";
 -- Learner cleanup includes records on dictionaries owned by another user.
 GRANT DELETE ON TABLE flashcard_entry_progress, flashcard_attempts,
     flashcard_preferences TO :"account_purge_role";
