@@ -4,7 +4,7 @@ import type {
     PortraitItems,
     StartPortraitInterviewResponse,
 } from '@languon/contracts';
-import { Button, UserMessage } from '@/fsd/shared/ui';
+import { UserMessage } from '@/fsd/shared/ui';
 import { interviewText } from '../../lib/interview-copy';
 import { InterviewMessage } from './interview-message';
 import { InterviewProposal } from './interview-proposal';
@@ -17,7 +17,6 @@ export function InterviewTranscript({
     onAccept,
     onDismiss,
     onReview,
-    onStop,
 }: {
     session: StartPortraitInterviewResponse;
     opening: { revealed: number; typing: boolean; done: boolean };
@@ -26,7 +25,6 @@ export function InterviewTranscript({
     onAccept(items?: PortraitItems): void;
     onDismiss(): void;
     onReview(): void;
-    onStop(): void;
 }) {
     const locale = session.context.locale;
     const latestUser = session.context.messages.at(-2);
@@ -97,9 +95,6 @@ export function InterviewTranscript({
             {busy ? (
                 <div className={styles.generating}>
                     <InterviewMessage locale={locale} typing />
-                    <Button size='compact' variant='secondary' onClick={onStop}>
-                        {interviewText(locale, 'stop')}
-                    </Button>
                     <p className={styles.meta}>
                         {interviewText(locale, 'pinnedPolicy')}
                     </p>

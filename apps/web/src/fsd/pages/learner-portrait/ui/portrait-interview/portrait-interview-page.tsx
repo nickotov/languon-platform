@@ -139,7 +139,6 @@ export function PortraitInterviewPage() {
                         onAccept={engine.acceptProposal}
                         onDismiss={engine.dismissProposal}
                         onReview={review}
-                        onStop={engine.stop}
                     />
                     {engine.error ? (
                         <InterviewErrorNotice
@@ -194,9 +193,12 @@ export function PortraitInterviewPage() {
                     <InterviewComposer
                         clearVersion={session.context.messages.length}
                         disabled={engine.busy}
+                        busy={engine.busy}
+                        canStop={engine.canStop}
                         locale={locale}
                         free={session.creditsBypass}
                         onSend={questions.send}
+                        onStop={engine.stop}
                     />
                 </main>
                 <InterviewPreview

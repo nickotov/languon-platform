@@ -1,0 +1,109 @@
+{
+  "baseRevision": "35e6aa90bf99c5073cdc78c7c7af7d16cbd3266b",
+  "runs": [
+    {
+      "id": "portrait-output-stop-free-verified",
+      "policy": "free",
+      "creditGrant": 20000,
+      "backendTests": 14,
+      "browserTests": 5,
+      "result": "pass",
+      "browserDurationSeconds": 53.3,
+      "command": "LEARNER_PORTRAIT_TEST_PAID=false pnpm test:e2e:learner-portrait -- --output=/private/tmp/portrait-output-stop-free-verified"
+    },
+    {
+      "id": "portrait-output-stop-paid-verified",
+      "policy": "paid",
+      "creditGrant": 20000,
+      "backendTests": 14,
+      "browserTests": 5,
+      "result": "pass",
+      "browserDurationSeconds": 57.3,
+      "command": "LEARNER_PORTRAIT_TEST_PAID=true pnpm test:e2e:learner-portrait -- --output=/private/tmp/portrait-output-stop-paid-verified"
+    }
+  ],
+  "environment": {
+    "postgres": "dedicatedloopback55481/languon_auth_portrait_test",
+    "redis": "dedicatedloopback56381/db1",
+    "provider": "deterministic localfixture",
+    "realUserData": false,
+    "ratePolicy": "Existing guarded fixture extends only shared-address portrait bucket180 to900 for five synthetic learners on one loopback address; realRedis andper-account120/minute retained; productionunchanged"
+  },
+  "viewports": [
+    [
+      1440,
+      900
+    ],
+    [
+      390,
+      844
+    ]
+  ],
+  "assertions": [
+    "existingportraitapproval/globaloff/conflict/historywarning",
+    "default7languages/48expanded/retaineddetails/desktopandmobilegeometry",
+    "successfulschema-awareproposalwith20kpaidcredits",
+    "Continuerunningresponse:solecomposerStopusablewithemptythen1001characterinput;CtrlEnterdoesnotsubmit;actualstop200cancelled;unsentinputpreserved;interviewresumes",
+    "chatrunningresponse:solecomposerStopmobile;actualstop200cancelled;unsentinputpreserved;interviewresumes",
+    "invalidnestedlanguageshape:localizedinvalid_model_output;answerpreservedafterreload;noautomaticHTTPresubmission"
+  ],
+  "runtimeErrors": [],
+  "unexpected5xxAndNavigation404": [],
+  "historicalInvalidatedRuns": [
+    {
+      "id": "portrait-output-stop-{free,paid}-final",
+      "reason": "paidinvalid-case reloadhitsharedloopbackportrait-address429afterfivelegitimatejourneys;fixedguardedfixtureIPcapacity, reranbothentiresuites; noassertionweakened"
+    },
+    {
+      "id": "portrait-output-stop-{free,paid}",
+      "reason": "passedbeforefinalpromptASCII-idcaptionchange; rerunforfinalsourcebinding"
+    }
+  ],
+  "sourceSha256": {
+    "apps/backend/tests/support/learner-portrait-web-fixture.ts": "8286fc321264ecf3cc0917d8676e3f5545b4f3013ce2560ed927387fd38f640f",
+    "apps/web/tests/e2e/learner-portrait.journeys.spec.ts": "a206925648693d8cc1c1c9e6a06ab79215ff7ff04baaec31f1af833dd65a5a32",
+    "apps/backend/tests/integration/modules/learner-portraits/learner-portrait.journeys.test.ts": "0d3ebee08b93541f3543f816803f81fc1f24a43528af06f773d9585b6700ef1f",
+    "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.ts": "cfaaf4997424ea6e69955d1d2527911b316691813fb5f8f32acc99b1afc3c25c",
+    "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.ts": "be97f62c08d098f5362ca5b3bd91260b64c9074f8ff844f2df2bff651e88badd",
+    "apps/backend/src/modules/learner-portraits/application/interview-worker-service.ts": "3dfbb506e0b5d200abd0e79e3a29e619495c0f80c9e9a79603618fcae3dac649",
+    "apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts": "cd91ee152acfc2fbb12eab75cda628f5561c75082a03dab07dac371811d234cc",
+    "packages/prompts/src/local/learner-interviewer.ts": "ea5900a41b6767b24ed77e83262172c5b77a7c07c9666a5f245497e3fb0c11de",
+    "packages/prompts/dist/index.js": "39fec8f4647ede3eda7133593db2f125e98b205ddadb820a2a971d7cca550354",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-composer.tsx": "6e3f32b4d15e83ffd16a3abacfb70c9bd0d3a03372a9e22a146e5d57fc8ea3fe",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-transcript.tsx": "903c3e5fba2ff84b85bdee919f18a07045ee910a9694342d92267013806b8b07",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/portrait-interview-page.tsx": "84d03876f900a3f27d502ea91504065bb25ac332af4a628a6c1121b2087e9eab",
+    "apps/web/src/fsd/pages/learner-portrait/lib/interview-copy.ts": "5221e7274b5cfc9e7b88a1fb6e349ebc23db567bbafe164010d724632c44faa3",
+    "docs/user-flows/learner-portrait.md": "df057552b4339317fced36b0c52f05ce692e99f523521f33d9450d8abb4a0735"
+  },
+  "captureSha256": {
+    "free/portrait-chat-composer-stop-mobile.png": "c237c877f40c66cc171647df3edf9856fbc9f673f11e8e43ddca2ddc968508b8",
+    "free/portrait-conflict-desktop.png": "ce497fce7b42eb6de8bb444571faedf2cc1ce6a8c5260edff5dcbc9f2702d5c7",
+    "free/portrait-continue-composer-stop-desktop.png": "674c2395e309bb034b58c6f2e8896874ef4c082b85e4fac9c4cb2048cf400838",
+    "free/portrait-delete-mobile.png": "1d7930fdc6fae6c3d341389b751fa787dacfa29a17dbd06fe09dd178eb27c484",
+    "free/portrait-expanded-language-details-mobile.png": "2073fd012f864685549c6fc940889ec31dd9c4d20b41d89fb9f8fba35bedd54a",
+    "free/portrait-interview-desktop.png": "5a9c800ee46b4d71ef06b889c6205ee03e317665d68252f1f22ee95e0682512c",
+    "free/portrait-interview-intro-desktop.png": "f8a0418428f0d0ea1f9a70a5c8113576633d79e942ffa1e81200812b66c45b6a",
+    "free/portrait-interview-preview-desktop.png": "6985fa3c1c0941071615d7148513bf82e624240da37a28566ceb896d40690477",
+    "free/portrait-interview-review-desktop.png": "158e279de077a88573887234e37665a1a14d419296caf872565973d564c10af4",
+    "free/portrait-invalid-structured-output-kept.png": "4ababcff2de50cf0f2797c8b8734b6e70123b69dabe13456c4cada1eafc810d7",
+    "free/portrait-manual-editor-desktop.png": "6e43b67888207830c866eb48aeb81880e9cdbf8290ce98c35603efb4cf1db53d",
+    "free/portrait-manual-editor-populated-desktop.png": "e7fec821634fac5e4966fa46ecb923983a82feced96ee3327cfac776076b5b0e",
+    "free/portrait-overview-restored-sidebar-desktop.png": "4517eb70172d23e2cfda543ce840c1fd90fbeb517cb99be370113d559edccc61",
+    "free/portrait-two-language-details-desktop.png": "4e25a6a49e758c44aba627a210a76e900f8bc2dcbb7d326157d464922e92f6a7",
+    "paid/portrait-chat-composer-stop-mobile.png": "6521e0f4b60f2a40dad8243d860359dd72766f6dbb30041753d28ded11d5d636",
+    "paid/portrait-conflict-desktop.png": "42c60ea912ebcc1d4608fcb8905f9ce16915316e8cde892384ebaffdd706f636",
+    "paid/portrait-continue-composer-stop-desktop.png": "7a7e68cfaaaceece774aa45e2e74a9d06f0998288cac2f7fac21626661862958",
+    "paid/portrait-delete-mobile.png": "1d7930fdc6fae6c3d341389b751fa787dacfa29a17dbd06fe09dd178eb27c484",
+    "paid/portrait-expanded-language-details-mobile.png": "36c6dc77fb9e7018ec6b01d637346e2c650b272dfd9df836e4fc1fdf74635ab8",
+    "paid/portrait-interview-desktop.png": "07fac244e9b5076ff3e21567a5261665c2a0ad07f30017ba60f16cb4209edf39",
+    "paid/portrait-interview-intro-desktop.png": "8236fb931c1710df63896aeb8b112ceb657b09c558ef7cfe705dd5637707aa82",
+    "paid/portrait-interview-preview-desktop.png": "b17420463167ef60a23950076cd8284a0b1004c1b94e4ba8542c68478c6ebb3a",
+    "paid/portrait-interview-review-desktop.png": "f2d85f98c3aaf7c8d5d12be4a94ccd1478b50fd329fea2990501ac5cbd264ca9",
+    "paid/portrait-invalid-structured-output-kept.png": "7392efe4910334dbb004322266d5839a484f7cf72d33c1f8da10f87d53bd0686",
+    "paid/portrait-manual-editor-desktop.png": "f9e2d7b47e446a86bbe959c7c664935db23c9c005a731e25f9b3c803b1382c38",
+    "paid/portrait-manual-editor-populated-desktop.png": "858e40869108f332c5a91cc493beb80a41bdc12afa5c400d25afcbdb7eea68ce",
+    "paid/portrait-overview-restored-sidebar-desktop.png": "bfe58708d8331401e258264b2d525a77d97b80a9387eebb78d87bf2c8f0a46ce",
+    "paid/portrait-paid-credit-confirmation.png": "b7c12e535034a67169ef1cc0fd2d92455f41cc4a05af919c97772a1fcaeb23f2",
+    "paid/portrait-two-language-details-desktop.png": "40ea9f25f3252cf056e49e36ce0e95c9caac73ccb1b5a214544ff44d5250ff0d"
+  }
+}

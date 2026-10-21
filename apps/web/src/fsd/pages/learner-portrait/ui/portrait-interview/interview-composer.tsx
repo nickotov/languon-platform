@@ -9,24 +9,32 @@ import {
     type KeyboardEvent,
 } from 'react';
 import { portraitCharacterCount } from '@languon/contracts';
-import { Send } from 'lucide-react';
+import { Send, Square } from 'lucide-react';
 import { IconButton, Textarea } from '@/fsd/shared/ui';
 import { interviewText, type InterviewLocale } from '../../lib/interview-copy';
 import styles from './portrait-interview.module.css';
 export function InterviewComposer({
     clearVersion = 0,
     disabled,
+    busy = false,
+    canStop = false,
     locale,
     free,
     onSend,
+    onStop,
 }: {
     clearVersion?: number;
     disabled: boolean;
+    busy?: boolean;
+    canStop?: boolean;
     locale: InterviewLocale;
     free: boolean;
     onSend(text: string): Promise<boolean>;
+    onStop?(): Promise<void>;
 }) {
     const [text, setText] = useState('');
+    const [stopping, setStopping] = useState(false);
+    const stopPending = useRef(false);
     const previousVersion = useRef(clearVersion);
     useEffect(() => {
         if (previousVersion.current !== clearVersion) setText('');
@@ -35,7 +43,8 @@ export function InterviewComposer({
     const counterId = useId();
     const count = portraitCharacterCount(text);
     const over = count > 1000;
-    const sendDisabled = disabled || over || !text.trim();
+    const sendDisabled = disabled || busy || over || !text.trim();
+    const stopDisabled = !canStop || stopping || !onStop;
     function changeText(event: ChangeEvent<HTMLTextAreaElement>) {
         setText(event.target.value);
     }
@@ -46,6 +55,17 @@ export function InterviewComposer({
     async function submit(event: FormEvent) {
         event.preventDefault();
         await send();
+    }
+    async function stop() {
+        if (stopDisabled || stopPending.current || !onStop) return;
+        stopPending.current = true;
+        setStopping(true);
+        try {
+            await onStop();
+        } finally {
+            stopPending.current = false;
+            setStopping(false);
+        }
     }
     function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
@@ -73,15 +93,28 @@ export function InterviewComposer({
                     onKeyDown={handleKeyDown}
                     resize='none'
                 />
-                <IconButton
-                    type='submit'
-                    icon={<Send />}
-                    label={interviewText(locale, 'send')}
-                    variant='primary'
-                    rounded
-                    disabled={sendDisabled}
-                    className={styles.send}
-                />
+                {busy ? (
+                    <IconButton
+                        type='button'
+                        icon={<Square />}
+                        label={interviewText(locale, 'stop')}
+                        variant='primary'
+                        rounded
+                        disabled={stopDisabled}
+                        onClick={stop}
+                        className={styles.send}
+                    />
+                ) : (
+                    <IconButton
+                        type='submit'
+                        icon={<Send />}
+                        label={interviewText(locale, 'send')}
+                        variant='primary'
+                        rounded
+                        disabled={sendDisabled}
+                        className={styles.send}
+                    />
+                )}
             </div>
             <p
                 id={counterId}

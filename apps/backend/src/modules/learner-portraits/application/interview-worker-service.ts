@@ -2,10 +2,11 @@ import {
     PortraitConflictError,
     PortraitDraftUnavailableError,
 } from './ports/portrait-store';
-import type {
-    InterviewRunner,
-    InterviewStore,
-    ClaimedInterviewOperation,
+import {
+    PortraitInterviewInvalidModelOutputError,
+    type InterviewRunner,
+    type InterviewStore,
+    type ClaimedInterviewOperation,
 } from './ports/interview-store';
 
 /** Durable worker ownership is independent of the admitting HTTP connection. */
@@ -56,13 +57,16 @@ export class InterviewWorkerService {
                 result,
                 new Date(),
             );
-        } catch {
+        } catch (error) {
             try {
                 await this.dependencies.store.fail(
                     operation,
                     combined.aborted
                         ? 'response_interrupted'
-                        : 'generation_failed',
+                        : error instanceof
+                            PortraitInterviewInvalidModelOutputError
+                          ? 'invalid_model_output'
+                          : 'generation_failed',
                     new Date(),
                 );
             } catch (failure) {

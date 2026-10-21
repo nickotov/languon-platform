@@ -1,4 +1,4 @@
-// @user-flow-revision learner-portrait sha256:79395f586918a1a0
+// @user-flow-revision learner-portrait sha256:c5635e99218a7ba5
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 async function signup(page: Page, info: TestInfo) {
@@ -47,6 +47,20 @@ async function restoredSidebar(page: Page) {
     await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Create new', exact: true })).toBeVisible();
+}
+
+async function acknowledgePaidResponse(page: Page) {
+    if (process.env.LEARNER_PORTRAIT_TEST_PAID !== 'true') return;
+    const notice = page.getByRole('dialog', { name: 'Interviewer responses now use credits' });
+    await expect(notice).toBeVisible();
+    await notice.getByRole('button', { name: 'Continue with credits', exact: true }).click();
+}
+
+async function startInterview(page: Page, info: TestInfo) {
+    await signup(page, info);
+    await page.goto('/portrait/intro');
+    await page.getByRole('button', { name: 'Start interview', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Which languages do you know, and which are you learning?' })).toBeVisible();
 }
 
 async function languageDetails(page: Page, info: TestInfo) {
@@ -232,5 +246,79 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
     await page.getByRole('button', { name: 'Save portrait', exact: true }).click();
     await expect(page).toHaveURL(/\/portrait\?saved=first$/);
     await expect(page.getByText('Chats don’t use it yet.')).toBeVisible();
+    assertNoRuntimeErrors();
+});
+
+for (const action of ['continue', 'chat'] as const) {
+    // @user-flow learner-portrait/composer-stop-cancels-active-interview
+    test(`${action} response stops only from the composer and keeps unfinished work`, async ({ page }, info) => {
+        const assertNoRuntimeErrors = runtimeErrors(page);
+        let accepted = 0;
+        page.on('response', (response) => {
+            if (new URL(response.url()).pathname.endsWith('/interview/responses') && response.status() === 202)
+                accepted += 1;
+        });
+        await startInterview(page, info);
+        if (action === 'chat') await page.setViewportSize({ width: 390, height: 844 });
+        const running = page.waitForResponse(async (response) =>
+            response.request().method() === 'GET' &&
+            /\/interview\/responses\/[0-9a-f-]+$/u.test(new URL(response.url()).pathname) &&
+            response.status() === 200 && (await response.json()).state === 'running',
+        );
+        if (action === 'continue') {
+            await page.getByLabel('Your own answer (optional)', { exact: true }).fill('[portrait-slow] Short learning steps');
+            await page.getByRole('button', { name: 'Continue', exact: true }).click();
+        } else {
+            await page.getByLabel('Ask a question or answer in your own words…').fill('[portrait-slow] Help me choose a learning approach');
+            await page.getByRole('button', { name: 'Send message', exact: true }).click();
+        }
+        await acknowledgePaidResponse(page);
+        await running;
+        const composer = page.getByRole('form', { name: 'Message the interviewer' });
+        const stop = composer.getByRole('button', { name: 'Stop', exact: true });
+        await expect(page.getByRole('button', { name: 'Stop', exact: true })).toHaveCount(1);
+        await expect(stop).toBeEnabled();
+        await expect(composer.getByRole('button', { name: 'Send message', exact: true })).toHaveCount(0);
+        const input = composer.getByRole('textbox');
+        const unsent = action === 'continue' ? 'x'.repeat(1001) : 'Keep this unsent clarification';
+        await input.fill(unsent);
+        await input.press('Control+Enter');
+        await expect(stop).toBeEnabled();
+        await capture(page, info, `portrait-${action}-composer-stop-${action === 'chat' ? 'mobile' : 'desktop'}`);
+        const stopped = page.waitForResponse((response) => response.url().endsWith('/stop') && response.status() === 200);
+        await stop.click();
+        expect((await (await stopped).json()).state).toBe('cancelled');
+        await expect(stop).toHaveCount(0);
+        await expect(input).toHaveValue(unsent);
+        await expect(page.getByRole('button', { name: 'Review portrait', exact: true })).toBeEnabled();
+        expect(accepted).toBe(1);
+        await page.reload();
+        await expect(page.getByRole('heading', { name: 'Learner portrait interview', exact: true })).toBeVisible();
+        await expect(page.getByText('Proposed for your draft · not saved yet')).toHaveCount(0);
+        await noOverflow(page);
+        assertNoRuntimeErrors();
+    });
+}
+
+// @user-flow learner-portrait/invalid-model-output-preserves-interview
+test('invalid structured output keeps the answer and does not submit another response automatically', async ({ page }, info) => {
+    const assertNoRuntimeErrors = runtimeErrors(page);
+    let accepted = 0;
+    page.on('response', (response) => {
+        if (new URL(response.url()).pathname.endsWith('/interview/responses') && response.status() === 202)
+            accepted += 1;
+    });
+    await startInterview(page, info);
+    await page.getByLabel('Ask a question or answer in your own words…').fill('[portrait-invalid] Explain which learning preferences would help');
+    await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    await acknowledgePaidResponse(page);
+    await expect(page.getByText('The interviewer returned a response we couldn’t use. Your answer and draft are kept. Retry when you’re ready, or edit your portrait by hand.').first()).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Your previous answer', exact: true })).toHaveValue('[portrait-invalid] Explain which learning preferences would help');
+    await expect(page.getByText('Proposed for your draft · not saved yet')).toHaveCount(0);
+    await capture(page, info, 'portrait-invalid-structured-output-kept');
+    expect(accepted).toBe(1);
+    await page.reload();
+    await expect(page.getByRole('textbox', { name: 'Your previous answer', exact: true })).toHaveValue('[portrait-invalid] Explain which learning preferences would help');
+    expect(accepted).toBe(1);
     assertNoRuntimeErrors();
 });

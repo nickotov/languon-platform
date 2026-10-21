@@ -37,6 +37,8 @@ e2e_scenarios:
     - approved-private-portrait-and-interview-accounting
     - manual-approval-global-off-and-delete-warning
     - resumable-interview-proposal-and-explicit-approval
+    - composer-stop-cancels-active-interview
+    - invalid-model-output-preserves-interview
 related_features:
     - contextual-language-assistant-and-knowledge
     - ai-credit-wallet
@@ -53,7 +55,8 @@ The guided interview is a standalone, resumable operation; it never reads other
 chats, publishes a portrait, or enables use. Interview admission selects only a
 ready portrait-interview execution capability and uses the frozen paid/free
 policy of that operation. New interview operations pin a conservative input bound
-for the serialized interview request, including system instructions and framing;
+for the serialized interview request, including system instructions, the exact
+injected structured-output schema and framing;
 the same bound controls affordability, provider dispatch and the database-backed
 hold. The output ceiling remains4,096tokens. Existing admitted operations retain
 their original limits. The server-only free flag removes the learner charge
@@ -140,6 +143,13 @@ test-only paid policy (`LEARNER_PORTRAIT_TEST_PAID=true`) and a20,000-credit gra
 it accepts the actual first-paid-response notice and proves admission succeeds.
 This fixture flag cannot change normal application billing.
 
+While a response is running, the composer replaces Send with its sole Stop
+button. Stop works with an empty or oversized unsent message, does not submit
+that message, and retains its text. Cancellation leaves the interview resumable.
+If the model returns invalid structured output, the interview shows a specific
+recoverable error and retains the answer and editable draft. Reloading does not
+automatically retry or incur another provider call.
+
 ## E2E coverage
 
 | Scenario | Observable proof |
@@ -147,6 +157,8 @@ This fixture flag cannot change normal application billing.
 | `approved-private-portrait-and-interview-accounting` | Real authentication, HTTP routes, PostgreSQL state and Redis rate limiting prove owner isolation, draft approval without automatic use, paid provider-accounting settlement, and a zero-charge bypass dispatch that still records provider usage. Additional funded-account regressions verify a bounded first response with20,000credits, genuine insufficiency and settlement/release. The same fixture uses the deployment account-purge role to settle an expired active paid call and allocation, archive only numerical provider usage, erase portrait content, and deny reads of private operation/session/portrait payload columns. |
 | `manual-approval-global-off-and-delete-warning` | Desktop and mobile browser evidence proves partial manual approval remains separately disabled after reload; a real two-tab version conflict preserves local edits until the learner chooses a latest or draft value and saves again; global off disables the per-chat control; and the delete confirmation retains the history warning. |
 | `resumable-interview-proposal-and-explicit-approval` | A real browser reload resumes an interview; default and expanded language choices, retained level/learning selections and responsive row alignment are verified; a deterministic provider-bound worker completes the queued French/Russian response, produces a reviewable proposal, and requires the learner to save it before any portrait exists. Free and paid fixture policies preserve the notice and separate activation choices. |
+| `composer-stop-cancels-active-interview` | Desktop Continue and mobile chat requests use the composer Stop control while the real queued operation runs. Empty and oversized unsent input cannot disable Stop; keyboard input cannot submit a second response. Cancellation retains unsent text and the resumable interview. |
+| `invalid-model-output-preserves-interview` | A deterministic invalid nested model response produces the specific recoverable failure through the real worker and HTTP polling. The submitted answer survives reload, with no automatic resubmission. Backend tests independently verify one provider call and retained accounting. |
 
 Repository, contract, and worker tests cover Unicode boundaries, diagnosis-label
 exclusion, conflict/expiry/delete races, recovery of interrupted calls, operation
@@ -168,6 +180,10 @@ traffic; it does not establish generated wording quality or browser behavior.
 - Model failure preserves editable unfinished work until expiry. An unrelated
   interview request receives the bounded `/knowledge` redirect; it cannot become
   new portrait data without explicit review.
+- Invalid structured model output returns `invalid_model_output`. The interviewer
+  requests and validates its complete output contract in the original provider
+  call; it performs no automatic paid repair or fallback call. A learner may
+  explicitly retry or edit the portrait manually.
 
 ## Automated regression checks
 

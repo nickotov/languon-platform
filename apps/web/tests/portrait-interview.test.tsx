@@ -6,6 +6,7 @@ import {
     render,
     screen,
     fireEvent,
+    within,
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, afterEach, it, expect, vi } from 'vitest';
@@ -232,6 +233,136 @@ it('keeps a failed chat message in the composer and prevents more than 1000 grap
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
     await waitFor(() => expect(send).toHaveBeenCalledWith('Please clarify'));
     expect(input).toHaveValue('Please clarify');
+});
+
+it.each(['continue', 'chat'] as const)(
+    'moves the only Stop control into the composer after %s admits work',
+    async (entry) => {
+        vi.mocked(portraitApi.startInterview).mockResolvedValue({
+            ...session,
+            context: {
+                ...session.context,
+                messages: [
+                    { role: 'assistant', content: 'Ready to continue.' },
+                ],
+            },
+        });
+        const operation = {
+            id: '00000000-0000-4000-8000-000000000002',
+            interviewId: session.interviewId,
+            state: 'running' as const,
+            result: null,
+            errorCode: null,
+        };
+        let admit!: (value: typeof operation) => void;
+        const submit = vi
+            .spyOn(portraitApi, 'submitInterview')
+            .mockImplementation(
+                () =>
+                    new Promise((resolve) => {
+                        admit = resolve;
+                    }),
+            );
+        vi.spyOn(portraitApi, 'readOperation').mockImplementation(
+            () => new Promise(() => {}),
+        );
+        let finishStop!: () => void;
+        const stop = vi.spyOn(portraitApi, 'stopOperation').mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    finishStop = () =>
+                        resolve({ ...operation, state: 'cancelled' });
+                }),
+        );
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        });
+        render(
+            <QueryClientProvider client={client}>
+                <PortraitInterviewPage />
+            </QueryClientProvider>,
+        );
+        const composer = await screen.findByRole('form', {
+            name: 'Message the interviewer',
+        });
+        const input = within(composer).getByRole('textbox');
+        fireEvent.change(input, { target: { value: 'Keep my draft' } });
+        if (entry === 'continue') {
+            fireEvent.change(
+                screen.getByLabelText('Your own answer (optional)'),
+                {
+                    target: { value: 'Short steps' },
+                },
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        } else {
+            fireEvent.click(
+                within(composer).getByRole('button', { name: 'Send message' }),
+            );
+        }
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+        expect(
+            within(composer).getByRole('button', { name: 'Stop' }),
+        ).toBeDisabled();
+        expect(
+            screen.queryByRole('button', { name: 'Send message' }),
+        ).not.toBeInTheDocument();
+        await act(async () => admit(operation));
+        const stopButton = within(composer).getByRole('button', {
+            name: 'Stop',
+        });
+        expect(stopButton).toBeEnabled();
+        expect(stopButton).toHaveAttribute('type', 'button');
+        expect(screen.getAllByRole('button', { name: 'Stop' })).toHaveLength(1);
+        fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true });
+        fireEvent.keyDown(input, { key: 'Enter', metaKey: true });
+        expect(stop).not.toHaveBeenCalled();
+        expect(submit).toHaveBeenCalledTimes(1);
+        fireEvent.click(stopButton);
+        fireEvent.click(stopButton);
+        await waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
+        expect(stop).toHaveBeenCalledWith('test-token', operation.id);
+        expect(
+            within(composer).getByRole('button', { name: 'Stop' }),
+        ).toBeDisabled();
+        expect(input).toHaveValue('Keep my draft');
+        await act(async () => finishStop());
+        await waitFor(() =>
+            expect(
+                within(composer).getByRole('button', { name: 'Send message' }),
+            ).toBeEnabled(),
+        );
+        expect(input).toHaveValue('Keep my draft');
+    },
+);
+
+it('keeps localized Stop usable with an empty or oversized draft', async () => {
+    const stop = vi.fn().mockResolvedValue(undefined);
+    const send = vi.fn().mockResolvedValue(true);
+    render(
+        <InterviewComposer
+            locale='ru'
+            free
+            disabled
+            busy
+            canStop
+            onSend={send}
+            onStop={stop}
+        />,
+    );
+    const input = screen.getByRole('textbox');
+    const button = screen.getByRole('button', { name: 'Остановить' });
+    expect(button).toBeEnabled();
+    fireEvent.change(input, { target: { value: 'a'.repeat(1001) } });
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(button).toBeEnabled();
+    fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true });
+    expect(stop).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+    fireEvent.click(button);
+    await waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
+    expect(input).toHaveValue('a'.repeat(1001));
+    expect(send).not.toHaveBeenCalled();
 });
 
 it('restores a failed answer as private editable work without automatically retrying', async () => {

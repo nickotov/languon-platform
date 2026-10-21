@@ -1,4 +1,4 @@
-// @user-flow-revision learner-portrait sha256:79395f586918a1a0
+// @user-flow-revision learner-portrait sha256:c5635e99218a7ba5
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
@@ -26,6 +26,13 @@ import {
     aiCreditReservationsTable,
 } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
 import type { TutorCallAdmission } from '../../../../src/modules/conversations/application/ports/tutor-runner';
+import { InterviewWorkerService } from '../../../../src/modules/learner-portraits/application/interview-worker-service';
+import { createLearnerInterviewerRunner } from '../../../../src/modules/learner-portraits/infrastructure/ai/learner-interviewer';
+import {
+    readInterviewInputTokenLimit,
+    type InterviewExecution,
+} from '../../../../src/modules/learner-portraits/infrastructure/ai/interview-request';
+import { scriptedTutorModel } from '../../../../src/modules/conversations/infrastructure/ai/tutor-test-fixtures';
 import { createInterviewAccounting } from '../../../../src/modules/learner-portraits/infrastructure/interview-accounting';
 import { createLearnerPortraitModule } from '../../../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { portraitInterviewProviderCallsTable } from '../../../../src/modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';
@@ -591,7 +598,7 @@ run('real learner portrait HTTP and accounting journey', () => {
         const next = makeCall();
         await accounting.admit(next);
         // Ambiguous dispatched usage must retain the entire pinned liability.
-        await accounting.settle(next);
+        await accounting.fail(next, 'missing-usage');
         const [unknownCall] = await database
             .select()
             .from(portraitInterviewProviderCallsTable)
@@ -623,6 +630,100 @@ run('real learner portrait HTTP and accounting journey', () => {
         ).toBe(estimated!.reservedCredits);
         await paid.module.store.fail(claim!, 'test_complete', new Date());
     }, 120_000);
+
+    it.each(['valid', 'invalid'] as const)(
+        'executes one schema-inclusive paid %s response with 20,000 credits and settles actual usage',
+        async (kind) => {
+            const paid = composed(false);
+            const learner = await signup(
+                paid.app,
+                `portrait-structured-${kind}`,
+            );
+            await grantCredits(learner.userId, 20_000n);
+            const operation = await startAndSubmit(
+                paid.app,
+                learner.token,
+                true,
+            );
+            const provider = scriptedTutorModel([
+                kind === 'valid'
+                    ? JSON.stringify({
+                          message: 'Which language should explanations use?',
+                          topic: 'explanation-languages',
+                          options: [{ id: 'english', label: 'English' }],
+                          multiSelect: true,
+                          answerSummary: 'Learning Spanish',
+                          proposedItems: {
+                              languages: [{ language: 'es', learning: true }],
+                              explanationLanguages: [],
+                              goals: [],
+                              accommodations: [],
+                              hobbies: [],
+                          },
+                      })
+                    : 'This is not valid JSON',
+            ]);
+            const worker = new InterviewWorkerService({
+                store: paid.module.store,
+                createRunner(claim) {
+                    expect(claim.id).toBe(operation.id);
+                    return createLearnerInterviewerRunner({
+                        model: provider.model,
+                        accounting: createInterviewAccounting({
+                            database:
+                                authentication.productDependencies.database,
+                            withOperation: (work) =>
+                                paid.module.store.withOperation(claim, work),
+                            ownerId: learner.userId,
+                            operationId: operation.id,
+                            execution: claim.execution as never,
+                        }),
+                        maxInputTokens: readInterviewInputTokenLimit(
+                            claim.execution as unknown as InterviewExecution,
+                        ),
+                    });
+                },
+            });
+            expect(await worker.processNext(new AbortController().signal)).toBe(
+                true,
+            );
+            const finished = await paid.module.store.read(
+                learner.userId,
+                operation.id,
+            );
+            expect(finished?.state).toBe(
+                kind === 'valid' ? 'succeeded' : 'failed',
+            );
+            expect(finished?.errorCode).toBe(
+                kind === 'valid' ? null : 'invalid_model_output',
+            );
+            expect(provider.requests).toHaveLength(1);
+            const [reservation] =
+                await authentication.productDependencies.database
+                    .select()
+                    .from(aiCreditReservationsTable)
+                    .where(eq(aiCreditReservationsTable.jobId, operation.id));
+            expect(reservation?.state).toBe('settled');
+            expect(reservation?.reservedCredits).toBeLessThanOrEqual(20_000n);
+            expect(reservation?.chargedCredits).toBeGreaterThan(0n);
+            expect(reservation?.chargedCredits).toBeLessThan(
+                reservation!.reservedCredits,
+            );
+            const calls = await authentication.productDependencies.database
+                .select()
+                .from(portraitInterviewProviderCallsTable)
+                .where(
+                    eq(
+                        portraitInterviewProviderCallsTable.operationId,
+                        operation.id,
+                    ),
+                );
+            expect(calls).toHaveLength(1);
+            expect(calls[0]?.actualInputTokens).toBe(50);
+            expect(calls[0]?.actualOutputTokens).toBe(12);
+            if (kind === 'invalid') expect(finished?.result).toBeNull();
+        },
+    );
 
     it.each([0n, 100n])(
         'rejects genuinely insufficient paid balance %s before enqueue or dispatch',

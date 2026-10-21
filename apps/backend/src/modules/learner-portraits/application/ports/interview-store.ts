@@ -111,3 +111,11 @@ export interface InterviewRunner {
 }
 
 export class PortraitInterviewResourceLimitError extends Error {}
+
+/** Safe category only: never retains provider text, prompt, validation issues or causes. */
+export class PortraitInterviewInvalidModelOutputError extends Error {
+    constructor() {
+        super('The interview response did not match the required format.');
+        this.name = 'PortraitInterviewInvalidModelOutputError';
+    }
+}

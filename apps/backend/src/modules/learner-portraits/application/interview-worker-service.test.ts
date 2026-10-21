@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { InterviewWorkerService } from './interview-worker-service';
-import type { ClaimedInterviewOperation } from './ports/interview-store';
+import {
+    PortraitInterviewInvalidModelOutputError,
+    type ClaimedInterviewOperation,
+} from './ports/interview-store';
 const operation: ClaimedInterviewOperation = {
     id: 'operation',
     interviewId: 'session',
@@ -60,6 +63,23 @@ describe('durable interview worker', () => {
         await worker.processNext(new AbortController().signal);
         expect(createRunner).not.toHaveBeenCalled();
         expect(store.fail).toHaveBeenCalledOnce();
+        expect(store.complete).not.toHaveBeenCalled();
+    });
+    it('persists a safe invalid-output category without details or an automatic retry', async () => {
+        const store = fixture();
+        const run = vi
+            .fn()
+            .mockRejectedValue(new PortraitInterviewInvalidModelOutputError());
+        await new InterviewWorkerService({
+            store,
+            createRunner: () => ({ run }),
+        }).processNext(new AbortController().signal);
+        expect(run).toHaveBeenCalledOnce();
+        expect(store.fail).toHaveBeenCalledWith(
+            operation,
+            'invalid_model_output',
+            expect.any(Date),
+        );
         expect(store.complete).not.toHaveBeenCalled();
     });
     it('does not automatically redispatch a failed generation', async () => {

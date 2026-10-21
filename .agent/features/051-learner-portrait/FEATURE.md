@@ -1,6 +1,6 @@
 # Learner portrait and AI interview
 
-Status: Complete — original delivery and user-reported interview UI/credit follow-up verified and independently reviewed (2026-10-21)
+Status: Complete — original delivery/refinements complete; real interview response and composer Stop follow-up (2026-10-21)
 Authorized: 2026-10-20, user “Implement the plan”; prompt destination confirmed as docs/design-prompt once logic is done.
 
 ## Problem and desired behavior
@@ -28,6 +28,8 @@ Deliver the learner-owned approved portrait and standalone guided interview desc
 | POR-15 | Selected-language rows follow the user's retained screenshot: language left, labeled description select middle, learning checkbox aligned with the select; narrow layouts remain usable without overflow. |
 | POR-16 | Both interview language questions initially show Russian, English, French, Spanish, German, Serbian and Polish in that order; Show more exposes the expanded portrait language choices including Turkish/Hungarian, preserving custom/adaptive choices and selected details. |
 | POR-17 | Short interview requests use a conservative request-specific pinned input hold, rather than the full model input capacity. A sufficient20,000-credit grant admits and funds the representative first response; genuine insufficiency, concurrent allocation, immutable pricing, bypass, actual settlement and older in-flight policy remain correct. |
+| POR-18 | The interviewer supplies the exact output contract through the existing DeepSeek-compatible structured-output path in one accounted call. Structured results are strictly validated; invalid results preserve work and expose a safe specific failure code without retaining/logging raw provider content or automatic paid repair calls. The input bound includes all injected contract instructions. |
+| POR-19 | While a response is pending, the composer Send control becomes the sole Stop control. It is enabled when an owned operation can be stopped, prevents duplicate cancellation and does not submit text; empty/oversized text cannot disable Stop. Idle Send, text limits, keyboard behavior and resumable work remain intact. |
 
 ## Scope and constraints
 

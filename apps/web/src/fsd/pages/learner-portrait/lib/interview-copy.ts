@@ -494,6 +494,12 @@ export function interviewLevelOptions(locale: InterviewLocale) {
 }
 
 const errors: Record<string, string[]> = {
+    invalid_model_output: [
+        'The interviewer returned a response we couldn’t use. Your answer and draft are kept. Retry when you’re ready, or edit your portrait by hand.',
+        'Интервьюер вернул ответ, который не удалось обработать. Ваш ответ и черновик сохранены. Повторите попытку, когда будете готовы, или отредактируйте портрет вручную.',
+        'La réponse de l’intervieweur n’a pas pu être utilisée. Votre réponse et votre brouillon sont conservés. Réessayez quand vous le souhaitez ou modifiez votre portrait manuellement.',
+        'No se pudo utilizar la respuesta del entrevistador. Tu respuesta y borrador se conservan. Reintenta cuando quieras o edita tu retrato a mano.',
+    ],
     model_unavailable: [
         'The selected model is unavailable for interviews. Choose Auto or DeepSeek Flash in model settings, then try again. Your answer and draft are kept.',
         'Выбранная модель недоступна для интервью. Выберите «Авто» или DeepSeek Flash в настройках модели и повторите попытку. Ответ и черновик сохранены.',

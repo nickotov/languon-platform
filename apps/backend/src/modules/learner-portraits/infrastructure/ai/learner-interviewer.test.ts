@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { createLearnerInterviewerRunner } from './learner-interviewer';
 import {
     interviewInputTokenLimit,
+    buildInterviewSchemaInstruction,
     readInterviewInputTokenLimit,
 } from './interview-request';
 import {
     scriptedTutorModel,
     tutorAccountingFixture,
 } from '../../../conversations/infrastructure/ai/tutor-test-fixtures';
-import type { ClaimedInterviewOperation } from '../../application/ports/interview-store';
+import {
+    PortraitInterviewInvalidModelOutputError,
+    type ClaimedInterviewOperation,
+} from '../../application/ports/interview-store';
 const operation: ClaimedInterviewOperation = {
     id: 'id',
     interviewId: 'interview',
@@ -75,7 +79,31 @@ describe('learner interviewer runner', () => {
                 accounting.admit.mock.calls[0]![0].inputTokenEstimate,
             ).toBeLessThanOrEqual(limit);
             expect(limit).toBeLessThan(64000);
-            if (kind === 'small') expect(limit).toBeLessThan(6000);
+            const actual = Buffer.byteLength(
+                JSON.stringify({
+                    prompt: provider.requests[0]!.prompt,
+                    tools: provider.requests[0]!.tools,
+                }),
+                'utf8',
+            );
+            expect(accounting.admit.mock.calls[0]![0].inputTokenEstimate).toBe(
+                actual,
+            );
+            expect(actual).toBeLessThanOrEqual(limit);
+            const userMessage = provider.requests[0]!.prompt.find(
+                (message) => message.role === 'user',
+            );
+            expect(userMessage?.content).toContainEqual({
+                type: 'text',
+                text: buildInterviewSchemaInstruction(),
+            });
+            expect(JSON.stringify(provider.requests[0]!.prompt)).toContain(
+                'proposedItems',
+            );
+            expect(JSON.stringify(provider.requests[0]!.prompt)).toContain(
+                'just-starting',
+            );
+            if (kind === 'small') expect(limit).toBeLessThan(5900);
         },
     );
     it('preserves the full historical bound for old operations and rejects invalid new pins', () => {
@@ -122,6 +150,10 @@ describe('learner interviewer runner', () => {
         expect(provider.requests).toHaveLength(1);
         const request = JSON.stringify(provider.requests[0]);
         expect(request).toContain('explanation-languages');
+        expect(request).toContain(
+            'Return your response as JSON matching this schema',
+        );
+        expect(provider.requests[0]?.toolChoice).toEqual({ type: 'none' });
         expect(request).toContain('never claim access');
         expect(provider.requests[0]?.tools ?? []).toHaveLength(0);
     });
@@ -177,6 +209,88 @@ describe('learner interviewer runner', () => {
         await expect(
             runner.run({ operation, signal: new AbortController().signal }),
         ).rejects.toThrow();
+        expect(provider.requests).toHaveLength(1);
+    });
+    it.each([
+        ['non-JSON', 'This is a natural language reply'],
+        ['malformed JSON', '{"message":'],
+        [
+            'markdown-wrapped JSON',
+            `\`\`\`json\n${JSON.stringify(result)}\n\`\`\``,
+        ],
+        [
+            'non-ASCII option id',
+            JSON.stringify({
+                ...result,
+                options: [{ id: 'русский', label: 'Русский' }],
+            }),
+        ],
+        [
+            'nested invalid preference',
+            JSON.stringify({
+                ...result,
+                proposedItems: {
+                    languages: [
+                        { language: 'en', learning: true, level: 'assessed' },
+                    ],
+                },
+            }),
+        ],
+        [
+            'duplicate option ids',
+            JSON.stringify({
+                ...result,
+                options: [
+                    { id: 'travel', label: 'A' },
+                    { id: 'travel', label: 'B' },
+                ],
+            }),
+        ],
+    ])(
+        'fails %s safely after exactly one accounted provider call',
+        async (_label, response) => {
+            const provider = scriptedTutorModel([response]);
+            const accounting = tutorAccountingFixture();
+            const runner = createLearnerInterviewerRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: 64000,
+            });
+            const failure = await runner
+                .run({ operation, signal: new AbortController().signal })
+                .catch((error: unknown) => error);
+            expect(failure).toBeInstanceOf(
+                PortraitInterviewInvalidModelOutputError,
+            );
+            expect((failure as Error).message).toBe(
+                'The interview response did not match the required format.',
+            );
+            expect(failure).not.toHaveProperty('cause');
+            expect(provider.requests).toHaveLength(1);
+            expect(accounting.admit).toHaveBeenCalledOnce();
+            expect(accounting.settle).toHaveBeenCalledOnce();
+        },
+    );
+    it('returns a strict structured object with supported nested preferences', async () => {
+        const expected = {
+            ...result,
+            proposedItems: {
+                languages: [{ language: 'en', learning: true, level: 'basic' }],
+                explanationLanguages: ['ru'],
+                goals: ['Travel'],
+                accommodations: ['Short steps'],
+                hobbies: [],
+            },
+        };
+        const provider = scriptedTutorModel([JSON.stringify(expected)]);
+        const accounting = tutorAccountingFixture();
+        await expect(
+            createLearnerInterviewerRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: 64000,
+            }).run({ operation, signal: new AbortController().signal }),
+        ).resolves.toEqual(expected);
         expect(provider.requests).toHaveLength(1);
     });
     it('does not dispatch when accounting admission fails', async () => {

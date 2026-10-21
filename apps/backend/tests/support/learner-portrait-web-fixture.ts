@@ -262,7 +262,9 @@ function deterministicModel(
 }
 
 /** The interview still uses Mastra, durable accounting and its real worker. */
-function deterministicInterviewerModel(): TutorProviderModel {
+function deterministicInterviewerModel(
+    mode: 'normal' | 'slow' | 'invalid' = 'normal',
+): TutorProviderModel {
     const response = JSON.stringify({
         message:
             'I can use short French examples and Russian clarification when useful. Review this proposal before saving it.',
@@ -295,14 +297,29 @@ function deterministicInterviewerModel(): TutorProviderModel {
             hobbies: [],
         },
     });
+    const invalid = JSON.parse(response) as Record<string, unknown>;
+    invalid.proposedItems = {
+        ...(invalid.proposedItems as Record<string, unknown>),
+        languages: [{ language: 'French', level: 'A1' }],
+    };
+    const invalidResponse = JSON.stringify(invalid);
     return {
         specificationVersion: 'v2',
         provider: 'deterministic-portrait-web',
         modelId: 'deepseek-flash',
         supportedUrls: {},
-        async doGenerate() {
+        async doGenerate(options) {
+            if (mode === 'slow')
+                await delay(3_000, undefined, {
+                    signal: options.abortSignal ?? undefined,
+                });
             return {
-                content: [{ type: 'text' as const, text: response }],
+                content: [{
+                    type: 'text' as const,
+                    text: mode === 'invalid'
+                        ? invalidResponse
+                        : response,
+                }],
                 finishReason: 'stop' as const,
                 usage: { inputTokens: 50, outputTokens: 30, totalTokens: 80 },
                 warnings: [],
@@ -383,14 +400,16 @@ export async function createLearnerPortraitWebFixture(
         const d = authentication.productDependencies;
         const consumeRateLimit = d.rateLimiter.consume.bind(d.rateLimiter);
         // The one guarded browser server shares a loopback client address across
-        // its six synthetic journeys (and the share recipient). Keep the real
-        // Redis limiter, while giving only that test-only client bucket enough
-        // capacity; account and cooldown limits still apply unchanged.
+        // its synthetic learners. Keep the real Redis limiter, while giving
+        // test-only shared-address buckets enough capacity for five browser
+        // journeys; per-account and cooldown limits remain unchanged.
         d.rateLimiter.consume = async (request) =>
             consumeRateLimit({
                 ...request,
                 ...(request.scope === 'verification.email_send.client'
                     ? { limit: Math.max(request.limit, 64) }
+                    : request.scope === 'learner-portrait-address'
+                      ? { limit: request.limit * 5 }
                     : {}),
             });
         const authenticate = async (token: string) => {
@@ -463,8 +482,14 @@ export async function createLearnerPortraitWebFixture(
                 const snapshot = execution.snapshot;
                 if (!snapshot)
                     throw new Error('Portrait fixture operation lacks a model snapshot.');
+                const submission = JSON.stringify(operation.input);
+                const mode = submission.includes('[portrait-invalid]')
+                    ? 'invalid'
+                    : submission.includes('[portrait-slow]')
+                      ? 'slow'
+                      : 'normal';
                 return createLearnerInterviewerRunner({
-                    model: deterministicInterviewerModel(),
+                    model: deterministicInterviewerModel(mode),
                     accounting: createInterviewAccounting({
                         database: d.database,
                         ownerId: operation.ownerId,

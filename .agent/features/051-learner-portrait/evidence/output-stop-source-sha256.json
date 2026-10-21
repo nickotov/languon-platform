@@ -1,0 +1,70 @@
+{
+  "base": "35e6aa9",
+  "purpose": "Structured single-call interview output and composer Stop follow-up; generated declarations excluded/restored",
+  "files": [
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/interview-worker-service.test.ts",
+      "sha256": "a238804c0736b9bdfbcf5cb7bc698e43a55b9409ca72008964d2912582079a16"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/interview-worker-service.ts",
+      "sha256": "3dfbb506e0b5d200abd0e79e3a29e619495c0f80c9e9a79603618fcae3dac649"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/ports/interview-store.ts",
+      "sha256": "cb930eb74c33cc19226ad6bf61b193910d512fc9caf424f7d941604c5e818b53"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.ts",
+      "sha256": "be97f62c08d098f5362ca5b3bd91260b64c9074f8ff844f2df2bff651e88badd"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts",
+      "sha256": "ad14eee5628137cc32cb91dea575184116ff20626c729cfcc607ae2160a061cf"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.ts",
+      "sha256": "cfaaf4997424ea6e69955d1d2527911b316691813fb5f8f32acc99b1afc3c25c"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learner-portraits/learner-portrait.journeys.test.ts",
+      "sha256": "0d3ebee08b93541f3543f816803f81fc1f24a43528af06f773d9585b6700ef1f"
+    },
+    {
+      "path": "apps/backend/tests/support/learner-portrait-web-fixture.ts",
+      "sha256": "8286fc321264ecf3cc0917d8676e3f5545b4f3013ce2560ed927387fd38f640f"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/hooks/use-portrait-interview.ts",
+      "sha256": "938a1bfa31d7ec6146ef5ebcc3eb70661e40eaa021d895c5e70b13b2d61dbab8"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/lib/interview-copy.ts",
+      "sha256": "5221e7274b5cfc9e7b88a1fb6e349ebc23db567bbafe164010d724632c44faa3"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-composer.tsx",
+      "sha256": "6e3f32b4d15e83ffd16a3abacfb70c9bd0d3a03372a9e22a146e5d57fc8ea3fe"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-transcript.tsx",
+      "sha256": "903c3e5fba2ff84b85bdee919f18a07045ee910a9694342d92267013806b8b07"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/portrait-interview-page.tsx",
+      "sha256": "84d03876f900a3f27d502ea91504065bb25ac332af4a628a6c1121b2087e9eab"
+    },
+    {
+      "path": "apps/web/tests/e2e/learner-portrait.journeys.spec.ts",
+      "sha256": "a206925648693d8cc1c1c9e6a06ab79215ff7ff04baaec31f1af833dd65a5a32"
+    },
+    {
+      "path": "apps/web/tests/portrait-interview.test.tsx",
+      "sha256": "bbdf224267c7c84e400db1ff7bb967e4ed30028f3551ce9a281302a0f60eecec"
+    },
+    {
+      "path": "packages/prompts/src/local/learner-interviewer.ts",
+      "sha256": "ea5900a41b6767b24ed77e83262172c5b77a7c07c9666a5f245497e3fb0c11de"
+    }
+  ]
+}

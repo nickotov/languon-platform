@@ -253,6 +253,7 @@ export function usePortraitInterview() {
         missing,
         state,
         busy,
+        canStop: Boolean(operationId) && isInterviewOwner(sessionOwner),
         error,
         notice,
         proposal,

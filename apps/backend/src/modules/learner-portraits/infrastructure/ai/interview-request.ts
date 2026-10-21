@@ -1,3 +1,5 @@
+import { PortraitInterviewerOutputSchema } from '@languon/contracts';
+import { z } from 'zod';
 import { getLocalPrompt } from '@languon/prompts';
 import type { TextAiAdmissionExecution } from '../../../text-ai/application/text-ai-admission-participant';
 import type { InterviewOperation } from '../../application/ports/interview-store';
@@ -26,10 +28,21 @@ export function buildInterviewRequest(
     });
 }
 
+/** Mirrors the pinned Mastra inline-schema framing; SDK-boundary tested. */
+export function buildInterviewSchemaInstruction() {
+    const schema = z.toJSONSchema(PortraitInterviewerOutputSchema, {
+        io: 'output',
+        target: 'draft-7',
+        unrepresentable: 'any',
+    });
+    return `Return your response as JSON matching this schema:\n\n${JSON.stringify(schema)}\n\nReturn only valid JSON. Do not include markdown or explanatory text.`;
+}
+
 /**
  * One UTF-8 byte per token is deliberately conservative. Include JSON escaping
- * and 1,024 bytes for Mastra message framing. The worker's actual model gate
- * independently checks this immutable bound before accounting or dispatch.
+ * and the full schema injected by Mastra, plus 256 bytes for message framing.
+ * The worker's actual model gate checks this immutable bound before accounting
+ * or dispatch. SDK-boundary tests verify exact schema framing and full envelopes.
  */
 export function interviewInputTokenLimit(
     operation: Pick<InterviewOperation, 'input' | 'context'>,
@@ -42,6 +55,13 @@ export function interviewInputTokenLimit(
                 role: 'user',
                 content: [
                     { type: 'text', text: buildInterviewRequest(operation) },
+                    // Mastra 1.57 injects this compact JSON schema into the latest user
+                    // message. SDK-boundary tests compare its actual prompt/tools bytes
+                    // with this pin so upgrades cannot silently under-reserve a call.
+                    {
+                        type: 'text',
+                        text: buildInterviewSchemaInstruction(),
+                    },
                 ],
             },
         ],
@@ -49,7 +69,7 @@ export function interviewInputTokenLimit(
     };
     return Math.min(
         modelLimit,
-        Buffer.byteLength(JSON.stringify(envelope), 'utf8') + 1024,
+        Buffer.byteLength(JSON.stringify(envelope), 'utf8') + 256,
     );
 }
 
