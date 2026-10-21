@@ -37,16 +37,6 @@ export function useInterviewQuestion(
     }, [session]);
     let question: PortraitInterviewerOutput | null = null;
     if (session) question = session.initialQuestion;
-    if (
-        session?.context.messages.length === 0 &&
-        question?.topic === 'languages'
-    ) {
-        question = {
-            ...question,
-            options: localInterviewQuestion('languages', session.context.locale)
-                .options,
-        };
-    }
     if (session?.lastAttempt)
         question = localInterviewQuestion(
             session.lastAttempt.input.topic,

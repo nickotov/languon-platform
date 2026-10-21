@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createLearnerInterviewerRunner } from './learner-interviewer';
 import {
+    interviewInputTokenLimit,
+    readInterviewInputTokenLimit,
+} from './interview-request';
+import {
     scriptedTutorModel,
     tutorAccountingFixture,
 } from '../../../conversations/infrastructure/ai/tutor-test-fixtures';
@@ -33,6 +37,72 @@ const result = {
     answerSummary: 'Travel comfortably',
 };
 describe('learner interviewer runner', () => {
+    it.each(['small', 'unicode-history'] as const)(
+        'bounds the actual provider envelope for %s without reserving the model context window',
+        async (kind) => {
+            const current =
+                kind === 'small'
+                    ? operation
+                    : {
+                          ...operation,
+                          input: {
+                              kind: 'chat' as const,
+                              topic: 'goals' as const,
+                              text: '日本語\\"🙂'.repeat(80),
+                          },
+                          context: {
+                              ...operation.context,
+                              messages: Array.from({ length: 8 }, () => ({
+                                  role: 'user' as const,
+                                  content: 'Türkçe Magyar 日本語\\"🙂'.repeat(
+                                      50,
+                                  ),
+                              })),
+                          },
+                      };
+            const limit = interviewInputTokenLimit(current, 64000);
+            const accounting = tutorAccountingFixture();
+            const provider = scriptedTutorModel([JSON.stringify(result)]);
+            await createLearnerInterviewerRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: limit,
+            }).run({
+                operation: current,
+                signal: new AbortController().signal,
+            });
+            expect(
+                accounting.admit.mock.calls[0]![0].inputTokenEstimate,
+            ).toBeLessThanOrEqual(limit);
+            expect(limit).toBeLessThan(64000);
+            if (kind === 'small') expect(limit).toBeLessThan(6000);
+        },
+    );
+    it('preserves the full historical bound for old operations and rejects invalid new pins', () => {
+        const execution = { snapshot: { perCallMaxInputTokens: 64000 } };
+        expect(readInterviewInputTokenLimit(execution as never)).toBe(64000);
+        for (const limit of [0, -1, 64001, 1.5, NaN]) {
+            expect(() =>
+                readInterviewInputTokenLimit({
+                    ...execution,
+                    interviewInputTokenLimit: limit,
+                } as never),
+            ).toThrow();
+        }
+    });
+    it('rejects a provider envelope above its pin before admission or dispatch', async () => {
+        const accounting = tutorAccountingFixture();
+        const provider = scriptedTutorModel([JSON.stringify(result)]);
+        await expect(
+            createLearnerInterviewerRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: 1,
+            }).run({ operation, signal: new AbortController().signal }),
+        ).rejects.toThrow();
+        expect(accounting.admit).not.toHaveBeenCalled();
+        expect(provider.requests).toHaveLength(0);
+    });
     it('registers an operation-only tool-free agent, validates output and accounts the provider request', async () => {
         const provider = scriptedTutorModel([JSON.stringify(result)]);
         const accounting = tutorAccountingFixture();

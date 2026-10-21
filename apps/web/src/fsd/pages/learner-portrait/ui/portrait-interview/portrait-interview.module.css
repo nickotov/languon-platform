@@ -241,6 +241,22 @@
     font-size: var(--size-14);
 }
 
+.languageName {
+    display: flex;
+    align-items: center;
+    min-height: var(--size-40);
+    overflow-wrap: anywhere;
+}
+
+.languageLearning {
+    justify-content: center;
+    min-height: var(--size-40);
+}
+
+.showMoreLanguages {
+    margin-top: var(--space-8);
+}
+
 .custom {
     margin-top: var(--space-16);
 }

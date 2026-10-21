@@ -19,6 +19,7 @@ import {
     interviewQuestionHelp,
     interviewAnswerPlaceholder,
 } from '../../lib/interview-questions';
+import { interviewLanguageOptions } from '../../lib/interview-languages';
 import { InterviewOptionGroup } from './interview-option-group';
 import { InterviewLanguageFields } from './interview-language-fields';
 import styles from './portrait-interview.module.css';
@@ -37,6 +38,13 @@ export function InterviewQuestion({
     onAnswer(answer: Answer): void;
     onSkip(): void;
 }) {
+    const languageTopic =
+        question.topic === 'languages' ||
+        question.topic === 'explanation-languages';
+    const options = languageTopic
+        ? interviewLanguageOptions(locale, question.options)
+        : question.options;
+    const effectiveQuestion = { ...question, options };
     const [selected, setSelected] = useState<string[]>([]);
     const [preferences, setPreferences] = useState<Record<string, string>>({});
     const [mixing, setMixing] = useState('');
@@ -94,8 +102,7 @@ export function InterviewQuestion({
             return;
         const answers = selected.map((id) => {
             const label =
-                question.options.find((option) => option.id === id)?.label ??
-                id;
+                options.find((option) => option.id === id)?.label ?? id;
             if (question.topic !== 'languages') return label;
             const details = languages[id];
             const levelLabel = interviewLevelOptions(locale).find(
@@ -145,7 +152,7 @@ export function InterviewQuestion({
                 />
             ) : null}
             <InterviewOptionGroup
-                question={question}
+                question={effectiveQuestion}
                 locale={locale}
                 selected={selected}
                 busy={busy}
@@ -154,7 +161,7 @@ export function InterviewQuestion({
             {question.topic === 'languages' && selected.length > 0 ? (
                 <InterviewLanguageFields
                     selected={selected}
-                    options={question.options}
+                    options={options}
                     values={languages}
                     locale={locale}
                     onChange={changeLanguage}

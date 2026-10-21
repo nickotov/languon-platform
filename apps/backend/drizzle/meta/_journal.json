@@ -568,6 +568,13 @@
       "when": 1792589454017,
       "tag": "0080_luxuriant_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1792592595523,
+      "tag": "0081_portrait_operation_input_bound",
+      "breakpoints": true
     }
   ]
 }

@@ -30,6 +30,7 @@ import { createLearnerPortraitModule } from '../../src/modules/learner-portraits
 import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
 import { InterviewWorkerService } from '../../src/modules/learner-portraits/application/interview-worker-service';
 import { createLearnerInterviewerRunner } from '../../src/modules/learner-portraits/infrastructure/ai/learner-interviewer';
+import { readInterviewInputTokenLimit } from '../../src/modules/learner-portraits/infrastructure/ai/interview-request';
 import { createInterviewAccounting } from '../../src/modules/learner-portraits/infrastructure/interview-accounting';
 import { readApprovedPortraitForConversation } from '../../src/modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-portrait-store';
 import {
@@ -328,7 +329,7 @@ function admittedPortraitExecution(
             'number' ||
         !budget ||
         typeof budget !== 'object' ||
-        value.interviewCreditsBypass !== true
+        typeof value.interviewCreditsBypass !== 'boolean'
     )
         throw new Error(
             'Portrait fixture operation lacks the admitted execution snapshot.',
@@ -342,6 +343,7 @@ export async function createLearnerPortraitWebFixture(
     origin = 'http://localhost:3337',
 ) {
     assertFixtureTarget();
+    const creditsBypass = process.env.LEARNER_PORTRAIT_TEST_PAID !== 'true';
     const migration = createTestPostgresClient();
     // Never reset an existing schema; append project migrations to the exclusive target.
     try {
@@ -447,7 +449,7 @@ export async function createLearnerPortraitWebFixture(
         });
         const learnerPortraits = createLearnerPortraitModule({
             database: d.database,
-            creditsBypass: true,
+            creditsBypass,
             selectionPolicy: {
                 routingEnabled: true,
                 credentialConfigured: () => true,
@@ -471,7 +473,7 @@ export async function createLearnerPortraitWebFixture(
                         withOperation: (work) =>
                             learnerPortraits.store.withOperation(operation, work),
                     }),
-                    maxInputTokens: snapshot.perCallMaxInputTokens,
+                    maxInputTokens: readInterviewInputTokenLimit(execution),
                     maxOutputTokens: snapshot.perCallMaxOutputTokens,
                 });
             },
@@ -508,7 +510,7 @@ export async function createLearnerPortraitWebFixture(
                 authenticate,
                 rateLimiter: d.rateLimiter,
                 policy: authentication.options.policy,
-                creditsBypass: true,
+                creditsBypass,
             }),
             dictionaries: createDictionaryComposition({
                 ...d,
@@ -545,7 +547,7 @@ export async function createLearnerPortraitWebFixture(
             await d.database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: userId,
-                    amount: 1_000_000_000n,
+                    amount: 20_000n,
                     createdAt: new Date(),
                     expiresAt: null,
                     source: 'admin',

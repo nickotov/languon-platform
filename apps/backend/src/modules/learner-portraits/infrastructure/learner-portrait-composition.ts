@@ -3,7 +3,10 @@ import { learnerPortraitInterviewOperationsTable as operations } from './persist
 import type { PortraitTransaction } from './persistence/drizzle/drizzle-portrait-store';
 import type { TextAiAvailabilityPolicy } from '../../text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
 import { resolveTextAiProviderOptions } from '../../text-ai/infrastructure/ai/text-ai-provider-resolver';
-import type { TextAiAdmissionExecution } from '../../text-ai/application/text-ai-admission-participant';
+import {
+    readInterviewInputTokenLimit,
+    type InterviewExecution,
+} from './ai/interview-request';
 import { PortraitService } from '../application/portrait-service';
 import { InterviewService } from '../application/interview-service';
 import { InterviewWorkerService } from '../application/interview-worker-service';
@@ -70,9 +73,7 @@ export function createLearnerPortraitWorkerComposition(input: {
         store,
         createRunner(operation) {
             const execution =
-                operation.execution as unknown as TextAiAdmissionExecution & {
-                    interviewCreditsBypass: boolean;
-                };
+                operation.execution as unknown as InterviewExecution;
             if (!execution.snapshot)
                 throw new Error('Interview execution snapshot is unavailable.');
             const provider = resolveTextAiProviderOptions({
@@ -90,7 +91,7 @@ export function createLearnerPortraitWorkerComposition(input: {
                     operationId: operation.id,
                     execution,
                 }),
-                maxInputTokens: execution.snapshot.perCallMaxInputTokens,
+                maxInputTokens: readInterviewInputTokenLimit(execution),
                 maxOutputTokens: execution.snapshot.perCallMaxOutputTokens,
             });
         },

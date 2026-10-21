@@ -16,6 +16,7 @@ import {
 } from '../../../conversations/infrastructure/ai/accounted-tutor-model';
 import type { TutorAccountingPort } from '../../../conversations/application/ports/tutor-runner';
 import type { InterviewRunner } from '../../application/ports/interview-store';
+import { buildInterviewRequest } from './interview-request';
 
 export function createLearnerInterviewerAgent(model: MastraModelConfig) {
     const agent = new Agent({
@@ -31,13 +32,6 @@ export function createLearnerInterviewerAgent(model: MastraModelConfig) {
     agent.__registerPrimitives({ logger: noopLogger });
     return agent;
 }
-const coreTopics = [
-    'languages',
-    'explanation-languages',
-    'goals',
-    'style',
-    'accommodations',
-] as const;
 export function createLearnerInterviewerRunner(options: {
     model: ModelRouterModelId | OpenAICompatibleConfig | TutorProviderModel;
     accounting: TutorAccountingPort;
@@ -63,18 +57,7 @@ export function createLearnerInterviewerRunner(options: {
                     gate.wrap(model, 'answer'),
                 ),
             }).getAgent('learnerInterviewer');
-            const completed = new Set(operation.context.completedTopics);
-            if (operation.input.kind !== 'chat')
-                completed.add(operation.input.topic);
-            const nextCoreTopic =
-                coreTopics.find((topic) => !completed.has(topic)) ?? 'update';
-            const content = JSON.stringify({
-                nextCoreTopic,
-                context: operation.context,
-                submission: operation.input,
-                instruction:
-                    'Return JSON only. Proposals remain pending review; never claim they are saved or active.',
-            });
+            const content = buildInterviewRequest(operation);
             try {
                 const output = await agent.generate(content, {
                     abortSignal: gate.signal,

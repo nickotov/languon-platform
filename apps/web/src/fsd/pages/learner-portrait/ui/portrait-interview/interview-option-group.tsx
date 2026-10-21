@@ -1,5 +1,7 @@
-import type { ChangeEvent } from 'react';
+import { useId, useState, type ChangeEvent } from 'react';
 import type { PortraitInterviewerOutput } from '@languon/contracts';
+import { Button } from '@/fsd/shared/ui';
+import { primaryInterviewLanguageTags } from '../../lib/interview-languages';
 import { interviewText, type InterviewLocale } from '../../lib/interview-copy';
 import { InterviewChoice } from './interview-choice';
 import styles from './portrait-interview.module.css';
@@ -16,6 +18,24 @@ export function InterviewOptionGroup({
     busy: boolean;
     onChange(event: ChangeEvent<HTMLInputElement>): void;
 }) {
+    const [expanded, setExpanded] = useState(false);
+    const choicesId = useId();
+    const languageTopic =
+        question.topic === 'languages' ||
+        question.topic === 'explanation-languages';
+    const primaryCount = primaryInterviewLanguageTags.length;
+    const visibleOptions = question.options.filter(
+        (option, index) =>
+            !languageTopic ||
+            expanded ||
+            index < primaryCount ||
+            selected.includes(option.id),
+    );
+    const canExpand =
+        languageTopic && visibleOptions.length < question.options.length;
+    function showMore() {
+        setExpanded(true);
+    }
     if (question.topic === 'style' || question.options.length === 0)
         return null;
     let label = interviewText(locale, question.topic);
@@ -33,8 +53,8 @@ export function InterviewOptionGroup({
                     {interviewText(locale, 'selectAll')}
                 </p>
             ) : null}
-            <div className={styles.fieldChoices}>
-                {question.options.map((option) => (
+            <div className={styles.fieldChoices} id={choicesId}>
+                {visibleOptions.map((option) => (
                     <InterviewChoice
                         key={option.id}
                         label={option.label}
@@ -47,6 +67,19 @@ export function InterviewOptionGroup({
                     />
                 ))}
             </div>
+            {canExpand ? (
+                <Button
+                    type='button'
+                    variant='ghost'
+                    className={styles.showMoreLanguages}
+                    aria-expanded={expanded}
+                    aria-controls={choicesId}
+                    onClick={showMore}
+                    disabled={busy}
+                >
+                    {interviewText(locale, 'showMoreLanguages')}
+                </Button>
+            ) : null}
         </fieldset>
     );
 }

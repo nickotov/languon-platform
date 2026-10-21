@@ -1,5 +1,15 @@
 # Learner portrait backend checkpoint review
 
+## User refinement credit/security/test review — 2026-10-21
+
+Independent security reviewer portrait_credit_security reviewed the complete changed runtime credit path,0081guard and surrounding immutable execution/call/ledger/recovery/deletion boundaries from base5bb2e56. Verdict: Pass, no material exploitable findings. Server-derived pinned input limit is not a transport field; actual gate checks prompt/tools bytes before dispatch; synchronous affordability and worker reservation agree; SQL requires owned immutable call identity, valid numeric request pin bounded by model max and exact reserved input match. Security-definer path and revokedPUBLIC permissions remain. Old absent-pin executions retain full-model semantics. New/old mixed workers or schema fail closed before provider calls; coordinate migration and worker rollout. Backend unit1106passes. Framing allowance/provider-SDK uncertainty is a bounded residual vendor-cost assumption, not a claim of live paid-model verification.
+
+Separate tester portrait_credit_test_audit independently checked request/unit/PG/browser coverage. Two test-fidelity gaps were identified and closed: browser fixture now passes the exact production pinned gate, and the20kPG regression asserts unknown usage settles the full reserved amount with matching allocations. Final registered free and paid runs each pass12backend/2browser after those fixes. Focused runner9passes and realPG cases cover true insufficiency, serialization of competing holds, actual settlement/release, invalidpins and old executions. No database reset or paid call was run by the audit agent.
+
+Root author preflight verifies20changed source/test/migration hashes, both production builds, lint/types,27guides, real desktop/mobile screenshot refinement, free/paid real-browser runs and real local backed-up migration/admission/health.
+
+Independent initial completion review portrait_refinement_review verifies base5bb2e56667a82dc4f3e202d0f07609c9930e5e79 through the final20-path source manifest plus related requirements/plan/guide and captured user/runtime reference. Verdict: Pass, no material findings. POR15–17 satisfied: materially faithful aligned rows/responsive stack; exact seven defaults and48expanded choices with identity/detail preservation; request-specific pinned affordability/worker gate/SQLhold/settlement/recovery with old-operation semantics and fail-closed invalid pins. Boundaries preserved; no sidebar or global conversation change. Prior original feature reviews apply only to unchanged paths. Both tester remediation gaps are closed and final runs pass. Accepted residuals remain no live paid provider proof, conservative framing/vendor tokenization assumptions, curated rather than certified/exhaustive language coverage, and representative visual/localization coverage. No required implementation or review work remains.
+
 Reviewed: 2026-10-21
 Verdict: Backend checkpoint passes — functional and security reviews closed; UI awaits design
 

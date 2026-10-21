@@ -93,6 +93,12 @@ const rows = {
         'Sélectionnez tout ce qui convient.',
         'Selecciona todo lo que corresponda.',
     ],
+    showMoreLanguages: [
+        'Show more',
+        'Показать ещё',
+        'Afficher plus',
+        'Mostrar más',
+    ],
     describeLanguages: [
         'Describe each language',
         'Опишите каждый язык',

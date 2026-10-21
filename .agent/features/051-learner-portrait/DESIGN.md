@@ -33,6 +33,8 @@ Revision rules: [Versioned design handoff](../../DESIGN_HANDOFF.md)
 
 Decision history:
 
+- 2026-10-21 — User explicitly refines the selected-language row with a supplied local screenshot, retained at designs/user-refinements/2026-10-21/interview-language-row-reference.png, and requests a seven-language initial set with Show more. This approved refinement supplements targetv001; provider export/prompt are unchanged and remain frozen. POR15–16 own observable acceptance. No new sidebar design is included.
+
 - 2026-10-20 — Saved full brief after backend logic checks passed. Created exact immutable v001 snapshot. Awaiting generated design; no UI implementation implied.
 
 - 2026-10-21 — User returned and explicitly selected the linked design. Captured complete provider source before implementation; targetv001 fixed to the recorded artifact. The original blank URL is filled once; no prompt/snapshot content changed.

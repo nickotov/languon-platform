@@ -7,6 +7,7 @@ import {
     type InterviewLocale,
     type InterviewTopic,
 } from './interview-copy';
+import { interviewLanguageOptions } from './interview-languages';
 const rows: Partial<Record<InterviewTopic, string[][]>> = {
     goals: [
         ['Travel', 'Путешествия', 'Voyages', 'Viajes'],
@@ -100,14 +101,10 @@ export function localInterviewQuestion(
     locale: InterviewLocale,
 ): PortraitInterviewerOutput {
     const index = ['en', 'ru', 'fr', 'es'].indexOf(locale);
-    const names = new Intl.DisplayNames([locale], { type: 'language' });
     const languageTopic =
         topic === 'languages' || topic === 'explanation-languages';
     const options = languageTopic
-        ? ['en', 'es', 'fr', 'ru', 'de', 'it', 'pt', 'ja'].map((code) => ({
-              id: code,
-              label: names.of(code) ?? code,
-          }))
+        ? interviewLanguageOptions(locale)
         : (rows[topic] ?? []).map((labels, i) => ({
               id: `choice-${i}`,
               label: labels[index]!,

@@ -31,7 +31,7 @@ export function InterviewLanguageFields({
         >
             {selected.map((id) => (
                 <li key={id} className={styles.languageRow}>
-                    <strong>
+                    <strong className={styles.languageName}>
                         {options.find((option) => option.id === id)?.label}
                     </strong>
                     <Select
@@ -43,6 +43,7 @@ export function InterviewLanguageFields({
                         options={levelOptions}
                     />
                     <Checkbox
+                        className={styles.languageLearning}
                         label={interviewText(locale, 'learning')}
                         data-language={id}
                         data-field='learning'

@@ -52,7 +52,11 @@ explicitly approve it, and separately decide whether future chats may use it.
 The guided interview is a standalone, resumable operation; it never reads other
 chats, publishes a portrait, or enables use. Interview admission selects only a
 ready portrait-interview execution capability and uses the frozen paid/free
-policy of that operation. The server-only free flag removes the learner charge
+policy of that operation. New interview operations pin a conservative input bound
+for the serialized interview request, including system instructions and framing;
+the same bound controls affordability, provider dispatch and the database-backed
+hold. The output ceiling remains4,096tokens. Existing admitted operations retain
+their original limits. The server-only free flag removes the learner charge
 without omitting provider-cost accounting or capacity limits.
 
 The web journey uses the actual authenticated application, portrait routes,
@@ -122,19 +126,27 @@ delete confirmation explains that ordinary chat history remains. Two tabs that
 save different manual edits must show the latest and local values, require an
 explicit reconciliation choice, and save the chosen result.
 
-The interview journey starts and reloads a resumable interview, submits a
+The interview journey starts and reloads a resumable interview. Both language
+questions initially offer Russian, English, French, Spanish, German, Serbian and
+Polish; Show more reveals the expanded portrait choices, including Turkish and
+Hungarian. Existing custom/adaptive choices and selected language details remain.
+Selected-language rows align language name, labeled description and learning
+checkbox on desktop and remain usable in a narrow browser. The journey submits a
 French/Russian clarification to a deterministic queued worker, reviews its
 proposal, adds it to the draft, and saves it through the same separate approval
 flow. The resulting portrait is still off until the learner explicitly enables
-it.
+it. The same deterministic browser journey also runs with the fixture's explicit
+test-only paid policy (`LEARNER_PORTRAIT_TEST_PAID=true`) and a20,000-credit grant;
+it accepts the actual first-paid-response notice and proves admission succeeds.
+This fixture flag cannot change normal application billing.
 
 ## E2E coverage
 
 | Scenario | Observable proof |
 | --- | --- |
-| `approved-private-portrait-and-interview-accounting` | Real authentication, HTTP routes, PostgreSQL state and Redis rate limiting prove owner isolation, draft approval without automatic use, paid provider-accounting settlement, and a zero-charge bypass dispatch that still records provider usage. The same fixture uses the deployment account-purge role to settle an expired active paid call and allocation, archive only numerical provider usage, erase portrait content, and deny reads of private operation/session/portrait payload columns. |
+| `approved-private-portrait-and-interview-accounting` | Real authentication, HTTP routes, PostgreSQL state and Redis rate limiting prove owner isolation, draft approval without automatic use, paid provider-accounting settlement, and a zero-charge bypass dispatch that still records provider usage. Additional funded-account regressions verify a bounded first response with20,000credits, genuine insufficiency and settlement/release. The same fixture uses the deployment account-purge role to settle an expired active paid call and allocation, archive only numerical provider usage, erase portrait content, and deny reads of private operation/session/portrait payload columns. |
 | `manual-approval-global-off-and-delete-warning` | Desktop and mobile browser evidence proves partial manual approval remains separately disabled after reload; a real two-tab version conflict preserves local edits until the learner chooses a latest or draft value and saves again; global off disables the per-chat control; and the delete confirmation retains the history warning. |
-| `resumable-interview-proposal-and-explicit-approval` | A real browser reload resumes an interview; a deterministic provider-bound worker completes the queued French/Russian response, produces a reviewable proposal, and requires the learner to save it before any portrait exists. |
+| `resumable-interview-proposal-and-explicit-approval` | A real browser reload resumes an interview; default and expanded language choices, retained level/learning selections and responsive row alignment are verified; a deterministic provider-bound worker completes the queued French/Russian response, produces a reviewable proposal, and requires the learner to save it before any portrait exists. Free and paid fixture policies preserve the notice and separate activation choices. |
 
 Repository, contract, and worker tests cover Unicode boundaries, diagnosis-label
 exclusion, conflict/expiry/delete races, recovery of interrupted calls, operation

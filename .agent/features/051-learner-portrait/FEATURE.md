@@ -1,6 +1,6 @@
 # Learner portrait and AI interview
 
-Status: Complete — selected Magic Patterns v001 implemented, verified and independently reviewed (2026-10-21)
+Status: Complete — original delivery and user-reported interview UI/credit follow-up verified and independently reviewed (2026-10-21)
 Authorized: 2026-10-20, user “Implement the plan”; prompt destination confirmed as docs/design-prompt once logic is done.
 
 ## Problem and desired behavior
@@ -25,6 +25,9 @@ Deliver the learner-owned approved portrait and standalone guided interview desc
 | POR-12 | The server-only flag enables interview-only zero user charge while preserving provider accounting and execution limits; flag-off behavior follows existing rules. |
 | POR-13 | Failures preserve editable unfinished work until its expiry; paid/free notices match the operation policy and manual actions never invoke AI. |
 | POR-14 | Known/studied/explanation languages remain distinct; proficiency is self-described, age use is limited, and future recipient context is not confused with the requesting account. |
+| POR-15 | Selected-language rows follow the user's retained screenshot: language left, labeled description select middle, learning checkbox aligned with the select; narrow layouts remain usable without overflow. |
+| POR-16 | Both interview language questions initially show Russian, English, French, Spanish, German, Serbian and Polish in that order; Show more exposes the expanded portrait language choices including Turkish/Hungarian, preserving custom/adaptive choices and selected details. |
+| POR-17 | Short interview requests use a conservative request-specific pinned input hold, rather than the full model input capacity. A sufficient20,000-credit grant admits and funds the representative first response; genuine insufficiency, concurrent allocation, immutable pricing, bypass, actual settlement and older in-flight policy remain correct. |
 
 ## Scope and constraints
 

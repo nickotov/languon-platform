@@ -1,4 +1,4 @@
-// @user-flow-revision learner-portrait sha256:34bac194f709f508
+// @user-flow-revision learner-portrait sha256:79395f586918a1a0
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 async function signup(page: Page, info: TestInfo) {
@@ -47,6 +47,53 @@ async function restoredSidebar(page: Page) {
     await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Create new', exact: true })).toBeVisible();
+}
+
+async function languageDetails(page: Page, info: TestInfo) {
+    const choices = page.getByRole('group', { name: 'Languages you know', exact: true });
+    await expect(choices.getByRole('checkbox')).toHaveCount(7);
+    expect(await choices.getByRole('checkbox').evaluateAll((inputs) =>
+        inputs.map((input) => (input as HTMLInputElement).value),
+    )).toEqual(['ru', 'en', 'fr', 'es', 'de', 'sr', 'pl']);
+    await choices.getByRole('checkbox', { name: 'Russian', exact: true }).check();
+    await choices.getByRole('checkbox', { name: 'English', exact: true }).check();
+    const details = page.getByRole('list', { name: 'Describe each language', exact: true });
+    const russian = details.getByRole('listitem').filter({ hasText: 'Russian' });
+    const english = details.getByRole('listitem').filter({ hasText: 'English' });
+    await russian.getByRole('combobox').selectOption('native');
+    await english.getByRole('combobox').selectOption('intermediate');
+    await english.getByRole('checkbox', { name: 'Learning now' }).check();
+    for (const row of [russian, english]) {
+        const name = await row.locator('strong').boundingBox();
+        const level = await row.getByRole('combobox').boundingBox();
+        const learning = await row.getByRole('checkbox').boundingBox();
+        expect(name && level && learning).toBeTruthy();
+        expect(level!.x).toBeGreaterThan(name!.x + name!.width);
+        expect(learning!.x).toBeGreaterThan(level!.x + level!.width);
+        expect(Math.abs(name!.y + name!.height / 2 - level!.y - level!.height / 2)).toBeLessThan(3);
+        expect(Math.abs(learning!.y + learning!.height / 2 - level!.y - level!.height / 2)).toBeLessThan(3);
+    }
+    await capture(page, info, 'portrait-two-language-details-desktop');
+    await page.getByRole('button', { name: 'Show more', exact: true }).click();
+    await expect(choices.getByRole('checkbox', { name: 'Turkish', exact: true })).toBeVisible();
+    await expect(choices.getByRole('checkbox', { name: 'Hungarian', exact: true })).toBeVisible();
+    await expect(choices.getByRole('checkbox')).toHaveCount(48);
+    await expect(english.getByRole('combobox')).toHaveValue('intermediate');
+    await expect(english.getByRole('checkbox', { name: 'Learning now' })).toBeChecked();
+    await choices.getByRole('checkbox', { name: 'English', exact: true }).uncheck();
+    await choices.getByRole('checkbox', { name: 'English', exact: true }).check();
+    await expect(english.getByRole('combobox')).toHaveValue('intermediate');
+    await expect(english.getByRole('checkbox', { name: 'Learning now' })).toBeChecked();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await english.scrollIntoViewIfNeeded();
+    const name = await english.locator('strong').boundingBox();
+    const level = await english.getByRole('combobox').boundingBox();
+    const learning = await english.getByRole('checkbox').boundingBox();
+    expect(name!.y + name!.height).toBeLessThanOrEqual(level!.y);
+    expect(level!.y + level!.height).toBeLessThanOrEqual(learning!.y);
+    await noOverflow(page);
+    await capture(page, info, 'portrait-expanded-language-details-mobile');
+    await page.setViewportSize({ width: 1440, height: 900 });
 }
 
 // @user-flow learner-portrait/manual-approval-global-off-and-delete-warning
@@ -137,7 +184,10 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
     const assertNoRuntimeErrors = runtimeErrors(page);
     await signup(page, info);
     await page.goto('/portrait/intro');
-    await expect(page.getByText('This interview is currently free; it won’t use your credits.')).toBeVisible();
+    const paid = process.env.LEARNER_PORTRAIT_TEST_PAID === 'true';
+    await expect(page.getByText(paid
+        ? 'AI responses use credits under your current model and usage settings. Reviewing, editing and saving by hand are free.'
+        : 'This interview is currently free; it won’t use your credits.')).toBeVisible();
     await capture(page, info, 'portrait-interview-intro-desktop');
     await page.getByRole('button', { name: 'Start interview', exact: true }).click();
     await expect(page).toHaveURL(/\/portrait\/interview$/);
@@ -152,12 +202,27 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
         }),
     ).toBeVisible();
     await capture(page, info, 'portrait-interview-desktop');
+    await languageDetails(page, info);
     await page.getByRole('button', { name: 'Draft preview', exact: true }).click();
     await expect(page.getByText('Draft preview Not saved')).toBeVisible();
     await capture(page, info, 'portrait-interview-preview-desktop');
     await page.getByRole('button', { name: 'Dismiss', exact: true }).click();
     await page.getByLabel('Ask a question or answer in your own words…').fill('Je voudrais des exemples courts, avec des explications en русском.');
+    const billingNotice = paid ? page.waitForResponse((response) =>
+        response.url().includes('/interview/responses') && response.status() === 409,
+    ) : undefined;
     await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    if (paid) {
+        expect((await billingNotice!).status()).toBe(409);
+        const notice = page.getByRole('dialog', { name: 'Interviewer responses now use credits' });
+        await expect(notice).toBeVisible();
+        await capture(page, info, 'portrait-paid-credit-confirmation');
+        const admitted = page.waitForResponse((response) =>
+            response.url().includes('/interview/responses') && response.status() === 202,
+        );
+        await notice.getByRole('button', { name: 'Continue with credits', exact: true }).click();
+        await admitted;
+    }
     await expect(page.getByText('Proposed for your draft · not saved yet')).toBeVisible();
     await expect(page.getByText('French travel examples with Russian clarification.')).toBeVisible();
     await page.getByRole('button', { name: 'Add to draft', exact: true }).click();

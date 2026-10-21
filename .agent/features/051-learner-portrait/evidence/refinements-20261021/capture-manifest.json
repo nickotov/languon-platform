@@ -1,0 +1,85 @@
+{
+  "baseRevision": "5bb2e56667a82dc4f3e202d0f07609c9930e5e79",
+  "runs": [
+    {
+      "id": "portrait-refinements-free-pinned-final",
+      "policy": "free",
+      "creditGrant": 20000,
+      "backendTests": 12,
+      "browserTests": 2,
+      "result": "pass",
+      "command": "LEARNER_PORTRAIT_TEST_PAID=false pnpm test:e2e:learner-portrait -- --output=/private/tmp/portrait-refinements-free-pinned-final",
+      "pinnedGate": "Fixture uses production readInterviewInputTokenLimit(execution); full final fixture source tested",
+      "paidFlow": null
+    },
+    {
+      "id": "portrait-refinements-paid-pinned-final",
+      "policy": "paid",
+      "creditGrant": 20000,
+      "backendTests": 12,
+      "browserTests": 2,
+      "result": "pass",
+      "command": "LEARNER_PORTRAIT_TEST_PAID=true pnpm test:e2e:learner-portrait -- --output=/private/tmp/portrait-refinements-paid-pinned-final",
+      "pinnedGate": "Fixture uses production readInterviewInputTokenLimit(execution); full final fixture source tested",
+      "paidFlow": "409notice,explicitContinuewithcredits,202admission,deterministicworkerproposal,explicitSave"
+    }
+  ],
+  "environment": {
+    "postgres": "dedicatedloopback55481/languon_auth_portrait_test",
+    "redis": "dedicatedloopback56381/db1",
+    "provider": "deterministic localfixture",
+    "realUserData": false
+  },
+  "viewports": [
+    [
+      1440,
+      900
+    ],
+    [
+      390,
+      844
+    ]
+  ],
+  "runtimeErrors": [],
+  "unexpected5xxAndNavigation404": [],
+  "geometry": "Desktop name/select/checkbox centers within3px inthreecolumns;mobileverticalstack,nodocumentoverflow",
+  "sourceSha256": {
+    "apps/backend/tests/support/learner-portrait-web-fixture.ts": "4113c9a445daa6f0ba6729bc8f9ff1f1ee8df36704b64eedbc31ba71d0343b53",
+    "apps/web/tests/e2e/learner-portrait.journeys.spec.ts": "5f85f58cc99fbcc6b48f2691a9bc16c70a1481e1004da7cde05fbb3f85833e21",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-language-fields.tsx": "48558826e1574909bfbc5b1ca56770307fe1bf1ae80b8d7f1579add121ff32a9",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-question.tsx": "0b50f639a8d37db4ae534fcd23ec95f43ec96bc4bab939fff4bcf08bbff10944",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-option-group.tsx": "ff30cea2d652385b7d2aa65e063a34b563246f8f0144b2f203a4ab2aa2617fb2",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/portrait-interview.module.css": "43817051cd68e057c9ef3b9b2e285cb21775650fa20c876ba47a9e0d43726a45",
+    "apps/web/src/fsd/pages/learner-portrait/lib/interview-languages.ts": "756944912412607cdb0229876d2cb0f2ce49786fd05da832be91fc6aa139d582",
+    "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.ts": "e900bab53c016e584b52b36a0a5192b56b3bb654427653d483ea17b51bb9849f",
+    "docs/user-flows/learner-portrait.md": "5bdee11ab96e6cac4a753ab14241f6000922e53be682cd3ae306ecf09c22c9fb",
+    "apps/backend/src/modules/learner-portraits/infrastructure/learner-portrait-composition.ts": "77b39be5af0daa6a2d2ff902eb5fa180e9de1be9b902b8990812d263b82576a7",
+    "apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts": "cd91ee152acfc2fbb12eab75cda628f5561c75082a03dab07dac371811d234cc",
+    "apps/backend/drizzle/0081_portrait_operation_input_bound.sql": "4665e8caa3f75a24cc668efa293cc45d95e34bc70f92e1a1968eb71ee195662e"
+  },
+  "captureSha256": {
+    "free/portrait-conflict-desktop.png": "386cac0bd2454dcbada4dd05a36c8e9d7aa2a4e25fb333f331a65da79d727217",
+    "free/portrait-delete-mobile.png": "1d7930fdc6fae6c3d341389b751fa787dacfa29a17dbd06fe09dd178eb27c484",
+    "free/portrait-expanded-language-details-mobile.png": "2073fd012f864685549c6fc940889ec31dd9c4d20b41d89fb9f8fba35bedd54a",
+    "free/portrait-interview-desktop.png": "5a9c800ee46b4d71ef06b889c6205ee03e317665d68252f1f22ee95e0682512c",
+    "free/portrait-interview-intro-desktop.png": "5afa398182a3ae01dbc21b1d25ff93e8499e4cd7de09944871d67666326b0176",
+    "free/portrait-interview-preview-desktop.png": "6985fa3c1c0941071615d7148513bf82e624240da37a28566ceb896d40690477",
+    "free/portrait-interview-review-desktop.png": "d90743fff04dd0b61165f9a818c40ed25bef75683f859d0d3295eb6ad5a35836",
+    "free/portrait-manual-editor-desktop.png": "9b74eace839a0527f6f1072f9bcf78343c989a99a913d50b0be9cc5837a7acbb",
+    "free/portrait-manual-editor-populated-desktop.png": "a9e18d49d7604a7c99355a498cefb71d30914dd7bb40ae7d2c912fce2ab2873c",
+    "free/portrait-overview-restored-sidebar-desktop.png": "a045450554a31ee0310ac72bf9c28964126177e91b36ab59d6b384b2f3af882b",
+    "free/portrait-two-language-details-desktop.png": "4e25a6a49e758c44aba627a210a76e900f8bc2dcbb7d326157d464922e92f6a7",
+    "paid/portrait-conflict-desktop.png": "130084074b049d496633a9ff40d57c5dd6ff034c701e17d4dc66cd835b1701cb",
+    "paid/portrait-delete-mobile.png": "1d7930fdc6fae6c3d341389b751fa787dacfa29a17dbd06fe09dd178eb27c484",
+    "paid/portrait-expanded-language-details-mobile.png": "36c6dc77fb9e7018ec6b01d637346e2c650b272dfd9df836e4fc1fdf74635ab8",
+    "paid/portrait-interview-desktop.png": "07fac244e9b5076ff3e21567a5261665c2a0ad07f30017ba60f16cb4209edf39",
+    "paid/portrait-interview-intro-desktop.png": "18c361d35f30b74e131d131430cec9f5ca7e971dee21c8481505ad1703a47574",
+    "paid/portrait-interview-preview-desktop.png": "b17420463167ef60a23950076cd8284a0b1004c1b94e4ba8542c68478c6ebb3a",
+    "paid/portrait-interview-review-desktop.png": "c30391d9dd3d39e549d1b1426c4b5ae2828aacce7af9e0a795709f509b94dba4",
+    "paid/portrait-manual-editor-desktop.png": "844a2bc66ec0412826f6748dfda24b42384f03b6b691088c1168fb234776345b",
+    "paid/portrait-manual-editor-populated-desktop.png": "0d6ab0d77fc4382ed0420fdb5d55a1f1eaa4cd8d8c5e9175f8da3bd7c66ee1e6",
+    "paid/portrait-overview-restored-sidebar-desktop.png": "2bf7f1406f8bb1d0d84fb1b01254f247e2fd17eeed2bcc08bd22d661642e59dd",
+    "paid/portrait-paid-credit-confirmation.png": "443504517c3a62c17a8cf15d53a4b5f56133e9e862dac446320f36a8d7c53f74",
+    "paid/portrait-two-language-details-desktop.png": "40ea9f25f3252cf056e49e36ce0e95c9caac73ccb1b5a214544ff44d5250ff0d"
+  }
+}

@@ -22,6 +22,7 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { useInterviewOpening } from '@/fsd/pages/learner-portrait/hooks/use-interview-opening';
 import { usePortraitInterview } from '@/fsd/pages/learner-portrait/hooks/use-portrait-interview';
 import { PortraitInterviewPage } from '@/fsd/pages/learner-portrait/ui/portrait-interview/portrait-interview-page';
+import { localInterviewQuestion } from '@/fsd/pages/learner-portrait/lib/interview-questions';
 import { InterviewQuestion } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-question';
 import { InterviewRecovery } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-recovery';
 import { InterviewPreview } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-preview';
@@ -630,3 +631,104 @@ it('shows the source preview title and a readable cross-device resume expiry', (
     ).toHaveTextContent('Dec 1, 2026');
     expect(screen.getByText('Nothing to save yet')).toBeInTheDocument();
 });
+
+it.each(['languages', 'explanation-languages'] as const)(
+    'shows the requested default languages and expands additional choices for %s',
+    (topic) => {
+        const answer = vi.fn();
+        render(
+            <InterviewQuestion
+                question={localInterviewQuestion(topic, 'en')}
+                locale='en'
+                busy={false}
+                onAnswer={answer}
+                onSkip={vi.fn()}
+            />,
+        );
+        const choices = screen
+            .getAllByRole('checkbox')
+            .map((choice) => choice.getAttribute('value'));
+        expect(choices).toEqual(['ru', 'en', 'fr', 'es', 'de', 'sr', 'pl']);
+        expect(
+            screen.queryByRole('checkbox', { name: 'Turkish' }),
+        ).not.toBeInTheDocument();
+        const more = screen.getByRole('button', { name: 'Show more' });
+        expect(more).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(more);
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Turkish' }));
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Hungarian' }));
+        if (topic === 'languages') {
+            const descriptions = screen.getAllByRole('combobox', {
+                name: 'Your description',
+            });
+            fireEvent.change(descriptions[0]!, { target: { value: 'basic' } });
+            fireEvent.click(
+                screen.getAllByRole('checkbox', { name: 'Learning now' })[0]!,
+            );
+        }
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        const turkish =
+            topic === 'languages'
+                ? 'Turkish · Basic · Learning now'
+                : 'Turkish';
+        expect(answer).toHaveBeenCalledWith({
+            selected: [turkish, 'Hungarian'],
+        });
+    },
+);
+
+it('preserves adaptive language labels and custom options when expanding the catalog', () => {
+    const answer = vi.fn();
+    const question = {
+        ...localInterviewQuestion('languages', 'en'),
+        options: [
+            { id: 'custom-german', label: 'German' },
+            { id: 'custom-regional', label: 'Swiss German' },
+        ],
+    };
+    render(
+        <InterviewQuestion
+            question={question}
+            locale='en'
+            busy={false}
+            onAnswer={answer}
+            onSkip={vi.fn()}
+        />,
+    );
+    const german = screen.getByRole('checkbox', { name: 'German' });
+    expect(german).toHaveAttribute('value', 'custom-german');
+    fireEvent.click(german);
+    fireEvent.click(screen.getByRole('button', { name: 'Show more' }));
+    expect(german).toBeChecked();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Swiss German' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(answer).toHaveBeenCalledWith({
+        selected: ['German', 'Swiss German'],
+    });
+});
+
+it.each([
+    ['ru', 'Показать ещё', 'турецкий', 'венгерский'],
+    ['fr', 'Afficher plus', 'turc', 'hongrois'],
+    ['es', 'Mostrar más', 'turco', 'húngaro'],
+] as const)(
+    'localizes expanded language choices for %s',
+    (locale, more, turkish, hungarian) => {
+        render(
+            <InterviewQuestion
+                question={localInterviewQuestion('languages', locale)}
+                locale={locale}
+                busy={false}
+                onAnswer={vi.fn()}
+                onSkip={vi.fn()}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button', { name: more }));
+        expect(
+            screen.getByRole('checkbox', { name: turkish }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole('checkbox', { name: hungarian }),
+        ).toBeInTheDocument();
+    },
+);

@@ -19,10 +19,7 @@ import {
     textAiProviderUsageCostMicros,
     type TextAiExecutionSnapshot,
 } from '../../text-ai/application/text-ai-provider-catalog';
-import {
-    TextAiSelectionUnavailableError,
-    type TextAiAdmissionExecution,
-} from '../../text-ai/application/text-ai-admission-participant';
+import { TextAiSelectionUnavailableError } from '../../text-ai/application/text-ai-admission-participant';
 import { aiCreditReservationsTable } from '../../ai-credits/infrastructure/persistence/drizzle/schema';
 import type { TextAiAvailabilityPolicy } from '../../text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
 import type {
@@ -32,6 +29,11 @@ import type {
 } from '../../conversations/application/ports/tutor-runner';
 import type { learnerPortraitInterviewOperationsTable as operations } from './persistence/drizzle/schema';
 import type { InterviewOperation } from '../application/ports/interview-store';
+import {
+    interviewInputTokenLimit,
+    readInterviewInputTokenLimit,
+    type InterviewExecution,
+} from './ai/interview-request';
 
 export class InterviewAccountingError extends Error {
     constructor(
@@ -94,10 +96,13 @@ export function createInterviewAdmission(options: {
         const account = await new DrizzleAiCreditTransactionParticipant(
             tx,
         ).accountSummary(input.ownerId, now);
+        const inputTokenLimit = interviewInputTokenLimit(
+            operation,
+            execution.snapshot.perCallMaxInputTokens,
+        );
         const firstCallCredits = maximumTextPrice(
             {
-                maxInputTokensPerAttempt:
-                    execution.snapshot.perCallMaxInputTokens,
+                maxInputTokensPerAttempt: inputTokenLimit,
                 maxOutputTokensPerAttempt: Math.min(
                     4096,
                     execution.snapshot.perCallMaxOutputTokens,
@@ -132,7 +137,11 @@ export function createInterviewAdmission(options: {
                 'capacity_unavailable',
                 'AI capacity is currently unavailable. Try again later.',
             );
-        return { ...execution, interviewCreditsBypass: options.creditsBypass };
+        return {
+            ...execution,
+            interviewCreditsBypass: options.creditsBypass,
+            interviewInputTokenLimit: inputTokenLimit,
+        };
     };
 }
 
@@ -142,7 +151,7 @@ export function createInterviewAccounting(input: {
     withOperation<T>(work: (tx: Transaction) => Promise<T>): Promise<T>;
     ownerId: string;
     operationId: string;
-    execution: TextAiAdmissionExecution & { interviewCreditsBypass: boolean };
+    execution: InterviewExecution;
 }): TutorAccountingPort {
     const snapshot = input.execution.snapshot;
     if (!snapshot?.creditPricing || snapshot.modelId !== 'deepseek-flash')
@@ -150,6 +159,7 @@ export function createInterviewAccounting(input: {
     const selected: TextAiExecutionSnapshot = snapshot;
     const pricing = snapshot.creditPricing;
     const policy = input.execution.budget;
+    const inputTokenLimit = readInterviewInputTokenLimit(input.execution);
     async function settle(call: TutorCallAdmission, usage?: TutorCallUsage) {
         await input.database.transaction(async (tx) => {
             await lockTextAiCapacity(tx);
@@ -204,7 +214,7 @@ export function createInterviewAccounting(input: {
                         (memoryCalls >= 2 || previous.length >= 4))
                 )
                     throw new Error('Interview provider-call limit reached.');
-                const inputTokens = selected.perCallMaxInputTokens;
+                const inputTokens = inputTokenLimit;
                 const outputCap = Math.min(
                     selected.perCallMaxOutputTokens,
                     call.purpose === 'answer' ? 4096 : 2048,
@@ -403,7 +413,7 @@ export async function settleInterruptedInterviewCalls(
     tx: Transaction,
     turn: Pick<typeof operations.$inferSelect, 'id' | 'ownerId' | 'execution'>,
 ) {
-    const execution = turn.execution as unknown as TextAiAdmissionExecution;
+    const execution = turn.execution as unknown as InterviewExecution;
     const rows = await tx
         .select()
         .from(calls)
