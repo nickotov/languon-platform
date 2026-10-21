@@ -16,12 +16,15 @@ const server = serve({
             new URL(request.url).pathname ===
                 '/auth/email-verification/verify' &&
             response.status === 200
-        )
-            await fixture.credit(
-                AuthenticationSuccessResponseSchema.parse(
-                    await response.clone().json(),
-                ).accessToken,
+        ) {
+            const authenticated = AuthenticationSuccessResponseSchema.parse(
+                await response.clone().json(),
             );
+            await fixture.credit(
+                authenticated.accessToken,
+                authenticated.user.primaryEmail,
+            );
+        }
         return response;
     },
 });

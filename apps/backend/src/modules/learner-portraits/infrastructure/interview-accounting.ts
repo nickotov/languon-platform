@@ -31,6 +31,9 @@ import type { learnerPortraitInterviewOperationsTable as operations } from './pe
 import type { InterviewOperation } from '../application/ports/interview-store';
 import {
     interviewInputTokenLimit,
+    chooseInterviewOutputTokenLimit,
+    INTERVIEW_MIN_OUTPUT_TOKENS,
+    readInterviewOutputTokenLimit,
     readInterviewInputTokenLimit,
     type InterviewExecution,
 } from './ai/interview-request';
@@ -93,6 +96,14 @@ export function createInterviewAdmission(options: {
                 'model_unavailable',
                 'The selected model does not support interviews. Choose Auto or DeepSeek Flash.',
             );
+        if (
+            execution.snapshot.perCallMaxOutputTokens <
+            INTERVIEW_MIN_OUTPUT_TOKENS
+        )
+            throw new InterviewAccountingError(
+                'model_unavailable',
+                'The selected model cannot provide a useful interview response.',
+            );
         const account = await new DrizzleAiCreditTransactionParticipant(
             tx,
         ).accountSummary(input.ownerId, now);
@@ -100,21 +111,16 @@ export function createInterviewAdmission(options: {
             operation,
             execution.snapshot.perCallMaxInputTokens,
         );
-        const firstCallCredits = maximumTextPrice(
-            {
-                maxInputTokensPerAttempt: inputTokenLimit,
-                maxOutputTokensPerAttempt: Math.min(
-                    4096,
-                    execution.snapshot.perCallMaxOutputTokens,
-                ),
-            },
-            execution.snapshot.creditPricing,
-        );
-        if (
-            !options.creditsBypass &&
-            account.policy.effectiveMode === 'limited' &&
-            account.availableCredits < BigInt(firstCallCredits)
-        )
+        const outputTokenLimit = chooseInterviewOutputTokenLimit({
+            inputTokenLimit,
+            modelLimit: execution.snapshot.perCallMaxOutputTokens,
+            creditPricing: execution.snapshot.creditPricing,
+            ...(!options.creditsBypass &&
+            account.policy.effectiveMode === 'limited'
+                ? { availableCredits: account.availableCredits }
+                : {}),
+        });
+        if (outputTokenLimit === null)
             throw new InterviewAccountingError(
                 'credits_exhausted',
                 'You do not have enough AI credits for an interview response.',
@@ -141,6 +147,7 @@ export function createInterviewAdmission(options: {
             ...execution,
             interviewCreditsBypass: options.creditsBypass,
             interviewInputTokenLimit: inputTokenLimit,
+            interviewOutputTokenLimit: outputTokenLimit,
         };
     };
 }
@@ -160,6 +167,7 @@ export function createInterviewAccounting(input: {
     const pricing = snapshot.creditPricing;
     const policy = input.execution.budget;
     const inputTokenLimit = readInterviewInputTokenLimit(input.execution);
+    const outputTokenLimit = readInterviewOutputTokenLimit(input.execution);
     async function settle(call: TutorCallAdmission, usage?: TutorCallUsage) {
         await input.database.transaction(async (tx) => {
             await lockTextAiCapacity(tx);
@@ -217,7 +225,7 @@ export function createInterviewAccounting(input: {
                 const inputTokens = inputTokenLimit;
                 const outputCap = Math.min(
                     selected.perCallMaxOutputTokens,
-                    call.purpose === 'answer' ? 4096 : 2048,
+                    call.purpose === 'answer' ? outputTokenLimit : 2048,
                 );
                 const outputTokens = Math.min(outputCap, call.maxOutputTokens);
                 if (

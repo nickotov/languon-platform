@@ -191,6 +191,7 @@ export function usePortraitInterview() {
         }
     }
     async function confirmCost() {
+        setNotice(false);
         if (pending.current) await submit(pending.current.input, true);
     }
     function cancelCost() {

@@ -1,4 +1,4 @@
-// @user-flow-revision learner-portrait sha256:c5635e99218a7ba5
+// @user-flow-revision learner-portrait sha256:19454040cf3cf4ca
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
@@ -30,9 +30,13 @@ import { InterviewWorkerService } from '../../../../src/modules/learner-portrait
 import { createLearnerInterviewerRunner } from '../../../../src/modules/learner-portraits/infrastructure/ai/learner-interviewer';
 import {
     readInterviewInputTokenLimit,
+    readInterviewOutputTokenLimit,
     type InterviewExecution,
 } from '../../../../src/modules/learner-portraits/infrastructure/ai/interview-request';
 import { scriptedTutorModel } from '../../../../src/modules/conversations/infrastructure/ai/tutor-test-fixtures';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { maximumTextPrice } from '../../../../src/modules/ai-credits/domain/model-price';
+import { interviewInputTokenLimit } from '../../../../src/modules/learner-portraits/infrastructure/ai/interview-request';
 import { createInterviewAccounting } from '../../../../src/modules/learner-portraits/infrastructure/interview-accounting';
 import { createLearnerPortraitModule } from '../../../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { portraitInterviewProviderCallsTable } from '../../../../src/modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';
@@ -631,22 +635,72 @@ run('real learner portrait HTTP and accounting journey', () => {
         await paid.module.store.fail(claim!, 'test_complete', new Date());
     }, 120_000);
 
-    it.each(['valid', 'invalid'] as const)(
-        'executes one schema-inclusive paid %s response with 20,000 credits and settles actual usage',
-        async (kind) => {
+    it.each([
+        ['valid', 20_000n],
+        ['invalid', 20_000n],
+        ['affordable', 15_608n],
+    ] as const)(
+        'executes one schema-inclusive paid %s response with %s credits and settles actual usage',
+        async (kind, balance) => {
             const paid = composed(false);
             const learner = await signup(
                 paid.app,
                 `portrait-structured-${kind}`,
             );
             await grantCredits(learner.userId, 20_000n);
+            if (kind === 'affordable') {
+                for (const charge of [1562, 1262, 1568]) {
+                    const previous = await startAndSubmit(
+                        paid.app,
+                        learner.token,
+                        true,
+                    );
+                    const claim = (await paid.module.store.claim())!;
+                    expect(claim.id).toBe(previous.id);
+                    const accounting = createInterviewAccounting({
+                        database: authentication.productDependencies.database,
+                        withOperation: (work) =>
+                            paid.module.store.withOperation(claim, work),
+                        ownerId: learner.userId,
+                        operationId: claim.id,
+                        execution: claim.execution as never,
+                    });
+                    const call = {
+                        callId: randomUUID(),
+                        purpose: 'answer' as const,
+                        inputTokenEstimate: 3500,
+                        maxOutputTokens: readInterviewOutputTokenLimit(
+                            claim.execution as unknown as InterviewExecution,
+                        ),
+                    };
+                    await accounting.admit(call);
+                    await accounting.settle(call, {
+                        inputTokens: charge - 900,
+                        outputTokens: 300,
+                    });
+                    await paid.module.store.fail(
+                        claim,
+                        'invalid_model_output',
+                        new Date(),
+                    );
+                }
+            }
+            const before =
+                await authentication.productDependencies.database.transaction(
+                    (tx) =>
+                        new DrizzleAiCreditTransactionParticipant(
+                            tx,
+                        ).accountSummary(learner.userId, new Date()),
+                );
+            expect(before.availableCredits).toBe(balance);
+            expect(before.reservedCredits).toBe(0n);
             const operation = await startAndSubmit(
                 paid.app,
                 learner.token,
                 true,
             );
             const provider = scriptedTutorModel([
-                kind === 'valid'
+                kind !== 'invalid'
                     ? JSON.stringify({
                           message: 'Which language should explanations use?',
                           topic: 'explanation-languages',
@@ -666,7 +720,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             const worker = new InterviewWorkerService({
                 store: paid.module.store,
                 createRunner(claim) {
-                    expect(claim.id).toBe(operation.id);
+                    expect(claim.ownerId).toBe(learner.userId);
                     return createLearnerInterviewerRunner({
                         model: provider.model,
                         accounting: createInterviewAccounting({
@@ -675,9 +729,12 @@ run('real learner portrait HTTP and accounting journey', () => {
                             withOperation: (work) =>
                                 paid.module.store.withOperation(claim, work),
                             ownerId: learner.userId,
-                            operationId: operation.id,
+                            operationId: claim.id,
                             execution: claim.execution as never,
                         }),
+                        maxOutputTokens: readInterviewOutputTokenLimit(
+                            claim.execution as unknown as InterviewExecution,
+                        ),
                         maxInputTokens: readInterviewInputTokenLimit(
                             claim.execution as unknown as InterviewExecution,
                         ),
@@ -692,10 +749,10 @@ run('real learner portrait HTTP and accounting journey', () => {
                 operation.id,
             );
             expect(finished?.state).toBe(
-                kind === 'valid' ? 'succeeded' : 'failed',
+                kind !== 'invalid' ? 'succeeded' : 'failed',
             );
             expect(finished?.errorCode).toBe(
-                kind === 'valid' ? null : 'invalid_model_output',
+                kind !== 'invalid' ? null : 'invalid_model_output',
             );
             expect(provider.requests).toHaveLength(1);
             const [reservation] =
@@ -704,7 +761,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                     .from(aiCreditReservationsTable)
                     .where(eq(aiCreditReservationsTable.jobId, operation.id));
             expect(reservation?.state).toBe('settled');
-            expect(reservation?.reservedCredits).toBeLessThanOrEqual(20_000n);
+            expect(reservation?.reservedCredits).toBeLessThanOrEqual(balance);
             expect(reservation?.chargedCredits).toBeGreaterThan(0n);
             expect(reservation?.chargedCredits).toBeLessThan(
                 reservation!.reservedCredits,
@@ -719,13 +776,257 @@ run('real learner portrait HTTP and accounting journey', () => {
                     ),
                 );
             expect(calls).toHaveLength(1);
+            const snapshot = finished!
+                .execution as unknown as InterviewExecution;
+            expect(
+                BigInt(
+                    maximumTextPrice(
+                        {
+                            maxInputTokensPerAttempt:
+                                readInterviewInputTokenLimit(snapshot),
+                            maxOutputTokensPerAttempt:
+                                readInterviewOutputTokenLimit(snapshot),
+                        },
+                        snapshot.snapshot!.creditPricing!,
+                    ),
+                ),
+            ).toBeLessThanOrEqual(before.availableCredits);
+            if (readInterviewOutputTokenLimit(snapshot) < 4096)
+                expect(
+                    BigInt(
+                        maximumTextPrice(
+                            {
+                                maxInputTokensPerAttempt:
+                                    readInterviewInputTokenLimit(snapshot),
+                                maxOutputTokensPerAttempt:
+                                    readInterviewOutputTokenLimit(snapshot) + 1,
+                            },
+                            snapshot.snapshot!.creditPricing!,
+                        ),
+                    ),
+                ).toBeGreaterThan(before.availableCredits);
             expect(calls[0]?.actualInputTokens).toBe(50);
             expect(calls[0]?.actualOutputTokens).toBe(12);
             if (kind === 'invalid') expect(finished?.result).toBeNull();
+            if (kind === 'affordable') {
+                expect(
+                    provider.requests[0]?.maxOutputTokens,
+                ).toBeGreaterThanOrEqual(1024);
+                expect(provider.requests[0]?.maxOutputTokens).toBeLessThan(
+                    4096,
+                );
+                expect(calls[0]?.reservedOutputTokens).toBe(
+                    provider.requests[0]?.maxOutputTokens,
+                );
+                const state = PortraitStateSchema.parse(
+                    await (
+                        await request(paid.app, '/learner-portrait', {
+                            token: learner.token,
+                        })
+                    ).json(),
+                );
+                const submitted = await request(
+                    paid.app,
+                    '/learner-portrait/interview/responses',
+                    {
+                        method: 'POST',
+                        token: learner.token,
+                        body: {
+                            interviewId: operation.interviewId,
+                            expectedVersion: state.version,
+                            expectedGeneration: state.generation,
+                            idempotencyKey: randomUUID(),
+                            paidAcknowledged: true,
+                            input: {
+                                kind: 'answer',
+                                topic: 'explanation-languages',
+                                text: 'English',
+                            },
+                        },
+                    },
+                );
+                expect(submitted.status, await submitted.clone().text()).toBe(
+                    202,
+                );
+                const next = PortraitInterviewOperationResponseSchema.parse(
+                    await submitted.json(),
+                );
+                const nextProvider = scriptedTutorModel([
+                    JSON.stringify({
+                        message: 'What will you use Spanish for?',
+                        topic: 'goals',
+                        options: [],
+                        multiSelect: true,
+                    }),
+                ]);
+                await new InterviewWorkerService({
+                    store: paid.module.store,
+                    createRunner(claim) {
+                        expect(claim.id).toBe(next.id);
+                        return createLearnerInterviewerRunner({
+                            model: nextProvider.model,
+                            accounting: createInterviewAccounting({
+                                database:
+                                    authentication.productDependencies.database,
+                                withOperation: (work) =>
+                                    paid.module.store.withOperation(
+                                        claim,
+                                        work,
+                                    ),
+                                ownerId: learner.userId,
+                                operationId: claim.id,
+                                execution: claim.execution as never,
+                            }),
+                            maxInputTokens: readInterviewInputTokenLimit(
+                                claim.execution as unknown as InterviewExecution,
+                            ),
+                            maxOutputTokens: readInterviewOutputTokenLimit(
+                                claim.execution as unknown as InterviewExecution,
+                            ),
+                        });
+                    },
+                }).processNext(new AbortController().signal);
+                expect(
+                    (await paid.module.store.read(learner.userId, next.id))
+                        ?.state,
+                ).toBe('succeeded');
+                expect(nextProvider.requests).toHaveLength(1);
+                expect(nextProvider.requests[0]?.maxOutputTokens).toBeLessThan(
+                    provider.requests[0]!.maxOutputTokens!,
+                );
+                const uncertain = await startAndSubmit(
+                    paid.app,
+                    learner.token,
+                    true,
+                );
+                const uncertainClaim = (await paid.module.store.claim())!;
+                expect(uncertainClaim.id).toBe(uncertain.id);
+                const uncertainAccounting = createInterviewAccounting({
+                    database: authentication.productDependencies.database,
+                    withOperation: (work) =>
+                        paid.module.store.withOperation(uncertainClaim, work),
+                    ownerId: learner.userId,
+                    operationId: uncertainClaim.id,
+                    execution: uncertainClaim.execution as never,
+                });
+                const uncertainCall = {
+                    callId: randomUUID(),
+                    purpose: 'answer' as const,
+                    inputTokenEstimate: 3500,
+                    maxOutputTokens: readInterviewOutputTokenLimit(
+                        uncertainClaim.execution as unknown as InterviewExecution,
+                    ),
+                };
+                await uncertainAccounting.admit(uncertainCall);
+                await uncertainAccounting.fail(uncertainCall, 'missing-usage');
+                const [unknown] =
+                    await authentication.productDependencies.database
+                        .select()
+                        .from(aiCreditReservationsTable)
+                        .where(
+                            eq(aiCreditReservationsTable.jobId, uncertain.id),
+                        );
+                expect(unknown!.measurement).toBe('estimated');
+                expect(unknown!.chargedCredits).toBe(unknown!.reservedCredits);
+                expect(uncertainCall.maxOutputTokens).toBeLessThan(4096);
+                await paid.module.store.fail(
+                    uncertainClaim,
+                    'test_complete',
+                    new Date(),
+                );
+            }
         },
     );
 
-    it.each([0n, 100n])(
+    it('retains its immutable budget but does not dispatch when funds disappear before the worker hold', async () => {
+        const paid = composed(false);
+        const learner = await signup(paid.app, 'portrait-deferred-funds');
+        await grantCredits(learner.userId, 15_608n);
+        const operation = await startAndSubmit(paid.app, learner.token, true);
+        const admitted = await paid.module.store.read(
+            learner.userId,
+            operation.id,
+        );
+        await authentication.productDependencies.database.transaction(
+            async (tx) => {
+                const credits = new DrizzleAiCreditTransactionParticipant(tx);
+                const account = await credits.accountSummary(
+                    learner.userId,
+                    new Date(),
+                );
+                await credits.adjustByAdmin({
+                    ownerId: learner.userId,
+                    amount: -10_000n,
+                    at: new Date(),
+                    expectedManagementVersion: account.managementVersion,
+                    expiresAt: null,
+                    sourceReference: randomUUID(),
+                    reason: 'Synthetic concurrent wallet change',
+                });
+            },
+        );
+        const claim = (await paid.module.store.claim())!;
+        expect(claim.id).toBe(operation.id);
+        const provider = scriptedTutorModel(['{}']);
+        await expect(
+            createLearnerInterviewerRunner({
+                model: provider.model,
+                maxInputTokens: readInterviewInputTokenLimit(
+                    claim.execution as unknown as InterviewExecution,
+                ),
+                maxOutputTokens: readInterviewOutputTokenLimit(
+                    claim.execution as unknown as InterviewExecution,
+                ),
+                accounting: createInterviewAccounting({
+                    database: authentication.productDependencies.database,
+                    withOperation: (work) =>
+                        paid.module.store.withOperation(claim, work),
+                    ownerId: learner.userId,
+                    operationId: claim.id,
+                    execution: claim.execution as never,
+                }),
+            }).run({ operation: claim, signal: new AbortController().signal }),
+        ).rejects.toMatchObject({ code: 'credits_exhausted' });
+        expect(provider.requests).toHaveLength(0);
+        expect(claim.execution).toEqual(admitted!.execution);
+        const reservations = await authentication.productDependencies.database
+            .select()
+            .from(aiCreditReservationsTable)
+            .where(eq(aiCreditReservationsTable.jobId, operation.id));
+        expect(reservations).toHaveLength(0);
+        await paid.module.store.fail(claim, 'test_complete', new Date());
+    });
+
+    it.each([
+        0n,
+        100n,
+        BigInt(
+            maximumTextPrice(
+                {
+                    maxInputTokensPerAttempt: interviewInputTokenLimit(
+                        {
+                            input: {
+                                kind: 'answer',
+                                topic: 'languages',
+                                text: 'Spanish',
+                            },
+                            context: {
+                                locale: 'en',
+                                approvedItems: null,
+                                draftItems: null,
+                                messages: [],
+                                completedTopics: [],
+                            },
+                        },
+                        64000,
+                    ),
+                    maxOutputTokensPerAttempt: 1024,
+                },
+                textAiModelCatalog.find((item) => item.id === 'deepseek-flash')!
+                    .creditPricing,
+            ),
+        ) - 1n,
+    ])(
         'rejects genuinely insufficient paid balance %s before enqueue or dispatch',
         async (amount) => {
             const paid = composed(false);
@@ -859,6 +1160,92 @@ run('real learner portrait HTTP and accounting journey', () => {
                     cause: {
                         message: expect.stringMatching(
                             /pinned portrait request input bound|pinned token or memory bounds/,
+                        ),
+                    },
+                });
+        },
+    );
+
+    it.each([
+        { pin: undefined, reserved: 4096, valid: true },
+        { pin: 2048, reserved: 2048, valid: true },
+        { pin: 2048, reserved: 2049, valid: false },
+        { pin: 3000, reserved: 3000, modelLimit: 2048, valid: false },
+        { pin: undefined, reserved: 2048, modelLimit: 2048, valid: true },
+        ...[null, '2048', 0, -1, 1023, 4097, 8193, 1024.5].map((pin) => ({
+            pin,
+            reserved: 2048,
+            valid: false,
+        })),
+    ])(
+        'database independently enforces output pin $pin and reservation $reserved',
+        async ({ pin, reserved, valid, ...model }) => {
+            const database = authentication.productDependencies.database;
+            const [template] = await database
+                .select()
+                .from(learnerPortraitInterviewOperationsTable)
+                .where(
+                    eq(
+                        learnerPortraitInterviewOperationsTable.state,
+                        'succeeded',
+                    ),
+                )
+                .limit(1);
+            const [callTemplate] = await database
+                .select()
+                .from(portraitInterviewProviderCallsTable)
+                .where(
+                    eq(
+                        portraitInterviewProviderCallsTable.operationId,
+                        template!.id,
+                    ),
+                )
+                .limit(1);
+            const execution = { ...template!.execution };
+            if ('modelLimit' in model)
+                execution.snapshot = {
+                    ...(execution.snapshot as Record<string, unknown>),
+                    perCallMaxOutputTokens: model.modelLimit,
+                };
+            if (pin === undefined) delete execution.interviewOutputTokenLimit;
+            else execution.interviewOutputTokenLimit = pin;
+            const rollback = new Error('rollback output budget probe');
+            const probe = database.transaction(async (tx) => {
+                await lockTextAiCapacity(tx);
+                const id = randomUUID(),
+                    reservationId = randomUUID();
+                await tx
+                    .insert(learnerPortraitInterviewOperationsTable)
+                    .values({
+                        ...template!,
+                        id,
+                        idempotencyKey: randomUUID(),
+                        state: 'queued',
+                        execution,
+                        result: null,
+                    });
+                await tx.insert(portraitInterviewProviderCallsTable).values({
+                    ...callTemplate!,
+                    id: randomUUID(),
+                    operationId: id,
+                    reservationId,
+                    ordinal: 1,
+                    state: 'dispatched',
+                    settledAt: null,
+                    reservedOutputTokens: reserved,
+                });
+                const result = await tx.execute(
+                    sql`select languon_portrait_credit_maximum(${id}::uuid,${template!.ownerId}::uuid,${reservationId}::uuid,1) as maximum`,
+                );
+                expect(Number(result[0]!.maximum)).toBeGreaterThan(0);
+                throw rollback;
+            });
+            if (valid) await expect(probe).rejects.toBe(rollback);
+            else
+                await expect(probe).rejects.toMatchObject({
+                    cause: {
+                        message: expect.stringMatching(
+                            /pinned portrait request output bound|pinned token or memory bounds/,
                         ),
                     },
                 });

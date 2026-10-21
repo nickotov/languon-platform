@@ -30,7 +30,10 @@ import { createLearnerPortraitModule } from '../../src/modules/learner-portraits
 import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
 import { InterviewWorkerService } from '../../src/modules/learner-portraits/application/interview-worker-service';
 import { createLearnerInterviewerRunner } from '../../src/modules/learner-portraits/infrastructure/ai/learner-interviewer';
-import { readInterviewInputTokenLimit } from '../../src/modules/learner-portraits/infrastructure/ai/interview-request';
+import {
+    readInterviewInputTokenLimit,
+    readInterviewOutputTokenLimit,
+} from '../../src/modules/learner-portraits/infrastructure/ai/interview-request';
 import { createInterviewAccounting } from '../../src/modules/learner-portraits/infrastructure/interview-accounting';
 import { readApprovedPortraitForConversation } from '../../src/modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-portrait-store';
 import {
@@ -402,14 +405,15 @@ export async function createLearnerPortraitWebFixture(
         // The one guarded browser server shares a loopback client address across
         // its synthetic learners. Keep the real Redis limiter, while giving
         // test-only shared-address buckets enough capacity for five browser
-        // journeys; per-account and cooldown limits remain unchanged.
+        // journeys plus two admission regressions; per-account and cooldown
+        // limits remain unchanged.
         d.rateLimiter.consume = async (request) =>
             consumeRateLimit({
                 ...request,
                 ...(request.scope === 'verification.email_send.client'
                     ? { limit: Math.max(request.limit, 64) }
                     : request.scope === 'learner-portrait-address'
-                      ? { limit: request.limit * 5 }
+                      ? { limit: request.limit * 7 }
                     : {}),
             });
         const authenticate = async (token: string) => {
@@ -499,7 +503,7 @@ export async function createLearnerPortraitWebFixture(
                             learnerPortraits.store.withOperation(operation, work),
                     }),
                     maxInputTokens: readInterviewInputTokenLimit(execution),
-                    maxOutputTokens: snapshot.perCallMaxOutputTokens,
+                    maxOutputTokens: readInterviewOutputTokenLimit(execution),
                 });
             },
         });
@@ -566,13 +570,18 @@ export async function createLearnerPortraitWebFixture(
             },
         });
         const credited = new Set<string>();
-        async function credit(token: string) {
+        async function credit(token: string, verifiedEmail?: string) {
             const { userId } = await authenticate(token);
             if (credited.has(userId)) return;
+            // Only identities returned by real synthetic email verification can
+            // select these bounded balances; ordinary fixture accounts keep20k.
+            const balance = /^portrait-balance-(100|15608)-\d+-\d+@example\.test$/u
+                .exec(verifiedEmail ?? '')?.[1];
+            const amount = balance ? BigInt(balance) : 20_000n;
             await d.database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: userId,
-                    amount: 20_000n,
+                    amount,
                     createdAt: new Date(),
                     expiresAt: null,
                     source: 'admin',

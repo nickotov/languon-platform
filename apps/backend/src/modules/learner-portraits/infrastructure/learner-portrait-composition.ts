@@ -5,6 +5,7 @@ import type { TextAiAvailabilityPolicy } from '../../text-ai/infrastructure/pers
 import { resolveTextAiProviderOptions } from '../../text-ai/infrastructure/ai/text-ai-provider-resolver';
 import {
     readInterviewInputTokenLimit,
+    readInterviewOutputTokenLimit,
     type InterviewExecution,
 } from './ai/interview-request';
 import { PortraitService } from '../application/portrait-service';
@@ -92,7 +93,7 @@ export function createLearnerPortraitWorkerComposition(input: {
                     execution,
                 }),
                 maxInputTokens: readInterviewInputTokenLimit(execution),
-                maxOutputTokens: execution.snapshot.perCallMaxOutputTokens,
+                maxOutputTokens: readInterviewOutputTokenLimit(execution),
             });
         },
     });

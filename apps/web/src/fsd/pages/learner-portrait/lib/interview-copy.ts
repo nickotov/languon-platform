@@ -526,10 +526,10 @@ const errors: Record<string, string[]> = {
         'Tu retrato cambió. Revisa la versión más reciente.',
     ],
     credits_exhausted: [
-        'Not enough credits. You can review and edit your draft for free.',
-        'Недостаточно кредитов. Можно бесплатно проверить и отредактировать черновик.',
-        'Crédits insuffisants. La relecture et les modifications restent gratuites.',
-        'No hay créditos suficientes. Revisar y editar sigue siendo gratis.',
+        'Your available credits cannot cover this response’s maximum credit hold. Add credits, or review and edit your saved draft for free.',
+        'Доступных кредитов не хватает для максимального резерва на этот ответ. Пополните баланс или бесплатно проверьте и отредактируйте сохранённый черновик.',
+        'Vos crédits disponibles ne couvrent pas la réserve maximale pour cette réponse. Ajoutez des crédits ou relisez et modifiez gratuitement votre brouillon conservé.',
+        'Tus créditos disponibles no cubren la reserva máxima para esta respuesta. Añade créditos o revisa y edita gratis tu borrador guardado.',
     ],
     resource_limit: [
         'Interview limit reached. Review or edit your draft; your work is kept.',

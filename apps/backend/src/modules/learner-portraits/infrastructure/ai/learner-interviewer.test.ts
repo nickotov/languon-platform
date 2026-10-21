@@ -293,6 +293,18 @@ describe('learner interviewer runner', () => {
         ).resolves.toEqual(expected);
         expect(provider.requests).toHaveLength(1);
     });
+    it('dispatches the exact admitted affordable output cap', async () => {
+        const provider = scriptedTutorModel([JSON.stringify(result)]);
+        const accounting = tutorAccountingFixture();
+        await createLearnerInterviewerRunner({
+            model: provider.model,
+            accounting,
+            maxInputTokens: 64000,
+            maxOutputTokens: 3261,
+        }).run({ operation, signal: new AbortController().signal });
+        expect(provider.requests[0]?.maxOutputTokens).toBe(3261);
+        expect(accounting.admit.mock.calls[0]?.[0].maxOutputTokens).toBe(3261);
+    });
     it('does not dispatch when accounting admission fails', async () => {
         const provider = scriptedTutorModel([JSON.stringify(result)]);
         const accounting = tutorAccountingFixture();

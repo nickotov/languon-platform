@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 export function useInterviewQuestionScroll(
     messageCount: number,
     busy: boolean,
+    error: string | null,
 ) {
     const first = useRef(true);
     useEffect(() => {
@@ -12,7 +13,7 @@ export function useInterviewQuestionScroll(
             first.current = false;
             return;
         }
-        if (busy) return;
+        if (busy || error) return;
         const question = document.querySelector<HTMLElement>(
             '[aria-label="Current question"]',
         );
@@ -39,5 +40,5 @@ export function useInterviewQuestionScroll(
                 actions.scrollIntoView({ block: 'end' });
         });
         return () => cancelAnimationFrame(frame);
-    }, [busy, messageCount]);
+    }, [busy, error, messageCount]);
 }

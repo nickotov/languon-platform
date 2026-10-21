@@ -1,5 +1,6 @@
 import { PortraitInterviewerOutputSchema } from '@languon/contracts';
 import { z } from 'zod';
+import { maximumTextPrice } from '../../../ai-credits/domain/model-price';
 import { getLocalPrompt } from '@languon/prompts';
 import type { TextAiAdmissionExecution } from '../../../text-ai/application/text-ai-admission-participant';
 import type { InterviewOperation } from '../../application/ports/interview-store';
@@ -73,9 +74,46 @@ export function interviewInputTokenLimit(
     );
 }
 
+export const INTERVIEW_MIN_OUTPUT_TOKENS = 1024;
+export const INTERVIEW_MAX_OUTPUT_TOKENS = 4096;
+
+/** Largest useful response budget whose exact conservative hold is affordable. */
+export function chooseInterviewOutputTokenLimit(input: {
+    inputTokenLimit: number;
+    modelLimit: number;
+    creditPricing: Parameters<typeof maximumTextPrice>[1];
+    /** Omitted for free or unlimited execution; never reprices an admitted call. */
+    availableCredits?: bigint;
+}): number | null {
+    const maximum = Math.min(INTERVIEW_MAX_OUTPUT_TOKENS, input.modelLimit);
+    if (!Number.isSafeInteger(maximum) || maximum < INTERVIEW_MIN_OUTPUT_TOKENS)
+        return null;
+    if (input.availableCredits === undefined) return maximum;
+    const affordable = (output: number) =>
+        BigInt(
+            maximumTextPrice(
+                {
+                    maxInputTokensPerAttempt: input.inputTokenLimit,
+                    maxOutputTokensPerAttempt: output,
+                },
+                input.creditPricing,
+            ),
+        ) <= input.availableCredits!;
+    if (!affordable(INTERVIEW_MIN_OUTPUT_TOKENS)) return null;
+    let lower = INTERVIEW_MIN_OUTPUT_TOKENS;
+    let upper = maximum;
+    while (lower < upper) {
+        const middle = Math.floor((lower + upper + 1) / 2);
+        if (affordable(middle)) lower = middle;
+        else upper = middle - 1;
+    }
+    return lower;
+}
+
 export type InterviewExecution = TextAiAdmissionExecution & {
     interviewCreditsBypass: boolean;
     interviewInputTokenLimit?: number;
+    interviewOutputTokenLimit?: number;
 };
 
 export function readInterviewInputTokenLimit(
@@ -94,5 +132,28 @@ export function readInterviewInputTokenLimit(
         limit > modelLimit
     )
         throw new Error('Pinned interview input limit is invalid.');
+    return limit;
+}
+
+/** Legacy operations retain the full original output allowance. */
+export function readInterviewOutputTokenLimit(
+    execution: InterviewExecution,
+): number {
+    const modelLimit = execution.snapshot?.perCallMaxOutputTokens;
+    const maximum = Math.min(INTERVIEW_MAX_OUTPUT_TOKENS, modelLimit ?? 0);
+    const limit =
+        execution.interviewOutputTokenLimit === undefined
+            ? maximum
+            : execution.interviewOutputTokenLimit;
+    if (
+        !Number.isSafeInteger(modelLimit) ||
+        !modelLimit ||
+        !Number.isSafeInteger(limit) ||
+        limit < 1 ||
+        limit > maximum ||
+        (execution.interviewOutputTokenLimit !== undefined &&
+            limit < INTERVIEW_MIN_OUTPUT_TOKENS)
+    )
+        throw new Error('Pinned interview output limit is invalid.');
     return limit;
 }

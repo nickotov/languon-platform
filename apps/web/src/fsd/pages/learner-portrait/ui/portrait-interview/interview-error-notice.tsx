@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useRef } from 'react';
 import { Button, ButtonLink, InlineAlert } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
@@ -18,6 +19,16 @@ export function InterviewErrorNotice({
     onReconnect(): void;
     onReview(): void;
 }) {
+    const alertRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        // Let the native billing dialog restore its opener before moving focus.
+        const frame = requestAnimationFrame(() => {
+            const alert = alertRef.current;
+            alert?.focus({ preventScroll: true });
+            alert?.scrollIntoView?.({ block: 'center' });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [error]);
     const { href } = useI18n();
     const modelUnavailable = error === 'model_unavailable';
     const creditsUnavailable = error === 'credits_exhausted';
@@ -26,7 +37,8 @@ export function InterviewErrorNotice({
     const limitReached = error === 'resource_limit';
     return (
         <InlineAlert
-            tone='warning'
+            ref={alertRef}
+            tone='error'
             title={interviewText(locale, 'kept')}
             actions={
                 <div className={styles.proposalActions}>

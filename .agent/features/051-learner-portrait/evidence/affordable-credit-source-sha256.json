@@ -1,0 +1,78 @@
+{
+  "base": "0110894",
+  "purpose": "Affordable interview output budget and visible admission errors; generated Next declaration excluded/restored",
+  "files": [
+    {
+      "path": "apps/backend/drizzle/0082_portrait_operation_output_bound.sql",
+      "sha256": "e814d19de5e83eae17018e77f4792dc5d174eeaa7b8fb0a928e992fb52205cb3"
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0082_snapshot.json",
+      "sha256": "36fd6e3ab7dda4216e9ba90e1616a1359463815200ffd0b73628f90f86f627c2"
+    },
+    {
+      "path": "apps/backend/drizzle/meta/_journal.json",
+      "sha256": "f084832a9267f19ebda7c6556121722c92eeae8de164ac20b33b005934d6e82c"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.test.ts",
+      "sha256": "931ad172f00e9de8a84cb90a1e05150aa432ba70ca7be24a3d816ff72d845ae9"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.ts",
+      "sha256": "912b7a3c83801756208e8368ea53690fc7b313d96d15f1b328dc36b2aec36fd1"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts",
+      "sha256": "ac3c3df3a6d0436df205ce8b4a88fdae3e3a6a7d2fd55c2cdfb9c52006c6ac36"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts",
+      "sha256": "41aecc5c502086f3773ce5791bb48fec868b81be544d16919980c3e0e50b5b3d"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/learner-portrait-composition.ts",
+      "sha256": "c6d10fa88f03c07bd31771b08f08c3a6909fd37f4e4f4cea88e3025542a4b638"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learner-portraits/learner-portrait.journeys.test.ts",
+      "sha256": "f191d536473fda37d590e97a3732411a4b327429bb120702563bea951358e76a"
+    },
+    {
+      "path": "apps/backend/tests/support/learner-portrait-web-fixture.ts",
+      "sha256": "9ac8f316e3dfacb8de73a7fb2165a395ae8a18af437504d21ad9ca4e07491049"
+    },
+    {
+      "path": "apps/backend/tests/support/learner-portrait-web-server.ts",
+      "sha256": "386dfd3ef2b1f0aeb8f84456aa909c98386811b7f3bbda2915a810a42fe70c9d"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/hooks/use-interview-question-scroll.ts",
+      "sha256": "85cd4b69cb50b6d8b2f7095e31ed9dc4ab3585fd564a108b8e8c5e51c7bc271e"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/hooks/use-portrait-interview.ts",
+      "sha256": "b0297d6cabffe413368b51eca6b933dbd68ea5fbf293aafe171ac26b1e93b0dd"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/lib/interview-copy.ts",
+      "sha256": "c93ae3073b50ff421cc1b0a00679954eb5514e26629d4e268a4f6d3b50ab2182"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-error-notice.tsx",
+      "sha256": "16ae37e8582ec70cc88c671ec0e3ac57f2f15687689f49c8926c67d1cf8d4ced"
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/portrait-interview-page.tsx",
+      "sha256": "97f3987205a9c2a86c52e01714fefb9a26c8416d9fa3bf263297c791efd4adfb"
+    },
+    {
+      "path": "apps/web/tests/e2e/learner-portrait.journeys.spec.ts",
+      "sha256": "c6fade9831ebb27badbf914b6c706fcbc6e7f262f3202203a521a94b301e71a8"
+    },
+    {
+      "path": "apps/web/tests/portrait-interview.test.tsx",
+      "sha256": "764669a2715e138d26f4808adea242464b01b16f33583fb4aaa4a9420bfe3746"
+    }
+  ]
+}

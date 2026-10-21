@@ -39,6 +39,7 @@ e2e_scenarios:
     - resumable-interview-proposal-and-explicit-approval
     - composer-stop-cancels-active-interview
     - invalid-model-output-preserves-interview
+    - affordable-response-and-visible-insufficiency
 related_features:
     - contextual-language-assistant-and-knowledge
     - ai-credit-wallet
@@ -58,7 +59,11 @@ policy of that operation. New interview operations pin a conservative input boun
 for the serialized interview request, including system instructions, the exact
 injected structured-output schema and framing;
 the same bound controls affordability, provider dispatch and the database-backed
-hold. The output ceiling remains4,096tokens. Existing admitted operations retain
+hold. For finite balances, a new response pins the largest affordable output
+allowance from1,024tokens through the4,096-token/model ceiling, using exact
+tariff rounding. Sufficient balances, unlimited and free mode retain the full
+ceiling. A balance below the minimum useful response reservation is rejected.
+Existing admitted operations retain
 their original limits. The server-only free flag removes the learner charge
 without omitting provider-cost accounting or capacity limits.
 
@@ -143,6 +148,13 @@ test-only paid policy (`LEARNER_PORTRAIT_TEST_PAID=true`) and a20,000-credit gra
 it accepts the actual first-paid-response notice and proves admission succeeds.
 This fixture flag cannot change normal application billing.
 
+Paid regression learners also exercise a15,608-credit balance and complete two
+successive responses with affordable limits. A separate100-credit learner
+accepts the real billing notice and receives a visible, focused error: the
+notice closes, the retained answer remains editable, and credits/manual-edit
+actions remain available on desktop and mobile. The error explains the maximum
+credit hold instead of implying a positive balance is zero.
+
 While a response is running, the composer replaces Send with its sole Stop
 button. Stop works with an empty or oversized unsent message, does not submit
 that message, and retains its text. Cancellation leaves the interview resumable.
@@ -159,6 +171,7 @@ automatically retry or incur another provider call.
 | `resumable-interview-proposal-and-explicit-approval` | A real browser reload resumes an interview; default and expanded language choices, retained level/learning selections and responsive row alignment are verified; a deterministic provider-bound worker completes the queued French/Russian response, produces a reviewable proposal, and requires the learner to save it before any portrait exists. Free and paid fixture policies preserve the notice and separate activation choices. |
 | `composer-stop-cancels-active-interview` | Desktop Continue and mobile chat requests use the composer Stop control while the real queued operation runs. Empty and oversized unsent input cannot disable Stop; keyboard input cannot submit a second response. Cancellation retains unsent text and the resumable interview. |
 | `invalid-model-output-preserves-interview` | A deterministic invalid nested model response produces the specific recoverable failure through the real worker and HTTP polling. The submitted answer survives reload, with no automatic resubmission. Backend tests independently verify one provider call and retained accounting. |
+| `affordable-response-and-visible-insufficiency` | Paid browser learners with15,608credits complete successive real worker responses; a100-credit learner sees billing409→confirmation→credits400, with the modal closed, error focused and visible, answer retained and explicit credit/manual-edit actions. Real PostgreSQL tests independently prove cumulative prior charges, exact affordable maximality, immutable output limits, insufficient funds and settlement. |
 
 Repository, contract, and worker tests cover Unicode boundaries, diagnosis-label
 exclusion, conflict/expiry/delete races, recovery of interrupted calls, operation
@@ -184,6 +197,9 @@ traffic; it does not establish generated wording quality or browser behavior.
   requests and validates its complete output contract in the original provider
   call; it performs no automatic paid repair or fallback call. A learner may
   explicitly retry or edit the portrait manually.
+- Admission errors after credit confirmation close the notice and focus the
+  persistent error; question scrolling must not move away from it. No error
+  automatically retries a paid request or clears the learner's answer.
 
 ## Automated regression checks
 

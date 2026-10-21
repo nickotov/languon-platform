@@ -34,6 +34,7 @@ export function PortraitInterviewPage() {
     useInterviewQuestionScroll(
         session?.context.messages.length ?? 0,
         engine.busy,
+        engine.error,
     );
     function pause() {
         router.push(href('/portrait'));

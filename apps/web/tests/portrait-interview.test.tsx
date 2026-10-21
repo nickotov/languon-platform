@@ -173,6 +173,48 @@ it('asks for explicit paid acknowledgement and leaves drafts and use untouched',
     expect(approve).not.toHaveBeenCalled();
     expect(setUse).not.toHaveBeenCalled();
 });
+it('exposes a paid admission failure outside the closed notice and preserves the answer for retry', async () => {
+    const submit = vi
+        .spyOn(portraitApi, 'submitInterview')
+        .mockRejectedValueOnce({ code: 'billing_notice_required' })
+        .mockRejectedValue({ code: 'credits_exhausted' });
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
+    render(
+        <QueryClientProvider client={client}>
+            <PortraitInterviewPage />
+        </QueryClientProvider>,
+    );
+    const input = await screen.findByRole('textbox', {
+        name: 'Ask a question or answer in your own words…',
+    });
+    fireEvent.change(input, { target: { value: 'I prefer short steps' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /Continue/ }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Your available credits cannot cover this response’s maximum credit hold');
+    expect(
+        within(alert).getByRole('link', {
+            name: 'Credit settings (opens in a new tab)',
+        }),
+    ).toHaveAttribute('href', '/profile?tab=credits');
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(input).toHaveValue('I prefer short steps');
+    expect(screen.getByRole('button', { name: 'Send message' })).toBeEnabled();
+    expect(submit).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(3));
+    expect(submit.mock.calls[2]![1].idempotencyKey).toBe(
+        submit.mock.calls[1]![1].idempotencyKey,
+    );
+    expect(input).toHaveValue('I prefer short steps');
+});
 it('refuses an old proposal after another device changed the portrait', async () => {
     vi.mocked(portraitApi.startInterview).mockResolvedValue({
         ...session,

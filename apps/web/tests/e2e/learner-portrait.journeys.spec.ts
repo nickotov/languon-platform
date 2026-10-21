@@ -1,9 +1,10 @@
-// @user-flow-revision learner-portrait sha256:c5635e99218a7ba5
+// @user-flow-revision learner-portrait sha256:19454040cf3cf4ca
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-async function signup(page: Page, info: TestInfo) {
+async function signup(page: Page, info: TestInfo, balance?: '100' | '15608') {
     await page.goto('/signup?returnTo=%2Fportrait');
-    await page.getByLabel('Email').fill(`portrait-${Date.now()}-${info.workerIndex}@example.test`);
+    const prefix = balance ? `portrait-balance-${balance}` : 'portrait';
+    await page.getByLabel('Email').fill(`${prefix}-${Date.now()}-${info.workerIndex}@example.test`);
     await page.getByLabel('Password', { exact: true }).fill('Synthetic portrait password 47!');
     await page.getByRole('button', { name: 'Create account', exact: true }).click();
     await page.getByLabel('Verification code').fill('0000');
@@ -56,8 +57,8 @@ async function acknowledgePaidResponse(page: Page) {
     await notice.getByRole('button', { name: 'Continue with credits', exact: true }).click();
 }
 
-async function startInterview(page: Page, info: TestInfo) {
-    await signup(page, info);
+async function startInterview(page: Page, info: TestInfo, balance?: '100' | '15608') {
+    await signup(page, info, balance);
     await page.goto('/portrait/intro');
     await page.getByRole('button', { name: 'Start interview', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Which languages do you know, and which are you learning?' })).toBeVisible();
@@ -322,3 +323,80 @@ test('invalid structured output keeps the answer and does not submit another res
     expect(accepted).toBe(1);
     assertNoRuntimeErrors();
 });
+
+if (process.env.LEARNER_PORTRAIT_TEST_PAID === 'true') {
+    // @user-flow learner-portrait/affordable-response-and-visible-insufficiency
+    test('15608 credits fund two explicit interview responses', async ({ page }, info) => {
+        const assertNoRuntimeErrors = runtimeErrors(page);
+        let accepted = 0;
+        page.on('response', (response) => {
+            if (new URL(response.url()).pathname.endsWith('/interview/responses') && response.status() === 202)
+                accepted += 1;
+        });
+        await startInterview(page, info, '15608');
+        for (const [index, text] of ['Please use short practical examples.', 'Please also recap the main points.'].entries()) {
+            const admitted = page.waitForResponse((response) =>
+                new URL(response.url()).pathname.endsWith('/interview/responses') && response.status() === 202,
+            );
+            await page.getByLabel('Ask a question or answer in your own words…').fill(text);
+            await page.getByRole('button', { name: 'Send message', exact: true }).click();
+            if (index === 0) await acknowledgePaidResponse(page);
+            await admitted;
+            const proposal = page.getByRole('article', { name: 'Proposed for your draft · not saved yet', exact: true });
+            await expect(proposal).toContainText(text);
+            await page.getByRole('button', { name: 'Add to draft', exact: true }).click();
+        }
+        expect(accepted).toBe(2);
+        await page.reload();
+        await expect(page.getByRole('log', { name: 'Interview conversation' })).toContainText('Please use short practical examples.');
+        await expect(page.getByRole('log', { name: 'Interview conversation' })).toContainText('Please also recap the main points.');
+        await capture(page, info, 'portrait-15608-two-successful-responses');
+        assertNoRuntimeErrors();
+    });
+
+    test('100 credits show a focused visible error after consent and keep the answer', async ({ page }, info) => {
+        const assertNoRuntimeErrors = runtimeErrors(page);
+        let accepted = 0;
+        let rejected = 0;
+        page.on('response', (response) => {
+            if (!new URL(response.url()).pathname.endsWith('/interview/responses')) return;
+            if (response.status() === 202) accepted += 1;
+            if (response.status() === 400) rejected += 1;
+        });
+        await startInterview(page, info, '100');
+        const answer = 'Please help me choose an explanation style.';
+        await page.getByLabel('Ask a question or answer in your own words…').fill(answer);
+        for (const width of [1440, 390]) {
+            await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+            const noticeRequired = page.waitForResponse((response) =>
+                response.url().endsWith('/interview/responses') && response.status() === 409,
+            );
+            await page.getByRole('button', { name: 'Send message', exact: true }).click();
+            await noticeRequired;
+            const insufficient = page.waitForResponse((response) =>
+                response.url().endsWith('/interview/responses') && response.status() === 400,
+            );
+            await acknowledgePaidResponse(page);
+            expect((await (await insufficient).json()).error.code).toBe('credits_exhausted');
+            await expect(page.getByRole('dialog', { name: 'Interviewer responses now use credits' })).toHaveCount(0);
+            const alert = page.getByRole('alert').filter({ hasText: 'Your available credits cannot cover this response’s maximum credit hold.' });
+            await expect(alert).toBeVisible();
+            await expect(alert).toBeFocused();
+            const bounds = await alert.boundingBox();
+            expect(bounds!.y).toBeGreaterThanOrEqual(0);
+            expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(width === 390 ? 844 : 900);
+            await expect(alert.getByRole('button', { name: 'Edit draft by hand', exact: true })).toBeEnabled();
+            await expect(alert.getByRole('link', { name: /^Credit settings/iu })).toHaveAttribute('href', /\/profile\?tab=credits$/u);
+            await expect(page.getByLabel('Ask a question or answer in your own words…')).toHaveValue(answer);
+            await noOverflow(page);
+            await capture(page, info, `portrait-low-credit-visible-${width}`);
+            expect(accepted).toBe(0);
+            expect(rejected).toBe(width === 1440 ? 1 : 2);
+        }
+        await page.getByRole('alert').filter({ hasText: 'Your available credits cannot cover this response’s maximum credit hold.' })
+            .getByRole('button', { name: 'Edit draft by hand', exact: true }).click();
+        await expect(page).toHaveURL(/\/portrait\/review$/u);
+        expect(accepted).toBe(0);
+        assertNoRuntimeErrors();
+    });
+}

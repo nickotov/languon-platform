@@ -1,0 +1,108 @@
+{
+  "baseRevision": "0110894fac6ef42ae90fc0df4a917b909deb9489",
+  "runs": [
+    {
+      "id": "portrait-credit-admission-free",
+      "policy": "free",
+      "backendTests": 30,
+      "browserTests": 5,
+      "result": "pass",
+      "browserDurationSeconds": 55.2,
+      "command": "LEARNER_PORTRAIT_TEST_PAID=false pnpm test:e2e:learner-portrait -- --output=/private/tmp/portrait-credit-admission-free",
+      "reuseNote": "Final changes after free pass affected only conditionally registered paid-only assertions, not fixture/runtime/free test paths."
+    },
+    {
+      "id": "portrait-credit-admission-paid-final",
+      "policy": "paid",
+      "backendTests": 30,
+      "browserTests": 7,
+      "result": "pass",
+      "command": "LEARNER_PORTRAIT_TEST_PAID=true pnpm test:e2e:learner-portrait -- --output=/private/tmp/portrait-credit-admission-paid-final"
+    }
+  ],
+  "environment": {
+    "postgres": "dedicatedloopback55481/languon_auth_portrait_test",
+    "redis": "dedicatedloopback56381/db1",
+    "provider": "deterministicexternalmodelboundary;realMastra/accounting/routes/worker",
+    "syntheticGrants": [
+      20000,
+      15608,
+      100
+    ],
+    "grantSelection": "Bounded synthetic email tags from verified AuthenticationSuccess primaryEmail; no public grant endpoint",
+    "sharedIPBudget": "Guardedfixture learner-portrait-address180*7;productionlimitsandper-owner120 unchanged"
+  },
+  "assertions": [
+    "Existingfivefree/paidportraitcasesremainpassing",
+    "15608creditsfundfirstandsecondexplicitresponse;eachnewproposalassociatedwithsubmittedtext;bothsubmissionstextspersistafterreload;twoactual202admissions",
+    "100credits:409notice\u2192explicitconsent\u2192400credits_exhausted;dialogcloses;alertvisible/focusedwithinviewport;creditsettingsandmanualactions;typedtextpreserved;desktopand390mobile",
+    "RetryonlyafterexplicitSend+consent;zero202operationsfor100creditcase;manualreviewopensfree"
+  ],
+  "viewports": [
+    [
+      1440,
+      900
+    ],
+    [
+      390,
+      844
+    ]
+  ],
+  "runtimeErrors": [],
+  "unexpected5xxAndNavigation404": [],
+  "historicalInvalidatedRuns": [
+    {
+      "id": "portrait-credit-admission-paid",
+      "reason": "Runtime rendered both15608responses and focused100credit error. Test driver failed on async CDP response-body predicate, then incorrect plural credits accessible-name locator. Replaced with submission-associated proposal assertion and actual Credit settings name; added post-second reload persistence; reran all7paidcases."
+    }
+  ],
+  "sourceSha256": {
+    "apps/backend/tests/support/learner-portrait-web-fixture.ts": "9ac8f316e3dfacb8de73a7fb2165a395ae8a18af437504d21ad9ca4e07491049",
+    "apps/backend/tests/support/learner-portrait-web-server.ts": "386dfd3ef2b1f0aeb8f84456aa909c98386811b7f3bbda2915a810a42fe70c9d",
+    "apps/web/tests/e2e/learner-portrait.journeys.spec.ts": "c6fade9831ebb27badbf914b6c706fcbc6e7f262f3202203a521a94b301e71a8",
+    "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.ts": "912b7a3c83801756208e8368ea53690fc7b313d96d15f1b328dc36b2aec36fd1",
+    "apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts": "41aecc5c502086f3773ce5791bb48fec868b81be544d16919980c3e0e50b5b3d",
+    "apps/backend/src/modules/learner-portraits/infrastructure/learner-portrait-composition.ts": "c6d10fa88f03c07bd31771b08f08c3a6909fd37f4e4f4cea88e3025542a4b638",
+    "apps/backend/tests/integration/modules/learner-portraits/learner-portrait.journeys.test.ts": "f191d536473fda37d590e97a3732411a4b327429bb120702563bea951358e76a",
+    "apps/web/src/fsd/pages/learner-portrait/hooks/use-portrait-interview.ts": "b0297d6cabffe413368b51eca6b933dbd68ea5fbf293aafe171ac26b1e93b0dd",
+    "apps/web/src/fsd/pages/learner-portrait/hooks/use-interview-question-scroll.ts": "85cd4b69cb50b6d8b2f7095e31ed9dc4ab3585fd564a108b8e8c5e51c7bc271e",
+    "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-error-notice.tsx": "16ae37e8582ec70cc88c671ec0e3ac57f2f15687689f49c8926c67d1cf8d4ced",
+    "apps/web/src/fsd/pages/learner-portrait/lib/interview-copy.ts": "c93ae3073b50ff421cc1b0a00679954eb5514e26629d4e268a4f6d3b50ab2182",
+    "docs/user-flows/learner-portrait.md": "ed55886403a974ad8ef30a5c74ba0a26bd9da525930f3fb64f64e3010ae3eb46",
+    "apps/backend/drizzle/0082_portrait_operation_output_bound.sql": "e814d19de5e83eae17018e77f4792dc5d174eeaa7b8fb0a928e992fb52205cb3"
+  },
+  "captureSha256": {
+    "free/portrait-chat-composer-stop-mobile.png": "c237c877f40c66cc171647df3edf9856fbc9f673f11e8e43ddca2ddc968508b8",
+    "free/portrait-conflict-desktop.png": "418b1e7fe48db515410e85c1c6e270ef6b767ec9adc9ee1af6052ec23c781135",
+    "free/portrait-continue-composer-stop-desktop.png": "674c2395e309bb034b58c6f2e8896874ef4c082b85e4fac9c4cb2048cf400838",
+    "free/portrait-delete-mobile.png": "1d7930fdc6fae6c3d341389b751fa787dacfa29a17dbd06fe09dd178eb27c484",
+    "free/portrait-expanded-language-details-mobile.png": "2073fd012f864685549c6fc940889ec31dd9c4d20b41d89fb9f8fba35bedd54a",
+    "free/portrait-interview-desktop.png": "5a9c800ee46b4d71ef06b889c6205ee03e317665d68252f1f22ee95e0682512c",
+    "free/portrait-interview-intro-desktop.png": "685fe9e7d3a5009eeb56d6f2b2ad91f3979bc76ff565e22f9e6c2dae792210c9",
+    "free/portrait-interview-preview-desktop.png": "6985fa3c1c0941071615d7148513bf82e624240da37a28566ceb896d40690477",
+    "free/portrait-interview-review-desktop.png": "02a725342b696a1977d0f7dab2d0a633f039ec9ea3318ab32546a9cbef5d3db7",
+    "free/portrait-invalid-structured-output-kept.png": "9587beeb62632528120c4cebcdf6a470805f02dd72aed651a0416df561098f2b",
+    "free/portrait-manual-editor-desktop.png": "8030b7af6d14bbd84df77053bcfbc57e4e5a5174e00b7125de759e568cd2fc62",
+    "free/portrait-manual-editor-populated-desktop.png": "1583c01aeb492c066553f7f8ce2cc48ca01fcf28a471346ac04adf7af46052fb",
+    "free/portrait-overview-restored-sidebar-desktop.png": "af832ff73fae6e626e4b67a8eb80c3ca960e4af8c45c112213d695365b912b76",
+    "free/portrait-two-language-details-desktop.png": "4e25a6a49e758c44aba627a210a76e900f8bc2dcbb7d326157d464922e92f6a7",
+    "paid/portrait-15608-two-successful-responses.png": "232c58ea6e0b37b74159455894350302f4602f2b26f97ce119529f08c26df7e8",
+    "paid/portrait-chat-composer-stop-mobile.png": "9ec7fc36fc02baedb80237f00cc7fe5555a9237e47194df8a40102ac424cce41",
+    "paid/portrait-conflict-desktop.png": "aad2224b015f568a1a560edf44d65dff039029c4de2d855a9c970dc13dd9e33e",
+    "paid/portrait-continue-composer-stop-desktop.png": "52df320fd1c87d7b55d56cf9b52163c4ea56708a0cb1ab7d8fc99eac42c174ac",
+    "paid/portrait-delete-mobile.png": "1d7930fdc6fae6c3d341389b751fa787dacfa29a17dbd06fe09dd178eb27c484",
+    "paid/portrait-expanded-language-details-mobile.png": "36c6dc77fb9e7018ec6b01d637346e2c650b272dfd9df836e4fc1fdf74635ab8",
+    "paid/portrait-interview-desktop.png": "07fac244e9b5076ff3e21567a5261665c2a0ad07f30017ba60f16cb4209edf39",
+    "paid/portrait-interview-intro-desktop.png": "ad8b5c56a83ba016cd9d01542811e0e362cc186c2064bcd22a398339873bdd2e",
+    "paid/portrait-interview-preview-desktop.png": "b17420463167ef60a23950076cd8284a0b1004c1b94e4ba8542c68478c6ebb3a",
+    "paid/portrait-interview-review-desktop.png": "bfade0ea5a3918ad122f7cd7bce6c3cf44e19ea0f5b8b2a8fd10852f141fc110",
+    "paid/portrait-invalid-structured-output-kept.png": "36d707305e73d1481fc0d5fa12cad5668c41d99d9b6f02bf22ea17343e1b506c",
+    "paid/portrait-low-credit-visible-1440.png": "04a4272ecba873820aba31d4e800ec97ed5fed7d18adda4964ec326b5e0cecf5",
+    "paid/portrait-low-credit-visible-390.png": "2df76a9e4ef71ecbe51191623102bf48a1f65a7720d69f3c8ca48f6981f7bf03",
+    "paid/portrait-manual-editor-desktop.png": "2c2d5fdd4d2a3538da3227fe892b805f4baf9f42ca232610d79a255e5036492b",
+    "paid/portrait-manual-editor-populated-desktop.png": "d211f9fa31af9ca4484a7baa09370a22f6d64f52fb69526303b00b92f079540d",
+    "paid/portrait-overview-restored-sidebar-desktop.png": "7e6105c75aedf9cd826968b57a9d4dece1b6bcd0a981bd628dd0766b726f8943",
+    "paid/portrait-paid-credit-confirmation.png": "b7c12e535034a67169ef1cc0fd2d92455f41cc4a05af919c97772a1fcaeb23f2",
+    "paid/portrait-two-language-details-desktop.png": "40ea9f25f3252cf056e49e36ce0e95c9caac73ccb1b5a214544ff44d5250ff0d"
+  }
+}

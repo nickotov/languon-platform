@@ -1,6 +1,6 @@
 # Learner portrait and AI interview
 
-Status: Complete — original delivery/refinements complete; real interview response and composer Stop follow-up (2026-10-21)
+Status: Complete — available credit budget and visible admission-error follow-up (2026-10-21)
 Authorized: 2026-10-20, user “Implement the plan”; prompt destination confirmed as docs/design-prompt once logic is done.
 
 ## Problem and desired behavior
@@ -30,6 +30,8 @@ Deliver the learner-owned approved portrait and standalone guided interview desc
 | POR-17 | Short interview requests use a conservative request-specific pinned input hold, rather than the full model input capacity. A sufficient20,000-credit grant admits and funds the representative first response; genuine insufficiency, concurrent allocation, immutable pricing, bypass, actual settlement and older in-flight policy remain correct. |
 | POR-18 | The interviewer supplies the exact output contract through the existing DeepSeek-compatible structured-output path in one accounted call. Structured results are strictly validated; invalid results preserve work and expose a safe specific failure code without retaining/logging raw provider content or automatic paid repair calls. The input bound includes all injected contract instructions. |
 | POR-19 | While a response is pending, the composer Send control becomes the sole Stop control. It is enabled when an owned operation can be stopped, prevents duplicate cancellation and does not submit text; empty/oversized text cannot disable Stop. Idle Send, text limits, keyboard behavior and resumable work remain intact. |
+| POR-20 | Finite credit admission chooses the largest affordable useful interview output allowance, from1024 through4096/model maximum, using exact pinned tariff rounding and the complete input bound. Sufficient funding, unlimited and bypass retain the full ceiling. The immutable allowance is enforced throughout dispatch/accounting/SQL; older operations retain their original limits. Insufficient funds cannot be bypassed; depleted/repeated-call and actual-usage settlement regressions pass. |
+| POR-21 | Admission failures are visible after billing confirmation: close the modal, announce/focus a persistent actionable localized alert, preserve input and explicit retry, and do not auto-scroll away or automatically send another charged request. Genuine insufficiency explains the reservation requirement and offers credits/manual editing. |
 
 ## Scope and constraints
 
